@@ -221,6 +221,48 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         );
     };
 
+    const renderManualLibraryCategories = () => {
+        const categories: { id: OracleCategory; label: string; icon: string }[] = [
+            { id: 'frases_inspiradoras', label: 'Frases Inspiradoras', icon: '🔥' },
+            { id: 'reflexoes_filosoficas', label: 'Reflexões Filosóficas', icon: '🧠' },
+            { id: 'fragmentos_sabedoria', label: 'Fragmentos de Sabedoria', icon: '📜' },
+            { id: 'rituais_lifestyle', label: 'Dicas de Vida', icon: '🌿' },
+            { id: 'sussurros_maestria', label: 'Sussurros da Maestria', icon: '👁️' },
+        ];
+
+        return (
+            <div className="space-y-3">
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Biblioteca manual</div>
+                    <p className="mt-2 text-xs leading-relaxed text-gray-400">
+                        Esses são os cards de frases, reflexão e vida do botão manual.
+                        Foco, análise e choque continuam no disparo automático do Oráculo.
+                    </p>
+                </div>
+                {categories.map((cat) => {
+                    const isEnabled = oraclePreferences.enabledCategories.includes(cat.id);
+                    return (
+                        <button
+                            key={cat.id}
+                            onClick={() => handleCategoryToggle(cat.id)}
+                            className={`flex w-full items-center justify-between rounded-xl border p-3 transition-all ${
+                                isEnabled
+                                    ? 'border-white/20 bg-white/10'
+                                    : 'border-transparent bg-black/20 hover:bg-black/30'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-lg">{cat.icon}</span>
+                                <span className={`text-sm font-medium ${isEnabled ? 'text-white' : 'text-gray-400'}`}>{cat.label}</span>
+                            </div>
+                            {isEnabled && <CheckIcon className="h-4 w-4 text-[var(--skin-accent-color)]" />}
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    };
+
     return (
         <Portal>
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
@@ -339,7 +381,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         ) : (
                             <>
                                 {activeTab === 'modos' && renderModes()}
-                                {activeTab === 'categorias' && renderCategories()}
+                                {activeTab === 'categorias' && renderManualLibraryCategories()}
                             </>
                         )}
                     </div>

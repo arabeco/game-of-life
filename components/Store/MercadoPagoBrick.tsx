@@ -213,7 +213,11 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
             }
         } catch (error: any) {
             console.error('Erro ao criar Pix:', error);
-            const nextError = error.message || 'Falha ao gerar o Pix.';
+            const rawMessage = String(error?.message || '').trim();
+            const nextError =
+                !rawMessage || /failed to fetch|networkerror|load failed/i.test(rawMessage)
+                    ? 'Nao consegui falar com o backend do Pix. Isso costuma ser deploy antigo da edge function ou bloqueio de dominio/CORS.'
+                    : rawMessage;
             setPaymentError(nextError);
             latestRefs.current.showToast(nextError);
             setCheckoutStep('payer');

@@ -6,8 +6,21 @@ const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const SITE_URL = Deno.env.get("SITE_URL") || "https://glyph-app-arabecos-projects.vercel.app";
-const VERCEL_URL = `${SITE_URL}?_vercel_share=60aVDYM4ZOqZSA65zTG1QyOiBfnTIl6s`;
-const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || `${SITE_URL},http://localhost:3000,http://localhost:5173`).split(",").map(o => o.trim()).filter(Boolean);
+const DEFAULT_ALLOWED_ORIGINS = [
+  SITE_URL,
+  "https://glyph.life",
+  "https://app.glyph.life",
+  "https://www.glyph.life",
+  "https://glyph-app-arabecos-projects.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5173",
+];
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || DEFAULT_ALLOWED_ORIGINS.join(","))
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -97,8 +110,40 @@ const buildSafePaymentMetadata = (paymentData: any) => {
   };
 };
 
+const normalizeOrigin = (value: string | null | undefined) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return raw.replace(/\/+$/, "");
+  }
+};
+
+const NORMALIZED_ALLOWED_ORIGINS = ALLOWED_ORIGINS.map((origin) => normalizeOrigin(origin));
+const ALLOWED_HOST_SUFFIXES = [
+  "glyph.life",
+  "vercel.app",
+  "localhost",
+  "127.0.0.1",
+];
+
+const isAllowedOriginValue = (origin: string | null) => {
+  if (!origin) return true;
+  const normalized = normalizeOrigin(origin);
+  if (!normalized) return false;
+  if (NORMALIZED_ALLOWED_ORIGINS.includes(normalized)) return true;
+
+  try {
+    const hostname = new URL(normalized).hostname.toLowerCase();
+    return ALLOWED_HOST_SUFFIXES.some((suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`));
+  } catch {
+    return false;
+  }
+};
+
 const buildCorsHeaders = (origin: string | null) => ({
-  "Access-Control-Allow-Origin": origin || ALLOWED_ORIGINS[0] || "",
+  "Access-Control-Allow-Origin": normalizeOrigin(origin || ALLOWED_ORIGINS[0] || ""),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Vary": "Origin",
@@ -106,7 +151,7 @@ const buildCorsHeaders = (origin: string | null) => ({
 
 serve(async (req) => {
   const origin = req.headers.get("origin");
-  const isAllowedOrigin = !origin || ALLOWED_ORIGINS.includes(origin);
+  const isAllowedOrigin = isAllowedOriginValue(origin);
   const corsHeaders = buildCorsHeaders(origin && isAllowedOrigin ? origin : null);
 
   if (req.method === "OPTIONS") {

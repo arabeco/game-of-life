@@ -276,6 +276,32 @@ const MentorshipCampaignBoardCard: React.FC<{
     </button>
 );
 
+const RelationshipSectionCard: React.FC<{
+    eyebrow: string;
+    title: string;
+    description?: string;
+    action?: React.ReactNode;
+    children: React.ReactNode;
+}> = ({ eyebrow, title, description, action, children }) => (
+    <GlassCard className="relationship-hub-section rounded-[22px] border border-white/10 bg-black/22 p-3">
+        <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">{eyebrow}</div>
+                <div className="mt-1 text-sm font-black text-white">{title}</div>
+                {description && (
+                    <div className="mt-1 text-[12px] leading-relaxed text-white/52">
+                        {description}
+                    </div>
+                )}
+            </div>
+            {action && <div className="shrink-0">{action}</div>}
+        </div>
+        <div className="mt-4">
+            {children}
+        </div>
+    </GlassCard>
+);
+
 const InviteCard: React.FC<{
     invite: RelationshipLinkInvite;
     profile?: RelationshipProfileLite | null;
@@ -365,7 +391,7 @@ const RelationshipInvitePicker: React.FC<{
             <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/78 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
                 <GlassCard
                     variant="neutral"
-                    className="w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(206,214,224,0.94)_0%,rgba(114,123,137,0.82)_18%,rgba(27,32,43,0.92)_52%,rgba(8,10,15,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                    className="relationship-hub-sheet w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(206,214,224,0.94)_0%,rgba(114,123,137,0.82)_18%,rgba(27,32,43,0.92)_52%,rgba(8,10,15,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
                     onClick={(event) => event.stopPropagation()}
                 >
                     <div className="flex items-center justify-between gap-3">
@@ -457,7 +483,7 @@ const RelationshipInviteConfirmModal: React.FC<{
             <div className="fixed inset-0 z-[190] flex items-center justify-center bg-black/82 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
                 <GlassCard
                     variant="neutral"
-                    className="w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                    className="relationship-hub-sheet w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
                     onClick={(event) => event.stopPropagation()}
                 >
                     <div className="flex items-center justify-between gap-3">
@@ -533,7 +559,7 @@ const RelationshipEndConfirmModal: React.FC<{
             <div className="fixed inset-0 z-[192] flex items-center justify-center bg-black/82 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
                 <GlassCard
                     variant="neutral"
-                    className="w-full max-w-md rounded-[28px] border border-red-300/14 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                    className="relationship-hub-sheet w-full max-w-md rounded-[28px] border border-red-300/14 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
                     onClick={(event) => event.stopPropagation()}
                 >
                     <div className="flex items-center justify-between gap-3">
@@ -1071,57 +1097,65 @@ export const RelationshipHubModal: React.FC<{
         );
     };
 
-    const renderRelationshipCards = () =>
-        currentTabLinks.length === 0 ? (
-            <EmptyState title="Sem relacoes" text="Nenhum vinculo ativo nesta aba ainda." />
-        ) : (
-            <div className="space-y-3">
-                {currentTabLinks.map((link) => {
-                    const profile = otherParticipant(link);
-                    const role = getRelationshipRoleCopy(link);
-                    const arenasForLink = getArenaChipsForLink(link);
-                    return (
-                        <button
-                            key={link.id}
-                            onClick={() => setSelectedDetailLink(link)}
-                            className="w-full rounded-[20px] border border-white/12 bg-black/20 p-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition-all hover:bg-black/26"
-                        >
-                            <div className="flex items-start gap-3">
-                                <AvatarPill profile={profile} fallback="?" />
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="truncate text-sm font-black text-white">{profile?.nickname || 'Aliado'}</div>
-                                        <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/38" />
-                                    </div>
-                                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                                        <span className="rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/56">
-                                            {role.badge}
-                                        </span>
-                                        <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-emerald-200">
-                                            {arenasForLink.length} arena{arenasForLink.length === 1 ? '' : 's'}
-                                        </span>
+    const renderRelationshipCards = () => (
+        <RelationshipSectionCard
+            eyebrow="Vinculos ativos"
+            title={activeTab === 'mentoria' ? 'Mentorias abertas' : activeTab === 'parceria' ? 'Parcerias abertas' : 'Competicoes abertas'}
+            description={activeTab === 'mentoria'
+                ? 'Cada item abre a leitura completa da relacao, com arenas, campanhas e papel de mentor ou pupilo.'
+                : 'Cada item abre os detalhes do vinculo, as arenas ligadas e o estado atual dessa relacao.'}
+        >
+            {currentTabLinks.length === 0 ? (
+                <EmptyState title="Sem relacoes" text="Nenhum vinculo ativo nesta aba ainda." />
+            ) : (
+                <div className="space-y-3">
+                    {currentTabLinks.map((link) => {
+                        const profile = otherParticipant(link);
+                        const role = getRelationshipRoleCopy(link);
+                        const arenasForLink = getArenaChipsForLink(link);
+                        return (
+                            <button
+                                key={link.id}
+                                onClick={() => setSelectedDetailLink(link)}
+                                className="w-full rounded-[20px] border border-white/12 bg-black/20 p-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition-all hover:bg-black/26"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <AvatarPill profile={profile} fallback="?" />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="truncate text-sm font-black text-white">{profile?.nickname || 'Aliado'}</div>
+                                            <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/38" />
+                                        </div>
+                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/56">
+                                                {role.badge}
+                                            </span>
+                                            <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-emerald-200">
+                                                {arenasForLink.length} arena{arenasForLink.length === 1 ? '' : 's'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </button>
-                    );
-                })}
-            </div>
-        );
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </RelationshipSectionCard>
+    );
 
     const renderInviteSection = () => (
-        <GlassCard className="rounded-[22px] border border-white/10 bg-black/22 p-3">
-            <div className="flex items-center justify-between gap-3">
-                <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Convites pendentes</div>
-                    <div className="mt-1 text-[12px] text-white/56">O valor volta se recusar, revogar ou expirar.</div>
-                </div>
+        <RelationshipSectionCard
+            eyebrow="Convites"
+            title="Pendentes dessa aba"
+            description="O valor volta se recusar, revogar ou expirar."
+            action={
                 <div className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                     {filteredInvites.length}
                 </div>
-            </div>
-
-            <div className="mt-4 space-y-3">
+            }
+        >
+            <div className="space-y-3">
                 {incomingInvites.map((invite) => (
                     <InviteCard
                         key={invite.id}
@@ -1147,7 +1181,7 @@ export const RelationshipHubModal: React.FC<{
                     <EmptyState title="Sem convites" text="Nenhum convite pendente nessa aba no momento." />
                 )}
             </div>
-        </GlassCard>
+        </RelationshipSectionCard>
     );
 
     const renderLinkDetail = (link: RelationshipLink) => {
@@ -1187,6 +1221,10 @@ export const RelationshipHubModal: React.FC<{
                     },
                 ]
                 : [];
+            const campaignSectionTitle = isMentorSide ? 'Campanhas enviadas' : 'Campanhas do mentor';
+            const campaignSectionDescription = isMentorSide
+                ? 'Tudo que voce ja mandou para esse pupilo e pode reabrir ou acompanhar daqui.'
+                : 'Campanhas entregues pelo mentor para instalar, revisar ou abrir.';
             return (
                 <div className="space-y-4">
                     <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
@@ -1247,106 +1285,133 @@ export const RelationshipHubModal: React.FC<{
                         </div>
                     </GlassCard>
 
-                    <GlassCard className="rounded-[22px] border border-white/10 bg-black/22 p-3">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">ArenaView</div>
-                                        <div className="mt-1 text-[11px] text-white/50">
-                                            {isMentorSide ? 'Mini ArenaView dessa mentoria para editar e acompanhar o pupilo.' : 'Mini ArenaView da mentoria com arenas e campanhas do mentor.'}
-                                        </div>
-                                    </div>
-                            <div className="flex items-center gap-2">
-                                {!isMentorSide && (
-                                    <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
-                                        {relationshipCodexes.length} campanha{relationshipCodexes.length === 1 ? '' : 's'}
-                                    </span>
-                                )}
-                                {isMentorSide && (
-                                    <button
-                                        onClick={() => setSelectedMentorLinkForArena(link)}
-                                        className="luxe-skin-button rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
-                                    >
-                                        + arena
-                                    </button>
-                                )}
+                    <RelationshipSectionCard
+                        eyebrow="Arenas da mentoria"
+                        title={isMentorSide ? 'Arenas abertas para acompanhar o pupilo' : 'Arenas compartilhadas pelo mentor'}
+                        description={isMentorSide
+                            ? 'Aqui ficam as arenas dessa relacao. Toque para abrir, editar ou acompanhar.'
+                            : 'Essas arenas aparecem como uma mini ArenaView da sua mentoria.'}
+                        action={isMentorSide ? (
+                            <button
+                                onClick={() => setSelectedMentorLinkForArena(link)}
+                                className="luxe-skin-button rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
+                            >
+                                + arena
+                            </button>
+                        ) : (
+                            <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
+                                {arenasForLink.length} arena{arenasForLink.length === 1 ? '' : 's'}
+                            </span>
+                        )}
+                    >
+                        {arenasForLink.length === 0 ? (
+                            <EmptyState
+                                title="Sem arenas"
+                                text={isMentorSide
+                                    ? 'Abra uma arena para essa mentoria e ela passa a aparecer aqui.'
+                                    : 'Seu mentor ainda nao compartilhou arenas nessa relacao.'}
+                            />
+                        ) : (
+                            <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
+                                {arenasForLink.map((linkedArena) => (
+                                    <RelationshipArenaBoardCard
+                                        key={linkedArena.id}
+                                        arena={linkedArena}
+                                        assetName={assetNameForArena(linkedArena)}
+                                        onClick={() => openLinkedArena(linkedArena)}
+                                    />
+                                ))}
                             </div>
-                        </div>
+                        )}
+                    </RelationshipSectionCard>
 
-                            <div className="mt-4">
-                            {arenasForLink.length === 0 && mentorBoardItems.length === 0 && relationshipCodexes.length === 0 ? (
-                                <EmptyState title="Sem conteudo" text="Seu mentor ainda nao abriu arena nem enviou campanha para esta mentoria." />
-                            ) : (
-                                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                                    {arenasForLink.map((linkedArena) => (
-                                        <RelationshipArenaBoardCard
-                                            key={linkedArena.id}
-                                            arena={linkedArena}
-                                            assetName={assetNameForArena(linkedArena)}
-                                            className="w-full min-w-0"
-                                            onClick={() => openLinkedArena(linkedArena)}
-                                        />
-                                    ))}
-
-                                    {relationshipCodexes.map((codex: UserCodex) => {
-                                            const installed = !isMentorSide && installedOriginCodexIds.has(codex.id);
-                                            const preview = receivedCodexPreviewById.get(codex.id) || null;
-                                            return (
-                                                <MentorshipCampaignBoardCard
-                                                    key={codex.id}
-                                                    title={codex.name}
-                                                    subtitle={`${Array.isArray(codex.template?.levels) ? codex.template.levels.length : 0} fase(s)`}
-                                                    preview={preview}
-                                                    className="w-full min-w-0"
-                                                    onClick={() => {
-                                                        if (preview) setSelectedCampaignPreview(preview);
-                                                    }}
-                                                    badge={
-                                                        installed ? (
-                                                            <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-200">
-                                                                Instalada
-                                                            </span>
-                                                        ) : isMentorSide ? (
-                                                            <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
-                                                                Enviada
-                                                            </span>
-                                                        ) : null
-                                                    }
-                                                    action={
-                                                        installed || isMentorSide ? null : (
-                                                            <button
-                                                                onClick={async (event) => {
-                                                                    event.stopPropagation();
-                                                                    setBusyKey(`install:${codex.id}`);
-                                                                    try {
-                                                                        await installCodex(codex.id);
-                                                                    } finally {
-                                                                        setBusyKey(null);
-                                                                    }
-                                                                }}
-                                                                disabled={busyKey === `install:${codex.id}`}
-                                                                className="shrink-0 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
-                                                            >
-                                                                {busyKey === `install:${codex.id}` ? 'Instalando' : 'Instalar'}
-                                                            </button>
-                                                        )
-                                                    }
-                                                />
-                                            );
-                                        })}
-                                    {isMentorSide && mentorBoardItems.map((item) => (
+                    <RelationshipSectionCard
+                        eyebrow="Campanhas"
+                        title={campaignSectionTitle}
+                        description={campaignSectionDescription}
+                        action={
+                            <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
+                                {relationshipCodexes.length} campanha{relationshipCodexes.length === 1 ? '' : 's'}
+                            </span>
+                        }
+                    >
+                        {relationshipCodexes.length === 0 ? (
+                            <EmptyState
+                                title="Sem campanhas"
+                                text={isMentorSide
+                                    ? 'Nenhuma campanha foi enviada para esse pupilo ainda.'
+                                    : 'Seu mentor ainda nao entregou campanhas nessa mentoria.'}
+                            />
+                        ) : (
+                            <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
+                                {relationshipCodexes.map((codex: UserCodex) => {
+                                    const installed = !isMentorSide && installedOriginCodexIds.has(codex.id);
+                                    const preview = receivedCodexPreviewById.get(codex.id) || null;
+                                    return (
                                         <MentorshipCampaignBoardCard
-                                            key={item.id}
-                                            title={item.title}
-                                            subtitle={item.subtitle}
-                                            onClick={item.onClick}
-                                            action={item.action}
-                                            className="w-full min-w-0"
+                                            key={codex.id}
+                                            title={codex.name}
+                                            subtitle={`${Array.isArray(codex.template?.levels) ? codex.template.levels.length : 0} fase(s)`}
+                                            preview={preview}
+                                            onClick={() => {
+                                                if (preview) setSelectedCampaignPreview(preview);
+                                            }}
+                                            badge={
+                                                installed ? (
+                                                    <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-200">
+                                                        Instalada
+                                                    </span>
+                                                ) : isMentorSide ? (
+                                                    <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
+                                                        Enviada
+                                                    </span>
+                                                ) : null
+                                            }
+                                            action={
+                                                installed || isMentorSide ? null : (
+                                                    <button
+                                                        onClick={async (event) => {
+                                                            event.stopPropagation();
+                                                            setBusyKey(`install:${codex.id}`);
+                                                            try {
+                                                                await installCodex(codex.id);
+                                                            } finally {
+                                                                setBusyKey(null);
+                                                            }
+                                                        }}
+                                                        disabled={busyKey === `install:${codex.id}`}
+                                                        className="shrink-0 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
+                                                    >
+                                                        {busyKey === `install:${codex.id}` ? 'Instalando' : 'Instalar'}
+                                                    </button>
+                                                )
+                                            }
                                         />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </GlassCard>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </RelationshipSectionCard>
+
+                    {isMentorSide && (
+                        <RelationshipSectionCard
+                            eyebrow="Acoes do mentor"
+                            title="Criar ou entregar algo novo"
+                            description="Essas acoes ficam separadas das arenas e campanhas ja existentes para a tela nao misturar tudo."
+                        >
+                            <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
+                                {mentorBoardItems.map((item) => (
+                                    <MentorshipCampaignBoardCard
+                                        key={item.id}
+                                        title={item.title}
+                                        subtitle={item.subtitle}
+                                        onClick={item.onClick}
+                                        action={item.action}
+                                    />
+                                ))}
+                            </div>
+                        </RelationshipSectionCard>
+                    )}
                 </div>
             );
         }
@@ -1450,7 +1515,7 @@ export const RelationshipHubModal: React.FC<{
                 <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/82 backdrop-blur-sm p-3 animate-fade-in" onClick={onClose}>
                     <GlassCard
                         variant="neutral"
-                        className="w-full max-w-[44rem] max-h-[92vh] overflow-hidden rounded-[28px] border border-[rgba(229,234,242,0.24)] bg-[linear-gradient(160deg,rgba(218,223,232,0.96)_0%,rgba(116,125,139,0.84)_18%,rgba(30,36,47,0.94)_52%,rgba(9,11,16,0.985)_100%)] shadow-[0_28px_90px_rgba(0,0,0,0.42)]"
+                        className="relationship-hub-modal relationship-hub-sheet w-full max-w-[44rem] max-h-[92vh] overflow-hidden rounded-[28px] border border-[rgba(229,234,242,0.24)] bg-[linear-gradient(160deg,rgba(218,223,232,0.96)_0%,rgba(116,125,139,0.84)_18%,rgba(30,36,47,0.94)_52%,rgba(9,11,16,0.985)_100%)] shadow-[0_28px_90px_rgba(0,0,0,0.42)]"
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="relative h-full">
@@ -1528,6 +1593,7 @@ export const RelationshipHubModal: React.FC<{
                                     ) : (
                                         <div className="space-y-4">
                                             {renderTabBoard()}
+                                            {renderInviteSection()}
                                             {renderRelationshipCards()}
                                         </div>
                                     )}
@@ -1590,7 +1656,7 @@ export const RelationshipHubModal: React.FC<{
                     <div className="fixed inset-0 z-[181] flex items-center justify-center bg-black/78 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedPupilLink(null)}>
                         <GlassCard
                             variant="neutral"
-                            className="w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                            className="relationship-hub-sheet w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
                             onClick={(event) => event.stopPropagation()}
                         >
                             <div className="flex items-center justify-between gap-3">
@@ -1700,7 +1766,7 @@ export const RelationshipHubModal: React.FC<{
                     <div className="fixed inset-0 z-[181] flex items-center justify-center bg-black/78 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedMentorLinkForArena(null)}>
                         <GlassCard
                             variant="neutral"
-                            className="w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                            className="relationship-hub-sheet w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
                             onClick={(event) => event.stopPropagation()}
                         >
                             <div className="flex items-center justify-between gap-3">

@@ -466,6 +466,88 @@ body {
     linear-gradient(180deg, rgba(226, 235, 245, 0.82) 0%, rgba(206, 217, 231, 0.9) 100%) !important;
 }
 
+.mode-game.theme-light .assets-view-root :is(.text-white, [class*="text-white/"]),
+.mode-game.theme-light .assets-detail-root :is(.text-white, [class*="text-white/"]) {
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light .sephirot-name-label {
+  color: #f6e8bf !important;
+  background: rgba(25, 31, 40, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+}
+
+.mode-game.theme-light .relationship-hub-sheet {
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.16) 22%, transparent 48%),
+    linear-gradient(160deg, rgba(247, 251, 255, 0.98) 0%, rgba(232, 240, 248, 0.97) 18%, rgba(219, 228, 238, 0.98) 54%, rgba(209, 220, 232, 0.99) 100%) !important;
+  border-color: rgba(100, 116, 139, 0.18) !important;
+  box-shadow: 0 24px 64px rgba(73, 88, 112, 0.16) !important;
+}
+
+.mode-game.theme-light .relationship-hub-sheet :is(.text-white, [class~="text-white"]) {
+  color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light .relationship-hub-sheet :is(
+  [class*="text-white/28"],
+  [class*="text-white/36"],
+  [class*="text-white/38"],
+  [class*="text-white/40"],
+  [class*="text-white/42"],
+  [class*="text-white/44"],
+  [class*="text-white/46"],
+  [class*="text-white/50"],
+  [class*="text-white/52"],
+  [class*="text-white/56"],
+  [class*="text-white/58"],
+  [class*="text-white/62"],
+  [class*="text-white/64"],
+  [class*="text-white/70"],
+  [class*="text-white/72"],
+  [class*="text-white/76"],
+  [class*="text-white/84"]
+) {
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light .relationship-hub-sheet :is(.text-gray-300, .text-gray-400, .text-gray-500) {
+  color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-light .relationship-hub-sheet [class*="bg-black/"] {
+  background-color: rgba(244, 248, 252, 0.82) !important;
+}
+
+.mode-game.theme-light .relationship-hub-sheet [class*="bg-white/"] {
+  background-color: rgba(100, 116, 139, 0.08) !important;
+}
+
+.mode-game.theme-light .relationship-hub-sheet [class*="border-white/"] {
+  border-color: rgba(100, 116, 139, 0.16) !important;
+}
+
+.mode-game.theme-light .relationship-hub-modal .relationship-hub-section {
+  background: rgba(246, 249, 253, 0.84) !important;
+  border-color: rgba(100, 116, 139, 0.16) !important;
+  box-shadow: 0 10px 24px rgba(73, 88, 112, 0.08) !important;
+}
+
+.mode-game.theme-light .relationship-hub-sheet input,
+.mode-game.theme-light .relationship-hub-sheet textarea,
+.mode-game.theme-light .relationship-hub-sheet select {
+  color: var(--text-primary) !important;
+  background-color: rgba(255, 255, 255, 0.86) !important;
+  border-color: rgba(100, 116, 139, 0.16) !important;
+}
+
+.mode-game.theme-light .relationship-hub-sheet input::placeholder,
+.mode-game.theme-light .relationship-hub-sheet textarea::placeholder {
+  color: rgba(101, 116, 133, 0.58) !important;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

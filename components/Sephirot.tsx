@@ -34,7 +34,7 @@ export const Sephirot: React.FC<SephirotProps> = ({
 
   return (
     <div style={style} className="flex flex-col items-center justify-center z-10 animate-fade-in">
-        <div className={`luxe-title-ornate pointer-events-none text-[color:var(--skin-accent-color)] text-[9px] font-black uppercase tracking-[0.08em] ${titleMargin} px-2 py-[0.2rem] bg-black/44 border border-white/8 rounded z-10 shadow-[0_3px_10px_rgba(0,0,0,0.32)] backdrop-blur-[3px]`}>
+        <div className={`sephirot-name-label luxe-title-ornate pointer-events-none text-[color:var(--skin-accent-color)] text-[9px] font-black uppercase tracking-[0.08em] ${titleMargin} px-2 py-[0.2rem] bg-black/44 border border-white/8 rounded z-10 shadow-[0_3px_10px_rgba(0,0,0,0.32)] backdrop-blur-[3px]`}>
             {asset.name}
         </div>
         <button 

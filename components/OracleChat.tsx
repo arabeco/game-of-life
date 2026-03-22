@@ -121,21 +121,21 @@ const ORACLE_CATEGORY_VISUALS: Record<OracleCategory, {
     bgClass: string;
 }> = {
     frases_inspiradoras: {
-        label: 'Pulso inspirador',
+        label: 'Carta inspiradora',
         accentClass: 'text-emerald-200',
         badgeClass: 'border-emerald-400/20 bg-emerald-400/12 text-emerald-200',
         borderClass: 'border-emerald-400/16',
         bgClass: 'bg-emerald-500/8',
     },
     reflexoes_filosoficas: {
-        label: 'Pulso reflexivo',
+        label: 'Reflexao filosofica',
         accentClass: 'text-sky-200',
         badgeClass: 'border-sky-400/20 bg-sky-400/12 text-sky-200',
         borderClass: 'border-sky-400/16',
         bgClass: 'bg-sky-500/8',
     },
     fragmentos_sabedoria: {
-        label: 'Pulso de sabedoria',
+        label: 'Fragmento de sabedoria',
         accentClass: 'text-violet-200',
         badgeClass: 'border-violet-400/20 bg-violet-400/12 text-violet-200',
         borderClass: 'border-violet-400/16',
@@ -149,7 +149,7 @@ const ORACLE_CATEGORY_VISUALS: Record<OracleCategory, {
         bgClass: 'bg-[linear-gradient(180deg,rgba(191,148,56,0.16),rgba(15,15,15,0.92))]',
     },
     rituais_lifestyle: {
-        label: 'Pulso de ritual',
+        label: 'Dica de vida',
         accentClass: 'text-lime-100',
         badgeClass: 'border-lime-300/20 bg-lime-400/12 text-lime-100',
         borderClass: 'border-lime-300/16',
@@ -163,7 +163,7 @@ const ORACLE_CATEGORY_VISUALS: Record<OracleCategory, {
         bgClass: 'bg-[linear-gradient(180deg,rgba(190,65,91,0.16),rgba(15,15,15,0.92))]',
     },
     sussurros_maestria: {
-        label: 'Pulso de maestria',
+        label: 'Sussurro de maestria',
         accentClass: 'text-fuchsia-100',
         badgeClass: 'border-fuchsia-300/20 bg-fuchsia-400/12 text-fuchsia-100',
         borderClass: 'border-fuchsia-300/16',
@@ -803,7 +803,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                 )}
               </div>
               <div className="mt-1 text-[10px] text-gray-500">
-                O botão gera um card informativo aqui no chat. Os pulsos automáticos continuam chegando ao longo do dia.
+                O botão gera cartas de frases, reflexão, sabedoria e dicas de vida aqui no chat. Os cards automáticos de foco continuam chegando ao longo do dia.
               </div>
             </div>
             <button

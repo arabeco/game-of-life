@@ -273,14 +273,27 @@ const ORACLE_INTEL_CATEGORIES = new Set<OracleCategory>([
     'analise_padroes',
 ]);
 
+const ORACLE_MANUAL_LIBRARY_CATEGORIES: OracleCategory[] = [
+    'frases_inspiradoras',
+    'reflexoes_filosoficas',
+    'fragmentos_sabedoria',
+    'rituais_lifestyle',
+    'sussurros_maestria',
+];
+
+const normalizeOracleManualCategories = (enabledCategories: OracleCategory[] = []): OracleCategory[] => {
+    const filtered = enabledCategories.filter((category) => ORACLE_MANUAL_LIBRARY_CATEGORIES.includes(category));
+    return filtered.length > 0 ? filtered : [...ORACLE_MANUAL_LIBRARY_CATEGORIES];
+};
+
 const ORACLE_CATEGORY_LABELS: Record<OracleCategory, string> = {
-    frases_inspiradoras: 'Pulso inspirador',
-    reflexoes_filosoficas: 'Pulso reflexivo',
-    fragmentos_sabedoria: 'Pulso de sabedoria',
+    frases_inspiradoras: 'Carta inspiradora',
+    reflexoes_filosoficas: 'Reflexao filosofica',
+    fragmentos_sabedoria: 'Fragmento de sabedoria',
     dicas_produtividade: 'Card de foco',
-    rituais_lifestyle: 'Pulso de ritual',
+    rituais_lifestyle: 'Dica de vida',
     provocacoes: 'Card de choque',
-    sussurros_maestria: 'Pulso de maestria',
+    sussurros_maestria: 'Sussurro de maestria',
     analise_padroes: 'Card de analise',
 };
 
@@ -292,10 +305,9 @@ const resolveOraclePresentation = (
 );
 
 const resolveManualOracleCategory = (enabledCategories: OracleCategory[] = []): OracleCategory => {
-    const preferredOrder: OracleCategory[] = ['analise_padroes', 'dicas_produtividade', 'provocacoes'];
-    return preferredOrder.find((category) => enabledCategories.includes(category))
-        || enabledCategories[0]
-        || 'dicas_produtividade';
+    const manualPool = normalizeOracleManualCategories(enabledCategories);
+    const randomIndex = Math.floor(Math.random() * manualPool.length);
+    return manualPool[randomIndex] || 'frases_inspiradoras';
 };
 
 export interface GameContextType {
@@ -955,6 +967,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const mapped = mapToCamelCase(data) as OraclePreferences;
             setOraclePreferences({
                 ...mapped,
+                enabledCategories: normalizeOracleManualCategories(mapped.enabledCategories || []),
                 sentinelMode: getSentinelMode(userId),
                 pushEnabled: getPushEnabled(userId),
             });
@@ -969,7 +982,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 soundsEnabled: true,
                 hapticsEnabled: true,
                 sentinelMode: getSentinelMode(userId),
-                enabledCategories: ['frases_inspiradoras', 'reflexoes_filosoficas', 'fragmentos_sabedoria', 'dicas_produtividade', 'rituais_lifestyle', 'provocacoes'],
+                enabledCategories: [...ORACLE_MANUAL_LIBRARY_CATEGORIES],
                 activeMode: 'neutro',
                 quietHoursStart: '22:00',
                 quietHoursEnd: '07:00',
@@ -994,7 +1007,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         localStorage.setItem(getSentinelStorageKey(userId), nextSentinelMode || 'soberano_ativo');
         localStorage.setItem(getPushStorageKey(userId), nextPushEnabled ?'true' : 'false');
 
-        const newPrefs = { ...oraclePreferences, ...prefs, sentinelMode: nextSentinelMode, pushEnabled: nextPushEnabled, updatedAt: new Date().toISOString() };
+        const normalizedEnabledCategories = prefs.enabledCategories
+            ? normalizeOracleManualCategories(prefs.enabledCategories)
+            : oraclePreferences?.enabledCategories;
+        const newPrefs = {
+            ...oraclePreferences,
+            ...prefs,
+            enabledCategories: normalizedEnabledCategories,
+            sentinelMode: nextSentinelMode,
+            pushEnabled: nextPushEnabled,
+            updatedAt: new Date().toISOString()
+        };
         // Optimistic update
         setOraclePreferences(newPrefs as OraclePreferences);
 
@@ -1146,29 +1169,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const enabled = oraclePreferences.enabledCategories || [];
 
         if (triggerType !== 'manual') {
-            const enabledOperational = enabled.filter((entry) =>
-                entry === 'dicas_produtividade'
-                || entry === 'analise_padroes'
-                || entry === 'provocacoes'
-                || entry === 'rituais_lifestyle',
-            );
-
             if (!activeCycle || contextData.needsFirstArena || contextData.needsFirstAction || contextData.needsFirstTask || contextData.needsSitrepClosure) {
                 category = 'dicas_produtividade';
             } else if (contextData.cycleRisk === 'alto') {
                 category = contextData.overdueActions > 0 ? 'provocacoes' : 'dicas_produtividade';
             } else if (contextData.cycleRisk === 'medio') {
                 category = 'analise_padroes';
-            } else if (hour >= 19 && enabledOperational.includes('rituais_lifestyle') && Math.random() < 0.15) {
-                category = 'rituais_lifestyle';
             } else {
                 category = 'dicas_produtividade';
-            }
-
-            if (enabledOperational.length > 0 && !enabledOperational.includes(category)) {
-                category = enabledOperational[0];
-            } else if (enabled.length > 0 && !enabled.includes(category as any)) {
-                category = enabled[0];
             }
         } else if (enabled.length > 0 && !enabled.includes(category as any)) {
             category = enabled[0];
@@ -1210,8 +1218,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
         const systemPrompt = modeConfig.systemPromptTemplate(contextData);
         const presentation = resolveOraclePresentation(category, triggerType);
-        const userPrompt = triggerType === 'manual'
-            ? `Gere um card operacional curto para o chat do usuario.
+        const isManualLibraryCard = triggerType === 'manual' && ORACLE_MANUAL_LIBRARY_CATEGORIES.includes(category);
+        const userPrompt = isManualLibraryCard
+            ? `Gere um card curto para o chat do usuario.
+      Categoria solicitada: ${category}
+      Objetivo: entregar uma peca breve de frase, reflexao, sabedoria ou dica de vida.
+      Formato obrigatorio:
+      TITULO: ate 4 palavras
+      CARD: 2 a 4 linhas curtas
+      FECHO: 1 linha final breve
+      Regras:
+      - sem saudacao
+      - sem PRIORIDADE, RISCO ou AJA
+      - sem linguagem corporativa
+      - se a categoria for rituais_lifestyle, o card deve trazer uma dica de vida pratica e simples
+      - nas outras categorias, o card deve soar memoravel, util e limpo
+      - nao force foco operacional aqui
+      Contexto atual: ${JSON.stringify(contextData)}`
+            : triggerType === 'manual'
+                ? `Gere um card operacional curto para o chat do usuario.
       Categoria solicitada: ${category}
       Formato obrigatorio:
       PRIORIDADE: uma frase curta

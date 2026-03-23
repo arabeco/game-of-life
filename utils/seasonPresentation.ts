@@ -106,6 +106,7 @@ export const resolveSeasonArchiveLogEntry = (season: SeasonLike) => {
 export const getEraCalendarYears = () => ERA_CALENDAR;
 
 export const getSeasonLaunchRewardFlag = (seasonId: string): string => `__flag_season_launch_reward_${seasonId}`;
+export const getSeasonTransitionSeenFlag = (seasonId: string): string => `__flag_season_transition_seen_${seasonId}`;
 
 export const getSeasonLaunchToastStorageKey = (seasonId: string): string => `glyph:season-launch-toast:${seasonId}`;
 

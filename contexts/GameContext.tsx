@@ -6192,11 +6192,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return { report: newReport, expGained };
     };
 
+    const getAutoFinishedCycleSeenStorageKey = (userId: string, cycleId: string) =>
+        `glyph:auto-finished-cycle-seen:${userId}:${cycleId}`;
+
     useEffect(() => {
         if (!hasHydratedFromSupabase || !activeCycle?.id) {
             autoFinishingCycleRef.current = null;
             return;
         }
+
+        const userId = getSupabaseUserId();
+        if (!userId) return;
 
         const hasExpired = getLocalDateString() > activeCycle.endDate;
         if (!hasExpired) {
@@ -6204,6 +6210,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 autoFinishingCycleRef.current = null;
             }
             return;
+        }
+
+        if (typeof window !== 'undefined') {
+            const seenStorageKey = getAutoFinishedCycleSeenStorageKey(userId, activeCycle.id);
+            if (window.localStorage.getItem(seenStorageKey) === 'seen') {
+                setActiveCycle(prev => prev?.id === activeCycle.id ? null : prev);
+                autoFinishingCycleRef.current = activeCycle.id;
+                return;
+            }
         }
 
         if (autoFinishingCycleRef.current === activeCycle.id) return;
@@ -6217,6 +6232,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const result = endCycle(assets, actions);
                 if (result?.report) {
                     if (typeof window !== 'undefined') {
+                        const seenStorageKey = getAutoFinishedCycleSeenStorageKey(userId, activeCycle.id);
+                        window.localStorage.setItem(seenStorageKey, 'seen');
                         (window as any).__glyphPendingCycleResults = {
                             report: result.report,
                             expGained: result.expGained,

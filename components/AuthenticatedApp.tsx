@@ -25,6 +25,7 @@ import {
 import { APP_NAVIGATE_EVENT, AppNavigatePayload } from '../utils/arenaAttention';
 import {
     getSeasonLaunchToastStorageKey,
+    getSeasonTransitionSeenFlag,
     getSeasonTransitionStorageKey,
     resolveRuntimeSeasonTransition,
 } from '../utils/seasonPresentation';
@@ -71,29 +72,41 @@ const sanitizeView = (view: View | null | undefined, canUseAssetsView: boolean, 
 
 const TutorialBridge: React.FC = () => null;
 const GlobalSeasonTransitionGate: React.FC<{ enabled: boolean }> = ({ enabled }) => {
-    const { seasons, showToast } = useGame();
+    const { seasons, showToast, userProfile, addProfileFlag } = useGame();
     const [pendingTransition, setPendingTransition] = useState<ReturnType<typeof resolveRuntimeSeasonTransition>>(null);
 
     useEffect(() => {
         if (!enabled) return;
         if (typeof window === 'undefined') return;
+        if (pendingTransition) return;
 
         const runtimeTransition = resolveRuntimeSeasonTransition(seasons);
         if (!runtimeTransition) return;
 
-        const storageKey = getSeasonTransitionStorageKey(
+        const seenFlag = getSeasonTransitionSeenFlag(runtimeTransition.toSeason.id);
+        if ((userProfile.completedSeasonMissions || []).includes(seenFlag)) return;
+
+        const storageKey = `${getSeasonTransitionStorageKey(
             runtimeTransition.fromSeason.id,
             runtimeTransition.toSeason.id,
-        );
+        )}:${userProfile.id || 'anon'}`;
 
         if (window.localStorage.getItem(storageKey) === 'seen') return;
 
-        window.localStorage.setItem(storageKey, 'seen');
         setPendingTransition(runtimeTransition);
-    }, [enabled, seasons]);
+    }, [enabled, pendingTransition, seasons, userProfile.completedSeasonMissions, userProfile.id]);
 
     const handleClose = useCallback(() => {
         if (typeof window !== 'undefined' && pendingTransition) {
+            const storageKey = `${getSeasonTransitionStorageKey(
+                pendingTransition.fromSeason.id,
+                pendingTransition.toSeason.id,
+            )}:${userProfile.id || 'anon'}`;
+            window.localStorage.setItem(storageKey, 'seen');
+
+            const seenFlag = getSeasonTransitionSeenFlag(pendingTransition.toSeason.id);
+            addProfileFlag(seenFlag);
+
             const toastKey = getSeasonLaunchToastStorageKey(pendingTransition.toSeason.id);
             const pendingToast = window.localStorage.getItem(toastKey);
             if (pendingToast) {
@@ -103,7 +116,7 @@ const GlobalSeasonTransitionGate: React.FC<{ enabled: boolean }> = ({ enabled })
         }
 
         setPendingTransition(null);
-    }, [pendingTransition, showToast]);
+    }, [addProfileFlag, pendingTransition, showToast, userProfile.id]);
 
     if (!pendingTransition) return null;
 

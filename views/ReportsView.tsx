@@ -667,7 +667,22 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }, 0);
     };
 
-    const handleCloseDynamic = () => {
+    const handleForceClose = useCallback((event?: React.MouseEvent<HTMLButtonElement>) => {
+        event?.stopPropagation();
+        setView('hub');
+        setSelectedReport(null);
+        setReportsToCompare(null);
+        setReportForComparison(null);
+        setShowConfirmEndCycle(false);
+        setScanError(null);
+        setIsPostCycleFlow(false);
+        if (typeof window !== 'undefined') {
+            (window as any).__glyphPendingCycleResults = null;
+        }
+        onClose();
+    }, [onClose]);
+
+    const handleCloseDynamic = useCallback(() => {
         switch (view) {
             case 'results':
             case 'comparing':
@@ -677,9 +692,19 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 setReportForComparison(null);
                 break;
             default:
-                onClose();
+                handleForceClose();
         }
-    };
+    }, [handleForceClose, onClose, view]);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            handleCloseDynamic();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleCloseDynamic]);
 
     const buildCycleFinalizedNotificationContent = (report: Report) => {
         const cycleName = report.cycleName || 'seu ciclo';
@@ -1856,14 +1881,21 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={handleCloseDynamic}>
                 <div className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
-                    <div className="flex-shrink-0 flex justify-between items-center text-white pb-4">
+                    <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
                             {(view === 'results' || view === 'comparing') && (
                                 <button id="reports-view-back-button" onClick={handleCloseDynamic} className="p-2 -ml-2"><ChevronLeftIcon /></button>
                             )}
                             <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
                         </div>
-                        <button onClick={onClose}><XIcon /></button>
+                        <button
+                            type="button"
+                            aria-label="Fechar historico"
+                            onClick={handleForceClose}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+                        >
+                            <XIcon />
+                        </button>
                     </div>
                     <div className="flex-grow overflow-y-auto relative overflow-hidden">
                         {renderContent()}
@@ -1945,7 +1977,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
 
 
 

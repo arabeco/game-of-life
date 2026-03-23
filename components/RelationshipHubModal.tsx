@@ -228,6 +228,7 @@ const RelationshipArenaBoardCard: React.FC<{
                 arena={previewArena}
                 actions={arena.actions || []}
                 tasks={arena.tasks || []}
+                relationshipBadgeType={arena.linkType ?? null}
                 onClick={() => undefined}
                 variant="overview"
                 assetName={assetName}

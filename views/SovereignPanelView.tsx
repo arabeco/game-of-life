@@ -242,7 +242,7 @@ const GM_SKIN_BUTTON_GRADIENTS: Record<(typeof GM_SKIN_PREVIEW_ORDER)[number], s
   BASIC: 'linear-gradient(135deg, #333333 0%, #eeeeee 50%, #333333 100%)',
   GOLD: 'linear-gradient(135deg, #5c4a1f 0%, #d4af37 50%, #5c4a1f 100%)',
   FROST: 'linear-gradient(135deg, #4a90e2 0%, #92d4f3 50%, #4a90e2 100%)',
-  EMBER: 'linear-gradient(135deg, #8a2be2 0%, #ff6a00 50%, #8a2be2 100%)',
+  EMBER: 'linear-gradient(135deg, #3d0909 0%, #7d1412 34%, #bf3c1b 72%, #5f0f18 100%)',
   CYBER: 'linear-gradient(135deg, #143345 0%, #7cd9ff 50%, #143345 100%)',
   AURORA: 'linear-gradient(135deg, #0ea5e9 0%, #a5f3fc 50%, #0ea5e9 100%)',
   VOID: 'linear-gradient(135deg, #120815 0%, #2a1336 50%, #120815 100%)',
@@ -282,7 +282,8 @@ const buildSkinPreviewTokens = (skinId: (typeof GM_SKIN_PREVIEW_ORDER)[number], 
   const accent = hexToRgb(GM_SKIN_ACCENTS[skinId]);
   const slateDark = hexToRgb('#243447');
   const slateMid = hexToRgb('#66788c');
-  const ivory = hexToRgb('#f2ead7');
+  const safeDark = hexToRgb('#141b24');
+  const safeDarkSoft = hexToRgb('#4f5f72');
   const white = hexToRgb('#ffffff');
   const deepDark = hexToRgb('#0a0d12');
   const darkShell = hexToRgb('#20242d');
@@ -296,16 +297,20 @@ const buildSkinPreviewTokens = (skinId: (typeof GM_SKIN_PREVIEW_ORDER)[number], 
     const cardBottom = mixRgb(accent, deepDark, 0.08);
     const plannerTop = mixRgb(accent, hexToRgb('#11161d'), 0.12);
     const plannerBottom = mixRgb(accent, deepDark, 0.06);
-    const text = mixRgb(accent, ivory, 0.28);
-    const border = mixRgb(accent, white, 0.12);
+    const text = mixRgb(accent, safeDark, 0.92);
+    const cardText = mixRgb(accent, safeDark, 0.95);
+    const subtleText = mixRgb(accent, safeDarkSoft, 0.88);
+    const border = mixRgb(accent, white, 0.28);
 
     return {
       accentHex: GM_SKIN_ACCENTS[skinId],
       buttonBackground: GM_SKIN_BUTTON_GRADIENTS[skinId],
-      buttonText: skinId === 'VOID' ? '#F3EEFF' : '#1B1408',
+      buttonText: skinId === 'VOID' || skinId === 'EMBER' ? '#F6EEE7' : '#1B1408',
       cardBackground: `linear-gradient(180deg, ${rgbToString(cardTop, 0.96)} 0%, ${rgbToString(cardBottom, 0.985)} 100%)`,
       plannerBackground: `linear-gradient(180deg, ${rgbToString(plannerTop, 0.95)} 0%, ${rgbToString(plannerBottom, 0.98)} 100%)`,
       textColor: rgbToString(text),
+      cardTextColor: rgbToString(cardText),
+      subtleTextColor: rgbToString(subtleText),
       borderColor: rgbToString(border),
       textHex: rgbToHex(text),
       borderHex: rgbToHex(border),
@@ -317,16 +322,20 @@ const buildSkinPreviewTokens = (skinId: (typeof GM_SKIN_PREVIEW_ORDER)[number], 
   const plannerTop = mixRgb(accent, white, 0.2);
   const plannerMidColor = mixRgb(accent, plannerMid, 0.26);
   const plannerBottom = mixRgb(accent, plannerBase, 0.18);
-  const text = mixRgb(accent, slateDark, 0.3);
-  const border = mixRgb(accent, slateMid, 0.22);
+  const text = mixRgb(accent, safeDark, 0.92);
+  const cardText = mixRgb(accent, safeDark, 0.96);
+  const subtleText = mixRgb(accent, safeDarkSoft, 0.9);
+  const border = mixRgb(accent, slateMid, 0.34);
 
   return {
     accentHex: GM_SKIN_ACCENTS[skinId],
     buttonBackground: GM_SKIN_BUTTON_GRADIENTS[skinId],
-    buttonText: skinId === 'VOID' ? '#F3EEFF' : '#1B1408',
+    buttonText: skinId === 'VOID' || skinId === 'EMBER' ? '#F6EEE7' : '#1B1408',
     cardBackground: `linear-gradient(180deg, ${rgbToString(cardTop, 0.96)} 0%, ${rgbToString(cardBottom, 0.94)} 100%)`,
     plannerBackground: `linear-gradient(180deg, ${rgbToString(plannerTop, 0.98)} 0%, ${rgbToString(plannerMidColor, 0.94)} 38%, ${rgbToString(plannerBottom, 0.96)} 100%)`,
     textColor: rgbToString(text),
+    cardTextColor: rgbToString(cardText),
+    subtleTextColor: rgbToString(subtleText),
     borderColor: rgbToString(border),
     textHex: rgbToHex(text),
     borderHex: rgbToHex(border),
@@ -361,10 +370,10 @@ const SkinPreviewMiniModal: React.FC<{
     <div className="space-y-2">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: preview.textColor }}>
+          <p className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: preview.subtleTextColor }}>
             Modal teste
           </p>
-          <h3 className="text-sm font-black uppercase tracking-[0.12em]" style={{ color: preview.textColor }}>
+          <h3 className="text-sm font-black uppercase tracking-[0.12em]" style={{ color: preview.cardTextColor }}>
             {title}
           </h3>
         </div>
@@ -378,8 +387,8 @@ const SkinPreviewMiniModal: React.FC<{
         className="rounded-[14px] border px-3 py-2"
         style={{ background: preview.plannerBackground, borderColor: preview.borderColor }}
       >
-        <p className="text-[10px] leading-relaxed" style={{ color: preview.textColor }}>
-          Texto principal, subtom de painel e leitura do bloco interno.
+        <p className="text-[10px] leading-relaxed" style={{ color: preview.cardTextColor }}>
+          Fundo interno, bloco secundario e leitura segura sobre a superficie.
         </p>
       </div>
 
@@ -400,7 +409,7 @@ const SkinPreviewMiniModal: React.FC<{
           className="rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em]"
           style={{
             background: 'rgba(255,255,255,0.05)',
-            color: preview.textColor,
+            color: preview.cardTextColor,
             borderColor: preview.borderColor,
           }}
         >
@@ -482,22 +491,27 @@ const GmSkinPaletteSection: React.FC = () => {
                     </span>
                   </SkinPaletteLine>
 
-                  <SkinPaletteLine label="Cards" background={skin.preview.cardBackground} borderColor={skin.preview.borderColor}>
-                    <span className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: skin.preview.textColor }}>
+          <SkinPaletteLine label="Cards" background={skin.preview.cardBackground} borderColor={skin.preview.borderColor}>
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: skin.preview.cardTextColor }}>
                       Fundo principal
                     </span>
                   </SkinPaletteLine>
 
                   <SkinPaletteLine label="Planner" background={skin.preview.plannerBackground} borderColor={skin.preview.borderColor}>
-                    <span className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: skin.preview.textColor }}>
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: skin.preview.cardTextColor }}>
                       Grade / superficie
                     </span>
                   </SkinPaletteLine>
 
-                  <SkinPaletteLine label="Texto" background="rgba(0,0,0,0.18)" borderColor={skin.preview.borderColor}>
-                    <span className="text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: skin.preview.textColor }}>
-                      {skin.preview.textHex}
-                    </span>
+                  <SkinPaletteLine label="Leitura" background={skin.preview.cardBackground} borderColor={skin.preview.borderColor}>
+                    <div className="flex w-full items-center justify-between gap-3">
+                      <span className="text-[10px] font-black uppercase tracking-[0.12em]" style={{ color: skin.preview.cardTextColor }}>
+                        Titulo seguro
+                      </span>
+                      <span className="text-[10px] font-semibold tracking-[0.08em]" style={{ color: skin.preview.subtleTextColor }}>
+                        subtom
+                      </span>
+                    </div>
                   </SkinPaletteLine>
 
                   <SkinPaletteLine label="Bordas" background="rgba(0,0,0,0.18)" borderColor={skin.preview.borderColor}>

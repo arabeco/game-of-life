@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
-import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, ScheduledTask } from '../types';
-import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon } from '../components/Icons';
+import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, RelationshipLinkType, ScheduledTask } from '../types';
+import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
 import { ArenaCard } from '../components/ArenaCard';
@@ -220,17 +220,17 @@ export const ArenasView: React.FC = () => {
         assets.forEach(asset => asset.arenas.forEach(arena => ids.add(arena.id)));
         return ids;
     }, [assets]);
-    const relationshipOwnedArenaIds = useMemo(() => {
-        const ids = new Set<string>();
+    const relationshipLinkTypeByArenaId = useMemo(() => {
+        const linkTypes = new Map<string, RelationshipLinkType>();
         sharedLinkedArenas.forEach((linkedArena) => {
-            if (linkedArena.arenaId && ownedArenaIds.has(linkedArena.arenaId)) {
-                ids.add(linkedArena.arenaId);
+            if (linkedArena.arenaId && linkedArena.linkType) {
+                linkTypes.set(linkedArena.arenaId, linkedArena.linkType);
             }
         });
-        return ids;
-    }, [ownedArenaIds, sharedLinkedArenas]);
+        return linkTypes;
+    }, [sharedLinkedArenas]);
     
-    const allArenas = getArenas().filter(a => (showArchived || !a.isArchived) && !relationshipOwnedArenaIds.has(a.id));
+    const allArenas = getArenas().filter(a => (showArchived || !a.isArchived));
     const rootArenas = allArenas
         .filter(a => !a.folderId && !allCampaignArenaIds.includes(a.id))
         .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -339,6 +339,30 @@ export const ArenasView: React.FC = () => {
             isArchived: false,
         }
     );
+    const renderRelationshipMiniBadge = (linkType?: RelationshipLinkType | null) => {
+        if (linkType === 'mentoria') {
+            return (
+                <span title="Mentoria" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-500/18 text-emerald-300">
+                    <CrownIcon className="h-[9px] w-[9px]" />
+                </span>
+            );
+        }
+        if (linkType === 'parceria') {
+            return (
+                <span title="Parceria" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-sky-300/40 bg-sky-500/18 text-sky-300">
+                    <UsersIcon className="h-[9px] w-[9px]" />
+                </span>
+            );
+        }
+        if (linkType === 'competicao') {
+            return (
+                <span title="Competição" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-rose-300/40 bg-rose-500/18 text-rose-300">
+                    <TrophyIcon className="h-[9px] w-[9px]" />
+                </span>
+            );
+        }
+        return null;
+    };
 
     const handlePriorityDrop = async (e: React.DragEvent, priority: 'alta' | 'media' | 'baixa', targetId?: string) => {
         e.preventDefault();
@@ -839,6 +863,7 @@ export const ArenasView: React.FC = () => {
             onOpen?: () => void;
             sortableType?: 'arena' | 'campaign';
             registerNode?: (node: HTMLDivElement | null) => void;
+            relationshipBadgeType?: RelationshipLinkType | null;
         } = {}
     ) => {
         const rowId = options.rowId ?? arena.id;
@@ -850,6 +875,7 @@ export const ArenasView: React.FC = () => {
         const isDragged = draggedId === rowId;
         const isSortable = shouldEnableListReorder && !!options.sortableType;
         const arenaAccentColor = ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843';
+        const relationshipBadgeType = options.relationshipBadgeType ?? relationshipLinkTypeByArenaId.get(arena.id) ?? null;
 
         return (
             <div
@@ -879,6 +905,7 @@ export const ArenasView: React.FC = () => {
                         >
                             <EmojiGlyph symbol={arena.icon || '🏛️'} size="action" className="text-white" />
                         </span>
+                        {relationshipBadgeType && renderRelationshipMiniBadge(relationshipBadgeType)}
                         <span className="min-w-0 truncate text-[12px] font-bold text-white/92">
                             {arena.name}
                             <span className="text-white/45 font-medium">{assetLabel}</span>
@@ -923,6 +950,7 @@ export const ArenasView: React.FC = () => {
             installAction?: (() => Promise<void>) | null;
             sortable?: boolean;
             registerNode?: (node: HTMLDivElement | null) => void;
+            mentorBadge?: boolean;
         } = {}
     ) => {
         const arenaCount = campaign.arenaIds.length;
@@ -956,6 +984,7 @@ export const ArenasView: React.FC = () => {
                         <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/35 bg-black/28 text-[13px]">
                             📁
                         </span>
+                        {options.mentorBadge && renderRelationshipMiniBadge('mentoria')}
                         <span className="min-w-0 truncate text-[12px] font-bold text-white/92">
                             {campaign.title}
                             <span className="text-white/45 font-medium"> (Campanha)</span>
@@ -1403,6 +1432,7 @@ export const ArenasView: React.FC = () => {
                         arena={arena}
                         assetName={options.assetName}
                         actions={getActionsForArena(arena.id)}
+                        relationshipBadgeType={relationshipLinkTypeByArenaId.get(arena.id) ?? null}
                         onClick={() => {}}
                         variant="overview"
                         highlightPhase={arenaHighlightPhase}
@@ -1454,6 +1484,7 @@ export const ArenasView: React.FC = () => {
                                         {
                                             onOpen: () => setSelectedReceivedCampaignPreview(preview),
                                             actionCount: preview.actions.length,
+                                            mentorBadge: true,
                                             installAction: async () => {
                                                 await installCodex(codex.id);
                                             },
@@ -1479,13 +1510,14 @@ export const ArenasView: React.FC = () => {
                                     }}
                                     className="relative col-span-2 aspect-[4/3] overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a1a] text-left transition-all hover:border-[var(--skin-accent-color)]/35 cursor-pointer"
                                 >
-                                    <div className="p-2 border-b border-white/5 bg-black/20 flex items-center justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
-                                                Campanha recebida
+                                        <div className="p-2 border-b border-white/5 bg-black/20 flex items-center justify-between gap-2">
+                                            <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
+                                                {renderRelationshipMiniBadge('mentoria')}
+                                                <span>Campanha</span>
                                             </div>
                                             <div className="truncate text-[11px] font-black text-white">{preview.campaign.title}</div>
-                                        </div>
+                                            </div>
                                         <div className="rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/60">
                                             {preview.arenas.length} arenas
                                         </div>
@@ -1556,6 +1588,7 @@ export const ArenasView: React.FC = () => {
                                         assetName={getAssetNameForSharedArena(linkedArena)}
                                         actions={linkedArena.actions || []}
                                         tasks={linkedArena.tasks || []}
+                                        relationshipBadgeType={linkedArena.linkType ?? null}
                                         onClick={() => {
                                             setSelectedSharedArenaDetail({
                                                 arena: getPreviewArenaForSharedArena(linkedArena),

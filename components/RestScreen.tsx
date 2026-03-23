@@ -153,6 +153,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const actionSessionCompleteIntervalRef = useRef<number | null>(null);
     const actionSessionTimeoutPlayedRef = useRef(false);
     const actionSessionNotificationSentRef = useRef(false);
+    const actionSessionToastSentRef = useRef(false);
 
     // Quick Action Input State
     const [showQuickActionInput, setShowQuickActionInput] = useState(false);
@@ -481,11 +482,13 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
             setIsActionSessionCompleting(false);
             actionSessionTimeoutPlayedRef.current = false;
             actionSessionNotificationSentRef.current = false;
+            actionSessionToastSentRef.current = false;
             return;
         }
 
         actionSessionTimeoutPlayedRef.current = false;
         actionSessionNotificationSentRef.current = false;
+        actionSessionToastSentRef.current = false;
         const startedAtMs = new Date(actionSession.startedAt).getTime();
         const totalSeconds = Math.max(1, Math.round(actionSession.durationMinutes * 60));
 
@@ -506,17 +509,27 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     }, [actionSession, actionSessionTimeLeft]);
 
     useEffect(() => {
-        if (!actionSession || actionSessionTimeLeft > 0 || actionSessionNotificationSentRef.current) return;
-        if (!oraclePreferences?.pushEnabled) return;
+        if (!actionSession || actionSessionTimeLeft > 0) return;
+
+        const timeoutMessage = `O tempo da ação "${actionSession.actionName}" terminou.`;
+
+        if (document.visibilityState === 'visible') {
+            if (actionSessionToastSentRef.current) return;
+            actionSessionToastSentRef.current = true;
+            showToast(timeoutMessage, 'info');
+            return;
+        }
+
+        if (actionSessionNotificationSentRef.current || !oraclePreferences?.pushEnabled) return;
 
         actionSessionNotificationSentRef.current = true;
         void showLocalNotification({
             title: 'Tempo encerrado',
-            body: `A acao "${actionSession.actionName}" passou do tempo.`,
+            body: timeoutMessage,
             tag: `action-session-${actionSession.actionId}`,
             url: '/',
         });
-    }, [actionSession, actionSessionTimeLeft, oraclePreferences?.pushEnabled]);
+    }, [actionSession, actionSessionTimeLeft, oraclePreferences?.pushEnabled, showToast]);
 
     useEffect(() => {
         return () => {

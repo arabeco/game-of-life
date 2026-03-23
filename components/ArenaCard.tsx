@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Arena, Action } from '../types';
-import { CheckIcon, UsersIcon } from './Icons';
+import { Arena, Action, RelationshipLinkType } from '../types';
+import { CheckIcon, CrownIcon, TrophyIcon, UsersIcon } from './Icons';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
 import { calculateArenaProgress } from '../utils/progressUtils';
@@ -211,6 +211,7 @@ interface ArenaCardProps {
     assetName?: string; // For overview
     variant: 'overview' | 'dossier' | 'compact';
     highlightPhase?: 'populate' | 'celebrate' | null;
+    relationshipBadgeType?: RelationshipLinkType | null;
 }
 
 export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ 
@@ -220,6 +221,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     assetName, 
     variant, 
     highlightPhase = null,
+    relationshipBadgeType = null,
     tasks: propTasks
 }) => {
     const { appMode, tasks: contextTasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction } = useGame();
@@ -256,6 +258,10 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     }, []);
 
     useEffect(() => {
+        if (relationshipBadgeType) {
+            setLinkType(relationshipBadgeType);
+            return;
+        }
         // Fetch link type for icon
         const fetchLinkType = async () => {
              const { data: sessionData } = await supabase.auth.getSession();
@@ -282,7 +288,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
              }
         };
         fetchLinkType();
-    }, [arena.id]);
+    }, [arena.id, relationshipBadgeType]);
 
     const handleActionDragStart = (e: React.DragEvent, actionId: string) => {
         e.stopPropagation();
@@ -362,6 +368,34 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const getIcon = () => {
         return <EmojiGlyph symbol={arena.icon || '\u{1F3DB}\uFE0F'} size="arena" className="text-white" />;
     };
+    const effectiveLinkType = relationshipBadgeType || linkType;
+    const renderRelationshipBadge = () => {
+        if (effectiveLinkType === 'mentoria') {
+            return (
+                <span title="Mentoria" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-500/18 text-emerald-300 shadow-[0_4px_10px_rgba(16,185,129,0.18)]">
+                    <CrownIcon className="h-[9px] w-[9px]" />
+                </span>
+            );
+        }
+
+        if (effectiveLinkType === 'parceria') {
+            return (
+                <span title="Parceria" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-sky-300/40 bg-sky-500/18 text-sky-300 shadow-[0_4px_10px_rgba(56,189,248,0.16)]">
+                    <UsersIcon className="h-[9px] w-[9px]" />
+                </span>
+            );
+        }
+
+        if (effectiveLinkType === 'competicao') {
+            return (
+                <span title="Competição" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-rose-300/40 bg-rose-500/18 text-rose-300 shadow-[0_4px_10px_rgba(244,63,94,0.18)]">
+                    <TrophyIcon className="h-[9px] w-[9px]" />
+                </span>
+            );
+        }
+
+        return null;
+    };
 
     const isOverview = variant === 'overview';
     const isCompactThumbnail = variant === 'overview' || variant === 'compact';
@@ -428,9 +462,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     <>
                     <div className="arena-thumb-header flex-1 justify-start gap-[0.02rem] pt-0">
                         <div className="arena-thumb-link-space left-auto right-[0.04rem] top-[0.02rem] z-[3]">
-                            {linkType === 'competicao' && <EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="arena-thumb-link-badge text-red-400" />}
-                            {linkType === 'mentoria' && <EmojiGlyph symbol={'\u{1F441}\uFE0F'} size="badge" className="arena-thumb-link-badge text-blue-400" />}
-                            {linkType === 'parceria' && <EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="arena-thumb-link-badge text-purple-400" />}
+                            {renderRelationshipBadge()}
                         </div>
                         <div className="relative h-[1.64rem] w-full">
                             <span
@@ -482,11 +514,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     </div>
                 )}
 
-                {linkType && !isCompactThumbnail && (
+                {effectiveLinkType && !isCompactThumbnail && (
                     <div className="absolute top-1 left-1 z-20">
-                        {linkType === 'competicao' && <span title="Desafio PVP" className="text-[10px] bg-red-500/20 text-red-400 px-1 rounded border border-red-500/30"><EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="text-red-400" /></span>}
-                        {linkType === 'mentoria' && <span title="Mentoria" className="text-[10px] bg-blue-500/20 text-blue-400 px-1 rounded border border-blue-500/30"><EmojiGlyph symbol={'\u{1F441}\uFE0F'} size="badge" className="text-blue-400" /></span>}
-                        {linkType === 'parceria' && <span title="Parceria" className="text-[10px] bg-purple-500/20 text-purple-400 px-1 rounded border border-purple-500/30"><EmojiGlyph symbol={'\u2694\uFE0F'} size="badge" className="text-purple-400" /></span>}
+                        {renderRelationshipBadge()}
                     </div>
                 )}
             </div>

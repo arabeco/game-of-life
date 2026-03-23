@@ -629,7 +629,17 @@ export interface Report {
   clanPoints?: number;
   expGained?: number;
   identitySnapshot?: ReportIdentitySnapshot;
-  assetProgress: { asset: string; value: number }[];
+  assetProgress: {
+    asset: string;
+    value: number;
+    assetId?: string;
+    activeCount?: number;
+    archivedCount?: number;
+    totalActions?: number;
+    totalCompleted?: number;
+    totalPlanned?: number;
+    progressPercent?: number;
+  }[];
 }
 
 export interface NobilityRank {
@@ -909,6 +919,7 @@ export interface RelationshipCapacitySummary {
 export interface LinkedRelationshipArena {
   id: string;
   relationshipLinkId: string;
+  linkType?: RelationshipLinkType;
   arenaId: string;
   createdByUserId?: string | null;
   createdAt: string;

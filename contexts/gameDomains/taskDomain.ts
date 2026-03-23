@@ -82,14 +82,14 @@ export const createTaskDomain = ({
         const taskOperationalDate = getTaskOperationalDateString(task);
         if (!taskOperationalDate) return false;
 
-        const currentOperationalDate = getOperationalDateString(new Date());
-        if (taskOperationalDate < currentOperationalDate) return true;
-
+        // O julgamento diario fecha apenas o dia operacional atual.
+        // Dias passados continuam ajustaveis durante o ciclo e so devem
+        // ser tratados como "congelados" no encerramento real do ciclo.
         return taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment';
     };
 
     const showClosedDayMutationBlockedToast = () => {
-        showToast('Este dia ja foi julgado e nao pode mais ser alterado.', 'error');
+        showToast('O dia atual ja foi julgado. O passado so deve travar no encerramento do ciclo.', 'error');
     };
 
     const isCommitmentDayClosedForTask = (task: Pick<ScheduledTask, 'actionId' | 'date'>) =>

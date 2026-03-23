@@ -12,7 +12,7 @@ import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
 import { useCodexBuilder } from './CodexBuilderContext';
-import { getCampaignArenaStates } from '../utils/progressUtils';
+import { calculateArenaProgress, getCampaignArenaStates } from '../utils/progressUtils';
 import { createTaskDomain } from './gameDomains/taskDomain';
 import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
 import { buildCyclePaceMetrics, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds } from '../utils/coreLoopUtils.js';
@@ -3840,6 +3840,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return {
             id: row.id,
             relationshipLinkId: row.relationship_link_id,
+            linkType: link?.linkType,
             arenaId: row.arena_id,
             createdByUserId: row.created_by_user_id ?? null,
             createdAt: row.created_at,
@@ -6143,17 +6144,45 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             assetProgress: currentAssets.map(asset => {
                 if (asset.id === 'geral') return null;
 
-                // Compute value as percentage of total actions dedicated to this asset
-                const assetArenaIds = asset.arenas.map(a => a.id);
-                const assetActionIds = currentActions.filter(a => assetArenaIds.includes(a.arenaId)).map(a => a.id);
-                const assetCompletedCount = completedScoredTasks.filter(t => assetActionIds.includes(t.actionId)).length;
-                const totalCompleted = completedScoredTasks.length;
-                const value = totalCompleted > 0 ?(assetCompletedCount / totalCompleted) * 100 : 0;
+                const arenasForAsset = cycle?.arenaIds?.length
+                    ? asset.arenas.filter(arena => cycle.arenaIds.includes(arena.id))
+                    : asset.arenas;
+                const actionsForAsset = currentActions.filter(action => arenasForAsset.some(arena => arena.id === action.arenaId));
+                const activeCount = arenasForAsset.filter(arena => !arena.isArchived).length;
+                const archivedCount = arenasForAsset.filter(arena => arena.isArchived).length;
+
+                let totalCompletedForAsset = 0;
+                let totalPlannedForAsset = 0;
+
+                for (const arena of arenasForAsset) {
+                    const arenaActions = currentActions.filter(action => action.arenaId === arena.id);
+                    const actionIds = new Set(arenaActions.map(action => action.id));
+                    const arenaTasks = cycleTasks.filter(task => actionIds.has(task.actionId));
+                    const arenaProgress = calculateArenaProgress({
+                        arena,
+                        actions: arenaActions,
+                        tasks: arenaTasks,
+                    });
+                    totalCompletedForAsset += arenaProgress.totalCompleted;
+                    totalPlannedForAsset += arenaProgress.totalPlanned;
+                }
+
+                // Radar continua lendo "value", mas agora o snapshot completo do ativo
+                // tambem fica salvo junto no relatorio.
+                const completedAcrossCycle = completedScoredTasks.length;
+                const value = completedAcrossCycle > 0 ?(totalCompletedForAsset / completedAcrossCycle) * 100 : 0;
+                const progressPercent = totalPlannedForAsset > 0 ? Math.round((totalCompletedForAsset / totalPlannedForAsset) * 100) : 100;
 
                 return {
                     asset: asset.name,
                     value: Math.round(value),
                     assetId: asset.id,
+                    activeCount,
+                    archivedCount,
+                    totalActions: actionsForAsset.length,
+                    totalCompleted: totalCompletedForAsset,
+                    totalPlanned: totalPlannedForAsset,
+                    progressPercent,
                     startLevel: asset.level,
                     endLevel: asset.level,
                     expGained: 0
@@ -8155,13 +8184,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         await loadClanAndMembers(clanId, true);
+        if (clanDetails.backgroundUrl) {
+            const { error: backgroundError } = await supabase
+                .from('clans')
+                .update({ background_url: clanDetails.backgroundUrl })
+                .eq('id', clanId);
+
+            if (backgroundError) {
+                console.error('Error persisting clan background:', backgroundError.message);
+            } else {
+                setClan(prev => (prev && prev.id === clanId) ? { ...prev, backgroundUrl: clanDetails.backgroundUrl } : prev);
+            }
+        }
         showToast(`Grupo criado com sucesso. ${GOLD_CLAN_CREATION_COST} ouro debitados.`, 'success');
         return true;
     };
 
     const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl'>>) => {
         const snakeCaseData = mapToSnakeCase(data) as Record<string, unknown>;
-        delete snakeCaseData.background_url;
         const { error } = await supabase.from('clans').update(snakeCaseData).eq('id', clanId);
         if (error) { console.error("Error updating clan:", error.message); return; }
         setClan(prev => (prev && prev.id === clanId) ?{ ...prev, ...data } : prev);

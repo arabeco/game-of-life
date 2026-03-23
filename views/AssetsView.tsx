@@ -10,8 +10,6 @@ import type { Asset } from '../types';
 
 type AssetSubview = 'widgets' | 'arenas';
 
-const ASSETS_VIEW_VERTICAL_BLEED_PX = 18;
-
 const hexToRgb = (hex: string): [number, number, number] | null => {
     const normalized = String(hex || '').trim();
     if (!normalized) return null;
@@ -100,7 +98,9 @@ export const AssetsView: React.FC = () => {
     const [assetSubview, setAssetSubview] = useState<AssetSubview>('widgets');
     const [isWidgetEditing, setIsWidgetEditing] = useState(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const cycleSummaryRef = useRef<HTMLButtonElement | null>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+    const [cycleSummaryHeight, setCycleSummaryHeight] = useState(56);
     const [hasSephirotRasterArt, setHasSephirotRasterArt] = useState(false);
     const overviewLayout = useAssetsOverviewLayoutConfig();
 
@@ -117,20 +117,18 @@ export const AssetsView: React.FC = () => {
     const cycleMetaColor = lightenToward(cycleAccentRgb, [199, 209, 223], 0.58);
 
     const baseAspect = 9 / 16;
-    const viewportBaseHeight = '100dvh - 76px - var(--safe-area-top) - 64px - var(--safe-area-bottom)';
-    const shellVerticalBleed = isBasicMode ? 0 : ASSETS_VIEW_VERTICAL_BLEED_PX;
     const assetsShellStyle: React.CSSProperties = {
-        height: `calc(${viewportBaseHeight} + ${shellVerticalBleed * 2}px)`,
-        minHeight: `calc(${viewportBaseHeight} + ${shellVerticalBleed * 2}px)`,
-        marginTop: shellVerticalBleed ? `-${shellVerticalBleed}px` : undefined,
-        marginBottom: shellVerticalBleed ? `-${shellVerticalBleed}px` : undefined,
-        paddingTop: shellVerticalBleed ? `${shellVerticalBleed}px` : undefined,
-        paddingBottom: shellVerticalBleed ? `${shellVerticalBleed}px` : undefined,
+        height: '100%',
+        minHeight: '100%',
     };
     const containerAspect = containerSize.width > 0 && containerSize.height > 0
         ? containerSize.width / containerSize.height
         : baseAspect;
-    const stretchY = containerAspect < baseAspect ? baseAspect / containerAspect : 1;
+    const stretchY = 1;
+    const cycleSummaryTop = 'calc(14px + 2%)';
+    const cycleSummaryTopPx = 14 + (containerSize.height > 0 ? Math.round(containerSize.height * 0.02) : 12);
+    const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 8;
+    const assetsGridBottomPx = 70;
     const overviewCoords = useMemo(
         () => Object.entries(overviewLayout).map(([id, position]) => ({ id, ...position })),
         [overviewLayout],
@@ -241,6 +239,29 @@ export const AssetsView: React.FC = () => {
         window.addEventListener('resize', updateSize);
         return () => window.removeEventListener('resize', updateSize);
     }, []);
+
+    useLayoutEffect(() => {
+        const summaryCard = cycleSummaryRef.current;
+        if (!summaryCard) {
+            setCycleSummaryHeight(56);
+            return;
+        }
+
+        const updateSummaryHeight = () => {
+            setCycleSummaryHeight(Math.ceil(summaryCard.getBoundingClientRect().height));
+        };
+
+        updateSummaryHeight();
+
+        if (typeof ResizeObserver !== 'undefined') {
+            const observer = new ResizeObserver(() => updateSummaryHeight());
+            observer.observe(summaryCard);
+            return () => observer.disconnect();
+        }
+
+        window.addEventListener('resize', updateSummaryHeight);
+        return () => window.removeEventListener('resize', updateSummaryHeight);
+    }, [cycleSummary?.name, cycleSummary?.progress, cycleSummary?.totalCompleted, cycleSummary?.totalPlanned, cycleSummary?.activeArenaCount]);
 
     const handleOpenAsset = (asset: Asset) => {
         setSelectedAssetId(asset.id);
@@ -393,8 +414,9 @@ export const AssetsView: React.FC = () => {
                     )}
 
                     <div className="relative z-10 h-full w-full">
-                        <div className="absolute inset-x-0 top-[1.2%] z-20 flex justify-center px-3">
+                        <div className="absolute inset-x-0 z-20 flex justify-center px-3" style={{ top: cycleSummaryTop }}>
                             <button
+                                ref={cycleSummaryRef}
                                 type="button"
                                 onClick={handleOpenReports}
                                 className="group w-full max-w-[258px] overflow-hidden rounded-[16px] border border-white/10 px-3 py-1.5 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px]"
@@ -446,7 +468,7 @@ export const AssetsView: React.FC = () => {
                             </button>
                         </div>
 
-                        <div id="assets-grid" className="absolute inset-x-0 bottom-0 top-[74px]">
+                        <div id="assets-grid" className="absolute inset-x-0" style={{ top: assetsGridTopPx, bottom: assetsGridBottomPx }}>
                             {overviewCoords.map(coord => {
                                 const asset = assets.find(a => a.id === coord.id);
                                 if (!asset) return null;

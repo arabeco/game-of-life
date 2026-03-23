@@ -24,6 +24,7 @@ import { SupabaseService } from '../services/SupabaseService';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
 import { requestLocalNotificationPermission, showLocalNotification } from '../utils/localNotification';
+import { SKINS_DATA } from '../constants';
 import type { ChestType, LegacyRenderCycleDigest, LegacyRenderEraSummary, NotificationType, Report, ReportAtlasWeek, ReportIdentitySnapshot } from '../types';
 
 type BetaTier = 'ouro' | 'prata' | 'bronze' | null;
@@ -220,6 +221,307 @@ const KpiSkeletonCard: React.FC = () => (
     <div className="mt-4 h-2.5 rounded-full bg-white/8" />
   </GlassCard>
 );
+
+type SkinPreviewTheme = 'dark' | 'light';
+
+type RGB = [number, number, number];
+
+const GM_SKIN_PREVIEW_ORDER = ['BASIC', 'GOLD', 'FROST', 'EMBER', 'CYBER', 'AURORA', 'VOID'] as const;
+
+const GM_SKIN_ACCENTS: Record<(typeof GM_SKIN_PREVIEW_ORDER)[number], string> = {
+  BASIC: '#ffffff',
+  GOLD: '#C5A059',
+  FROST: '#92d4f3',
+  EMBER: '#ff6a00',
+  CYBER: '#7cd9ff',
+  AURORA: '#a5f3fc',
+  VOID: '#f1edff',
+};
+
+const GM_SKIN_BUTTON_GRADIENTS: Record<(typeof GM_SKIN_PREVIEW_ORDER)[number], string> = {
+  BASIC: 'linear-gradient(135deg, #333333 0%, #eeeeee 50%, #333333 100%)',
+  GOLD: 'linear-gradient(135deg, #5c4a1f 0%, #d4af37 50%, #5c4a1f 100%)',
+  FROST: 'linear-gradient(135deg, #4a90e2 0%, #92d4f3 50%, #4a90e2 100%)',
+  EMBER: 'linear-gradient(135deg, #8a2be2 0%, #ff6a00 50%, #8a2be2 100%)',
+  CYBER: 'linear-gradient(135deg, #143345 0%, #7cd9ff 50%, #143345 100%)',
+  AURORA: 'linear-gradient(135deg, #0ea5e9 0%, #a5f3fc 50%, #0ea5e9 100%)',
+  VOID: 'linear-gradient(135deg, #120815 0%, #2a1336 50%, #120815 100%)',
+};
+
+const hexToRgb = (hex: string): RGB => {
+  const value = hex.replace('#', '').trim();
+  const normalized = value.length === 3
+    ? value.split('').map((part) => part + part).join('')
+    : value;
+  const parsed = Number.parseInt(normalized, 16);
+  return [
+    (parsed >> 16) & 255,
+    (parsed >> 8) & 255,
+    parsed & 255,
+  ];
+};
+
+const mixRgb = (a: RGB, b: RGB, amount: number): RGB => {
+  const t = Math.max(0, Math.min(1, amount));
+  return [
+    Math.round(a[0] * (1 - t) + b[0] * t),
+    Math.round(a[1] * (1 - t) + b[1] * t),
+    Math.round(a[2] * (1 - t) + b[2] * t),
+  ];
+};
+
+const rgbToString = (rgb: RGB, alpha = 1) =>
+  alpha >= 1
+    ? `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
+    : `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+
+const rgbToHex = (rgb: RGB) =>
+  `#${rgb.map((value) => value.toString(16).padStart(2, '0')).join('')}`.toUpperCase();
+
+const buildSkinPreviewTokens = (skinId: (typeof GM_SKIN_PREVIEW_ORDER)[number], theme: SkinPreviewTheme) => {
+  const accent = hexToRgb(GM_SKIN_ACCENTS[skinId]);
+  const slateDark = hexToRgb('#243447');
+  const slateMid = hexToRgb('#66788c');
+  const ivory = hexToRgb('#f2ead7');
+  const white = hexToRgb('#ffffff');
+  const deepDark = hexToRgb('#0a0d12');
+  const darkShell = hexToRgb('#20242d');
+  const lightTop = hexToRgb('#f5f8fa');
+  const lightBottom = hexToRgb('#d5dde5');
+  const plannerMid = hexToRgb('#afbed0');
+  const plannerBase = hexToRgb('#6c7b8f');
+
+  if (theme === 'dark') {
+    const cardTop = mixRgb(accent, darkShell, 0.22);
+    const cardBottom = mixRgb(accent, deepDark, 0.08);
+    const plannerTop = mixRgb(accent, hexToRgb('#11161d'), 0.12);
+    const plannerBottom = mixRgb(accent, deepDark, 0.06);
+    const text = mixRgb(accent, ivory, 0.28);
+    const border = mixRgb(accent, white, 0.12);
+
+    return {
+      accentHex: GM_SKIN_ACCENTS[skinId],
+      buttonBackground: GM_SKIN_BUTTON_GRADIENTS[skinId],
+      buttonText: skinId === 'VOID' ? '#F3EEFF' : '#1B1408',
+      cardBackground: `linear-gradient(180deg, ${rgbToString(cardTop, 0.96)} 0%, ${rgbToString(cardBottom, 0.985)} 100%)`,
+      plannerBackground: `linear-gradient(180deg, ${rgbToString(plannerTop, 0.95)} 0%, ${rgbToString(plannerBottom, 0.98)} 100%)`,
+      textColor: rgbToString(text),
+      borderColor: rgbToString(border),
+      textHex: rgbToHex(text),
+      borderHex: rgbToHex(border),
+    };
+  }
+
+  const cardTop = mixRgb(accent, lightTop, 0.18);
+  const cardBottom = mixRgb(accent, lightBottom, 0.26);
+  const plannerTop = mixRgb(accent, white, 0.2);
+  const plannerMidColor = mixRgb(accent, plannerMid, 0.26);
+  const plannerBottom = mixRgb(accent, plannerBase, 0.18);
+  const text = mixRgb(accent, slateDark, 0.3);
+  const border = mixRgb(accent, slateMid, 0.22);
+
+  return {
+    accentHex: GM_SKIN_ACCENTS[skinId],
+    buttonBackground: GM_SKIN_BUTTON_GRADIENTS[skinId],
+    buttonText: skinId === 'VOID' ? '#F3EEFF' : '#1B1408',
+    cardBackground: `linear-gradient(180deg, ${rgbToString(cardTop, 0.96)} 0%, ${rgbToString(cardBottom, 0.94)} 100%)`,
+    plannerBackground: `linear-gradient(180deg, ${rgbToString(plannerTop, 0.98)} 0%, ${rgbToString(plannerMidColor, 0.94)} 38%, ${rgbToString(plannerBottom, 0.96)} 100%)`,
+    textColor: rgbToString(text),
+    borderColor: rgbToString(border),
+    textHex: rgbToHex(text),
+    borderHex: rgbToHex(border),
+  };
+};
+
+const SkinPaletteLine: React.FC<{
+  label: string;
+  background: string;
+  borderColor: string;
+  children?: React.ReactNode;
+}> = ({ label, background, borderColor, children }) => (
+  <div className="grid grid-cols-[88px_1fr] items-center gap-3">
+    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">{label}</span>
+    <div
+      className="flex min-h-[38px] items-center justify-between rounded-[14px] border px-3 py-2"
+      style={{ background: background, borderColor }}
+    >
+      {children}
+    </div>
+  </div>
+);
+
+const SkinPreviewMiniModal: React.FC<{
+  title: string;
+  preview: ReturnType<typeof buildSkinPreviewTokens>;
+}> = ({ title, preview }) => (
+  <div
+    className="mt-3 overflow-hidden rounded-[20px] border p-3 shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+    style={{ background: preview.cardBackground, borderColor: preview.borderColor }}
+  >
+    <div className="space-y-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: preview.textColor }}>
+            Modal teste
+          </p>
+          <h3 className="text-sm font-black uppercase tracking-[0.12em]" style={{ color: preview.textColor }}>
+            {title}
+          </h3>
+        </div>
+        <div
+          className="h-8 w-8 rounded-full border"
+          style={{ borderColor: preview.borderColor, background: 'rgba(255,255,255,0.08)' }}
+        />
+      </div>
+
+      <div
+        className="rounded-[14px] border px-3 py-2"
+        style={{ background: preview.plannerBackground, borderColor: preview.borderColor }}
+      >
+        <p className="text-[10px] leading-relaxed" style={{ color: preview.textColor }}>
+          Texto principal, subtom de painel e leitura do bloco interno.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em]"
+          style={{
+            background: preview.buttonBackground,
+            color: preview.buttonText,
+            border: `1px solid ${preview.borderColor}`,
+          }}
+        >
+          Primario
+        </button>
+        <button
+          type="button"
+          className="rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em]"
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            color: preview.textColor,
+            borderColor: preview.borderColor,
+          }}
+        >
+          Secundario
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const GmSkinPaletteSection: React.FC = () => {
+  const [previewTheme, setPreviewTheme] = useState<SkinPreviewTheme>('dark');
+
+  const skins = useMemo(() => {
+    const byId = new Map(SKINS_DATA.map((skin) => [skin.id, skin]));
+    return GM_SKIN_PREVIEW_ORDER.map((skinId) => ({
+      id: skinId,
+      name: byId.get(skinId)?.name || skinId,
+      preview: buildSkinPreviewTokens(skinId, previewTheme),
+    }));
+  }, [previewTheme]);
+
+  return (
+    <section>
+      <GlassCard variant="neutral" className="p-4 md:p-5">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-400">Painel de Skins UI</p>
+              <h2 className="text-lg font-black text-white">Mesa indicativa das 7 skins</h2>
+              <p className="text-xs text-zinc-400">
+                Leitura rÃ¡pida de botÃ£o, fundo de cards, planner, texto e bordas para lapidar a linguagem visual sem abrir uma por uma.
+              </p>
+            </div>
+            <div className="inline-flex rounded-full border border-white/10 bg-black/25 p-1">
+              {([
+                { id: 'dark', label: 'Escuro' },
+                { id: 'light', label: 'Claro' },
+              ] as const).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setPreviewTheme(option.id)}
+                  className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
+                    previewTheme === option.id
+                      ? 'bg-white/12 text-white shadow-[0_6px_18px_rgba(0,0,0,0.25)]'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {skins.map((skin) => (
+              <div key={skin.id} className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black uppercase tracking-[0.16em] text-white">{skin.name}</p>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                      Accent {skin.preview.accentHex}
+                    </p>
+                  </div>
+                  <div
+                    className="h-8 w-8 shrink-0 rounded-full border"
+                    style={{ background: skin.preview.buttonBackground, borderColor: skin.preview.borderColor }}
+                  />
+                </div>
+
+                <div className="space-y-2.5">
+                  <SkinPaletteLine label="Botao" background={skin.preview.buttonBackground} borderColor={skin.preview.borderColor}>
+                    <span
+                      className="text-[10px] font-black uppercase tracking-[0.18em]"
+                      style={{ color: skin.preview.buttonText }}
+                    >
+                      CTA / Gradiente
+                    </span>
+                  </SkinPaletteLine>
+
+                  <SkinPaletteLine label="Cards" background={skin.preview.cardBackground} borderColor={skin.preview.borderColor}>
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: skin.preview.textColor }}>
+                      Fundo principal
+                    </span>
+                  </SkinPaletteLine>
+
+                  <SkinPaletteLine label="Planner" background={skin.preview.plannerBackground} borderColor={skin.preview.borderColor}>
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: skin.preview.textColor }}>
+                      Grade / superficie
+                    </span>
+                  </SkinPaletteLine>
+
+                  <SkinPaletteLine label="Texto" background="rgba(0,0,0,0.18)" borderColor={skin.preview.borderColor}>
+                    <span className="text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: skin.preview.textColor }}>
+                      {skin.preview.textHex}
+                    </span>
+                  </SkinPaletteLine>
+
+                  <SkinPaletteLine label="Bordas" background="rgba(0,0,0,0.18)" borderColor={skin.preview.borderColor}>
+                    <div className="flex w-full items-center gap-3">
+                      <span
+                        className="h-[3px] flex-1 rounded-full"
+                        style={{ background: skin.preview.borderColor }}
+                      />
+                      <span className="text-[11px] font-black uppercase tracking-[0.18em]" style={{ color: skin.preview.textColor }}>
+                        {skin.preview.borderHex}
+                      </span>
+                    </div>
+                  </SkinPaletteLine>
+
+                  <SkinPreviewMiniModal title={skin.name} preview={skin.preview} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GlassCard>
+    </section>
+  );
+};
 
 const GM_SHOWCASE_REPORT = {
   title: 'Operacao Primeira Linhagem',
@@ -1880,6 +2182,8 @@ export const SovereignPanelView: React.FC = () => {
       </div>
 
       <GmShowcaseSection />
+
+      <GmSkinPaletteSection />
 
       <section className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {loading ? (

@@ -5,7 +5,9 @@ param(
     [string]$PrintPath = "C:\Users\Afonso\Downloads\GOL1.006\marketing\round11\arenas2.jpeg",
     [string]$Word = "",
     [string]$Definition = "",
-    [switch]$BrightBackground
+    [string]$SheetTitle = "",
+    [switch]$BrightBackground,
+    [switch]$NoSlide2Darkening
 )
 
 Set-StrictMode -Version Latest
@@ -440,7 +442,8 @@ function Save-Slide {
 function New-ContactSheet {
     param(
         [string[]]$SlidePaths,
-        [string]$OutputPath
+        [string]$OutputPath,
+        [string]$Title = ""
     )
 
     $sheetWidth = 2340
@@ -460,7 +463,11 @@ function New-ContactSheet {
     $headlineFamily = Get-FontFamily -Candidates @("Cormorant Garamond", "Garamond", "Book Antiqua", "Palatino Linotype", "Georgia", "Times New Roman")
     $titleFont = [System.Drawing.Font]::new($headlineFamily, 40, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
     try {
-        $sheetTitle = "Ponte 01 | Imp" + [char]233 + "rio"
+        if ([string]::IsNullOrWhiteSpace($Title)) {
+            $sheetTitle = "Ponte 01 | Imp" + [char]233 + "rio"
+        } else {
+            $sheetTitle = $Title
+        }
         $graphics.DrawString($sheetTitle, $titleFont, $goldBrush, [System.Drawing.PointF]::new(92, 46))
         for ($i = 0; $i -lt $SlidePaths.Count; $i++) {
             $x = 90 + ($i * 1080)
@@ -522,7 +529,7 @@ if ([string]::IsNullOrWhiteSpace($Word)) { $Word = $defaultWord }
 if ([string]::IsNullOrWhiteSpace($Definition)) { $Definition = $defaultDefinition }
 
 $overlayAlpha = if ($BrightBackground) { 116 } else { 92 }
-$screenAlpha = if ($BrightBackground) { 220 } else { 208 }
+$screenAlpha = if ($NoSlide2Darkening) { 0 } elseif ($BrightBackground) { 220 } else { 208 }
 $brandShadowAlpha = if ($BrightBackground) { 182 } else { 148 }
 $overlayBrush.Dispose()
 $overlayBrush = [System.Drawing.SolidBrush]::new((New-Color $overlayAlpha 4 5 8))
@@ -566,9 +573,11 @@ $bitmap2 = $slide2.Bitmap
 $graphics2 = $slide2.Graphics
 
 Draw-ImageCoverRect -Graphics $graphics2 -ImagePath $BackgroundPath -X 0 -Y 0 -Width $width -Height $height
-$screenDim = [System.Drawing.SolidBrush]::new((New-Color $screenAlpha 3 4 6))
-$graphics2.FillRectangle($screenDim, 0, 0, $width, $height)
-$screenDim.Dispose()
+if ($screenAlpha -gt 0) {
+    $screenDim = [System.Drawing.SolidBrush]::new((New-Color $screenAlpha 3 4 6))
+    $graphics2.FillRectangle($screenDim, 0, 0, $width, $height)
+    $screenDim.Dispose()
+}
 
 $printBoxWidth = 190
 $printBoxHeight = 318
@@ -584,7 +593,7 @@ Draw-SiteFooter -Graphics $graphics2 -LogoPath $logoPath -Font $siteFont -Brush 
 $slide2Path = Join-Path $OutputDir "slide-02-app.png"
 Save-Slide -Bitmap $bitmap2 -Graphics $graphics2 -Path $slide2Path
 
-New-ContactSheet -SlidePaths @($slide1Path, $slide2Path) -OutputPath (Join-Path $OutputDir "contact-sheet.png")
+New-ContactSheet -SlidePaths @($slide1Path, $slide2Path) -OutputPath (Join-Path $OutputDir "contact-sheet.png") -Title $SheetTitle
 
 $wordFont.Dispose()
 $definitionFont.Dispose()

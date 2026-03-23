@@ -119,10 +119,22 @@
   --game-grid-line: rgba(100, 116, 139, 0.1);
   --game-muted-text: #4f6073;
   --game-soft-text: #74859a;
-  --planner-top-bg: linear-gradient(180deg, rgba(221, 229, 237, 0.96), rgba(154, 169, 185, 0.94));
-  --planner-scroll-bg: linear-gradient(180deg, rgba(210, 220, 230, 0.96), rgba(126, 142, 159, 0.97));
-  --planner-surface-bg: linear-gradient(180deg, rgba(205, 216, 227, 0.97), rgba(88, 103, 122, 0.97));
-  --planner-surface-inner: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(117, 131, 149, 0.08));
+  --planner-top-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--skin-accent-color) 8%, rgba(194, 205, 217, 0.97)),
+    color-mix(in srgb, var(--skin-accent-color) 20%, rgba(119, 133, 151, 0.96))
+  );
+  --planner-scroll-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--skin-accent-color) 10%, rgba(181, 193, 207, 0.98)),
+    color-mix(in srgb, var(--skin-accent-color) 24%, rgba(94, 109, 128, 0.99))
+  );
+  --planner-surface-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--skin-accent-color) 12%, rgba(173, 186, 201, 0.98)),
+    color-mix(in srgb, var(--skin-accent-color) 28%, rgba(67, 81, 99, 0.99))
+  );
+  --planner-surface-inner: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(96, 111, 130, 0.06));
   --modal-overlay: rgba(51, 65, 85, 0.22);
   --ui-text-accent: color-mix(in srgb, var(--skin-accent-color) 30%, #1d2733);
   --ui-text-accent-soft: color-mix(in srgb, var(--skin-accent-color) 18%, #526274);
@@ -329,8 +341,8 @@ body {
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--skin-accent-color) 16%, rgba(223, 231, 239, 0.96)),
-      color-mix(in srgb, var(--skin-accent-color) 22%, rgba(146, 161, 178, 0.94))
+      color-mix(in srgb, var(--skin-accent-color) 10%, rgba(190, 201, 214, 0.97)),
+      color-mix(in srgb, var(--skin-accent-color) 24%, rgba(111, 126, 145, 0.96))
     ) !important;
   border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 30%, transparent) !important;
   box-shadow:
@@ -342,8 +354,8 @@ body {
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--skin-accent-color) 20%, rgba(214, 224, 235, 0.96)),
-      color-mix(in srgb, var(--skin-accent-color) 32%, rgba(108, 123, 143, 0.94))
+      color-mix(in srgb, var(--skin-accent-color) 14%, rgba(184, 196, 210, 0.97)),
+      color-mix(in srgb, var(--skin-accent-color) 30%, rgba(88, 103, 122, 0.96))
     ) !important;
   color: color-mix(in srgb, var(--skin-accent-color) 18%, #edf4fb) !important;
   border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 28%, transparent) !important;
@@ -351,22 +363,22 @@ body {
 
 .mode-game.theme-light #planner-container .planner-scroll-surface {
   background:
-    radial-gradient(circle at 18% 18%, rgba(229, 236, 244, 0.18), rgba(229, 236, 244, 0) 18%),
-    radial-gradient(circle at 82% 24%, rgba(194, 207, 220, 0.14), rgba(194, 207, 220, 0) 22%),
+    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--skin-accent-color) 10%, rgba(198, 209, 222, 0.14)), rgba(198, 209, 222, 0) 18%),
+    radial-gradient(circle at 82% 24%, color-mix(in srgb, var(--skin-accent-color) 12%, rgba(166, 180, 196, 0.12)), rgba(166, 180, 196, 0) 22%),
     repeating-linear-gradient(
       128deg,
-      color-mix(in srgb, var(--skin-accent-color) 10%, rgba(255, 255, 255, 0.045)) 0 1px,
+      color-mix(in srgb, var(--skin-accent-color) 10%, rgba(255, 255, 255, 0.03)) 0 1px,
       rgba(255, 255, 255, 0) 1px 48px
     ),
     repeating-linear-gradient(
       132deg,
-      color-mix(in srgb, var(--skin-accent-color) 8%, rgba(255, 255, 255, 0.03)) 0 1px,
+      color-mix(in srgb, var(--skin-accent-color) 8%, rgba(255, 255, 255, 0.02)) 0 1px,
       rgba(255, 255, 255, 0) 1px 88px
     ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--skin-accent-color) 16%, rgba(211, 221, 231, 0.96)) 0%,
-      color-mix(in srgb, var(--skin-accent-color) 22%, rgba(132, 147, 165, 0.97)) 100%
+      color-mix(in srgb, var(--skin-accent-color) 10%, rgba(180, 192, 206, 0.98)) 0%,
+      color-mix(in srgb, var(--skin-accent-color) 28%, rgba(88, 104, 123, 0.99)) 100%
     ) !important;
 }
 
@@ -389,7 +401,7 @@ body {
 }
 
 .mode-game.theme-light #planner-container .planner-pill-switch {
-  background: rgba(204, 215, 226, 0.42) !important;
+  background: color-mix(in srgb, var(--skin-accent-color) 10%, rgba(174, 187, 201, 0.5)) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 24%, rgba(255,255,255,0.08)) !important;
 }
 
@@ -398,7 +410,7 @@ body {
 }
 
 .mode-game.theme-light #planner-container .planner-pill-switch .planner-view-btn[data-active="true"] {
-  background: color-mix(in srgb, var(--skin-accent-color) 18%, rgba(233, 240, 247, 0.72)) !important;
+  background: color-mix(in srgb, var(--skin-accent-color) 20%, rgba(198, 211, 225, 0.74)) !important;
   color: var(--ui-shell-strong) !important;
 }
 
@@ -407,15 +419,15 @@ body {
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--skin-accent-color) 18%, rgba(206, 217, 228, 0.97)) 0%,
-      color-mix(in srgb, var(--skin-accent-color) 24%, rgba(148, 163, 181, 0.95)) 18%,
-      color-mix(in srgb, var(--skin-accent-color) 22%, rgba(96, 111, 130, 0.96)) 42%,
-      color-mix(in srgb, var(--skin-accent-color) 18%, rgba(63, 76, 93, 0.97)) 100%
+      color-mix(in srgb, var(--skin-accent-color) 12%, rgba(171, 184, 199, 0.99)) 0%,
+      color-mix(in srgb, var(--skin-accent-color) 20%, rgba(124, 139, 159, 0.97)) 18%,
+      color-mix(in srgb, var(--skin-accent-color) 24%, rgba(80, 95, 114, 0.98)) 42%,
+      color-mix(in srgb, var(--skin-accent-color) 30%, rgba(47, 59, 76, 0.99)) 100%
     ) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 28%, rgba(255,255,255,0.1)) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 14px 30px rgba(2, 6, 12, 0.18) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 14px 30px rgba(2, 6, 12, 0.22) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-hour-label,
@@ -442,8 +454,8 @@ body {
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--skin-accent-color) 18%, rgba(214, 224, 235, 0.95)),
-      color-mix(in srgb, var(--skin-accent-color) 30%, rgba(106, 121, 140, 0.94))
+      color-mix(in srgb, var(--skin-accent-color) 12%, rgba(181, 193, 207, 0.96)),
+      color-mix(in srgb, var(--skin-accent-color) 28%, rgba(84, 99, 118, 0.96))
     ) !important;
   color: color-mix(in srgb, var(--skin-accent-color) 18%, #edf4fb) !important;
   border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 28%, transparent) !important;

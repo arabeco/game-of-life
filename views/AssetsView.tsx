@@ -393,7 +393,7 @@ export const AssetsView: React.FC = () => {
                     )}
 
                     <div className="relative z-10 h-full w-full">
-                        <div className="absolute inset-x-0 top-[4%] z-20 flex justify-center px-3">
+                        <div className="absolute inset-x-0 top-[1.2%] z-20 flex justify-center px-3">
                             <button
                                 type="button"
                                 onClick={handleOpenReports}
@@ -446,7 +446,7 @@ export const AssetsView: React.FC = () => {
                             </button>
                         </div>
 
-                        <div id="assets-grid" className="absolute inset-x-0 bottom-0 top-[94px]">
+                        <div id="assets-grid" className="absolute inset-x-0 bottom-0 top-[74px]">
                             {overviewCoords.map(coord => {
                                 const asset = assets.find(a => a.id === coord.id);
                                 if (!asset) return null;
@@ -516,13 +516,13 @@ export const AssetsView: React.FC = () => {
                                                 }}
                                             >
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span style={{ color: rgbaString(statLabelColor, 0.88) }}>
-                                                        <span className="font-black" style={{ color: rgbString(statValueColor) }}>{stats.activeCount}</span> ativos
-                                                    </span>
-                                                    <span style={{ color: rgbaString(statLabelColor, 0.88) }}>
-                                                        <span className="font-black" style={{ color: rgbString(statValueColor) }}>{stats.totalActions}</span> aÃ§Ãµes
-                                                    </span>
-                                                </div>
+                                                        <span style={{ color: rgbaString(statLabelColor, 0.88) }}>
+                                                            <span className="font-black" style={{ color: rgbString(statValueColor) }}>{stats.activeCount}</span> arenas
+                                                        </span>
+                                                        <span style={{ color: rgbaString(statLabelColor, 0.88) }}>
+                                                            <span className="font-black" style={{ color: rgbString(statValueColor) }}>{stats.totalActions}</span> ações
+                                                        </span>
+                                                    </div>
                                                 <div className="mt-1">
                                                     <div className="h-[3px] w-full overflow-hidden rounded-full bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                                                         <div

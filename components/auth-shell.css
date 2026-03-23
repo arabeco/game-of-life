@@ -5,7 +5,7 @@
   min-height: 100dvh;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: var(--app-background);
   font-family: var(--font-body);
   color: var(--text-primary);
 }
@@ -15,6 +15,7 @@
   height: 100dvh;
   min-height: 0;
   overflow: hidden;
+  background: var(--app-background);
   color: var(--text-primary);
 }
 
@@ -51,7 +52,19 @@
 }
 
 .auth-nav-active {
-  color: var(--skin-accent-color);
+  color: var(--ui-text-accent);
+}
+
+.auth-nav-item {
+  color: var(--text-secondary);
+}
+
+.auth-nav-item:hover {
+  color: var(--text-primary);
+}
+
+.auth-nav-label {
+  color: inherit;
 }
 
 .auth-footer {
@@ -74,9 +87,21 @@
 }
 
 .mode-game.theme-light .auth-footer--game {
-  background: linear-gradient(180deg, rgba(243, 246, 250, 0.98), rgba(231, 237, 244, 0.95));
-  border-top-color: rgba(100, 116, 139, 0.16);
+  background: linear-gradient(180deg, rgba(238, 242, 245, 0.98), rgba(214, 222, 229, 0.95));
+  border-top-color: color-mix(in srgb, var(--skin-accent-color) 34%, rgba(100, 116, 139, 0.16));
   box-shadow: 0 -8px 20px rgba(88, 104, 129, 0.08);
+}
+
+.mode-game.theme-light .auth-nav-item {
+  color: var(--ui-shell-muted);
+}
+
+.mode-game.theme-light .auth-nav-item:hover {
+  color: var(--ui-shell-strong);
+}
+
+.mode-game.theme-light .auth-nav-active {
+  color: var(--ui-shell-strong);
 }
 
 .auth-nav-indicator {

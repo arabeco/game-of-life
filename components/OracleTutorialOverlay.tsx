@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTutorial } from '../contexts/TutorialContext';
 import { Portal } from './Portal';
+import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 
 const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -26,7 +27,7 @@ const getCategoryLabel = (category?: string) => {
 };
 
 export const OracleTutorialOverlay: React.FC = () => {
-    const { isTutorialActive, currentStep, nextStep, endTutorial, tutorialSteps } = useTutorial();
+    const { isTutorialActive, currentStep, nextStep, endTutorial, tutorialSteps, activeLevel } = useTutorial();
     const [displayedText, setDisplayedText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
@@ -57,12 +58,16 @@ export const OracleTutorialOverlay: React.FC = () => {
         return spotlightCenterY < screenHeight * 0.45 ? 'bottom' : 'top';
     }, [spotlightRect]);
 
-    const categoryLabel = useMemo(() => getCategoryLabel(step?.category), [step?.category]);
+    const currentSection = useMemo(() => TUTORIAL_SECTIONS.find((section) => section.id === activeLevel) || null, [activeLevel]);
+    const categoryLabel = useMemo(() => currentSection ? `CARD ${currentSection.id}` : getCategoryLabel(step?.category), [currentSection, step?.category]);
     const progressLabel = useMemo(() => {
         if (!step) return '';
         if (step.category === 'INTRO') return 'Entrada';
+        if (currentSection) {
+            return `${currentStep - currentSection.startIndex + 1} / ${currentSection.endIndex - currentSection.startIndex + 1}`;
+        }
         return `${currentStep} / ${tutorialSteps.length - 1}`;
-    }, [currentStep, step, tutorialSteps.length]);
+    }, [currentSection, currentStep, step, tutorialSteps.length]);
 
     useEffect(() => {
         if (!isTutorialActive || !step) return;

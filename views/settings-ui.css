@@ -28,11 +28,23 @@
   justify-content: center;
 }
 
-.mode-game.theme-light .settings-view-root {
+.mode-game.theme-dark .settings-view-root {
+  background: transparent !important;
+}
+
+.mode-game.theme-dark .settings-tab-strip {
   background:
-    radial-gradient(circle at 18% 14%, rgba(247, 250, 253, 0.22), rgba(247, 250, 253, 0) 18%),
-    radial-gradient(circle at 80% 20%, rgba(232, 238, 245, 0.16), rgba(232, 238, 245, 0) 20%),
-    linear-gradient(180deg, rgba(241, 246, 251, 0.94) 0%, rgba(226, 234, 243, 0.95) 100%);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--skin-accent-color) 10%, rgba(7, 9, 12, 0.84)),
+      color-mix(in srgb, var(--skin-accent-color) 6%, rgba(3, 4, 6, 0.72))
+    );
+  border: 1px solid color-mix(in srgb, var(--skin-accent-color) 22%, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+}
+
+.mode-game.theme-light .settings-view-root {
+  background: var(--app-background);
 }
 
 .mode-game.theme-light .settings-tab-strip {

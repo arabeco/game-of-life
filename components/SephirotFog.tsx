@@ -6,6 +6,7 @@ interface SephirotFogProps {
   mode?: 'sephirot' | 'arena' | 'office' | 'deepwork';
   tintStrength?: number;
   alphaMaxOverride?: number;
+  blendMode?: React.CSSProperties['mixBlendMode'];
 }
 
 const vertexShaderSource = `
@@ -179,11 +180,11 @@ const fragmentShaderSource = `
                  warpP = rot * warpP;
 
                  // 4. Sample Noise Twice
-                 vec2 offset1 = normalize(toPixel) * (t1 * 1.8); 
+                 vec2 offset1 = normalize(toPixel) * (t1 * 1.62); 
                  vec2 timeOffset = vec2(cos(scaledTime * 0.07), sin(scaledTime * 0.05)) * 0.6;
                  float n1 = fbm(warpP - offset1 + timeOffset);
 
-                 vec2 offset2 = normalize(toPixel) * ((t2 - 0.5) * 1.8); 
+                 vec2 offset2 = normalize(toPixel) * ((t2 - 0.5) * 1.62); 
                  float n2 = fbm(warpP - offset2 - timeOffset + wind);
 
                  float noiseVal = mix(n1, n2, blend);
@@ -209,7 +210,7 @@ const fragmentShaderSource = `
                  
                  // Reach: Even level 1 needs to go a bit further to be seen.
                  // Level 1: 60% reach. Level 10: 100%.
-                 float reach = 0.6 + (level / 10.0) * 0.4;
+                 float reach = (0.6 + (level / 10.0) * 0.4) * 0.9;
                  
                  // Radial Fade
                  float fade = 1.0 - smoothstep(0.0, radiusBase * reach, dist);
@@ -235,16 +236,27 @@ const fragmentShaderSource = `
     // COLOR GRADING
     vec3 color = uColor;
     
+    bool pureTintMode = (uMode == 0 && uTintStrength > 0.99);
+
     // Push toward pearl-white so the fog feels cleaner and less toxic.
     vec3 pearlWhite = vec3(0.96, 0.97, 0.94);
     vec3 energyColor = mix(pearlWhite, color, uTintStrength);
+    if (pureTintMode) {
+      energyColor = color;
+    }
     
     // Map density to color with startup fade
-    vec3 finalColor = energyColor * totalDensity * startupFade * 0.9;
+    vec3 shadedEnergyColor = pureTintMode
+      ? mix(energyColor * 0.2, energyColor * 0.54, smoothstep(0.16, 0.74, totalDensity))
+      : energyColor;
+    float shadowBias = pureTintMode ? mix(0.42, 0.82, smoothstep(0.18, 0.8, totalDensity)) : 1.0;
+    float colorBoost = pureTintMode ? 1.04 : 0.9;
+    vec3 finalColor = shadedEnergyColor * totalDensity * startupFade * colorBoost * shadowBias;
     
     // Alpha
     // Max opacity reduced for "efeito discreto"
-    float alpha = smoothstep(0.0, 1.0, totalDensity * startupFade);
+    float alphaBoost = pureTintMode ? 1.86 : 1.0;
+    float alpha = smoothstep(0.05, 0.92, totalDensity * startupFade * alphaBoost);
     alpha = clamp(alpha, 0.0, uAlphaMax); 
     
     gl_FragColor = vec4(finalColor, alpha);
@@ -257,6 +269,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
   mode = 'sephirot',
   tintStrength = 0.22,
   alphaMaxOverride,
+  blendMode = 'screen',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
@@ -468,9 +481,10 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
     const pointDrift = arenaMode ? 0.03 : 0.0;
     const fieldDrift = arenaMode ? 1.0 : 0.0;
     const baseAlphaMax = alphaMaxOverride ?? (officeMode ? 0.0 : (arenaMode ? 0.28 : 0.15));
-    const alphaMax = sephirotMode ? baseAlphaMax * 0.72 : baseAlphaMax;
+    const pureTintMode = sephirotMode && tintStrength >= 0.99;
+    const alphaMax = sephirotMode ? baseAlphaMax * (pureTintMode ? 1.45 : 0.72) : baseAlphaMax;
     const coreBoost = arenaMode ? 1.0 : 0.0;
-    const effectiveTintStrength = sephirotMode ? tintStrength * 0.84 : tintStrength;
+    const effectiveTintStrength = sephirotMode ? (pureTintMode ? tintStrength : tintStrength * 0.84) : tintStrength;
 
     if (uWindStrengthLoc.current) {
         gl.uniform1f(uWindStrengthLoc.current, windStrength);
@@ -530,7 +544,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
     <canvas
       ref={canvasRef}
       className="absolute top-0 left-0 w-full h-full pointer-events-none z-0"
-      style={{ mixBlendMode: 'screen' }}
+      style={{ mixBlendMode: blendMode }}
     />
   );
 };

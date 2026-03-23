@@ -84,13 +84,16 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     <label className="text-xs font-bold text-gray-400">Tipo de Grupo</label>
                                     <div className="flex bg-black/20 p-1 rounded-xl mt-1">
                                         {isBasicMode ? (
-                                            <button className="w-full py-1 text-sm rounded-lg bg-white/10 text-gray-200 cursor-default">Office</button>
+                                            <button className="w-full py-1 text-sm rounded-lg bg-white/10 text-gray-200 cursor-default">Equipe</button>
                                         ) : (
                                             clanTypes.map(type => (
-                                                <button key={type} onClick={() => setClanType(type)} className={`w-full py-1 text-sm rounded-lg ${clanType === type ? 'bg-white/10' : 'text-gray-400'}`}>{type}</button>
+                                                <button key={type} onClick={() => setClanType(type)} className={`w-full py-1 text-sm rounded-lg ${clanType === type ? 'bg-white/10' : 'text-gray-400'}`}>{type === 'Office' ? 'Equipe' : 'Social'}</button>
                                             ))
                                         )}
                                     </div>
+                                    {isBasicMode && (
+                                        <p className="mt-1 text-[10px] text-gray-500">No modo basico, novos grupos nascem como equipe.</p>
+                                    )}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-400 uppercase">Fundo do Espaco</label>

@@ -26,7 +26,7 @@ const GOOGLE_OAUTH_RECOVERY_DELAYS_MS = [250, 350, 500, 700, 900, 1200, 1500, 18
 
 const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; theme?: 'LIGHT' | 'DARK' | null }> = ({
     accentColor = '#d4af37',
-    mode = 'GAME',
+    mode = 'BASIC',
     theme = 'DARK',
 }) => (
     <div
@@ -35,7 +35,6 @@ const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; t
             ['--skin-accent-color' as string]: accentColor,
             background: 'radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 28%), linear-gradient(180deg, #050505 0%, #000000 100%)',
         }}
-        data-skin={mode === 'BASIC' ? 'default' : undefined}
     >
         <div className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.14),transparent_62%)]" />
@@ -73,7 +72,7 @@ const App: React.FC = () => {
     const lastSessionRecoveryAttemptRef = useRef(0);
     const [bootVisuals, setBootVisuals] = useState<{ skin: string; mode: 'GAME' | 'BASIC'; theme: 'LIGHT' | 'DARK' | null }>({
         skin: 'BASIC',
-        mode: 'GAME',
+        mode: 'BASIC',
         theme: 'DARK',
     });
     const renderMode = useMemo(() => new URLSearchParams(window.location.search).get('render'), []);
@@ -198,7 +197,7 @@ const App: React.FC = () => {
                 const parsed = JSON.parse(cached);
                 setBootVisuals({
                     skin: parsed?.skin || 'BASIC',
-                    mode: parsed?.appMode === 'BASIC' ? 'BASIC' : 'GAME',
+                    mode: parsed?.appMode === 'GAME' ? 'GAME' : 'BASIC',
                     theme: parsed?.themePreference === 'LIGHT' ? 'LIGHT' : 'DARK',
                 });
             } catch (storageError) {
@@ -547,7 +546,7 @@ const App: React.FC = () => {
                     <LegacyRenderView />
                 </Suspense>
             ) : (
-                <div className="relative flex min-h-screen flex-col overflow-hidden bg-black font-sans text-white">
+                <div className="relative flex min-h-screen flex-col overflow-hidden bg-transparent font-sans text-white">
                     {showFullScreenBoot ? (
                         <AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />
                     ) : (

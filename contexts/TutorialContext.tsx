@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useGame, PROFILE_FLAG_TUTORIAL_COMPLETED } from './GameContext';
-import { TUTORIAL_STEPS } from '../constants/tutorialSteps';
+import { TUTORIAL_STEPS, TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { TutorialStep } from '../types';
 
 interface TooltipContent {
@@ -16,6 +16,7 @@ interface TutorialContextType {
     spotlightTarget: DOMRect | null;
     tooltipContent: TooltipContent | null;
     tutorialSteps: TutorialStep[];
+    activeLevel: number | null;
     didForceGameMode: boolean;
     originalMode: 'BASIC' | 'GAME' | null;
     startedFromSettings: boolean;
@@ -33,6 +34,11 @@ const TutorialContext = createContext<TutorialContextType | undefined>(undefined
 const getFirstStepIndexForCategory = (category: TutorialStep['category']) => {
     const index = TUTORIAL_STEPS.findIndex((step) => step.category === category);
     return index >= 0 ? index : 0;
+};
+
+const getTutorialSection = (level: number | null) => {
+    if (level === null) return null;
+    return TUTORIAL_SECTIONS.find((section) => section.id === level) || null;
 };
 
 export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -118,7 +124,8 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         (window as any).__GOL_TUTORIAL_ACTIVE__ = true;
         const step = TUTORIAL_STEPS[currentStep];
-        const isGameStep = step && (step.category === 'IDENTIDADE' || step.category === 'MUNDO' || (currentStep >= 9 && currentStep <= 19));
+        const activeSection = getTutorialSection(activeLevel);
+        const isGameStep = activeSection ? activeSection.gameOnly : !!(step && (step.category === 'IDENTIDADE' || step.category === 'MUNDO' || step.category === 'ARQUITETO'));
 
         if (isGameStep && appMode === 'BASIC') {
             console.log(`Tutorial Engine: Forcing GAME Mode for step ${currentStep}`);
@@ -140,8 +147,20 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
     }, [currentStep, isTutorialActive, appMode, didForceGameMode, setAppMode, originalMode]);
 
     const nextStep = useCallback(() => {
-        const currentCategory = TUTORIAL_STEPS[currentStep]?.category;
+        const activeSection = getTutorialSection(activeLevel);
         const nextIdx = currentStep + 1;
+
+        if (activeSection) {
+            if (currentStep >= activeSection.endIndex) {
+                console.log(`Tutorial Engine: End of station reached (${activeSection.name}).`);
+                endTutorial(true);
+            } else {
+                setCurrentStep(Math.min(nextIdx, activeSection.endIndex));
+            }
+            return;
+        }
+
+        const currentCategory = TUTORIAL_STEPS[currentStep]?.category;
         const nextCategory = TUTORIAL_STEPS[nextIdx]?.category;
 
         // CRITICAL: Stop flow IF category changes (except when finishing INTRO)
@@ -159,16 +178,9 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         setCurrentStep(step);
     }, []);
 
-    // NEW: Robust mapping from Station Level (1-4) to Step Index
     const startTutorialLevel = useCallback((level: number) => {
-        let targetIndex = getFirstStepIndexForCategory('ALICERCE');
-        switch (level) {
-            case 1: targetIndex = getFirstStepIndexForCategory('ALICERCE'); break;
-            case 2: targetIndex = getFirstStepIndexForCategory('IDENTIDADE'); break;
-            case 3: targetIndex = getFirstStepIndexForCategory('MUNDO'); break;
-            case 4: targetIndex = getFirstStepIndexForCategory('ARQUITETO'); break;
-            default: targetIndex = level; // Fallback to raw index if passed
-        }
+        const targetSection = getTutorialSection(level);
+        const targetIndex = targetSection ? targetSection.startIndex : getFirstStepIndexForCategory('ALICERCE');
         console.log(`Tutorial Engine: Starting Station Level ${level} -> Index ${targetIndex}`);
         startTutorial(targetIndex, level, true);
     }, [startTutorial]);
@@ -186,6 +198,7 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             spotlightTarget: null,
             tooltipContent: null,
             tutorialSteps,
+            activeLevel,
             didForceGameMode,
             originalMode,
             startedFromSettings,

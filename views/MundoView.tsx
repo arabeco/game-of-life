@@ -55,23 +55,23 @@ const ClanInfoBox: React.FC<{ onClick: () => void }> = ({ onClick }) => {
     const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
 
     return (
-        <GlassCard variant="gold" className="p-4 space-y-2 text-center transition-all" id="clan-sanctuary">
-            <button onClick={onClick} className="w-full text-left space-y-2">
+        <GlassCard variant="gold" className="mundo-clan-card p-4 space-y-2 text-center transition-all" id="clan-sanctuary">
+            <button onClick={onClick} className="mundo-clan-card__button w-full text-left space-y-2">
                 <div className="flex items-center justify-center space-x-2">
                     <span className="text-3xl">{clan.icon}</span>
                     <div>
-                        <p className="text-sm uppercase tracking-wider">{clan.name}</p>
-                        <h2 className="text-2xl font-black" style={{ color: 'var(--skin-accent-color)' }}>{currentRank?.name || 'N/A'}</h2>
+                        <p className="mundo-clan-card__name text-sm uppercase tracking-wider">{clan.name}</p>
+                        <h2 className="mundo-clan-card__rank text-2xl font-black">{currentRank?.name || 'N/A'}</h2>
                     </div>
                 </div>
-                <div>
-                    <div className="flex justify-between text-[10px] font-bold">
+                <div className="mundo-clan-card__progress">
+                    <div className="mundo-clan-card__meta flex justify-between text-[10px] font-bold">
                         <span>{progressInRank.toLocaleString('pt-BR')} EXP</span>
                         <span>{nextRank ? `${(expToNextRank - progressInRank).toLocaleString('pt-BR')} para ${nextRank.name}` : 'Nível Máximo'}</span>
                     </div>
-                    <div className="w-full bg-black/30 rounded-full h-2 mt-1">
+                    <div className="mundo-clan-card__track w-full rounded-full h-2 mt-1">
                         <div
-                            className="bg-[var(--skin-accent-color)] h-2 rounded-full transition-all duration-500"
+                            className="mundo-clan-card__fill h-2 rounded-full transition-all duration-500"
                             style={{ width: `${progressPercentage}%` }}
                         ></div>
                     </div>
@@ -689,10 +689,16 @@ const MundoView: React.FC = () => {
         ] as const;
 
         if (isBasicMode) {
-            return allTabs.filter(t => t.id === 'social' || t.id === 'temporada' || t.id === 'loja');
+            return allTabs.filter(t => t.id === 'social' || t.id === 'loja');
         }
         return allTabs;
     }, [isBasicMode]);
+
+    useEffect(() => {
+        if (!tabs.some((tab) => tab.id === activeTab)) {
+            setActiveTab('social');
+        }
+    }, [activeTab, tabs]);
 
     useEffect(() => {
         const handleTabChange = (e: any) => {

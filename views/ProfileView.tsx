@@ -367,6 +367,8 @@ export const ShareableProfileCard: React.FC<{
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
     const { userProfile, assets, friends, updateUserProfile, clan, clanRanks, getUserPublicData, appMode, cycleProgress, showToast } = useGame();
+    type ProfileTab = 'summary' | 'widgets' | 'mastery';
+    const getDefaultProfileTab = (basicMode: boolean): ProfileTab => (basicMode ? 'summary' : 'widgets');
 
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
@@ -382,7 +384,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isSovereignModalOpen, setIsSovereignModalOpen] = useState(false);
     const [isAssetsPreviewOpen, setIsAssetsPreviewOpen] = useState(false);
-    const [activeWidgetTab, setActiveWidgetTab] = useState<'mural' | 'maestria'>('mural');
+    const [activeWidgetTab, setActiveWidgetTab] = useState<ProfileTab>(() => getDefaultProfileTab(isBasicMode));
 
     const [viewedClan, setViewedClan] = useState<Clan | null>(null);
     const [viewedClanRank, setViewedClanRank] = useState<ClanRank | undefined>(undefined);
@@ -401,6 +403,10 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
             });
         }
     }, [isOwnProfile, profile?.id, getUserPublicData]);
+
+    useEffect(() => {
+        setActiveWidgetTab(getDefaultProfileTab(isBasicMode));
+    }, [isBasicMode, isOwnProfile, profile?.id]);
 
     // Distinguish between Profile Photo (avatarUrl) and Sovereign Avatar (sovereign config)
     // The user explicitly requested to avoid confusion between the two.
@@ -537,16 +543,19 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     }, [assets, canViewMastery, fallbackViewedLevels, isOwnProfile, viewedLevels, viewedSlots]);
 
     useEffect(() => {
-        if (activeWidgetTab === 'maestria' && !canViewMastery) {
-            setActiveWidgetTab('mural');
-        }
-    }, [activeWidgetTab, canViewMastery]);
-
-    useEffect(() => {
         if (isAssetsPreviewOpen && !canViewAssetsPreview) {
             setIsAssetsPreviewOpen(false);
         }
     }, [canViewAssetsPreview, isAssetsPreviewOpen]);
+
+    const visibleWidgetsCount = displayProfile.visibleWidgets?.length || 0;
+    const visibleWidgetsMax = 6;
+    const masteryLevels = profileAssets.map((asset) => Math.max(1, asset.level || 1));
+    const masteryAverageLevel = masteryLevels.length > 0
+        ? masteryLevels.reduce((sum, level) => sum + level, 0) / masteryLevels.length
+        : 1;
+    const masteryAveragePercent = Math.max(0, Math.min(100, Math.round((masteryAverageLevel / 10) * 100)));
+    const summaryProgressPercent = isOwnProfile ? Math.max(0, Math.min(100, Math.round(cycleProgress))) : masteryAveragePercent;
 
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === displayProfile.border);
 
@@ -731,23 +740,123 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 <div className="space-y-1">
                                     <div className="flex bg-black/30 backdrop-blur-sm rounded-xl p-0.5 border border-white/5 mb-1 relative z-20">
                                         <button
-                                            onClick={() => setActiveWidgetTab('mural')}
-                                            className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'mural' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                            onClick={() => setActiveWidgetTab('summary')}
+                                            className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'summary' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                                         >
-                                            {isBasicMode ? 'Métricas' : 'Mural'}
+                                            Resumo
                                         </button>
-                                        {!isBasicMode && canViewMastery && (
-                                            <button
-                                                onClick={() => setActiveWidgetTab('maestria')}
-                                                className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'maestria' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                                            >
-                                                Maestria
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => setActiveWidgetTab('widgets')}
+                                            className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'widgets' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                        >
+                                            Widgets
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveWidgetTab('mastery')}
+                                            className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'mastery' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                        >
+                                            Maestria
+                                        </button>
                                     </div>
 
+                                    {activeWidgetTab === 'summary' && (
+                                        <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full space-y-2">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Nivel Geral</div>
+                                                    <div className="text-2xl font-bold text-[var(--ui-text-accent)]">{displayProfile.level}</div>
+                                                </div>
+                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Widgets</div>
+                                                    <div className="text-2xl font-bold text-white">{visibleWidgetsCount}/{visibleWidgetsMax}</div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-black/20 p-2 rounded-xl border border-white/5 space-y-1.5">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                                                        {isOwnProfile ? 'Progresso do ciclo' : 'Media da maestria'}
+                                                    </span>
+                                                    <span className="text-[11px] font-bold text-white">
+                                                        {isOwnProfile
+                                                            ? `${summaryProgressPercent}%`
+                                                            : `Nivel ${masteryAverageLevel.toFixed(1).replace('.', ',')}`}
+                                                    </span>
+                                                </div>
+                                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-[var(--skin-accent-color)] rounded-full transition-[width] duration-300" style={{ width: `${summaryProgressPercent}%` }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeWidgetTab === 'widgets' && (
+                                        isEditing && isOwnProfile ? (
+                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
+                                                <div className="flex justify-between items-center mb-1.5">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Widgets Visiveis ({editableProfile.visibleWidgets?.length || 0}/6)</span>
+                                                </div>
+                                                <div className="grid grid-cols-6 gap-1.5">
+                                                    {assets.flatMap(a => a.slots).map(slot => {
+                                                        const isSelected = editableProfile.visibleWidgets?.includes(slot.id);
+                                                        return (
+                                                            <button
+                                                                key={slot.id}
+                                                                onClick={() => handleWidgetToggle(slot.id)}
+                                                                className={`col-span-2 aspect-square rounded-xl border flex flex-col items-center justify-center p-1.5 gap-1 transition-all ${isSelected
+                                                                    ? 'bg-white/10 border-[var(--skin-accent-color)] text-white'
+                                                                    : 'bg-black/20 border-white/5 text-gray-500 hover:bg-white/5'
+                                                                    }`}
+                                                            >
+                                                                <span className="text-[8px] font-bold uppercase tracking-wider">{slot.label}</span>
+                                                                {isSelected && <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] shadow-[0_0_5px_var(--skin-accent-color)]" />}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ) : !isOwnProfile && !canViewAssetsPreview ? (
+                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
+                                                <p className="py-4 text-center text-sm text-gray-500">Widgets privados.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
+                                                {(displayProfile.visibleWidgets || []).length > 0 ? (
+                                                    <div className="grid grid-cols-6 gap-0.5">
+                                                        {(displayProfile.visibleWidgets || []).map(slotId => {
+                                                            const slot = getSlotById(slotId);
+                                                            if (!slot) return null;
+                                                            return <ProfileSlotWidget key={slotId} slot={slot} />
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-center text-sm text-gray-500 py-4">Nenhum widget visivel.</p>
+                                                )}
+                                            </div>
+                                        )
+                                    )}
+
+                                    {activeWidgetTab === 'mastery' && (
+                                        canViewMastery ? (
+                                            <div className="bg-black/30 backdrop-blur-sm p-1 rounded-2xl border border-white/5 w-full flex items-center justify-center">
+                                                <Suspense fallback={<div className="w-[220px] h-[220px]" />}>
+                                                    <AssetDecagon
+                                                        assets={assets}
+                                                        tempLevels={profileDecagonLevels}
+                                                        size={220}
+                                                    />
+                                                </Suspense>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
+                                                <p className="py-4 text-center text-sm text-gray-500">Maestria privada.</p>
+                                            </div>
+                                        )
+                                    )}
+
+                                    {false && (
+                                        <>
                                     {/* Tab Content */}
-                                    {activeWidgetTab === 'mural' || isBasicMode ? (
+                                    {activeWidgetTab === 'summary' || isBasicMode ? (
                                         isEditing && isOwnProfile ? (
                                             <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
                                                 <div className="flex justify-between items-center mb-1.5">
@@ -823,6 +932,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                 />
                                             </Suspense>
                                         </div>
+                                    )}
+                                        </>
                                     )}
                                 </div>
                             </div>

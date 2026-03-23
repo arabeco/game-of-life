@@ -1464,7 +1464,7 @@ export const ArenasView: React.FC = () => {
                             </div>
                         ) : (
                         <div className="overflow-x-auto hide-scrollbar pb-1">
-                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
+                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                             {receivedMentorCampaigns.map(({ codex, preview }) => (
                                 <div
                                     key={codex.id}
@@ -1548,7 +1548,7 @@ export const ArenasView: React.FC = () => {
                             </div>
                         ) : (
                         <div className="overflow-x-auto hide-scrollbar pb-1">
-                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
+                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                             {receivedSharedArenas.map((linkedArena) => (
                                 <div key={linkedArena.id}>
                                     <ArenaCard
@@ -1748,7 +1748,7 @@ export const ArenasView: React.FC = () => {
                                                         })}
                                                     </>
                                                 ) : (
-                                                    <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
+                                                    <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                                                         {items.map(item => {
                                                             if (item.itemType === 'campaign') {
                                                                 const campaign = item.value as Campaign;
@@ -1793,7 +1793,7 @@ export const ArenasView: React.FC = () => {
                                             </div>
                                         ) : (
                                         <div className="overflow-x-auto hide-scrollbar pb-1">
-                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
+                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                                                 {campaigns.map(campaign => renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign)))}
                                             </div>
                                         </div>
@@ -1827,7 +1827,7 @@ export const ArenasView: React.FC = () => {
                                                 </div>
                                             ) : (
                                             <div className="overflow-x-auto hide-scrollbar pb-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3">
+                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                                                     {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                                 </div>
                                             </div>

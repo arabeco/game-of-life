@@ -33,7 +33,6 @@ const SettingsView = React.lazy(() => import('../views/SettingsView').then((m) =
 const ProfileView = React.lazy(() => import('../views/ProfileView').then((m) => ({ default: m.ProfileView })));
 const ReportsView = React.lazy(() => import('../views/ReportsView').then((m) => ({ default: m.ReportsView })));
 const OracleTutorialOverlay = React.lazy(() => import('./OracleTutorialOverlay').then((m) => ({ default: m.OracleTutorialOverlay })));
-const ModeSelectionOverlay = React.lazy(() => import('./ModeSelectionOverlay').then((m) => ({ default: m.ModeSelectionOverlay })));
 const AchievementModal = React.lazy(() => import('./AchievementModal').then((m) => ({ default: m.AchievementModal })));
 const GoldenToast = React.lazy(() => import('./GoldenToast').then((m) => ({ default: m.GoldenToast })));
 const TermsOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.TermsOverlay })));
@@ -46,17 +45,16 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
-const GAME_NAV_VIEWS: View[] = ['assets', 'arenas', 'planner', 'social', 'settings'];
-const BASIC_NAV_VIEWS: View[] = ['arenas', 'planner', 'social', 'settings'];
+const CORE_NAV_VIEWS: View[] = ['assets', 'arenas', 'planner', 'social', 'settings'];
 
 const getAvailableViews = (canUseAssetsView: boolean, isBuilderMode: boolean): View[] => {
     if (isBuilderMode) return ['arenas'];
-    return canUseAssetsView ? GAME_NAV_VIEWS : BASIC_NAV_VIEWS;
+    return CORE_NAV_VIEWS;
 };
 
 const getDefaultView = (canUseAssetsView: boolean, isBuilderMode: boolean): View => {
     if (isBuilderMode) return 'arenas';
-    return canUseAssetsView ? 'assets' : 'arenas';
+    return 'assets';
 };
 
 const sanitizeView = (view: View | null | undefined, canUseAssetsView: boolean, isBuilderMode: boolean): View => {
@@ -69,11 +67,10 @@ const TutorialBridge: React.FC = () => null;
 const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaultRestScreenOpen = true }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
     const { userProfile, appMode, activeTheme, notifications } = useGame();
-    const { didForceGameMode } = useTutorial();
     const historyReady = useRef(false);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
-    const canUseAssetsView = activeUIMode === 'GAME' || didForceGameMode;
+    const canUseAssetsView = !isBuilderMode;
     const availableViews = useMemo(() => getAvailableViews(canUseAssetsView, isBuilderMode), [canUseAssetsView, isBuilderMode]);
     const [currentView, setCurrentView] = useState<View>(() => getDefaultView(canUseAssetsView, isBuilderMode));
     const [isProfileVisible, setProfileVisible] = useState(false);
@@ -265,6 +262,16 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
     }, [handleSetView]);
 
     useEffect(() => {
+        const handleAutoFinishedCycle = () => {
+            setProfileVisible(false);
+            setReportsVisible(true);
+        };
+
+        window.addEventListener('glyph-cycle-auto-finished', handleAutoFinishedCycle);
+        return () => window.removeEventListener('glyph-cycle-auto-finished', handleAutoFinishedCycle);
+    }, []);
+
+    useEffect(() => {
         setCurrentView((prev) => {
             const nextView = sanitizeView(prev, canUseAssetsView, isBuilderMode);
             return prev === nextView ?prev : nextView;
@@ -376,7 +383,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
                 if (el) navItemRefs.current.set(view, el);
             }}
             onClick={() => handleSetView(view)}
-            className={`relative z-10 flex w-full flex-col items-center justify-center transition-colors duration-200 ${currentView === view ?'auth-nav-active' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`auth-nav-item relative z-10 flex w-full flex-col items-center justify-center transition-colors duration-200 ${currentView === view ?'auth-nav-active' : ''}`}
         >
             {icon}
             {badgeCount > 0 && (
@@ -384,7 +391,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
                     {badgeCount > 9 ?'9+' : badgeCount}
                 </span>
             )}
-            <span className="mt-1 text-[10px] font-bold tracking-wider">{label}</span>
+            <span className="auth-nav-label mt-1 text-[10px] font-bold tracking-wider">{label}</span>
         </button>
     );
 
@@ -399,16 +406,16 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
         : `mode-game theme-${(activeTheme || 'DARK').toLowerCase()}`;
 
     useLayoutEffect(() => {
-        const skin = activeUIMode === 'BASIC' ?'default' : userProfile.skin;
+        const skin = userProfile.skin || 'default';
         document.body.setAttribute('data-skin', skin);
         document.documentElement.setAttribute('data-skin', skin);
-    }, [activeUIMode, userProfile.skin]);
+    }, [userProfile.skin]);
 
     return (
         <div
             id="app-root"
             className={`auth-app-root flex flex-col overflow-hidden font-sans text-gray-200 ${isBuilderMode ?'auth-app-root--builder' : ''} ${themeClass}`}
-            data-skin={activeUIMode === 'BASIC' ?'default' : userProfile.skin}
+            data-skin={userProfile.skin || 'default'}
         >
             <Suspense fallback={null}>
                 <OracleTutorialOverlay />
@@ -475,10 +482,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
                         }}
                     />
                     <div className="flex h-16 items-center justify-around">
-                        {activeUIMode === 'GAME' && <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />}
-                        <NavItem view="arenas" label={activeUIMode === 'BASIC' ? 'ÁREAS' : 'ARENAS'} icon={<ArenaIcon />} id="nav-arenas" />
+                        <NavItem view="assets" label="ATIVOS" icon={<AssetIcon />} id="nav-assets" />
+                        <NavItem view="arenas" label="ARENAS" icon={<ArenaIcon />} id="nav-arenas" />
                         <NavItem view="planner" label="PLANNER" icon={<PlannerIcon />} id="nav-planner" />
-                        <NavItem view="social" label={activeUIMode === 'BASIC' ?'EQUIPE' : 'MUNDO'} icon={<SocialIcon />} id="nav-mundo" />
+                        <NavItem view="social" label="MUNDO" icon={<SocialIcon />} id="nav-mundo" />
                         <NavItem view="settings" label="CONFIG" icon={<ConfigIcon />} id="nav-settings" />
                     </div>
                 </div>
@@ -533,7 +540,6 @@ const MainApp: React.FC = () => {
     const hasPendingTermsCeremony = completed.includes(PROFILE_FLAG_TERMS_PENDING);
     const requiresTermsAcceptance = (hasPendingTermsCeremony || !acceptedTerms) && isProfileLoaded && userProfile.id !== 'placeholder_user';
     const showTerms = forceShowTerms || requiresTermsAcceptance;
-    const needsModeSelection = !showTerms && acceptedTerms && !userProfile.appMode;
     const needsFirstUseOnboarding = shouldAutoStartOnboarding(userProfile);
     const [isFirstUseOnboardingActive, setFirstUseOnboardingActive] = useState(false);
     const [onboardingShownInSession, setOnboardingShownInSession] = useState(false);
@@ -545,7 +551,7 @@ const MainApp: React.FC = () => {
         !onboardingShownInSession;
 
     useEffect(() => {
-        if (userProfile.id === 'placeholder_user' || !isProfileLoaded || showTerms || needsModeSelection) return;
+        if (userProfile.id === 'placeholder_user' || !isProfileLoaded || showTerms) return;
         if (!needsFirstUseOnboarding || isFirstUseOnboardingActive || onboardingShownInSession) return;
 
         updateUserProfile(buildOnboardingStartPatch(userProfile));
@@ -555,7 +561,6 @@ const MainApp: React.FC = () => {
         userProfile,
         isProfileLoaded,
         showTerms,
-        needsModeSelection,
         needsFirstUseOnboarding,
         isFirstUseOnboardingActive,
         onboardingShownInSession,
@@ -617,7 +622,6 @@ const MainApp: React.FC = () => {
 
     const shouldShowVanguardWelcome =
         !showTerms &&
-        !needsModeSelection &&
         !isFirstUseOnboardingActive &&
         !shouldHoldVanguardWelcome &&
         !!userProfile.vanguardWelcomePending &&
@@ -652,7 +656,6 @@ const MainApp: React.FC = () => {
 
     const shouldOpenRestByDefault =
         !showTerms &&
-        !needsModeSelection &&
         !claimToken &&
         !needsFirstUseOnboarding &&
         !isFirstUseOnboardingActive;
@@ -693,11 +696,6 @@ const MainApp: React.FC = () => {
     return (
         <>
             {!requiresTermsAcceptance && <AppWithTutorial defaultRestScreenOpen={shouldOpenRestByDefault} />}
-            {!showTerms && (
-                <Suspense fallback={null}>
-                    <ModeSelectionOverlay />
-                </Suspense>
-            )}
             <Suspense fallback={null}>
                 <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
                 <OfflineOverlay open={!isOnline} />

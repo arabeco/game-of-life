@@ -939,7 +939,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     return (
         <Portal>
             <div
-                className={`fixed inset-0 z-[150] flex flex-col items-center justify-start gap-2 bg-black transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y border-[var(--skin-accent-color)]/20 ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`restscreen-root fixed inset-0 z-[150] flex flex-col items-center justify-start gap-2 bg-black transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y border-[var(--skin-accent-color)]/20 ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
                 style={{ touchAction: 'none' }} // Prevent scrolling
             >
                 {/* Sephirot Fog Background */}
@@ -1309,7 +1309,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onTouchStart={handleStartHold}
                             onTouchEnd={handleEndHold}
                             onContextMenu={(e) => e.preventDefault()}
-                            className="relative group active:scale-95 transition-transform duration-200"
                             style={{
                                 WebkitTapHighlightColor: 'transparent',
                                 touchAction: 'none',
@@ -1317,13 +1316,14 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                 WebkitUserSelect: 'none',
                                 WebkitTouchCallout: 'none',
                             } as React.CSSProperties}
+                            className="restscreen-unlock-trigger relative group active:scale-95 transition-transform duration-200"
                         >
                             <div className="absolute inset-[-14px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,rgba(212,175,55,0.18)_28%,transparent_72%)] opacity-90 blur-md" />
 
-                            <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+                            <div className="restscreen-unlock-ring absolute inset-0 rounded-full border-2 border-white/10" />
 
                             {/* Button Content */}
-                            <div className="w-[4.5rem] h-[4.5rem] rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.18),rgba(0,0,0,0.78))] backdrop-blur-md border border-[var(--skin-accent-color)]/35 flex items-center justify-center relative z-10 overflow-hidden shadow-[0_0_25px_rgba(212,175,55,0.20)]">
+                            <div className="restscreen-unlock-core w-[4.5rem] h-[4.5rem] rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.18),rgba(0,0,0,0.78))] backdrop-blur-md border border-[var(--skin-accent-color)]/35 flex items-center justify-center relative z-10 overflow-hidden shadow-[0_0_25px_rgba(212,175,55,0.20)]">
                                 <div className="absolute inset-[4px] rounded-full overflow-hidden">
                                     <div
                                         className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(212,175,55,0.24)_40%,rgba(212,175,55,0.52)_100%)] transition-[height] duration-75 ease-linear"

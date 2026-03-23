@@ -1,7 +1,7 @@
 
 
 
-import React, { Suspense, useState, useEffect, useMemo, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Report, Cycle, ChestType, FeedEvent } from '../types';
 import { GlassCard } from '../components/GlassCard';
@@ -494,48 +494,51 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         endCycleRef.current = endCycle;
     }, [endCycle]);
 
+    const primePostCycleResults = useCallback((report: Report, awardedExp: number): { ok: boolean; chest: ChestType | null } => {
+        setSelectedReport(report);
+        setExpGained(awardedExp);
+        setScanError(null);
+        setShowNewCycleSetup(false);
+
+        const startD = parseDate(report.startDate);
+        const endD = parseDate(report.endDate);
+        const durationDays = Math.max(1, daysBetween(startD, endD) + 1);
+        const score = report.performanceScore;
+
+        let chestType: ChestType | null = null;
+
+        if (awardedExp >= 25000 && score >= 90) chestType = 'Lendário';
+        else if (awardedExp >= 12000 && score >= 80) chestType = 'Épico';
+        else if (awardedExp >= 5000 && score >= 70) chestType = 'Raro';
+        else if (awardedExp >= 2250 && score >= 60) chestType = 'Incomum';
+        else if (awardedExp >= 750) chestType = 'Comum';
+
+        if (chestType && chestType !== 'Lendário') {
+            const roll = Math.random();
+            if (roll < 0.05) {
+                if (chestType === 'Comum') chestType = 'Incomum';
+                else if (chestType === 'Incomum') chestType = 'Raro';
+                else if (chestType === 'Raro') chestType = 'Épico';
+                else if (chestType === 'Épico') chestType = 'Lendário';
+            }
+        }
+
+        if (durationDays < 7) {
+            chestType = null;
+        }
+
+        setEarnedChest(chestType);
+        setGrantedInsignias(['insignia_report_comum']);
+        setIsPostCycleFlow(true);
+
+        return { ok: true, chest: chestType };
+    }, []);
+
     const performEndOfCycle = (): { ok: boolean; chest: ChestType | null } => {
         try {
             const result = endCycleRef.current(assetsRef.current, actionsRef.current);
             if (!result?.report) throw new Error('Relatório inválido');
-            const { report, expGained } = result;
-            setSelectedReport(report);
-            setExpGained(expGained);
-
-            const startD = parseDate(report.startDate);
-            const endD = parseDate(report.endDate);
-            const durationDays = Math.max(1, daysBetween(startD, endD) + 1);
-            const score = report.performanceScore;
-
-            let chestType: ChestType | null = null;
-
-            if (expGained >= 25000 && score >= 90) chestType = 'Lend\u00E1rio';
-            else if (expGained >= 12000 && score >= 80) chestType = '\u00C9pico';
-            else if (expGained >= 5000 && score >= 70) chestType = 'Raro';
-            else if (expGained >= 2250 && score >= 60) chestType = 'Incomum';
-            else if (expGained >= 750) chestType = 'Comum';
-
-            if (chestType && chestType !== 'Lend\u00E1rio') {
-                const roll = Math.random();
-                if (roll < 0.05) {
-                    if (chestType === 'Comum') chestType = 'Incomum';
-                    else if (chestType === 'Incomum') chestType = 'Raro';
-                    else if (chestType === 'Raro') chestType = '\u00C9pico';
-                    else if (chestType === '\u00C9pico') chestType = 'Lend\u00E1rio';
-                }
-            }
-
-            if (durationDays < 7) {
-                chestType = null;
-            }
-
-            setEarnedChest(chestType);
-
-            const insigniasToGrant: string[] = ['insignia_report_comum'];
-
-            setGrantedInsignias(insigniasToGrant);
-            setIsPostCycleFlow(true);
-            return { ok: true, chest: chestType };
+            return primePostCycleResults(result.report, result.expGained);
 
         } catch (error) {
             console.error('Erro ao analisar ciclo:', error);
@@ -551,6 +554,16 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
         return outcome;
     };
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const pending = (window as any).__glyphPendingCycleResults as { report?: Report; expGained?: number } | undefined;
+        if (!pending?.report) return;
+
+        (window as any).__glyphPendingCycleResults = null;
+        primePostCycleResults(pending.report, pending.expGained || 0);
+        setView('results');
+    }, [primePostCycleResults]);
 
     useEffect(() => {
         if (view === 'scanning') {
@@ -1932,11 +1945,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
-
-
-
-
 
 
 

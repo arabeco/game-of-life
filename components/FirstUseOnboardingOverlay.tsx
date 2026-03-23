@@ -239,7 +239,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'finish',
       title: 'Base pronta',
-      text: 'Sua base inicial esta pronta. Voce ja pode comecar por esta tela. Se quiser revisar o resto depois, o tutorial continua em Configuracoes > Tutoriais.',
+      text: 'Sua base inicial esta pronta. Voce ja pode comecar por esta tela.\n\nEm Configuracoes > Tutoriais, os cards 1 e 2 aprofundam o core. Em Configuracoes > Preferencias, o Modo Jogo libera tambem os cards 3 e 4 com progresso, mundo e metajogo.',
       navigation: { view: 'planner', showReports: false, showRestScreen: true, showArenaId: null },
       final: true,
     },

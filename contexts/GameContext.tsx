@@ -799,11 +799,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     const val = parsed.appMode;
                     if (val === 'GAME' || val === 'BASIC') return val;
                     if (val === 'OFFICE') return 'BASIC';
-                    return 'GAME';
+                    return 'BASIC';
                 }
             } catch (e) { }
         }
-        return 'GAME';
+        return 'BASIC';
     });
 
     const [activeTheme, setActiveTheme] = useState<ThemePreference>(() => {
@@ -821,9 +821,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     });
 
     useEffect(() => {
-        if (userProfile?.appMode) {
-            setAppModeState(userProfile.appMode);
-        }
+        setAppModeState(userProfile?.appMode === 'GAME' ? 'GAME' : 'BASIC');
         if (userProfile?.themePreference) {
             setActiveTheme(userProfile.themePreference);
         }
@@ -2405,6 +2403,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const clanQuestProgressTableReadyRef = useRef(enableClanQuestProgress);
     const pendingGuestMigrationRef = useRef<{ fromId: string; toId: string } | null>(null);
     const suspendPersistenceRef = useRef(false);
+    const autoFinishingCycleRef = useRef<string | null>(null);
     const pendingProfilePatchRef = useRef<Partial<UserProfile> | null>(null);
     const profileUpdateInFlightRef = useRef<Record<string, boolean>>({});
     const seasonLaunchRewardInFlightRef = useRef<Record<string, boolean>>({});
@@ -3305,21 +3304,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (!cyclesError && cyclesData && cyclesData.length > 0) {
                 const currentCycle = mapToCamelCase(cyclesData[0]) as Cycle;
                 setActiveCycle(currentCycle);
-
-                // --- AUTO FINISH CYCLE CHECK ---
-                // If cycle end date has passed, trigger finish and report
-                if (currentCycle && !currentCycle.isFinished) {
-                    const endDate = new Date(currentCycle.endDate);
-                    const now = new Date();
-                    if (now >= endDate) {
-                        console.log('Cycle end date reached. Auto-finishing cycle...');
-                        // Note: The actual finishing logic is in finishCycle function.
-                        // We trigger it here if the user opens the app after the end date.
-                        setTimeout(() => {
-                            (window as any).finishCycle?.();
-                        }, 2000);
-                    }
-                }
             }
 
             // --- CLEANUP ORPHAN TASKS ---
@@ -3402,7 +3386,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         if (now >= endDate && !cycle.isFinished) {
                             console.log('Cycle end date reached. Auto-finishing cycle...');
                             setTimeout(() => {
-                                (window as any).finishCycle?.();
+                                void 0;
                             }, 2000);
                         }
 
@@ -6176,6 +6160,49 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         return { report: newReport, expGained };
     };
+
+    useEffect(() => {
+        if (!hasHydratedFromSupabase || !activeCycle?.id) {
+            autoFinishingCycleRef.current = null;
+            return;
+        }
+
+        const hasExpired = getLocalDateString() > activeCycle.endDate;
+        if (!hasExpired) {
+            if (autoFinishingCycleRef.current === activeCycle.id) {
+                autoFinishingCycleRef.current = null;
+            }
+            return;
+        }
+
+        if (autoFinishingCycleRef.current === activeCycle.id) return;
+        if (assets.length === 0) return;
+
+        autoFinishingCycleRef.current = activeCycle.id;
+        const expiredCycleName = activeCycle.name;
+
+        const timeoutId = window.setTimeout(() => {
+            try {
+                const result = endCycle(assets, actions);
+                if (result?.report) {
+                    if (typeof window !== 'undefined') {
+                        (window as any).__glyphPendingCycleResults = {
+                            report: result.report,
+                            expGained: result.expGained,
+                        };
+                        window.dispatchEvent(new CustomEvent('glyph-cycle-auto-finished'));
+                    }
+                    showToast(`Ciclo "${expiredCycleName}" encerrado automaticamente.`, 'success');
+                }
+            } catch (error) {
+                console.error('Error auto-finishing expired cycle:', error);
+                showToast('Nao foi possivel encerrar automaticamente o ciclo vencido.', 'error');
+                autoFinishingCycleRef.current = null;
+            }
+        }, 350);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [activeCycle, actions, assets, endCycle, hasHydratedFromSupabase, showToast]);
 
     const applyExp = (expGained: number) => {
         // This function is now mostly for immediate visual feedback or small grants.

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
@@ -15,6 +15,7 @@ import { Portal } from '../components/Portal';
 import { SupabaseService } from '../services/SupabaseService';
 import { RelationshipHubModal } from '../components/RelationshipHubModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
+import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import './settings-ui.css';
 
@@ -152,15 +153,11 @@ const VisibilityScopeControl: React.FC<{
     </div>
 );
 
-const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
+const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () => void }> = ({ onStart, onRequestModeGame }) => {
     const { startTutorialLevel, isFlagCompleted } = useTutorial();
-
-    const levels = [
-        { id: 1, name: 'Alicerce', subtitle: 'Visao geral do core loop', flag: 'tutorial_level_1_completed', badge: 'BRONZE', accent: 'from-[#c98a62] via-[#c98a62]/24 via-70% to-transparent', glow: 'rgba(197,138,99,0.12)' },
-        { id: 2, name: 'Identidade', subtitle: 'Patentes, Maestria e Perfil', flag: 'tutorial_level_2_completed', badge: 'PRATA', accent: 'from-[#f4f7fd] via-[#edf1f8]/22 via-70% to-transparent', glow: 'rgba(214,217,223,0.12)' },
-        { id: 3, name: 'O Mundo', subtitle: 'Vinculos, aliados e Oraculo', flag: 'tutorial_level_3_completed', badge: 'OURO', accent: 'from-[#e4bc57] via-[#e4bc57]/24 via-70% to-transparent', glow: 'rgba(240,215,135,0.12)' },
-        { id: 4, name: 'O Arquiteto', subtitle: 'Campanhas, mentoria e premium', flag: 'tutorial_level_4_completed', badge: 'PREMIUM', accent: 'from-[#9b7af2] via-[#9b7af2]/24 via-70% to-transparent', glow: 'rgba(179,140,255,0.12)' },
-    ];
+    const { appMode } = useGame();
+    const isBasicMode = appMode !== 'GAME';
+    const levels = TUTORIAL_SECTIONS;
 
     return (
         <div className="space-y-2.5">
@@ -193,18 +190,30 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
                                 <p className="text-[10px] text-white/72 mt-1 truncate">
                                     {lvl.subtitle}
                                 </p>
+                                {lvl.gameOnly && (
+                                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 text-[var(--skin-accent-color)]/80">
+                                        Modo Jogo
+                                    </p>
+                                )}
                                 <p className={`text-[9px] font-bold uppercase tracking-[0.18em] mt-2 ${isCompleted ? 'text-green-300' : 'text-white/55'}`}>
-                                    {isCompleted ? 'Concluido' : 'Disponivel'}
+                                    {isCompleted ? 'Concluido' : (isBasicMode && lvl.gameOnly ? 'Bloqueado' : 'Disponivel')}
                                 </p>
                             </div>
                             <button
                                 onClick={() => {
+                                    if (isBasicMode && lvl.gameOnly) {
+                                        onRequestModeGame?.();
+                                        return;
+                                    }
                                     onStart?.();
                                     startTutorialLevel(lvl.id);
                                 }}
-                                className="shrink-0 rounded-full border border-white/12 bg-black/18 px-2.25 py-0.75 text-[7px] font-bold uppercase tracking-[0.18em] text-white/48 hover:text-white hover:bg-white/10 transition-all"
+                                className={`shrink-0 rounded-full border px-2.25 py-0.75 text-[7px] font-bold uppercase tracking-[0.18em] transition-all ${isBasicMode && lvl.gameOnly
+                                    ? 'border-[var(--skin-accent-color)]/24 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)] hover:bg-[var(--skin-accent-color)]/16'
+                                    : 'border-white/12 bg-black/18 text-white/48 hover:text-white hover:bg-white/10'
+                                    }`}
                             >
-                                Reabrir
+                                {isBasicMode && lvl.gameOnly ? 'Ativar' : 'Reabrir'}
                             </button>
                         </div>
                     </div>
@@ -214,25 +223,35 @@ const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
     );
 };
 
-const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
-    <Portal>
-        <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-[19.75rem] m-4 space-y-2.5 rounded-3xl overflow-hidden relative pt-4" onClick={e => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 inline-flex w-auto px-3.5 py-1.5 text-sm font-bold rounded-xl luxe-skin-button">OK</button>
-                <div className="px-4 pt-2">
-                    <div className="mx-auto max-w-[15.75rem] text-center space-y-1">
-                        <div className="text-[10px] font-black tracking-[0.28em] text-white/45 uppercase">Estacoes</div>
-                        <h2 className="text-base font-black uppercase tracking-[0.14em] text-center">Tutoriais</h2>
-                        <p className="text-[11px] text-white/55 leading-snug">
-                            Quatro cards para revisitar o sistema no seu ritmo, do core loop ate a camada premium.
-                        </p>
+const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const handleRequestModeGame = () => {
+        onClose();
+        window.dispatchEvent(new CustomEvent('tutorialTabChange', { detail: { tab: 'Preferências' } }));
+        window.setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tutorialFocusModeGame'));
+        }, 70);
+    };
+
+    return (
+        <Portal>
+            <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-[19.75rem] m-4 space-y-2.5 rounded-3xl overflow-hidden relative pt-4" onClick={e => e.stopPropagation()}>
+                    <button onClick={onClose} className="absolute top-4 right-4 inline-flex w-auto px-3.5 py-1.5 text-sm font-bold rounded-xl luxe-skin-button">OK</button>
+                    <div className="px-4 pt-2">
+                        <div className="mx-auto max-w-[15.75rem] text-center space-y-1">
+                            <div className="text-[10px] font-black tracking-[0.28em] text-white/45 uppercase">Estacoes</div>
+                            <h2 className="text-base font-black uppercase tracking-[0.14em] text-center">Tutoriais</h2>
+                            <p className="text-[11px] text-white/55 leading-snug">
+                                No basico voce revisita os cards 1 e 2. Ativando o Modo Jogo em Preferências, entram os cards 3 e 4 com progresso, mundo e metajogo.
+                            </p>
+                        </div>
                     </div>
-                </div>
-                <TutorialSettings onStart={onClose} />
-            </GlassCard>
-        </div>
-    </Portal>
-);
+                    <TutorialSettings onStart={onClose} onRequestModeGame={handleRequestModeGame} />
+                </GlassCard>
+            </div>
+        </Portal>
+    );
+};
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -1250,7 +1269,7 @@ const NobrezaHierarchyView: React.FC = () => {
 };
 
 const GeralTab: React.FC = () => {
-    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets, installPrompt, promptInstall, appMode, setAppMode, activeTheme, toggleTheme, showToast } = useGame();
+    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets, installPrompt, promptInstall, showToast } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
     const [isHierarchyVisible, setIsHierarchyVisible] = useState(false);
@@ -1354,33 +1373,35 @@ const GeralTab: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            {/* APP MODE SELECTOR */}
+            {/* Legacy mode-game block removed
             <GlassCard variant="neutral" className="p-4 space-y-4">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Modo de Operação</h3>
-                    <div className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-gray-300 font-mono">EXPERIMENTAL</div>
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Modo Jogo</h3>
+                    <div className={`text-[10px] px-2 py-0.5 rounded font-mono ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-white/10 text-gray-300'}`}>{appMode === 'GAME' ? 'LIGADO' : 'DESLIGADO'}</div>
                 </div>
+                <p className="text-[11px] leading-relaxed text-gray-500">O core fica sempre ligado. O Modo Jogo adiciona quests, patentes, baús, inventário, Hall da Fama e soberano.</p>
 
                 <div className="flex gap-2">
                     <button
-                        onClick={() => setAppMode('GAME')}
-                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden group ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_var(--sephirot-glow-color)] ring-1 ring-white/20' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
+                        onClick={() => setAppMode('BASIC')}
+                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden group ${appMode === 'BASIC' ? 'bg-white text-black shadow-lg ring-1 ring-white/50' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
                     >
                         <div className="relative z-10 flex flex-col items-center">
                             <span className="text-xl mb-1">🎮</span>
-                            <span className="text-xs tracking-widest">GAME</span>
+                            <span className="text-xs tracking-widest">DESLIGADO</span>
                         </div>
-                        {appMode === 'GAME' && <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none" />}
+                        {appMode === 'BASIC' && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
                     </button>
 
                     <button
-                        onClick={() => setAppMode('BASIC')}
-                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden ${appMode === 'BASIC' ? 'bg-white text-black shadow-lg ring-1 ring-white/50' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
+                        onClick={() => setAppMode('GAME')}
+                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_var(--sephirot-glow-color)] ring-1 ring-white/20' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
                     >
                         <div className="relative z-10 flex flex-col items-center">
                             <span className="text-xl mb-1">💼</span>
-                            <span className="text-xs tracking-widest">BÁSICO</span>
+                            <span className="text-xs tracking-widest">LIGADO</span>
                         </div>
+                        {appMode === 'GAME' && <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none" />}
                     </button>
                 </div>
 
@@ -1388,7 +1409,7 @@ const GeralTab: React.FC = () => {
                     <div className="flex justify-between items-center mb-2">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Tema Visual</h4>
                         <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
-                            {appMode === 'GAME' ? 'Game' : 'Basico'}
+                            {activeTheme === 'LIGHT' ? 'Light' : 'Dark'}
                         </span>
                     </div>
                     <div className="flex gap-2 p-1 bg-black/20 rounded-lg mb-4">
@@ -1407,6 +1428,7 @@ const GeralTab: React.FC = () => {
                     </div>
                 </div>
             </GlassCard>
+            */}
 
             <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group shadow-[0_0_20px_var(--sephirot-glow-color-soft)]" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color,rgba(0,0,0,0))] to-black/60 pointer-events-none" />
@@ -1569,9 +1591,11 @@ const GeralTab: React.FC = () => {
 };
 
 const PreferenciasTab: React.FC = () => {
-    const { userProfile, oraclePreferences, updateUserProfile } = useGame();
+    const { userProfile, oraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
+    const [highlightModeGame, setHighlightModeGame] = useState(false);
+    const modeGameRef = useRef<HTMLDivElement | null>(null);
     const normalizeAssetsVisibilityOption = (value?: ProfileVisibilityScope): ProfileVisibilityOption => {
         if (value === 'all' || value === 'friends' || value === 'nobody') return value;
         return 'nobody';
@@ -1615,6 +1639,17 @@ const PreferenciasTab: React.FC = () => {
         setMasteryVisibility(normalizeMasteryVisibilityOption(userProfile.masteryVisibility));
     }, [userProfile.assetsVisibility, userProfile.masteryVisibility]);
 
+    useEffect(() => {
+        const handleFocusModeGame = () => {
+            modeGameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setHighlightModeGame(true);
+            window.setTimeout(() => setHighlightModeGame(false), 1800);
+        };
+
+        window.addEventListener('tutorialFocusModeGame', handleFocusModeGame);
+        return () => window.removeEventListener('tutorialFocusModeGame', handleFocusModeGame);
+    }, []);
+
     const handleAssetsVisibilityChange = (value: ProfileVisibilityOption) => {
         setAssetsVisibility(value);
         updateUserProfile({ assetsVisibility: value });
@@ -1632,6 +1667,69 @@ const PreferenciasTab: React.FC = () => {
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>
                 <div className="space-y-2">
                     <SettingSelector label="Termos e Condições" value={termsStatus} onClick={() => window.dispatchEvent(new CustomEvent('openTermsOverlay'))} />
+                    <div
+                        id="mode-game-toggle"
+                        ref={modeGameRef}
+                        className={`transition-all duration-300 ${highlightModeGame ? 'scale-[1.01]' : ''}`}
+                    >
+                        <GlassCard
+                            variant="neutral"
+                            className={`p-4 space-y-4 ${highlightModeGame ? 'ring-1 ring-[var(--skin-accent-color)] shadow-[0_0_24px_var(--sephirot-glow-color-soft)]' : ''}`}
+                        >
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Modo Jogo</h3>
+                                <div className={`text-[10px] px-2 py-0.5 rounded font-mono ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-white/10 text-gray-300'}`}>{appMode === 'GAME' ? 'LIGADO' : 'DESLIGADO'}</div>
+                            </div>
+                            <p className="text-[11px] leading-relaxed text-gray-500">O core fica sempre ligado. O Modo Jogo adiciona quests, patentes, baus, inventario, Hall da Fama e soberano.</p>
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setAppMode('BASIC')}
+                                    className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden group ${appMode === 'BASIC' ? 'bg-white text-black shadow-lg ring-1 ring-white/50' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
+                                >
+                                    <div className="relative z-10 flex flex-col items-center">
+                                        <span className="text-xl mb-1">OFF</span>
+                                        <span className="text-xs tracking-widest">DESLIGADO</span>
+                                    </div>
+                                    {appMode === 'BASIC' && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
+                                </button>
+
+                                <button
+                                    onClick={() => setAppMode('GAME')}
+                                    className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_var(--sephirot-glow-color)] ring-1 ring-white/20' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
+                                >
+                                    <div className="relative z-10 flex flex-col items-center">
+                                        <span className="text-xl mb-1">ON</span>
+                                        <span className="text-xs tracking-widest">LIGADO</span>
+                                    </div>
+                                    {appMode === 'GAME' && <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none" />}
+                                </button>
+                            </div>
+
+                            <div className="pt-3 border-t border-white/5 animate-fade-in">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Tema Visual</h4>
+                                    <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
+                                        {activeTheme === 'LIGHT' ? 'Light' : 'Dark'}
+                                    </span>
+                                </div>
+                                <div className="flex gap-2 p-1 bg-black/20 rounded-lg">
+                                    <button
+                                        onClick={() => activeTheme !== 'LIGHT' && toggleTheme()}
+                                        className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'LIGHT' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                                    >
+                                        LIGHT
+                                    </button>
+                                    <button
+                                        onClick={() => activeTheme !== 'DARK' && toggleTheme()}
+                                        className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'DARK' ? 'bg-slate-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                                    >
+                                        DARK
+                                    </button>
+                                </div>
+                            </div>
+                        </GlassCard>
+                    </div>
                     <SettingSelector label="Tutoriais" value={tutorialStatus} onClick={() => setModal('tutorial')} />
                     <SettingSelector label="Privacidade" value="Abrir" onClick={() => window.open(LEGAL_PRIVACY_URL_PLACEHOLDER, '_blank', 'noopener,noreferrer')} />
                     <div id="oracle-preferences-setting">

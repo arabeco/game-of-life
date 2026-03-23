@@ -1,10 +1,61 @@
 import { TutorialStep } from '../types';
 
+export const TUTORIAL_SECTIONS = [
+    {
+        id: 1,
+        name: 'Alicerce',
+        subtitle: 'Arenas e campanhas do core',
+        flag: 'tutorial_level_1_completed',
+        badge: 'BRONZE',
+        accent: 'from-[#c98a62] via-[#c98a62]/24 via-70% to-transparent',
+        glow: 'rgba(197,138,99,0.12)',
+        startIndex: 1,
+        endIndex: 2,
+        gameOnly: false,
+    },
+    {
+        id: 2,
+        name: 'Operacao',
+        subtitle: 'Planner, ciclo e SITREP',
+        flag: 'tutorial_level_2_completed',
+        badge: 'PRATA',
+        accent: 'from-[#9fb4c8] via-[#9fb4c8]/22 via-70% to-transparent',
+        glow: 'rgba(166,181,199,0.12)',
+        startIndex: 3,
+        endIndex: 5,
+        gameOnly: false,
+    },
+    {
+        id: 3,
+        name: 'Modo Jogo: Progresso',
+        subtitle: 'Patentes, maestria e perfil',
+        flag: 'tutorial_level_3_completed',
+        badge: 'OURO',
+        accent: 'from-[#e4bc57] via-[#e4bc57]/24 via-70% to-transparent',
+        glow: 'rgba(240,215,135,0.12)',
+        startIndex: 6,
+        endIndex: 9,
+        gameOnly: true,
+    },
+    {
+        id: 4,
+        name: 'Modo Jogo: Mundo',
+        subtitle: 'Grupos, vinculos e metajogo',
+        flag: 'tutorial_level_4_completed',
+        badge: 'PREMIUM',
+        accent: 'from-[#9b7af2] via-[#9b7af2]/24 via-70% to-transparent',
+        glow: 'rgba(179,140,255,0.12)',
+        startIndex: 10,
+        endIndex: 16,
+        gameOnly: true,
+    },
+] as const;
+
 export const TUTORIAL_STEPS: TutorialStep[] = [
     {
         category: 'INTRO',
         title: 'BEM-VINDO AO GLYPH',
-        text: 'Eu sou o Oraculo. Estes 4 cards explicam o sistema no seu ritmo.\n\nO primeiro funciona como uma visao geral do core loop para revisitar depois do onboarding.',
+        text: 'Eu sou o Oraculo. Estes 4 cards explicam o sistema no seu ritmo.\n\nOs cards 1 e 2 cobrem o core. Quando quiser a camada extra, o Modo Jogo libera os cards 3 e 4.',
         view: 'arenas',
         targetId: 'nav-arenas',
     },
@@ -72,23 +123,23 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     {
         category: 'IDENTIDADE',
         title: '09. PREFERENCIAS',
-        text: 'Aqui voce ajusta o tom da experiencia. O sistema pode ficar mais limpo, mais game ou mais assistido, do jeito que fizer sentido para voce.',
+        text: 'Aqui voce ajusta o tom da experiencia. O core segue igual; o Modo Jogo liga quests, patentes, baus, inventario, Hall da Fama e soberano.',
         view: 'settings',
         tab: 'Preferências',
-        targetId: 'nav-settings',
+        targetId: 'mode-game-toggle',
     },
 
     {
         category: 'MUNDO',
         title: '10. MUNDO SOCIAL',
-        text: 'No terceiro card o sistema deixa de ser so seu. Entram aliados, clãs, quests e outras camadas de mundo.',
+        text: 'No quarto card o sistema deixa de ser so seu. Aqui entram grupos, vinculos e a camada compartilhada do GLYPH. Com o Modo Jogo ligado, esse mundo tambem ganha quests e outras trilhas de metajogo.',
         view: 'social',
         targetId: 'nav-mundo',
     },
     {
         category: 'MUNDO',
         title: '11. VINCULOS',
-        text: 'Vinculos abrem mentoria, parceria e observacao. Agora um mentor tambem pode passar um Codex autoral para o pupilo ou criar um na hora para ele.',
+        text: 'Vinculos abrem mentoria, parceria e observacao. Agora um mentor tambem pode passar uma campanha autoral para o pupilo ou montar uma na hora para ele.',
         view: 'settings',
         tab: 'Premium',
         targetId: 'links-button',
@@ -103,15 +154,15 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 
     {
         category: 'ARQUITETO',
-        title: '13. CODEX',
-        text: 'No quarto card voce para de so usar estrutura e comeca a criar estrutura. Codex transforma metodo em campanha reutilizavel.',
+        title: '13. BIBLIOTECA',
+        text: 'Aqui ficam as campanhas autorais e outras estruturas reutilizaveis. E onde metodo pronto vira material vivo para reaplicar, adaptar e compartilhar.',
         view: 'settings',
         tab: 'Premium',
         targetId: 'codex-button',
     },
     {
         category: 'ARQUITETO',
-        title: '14. CAMPANHAS MAIORES',
+        title: '14. CAMPANHAS',
         text: 'Campanhas juntam fases, arenas e progresso em jornadas longas. E assim que projetos grandes ficam legiveis sem virar caos.',
         view: 'settings',
         tab: 'Premium',
@@ -119,7 +170,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     },
     {
         category: 'ARQUITETO',
-        title: '15. IA E OPERACAO',
+        title: '15. ASSISTENTE E IA',
         text: 'Aqui entram as camadas mais avancadas: assistente, estruturas de operacao e recursos para escalar o sistema junto com voce.',
         view: 'settings',
         tab: 'Premium',
@@ -128,7 +179,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     {
         category: 'ARQUITETO',
         title: 'TUTORIAL CONCLUIDO',
-        text: 'Para comecar bem, lembre so do essencial: Arena, Planner, Ciclo e SITREP.\n\nO resto existe para expandir quando sua base ja estiver firme.',
+        text: 'Para comecar bem, lembre so do essencial: Arena, Planner, Ciclo e SITREP.\n\nOs cards 1 e 2 cobrem o core. Em Configuracoes > Preferencias, voce ativa o Modo Jogo para liberar tambem os cards 3 e 4.',
         view: 'planner',
         targetId: 'sitrep-button',
     },

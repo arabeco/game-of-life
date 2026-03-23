@@ -225,8 +225,8 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                 <div className="max-w-7xl mx-auto relative flex items-center justify-between h-[76px] px-4 text-xs font-semibold text-gray-300">
                     {/* Date Chip */}
                     <div className={chipStyle}>
-                        <span className="text-[10px] font-semibold tracking-[0.12em] text-[var(--skin-accent-color)] uppercase leading-none mb-0.5">{day}</span>
-                        <span className="text-[12px] font-semibold text-[var(--skin-accent-color)] tracking-[0.08em] leading-none">{dateStr}</span>
+                        <span className="shell-chip-label text-[10px] font-semibold tracking-[0.12em] uppercase leading-none mb-0.5">{day}</span>
+                        <span className="shell-chip-value text-[12px] font-semibold tracking-[0.08em] leading-none">{dateStr}</span>
                     </div>
                     
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[calc(100%-12rem)] flex items-center justify-center pointer-events-none">
@@ -256,10 +256,10 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                 <button
                                     id="lock-icon-button"
                                     onClick={() => setRestScreenOpen(true)}
-                                    className="shell-float-button absolute right-full mr-2 group border border-[var(--skin-accent-color)]/30 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.12),rgba(0,0,0,0.82))] shadow-[0_0_18px_rgba(212,175,55,0.22)] hover:shadow-[0_0_24px_rgba(212,175,55,0.32)]"
+                                    className="shell-float-button absolute right-full mr-2 group"
                                     aria-label="Tela de Descanso"
                                 >
-                                    <LockIcon className="w-4 h-4 text-[var(--skin-accent-color)] group-hover:text-white transition-colors drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
+                                    <LockIcon className="shell-float-icon w-4 h-4 group-hover:text-white transition-colors drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
                                 </button>
 
                                 <button onClick={onProfileClick} className="flex flex-col items-center relative group flex-shrink-0" id="nobility-badge">
@@ -290,7 +290,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         )}
                                     </div>
                                     <div className="shell-level-badge absolute top-[3.3rem] z-[60] group-hover:scale-110" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
-                                        <span className="text-[11px] font-black text-white">{userProfile.level}</span>
+                                        <span className="shell-level-text text-[11px] font-black">{userProfile.level}</span>
                                     </div>
                                 </button>
 
@@ -301,7 +301,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                     className={`shell-float-button absolute left-full ml-2 group ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
                                     aria-label="Oracle Assistant"
                                 >
-                                    <SparklesIcon className={`w-5 h-5 transition-all ${hasUnread ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'text-amber-200/80 group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'}`} />
+                                    <SparklesIcon className={`shell-oracle-icon w-5 h-5 transition-all ${hasUnread ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'}`} />
                                     {unreadNotificationsCount > 0 && (
                                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border border-black">
                                             <span className="text-[9px] font-bold text-white">{unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}</span>
@@ -320,7 +320,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
                     {/* Time Chip */}
                     <div className={chipStyle}>
-                        <span className="text-[15px] font-semibold tracking-[0.08em] text-[var(--skin-accent-color)] leading-none">{timeStr}</span>
+                        <span className="shell-chip-time text-[15px] font-semibold tracking-[0.08em] leading-none">{timeStr}</span>
                     </div>
                 </div>
             </header>

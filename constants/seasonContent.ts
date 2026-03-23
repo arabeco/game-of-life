@@ -64,11 +64,11 @@ export const ACTIVE_SEASON_ID = 'season-genesis-0';
 
 export const GENESIS_FOUNDER_REWARD_WINDOW: SeasonRewardWindow = {
   title: 'Marca de fundador',
-  summary: 'Quem entrou durante a abertura da Season 0 carregou a marca da Primeira Era e garantiu os cosmeticos de Genesis.',
+  summary: 'Quem entrou durante a abertura da Temporada 0 carregou a marca da Primeira Era e garantiu os cosmeticos de Genesis.',
   rewardLabels: ['Skin O Criador', 'Borda Genesis'],
   rewardItemIds: ['item_skin_season_001', 'item_border_genesis_01'],
   eligibilityDeadline: '2026-03-20',
-  eligibilityRule: 'Disponivel apenas para contas que entrarem dentro da janela da Season 0 - Genesis.',
+  eligibilityRule: 'Disponivel apenas para contas que entrarem dentro da janela da Temporada 0 - Genesis.',
 };
 
 export const AURORA_I_LAUNCH_HIGHLIGHTS: SeasonLaunchHighlights = {
@@ -124,7 +124,7 @@ export const ERA_CALENDAR: EraCalendarYear[] = [
 export const SEASONS: Record<string, SeasonConfig> = {
   'season-genesis-0': {
     id: 'season-genesis-0',
-    name: 'Season 0 - Genesis',
+    name: 'Temporada 0 - Genesis',
     description: 'A primeira abertura do GLYPH. Quem entrou a tempo carregou a marca da Primeira Era.',
     backgroundUrl: `${ROOT_IMAGES_URL}/season_genesis.jpg`,
     startDate: '2025-12-21',
@@ -133,15 +133,15 @@ export const SEASONS: Record<string, SeasonConfig> = {
     rewardWindow: GENESIS_FOUNDER_REWARD_WINDOW,
     archiveLog: {
       seasonId: 'season-genesis-0',
-      label: 'Season 0 - Genesis',
+      label: 'Temporada 0 - Genesis',
       status: 'legacy',
       summary: 'Primeiro marco vivo do GLYPH. Abriu a Primeira Era e reservou a marca de fundador para quem entrou dentro da janela.',
       rewardWindow: GENESIS_FOUNDER_REWARD_WINDOW,
     },
-    celebrationTitle: 'Season 0 encerrada',
+    celebrationTitle: 'Temporada 0 encerrada',
     celebrationSummary: 'Genesis fechou como marco fundador do GLYPH. Obrigado por atravessar a primeira abertura.',
     launchTitle: 'Primeira Era iniciada',
-    launchSummary: 'A trilha oficial das Seasons comeca agora. Novas quests e cosmeticos vao nascer sobre essa base.',
+    launchSummary: 'A trilha oficial das Temporadas comeca agora. Novas quests e cosmeticos vao nascer sobre essa base.',
     quests: [
       {
         id: 'quest-wanderer',
@@ -187,9 +187,9 @@ export const SEASONS: Record<string, SeasonConfig> = {
     endDate: '2026-06-21',
     theme: 'aurora',
     celebrationTitle: 'Aurora I concluida',
-    celebrationSummary: 'A primeira Season oficial da Primeira Era fecha sua trilha de abertura.',
+    celebrationSummary: 'A primeira Temporada oficial da Primeira Era fecha sua trilha de abertura.',
     launchTitle: 'Aurora I',
-    launchSummary: 'A nova Season entra em campo com cosmeticos, quests e recompensas proprias.',
+    launchSummary: 'A nova Temporada entra em campo com cosmeticos, quests e recompensas proprias.',
     launchHighlights: AURORA_I_LAUNCH_HIGHLIGHTS,
     launchRewardItemIds: ['insignia_season_aurora_1'],
     launchRewardToast: 'Insignia Aurora I integrada ao inventario.',
@@ -206,7 +206,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
     celebrationTitle: 'Zenite I concluida',
     celebrationSummary: 'O pico da Primeira Era foi encerrado com a leitura do que subiu e do que resistiu.',
     launchTitle: 'Zenite I',
-    launchSummary: 'A nova Season entra com sua propria identidade, quests e pool de recompensas.',
+    launchSummary: 'A nova Temporada entra com sua propria identidade, quests e pool de recompensas.',
     quests: EMPTY_SEASON_QUESTS,
   },
   'season-eclipse-1-2026': {
@@ -220,7 +220,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
     celebrationTitle: 'Eclipse I concluida',
     celebrationSummary: 'A travessia de sombra da Primeira Era terminou. O sistema sobreviveu ao estreitamento.',
     launchTitle: 'Eclipse I',
-    launchSummary: 'A nova Season abre um periodo de contraste, disciplina e consolidacao.',
+    launchSummary: 'A nova Temporada abre um periodo de contraste, disciplina e consolidacao.',
     quests: EMPTY_SEASON_QUESTS,
   },
   'season-egide-1-2026': {
@@ -234,7 +234,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
     celebrationTitle: 'Egide I concluida',
     celebrationSummary: 'O fechamento da Primeira Era foi concluido. O GLYPH entra maduro na Segunda Era.',
     launchTitle: 'Egide I',
-    launchSummary: 'A nova Season sela o fechamento anual com trilha propria de recompensas.',
+    launchSummary: 'A nova Temporada sela o fechamento anual com trilha propria de recompensas.',
     quests: EMPTY_SEASON_QUESTS,
   },
   'season-aurora-2-2027': {

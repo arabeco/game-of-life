@@ -2291,6 +2291,37 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const activeRuntimeSeasonId = activeRuntimeSeason?.id || ACTIVE_SEASON_ID;
     const activeRuntimeSeasonConfig = SEASONS[activeRuntimeSeasonId] || null;
 
+    useEffect(() => {
+        if (!activeRuntimeSeason) return;
+
+        setSeasons((prev) => {
+            const hasResolvedSeason = prev.some((season) => season.id === activeRuntimeSeason.id);
+            const nextSeasons = prev.map((season) => ({
+                ...season,
+                is_active: season.id === activeRuntimeSeason.id,
+            }));
+
+            if (!hasResolvedSeason) {
+                nextSeasons.push({ ...activeRuntimeSeason, is_active: true });
+            }
+
+            const isSameLength = nextSeasons.length === prev.length;
+            const isSameContent = isSameLength && nextSeasons.every((season, index) => {
+                const previous = prev[index];
+                return previous
+                    && previous.id === season.id
+                    && previous.is_active === season.is_active
+                    && previous.name === season.name
+                    && previous.start_date === season.start_date
+                    && previous.end_date === season.end_date
+                    && previous.background_png_url === season.background_png_url
+                    && previous.lore_text === season.lore_text;
+            });
+
+            return isSameContent ? prev : nextSeasons;
+        });
+    }, [activeRuntimeSeason]);
+
     const seasonQuests = useMemo(() => {
         // Default quests from constant
         let quests: SeasonQuest[] = [];
@@ -8048,17 +8079,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const mapClanCreateErrorMessage = (message?: string) => {
         switch (message) {
             case 'AUTH_REQUIRED':
-                return 'Voce precisa estar autenticado para criar um cla.';
+                return 'Voce precisa estar autenticado para criar um grupo.';
             case 'CLAN_NAME_REQUIRED':
-                return 'O nome do cla nao pode ficar vazio.';
+                return 'O nome do grupo nao pode ficar vazio.';
             case 'CLAN_ALREADY_JOINED':
-                return 'Voce ja participa de um cla.';
+                return 'Voce ja participa de um grupo.';
             case 'CLAN_NAME_ALREADY_EXISTS':
-                return 'Ja existe um cla com esse nome.';
+                return 'Ja existe um grupo com esse nome.';
             case 'Saldo insuficiente de Ouro.':
-                return `Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um cla.`;
+                return `Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`;
             default:
-                return 'Nao foi possivel criar o cla.';
+                return 'Nao foi possivel criar o grupo.';
         }
     };
 
@@ -8067,12 +8098,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) {
             console.error("User not authenticated");
-            showToast('Voce precisa estar autenticado para criar um cla.', 'error');
+            showToast('Voce precisa estar autenticado para criar um grupo.', 'error');
             return false;
         }
 
         if ((userProfile.wallet?.gold || 0) < GOLD_CLAN_CREATION_COST) {
-            showToast(`Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um cla.`, 'error');
+            showToast(`Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`, 'error');
             return false;
         }
 
@@ -8095,7 +8126,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const clanId = createdClan?.id;
 
         if (!clanId) {
-            showToast('Nao foi possivel confirmar a criacao do cla.', 'error');
+            showToast('Nao foi possivel confirmar a criacao do grupo.', 'error');
             return false;
         }
 
@@ -8107,7 +8138,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         await loadClanAndMembers(clanId, true);
-        showToast(`Cla criado com sucesso. ${GOLD_CLAN_CREATION_COST} ouro debitados.`, 'success');
+        showToast(`Grupo criado com sucesso. ${GOLD_CLAN_CREATION_COST} ouro debitados.`, 'success');
         return true;
     };
 

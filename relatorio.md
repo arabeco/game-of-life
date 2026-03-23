@@ -1,5 +1,5 @@
 ============================================================
-           GLYPH: MASTER SYSTEM STATE (22/03/26)
+           GLYPH: MASTER SYSTEM STATE (23/03/26)
 ============================================================
 STATUS: [X] ALPHA  |  [ ] BETA  |  [ ] LIVE
 FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
@@ -12,24 +12,24 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 - Trilha oficial do Marco 1: `T1 Fundacao -> T2 O Cerco -> T3 A Ascensao`.
 
 ## 2. SCORECARD DE AUDITORIA
-- **EXECUCAO REAL: 9.7** (Build/Type-check ok. Economia social sem slots aplicada, board de Grupo mais operacional e `ArenasView` blindada no mobile).
-- **ID VISUAL: 9.6** (Miniaturas/lista de arenas, Grupo e Legado mais coerentes no padrao luxe).
-- **FLUXO USUARIO: 9.6** (ArenasView mais util, Grupo menos hibrido e camada social mais simples. Pendente: `e-mail/Convite`, QA em `2 contas` e D2).
+- **EXECUCAO REAL: 9.8** (Build/Type-check ok. `Ativos`, `Modo Jogo` e tutorial passaram por uma rodada estrutural sem quebrar o core).
+- **ID VISUAL: 9.7** (Tela de `Ativos` ficou mais painel e menos cena, com leitura melhor em dark/light e palette por ativo mais coerente).
+- **FLUXO USUARIO: 9.7** (Onboarding/tutoriais agora conversam com `Modo Jogo`, sem escolha inicial de modo. Pendente: QA real de onboarding, `e-mail/Convite` e D2).
 - **RETENCAO: --** (Aguardando Beta)
 - **AQUISICAO: --** (Aguardando Videos)
 
 ## 3. STATUS DE ENTREGA (CONCLUIDO NESTE CICLO)
-[v] Fechar o laboratorio de notificacoes do GM com 3 botoes previsiveis (`Sistema Agora`, `Card do Oraculo`, `Sistema + Push 15s`) e destaque correto em `Avisos`/Oraculo. - Responsavel: PROTOCOLO
-[v] Validar o PIX real do Mercado Pago ate o credito de ouro na conta, com QR funcional, status em pt-BR, toast de sucesso e fechamento automatico apos a aprovacao. - Responsavel: PROTOCOLO
-[v] Adicionar atalho por `hold` da `Checklist` na `RestScreen`, abrindo a lista por cima da tela de descanso e zerando no reset operacional das `04:00`. - Responsavel: PROTOCOLO
-[v] Subir `Humor` + `Rascunho operacional` na `RestScreen`, com salvamento por dia operacional em `daily_commitments.operational_scratch`. - Responsavel: PROTOCOLO
-[x] Desligar a economia de `slots` e consolidar a camada social em Ouro direto (`Mentoria 100`, `Parceria 50`, `Competicao 50`, arena extra `50`), com SQL aplicado e copy publica puxada para `Campanha`/`Grupo`. - Responsavel: PROTOCOLO
-[x] Integrar `Tarefas do grupo` ao board oficial de arenas: quest/tarefa aceita vira arena real, abre `ArenaDetailModal` e limpa participacao/arena vazia no retorno. - Responsavel: PROTOCOLO
-[x] Entregar o `modo lista` da `ArenasView`, restaurar o scroll vertical mobile e preservar reorder em `Livre/Prioridades`, com expandir de todas as acoes por arena. - Responsavel: PROTOCOLO
-[x] Lapidar a visualizacao compacta das arenas no mobile: card achatado, tipografia/icone ajustados, badge do ativo nos circulos e limpeza do modulo `Grupo`/copy publica residual. - Responsavel: PROTOCOLO
+[v] Desligar a economia de `slots` e consolidar a camada social em Ouro direto (`Mentoria 100`, `Parceria 50`, `Competicao 50`, arena extra `50`), com SQL aplicado e copy publica puxada para `Campanha`/`Grupo`. - Responsavel: PROTOCOLO
+[v] Integrar `Tarefas do grupo` ao board oficial de arenas: quest/tarefa aceita vira arena real, abre `ArenaDetailModal` e limpa participacao/arena vazia no retorno. - Responsavel: PROTOCOLO
+[v] Entregar o `modo lista` da `ArenasView`, restaurar o scroll vertical mobile e preservar reorder em `Livre/Prioridades`, com expandir de todas as acoes por arena. - Responsavel: PROTOCOLO
+[v] Lapidar a visualizacao compacta das arenas no mobile: card achatado, tipografia/icone ajustados, badge do ativo nos circulos e limpeza do modulo `Grupo`/copy publica residual. - Responsavel: PROTOCOLO
+[v] Reestruturar a tela de `Ativos` como painel operacional: resumo fino do ciclo, cards por ativo nas posicoes oficiais, barrinhas finas de progresso, tint sutil por ativo e leitura melhor em dark/light. - Responsavel: PROTOCOLO
+[v] Iniciar a convergencia publica `GAME/BASIC -> Modo Jogo`: nave unificada, `Ativos` voltando para todos, perfil em `Resumo/Widgets/Maestria` e `Modo Jogo` centralizado em `Preferencias`. - Responsavel: PROTOCOLO
+[v] Revisar onboarding e tutoriais para o novo modelo `core + Modo Jogo`, com cards `1/2` no basico, cards `3/4` ligados ao toggle, copy alinhada e checagem final de anchors, `type-check` e `build`. - Responsavel: PROTOCOLO
 
 ## 4. MATRIZ DE EXECUCAO (PENDENCIAS & PRIORIDADES)
 ### COMANDO (METAS IMEDIATAS & DONO)
+[ ] Rodar QA completo do onboarding sem seletor inicial de modo: validar fim do onboarding, `Tutoriais` 1/2 no basico, ativacao de `Modo Jogo` em `Preferencias` e desbloqueio correto dos cards 3/4. - Responsavel: SENTINELA
 [ ] Rodar o QA final da `Mentoria basica` em `2 contas`: convite, aceite, recusa, revogacao, refund, abertura da relacao, arena extra por `50 ouro` e campanha exclusiva por `100 ouro`, sem slots. - Responsavel: SENTINELA
 [ ] Validar `Solicitacoes` no Social com amizade + vinculo no mesmo lugar, badge de relacao no card do amigo e notificacao/push coerentes no fluxo. - Responsavel: SENTINELA
 [ ] Fechar a conta nova real restante: ramo `e-mail/Convite` e primeiro retorno `D2` sem ruido. - Responsavel: TRONO
@@ -40,6 +40,7 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Analisar dados reais de Ativacao, D2 e % de Ciclos para validar a entrada da Primeira Linhagem.
 
 ### PROTOCOLO (Integridade & Codigo)
+[ ] Fechar a convergencia final do `Modo Jogo`: empacotar o metajogo num toggle unico, esconder o que for pacote game e limpar os ramos legados `GAME/BASIC` que ainda sobraram no codigo. - Responsavel: PROTOCOLO
 [ ] Fechar o teste real de e-mail via GM Panel e isolar o erro exato se a entrega nao chegar. - Responsavel: PROTOCOLO
 [ ] Concluir a ultima passada de pt-BR residual e acabamento fino do cadastro manual apos o novo ritual de Termos pos-login. - Responsavel: PROTOCOLO
 
@@ -79,9 +80,9 @@ Monitor complementar:
 [ ] Friccao mobile critica (P0/P1): 0/0
 
 ## 7. RESUMO ATUALIZADO
-- Data: 22/03/2026
+- Data: 23/03/2026
 - Atualizado por: GPT-5 Codex
-- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e o fechamento de 22/03 consolidou a frente estrutural do produto: camada social convertida para Ouro direto sem slots, `Clã -> Grupo` puxado para o board oficial de arenas, `Tarefas do grupo` virando arenas reais e `ArenasView` ficando mais operacional com scroll mobile restaurado, modo lista e miniaturas compactas melhores. O foco seguinte ficou claro: QA real da mentoria em `2 contas`, validacao de `Solicitacoes`, prova real do ramo `e-mail/Convite`, GM Panel/e-mail e a ultima passada de polimento mobile/Season.
+- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e o fechamento de 23/03 puxou a experiencia para um trilho mais unificado: a tela de `Ativos` virou painel operacional com resumo do ciclo e cards por ativo, a convergencia publica `GAME/BASIC -> Modo Jogo` comecou a tomar forma em `Preferencias`, o perfil foi reorganizado e o onboarding/tutoriais passaram a ensinar `core primeiro` e `Modo Jogo depois`. O foco seguinte ficou claro: QA real do novo onboarding sem seletor de modo, QA da mentoria em `2 contas`, validacao de `Solicitacoes`, prova real do ramo `e-mail/Convite` e a ultima rodada de limpeza do pacote `Modo Jogo`.
 - Texto do relatorio: atualizado a cada fechamento.
 
 ## 8. MODO DE USO DO RELATORIO
@@ -106,11 +107,13 @@ Monitor complementar:
 12. So converter `[x]` em `[v]` e mover `[v]` para `progresso.md` quando eu pedir claramente para `fechar o dia`, `fechar ciclo` ou equivalente.
 
 ## 9. BLOQUEIOS ATUAIS (ABERTOS)
+[ ] O novo trilho de onboarding/tutorial ainda pede QA ponta a ponta sem seletor inicial de modo, incluindo a liberacao dos cards 3/4 via `Modo Jogo`.
 [ ] Mentoria basica ainda pede a rodada final em `2 contas`, com refund, arena extra `50 ouro`, campanha `100 ouro` e leitura da relacao no Social.
 [ ] Conta nova real ainda pede fechamento do ramo `e-mail/Convite` e prova do primeiro retorno `D2`.
 [ ] GM Panel ainda pede prova real de entrega de e-mail.
 [ ] Acabamento final mobile ainda pede ultima passada em `Season`, `Genesis/Aurora`, pt-BR residual e hierarquia visual.
 [ ] Economia social agora pede validacao em uso real para garantir que o modelo de Ouro direto segure sem reintroduzir slot ou micro-regra.
+[ ] A convergencia final de `Modo Jogo` ainda pede esconder todo o pacote de metajogo por um unico toggle e remover o resto dos branches legados.
 
 Legenda rapida:
 - `[ ]` = pendente

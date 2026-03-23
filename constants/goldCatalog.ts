@@ -81,7 +81,7 @@ export const GOLD_CODEX_CATALOG = [
 ] as const;
 
 export const GOLD_MECHANIC_CATALOG = [
-    { id: 'create_clan', name: 'Criar cla', priceGold: GOLD_CLAN_CREATION_COST, source: 'sql' },
+    { id: 'create_clan', name: 'Criar grupo', priceGold: GOLD_CLAN_CREATION_COST, source: 'sql' },
     { id: 'relationship_invite_mentoria', name: 'Convite de mentoria', priceGold: 100, source: 'sql' },
     { id: 'relationship_invite_parceria', name: 'Convite de parceria', priceGold: 50, source: 'sql' },
     { id: 'relationship_invite_competicao', name: 'Convite de competicao', priceGold: 50, source: 'sql' },

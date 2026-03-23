@@ -1,8 +1,12 @@
 ﻿# PROGRESSO HISTORICO: GLYPH
-Data de consolidacao: 19/03/2026
+Data de consolidacao: 23/03/2026
 Fonte: itens [v] removidos do relatorio operacional
 
 ## Entregas consolidadas
+[v] Fechar o laboratorio de notificacoes do GM com 3 botoes previsiveis (`Sistema Agora`, `Card do Oraculo`, `Sistema + Push 15s`) e destaque correto em `Avisos`/Oraculo.
+[v] Validar o PIX real do Mercado Pago ate o credito de ouro na conta, com QR funcional, status em pt-BR, toast de sucesso e fechamento automatico apos a aprovacao.
+[v] Adicionar atalho por `hold` da `Checklist` na `RestScreen`, abrindo a lista por cima da tela de descanso e zerando no reset operacional das `04:00`.
+[v] Subir `Humor` + `Rascunho operacional` na `RestScreen`, com salvamento por dia operacional em `daily_commitments.operational_scratch`.
 [v] Reconstruir a `Central de Vinculos` em formato compacto por tipo, empurrando arenas e campanhas para dentro da mentoria e levando convites de vinculo para `Solicitacoes` no Social.
 [v] Lapidar a projecao final do `Legado` para vitrine mobile: navegacao manual, cena final, HUD mais discreto, PWA fullscreen e preset aprovado travado na composicao.
 [v] Publicar e validar em `app.glyph.life` o pacote atual de Login/Codex/Mentoria/Planner/Vinculos e fechar o smoke real consolidado no celular.

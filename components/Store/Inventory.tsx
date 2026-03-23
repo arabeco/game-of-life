@@ -137,7 +137,7 @@ export const Inventory: React.FC = () => {
         if (normalized === 'raro' || normalized === 'radiante') return 'RARO';
         if (normalized === 'ciclo') return 'CICLO';
         if (normalized === 'epico') return '\u00C9PICO';
-        if (normalized === 'season') return 'SEASON';
+        if (normalized === 'season') return 'TEMPORADA';
         if (normalized === 'lendario' || normalized === 'legendary') return 'LENDARIO';
         return type.toUpperCase();
     };

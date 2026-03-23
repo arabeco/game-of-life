@@ -338,7 +338,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'insignia_report_comum', name: 'Bronze: Relatorio de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: '🥉', description: "Relatorio de Bronze: Concedida por concluir um ciclo e selar o relatorio final." },
     { id: 'insignia_quest_incomum', name: 'Prata: Missão Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🥈', description: "Missão de Prata: Concedida ao concluir uma missão da temporada." },
     { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '🥇', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência." },
-    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 4, rarity: 'epic', icon: '🟣', description: "Marca roxa da primeira Season oficial da Primeira Era.", isSeasonExclusive: true },
+    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 4, rarity: 'epic', icon: '🟣', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true },
 ];
 
 const LEGACY_ITEM_ID_ALIASES: Record<string, string> = {
@@ -375,10 +375,10 @@ export const GOLD_PACKS = GOLD_PACK_CATALOG.map((pack) => ({
 
 export const CODEXES = [
     { id: 'd290f1ee-6c54-4b01-90e6-d701748f0851', name: "Máquina Biológica", cost: 200, icon: '🧬' },
-    { id: "codex_financas", name: "Codex: Finanças Pessoais", cost: 150, icon: '💰' },
-    { id: "codex_produtividade", name: "Codex: Produtividade Extrema", cost: 150, icon: '⚡' },
-    { id: "codex_saude", name: "Codex: Saúde & Fitness", cost: 150, icon: '🏋️' },
-    { id: "codex_mindset", name: "Codex: Mindset de Sucesso", cost: 150, icon: '🧠' }
+    { id: "codex_financas", name: "Campanha: Finanças Pessoais", cost: 150, icon: '💰' },
+    { id: "codex_produtividade", name: "Campanha: Produtividade Extrema", cost: 150, icon: '⚡' },
+    { id: "codex_saude", name: "Campanha: Saúde & Fitness", cost: 150, icon: '🏋️' },
+    { id: "codex_mindset", name: "Campanha: Mindset de Sucesso", cost: 150, icon: '🧠' }
 ];
 
 export const XP_BOOSTS = GOLD_BOOST_PRODUCTS.map((boost) => ({
@@ -393,14 +393,14 @@ export const XP_BOOSTS = GOLD_BOOST_PRODUCTS.map((boost) => ({
 const GENESIS_BORDER: ItemDef = interfaceCatalogItem('border', {
     id: 'item_border_genesis_01', name: 'Borda Gênesis',
     tier: 4, rarity: 'epic', icon: '✦',
-    description: 'Recompensa de Season e Quest de alto valor.',
+    description: 'Recompensa de Temporada e Quest de alto valor.',
     isSeasonExclusive: true,
     asset: 'borda_t5_genesis.png',
 });
 const GENESIS_BANNER: ItemDef = interfaceCatalogItem('banner', {
     id: 'item_banner_origin_01', name: 'Banner Origem',
     tier: 4, rarity: 'epic', icon: '⛊',
-    description: 'Recompensa de Season e Quest de alto valor.',
+    description: 'Recompensa de Temporada e Quest de alto valor.',
     isSeasonExclusive: true,
     asset: 'banner_origem.png',
 });

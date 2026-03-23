@@ -15,7 +15,7 @@ export const RARITY_VISUALS: Record<VisualRarity, RarityVisual> = {
     rare: { key: 'rare', label: 'Raro', hex: '#3B82F6', rgb: '59,130,246' },
     epic: { key: 'epic', label: 'Epico', hex: '#A855F7', rgb: '168,85,247' },
     legendary: { key: 'legendary', label: 'Lendario', hex: '#F59E0B', rgb: '245,158,11' },
-    quest: { key: 'quest', label: 'Season', hex: '#14B8A6', rgb: '20,184,166' },
+    quest: { key: 'quest', label: 'Temporada', hex: '#14B8A6', rgb: '20,184,166' },
 };
 
 export const withAlpha = (rgb: string, alpha: number): string =>     `rgba(${rgb}, ${alpha})`;

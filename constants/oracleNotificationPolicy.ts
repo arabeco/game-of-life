@@ -150,7 +150,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     basicVisible: true,
     gameVisible: true,
     icon: 'C',
-    label: 'Codex',
+    label: 'Campanha',
   },
   partnership_invite: {
     lane: 'essential',
@@ -212,7 +212,7 @@ export const getNotificationTitle = (notification: Notification): string => {
     case 'mentor_invite':
       return 'Voce recebeu um convite de mentor.';
     case 'clan_invite':
-      return 'Voce recebeu um convite de cla.';
+      return 'Voce recebeu um convite de grupo.';
     case 'friend_request':
       return 'Voce recebeu um convite de amizade.';
     case 'friend_response':
@@ -220,11 +220,11 @@ export const getNotificationTitle = (notification: Notification): string => {
     case 'friend_accepted':
       return 'Seu convite de amizade foi aceito.';
     case 'clan_response':
-      return 'Seu pedido de cla foi respondido.';
+      return 'Seu pedido de grupo foi respondido.';
     case 'clan_join':
-      return 'Seu pedido de cla foi aceito.';
+      return 'Seu pedido de grupo foi aceito.';
     case 'clan_mission_update':
-      return 'Seu cla precisa de voce.';
+      return 'Seu grupo precisa de voce.';
     case 'season_ending':
       return 'A temporada esta acabando.';
     case 'level_up':
@@ -234,7 +234,7 @@ export const getNotificationTitle = (notification: Notification): string => {
     case 'oracle_prompt':
       return 'O Oraculo chamou sua atencao.';
     case 'codex_gift':
-      return 'Um Codex chegou para voce.';
+      return 'Uma Campanha chegou para voce.';
     case 'partnership_invite':
       return 'Voce recebeu um convite de parceria.';
     case 'arena_access':
@@ -325,13 +325,13 @@ export const getNotificationBody = (
     case 'friend_accepted':
       return notification.content || 'Seu convite de amizade foi aceito.';
     case 'clan_join':
-      return notification.content || 'Seu pedido de entrada no cla foi aceito.';
+      return notification.content || 'Seu pedido de entrada no grupo foi aceito.';
     case 'mentor_invite':
       return notification.content || 'Alguem quer entrar em um vinculo de mentoria com voce.';
     case 'friend_request':
       return notification.content || 'Existe um novo convite de amizade esperando sua resposta.';
     case 'clan_invite':
-      return notification.content || 'Existe um novo convite de cla esperando sua resposta.';
+      return notification.content || 'Existe um novo convite de grupo esperando sua resposta.';
     case 'oracle_prompt':
       switch (oracleMode) {
         case 'coach':
@@ -344,7 +344,7 @@ export const getNotificationBody = (
           return notification.content || 'O Oraculo tem uma chamada curta para voce.';
       }
     case 'codex_gift':
-      return notification.content || 'Um manuscrito valioso foi enviado para a sua biblioteca.';
+      return notification.content || 'Uma campanha valiosa foi enviada para a sua biblioteca.';
     default:
       return notification.content || 'Ha uma atualizacao importante esperando sua leitura.';
   }

@@ -27,7 +27,7 @@ const getAchievementDetails = (type: FeedEventType, data: any) => {
         case 'REPORT_COMPLETED':
             return { title: 'RELATÓRIO CONCLUÍDO!', icon: '\u{1F4DC}', message: 'Você selou seu relatório de ciclo com sucesso!' };
         case 'CLAN_RANK_UP':
-            return { title: 'Patente do clã aumentou!', icon: '\u{1F6E1}\uFE0F', message: `Seu clã agora é um ${data.name}!` };
+            return { title: 'Patente do grupo aumentou!', icon: '\u{1F6E1}\uFE0F', message: `Seu grupo agora e um ${data.name}!` };
         default:
             return { title: 'Conquista!', icon: '\u2728', message: 'Você realizou um feito notável.' };
     }
@@ -317,6 +317,5 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         </Portal>
     );
 };
-
 
 

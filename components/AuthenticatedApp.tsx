@@ -23,6 +23,11 @@ import {
     shouldAutoStartOnboarding,
 } from '../utils/firstUseOnboarding';
 import { APP_NAVIGATE_EVENT, AppNavigatePayload } from '../utils/arenaAttention';
+import {
+    getSeasonLaunchToastStorageKey,
+    getSeasonTransitionStorageKey,
+    resolveRuntimeSeasonTransition,
+} from '../utils/seasonPresentation';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -40,6 +45,7 @@ const OfflineOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) 
 const FirstUseOnboardingOverlay = React.lazy(() => import('./FirstUseOnboardingOverlay').then((m) => ({ default: m.FirstUseOnboardingOverlay })));
 const CodexClaimModal = React.lazy(() => import('./CodexClaimModal').then((m) => ({ default: m.CodexClaimModal })));
 const VanguardWelcomeModal = React.lazy(() => import('./VanguardWelcomeModal').then((m) => ({ default: m.VanguardWelcomeModal })));
+const SeasonTransitionModal = React.lazy(() => import('./SeasonDetailModal').then((m) => ({ default: m.SeasonTransitionModal })));
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -64,7 +70,58 @@ const sanitizeView = (view: View | null | undefined, canUseAssetsView: boolean, 
 };
 
 const TutorialBridge: React.FC = () => null;
-const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaultRestScreenOpen = true }) => {
+const GlobalSeasonTransitionGate: React.FC<{ enabled: boolean }> = ({ enabled }) => {
+    const { seasons, showToast } = useGame();
+    const [pendingTransition, setPendingTransition] = useState<ReturnType<typeof resolveRuntimeSeasonTransition>>(null);
+
+    useEffect(() => {
+        if (!enabled) return;
+        if (typeof window === 'undefined') return;
+
+        const runtimeTransition = resolveRuntimeSeasonTransition(seasons);
+        if (!runtimeTransition) return;
+
+        const storageKey = getSeasonTransitionStorageKey(
+            runtimeTransition.fromSeason.id,
+            runtimeTransition.toSeason.id,
+        );
+
+        if (window.localStorage.getItem(storageKey) === 'seen') return;
+
+        window.localStorage.setItem(storageKey, 'seen');
+        setPendingTransition(runtimeTransition);
+    }, [enabled, seasons]);
+
+    const handleClose = useCallback(() => {
+        if (typeof window !== 'undefined' && pendingTransition) {
+            const toastKey = getSeasonLaunchToastStorageKey(pendingTransition.toSeason.id);
+            const pendingToast = window.localStorage.getItem(toastKey);
+            if (pendingToast) {
+                window.localStorage.removeItem(toastKey);
+                showToast(pendingToast, 'success');
+            }
+        }
+
+        setPendingTransition(null);
+    }, [pendingTransition, showToast]);
+
+    if (!pendingTransition) return null;
+
+    return (
+        <Suspense fallback={null}>
+            <SeasonTransitionModal
+                fromSeason={pendingTransition.fromSeason}
+                toSeason={pendingTransition.toSeason}
+                onClose={handleClose}
+            />
+        </Suspense>
+    );
+};
+
+const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTransition?: boolean }> = ({
+    defaultRestScreenOpen = true,
+    allowSeasonTransition = true,
+}) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
     const { userProfile, appMode, activeTheme, notifications } = useGame();
     const historyReady = useRef(false);
@@ -323,7 +380,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
                 await supabase.from('codex').insert({
                     owner_id: userId,
                     schema_version: typeof parsed.schemaVersion === 'number' ?parsed.schemaVersion : 1,
-                    name: (parsed.metadata?.name || draftName || 'Codex').toString(),
+                    name: (parsed.metadata?.name || draftName || 'Campanha').toString(),
                     author: parsed.metadata?.author || null,
                     price: typeof parsed.metadata?.price === 'number' ?parsed.metadata.price : null,
                     description: parsed.metadata?.description || null,
@@ -429,7 +486,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
                             value={draftName}
                             onChange={(e) => setDraftName(e.target.value)}
                             className="flex-1 rounded-md border border-yellow-500/40 bg-black/30 px-2 py-1 text-xs font-bold text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/40"
-                            placeholder="Nome do Codex"
+                            placeholder="Nome da Campanha"
                         />
                         <button
                             onClick={exitBuilderMode}
@@ -449,6 +506,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean }> = ({ defaul
 
             <GlobalHeader onProfileClick={() => setProfileVisible(true)} topOffsetPx={isBuilderMode ?44 : 0} defaultRestScreenOpen={defaultRestScreenOpen} />
             <TutorialBridge />
+            <GlobalSeasonTransitionGate enabled={allowSeasonTransition} />
 
             <main className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ paddingTop: mainPaddingTop, paddingBottom: mainPaddingBottom }}>
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col overflow-hidden">
@@ -659,6 +717,10 @@ const MainApp: React.FC = () => {
         !claimToken &&
         !needsFirstUseOnboarding &&
         !isFirstUseOnboardingActive;
+    const shouldAllowSeasonTransition =
+        !showTerms &&
+        !needsFirstUseOnboarding &&
+        !isFirstUseOnboardingActive;
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -695,7 +757,12 @@ const MainApp: React.FC = () => {
 
     return (
         <>
-            {!requiresTermsAcceptance && <AppWithTutorial defaultRestScreenOpen={shouldOpenRestByDefault} />}
+            {!requiresTermsAcceptance && (
+                <AppWithTutorial
+                    defaultRestScreenOpen={shouldOpenRestByDefault}
+                    allowSeasonTransition={shouldAllowSeasonTransition}
+                />
+            )}
             <Suspense fallback={null}>
                 <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
                 <OfflineOverlay open={!isOnline} />

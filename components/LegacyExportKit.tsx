@@ -40,7 +40,7 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
     const exportIdentity = useMemo(() => ({
         nickname: fallbackIdentity?.nickname || sovereignName,
         level: fallbackIdentity?.level || 1,
-        clanName: fallbackIdentity?.clanName || 'Sem cla',
+        clanName: fallbackIdentity?.clanName || 'Sem grupo',
         title: fallbackIdentity?.nobilityRankName || fallbackIdentity?.title || 'Vagante',
     }), [fallbackIdentity, sovereignName]);
 

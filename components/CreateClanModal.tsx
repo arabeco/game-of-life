@@ -131,8 +131,8 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                 </div>
                                 <div className={`rounded-2xl border px-3 py-2 text-center text-xs ${canAffordClanCreation ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-rose-500/20 bg-rose-500/10 text-rose-300'}`}>
                                     {canAffordClanCreation
-                                        ? `Saldo ok para abrir o cla. Debito: ${GOLD_CLAN_CREATION_COST} ouro.`
-                                        : `Saldo insuficiente. Criar cla custa ${GOLD_CLAN_CREATION_COST} ouro.`}
+                                        ? `Saldo ok para abrir o grupo. Debito: ${GOLD_CLAN_CREATION_COST} ouro.`
+                                        : `Saldo insuficiente. Criar grupo custa ${GOLD_CLAN_CREATION_COST} ouro.`}
                                 </div>
                             </div>
                         </div>

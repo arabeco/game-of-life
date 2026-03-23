@@ -16,7 +16,7 @@ const getEventMessage = (event: FeedEvent): string => {
         case 'PLAYER_RANK_UP':
             return `alcançou a patente de Nobreza: ${event.content.rankName}!`;
         case 'CLAN_RANK_UP':
-            return `ajudou o clã a alcançar a patente: ${event.content.rankName}!`;
+            return `ajudou o grupo a alcancar a patente: ${event.content.rankName}!`;
         default:
             return 'realizou um feito notável.';
     }

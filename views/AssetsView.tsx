@@ -393,7 +393,7 @@ export const AssetsView: React.FC = () => {
                     )}
 
                     <div className="relative z-10 h-full w-full">
-                        <div className="absolute inset-x-0 top-2 z-20 flex justify-center px-3">
+                        <div className="absolute inset-x-0 top-[4%] z-20 flex justify-center px-3">
                             <button
                                 type="button"
                                 onClick={handleOpenReports}
@@ -446,7 +446,7 @@ export const AssetsView: React.FC = () => {
                             </button>
                         </div>
 
-                        <div id="assets-grid" className="absolute inset-x-0 bottom-0 top-[72px]">
+                        <div id="assets-grid" className="absolute inset-x-0 bottom-0 top-[94px]">
                             {overviewCoords.map(coord => {
                                 const asset = assets.find(a => a.id === coord.id);
                                 if (!asset) return null;

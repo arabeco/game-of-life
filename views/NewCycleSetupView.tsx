@@ -107,7 +107,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                             <GlassCard variant="accent" className="p-3 bg-gradient-to-r from-[var(--skin-accent-color)]/10 to-[var(--skin-accent-color)]/5 border-[var(--skin-accent-color)]/30">
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <p className="text-[10px] font-bold accent-text uppercase tracking-wider">SEASON ATUAL</p>
+                                        <p className="text-[10px] font-bold accent-text uppercase tracking-wider">TEMPORADA ATUAL</p>
                                         <h3 className="text-lg font-black text-white">{activeSeason.name}</h3>
                                     </div>
                                     <div className="text-right">

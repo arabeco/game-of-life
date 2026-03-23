@@ -177,7 +177,7 @@ export const SharedArenaView: React.FC<SharedArenaViewProps> = ({ arena, quest, 
                     {action.name}
                 </p>
                 <p className="text-[10px] text-white/40 max-w-[200px] text-center">
-                    Toque para contribuir. Cada ação conta para o objetivo do clã.
+                    Toque para contribuir. Cada ação conta para o objetivo do grupo.
                 </p>
             </div>
         </div>

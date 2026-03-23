@@ -95,7 +95,7 @@ const getDefaultSubject = (notification: NormalizedNotification): string => {
     case "partnership_invite":
       return "Glyph - Convite de parceria";
     case "clan_invite":
-      return "Glyph - Convite de cla";
+      return "Glyph - Convite de grupo";
     default:
       return `Novo sinal no Oraculo: ${notification.type || "system"}`;
   }

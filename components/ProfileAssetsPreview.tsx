@@ -191,7 +191,7 @@ export const ProfileAssetsPreview: React.FC<{
                     Ativos
                 </div>
                 <div className="text-center text-[10px] font-black uppercase tracking-[0.18em] text-white/45">
-                    Sephirots e widgets visiveis
+                    Ativos e widgets visiveis
                 </div>
                 <button
                     type="button"

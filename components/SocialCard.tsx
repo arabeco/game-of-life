@@ -46,13 +46,13 @@ export const SocialCard: React.FC<{
 
                 <div className="flex flex-col items-end justify-center text-right pr-2 flex-shrink-0">
                     <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest opacity-60 mb-0.5">
-                        {subtitle ? 'INFO' : (profile.clanName ? 'CLA' : '')}
+                        {subtitle ? 'INFO' : (profile.clanName ? 'GRUPO' : '')}
                     </span>
                     <div className="text-[10px] text-gray-300 flex items-center gap-1 opacity-90 bg-black/20 px-1.5 py-0.5 rounded-md border border-white/5">
                         {subtitle ?? (
                             <>
                                 {profile.clanIcon && <span className="text-xs">{profile.clanIcon}</span>}
-                                <span className="max-w-[70px] truncate font-medium">{profile.clanName || 'Sem Cla'}</span>
+                                <span className="max-w-[70px] truncate font-medium">{profile.clanName || 'Sem Grupo'}</span>
                             </>
                         )}
                     </div>

@@ -71,7 +71,7 @@ export const QuestDetailModal: React.FC<{
         title={quest.title}
         icon={quest.actionTemplate?.icon}
         description={quest.description}
-        badge={quest.type === 'clan' ? 'Jornada de cla' : 'Jornada pessoal'}
+        badge={quest.type === 'clan' ? 'Jornada de grupo' : 'Jornada pessoal'}
         progress={progress}
         onClose={onClose}
         footer={
@@ -82,7 +82,7 @@ export const QuestDetailModal: React.FC<{
             ) : !isActive ? (
                 quest.type === 'clan' ? (
                     <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-white/58">
-                        Ative pelo menu do cla
+                        Ative pelo menu do grupo
                     </div>
                 ) : (
                     <button onClick={onTake} className="w-full rounded-xl py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
@@ -134,7 +134,7 @@ const MissionDetailModal: React.FC<{
         title={mission.title}
         icon={mission.icon}
         description={mission.description}
-        badge={mission.type === 'clan' ? 'Missao de cla' : 'Missao de temporada'}
+        badge={mission.type === 'clan' ? 'Missao de grupo' : 'Missao de temporada'}
         progress={progress}
         onClose={onClose}
         footer={!isCompleted && progress >= 100 ? (
@@ -275,7 +275,7 @@ const SeasonTransitionModal: React.FC<{
     const previousTitle = fromConfig?.celebrationTitle || `${fromSeason.name} encerrada`;
     const previousSummary = fromConfig?.celebrationSummary || 'Parabens por atravessar esta fase do GLYPH.';
     const nextTitle = toSeason.launchTitle || toSeason.name;
-    const nextSummary = toSeason.launchSummary || toSeason.description || 'A proxima Season entra agora com uma nova trilha de quests, itens e identidade visual.';
+    const nextSummary = toSeason.launchSummary || toSeason.description || 'A proxima Temporada entra agora com uma nova trilha de quests, itens e identidade visual.';
 
     return (
         <Portal>
@@ -310,7 +310,7 @@ const SeasonTransitionModal: React.FC<{
                                         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18)_0%,rgba(0,0,0,0.54)_42%,rgba(6,6,6,0.96)_100%)]" />
                                         <div className="absolute inset-x-0 bottom-0 p-4">
                                             <div className="space-y-2">
-                                                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/65">Season encerrada</div>
+                                                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/65">Temporada encerrada</div>
                                                 <div className="text-2xl font-black uppercase tracking-[0.14em] text-white luxe-title-shadow">{previousTitle}</div>
                                                 <p className="max-w-[92%] text-[12px] leading-relaxed text-white/82">{previousSummary}</p>
                                             </div>
@@ -348,7 +348,7 @@ const SeasonTransitionModal: React.FC<{
                                         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,5,0.14)_0%,rgba(0,0,0,0.46)_40%,rgba(6,6,6,0.96)_100%)]" />
                                         <div className="absolute inset-x-0 bottom-0 p-4">
                                             <div className="space-y-2">
-                                                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/65">Nova Season</div>
+                                                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/65">Nova Temporada</div>
                                                 <div className="text-2xl font-black uppercase tracking-[0.14em] text-white luxe-title-shadow">{nextTitle}</div>
                                                 <p className="max-w-[92%] text-[12px] leading-relaxed text-white/82">{nextSummary}</p>
                                             </div>
@@ -370,7 +370,7 @@ const SeasonTransitionModal: React.FC<{
                                         <LaunchHighlightsBlock highlights={toSeason.launchHighlights} />
                                     ) : (
                                         <div className="rounded-[16px] border border-white/8 bg-black/24 p-4 text-[12px] leading-relaxed text-white/72">
-                                            Esta estrutura ja esta pronta para receber quests, itens, banner e borda proprios da nova Season, sem misturar com a Genesis.
+                                            Esta estrutura ja esta pronta para receber quests, itens, banner e borda proprios da nova Temporada, sem misturar com a Genesis.
                                         </div>
                                     )}
                                 </div>
@@ -384,7 +384,7 @@ const SeasonTransitionModal: React.FC<{
                                         Fechar
                                     </button>
                                     <button onClick={() => setStep(1)} className="rounded-[12px] py-3 text-[11px] font-black uppercase tracking-[0.18em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
-                                        Ver nova season
+                                        Ver nova temporada
                                     </button>
                                 </div>
                             ) : (
@@ -604,7 +604,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                                 <div className="space-y-3">
                                     <SectionTitle title="Missoes da temporada" tone="white" />
                                     <div className="space-y-2">
-                                        {missionItems.map((mission) => <CompactSeasonEntryCard key={mission.id} title={mission.title} icon={mission.icon} metaLabel={mission.type === 'clan' ? 'Missao de cla' : 'Missao de temporada'} progress={getMissionProgress(mission)} isClaimed={isMissionCompleted(mission)} onClick={() => setSelectedMission(mission)} />)}
+                                        {missionItems.map((mission) => <CompactSeasonEntryCard key={mission.id} title={mission.title} icon={mission.icon} metaLabel={mission.type === 'clan' ? 'Missao de grupo' : 'Missao de temporada'} progress={getMissionProgress(mission)} isClaimed={isMissionCompleted(mission)} onClick={() => setSelectedMission(mission)} />)}
                                     </div>
                                 </div>
                             )}
@@ -612,7 +612,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                                 <div className="space-y-3">
                                     <SectionTitle title="Jornada" />
                                     <div className="space-y-2">
-                                        {questItems.map((quest) => <CompactSeasonEntryCard key={quest.id} title={quest.title} icon={quest.actionTemplate?.icon} metaLabel={quest.type === 'clan' ? 'Jornada de cla' : 'Jornada pessoal'} progress={getQuestProgress(quest)} isClaimed={isQuestCompleted(quest)} participants={quest.type === 'clan' ? clanQuestParticipants[quest.id] : undefined} onClick={() => setSelectedQuest(quest)} />)}
+                                        {questItems.map((quest) => <CompactSeasonEntryCard key={quest.id} title={quest.title} icon={quest.actionTemplate?.icon} metaLabel={quest.type === 'clan' ? 'Jornada de grupo' : 'Jornada pessoal'} progress={getQuestProgress(quest)} isClaimed={isQuestCompleted(quest)} participants={quest.type === 'clan' ? clanQuestParticipants[quest.id] : undefined} onClick={() => setSelectedQuest(quest)} />)}
                                     </div>
                                 </div>
                             )}

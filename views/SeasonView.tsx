@@ -265,7 +265,7 @@ export const SeasonView: React.FC = () => {
     const mainMissions: ConfigSeasonQuest[] = [
         {
             id: 'meta-quest-3',
-            title: 'Completar as 3 Quests da Season',
+            title: 'Completar as 3 quests da temporada',
             description: 'Prove seu valor completando 3 missões desta temporada.',
             type: 'individual',
             category: 'spiritual',

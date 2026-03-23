@@ -32,6 +32,24 @@ export const getSeasonConfigById = (seasonId?: string | null): SeasonConfig | nu
   return SEASONS[seasonId] || null;
 };
 
+const getSeasonStartTime = (value: string): number => new Date(`${value}T00:00:00`).getTime();
+const getSeasonEndTime = (value: string): number => new Date(`${value}T23:59:59`).getTime();
+
+export const resolveSeasonConfigForTimestamp = (timestamp = Date.now()): SeasonConfig | null => {
+  const matching = SEASON_ORDER
+    .map((id) => SEASONS[id])
+    .filter((season): season is SeasonConfig => Boolean(season))
+    .filter((season) => {
+      const start = getSeasonStartTime(season.startDate);
+      const end = getSeasonEndTime(season.endDate);
+      if (Number.isNaN(start) || Number.isNaN(end)) return false;
+      return timestamp >= start && timestamp <= end;
+    })
+    .sort((left, right) => getSeasonStartTime(right.startDate) - getSeasonStartTime(left.startDate));
+
+  return matching[0] || null;
+};
+
 export const getNextSeasonConfig = (seasonId?: string | null): SeasonConfig | null => {
   if (!seasonId) return null;
 
@@ -42,6 +60,18 @@ export const getNextSeasonConfig = (seasonId?: string | null): SeasonConfig | nu
   if (!nextSeasonId) return null;
 
   return SEASONS[nextSeasonId] || null;
+};
+
+export const getPreviousSeasonConfig = (seasonId?: string | null): SeasonConfig | null => {
+  if (!seasonId) return null;
+
+  const currentIndex = SEASON_ORDER.findIndex((id) => id === seasonId);
+  if (currentIndex <= 0) return null;
+
+  const previousSeasonId = SEASON_ORDER[currentIndex - 1];
+  if (!previousSeasonId) return null;
+
+  return SEASONS[previousSeasonId] || null;
 };
 
 export const resolveSeasonBackgroundUrl = (season: SeasonLike): string => {
@@ -79,6 +109,9 @@ export const getSeasonLaunchRewardFlag = (seasonId: string): string => `__flag_s
 
 export const getSeasonLaunchToastStorageKey = (seasonId: string): string => `glyph:season-launch-toast:${seasonId}`;
 
+export const getSeasonTransitionStorageKey = (fromSeasonId: string, toSeasonId: string): string =>
+  `glyph:season-transition:${fromSeasonId}:${toSeasonId}`;
+
 export const buildSeasonFromConfig = (season: SeasonConfig, isActive = false): Season => ({
   id: season.id,
   name: season.name,
@@ -90,6 +123,13 @@ export const buildSeasonFromConfig = (season: SeasonConfig, isActive = false): S
 });
 
 export const resolveRuntimeActiveSeason = (seasons: Season[]): Season | null => {
+  const byDateConfig = resolveSeasonConfigForTimestamp();
+  if (byDateConfig) {
+    const seasonFromState = seasons.find((season) => season.id === byDateConfig.id);
+    if (seasonFromState) return { ...seasonFromState, is_active: true };
+    return buildSeasonFromConfig(byDateConfig, true);
+  }
+
   const activeSeason = seasons.find((season) => season.is_active);
   if (activeSeason) return activeSeason;
 
@@ -97,4 +137,22 @@ export const resolveRuntimeActiveSeason = (seasons: Season[]): Season | null => 
   if (!fallbackSeason) return null;
 
   return buildSeasonFromConfig(fallbackSeason, true);
+};
+
+export const resolveRuntimeSeasonTransition = (
+  seasons: Season[],
+  timestamp = Date.now(),
+): { fromSeason: Season; toSeason: SeasonConfig } | null => {
+  const currentSeason = resolveSeasonConfigForTimestamp(timestamp);
+  if (!currentSeason) return null;
+
+  const previousSeason = getPreviousSeasonConfig(currentSeason.id);
+  if (!previousSeason) return null;
+
+  if (timestamp < getSeasonStartTime(currentSeason.startDate)) return null;
+
+  const fromSeason =
+    seasons.find((season) => season.id === previousSeason.id) || buildSeasonFromConfig(previousSeason, false);
+
+  return { fromSeason, toSeason: currentSeason };
 };

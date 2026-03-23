@@ -379,7 +379,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     if (!eras.length) return null;
 
     const activePatent = activeIdentity.nobilityRankName || activeIdentity.title || 'Vagante';
-    const activeClan = activeIdentity.clanName || 'Sem cla';
+    const activeClan = activeIdentity.clanName || 'Sem grupo';
     const displayNickname = activeIdentity.nickname || sovereignName;
     const nicknameClass = displayNickname.length > 24
         ? 'text-[0.82rem] tracking-[0.01em]'

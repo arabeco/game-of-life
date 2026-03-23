@@ -1880,22 +1880,23 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
         <>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={handleCloseDynamic}>
+                <button
+                    type="button"
+                    aria-label="Fechar historico"
+                    onClick={handleForceClose}
+                    className="fixed right-4 top-[calc(var(--safe-area-top)+12px)] z-[80] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white/90 shadow-[0_10px_28px_rgba(0,0,0,0.34)] transition-colors hover:bg-white/10 hover:text-white"
+                >
+                    <XIcon />
+                </button>
                 <div className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
-                    <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4">
+                    <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4 pr-12">
                         <div className="flex items-center space-x-2">
                             {(view === 'results' || view === 'comparing') && (
                                 <button id="reports-view-back-button" onClick={handleCloseDynamic} className="p-2 -ml-2"><ChevronLeftIcon /></button>
                             )}
                             <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
                         </div>
-                        <button
-                            type="button"
-                            aria-label="Fechar historico"
-                            onClick={handleForceClose}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white/90 transition-colors hover:bg-white/10 hover:text-white"
-                        >
-                            <XIcon />
-                        </button>
+                        <div className="h-10 w-10" />
                     </div>
                     <div className="flex-grow overflow-y-auto relative overflow-hidden">
                         {renderContent()}
@@ -1977,7 +1978,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
 
 
 

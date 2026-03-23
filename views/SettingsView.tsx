@@ -1409,7 +1409,7 @@ const GeralTab: React.FC = () => {
                     <div className="flex justify-between items-center mb-2">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Tema Visual</h4>
                         <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
-                            {activeTheme === 'LIGHT' ? 'Light' : 'Dark'}
+                            {activeTheme === 'LIGHT' ? 'Modo claro' : 'Modo escuro'}
                         </span>
                     </div>
                     <div className="flex gap-2 p-1 bg-black/20 rounded-lg mb-4">
@@ -1417,13 +1417,13 @@ const GeralTab: React.FC = () => {
                             onClick={() => activeTheme !== 'LIGHT' && toggleTheme()}
                             className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'LIGHT' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                         >
-                            LIGHT
+                            MODO CLARO
                         </button>
                         <button
                             onClick={() => activeTheme !== 'DARK' && toggleTheme()}
                             className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'DARK' ? 'bg-slate-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                         >
-                            DARK
+                            MODO ESCURO
                         </button>
                     </div>
                 </div>
@@ -1710,7 +1710,7 @@ const PreferenciasTab: React.FC = () => {
                                 <div className="flex justify-between items-center mb-2">
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Tema Visual</h4>
                                     <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
-                                        {activeTheme === 'LIGHT' ? 'Light' : 'Dark'}
+                                        {activeTheme === 'LIGHT' ? 'Modo claro' : 'Modo escuro'}
                                     </span>
                                 </div>
                                 <div className="flex gap-2 p-1 bg-black/20 rounded-lg">
@@ -1718,13 +1718,13 @@ const PreferenciasTab: React.FC = () => {
                                         onClick={() => activeTheme !== 'LIGHT' && toggleTheme()}
                                         className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'LIGHT' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                                     >
-                                        LIGHT
+                                        MODO CLARO
                                     </button>
                                     <button
                                         onClick={() => activeTheme !== 'DARK' && toggleTheme()}
                                         className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'DARK' ? 'bg-slate-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                                     >
-                                        DARK
+                                        MODO ESCURO
                                     </button>
                                 </div>
                             </div>

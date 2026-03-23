@@ -5,7 +5,7 @@ export interface AssetOverviewLayoutEntry {
 
 export type AssetOverviewLayoutConfig = Record<string, AssetOverviewLayoutEntry>;
 
-export const ASSET_OVERVIEW_LAYOUT_STORAGE_KEY = 'glyph:assets-overview-layout-v3';
+export const ASSET_OVERVIEW_LAYOUT_STORAGE_KEY = 'glyph:assets-overview-layout-v4';
 export const ASSET_OVERVIEW_LAYOUT_UPDATED_EVENT = 'glyph:assets-overview-layout-updated';
 
 export const DEFAULT_ASSET_OVERVIEW_LAYOUT: AssetOverviewLayoutConfig = {
@@ -17,7 +17,7 @@ export const DEFAULT_ASSET_OVERVIEW_LAYOUT: AssetOverviewLayoutConfig = {
   conexoes: { x: 50, y: 49.75 },
   trabalho: { x: 16.66, y: 62.75 },
   financas: { x: 83.33, y: 62.75 },
-  hobbies: { x: 50, y: 72.75 },
+  hobbies: { x: 50, y: 70.75 },
   fisico: { x: 50, y: 91 },
 };
 

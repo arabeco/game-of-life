@@ -632,9 +632,20 @@ body {
     radial-gradient(circle at 54% 72%, rgba(226, 232, 237, 0.08), rgba(226, 232, 237, 0) 24%) !important;
 }
 
-.mode-game.theme-light .assets-view-root :is(.text-white, [class*="text-white/"]),
-.mode-game.theme-light .assets-detail-root :is(.text-white, [class*="text-white/"]) {
+.mode-game.theme-light .assets-view-root :is(.text-white, [class*="text-white/"]) {
   color: var(--text-primary) !important;
+}
+
+.mode-game.theme-light .assets-detail-root :is(.text-white, [class*="text-white/"]) {
+  color: rgba(248, 250, 252, 0.94) !important;
+}
+
+.mode-game.theme-light .assets-detail-root :is(.text-gray-300, .text-gray-400, .text-gray-500, .text-white\/45, .text-white\/62, .text-white\/80) {
+  color: rgba(203, 213, 225, 0.86) !important;
+}
+
+.mode-game.theme-light .assets-detail-root [class*="bg-black/"] {
+  background-color: rgba(15, 19, 27, 0.4) !important;
 }
 
 .mode-game.theme-light .sephirot-name-label {

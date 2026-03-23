@@ -125,8 +125,8 @@ export const AssetsView: React.FC = () => {
         ? containerSize.width / containerSize.height
         : baseAspect;
     const stretchY = 1;
-    const cycleSummaryTop = 'calc(14px + 2%)';
-    const cycleSummaryTopPx = 14 + (containerSize.height > 0 ? Math.round(containerSize.height * 0.02) : 12);
+    const cycleSummaryTop = '14px';
+    const cycleSummaryTopPx = 14;
     const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 8;
     const assetsGridBottomPx = 70;
     const overviewCoords = useMemo(
@@ -238,7 +238,7 @@ export const AssetsView: React.FC = () => {
 
         window.addEventListener('resize', updateSize);
         return () => window.removeEventListener('resize', updateSize);
-    }, []);
+    }, [selectedAssetId]);
 
     useLayoutEffect(() => {
         const summaryCard = cycleSummaryRef.current;
@@ -261,7 +261,7 @@ export const AssetsView: React.FC = () => {
 
         window.addEventListener('resize', updateSummaryHeight);
         return () => window.removeEventListener('resize', updateSummaryHeight);
-    }, [cycleSummary?.name, cycleSummary?.progress, cycleSummary?.totalCompleted, cycleSummary?.totalPlanned, cycleSummary?.activeArenaCount]);
+    }, [selectedAssetId, cycleSummary?.name, cycleSummary?.progress, cycleSummary?.totalCompleted, cycleSummary?.totalPlanned, cycleSummary?.activeArenaCount]);
 
     const handleOpenAsset = (asset: Asset) => {
         setSelectedAssetId(asset.id);

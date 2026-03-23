@@ -114,21 +114,21 @@ export const TheForge: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="the-forge-root space-y-6 animate-fade-in">
             <div className="flex justify-center space-x-3">
-                <button onClick={() => setActiveTab('craft')} className={`min-w-[7.5rem] rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${activeTab === 'craft' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
+                <button onClick={() => setActiveTab('craft')} className={`forge-subtab-button min-w-[7.5rem] rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${activeTab === 'craft' ? 'luxe-skin-button forge-subtab-button-active' : 'luxe-button-secondary forge-subtab-button-inactive'}`}>
                     Forjar
                 </button>
-                <button onClick={() => setActiveTab('recycle')} className={`min-w-[7.5rem] rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${activeTab === 'recycle' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
+                <button onClick={() => setActiveTab('recycle')} className={`forge-subtab-button min-w-[7.5rem] rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${activeTab === 'recycle' ? 'luxe-skin-button forge-subtab-button-active' : 'luxe-button-secondary forge-subtab-button-inactive'}`}>
                     Reciclar
                 </button>
             </div>
 
             {activeTab === 'craft' && (
                 <div className="space-y-5">
-                    <div className="flex justify-between items-center bg-black/40 p-2 rounded-xl border border-white/10 overflow-x-auto">
+                    <div className="forge-tier-strip flex justify-between items-center bg-black/40 p-2 rounded-xl border border-white/10 overflow-x-auto">
                         {[1, 2, 3, 4, 5].map((tier) => (
-                            <button key={tier} onClick={() => setSelectedTier(tier)} className={`flex-1 min-w-[64px] rounded-xl py-2 text-sm font-bold transition-all ${selectedTier === tier ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
+                            <button key={tier} onClick={() => setSelectedTier(tier)} className={`forge-tier-button flex-1 min-w-[64px] rounded-xl py-2 text-sm font-bold transition-all ${selectedTier === tier ? 'luxe-skin-button forge-tier-button-active' : 'luxe-button-secondary forge-tier-button-inactive'}`}>
                                 T{tier}
                             </button>
                         ))}

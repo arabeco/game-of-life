@@ -743,9 +743,9 @@ const MundoView: React.FC = () => {
                         key={tab.id}
                         id={tab.tutorialId}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex flex-col items-center gap-1 min-w-[64px] transition-colors ${activeTab === tab.id ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
+                        className={`mundo-top-tab flex flex-col items-center gap-1 min-w-[64px] transition-colors ${activeTab === tab.id ? 'mundo-top-tab-active text-[var(--skin-accent-color)]' : 'mundo-top-tab-inactive text-gray-500 hover:text-gray-300'}`}
                     >
-                        <div className={`p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--skin-accent-color)]/10 ring-1 ring-[var(--skin-accent-color)]/30' : 'bg-transparent'}`}>
+                        <div className={`mundo-top-tab-icon p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--skin-accent-color)]/10 ring-1 ring-[var(--skin-accent-color)]/30' : 'bg-transparent'}`}>
                             {tab.icon}
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-wider">{tab.label}</span>

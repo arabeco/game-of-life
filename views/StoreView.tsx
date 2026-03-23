@@ -25,26 +25,26 @@ export const StoreView: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6 pb-20 animate-fade-in">
+    <div className="store-view-root space-y-6 pb-20 animate-fade-in">
       <StoreTopBar />
 
       <div className="flex items-center justify-between overflow-x-auto px-2">
-        <div className="flex space-x-2 rounded-xl bg-black/30 p-1.5">
+        <div className="store-subtab-strip flex space-x-2 rounded-xl bg-black/30 p-1.5">
             <button
               onClick={() => setActiveTab('store')}
-              className={`min-w-[3rem] rounded-xl px-3 py-2 text-xs font-bold transition-all ${activeTab === 'store' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}
+              className={`store-subtab-button min-w-[3rem] rounded-xl px-3 py-2 text-xs font-bold transition-all ${activeTab === 'store' ? 'luxe-skin-button store-subtab-button-active' : 'luxe-button-secondary store-subtab-button-inactive'}`}
               aria-label="Ouro"
               title="Ouro"
             >
               <span className="text-[14px] leading-none">🪙</span>
             </button>
-            <button onClick={() => setActiveTab('forge')} className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === 'forge' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
+            <button onClick={() => setActiveTab('forge')} className={`store-subtab-button rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === 'forge' ? 'luxe-skin-button store-subtab-button-active' : 'luxe-button-secondary store-subtab-button-inactive'}`}>
                 FORJA
             </button>
-            <button onClick={() => setActiveTab('codexes')} className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === 'codexes' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
+            <button onClick={() => setActiveTab('codexes')} className={`store-subtab-button rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === 'codexes' ? 'luxe-skin-button store-subtab-button-active' : 'luxe-button-secondary store-subtab-button-inactive'}`}>
                 CAMPANHAS
             </button>
-            <button onClick={() => setActiveTab('items')} className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === 'items' ? 'luxe-skin-button' : 'luxe-button-secondary text-white/72 hover:bg-white/10'}`}>
+            <button onClick={() => setActiveTab('items')} className={`store-subtab-button rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === 'items' ? 'luxe-skin-button store-subtab-button-active' : 'luxe-button-secondary store-subtab-button-inactive'}`}>
                 ITEMS
             </button>
         </div>

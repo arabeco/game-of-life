@@ -379,6 +379,9 @@ export interface UserProfile {
   premiumRewardPending?: boolean;
   premiumRewardShownAt?: string;
   premiumRewardPayload?: RewardModalPayload | null;
+  expBoostMultiplier?: number | null;
+  expBoostExpiresAt?: string | null;
+  expBoostProductId?: string | null;
   codexCreationSlotsPurchased?: number;
   partnershipSlotsPurchased?: number;
   competitionSlotsPurchased?: number;
@@ -638,6 +641,7 @@ export interface Report {
       questPts: number;
       consistencyPts: number;
       volumePts: number;
+      expBoostBonusPts?: number;
       premiumBonusPts?: number;
     };
   };

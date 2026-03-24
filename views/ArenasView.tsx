@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, RelationshipLinkType, ScheduledTask } from '../types';
-import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon } from '../components/Icons';
+import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon, FolderStarIcon, EditIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
 import { ArenaCard } from '../components/ArenaCard';
@@ -1606,36 +1606,37 @@ export const ArenasView: React.FC = () => {
                         )}
                     </div>
                 )}
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 z-[60]" id="campaigns-section">
+                <div className="mb-4 flex items-center gap-1.5 z-[60]" id="campaigns-section">
                     <button
                         id="campaigns-button"
                         onClick={() => setCampaignHubOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/32 hover:bg-[var(--skin-accent-color)]/16"
+                        className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/32 hover:bg-[var(--skin-accent-color)]/16"
+                        title="Abrir campanhas"
                     >
-                        <LayersIcon className="h-3.5 w-3.5" />
-                        <span>Campanhas</span>
-                        <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-black/16 px-1.5 py-0.5 text-[9px] font-black text-white/82">
+                        <FolderStarIcon className="h-3.5 w-3.5" />
+                        <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/75 px-1 py-0.5 text-[7px] font-black leading-none text-white">
                             {campaigns.length}
                         </span>
                     </button>
                     <button
                         onClick={handleCreateCampaignClick}
-                        className={`px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        title={isSelectionMode ? 'Organização ativa' : 'Gerenciar campanhas'}
+                        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-[0px] before:text-[14px] before:leading-none before:content-['✎'] transition-all ${
                             isSelectionMode
                                 ? 'bg-[var(--skin-accent-color)] text-black animate-pulse'
-                                : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                                : 'bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white'
                         }`}
                     >
                         {isSelectionMode ? 'Modo Organização (Ativo)' : 'Organizar Campanhas'}
                     </button>
-                    <div className="flex items-center bg-black/40 rounded-full px-1 border border-white/5">
+                    <div className="ml-auto flex min-w-0 shrink-0 items-center bg-black/40 rounded-full px-1 border border-white/5">
                         <button
                             onClick={handleCycleViewMode}
-                            className={`p-1.5 rounded-full transition-colors flex items-center gap-1.5 ${arenasViewMode !== 'free' ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
+                            className={`px-1.5 py-1 rounded-full transition-colors flex items-center gap-1 ${arenasViewMode !== 'free' ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
                             title={`Modo: ${arenasViewMode === 'free' ? 'Livre' : arenasViewMode === 'priorities' ? 'Prioridades' : 'Por Ativo'}`}
                         >
-                            <LayersIcon className="w-4 h-4" />
-                            <span className="text-[9px] font-bold uppercase tracking-tighter w-12 text-center truncate">
+                            <LayersIcon className="w-3.5 h-3.5" />
+                            <span className="text-[8px] font-black uppercase tracking-[0.08em] w-10 text-center truncate">
                                 {arenasViewMode === 'free' ? 'Livre' : arenasViewMode === 'priorities' ? 'Prios' : 'Ativo'}
                             </span>
                         </button>
@@ -1645,11 +1646,11 @@ export const ArenasView: React.FC = () => {
                             className={`p-1.5 rounded-full transition-colors ${arenaPresentationMode === 'list' ? 'text-white' : 'text-gray-500'}`}
                             title={arenaPresentationMode === 'list' ? 'Voltar para miniaturas' : 'Modo lista'}
                         >
-                            <ListRowsIcon className="w-4 h-4" />
+                            <ListRowsIcon className="w-3.5 h-3.5" />
                         </button>
                         <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
                         <button onClick={() => setShowArchived(s => !s)} className={`p-1.5 rounded-full transition-colors ${showArchived ? 'text-white' : 'text-gray-500'}`} title={showArchived ? 'Ocultar arquivadas' : 'Mostrar arquivadas'}>
-                            <ArchiveBoxIcon className="w-4 h-4" />
+                            <ArchiveBoxIcon className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 </div>
@@ -1793,7 +1794,7 @@ export const ArenasView: React.FC = () => {
                                                         })}
                                                     </>
                                                 ) : (
-                                                    <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
+                                                    <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[8.45rem] gap-3 px-2 pt-1">
                                                         {items.map(item => {
                                                             if (item.itemType === 'campaign') {
                                                                 const campaign = item.value as Campaign;
@@ -1872,7 +1873,7 @@ export const ArenasView: React.FC = () => {
                                                 </div>
                                             ) : (
                                             <div className="overflow-x-auto hide-scrollbar pb-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
+                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[8.45rem] gap-3 px-2 pt-1">
                                                     {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                                 </div>
                                             </div>

@@ -58,8 +58,8 @@ type InviteConfirmState = {
 
 type RelationshipArenaDetailState = {
     arena: Arena;
-    actions: Action[];
-    tasks: ScheduledTask[];
+    actions?: Action[];
+    tasks?: ScheduledTask[];
     readOnly: boolean;
 };
 
@@ -1066,13 +1066,30 @@ export const RelationshipHubModal: React.FC<{
         }
     );
 
-    const openLinkedArena = (linkedArena: LinkedRelationshipArena) => {
-        setSelectedArenaDetail({
-            arena: getArenaPreviewForLink(linkedArena),
+    const getLiveOwnedArena = (arenaId: string) =>
+        assets.flatMap((asset) => asset.arenas).find((arena) => arena.id === arenaId) || null;
+
+    const buildArenaDetailState = (linkedArena: LinkedRelationshipArena): RelationshipArenaDetailState => {
+        const previewArena = getArenaPreviewForLink(linkedArena);
+        const liveOwnedArena = ownedArenaIds.has(previewArena.id) ? getLiveOwnedArena(previewArena.id) : null;
+
+        if (liveOwnedArena) {
+            return {
+                arena: liveOwnedArena,
+                readOnly: false,
+            };
+        }
+
+        return {
+            arena: previewArena,
             actions: linkedArena.actions || [],
             tasks: linkedArena.tasks || [],
-            readOnly: !ownedArenaIds.has(getArenaPreviewForLink(linkedArena).id),
-        });
+            readOnly: true,
+        };
+    };
+
+    const openLinkedArena = (linkedArena: LinkedRelationshipArena) => {
+        setSelectedArenaDetail(buildArenaDetailState(linkedArena));
     };
 
     const renderTabBoard = () => {
@@ -1090,9 +1107,8 @@ export const RelationshipHubModal: React.FC<{
                     </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                    <CompactPill label="entrada" value={`${COIN_GLYPH} ${LINK_LABELS[activeTab].cost}`} tone="text-white" />
-                    {activeTab === 'mentoria' && <CompactPill label="nova arena" value={`${COIN_GLYPH} ${MENTOR_LINKED_ARENA_GOLD_COST}`} tone="text-[var(--skin-accent-color)]" />}
                     <CompactPill label="ativas" value={activeCount} tone="text-white" />
+                    {activeTab === 'mentoria' && <CompactPill label="arena extra" value={`${COIN_GLYPH} ${MENTOR_LINKED_ARENA_GOLD_COST}`} tone="text-[var(--skin-accent-color)]" />}
                 </div>
             </GlassCard>
         );
@@ -1295,9 +1311,12 @@ export const RelationshipHubModal: React.FC<{
                         action={isMentorSide ? (
                             <button
                                 onClick={() => setSelectedMentorLinkForArena(link)}
-                                className="luxe-skin-button rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
+                                className="luxe-skin-button inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
                             >
-                                + arena
+                                <span>Nova arena</span>
+                                <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[9px] leading-none">
+                                    {COIN_GLYPH} {MENTOR_LINKED_ARENA_GOLD_COST}
+                                </span>
                             </button>
                         ) : (
                             <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
@@ -1472,12 +1491,7 @@ export const RelationshipHubModal: React.FC<{
                                         key={linkedArena.id}
                                         arena={linkedArena}
                                         assetName={assetNameForArena(linkedArena)}
-                                        onClick={() => setSelectedArenaDetail({
-                                            arena: getArenaPreviewForLink(linkedArena),
-                                            actions: linkedArena.actions || [],
-                                            tasks: linkedArena.tasks || [],
-                                            readOnly: !ownedArenaIds.has(getArenaPreviewForLink(linkedArena).id),
-                                        })}
+                                        onClick={() => setSelectedArenaDetail(buildArenaDetailState(linkedArena))}
                                     />
                                 ))}
                             </div>
@@ -1609,10 +1623,13 @@ export const RelationshipHubModal: React.FC<{
                                                 setInvitePickerType(activeTab as RelationshipLinkType);
                                             }}
                                             disabled={loading}
-                                            className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-[18px] shadow-[0_18px_40px_rgba(0,0,0,0.28)] luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="pointer-events-auto inline-flex h-12 items-center justify-center gap-2 rounded-[18px] px-3 shadow-[0_18px_40px_rgba(0,0,0,0.28)] luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50"
                                             title={activeTab === 'mentoria' ? 'Nova mentoria' : activeTab === 'parceria' ? 'Nova parceria' : 'Nova competicao'}
                                         >
                                             <span className="text-xl leading-none">+</span>
+                                            <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[9px] font-black leading-none">
+                                                {COIN_GLYPH} {LINK_LABELS[activeTab].cost}
+                                            </span>
                                         </button>
                                     </div>
                                 )}
@@ -1825,19 +1842,17 @@ export const RelationshipHubModal: React.FC<{
                                     >
                                         Cancelar
                                     </button>
-                                    <div className="flex w-full items-center justify-end gap-2">
-                                        <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">
+                                    <button
+                                        id="relationship-linked-arena-submit-button"
+                                        onClick={handleCreateLinkedArena}
+                                        disabled={busyKey === `linked-arena:${selectedMentorLinkForArena.id}`}
+                                        className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
+                                    >
+                                        <span>Criar arena</span>
+                                        <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[9px] leading-none">
                                             {COIN_GLYPH} {MENTOR_LINKED_ARENA_GOLD_COST}
                                         </span>
-                                        <button
-                                            id="relationship-linked-arena-submit-button"
-                                            onClick={handleCreateLinkedArena}
-                                            disabled={busyKey === `linked-arena:${selectedMentorLinkForArena.id}`}
-                                            className="luxe-skin-button rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
-                                        >
-                                            Criar arena
-                                        </button>
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
                         </GlassCard>

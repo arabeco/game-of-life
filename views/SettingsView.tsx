@@ -11,7 +11,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
 import { supabase } from '../supabaseClient';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
-import { CODEXES } from '../constants/items';
+import { CODEXES, getCatalogItemsByCategory } from '../constants/items';
 import { Portal } from '../components/Portal';
 import { SupabaseService } from '../services/SupabaseService';
 import { RelationshipHubModal } from '../components/RelationshipHubModal';
@@ -19,6 +19,7 @@ import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
+import { buildUiSkinTokens } from '../utils/uiSkinTokens';
 import './settings-ui.css';
 
 const OracleChat = lazy(() =>
@@ -1593,7 +1594,7 @@ const GeralTab: React.FC = () => {
 };
 
 const PreferenciasTab: React.FC = () => {
-    const { userProfile, oraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme } = useGame();
+    const { userProfile, oraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
     const [highlightModeGame, setHighlightModeGame] = useState(false);
@@ -1635,6 +1636,13 @@ const PreferenciasTab: React.FC = () => {
     const completedFlags = userProfile.completedSeasonMissions || [];
     const termsStatus = completedFlags.includes(PROFILE_FLAG_TERMS_ACCEPTED) ? 'Aceito' : 'Pendente';
     const tutorialStatus = completedFlags.includes(PROFILE_FLAG_TUTORIAL_COMPLETED) ? 'Assistido' : 'Pendente';
+    const uiSkinCatalog = useMemo(() => getCatalogItemsByCategory('ui_skin'), []);
+    const unlockedUiSkinIds = useMemo(() => {
+        const unlocked = new Set<string>(['BASIC', userProfile.skin || 'BASIC']);
+        inventory.forEach((item) => unlocked.add(item.id));
+        return unlocked;
+    }, [inventory, userProfile.skin]);
+    const effectiveUiSkinId = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
 
     useEffect(() => {
         setAssetsVisibility(normalizeAssetsVisibilityOption(userProfile.assetsVisibility));
@@ -1700,6 +1708,54 @@ const PreferenciasTab: React.FC = () => {
                             </div>
 
                             <div className="pt-3 border-t border-white/5 animate-fade-in">
+                                <div className="mb-3">
+                                    <div className="mb-2 flex items-center justify-between">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Skin UI</h4>
+                                        <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
+                                            {appMode === 'BASIC' ? 'Modo básico usa Básico' : 'Modo jogo usa sua skin'}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {uiSkinCatalog.map((skin) => {
+                                            const unlocked = unlockedUiSkinIds.has(skin.id);
+                                            const selected = effectiveUiSkinId === skin.id;
+                                            const disabledByMode = appMode === 'BASIC' && skin.id !== 'BASIC';
+                                            const previewTokens = buildUiSkinTokens(skin.id, activeTheme === 'LIGHT' ? 'light' : 'dark');
+
+                                            return (
+                                                <button
+                                                    key={skin.id}
+                                                    type="button"
+                                                    disabled={!unlocked || disabledByMode}
+                                                    onClick={() => setCurrentSkin(skin.id)}
+                                                    title={skin.name}
+                                                    className={`relative overflow-hidden rounded-lg border px-2 py-2 text-center transition-all ${
+                                                        selected
+                                                            ? 'ring-1 ring-[var(--ui-border-accent)] shadow-[0_0_14px_var(--ui-button-primary-glow)]'
+                                                            : 'hover:scale-[1.02]'
+                                                    } ${!unlocked || disabledByMode ? 'cursor-default' : ''}`}
+                                                    style={{
+                                                        background: previewTokens.cardStrongBackground,
+                                                        borderColor: selected ? 'var(--ui-border-accent)' : previewTokens.borderSoftColor,
+                                                        opacity: unlocked ? (disabledByMode ? 0.38 : 1) : 0.28,
+                                                    }}
+                                                >
+                                                    <div
+                                                        className="mb-1 h-1.5 rounded-full"
+                                                        style={{ background: previewTokens.buttonBackground }}
+                                                    />
+                                                    <div className="text-[11px] leading-none">{skin.icon}</div>
+                                                    <div
+                                                        className="mt-1 text-[8px] font-black uppercase tracking-[0.14em]"
+                                                        style={{ color: previewTokens.cardTextColor }}
+                                                    >
+                                                        {skin.id}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                                 <div className="flex justify-between items-center mb-2">
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Tema Visual</h4>
                                     <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
@@ -1910,22 +1966,22 @@ const PremiumTab: React.FC = () => {
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">
                     <h2 className="text-sm font-bold accent-text uppercase tracking-widest">Premium</h2>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded ${isPremium ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-white/5 text-gray-500'}`}>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded ${isPremium ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
                         {premiumLabel}
                     </span>
                 </div>
 
                 <GlassCard variant="neutral" className="overflow-hidden border-[var(--skin-accent-color)]/16">
-                    <div className="border-b border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(0,0,0,0.14)_100%)] p-4">
+                    <div className="border-b border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-strong-bg)] p-4">
                         <div className="flex items-start justify-between gap-3">
                             <div className="space-y-1">
-                                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Assinatura</div>
-                                <h3 className="text-lg font-black uppercase tracking-[0.08em] text-white">Soberania premium</h3>
-                                <p className="max-w-[28rem] text-xs leading-relaxed text-white/58">
+                                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Assinatura</div>
+                                <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[color:var(--ui-card-text)]">Soberania premium</h3>
+                                <p className="max-w-[28rem] text-xs leading-relaxed text-[color:var(--ui-card-text-soft)]">
                                     Benefícios ativos, validade real de 30 dias e recompensas concretas de renovação dentro do próprio ritual premium.
                                 </p>
                             </div>
-                            <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-white/10 bg-white/5 text-white/65'}`}>
+                            <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
                                 {premiumLabel}
                             </div>
                         </div>
@@ -1933,10 +1989,10 @@ const PremiumTab: React.FC = () => {
 
                     <div className="space-y-4 p-4">
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Validade</div>
-                                <div className="mt-1 text-xl font-black text-white">{premiumCycleLabel}</div>
-                                <div className="text-[11px] text-white/55">
+                            <div className="rounded-2xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-3">
+                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--ui-card-text-soft)]">Validade</div>
+                                <div className="mt-1 text-xl font-black text-[color:var(--ui-card-text)]">{premiumCycleLabel}</div>
+                                <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">
                                     {isPremium && premiumExpiresLabel ? `até ${premiumExpiresLabel}` : 'por ativação'}
                                 </div>
                             </div>
@@ -1951,14 +2007,14 @@ const PremiumTab: React.FC = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Benefícios ativos</div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Benefícios ativos</div>
                             <div className="grid gap-2">
                                 {GOLD_PREMIUM_PRODUCT.benefits.map((benefit) => (
-                                    <div key={benefit} className="flex items-start gap-2 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
+                                    <div key={benefit} className="flex items-start gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
                                         <span className="mt-0.5 text-[var(--skin-accent-color)]">
                                             <CheckIcon className="h-4 w-4" />
                                         </span>
-                                        <span className="text-xs leading-relaxed text-white/78">{benefit}</span>
+                                        <span className="text-xs leading-relaxed text-[color:var(--ui-card-text)]">{benefit}</span>
                                     </div>
                                 ))}
                             </div>
@@ -2262,3 +2318,4 @@ export const SettingsView: React.FC = () => {
         </>
     );
 };
+

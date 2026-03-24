@@ -260,6 +260,9 @@ export const LoginView: React.FC = () => {
                     premiumExpiresAt: null,
                     premiumRewardPending: false,
                     premiumRewardPayload: null,
+                    expBoostMultiplier: null,
+                    expBoostExpiresAt: null,
+                    expBoostProductId: null,
                     starterRewardsPending: true,
                     vanguardWelcomePending: false,
                     vanguardWelcomePayload: null,
@@ -310,6 +313,9 @@ export const LoginView: React.FC = () => {
                         premium_expires_at: newProfile.premiumExpiresAt,
                         premium_reward_pending: newProfile.premiumRewardPending ?? false,
                         premium_reward_payload: newProfile.premiumRewardPayload ?? {},
+                        exp_boost_multiplier: newProfile.expBoostMultiplier,
+                        exp_boost_expires_at: newProfile.expBoostExpiresAt,
+                        exp_boost_product_id: newProfile.expBoostProductId,
                     }]);
 
                 if (profileError) throw profileError;
@@ -475,6 +481,9 @@ export const LoginView: React.FC = () => {
                         premiumExpiresAt: profile.premium_expires_at ?? null,
                         premiumRewardPending: profile.premium_reward_pending ?? false,
                         premiumRewardPayload: profile.premium_reward_payload ?? null,
+                        expBoostMultiplier: profile.exp_boost_multiplier ?? null,
+                        expBoostExpiresAt: profile.exp_boost_expires_at ?? null,
+                        expBoostProductId: profile.exp_boost_product_id ?? null,
                     };
                 }
             }

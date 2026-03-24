@@ -129,9 +129,12 @@ const BattleTaskItem: React.FC<{
 };
 
 export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
-    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, scheduleAndCompleteNow, updateTask, toggleTaskCompletion, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool, getArenas, checklistItems, showToast } = useGame();
+    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, scheduleAndCompleteNow, updateTask, toggleTaskCompletion, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool, getArenas, checklistItems, showToast, appMode } = useGame();
 
     const [isAdjusting, setIsAdjusting] = useState(false);
+    const isBasicMode = appMode === 'BASIC';
+    const softPanelClass = isBasicMode ? 'core-surface' : 'bg-black/20 border border-white/6';
+    const progressTrackClass = isBasicMode ? 'bg-[var(--ui-core-surface-bg)] border border-[var(--ui-core-surface-border)]' : 'bg-black/30';
 
     const arenas = getArenas();
     const isClanQuestActionId = (actionId: string) => isClanQuestAction(actionId, actions, arenas);
@@ -236,7 +239,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                                 key={group.ids[0]}
                                 onClick={() => handleGroupClick(group)}
                                 disabled={isStockOut}
-                                className={`w-full flex items-center justify-between text-left p-2 rounded-lg transition-colors border ${isFreeAction ? 'free-action-shell free-action-outline' : ''} ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : isFreeAction ? 'hover:border-white/35 hover:bg-white/[0.02]' : 'bg-black/20 hover:bg-white/[0.04] border-white/6'}`}
+                                className={`w-full flex items-center justify-between text-left p-2 rounded-lg transition-colors border ${isFreeAction ? 'free-action-shell free-action-outline' : ''} ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : isFreeAction ? 'hover:border-white/35 hover:bg-white/[0.02]' : `${softPanelClass} hover:bg-white/[0.04]`}`}
                             >
                                 <span className={`text-sm ${isStockOut ? 'text-gray-500' : isFreeAction ? 'text-slate-100' : ''}`}><PlusIcon className="w-4 h-4 inline-block mr-2" />{group.action.name}</span>
                                 <span className={`text-xs font-mono px-1.5 rounded ${isFreeAction ? 'free-action-chip text-[rgba(234,239,246,0.92)]' : isStockOut ? 'bg-gray-800 text-gray-600' : 'bg-gray-700 text-white'}`}>x{group.count}</span>
@@ -254,7 +257,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         const action = getActionById(task.actionId);
                         const isFreeAction = action?.actionType === 'Livre';
                         return (
-                            <div key={task.id} className={`w-full flex items-center justify-between text-left p-2 border rounded-lg ${isFreeAction ? 'free-action-shell free-action-outline' : 'bg-black/20 border-white/6'}`}>
+                            <div key={task.id} className={`w-full flex items-center justify-between text-left p-2 border rounded-lg ${isFreeAction ? 'free-action-shell free-action-outline' : softPanelClass}`}>
                                 <span className={`text-sm ${isFreeAction ? 'text-slate-100' : ''}`}>{action?.icon} {action?.name}</span>
                                 <button onClick={() => handleUncommitTask(task.id)}><XIcon className="w-4 h-4 text-red-400" /></button>
                             </div>
@@ -297,7 +300,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         <EditIcon className="w-5 h-5" />
                     </button>
                     <div className="flex-1 text-center">
-                        <div className="inline-block text-[10px] uppercase tracking-[0.2em] text-gray-400 bg-white/5 border border-white/5 rounded-lg px-2 py-1">
+                        <div className={`inline-block text-[10px] uppercase tracking-[0.2em] rounded-lg px-2 py-1 ${isBasicMode ? 'core-surface text-[color:var(--ui-card-text-soft)]' : 'text-gray-400 bg-white/5 border border-white/5'}`}>
                             Hoje {todayStr}
                         </div>
                     </div>
@@ -305,7 +308,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 </div>
                 <CycleHeader />
                 <div className='text-center'>
-                    <div className="w-full bg-black/30 rounded-full h-1.5 mt-1"><div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
+                    <div className={`w-full rounded-full h-1.5 mt-1 ${progressTrackClass}`}><div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
                     <p className="text-xs text-gray-400 mt-1">
                         Progresso: {progress.toFixed(0)}% | {commitmentStats.completedCount}/{commitmentStats.totalCount} acoes pontuaveis
                         {commitmentStats.totalAllCount !== commitmentStats.totalCount && (
@@ -423,8 +426,8 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                             <p className={`text-9xl font-black italic tracking-tighter ${rankColor} transition-all duration-1000 animate-in zoom-in-50 fade-in duration-700`}>
                                 {rankLetter}
                             </p>
-                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md px-4 py-1 rounded-full border border-white/10">
-                                <p className="text-sm font-mono tracking-[0.3em] text-white/80">SCORE: {score}</p>
+                            <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full border ${isBasicMode ? 'core-surface-strong' : 'bg-black/40 backdrop-blur-md border border-white/10'}`}>
+                                <p className={`text-sm font-mono tracking-[0.3em] ${isBasicMode ? 'text-[color:var(--ui-card-text)]' : 'text-white/80'}`}>SCORE: {score}</p>
                             </div>
                         </div>
 
@@ -525,11 +528,11 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 px-2">
-                    <div className="bg-black/20 p-3 rounded-xl text-center space-y-1">
+                    <div className={`${softPanelClass} p-3 rounded-xl text-center space-y-1`}>
                         <p className="text-xs text-gray-400 uppercase">Tarefas</p>
                         <p className="text-2xl arena-title-text text-white luxe-title-shadow leading-tight">{completedTasks.length}/{todaysTasks.length}</p>
                     </div>
-                    <div className="bg-black/20 p-3 rounded-xl text-center space-y-1">
+                    <div className={`${softPanelClass} p-3 rounded-xl text-center space-y-1`}>
                         <p className="text-xs text-gray-400 uppercase">Checklist</p>
                         <p className="text-2xl arena-title-text text-white luxe-title-shadow leading-tight">{checklistCompleted}/{checklistTotal}</p>
                     </div>

@@ -10,11 +10,13 @@
   gap: 0.5rem;
 }
 
-.mode-game.theme-dark .mundo-view-root {
+.mode-game.theme-dark .mundo-view-root,
+.mode-office.theme-dark .mundo-view-root {
   background: transparent !important;
 }
 
-.mode-game.theme-dark .mundo-tab-strip {
+.mode-game.theme-dark .mundo-tab-strip,
+.mode-office.theme-dark .mundo-tab-strip {
   background:
     linear-gradient(
       180deg,
@@ -25,74 +27,119 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
 }
 
-.mode-game.theme-light .mundo-view-root {
+.mode-game.theme-light .mundo-view-root,
+.mode-office.theme-light .mundo-view-root {
   background: var(--app-background);
 }
 
-.mode-game.theme-light .mundo-tab-strip {
+.mode-game.theme-light .mundo-tab-strip,
+.mode-office.theme-light .mundo-tab-strip {
   background: linear-gradient(180deg, rgba(243, 246, 250, 0.94), rgba(231, 237, 244, 0.88));
   border-bottom: 1px solid rgba(100, 116, 139, 0.12);
   box-shadow: 0 10px 22px rgba(88, 104, 129, 0.06);
 }
 
-.mode-game.theme-light .mundo-inline-search input {
+.mode-game.theme-light .mundo-inline-search input,
+.mode-office.theme-light .mundo-inline-search input {
   background: rgba(248, 250, 252, 0.84) !important;
   border-color: rgba(100, 116, 139, 0.16) !important;
   color: var(--text-primary) !important;
 }
 
-.mode-game.theme-light .mundo-inline-search input::placeholder {
+.mode-game.theme-light .mundo-inline-search input::placeholder,
+.mode-office.theme-light .mundo-inline-search input::placeholder {
   color: var(--game-muted-text) !important;
 }
 
 .mode-game.theme-light .mundo-view-root [class*="bg-black/20"],
 .mode-game.theme-light .mundo-view-root [class*="bg-black/30"],
-.mode-game.theme-light .mundo-view-root [class*="bg-black/40"] {
+.mode-game.theme-light .mundo-view-root [class*="bg-black/40"],
+.mode-office.theme-light .mundo-view-root [class*="bg-black/20"],
+.mode-office.theme-light .mundo-view-root [class*="bg-black/30"],
+.mode-office.theme-light .mundo-view-root [class*="bg-black/40"] {
   background-color: rgba(244, 247, 251, 0.74) !important;
 }
 
 .mode-game.theme-light .mundo-view-root .text-white,
+.mode-game.theme-light .mundo-view-root .text-white\/65,
+.mode-game.theme-light .mundo-view-root .text-white\/72,
+.mode-game.theme-light .mundo-view-root .text-white\/78,
 .mode-game.theme-light .mundo-view-root .text-white\/80,
-.mode-game.theme-light .mundo-view-root .text-white\/85 {
+.mode-game.theme-light .mundo-view-root .text-white\/85,
+.mode-office.theme-light .mundo-view-root .text-white,
+.mode-office.theme-light .mundo-view-root .text-white\/65,
+.mode-office.theme-light .mundo-view-root .text-white\/72,
+.mode-office.theme-light .mundo-view-root .text-white\/78,
+.mode-office.theme-light .mundo-view-root .text-white\/80,
+.mode-office.theme-light .mundo-view-root .text-white\/85 {
   color: var(--text-primary) !important;
 }
 
 .mode-game.theme-light .mundo-view-root .text-gray-300,
 .mode-game.theme-light .mundo-view-root .text-gray-400,
 .mode-game.theme-light .mundo-view-root .text-gray-500,
+.mode-game.theme-light .mundo-view-root .text-white\/42,
+.mode-game.theme-light .mundo-view-root .text-white\/45,
 .mode-game.theme-light .mundo-view-root .text-white\/35,
 .mode-game.theme-light .mundo-view-root .text-white\/55,
-.mode-game.theme-light .mundo-view-root .text-white\/60 {
+.mode-game.theme-light .mundo-view-root .text-white\/58,
+.mode-game.theme-light .mundo-view-root .text-white\/60,
+.mode-office.theme-light .mundo-view-root .text-gray-300,
+.mode-office.theme-light .mundo-view-root .text-gray-400,
+.mode-office.theme-light .mundo-view-root .text-gray-500,
+.mode-office.theme-light .mundo-view-root .text-white\/42,
+.mode-office.theme-light .mundo-view-root .text-white\/45,
+.mode-office.theme-light .mundo-view-root .text-white\/35,
+.mode-office.theme-light .mundo-view-root .text-white\/55,
+.mode-office.theme-light .mundo-view-root .text-white\/58,
+.mode-office.theme-light .mundo-view-root .text-white\/60 {
   color: var(--game-muted-text) !important;
 }
 
-.mode-game.theme-light .mundo-tab-strip .mundo-top-tab-inactive {
+.mode-game.theme-dark .mundo-view-root .text-gray-300,
+.mode-game.theme-dark .mundo-view-root .text-gray-400,
+.mode-game.theme-dark .mundo-view-root .text-gray-500,
+.mode-office.theme-dark .mundo-view-root .text-gray-300,
+.mode-office.theme-dark .mundo-view-root .text-gray-400,
+.mode-office.theme-dark .mundo-view-root .text-gray-500 {
+  color: var(--ui-card-text-soft) !important;
+}
+
+.mode-game.theme-light .mundo-tab-strip .mundo-top-tab-inactive,
+.mode-office.theme-light .mundo-tab-strip .mundo-top-tab-inactive {
   color: var(--ui-shell-strong) !important;
 }
 
-.mode-game.theme-light .mundo-tab-strip .mundo-top-tab-inactive:hover {
+.mode-game.theme-light .mundo-tab-strip .mundo-top-tab-inactive:hover,
+.mode-office.theme-light .mundo-tab-strip .mundo-top-tab-inactive:hover {
   color: color-mix(in srgb, var(--skin-accent-color) 24%, #243447) !important;
 }
 
-.mode-game.theme-light .mundo-tab-strip .mundo-top-tab-active {
+.mode-game.theme-light .mundo-tab-strip .mundo-top-tab-active,
+.mode-office.theme-light .mundo-tab-strip .mundo-top-tab-active {
   color: color-mix(in srgb, var(--skin-accent-color) 34%, #1f2f41) !important;
 }
 
-.mode-game.theme-light .mundo-tab-strip .mundo-top-tab-active .mundo-top-tab-icon {
+.mode-game.theme-light .mundo-tab-strip .mundo-top-tab-active .mundo-top-tab-icon,
+.mode-office.theme-light .mundo-tab-strip .mundo-top-tab-active .mundo-top-tab-icon {
   background: color-mix(in srgb, var(--skin-accent-color) 12%, rgba(245, 248, 252, 0.84)) !important;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--skin-accent-color) 26%, rgba(100, 116, 139, 0.18));
 }
 
-.mode-game.theme-dark .mundo-tab-strip .mundo-top-tab-inactive {
+.mode-game.theme-dark .mundo-tab-strip .mundo-top-tab-inactive,
+.mode-office.theme-dark .mundo-tab-strip .mundo-top-tab-inactive {
   color: rgba(226, 232, 240, 0.76) !important;
 }
 
-.mode-game.theme-dark .mundo-tab-strip .mundo-top-tab-inactive:hover {
+.mode-game.theme-dark .mundo-tab-strip .mundo-top-tab-inactive:hover,
+.mode-office.theme-dark .mundo-tab-strip .mundo-top-tab-inactive:hover {
   color: rgba(255, 255, 255, 0.96) !important;
 }
 
 .mode-game.theme-light .store-view-root .store-subtab-strip,
-.mode-game.theme-light .store-view-root .forge-tier-strip {
+.mode-game.theme-light .store-view-root .forge-tier-strip,
+.mode-office.theme-light .store-view-root .store-subtab-strip,
+.mode-office.theme-light .store-view-root .forge-tier-strip {
   background: color-mix(in srgb, var(--skin-accent-color) 10%, rgba(238, 243, 249, 0.92)) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 18%, rgba(100, 116, 139, 0.12)) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52), 0 10px 22px rgba(88, 104, 129, 0.08);
@@ -100,7 +147,10 @@
 
 .mode-game.theme-light .store-view-root .store-subtab-button-inactive,
 .mode-game.theme-light .store-view-root .forge-subtab-button-inactive,
-.mode-game.theme-light .store-view-root .forge-tier-button-inactive {
+.mode-game.theme-light .store-view-root .forge-tier-button-inactive,
+.mode-office.theme-light .store-view-root .store-subtab-button-inactive,
+.mode-office.theme-light .store-view-root .forge-subtab-button-inactive,
+.mode-office.theme-light .store-view-root .forge-tier-button-inactive {
   color: var(--ui-shell-strong) !important;
   background: var(--ui-button-secondary-bg) !important;
   border-color: var(--ui-button-secondary-border) !important;
@@ -108,7 +158,10 @@
 
 .mode-game.theme-light .store-view-root .store-subtab-button-inactive:hover,
 .mode-game.theme-light .store-view-root .forge-subtab-button-inactive:hover,
-.mode-game.theme-light .store-view-root .forge-tier-button-inactive:hover {
+.mode-game.theme-light .store-view-root .forge-tier-button-inactive:hover,
+.mode-office.theme-light .store-view-root .store-subtab-button-inactive:hover,
+.mode-office.theme-light .store-view-root .forge-subtab-button-inactive:hover,
+.mode-office.theme-light .store-view-root .forge-tier-button-inactive:hover {
   color: color-mix(in srgb, var(--skin-accent-color) 28%, #243447) !important;
   background: var(--ui-button-secondary-bg-hover) !important;
   border-color: var(--ui-button-secondary-border-hover) !important;
@@ -116,17 +169,24 @@
 
 .mode-game.theme-dark .store-view-root .store-subtab-button-inactive,
 .mode-game.theme-dark .store-view-root .forge-subtab-button-inactive,
-.mode-game.theme-dark .store-view-root .forge-tier-button-inactive {
+.mode-game.theme-dark .store-view-root .forge-tier-button-inactive,
+.mode-office.theme-dark .store-view-root .store-subtab-button-inactive,
+.mode-office.theme-dark .store-view-root .forge-subtab-button-inactive,
+.mode-office.theme-dark .store-view-root .forge-tier-button-inactive {
   color: rgba(235, 241, 248, 0.82) !important;
 }
 
 .mode-game.theme-dark .store-view-root .store-subtab-button-inactive:hover,
 .mode-game.theme-dark .store-view-root .forge-subtab-button-inactive:hover,
-.mode-game.theme-dark .store-view-root .forge-tier-button-inactive:hover {
+.mode-game.theme-dark .store-view-root .forge-tier-button-inactive:hover,
+.mode-office.theme-dark .store-view-root .store-subtab-button-inactive:hover,
+.mode-office.theme-dark .store-view-root .forge-subtab-button-inactive:hover,
+.mode-office.theme-dark .store-view-root .forge-tier-button-inactive:hover {
   color: rgba(255, 255, 255, 0.98) !important;
 }
 
-.mode-game.theme-light .store-view-root :is(.text-white, [class~="text-white"]) {
+.mode-game.theme-light .store-view-root :is(.text-white, [class~="text-white"]),
+.mode-office.theme-light .store-view-root :is(.text-white, [class~="text-white"]) {
   color: var(--text-primary) !important;
 }
 
@@ -141,7 +201,19 @@
   .text-white\/66,
   .text-white\/72,
   .text-white\/80
-) {
+ ),
+.mode-office.theme-light .store-view-root :is(
+  .text-gray-300,
+  .text-gray-400,
+  .text-gray-500,
+  .text-white\/40,
+  .text-white\/42,
+  .text-white\/45,
+  .text-white\/58,
+  .text-white\/66,
+  .text-white\/72,
+  .text-white\/80
+ ) {
   color: var(--game-muted-text) !important;
 }
 
@@ -149,6 +221,11 @@
 .mode-game.theme-light .store-view-root [class*="bg-black/25"],
 .mode-game.theme-light .store-view-root [class*="bg-black/30"],
 .mode-game.theme-light .store-view-root [class*="bg-black/35"],
-.mode-game.theme-light .store-view-root [class*="bg-black/40"] {
+.mode-game.theme-light .store-view-root [class*="bg-black/40"],
+.mode-office.theme-light .store-view-root [class*="bg-black/20"],
+.mode-office.theme-light .store-view-root [class*="bg-black/25"],
+.mode-office.theme-light .store-view-root [class*="bg-black/30"],
+.mode-office.theme-light .store-view-root [class*="bg-black/35"],
+.mode-office.theme-light .store-view-root [class*="bg-black/40"] {
   background-color: rgba(244, 247, 251, 0.78) !important;
 }

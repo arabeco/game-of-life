@@ -175,8 +175,8 @@ const RequestSection: React.FC<{
     return (
         <div className={`rounded-[26px] border p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${toneClass}`}>
             <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/55">{title}</div>
-                <div className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/85">
+                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[color:var(--ui-card-text-soft)]">{title}</div>
+                <div className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--ui-card-text)]">
                     {count}
                 </div>
             </div>
@@ -250,10 +250,10 @@ const SocialTab: React.FC = () => {
     const renderRequestsPanel = () => {
         if (relationshipCount === 0) {
             return (
-                <div className="rounded-[26px] border border-dashed border-white/10 bg-black/20 px-4 py-8 text-center">
-                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/35">Solicitacoes</div>
-                    <div className="mt-2 text-sm font-semibold text-white/80">Nenhuma solicitacao pendente.</div>
-                    <div className="mt-1 text-xs text-gray-500">Amizades e vinculos novos vao aparecer aqui.</div>
+                <div className="rounded-[26px] border border-dashed border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-4 py-8 text-center">
+                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[color:var(--ui-card-text-soft)]">Solicitacoes</div>
+                    <div className="mt-2 text-sm font-semibold text-[color:var(--ui-card-text)]">Nenhuma solicitacao pendente.</div>
+                    <div className="mt-1 text-xs text-[color:var(--ui-card-text-soft)]">Amizades e vinculos novos vao aparecer aqui.</div>
                 </div>
             );
         }
@@ -262,14 +262,14 @@ const SocialTab: React.FC = () => {
             <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-[22px] border border-[var(--skin-accent-color)]/16 bg-[linear-gradient(180deg,rgba(255,208,0,0.08)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
-                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55">Para voce</div>
-                        <div className="mt-1 text-2xl font-black text-white">{incomingRequestCount}</div>
-                        <div className="text-[11px] text-white/60">amizades e vinculos</div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Para voce</div>
+                        <div className="mt-1 text-2xl font-black text-[color:var(--ui-card-text)]">{incomingRequestCount}</div>
+                        <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">amizades e vinculos</div>
                     </div>
-                    <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
-                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55">Em aberto</div>
-                        <div className="mt-1 text-2xl font-black text-white">{outgoingRequestCount}</div>
-                        <div className="text-[11px] text-white/60">aguardando resposta</div>
+                    <div className="rounded-[22px] border border-[var(--ui-core-surface-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
+                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Em aberto</div>
+                        <div className="mt-1 text-2xl font-black text-[color:var(--ui-card-text)]">{outgoingRequestCount}</div>
+                        <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">aguardando resposta</div>
                     </div>
                 </div>
 

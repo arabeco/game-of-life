@@ -5,6 +5,7 @@ import { getCatalogItems, ItemDef } from '../../constants/items';
 import { ACTIVE_GOLD_STORE_ITEM_IDS } from '../../constants/goldCatalog';
 import { ItemArt } from '../ItemArt';
 import { ItemDetailModal } from '../ItemDetailModal';
+import { ConfirmationModal } from '../ConfirmationModal';
 
 const STORE_CATEGORY_LABELS: Record<ItemDef['category'], string> = {
     skin: 'Skin',
@@ -34,6 +35,7 @@ export const ItemsStore: React.FC = () => {
     const { buyStoreItem } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<ItemDef | null>(null);
+    const [pendingPurchaseItem, setPendingPurchaseItem] = useState<ItemDef | null>(null);
 
     const items = useMemo(() => {
         const lowTicketIds = new Set<string>(ACTIVE_GOLD_STORE_ITEM_IDS);
@@ -50,13 +52,19 @@ export const ItemsStore: React.FC = () => {
     const handleBuy = async (event: React.MouseEvent<HTMLButtonElement>, item: ItemDef) => {
         event.stopPropagation();
         if (loading || !item.costGold) return;
-        setLoading(item.id);
+        setPendingPurchaseItem(item);
+    };
+
+    const handleConfirmBuy = async () => {
+        if (!pendingPurchaseItem || !pendingPurchaseItem.costGold) return;
+        setLoading(pendingPurchaseItem.id);
         try {
-            await buyStoreItem(item.id, 'exclusive');
+            await buyStoreItem(pendingPurchaseItem.id, 'exclusive');
         } catch (error) {
             console.error('Store item purchase failed', error);
         } finally {
             setLoading(null);
+            setPendingPurchaseItem(null);
         }
     };
 
@@ -122,6 +130,15 @@ export const ItemsStore: React.FC = () => {
                     item={selectedItem}
                     type="catalog"
                     onClose={() => setSelectedItem(null)}
+                />
+            )}
+            {pendingPurchaseItem && pendingPurchaseItem.costGold && (
+                <ConfirmationModal
+                    title="Confirmar compra"
+                    message={`${pendingPurchaseItem.name} vai debitar ${pendingPurchaseItem.costGold} ouro da sua conta. Deseja continuar?`}
+                    confirmLabel={`COMPRAR · ${pendingPurchaseItem.costGold} 🪙`}
+                    onConfirm={() => { void handleConfirmBuy(); }}
+                    onCancel={() => setPendingPurchaseItem(null)}
                 />
             )}
         </>

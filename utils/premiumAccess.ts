@@ -38,6 +38,16 @@ export const getPremiumDaysRemaining = (profile?: PremiumLikeProfile | null, now
   return Math.max(0, Math.ceil((expiryDate.getTime() - now) / (24 * 60 * 60 * 1000)));
 };
 
+export const isPremiumInLastDay = (profile?: PremiumLikeProfile | null, now: number = Date.now()): boolean => {
+  if (!isPremiumActive(profile, now)) return false;
+  const daysRemaining = getPremiumDaysRemaining(profile, now);
+  return daysRemaining === 1;
+};
+
+export const getDiscountedPremiumPrice = (basePrice: number, discountPercent: number = 0.1): number => {
+  return Math.max(0, Math.round(basePrice * (1 - discountPercent)));
+};
+
 export const getNextPremiumExpiryAt = (currentExpiresAt?: string | null, now: number = Date.now()): string => {
   const currentExpiry = currentExpiresAt ? new Date(currentExpiresAt).getTime() : NaN;
   const baseTime = Number.isFinite(currentExpiry) && currentExpiry > now ? currentExpiry : now;

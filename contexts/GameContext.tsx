@@ -23,6 +23,7 @@ import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, i
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
+import { getExpBoostMultiplier, getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive } from '../utils/premiumAccess';
 import { emitArenaAttention } from '../utils/arenaAttention';
@@ -130,6 +131,9 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     premiumExpiresAt: null,
     premiumRewardPending: false,
     premiumRewardPayload: null,
+    expBoostMultiplier: null,
+    expBoostExpiresAt: null,
+    expBoostProductId: null,
     skin: 'BASIC',
     unlockedSkins: { BASIC: true },
     inventory: [],
@@ -495,7 +499,7 @@ export interface GameContextType {
     // Forge & Store
     inventory: InventoryItem[];
     buyGoldPack: (packId: string) => Promise<void>;
-    buyStoreItem: (itemId: string, type: 'premium' | 'codex' | 'exclusive' | 'boost') => Promise<void>;
+    buyStoreItem: (itemId: string, type: 'premium' | 'codex' | 'exclusive' | 'boost', options?: { costOverrideGold?: number; successMessage?: string }) => Promise<void>;
     recycleItem: (instanceId: string) => Promise<void>;
     craftItem: (tier: number, category?: string, exactItemId?: string) => Promise<InventoryItem | null>;
     equipItem: (item: InventoryItem) => Promise<void>;
@@ -1707,6 +1711,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     }, [session?.user.id, fetchInventory]);
 
+    const promptGoldShortage = useCallback((detail: {
+        requiredGold: number;
+        label?: string;
+        storeTab?: 'store' | 'codexes' | 'items' | 'forge';
+        section?: string | null;
+    }) => {
+        if (typeof window === 'undefined') return;
+        window.dispatchEvent(new CustomEvent('gold-shortage', {
+            detail: {
+                requiredGold: detail.requiredGold,
+                currentGold: Number(userProfile.wallet?.gold || 0),
+                label: detail.label || 'esta compra',
+                storeTab: detail.storeTab || 'store',
+                section: detail.section || 'packs',
+            },
+        }));
+    }, [userProfile.wallet?.gold]);
+
     const buyGoldPack = async (packId: string) => {
         const pack = GOLD_PACKS.find(p => p.id === packId);
         if (!pack) return;
@@ -1733,7 +1755,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const buyStoreItem = async (itemId: string, type: 'premium' | 'codex' | 'exclusive' | 'boost') => {
+    const buyStoreItem = async (
+        itemId: string,
+        type: 'premium' | 'codex' | 'exclusive' | 'boost',
+        options?: { costOverrideGold?: number; successMessage?: string },
+    ) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
 
@@ -1757,11 +1783,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } else if (type === 'boost') {
             const item = getGoldBoostProduct(itemId);
             if (!item) return;
-            cost = item.priceGold;
+            cost = options?.costOverrideGold ?? item.priceGold;
             name = item.name;
         } else if (type === 'premium') {
-            cost = GOLD_PREMIUM_PRODUCT.priceGold;
+            cost = options?.costOverrideGold ?? GOLD_PREMIUM_PRODUCT.priceGold;
             name = GOLD_PREMIUM_PRODUCT.name;
+        }
+
+        if ((userProfile.wallet?.gold || 0) < cost) {
+            const missingGold = Math.max(0, cost - Number(userProfile.wallet?.gold || 0));
+            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para ${name || 'essa compra'}.`, "warning");
+            promptGoldShortage({
+                requiredGold: cost,
+                label: name || 'essa compra',
+                storeTab: type === 'exclusive' ? 'items' : 'store',
+                section: type === 'premium' ? 'premium' : type === 'boost' ? 'boosts' : 'packs',
+            });
+            return;
         }
 
         if ((userProfile.wallet?.gold || 0) < cost) {
@@ -1800,6 +1838,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             fetchInventory(userId);
         } else if (type === 'codex') {
             grantUserUnlock('codexes', itemId);
+        } else if (type === 'boost') {
+            const boost = getGoldBoostProduct(itemId);
+            if (!boost) return;
+
+            const expBoostExpiresAt = getNextExpBoostExpiryAt(boost.durationHours, userProfile.expBoostExpiresAt);
+            updateUserProfile({
+                expBoostMultiplier: 2,
+                expBoostExpiresAt,
+                expBoostProductId: boost.id,
+            });
+            showToast(`Debito de ${cost} Ouro confirmado. ${boost.name} ativo.`, "success");
+            return;
         } else if (type === 'premium') {
             const premiumExpiresAt = getNextPremiumExpiryAt(userProfile.premiumExpiresAt);
             const premiumRewardPayload = await unlockPremiumPack(premiumExpiresAt);
@@ -1809,7 +1859,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 premiumRewardPending: true,
                 premiumRewardPayload,
             });
-            showToast(`Debito de ${cost} Ouro confirmado. Premium renovado por 30 dias.`, "success");
+            showToast(options?.successMessage || `Debito de ${cost} Ouro confirmado. Premium renovado por 30 dias.`, "success");
             return;
         }
 
@@ -3731,6 +3781,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const catalogItem = codexCatalog.find(c => c.id === catalogId);
         if (!catalogItem) return;
+        const priceGold = Number(catalogItem.price_gold ?? Math.round(catalogItem.price_brl ?? 0));
+
+        if ((userProfile.wallet?.gold || 0) < priceGold) {
+            const missingGold = Math.max(0, priceGold - Number(userProfile.wallet?.gold || 0));
+            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para adquirir ${catalogItem.title}.`, 'warning');
+            promptGoldShortage({
+                requiredGold: priceGold,
+                label: `adquirir ${catalogItem.title}`,
+                storeTab: 'store',
+                section: 'packs',
+            });
+            return;
+        }
 
         const { data, error } = await supabase.rpc('buy_codex_catalog_item', {
             p_catalog_id: catalogId,
@@ -4042,6 +4105,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const createRelationshipInvite = async (recipientId: string, linkType: RelationshipLinkType): Promise<boolean> => {
+        const inviteCost = linkType === 'mentoria' ? 100 : 50;
+        if ((userProfile.wallet?.gold || 0) < inviteCost) {
+            const missingGold = Math.max(0, inviteCost - Number(userProfile.wallet?.gold || 0));
+            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para esse convite.`, 'warning');
+            promptGoldShortage({
+                requiredGold: inviteCost,
+                label: linkType === 'mentoria' ? 'enviar mentoria' : linkType === 'parceria' ? 'enviar parceria' : 'enviar competicao',
+                storeTab: 'store',
+                section: 'packs',
+            });
+            return false;
+        }
+
         const { data, error } = await supabase.rpc('create_relationship_link_invite', {
             p_recipient_id: recipientId,
             p_link_type: linkType,
@@ -4053,7 +4129,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return false;
         }
 
-        const inviteCost = linkType === 'mentoria' ? 100 : 50;
         const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - inviteCost));
         const inviteId = String((data as any)?.invite?.id || '');
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
@@ -4142,6 +4217,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         relationshipLinkId: string,
         arenaInput: { assetId: string; name: string; description?: string; icon?: string }
     ): Promise<Arena | null> => {
+        if ((userProfile.wallet?.gold || 0) < 50) {
+            const missingGold = Math.max(0, 50 - Number(userProfile.wallet?.gold || 0));
+            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para abrir uma nova arena vinculada.`, 'warning');
+            promptGoldShortage({
+                requiredGold: 50,
+                label: 'abrir uma nova arena vinculada',
+                storeTab: 'store',
+                section: 'packs',
+            });
+            return null;
+        }
+
         const { data, error } = await supabase.rpc('create_linked_relationship_arena', {
             p_relationship_link_id: relationshipLinkId,
             p_asset_id: arenaInput.assetId,
@@ -4397,6 +4484,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     ): Promise<boolean> => {
         const userId = getSupabaseUserId();
         if (!userId) return false;
+
+        if ((userProfile.wallet?.gold || 0) < 100) {
+            const missingGold = Math.max(0, 100 - Number(userProfile.wallet?.gold || 0));
+            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para forjar essa campanha.`, 'warning');
+            promptGoldShortage({
+                requiredGold: 100,
+                label: 'forjar uma campanha para o pupilo',
+                storeTab: 'store',
+                section: 'packs',
+            });
+            return false;
+        }
 
         if (!codex?.template || !Array.isArray(codex.template.levels) || codex.template.levels.length === 0) {
             showToast('Essa campanha ainda nao tem fases para enviar.');
@@ -4988,11 +5087,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setCycleExpBonus(prev => prev + expDeposited);
             showToast(`${expDeposited} EXP foi adicionada ao seu ciclo.`);
         } else if (expDeposited > 0) {
+            const boostedExp = Math.round(expDeposited * getExpBoostMultiplier(userProfile));
             // Fallback if no cycle, apply to user directly?Or just warn?
             // User asked for "cycle", so assuming cycle is manh?datory for this flow.
             // But let's apply to user if no cycle, just in case.
-            updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + expDeposited } });
-            showToast(`+${expDeposited} EXP`, 'success');
+            updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + boostedExp } });
+            showToast(`+${boostedExp} EXP`, 'success');
         }
 
         // Persist to Supabase if logged in
@@ -5340,7 +5440,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [clan?.id]);
 
 
-    useEffect(() => { document.body.setAttribute('data-skin', userProfile.skin); }, [userProfile.skin]);
+    useEffect(() => {
+        document.body.setAttribute('data-skin', appMode === 'BASIC' ? 'BASIC' : userProfile.skin);
+    }, [appMode, userProfile.skin]);
 
     useEffect(() => {
         const supabaseUserId = getSupabaseUserId();
@@ -5423,7 +5525,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         setUserProfile(prev => ({ ...prev, ...profileData }));
         if (profileData.skin) {
-            document.body.setAttribute('data-skin', profileData.skin);
+            document.body.setAttribute('data-skin', appMode === 'BASIC' ? 'BASIC' : profileData.skin);
         }
         const supabaseUserId = getSupabaseUserId();
         if (supabaseUserId) {
@@ -5481,6 +5583,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'premiumRewardPending',
                 'premiumRewardShownAt',
                 'premiumRewardPayload',
+                'expBoostMultiplier',
+                'expBoostExpiresAt',
+                'expBoostProductId',
                 'appMode',
                 'themePreference',
                 'arenasViewMode',
@@ -5518,6 +5623,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (isPremiumActive(userProfile)) return;
 
         updateUserProfile({ isPremium: false });
+    }, [hasHydratedFromSupabase, updateUserProfile, userProfile]);
+
+    useEffect(() => {
+        if (!hasHydratedFromSupabase) return;
+        if (!userProfile.expBoostExpiresAt && !userProfile.expBoostMultiplier && !userProfile.expBoostProductId) return;
+        if (hasActiveExpBoost(userProfile)) return;
+
+        updateUserProfile({
+            expBoostMultiplier: null,
+            expBoostExpiresAt: null,
+            expBoostProductId: null,
+        });
     }, [hasHydratedFromSupabase, updateUserProfile, userProfile]);
 
     const updateMood = (mood: number) => updateUserProfile({ mood });
@@ -6129,8 +6246,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const unbankedOpenDayExp = currentDayBaseExp + currentDaySitrepBonus + currentDayVillageBonus;
         const isPremiumUser = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
         const rawExp = cycleExpBonus + unbankedOpenDayExp;
-        const premiumBonusExp = isPremiumUser ?Math.round(rawExp * 0.1) : 0;
-        const expGained = rawExp + premiumBonusExp;
+        const boostMultiplier = getExpBoostMultiplier(userProfile);
+        const boostedRawExp = Math.round(rawExp * boostMultiplier);
+        const expBoostBonus = Math.max(0, boostedRawExp - rawExp);
+        const premiumBonusExp = isPremiumUser ?Math.round(boostedRawExp * 0.1) : 0;
+        const expGained = boostedRawExp + premiumBonusExp;
 
         const identitySnapshot = {
             avatarUrl: userProfile.avatarUrl,
@@ -6164,6 +6284,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             questPts: questBonus,
             consistencyPts: consistencyBonus,
             volumePts: volumeBonus,
+            expBoostBonusPts: expBoostBonus,
             premiumBonusPts: premiumBonusExp,
         };
 
@@ -6408,7 +6529,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (activeCycle) {
             setCycleExpBonus(prev => prev + expGained);
         } else {
-            updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + expGained } });
+            const boostedExp = Math.round(expGained * getExpBoostMultiplier(userProfile));
+            updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + boostedExp } });
         }
     };
 
@@ -8285,7 +8407,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if ((userProfile.wallet?.gold || 0) < GOLD_CLAN_CREATION_COST) {
-            showToast(`Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`, 'error');
+            showToast(`Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`, 'warning');
+            promptGoldShortage({
+                requiredGold: GOLD_CLAN_CREATION_COST,
+                label: 'criar um grupo',
+                storeTab: 'store',
+                section: 'packs',
+            });
             return false;
         }
 

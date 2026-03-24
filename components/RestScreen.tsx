@@ -121,6 +121,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         scheduleAndCompleteMilestoneNow,
         getLocalDateString,
         oraclePreferences,
+        appMode,
+        activeTheme,
         showToast
     } = useGame();
     const [isClosing, setIsClosing] = useState(false);
@@ -164,6 +166,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const currentActionSessionTask = actionSession?.taskId ? tasks.find(task => task.id === actionSession.taskId) : null;
     const isActionSessionCompleted = Boolean(currentActionSessionTask?.completed);
     const sitrepStatusLabel = isSitrepLocked ? 'Travado' : 'Liberado';
+    const isBasicMode = appMode === 'BASIC';
+    const isLightTheme = activeTheme === 'LIGHT';
     const unlockHint = isUnlocked ? 'Saindo...' : 'Segure 1s para desbloquear';
     const shouldShowUnlockHint = isUnlocked || showUnlockHint;
 
@@ -952,26 +956,44 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     return (
         <Portal>
             <div
-                className={`restscreen-root fixed inset-0 z-[150] flex flex-col items-center justify-start gap-2 bg-black transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y border-[var(--skin-accent-color)]/20 ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
-                style={{ touchAction: 'none' }} // Prevent scrolling
+                className={`restscreen-root fixed inset-0 z-[150] flex flex-col items-center justify-start gap-2 transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y ${isBasicMode ? 'border-[var(--ui-core-surface-border)]' : 'border-[var(--skin-accent-color)]/20'} ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
+                style={{ touchAction: 'none', background: 'var(--app-background)' }} // Prevent scrolling
             >
                 {/* Sephirot Fog Background */}
-                <div className="absolute inset-0 z-0 pointer-events-none opacity-60">
+                <div className="absolute inset-0 z-0 pointer-events-none" style={{ opacity: isBasicMode ? (isLightTheme ? 0.12 : 0.22) : 0.6 }}>
                     <SephirotFog
                         points={[{ x: 50, y: 50, level: 10 }]}
-                        color={currentMood?.color || 'var(--skin-accent-color)'}
+                        color={isBasicMode ? (isLightTheme ? 'rgba(108, 125, 146, 0.55)' : 'rgba(176, 194, 214, 0.36)') : (currentMood?.color || 'var(--skin-accent-color)')}
                         mode="arena"
                     />
                 </div>
 
                 {/* Ambient Smoke Layer */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--skin-accent-color)]/5 to-transparent animate-smoke-slow" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--skin-accent-color)]/5 to-transparent animate-smoke-slow-reverse" />
+                <div className={`absolute inset-0 overflow-hidden pointer-events-none z-0 ${isBasicMode ? 'opacity-45' : ''}`}>
+                    <div
+                        className="absolute inset-0 animate-smoke-slow"
+                        style={{
+                            background: isBasicMode
+                                ? (isLightTheme
+                                    ? 'linear-gradient(180deg, transparent 0%, rgba(121, 139, 160, 0.08) 48%, transparent 100%)'
+                                    : 'linear-gradient(180deg, transparent 0%, rgba(176, 192, 212, 0.07) 48%, transparent 100%)')
+                                : 'linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--skin-accent-color) 5%, transparent) 50%, transparent 100%)',
+                        }}
+                    />
+                    <div
+                        className="absolute inset-0 animate-smoke-slow-reverse"
+                        style={{
+                            background: isBasicMode
+                                ? (isLightTheme
+                                    ? 'linear-gradient(90deg, transparent 0%, rgba(103, 120, 141, 0.07) 48%, transparent 100%)'
+                                    : 'linear-gradient(90deg, transparent 0%, rgba(166, 182, 203, 0.06) 48%, transparent 100%)')
+                                : 'linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--skin-accent-color) 5%, transparent) 50%, transparent 100%)',
+                        }}
+                    />
 
                     {/* Floating Blur Layers */}
-                    <div className="absolute top-1/4 -left-20 w-64 h-64 bg-[var(--skin-accent-color)]/10 rounded-full blur-[100px] animate-float" />
-                    <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[var(--skin-accent-color)]/10 rounded-full blur-[120px] animate-float-delayed" />
+                    <div className={`absolute top-1/4 -left-20 rounded-full blur-[100px] animate-float ${isBasicMode ? 'w-56 h-56' : 'w-64 h-64 bg-[var(--skin-accent-color)]/10'}`} style={isBasicMode ? { background: isLightTheme ? 'rgba(145, 161, 181, 0.12)' : 'rgba(173, 189, 208, 0.08)' } : undefined} />
+                    <div className={`absolute bottom-1/4 -right-20 rounded-full blur-[120px] animate-float-delayed ${isBasicMode ? 'w-72 h-72' : 'w-80 h-80 bg-[var(--skin-accent-color)]/10'}`} style={isBasicMode ? { background: isLightTheme ? 'rgba(130, 146, 166, 0.10)' : 'rgba(160, 177, 198, 0.08)' } : undefined} />
 
                     {/* Texture Overlay */}
                     <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]" />
@@ -1072,38 +1094,59 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 <div className="flex-1 flex flex-col items-center justify-start w-full max-w-md px-4 z-10 animate-fade-in overflow-hidden h-full min-h-0 mb-2">
                     <div className="relative w-full h-full flex flex-col group">
                         {/* Decorative background glow */}
-                        <div className="absolute inset-0 bg-[var(--skin-accent-color)]/5 blur-2xl rounded-3xl -z-10 transition-all duration-500" />
+                        <div className={`absolute inset-0 rounded-3xl -z-10 transition-all duration-500 ${isBasicMode ? 'bg-[var(--ui-core-surface-bg)]/60 blur-xl' : 'bg-[var(--skin-accent-color)]/5 blur-2xl'}`} />
 
                         <GlassCard
                             id="sitrep-embedded-card"
-                            variant="gold"
-                            className="bg-black/60 backdrop-blur-md rounded-[2rem] p-4 flex flex-col gap-2 shadow-2xl relative overflow-hidden h-full border border-white/10"
+                            variant={isBasicMode ? 'neutral' : 'gold'}
+                            className={`rounded-[2rem] p-4 flex flex-col gap-2 shadow-2xl relative overflow-hidden h-full ${
+                                isBasicMode
+                                    ? 'core-surface-strong'
+                                    : 'bg-black/60 backdrop-blur-md border border-white/10'
+                            }`}
                         >
                             {/* Header / Lock Control */}
-                            <div className="flex items-center justify-between pb-2 border-b border-white/5 shrink-0">
+                            <div className={`flex items-center justify-between pb-2 shrink-0 ${isBasicMode ? 'border-b border-[var(--ui-core-surface-border)]' : 'border-b border-white/5'}`}>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-xl bg-[var(--skin-accent-color)]/10 flex items-center justify-center border border-[var(--skin-accent-color)]/30">
+                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                                        isBasicMode
+                                            ? 'bg-[var(--ui-core-surface-bg)] border border-[var(--ui-core-surface-border)]'
+                                            : 'bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30'
+                                    }`}>
                                         <CheckCircleIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                     </div>
                                     <div>
-                                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">PAINEL DIÁRIO</h2>
-                                        <div className="text-xs font-bold text-white uppercase tracking-wider">
+                                        <h2 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isBasicMode ? 'text-[color:var(--ui-card-text-soft)]' : 'text-gray-400'}`}>PAINEL DIÁRIO</h2>
+                                        <div className={`text-xs font-bold uppercase tracking-wider ${isBasicMode ? 'text-[color:var(--ui-card-text)]' : 'text-white'}`}>
                                             {dailyCommitment.stage === 'planning' ? 'Planejamento' : dailyCommitment.stage === 'battle' ? 'Combate' : 'Julgamento'}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <div className={`hidden sm:flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${isSitrepLocked ? 'border-amber-300/25 bg-amber-300/10 text-amber-200 shadow-[0_0_16px_rgba(251,191,36,0.10)]' : 'border-emerald-300/25 bg-emerald-300/10 text-emerald-200 shadow-[0_0_16px_rgba(52,211,153,0.10)]'}`}>
+                                    <div className={`hidden sm:flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${
+                                        isBasicMode
+                                            ? isSitrepLocked
+                                                ? 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'
+                                                : 'border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)]'
+                                            : isSitrepLocked
+                                                ? 'border-amber-300/25 bg-amber-300/10 text-amber-200 shadow-[0_0_16px_rgba(251,191,36,0.10)]'
+                                                : 'border-emerald-300/25 bg-emerald-300/10 text-emerald-200 shadow-[0_0_16px_rgba(52,211,153,0.10)]'
+                                    }`}>
                                         {isSitrepLocked ? <EyeIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
                                         <span>{sitrepStatusLabel}</span>
                                     </div>
                                     <button
                                         onClick={() => setIsSitrepLocked(!isSitrepLocked)}
-                                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all ${isSitrepLocked
-                                            ? 'border-amber-300/30 bg-amber-300/12 text-amber-100 shadow-[0_0_20px_rgba(251,191,36,0.14)] hover:bg-amber-300/18'
-                                            : 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border border-[var(--skin-accent-color)]/30 shadow-[0_0_20px_rgba(212,175,55,0.14)]'
-                                            }`}
+                                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all ${
+                                            isBasicMode
+                                                ? isSitrepLocked
+                                                    ? 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text)] hover:bg-[var(--ui-core-surface-strong-bg)]'
+                                                    : 'bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)] border border-[var(--skin-accent-color)]/22 hover:bg-[var(--skin-accent-color)]/18'
+                                                : isSitrepLocked
+                                                    ? 'border-amber-300/30 bg-amber-300/12 text-amber-100 shadow-[0_0_20px_rgba(251,191,36,0.14)] hover:bg-amber-300/18'
+                                                    : 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border border-[var(--skin-accent-color)]/30 shadow-[0_0_20px_rgba(212,175,55,0.14)]'
+                                        }`}
                                     >
                                         {isSitrepLocked ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
                                         <span className="text-[9px] font-black uppercase tracking-[0.18em]">{sitrepStatusLabel}</span>
@@ -1112,7 +1155,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             </div>
 
                             {/* Content Area */}
-                            <div className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-300 ${isSitrepLocked ? 'opacity-65 saturate-75 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
+                            <div className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-300 ${isSitrepLocked ? 'opacity-65 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
                                 <SitrepContent />
                             </div>
                         </GlassCard>

@@ -28,11 +28,13 @@
   justify-content: center;
 }
 
-.mode-game.theme-dark .settings-view-root {
+.mode-game.theme-dark .settings-view-root,
+.mode-office.theme-dark .settings-view-root {
   background: transparent !important;
 }
 
-.mode-game.theme-dark .settings-tab-strip {
+.mode-game.theme-dark .settings-tab-strip,
+.mode-office.theme-dark .settings-tab-strip {
   background:
     linear-gradient(
       180deg,
@@ -43,37 +45,74 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
 }
 
-.mode-game.theme-light .settings-view-root {
+.mode-game.theme-light .settings-view-root,
+.mode-office.theme-light .settings-view-root {
   background: var(--app-background);
 }
 
-.mode-game.theme-light .settings-tab-strip {
+.mode-game.theme-light .settings-tab-strip,
+.mode-office.theme-light .settings-tab-strip {
   background: linear-gradient(180deg, rgba(243, 246, 250, 0.96), rgba(231, 237, 244, 0.9));
   border: 1px solid rgba(100, 116, 139, 0.14);
   box-shadow: 0 10px 22px rgba(88, 104, 129, 0.06);
 }
 
-.mode-game.theme-light .settings-panel-card {
+.mode-game.theme-light .settings-panel-card,
+.mode-office.theme-light .settings-panel-card {
   background: rgba(244, 247, 251, 0.8);
   border: 1px solid rgba(100, 116, 139, 0.14);
 }
 
 .mode-game.theme-light .settings-view-root [class*="bg-black/20"],
 .mode-game.theme-light .settings-view-root [class*="bg-black/30"],
-.mode-game.theme-light .settings-view-root [class*="bg-black/40"] {
+.mode-game.theme-light .settings-view-root [class*="bg-black/40"],
+.mode-office.theme-light .settings-view-root [class*="bg-black/20"],
+.mode-office.theme-light .settings-view-root [class*="bg-black/30"],
+.mode-office.theme-light .settings-view-root [class*="bg-black/40"] {
   background-color: rgba(244, 247, 251, 0.74) !important;
 }
 
 .mode-game.theme-light .settings-view-root .text-white,
-.mode-game.theme-light .settings-view-root .text-white\/70 {
+.mode-game.theme-light .settings-view-root .text-white\/65,
+.mode-game.theme-light .settings-view-root .text-white\/70,
+.mode-game.theme-light .settings-view-root .text-white\/72,
+.mode-game.theme-light .settings-view-root .text-white\/78,
+.mode-game.theme-light .settings-view-root .text-white\/80,
+.mode-game.theme-light .settings-view-root .text-white\/84,
+.mode-office.theme-light .settings-view-root .text-white,
+.mode-office.theme-light .settings-view-root .text-white\/65,
+.mode-office.theme-light .settings-view-root .text-white\/70,
+.mode-office.theme-light .settings-view-root .text-white\/72,
+.mode-office.theme-light .settings-view-root .text-white\/78,
+.mode-office.theme-light .settings-view-root .text-white\/80,
+.mode-office.theme-light .settings-view-root .text-white\/84 {
   color: var(--text-primary) !important;
 }
 
 .mode-game.theme-light .settings-view-root .text-gray-300,
 .mode-game.theme-light .settings-view-root .text-gray-400,
 .mode-game.theme-light .settings-view-root .text-gray-500,
+.mode-game.theme-light .settings-view-root .text-white\/42,
 .mode-game.theme-light .settings-view-root .text-white\/35,
 .mode-game.theme-light .settings-view-root .text-white\/45,
-.mode-game.theme-light .settings-view-root .text-white\/55 {
+.mode-game.theme-light .settings-view-root .text-white\/55,
+.mode-game.theme-light .settings-view-root .text-white\/58,
+.mode-office.theme-light .settings-view-root .text-gray-300,
+.mode-office.theme-light .settings-view-root .text-gray-400,
+.mode-office.theme-light .settings-view-root .text-gray-500,
+.mode-office.theme-light .settings-view-root .text-white\/42,
+.mode-office.theme-light .settings-view-root .text-white\/35,
+.mode-office.theme-light .settings-view-root .text-white\/45,
+.mode-office.theme-light .settings-view-root .text-white\/55,
+.mode-office.theme-light .settings-view-root .text-white\/58 {
   color: var(--game-muted-text) !important;
+}
+
+.mode-game.theme-dark .settings-view-root .text-gray-300,
+.mode-game.theme-dark .settings-view-root .text-gray-400,
+.mode-game.theme-dark .settings-view-root .text-gray-500,
+.mode-office.theme-dark .settings-view-root .text-gray-300,
+.mode-office.theme-dark .settings-view-root .text-gray-400,
+.mode-office.theme-dark .settings-view-root .text-gray-500 {
+  color: var(--ui-card-text-soft) !important;
 }

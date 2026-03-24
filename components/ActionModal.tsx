@@ -287,6 +287,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
 
         const resolvedArenaId = editableAction.arenaId || action?.arenaId || arenaId;
 
+        if (!isEditingTaskInstance && !resolvedArenaId) {
+            if (arenas.length === 0) {
+                showToast('Crie uma arena antes de criar uma ação.', 'warning');
+                onClose();
+                return;
+            }
+            showToast('Escolha uma arena para essa ação antes de salvar.', 'warning');
+            setIsArenaPickerOpen(true);
+            return;
+        }
+
         const actionData: Omit<Action, 'id'> = {
             arenaId: resolvedArenaId,
             name: editableAction.name,

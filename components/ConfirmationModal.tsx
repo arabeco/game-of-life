@@ -7,9 +7,18 @@ interface ConfirmationModalProps {
     message: string;
     onConfirm: () => void;
     onCancel: () => void;
+    confirmLabel?: string;
+    cancelLabel?: string;
 }
 
-export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ title, message, onConfirm, onCancel }) => {
+export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+    title,
+    message,
+    onConfirm,
+    onCancel,
+    confirmLabel = 'CONFIRMAR',
+    cancelLabel = 'CANCELAR',
+}) => {
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10002] flex items-center justify-center animate-fade-in" onClick={onCancel}>
@@ -18,10 +27,10 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ title, mes
                     <p className="text-center text-gray-300">{message}</p>
                     <div className="flex space-x-2">
                         <button onClick={onCancel} className="w-full py-2 rounded-xl luxe-button-secondary">
-                            CANCELAR
+                            {cancelLabel}
                         </button>
                         <button onClick={onConfirm} className="w-full py-2 rounded-xl luxe-skin-button">
-                            CONFIRMAR
+                            {confirmLabel}
                         </button>
                     </div>
                 </GlassCard>

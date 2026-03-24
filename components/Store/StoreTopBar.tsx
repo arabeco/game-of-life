@@ -10,10 +10,10 @@ type StoreTopBarProps = {
 };
 
 const STORE_TABS: Array<{ id: StoreTab; label: string; icon?: string }> = [
-    { id: 'store', label: 'Ouro', icon: '🪙' },
+    { id: 'store', label: 'Ouro', icon: '\u{1FA99}' },
     { id: 'forge', label: 'Forja' },
     { id: 'codexes', label: 'Campanhas' },
-    { id: 'items', label: 'Items' },
+    { id: 'items', label: 'Itens' },
 ];
 
 export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange }) => {
@@ -25,12 +25,12 @@ export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange
             <div className="flex items-center gap-2">
                 <div className="shrink-0 rounded-2xl border border-white/10 bg-black/25 px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                     <div className="flex items-center gap-1.5 text-[11px] font-black leading-none text-[var(--skin-accent-color)]">
-                        <span className="text-sm">🪙</span>
-                        <span>{gold.toLocaleString()}</span>
+                        <span className="text-sm">{'\u{1FA99}'}</span>
+                        <span>{gold.toLocaleString('pt-BR')}</span>
                     </div>
                     <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-black leading-none text-cyan-400">
-                        <span className="text-sm">💎</span>
-                        <span>{fragments.toLocaleString()}</span>
+                        <span className="text-sm">{'\u{1F48E}'}</span>
+                        <span>{fragments.toLocaleString('pt-BR')}</span>
                     </div>
                 </div>
 

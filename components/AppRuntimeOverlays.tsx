@@ -29,7 +29,7 @@ export const TermsOverlay: React.FC<{ open: boolean; onAccept: () => void }> = (
         },
         {
             title: 'II. RECURSOS SOCIAIS E PARCEIROS',
-            text: 'Mentoria, clas, amizades, mensagens, uploads e Oraculo podem envolver compartilhamento de perfil, progresso, imagens e conteudo conforme sua acao no app. Uploads e anexos podem ficar acessiveis por link. Para viabilizar o servico, usamos parceiros de autenticacao, infraestrutura, IA e pagamento.',
+            text: 'Mentoria, grupos, amizades, mensagens, uploads e Oraculo podem envolver compartilhamento de perfil, progresso, imagens e conteudo conforme sua acao no app. Uploads e anexos podem ficar acessiveis por link. Para viabilizar o servico, usamos parceiros de autenticacao, infraestrutura, IA e pagamento.',
         },
         {
             title: 'III. COMPRAS E LIMITES DO SERVICO',

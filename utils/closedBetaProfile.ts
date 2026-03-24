@@ -71,6 +71,9 @@ export const buildClosedBetaProfilePayload = (session: Session) => {
     premium_expires_at: null,
     premium_reward_pending: false,
     premium_reward_payload: {},
+    exp_boost_multiplier: null,
+    exp_boost_expires_at: null,
+    exp_boost_product_id: null,
   };
 };
 

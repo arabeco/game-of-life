@@ -17,7 +17,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const isBasicMode = appMode === 'BASIC';
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [icon, setIcon] = useState('🏛️');
+    const [icon, setIcon] = useState('\u{1F3DB}\uFE0F');
     const [clanType, setClanType] = useState<ClanType>(isBasicMode ? 'Office' : 'Casual');
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
@@ -39,7 +39,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
         }
 
         let finalBackgroundUrl = backgroundUrl;
-        if (clanType.toLowerCase() === 'office' && !officeBackgrounds.some(bg => bg.value === backgroundUrl)) {
+        if (clanType.toLowerCase() === 'office' && !officeBackgrounds.some((bg) => bg.value === backgroundUrl)) {
             finalBackgroundUrl = officeBackgrounds[0].value;
         }
 
@@ -53,9 +53,21 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     };
 
     const handleSave = async () => {
-        if (isSubmitting || !canAffordClanCreation) return;
+        if (isSubmitting) return;
         if (!name.trim()) {
             alert('O nome do grupo nao pode estar vazio.');
+            return;
+        }
+        if (!canAffordClanCreation) {
+            window.dispatchEvent(new CustomEvent('gold-shortage', {
+                detail: {
+                    requiredGold: GOLD_CLAN_CREATION_COST,
+                    currentGold: Number(userProfile.wallet?.gold || 0),
+                    label: 'criar um grupo',
+                    storeTab: 'store',
+                    section: 'packs',
+                },
+            }));
             return;
         }
         setIsConfirmingDebit(true);
@@ -69,14 +81,14 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     return (
         <>
             <Portal>
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
-                    <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-bold uppercase tracking-wider text-center">Criar Grupo</h2>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+                    <GlassCard variant="gold" className="m-4 w-full max-w-sm space-y-4 rounded-3xl" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="text-center text-lg font-bold uppercase tracking-wider">Criar Grupo</h2>
                         <div className="flex flex-col items-center space-y-4">
                             <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-yellow-300">
                                 {`Criacao institucional - ${GOLD_CLAN_CREATION_COST} ouro`}
                             </div>
-                            <button onClick={() => setIsIconPickerOpen(true)} className="w-24 h-24 bg-black/20 rounded-2xl flex items-center justify-center text-5xl">
+                            <button onClick={() => setIsIconPickerOpen(true)} className="flex h-24 w-24 items-center justify-center rounded-2xl bg-black/20 text-5xl">
                                 {icon}
                             </button>
                             <div className="w-full space-y-3">
@@ -86,7 +98,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     placeholder="Nome do Grupo"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-center font-bold"
+                                    className="h-12 w-full rounded-xl border border-[var(--glass-border)] bg-black/30 px-4 text-center font-bold focus:border-[var(--skin-accent-color)] focus:outline-none"
                                 />
                                 <textarea
                                     id="create-clan-description-input"
@@ -94,16 +106,22 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     rows={2}
-                                    className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-sm text-center"
+                                    className="w-full rounded-xl border border-[var(--glass-border)] bg-black/30 p-3 text-center text-sm focus:border-[var(--skin-accent-color)] focus:outline-none"
                                 />
                                 <div>
                                     <label className="text-xs font-bold text-gray-400">Tipo de Grupo</label>
-                                    <div className="flex bg-black/20 p-1 rounded-xl mt-1">
+                                    <div className="mt-1 flex rounded-xl bg-black/20 p-1">
                                         {isBasicMode ? (
-                                            <button className="w-full py-1 text-sm rounded-lg bg-white/10 text-gray-200 cursor-default">Equipe</button>
+                                            <button className="w-full cursor-default rounded-lg bg-white/10 py-1 text-sm text-gray-200">Equipe</button>
                                         ) : (
-                                            clanTypes.map(type => (
-                                                <button key={type} onClick={() => setClanType(type)} className={`w-full py-1 text-sm rounded-lg ${clanType === type ? 'bg-white/10' : 'text-gray-400'}`}>{type === 'Office' ? 'Equipe' : 'Social'}</button>
+                                            clanTypes.map((type) => (
+                                                <button
+                                                    key={type}
+                                                    onClick={() => setClanType(type)}
+                                                    className={`w-full rounded-lg py-1 text-sm ${clanType === type ? 'bg-white/10' : 'text-gray-400'}`}
+                                                >
+                                                    {type === 'Office' ? 'Equipe' : 'Social'}
+                                                </button>
                                             ))
                                         )}
                                     </div>
@@ -112,23 +130,20 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     )}
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase">Fundo do Espaco</label>
+                                    <label className="text-xs font-bold uppercase text-gray-400">Fundo do Espaco</label>
                                     <div className="grid grid-cols-3 gap-2">
-                                        {(clanType.toLowerCase() === 'office' ? officeBackgrounds : []).map(option => {
+                                        {(clanType.toLowerCase() === 'office' ? officeBackgrounds : []).map((option) => {
                                             const isSelected = backgroundUrl === option.value;
                                             return (
                                                 <button
                                                     key={option.id}
                                                     onClick={() => setBackgroundUrl(option.value)}
-                                                    className={`relative rounded-xl overflow-hidden border-2 transition-all ${isSelected ? 'border-[var(--skin-accent-color)] scale-105' : 'border-white/10 opacity-60 hover:opacity-100'}`}
+                                                    className={`relative overflow-hidden rounded-xl border-2 transition-all ${isSelected ? 'scale-105 border-[var(--skin-accent-color)]' : 'border-white/10 opacity-60 hover:opacity-100'}`}
                                                 >
-                                                    <div
-                                                        className="aspect-square w-full bg-cover bg-center"
-                                                        style={{ backgroundImage: `url(${option.value})` }}
-                                                    />
+                                                    <div className="aspect-square w-full bg-cover bg-center" style={{ backgroundImage: `url(${option.value})` }} />
                                                     {isSelected && (
-                                                        <div className="absolute inset-0 bg-[var(--skin-accent-color)]/10 flex items-center justify-center">
-                                                            <CheckIcon className="w-6 h-6 text-[var(--skin-accent-color)]" />
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-[var(--skin-accent-color)]/10">
+                                                            <CheckIcon className="h-6 w-6 text-[var(--skin-accent-color)]" />
                                                         </div>
                                                     )}
                                                 </button>
@@ -139,9 +154,15 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
 
                                 <div>
                                     <label className="text-xs font-bold text-gray-400">Entrada</label>
-                                    <div className="flex bg-black/20 p-1 rounded-xl mt-1">
-                                        {recruitmentOptions.map(opt => (
-                                            <button key={opt} onClick={() => setRecruitmentStatus(opt)} className={`w-full py-1 text-sm rounded-lg ${recruitmentStatus === opt ? 'bg-white/10' : 'text-gray-400'}`}>{opt}</button>
+                                    <div className="mt-1 flex rounded-xl bg-black/20 p-1">
+                                        {recruitmentOptions.map((opt) => (
+                                            <button
+                                                key={opt}
+                                                onClick={() => setRecruitmentStatus(opt)}
+                                                className={`w-full rounded-lg py-1 text-sm ${recruitmentStatus === opt ? 'bg-white/10' : 'text-gray-400'}`}
+                                            >
+                                                {opt}
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
@@ -153,14 +174,14 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                             </div>
                         </div>
                         <div className="flex space-x-2">
-                            <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
+                            <button onClick={onClose} className="w-full rounded-xl py-2 luxe-button-secondary">CANCELAR</button>
                             <button
                                 id="create-clan-submit-button"
                                 onClick={handleSave}
-                                disabled={isSubmitting || !canAffordClanCreation}
-                                className="w-full py-2 rounded-xl luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50"
+                                disabled={isSubmitting}
+                                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-2 luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                {isSubmitting ? 'CRIANDO...' : `CRIAR - ${GOLD_CLAN_CREATION_COST}`}
+                                {isSubmitting ? 'CRIANDO...' : <><span>Criar</span><span className="text-[11px] leading-none">{'\u{1FA99}'}</span><span>{GOLD_CLAN_CREATION_COST}</span></>}
                             </button>
                         </div>
                     </GlassCard>
@@ -179,6 +200,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                 <ConfirmationModal
                     title="Confirmar criacao"
                     message={`Criar este grupo vai debitar ${GOLD_CLAN_CREATION_COST} ouro da sua conta. Deseja continuar?`}
+                    confirmLabel={`CRIAR · ${GOLD_CLAN_CREATION_COST} \u{1FA99}`}
                     onConfirm={handleConfirmDebit}
                     onCancel={() => setIsConfirmingDebit(false)}
                 />

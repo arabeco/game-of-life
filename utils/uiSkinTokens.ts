@@ -55,6 +55,7 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
   const accent = hexToRgb(UI_SKIN_ACCENTS[normalizedSkinId]);
   const buttonBackground = UI_SKIN_BUTTON_GRADIENTS[normalizedSkinId];
   const isEmber = normalizedSkinId === 'EMBER';
+  const isBasic = normalizedSkinId === 'BASIC' || normalizedSkinId === 'DEFAULT';
 
   const white = hexToRgb('#ffffff');
   const safeDark = hexToRgb('#141b24');
@@ -74,6 +75,64 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
   const emberCrimson = hexToRgb('#991d1a');
   const emberGlow = hexToRgb('#a61f1b');
   const plannerAccent = isEmber ? emberCrimson : accent;
+
+  if (isBasic && theme === 'dark') {
+    return {
+      accentHex: UI_SKIN_ACCENTS[normalizedSkinId],
+      buttonBackground,
+      buttonText: '#111827',
+      buttonGlow: 'rgba(156, 171, 191, 0.18)',
+      accentGradientBorder: 'linear-gradient(135deg, #2c3642 0%, #b6c4d6 50%, #2c3642 100%)',
+      cardBackground: 'linear-gradient(180deg, rgba(35, 43, 54, 0.96) 0%, rgba(14, 19, 26, 0.985) 100%)',
+      cardStrongBackground: 'linear-gradient(180deg, rgba(44, 53, 65, 0.975) 0%, rgba(11, 15, 21, 0.992) 100%)',
+      borderColor: 'rgba(168, 184, 205, 0.34)',
+      borderSoftColor: 'rgba(120, 136, 156, 0.24)',
+      accentTextColor: '#e6edf5',
+      accentSoftTextColor: '#a3b0c0',
+      cardTextColor: '#e6edf5',
+      cardTextSoftColor: '#9aa8b8',
+      plannerTopBackground: 'linear-gradient(180deg, rgba(47, 56, 68, 0.96) 0%, rgba(19, 25, 33, 0.985) 100%)',
+      plannerDayHeaderBackground: 'linear-gradient(180deg, rgba(59, 70, 84, 0.95) 0%, rgba(27, 34, 44, 0.985) 100%)',
+      plannerDayHeaderText: '#edf4fb',
+      plannerScrollBackground: 'linear-gradient(180deg, rgba(34, 42, 52, 0.98) 0%, rgba(12, 17, 23, 0.992) 100%)',
+      plannerSurfaceBackground: 'linear-gradient(180deg, rgba(69, 79, 95, 0.982) 0%, rgba(28, 35, 45, 0.992) 100%)',
+      plannerWeekdayHeaderBackground: 'linear-gradient(180deg, rgba(59, 70, 84, 0.95) 0%, rgba(27, 34, 44, 0.985) 100%)',
+      plannerFloatingBackground: 'linear-gradient(180deg, rgba(74, 85, 101, 0.95) 0%, rgba(33, 41, 52, 0.985) 100%)',
+      plannerPillBackground: 'rgba(255, 255, 255, 0.08)',
+      plannerPillActiveBackground: 'rgba(181, 195, 214, 0.24)',
+      plannerSoftControlColor: '#d7e2ed',
+      plannerHourLabelColor: 'rgba(233, 241, 250, 0.92)',
+    };
+  }
+
+  if (isBasic && theme === 'light') {
+    return {
+      accentHex: UI_SKIN_ACCENTS[normalizedSkinId],
+      buttonBackground,
+      buttonText: '#111827',
+      buttonGlow: 'rgba(102, 120, 144, 0.16)',
+      accentGradientBorder: 'linear-gradient(135deg, #c2ccd8 0%, #f4f7fb 50%, #9aaabd 100%)',
+      cardBackground: 'linear-gradient(180deg, rgba(243, 247, 251, 0.97) 0%, rgba(215, 223, 232, 0.95) 100%)',
+      cardStrongBackground: 'linear-gradient(180deg, rgba(249, 251, 253, 0.985) 0%, rgba(228, 235, 242, 0.97) 100%)',
+      borderColor: 'rgba(110, 127, 147, 0.34)',
+      borderSoftColor: 'rgba(128, 145, 166, 0.22)',
+      accentTextColor: '#1a2430',
+      accentSoftTextColor: '#5b6c7f',
+      cardTextColor: '#1a2430',
+      cardTextSoftColor: '#607185',
+      plannerTopBackground: 'linear-gradient(180deg, rgba(220, 227, 236, 0.97) 0%, rgba(188, 199, 212, 0.96) 100%)',
+      plannerDayHeaderBackground: 'linear-gradient(180deg, rgba(200, 210, 222, 0.97) 0%, rgba(170, 182, 196, 0.96) 100%)',
+      plannerDayHeaderText: '#253647',
+      plannerScrollBackground: 'linear-gradient(180deg, rgba(201, 210, 220, 0.98) 0%, rgba(140, 153, 170, 0.99) 100%)',
+      plannerSurfaceBackground: 'linear-gradient(180deg, rgba(186, 196, 209, 0.985) 0%, rgba(109, 123, 142, 0.992) 100%)',
+      plannerWeekdayHeaderBackground: 'linear-gradient(180deg, rgba(200, 210, 222, 0.97) 0%, rgba(170, 182, 196, 0.96) 100%)',
+      plannerFloatingBackground: 'linear-gradient(180deg, rgba(210, 219, 229, 0.96) 0%, rgba(161, 174, 189, 0.97) 100%)',
+      plannerPillBackground: 'rgba(255, 255, 255, 0.52)',
+      plannerPillActiveBackground: 'rgba(100, 116, 139, 0.18)',
+      plannerSoftControlColor: '#415366',
+      plannerHourLabelColor: '#eef4fb',
+    };
+  }
 
   if (theme === 'dark') {
     const cardTop = mixRgb(accent, darkShell, 0.24);

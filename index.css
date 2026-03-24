@@ -81,6 +81,24 @@
   --card-border: 1px solid #e5e7eb;
   --nav-bg: #ffffff;
   --nav-border: #e5e7eb;
+  --app-background:
+    radial-gradient(circle at 16% 10%, rgba(179, 194, 210, 0.22), rgba(179, 194, 210, 0) 18%),
+    radial-gradient(circle at 84% 14%, rgba(205, 214, 223, 0.18), rgba(205, 214, 223, 0) 22%),
+    radial-gradient(circle at 50% 92%, rgba(115, 129, 146, 0.18), rgba(115, 129, 146, 0) 26%),
+    repeating-linear-gradient(
+      124deg,
+      rgba(255, 255, 255, 0.08) 0 2px,
+      rgba(255, 255, 255, 0) 2px 82px
+    ),
+    repeating-linear-gradient(
+      128deg,
+      rgba(101, 119, 141, 0.09) 0 2px,
+      rgba(255, 255, 255, 0) 2px 126px
+    ),
+    linear-gradient(180deg, #d4dde6 0%, #bcc8d4 24%, #8fa2b5 62%, #6c8095 100%);
+  --ui-shell-strong: #243447;
+  --ui-shell-muted: #66788c;
+  --ui-shell-icon: #314255;
 }
 
 /* Office Mode Variables - Dark Theme */
@@ -98,6 +116,23 @@
   --card-border: 1px solid #334155;
   --nav-bg: #0f172a;
   --nav-border: #334155;
+  --app-background:
+    radial-gradient(circle at 16% 12%, rgba(137, 153, 171, 0.08), rgba(137, 153, 171, 0) 18%),
+    radial-gradient(circle at 84% 18%, rgba(116, 134, 155, 0.07), rgba(116, 134, 155, 0) 18%),
+    repeating-linear-gradient(
+      124deg,
+      rgba(255, 255, 255, 0.014) 0 1px,
+      rgba(255, 255, 255, 0) 1px 58px
+    ),
+    repeating-linear-gradient(
+      128deg,
+      rgba(152, 170, 192, 0.03) 0 1px,
+      rgba(255, 255, 255, 0) 1px 92px
+    ),
+    linear-gradient(160deg, #151c24 0%, #0e141b 34%, #090d12 66%, #06090d 100%);
+  --ui-shell-strong: #e6edf5;
+  --ui-shell-muted: #a6b3c2;
+  --ui-shell-icon: #d7e2ed;
 }
 
 /* Game Mode Variables - Light Theme */
@@ -279,7 +314,13 @@ body {
 }
 
 .mode-game.theme-dark #planner-container .planner-root,
-.mode-game.theme-dark #planner-container .planner-scroll-surface {
+.mode-game.theme-dark #planner-container .planner-scroll-surface,
+.mode-office.theme-dark #planner-container .planner-root,
+.mode-office.theme-dark #planner-container .planner-scroll-surface {
+  background: transparent !important;
+}
+
+.mode-office.theme-dark #planner-container {
   background: transparent !important;
 }
 
@@ -315,7 +356,8 @@ body {
   border-color: var(--glass-border);
 }
 
-.mode-game.theme-light .depth-grid {
+.mode-game.theme-light .depth-grid,
+.mode-office.theme-light .depth-grid {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--skin-accent-color) 8%, rgba(18, 22, 28, 0.98)), rgba(10, 14, 19, 0.98)) !important;
   box-shadow:
@@ -324,13 +366,15 @@ body {
     inset 0 0 0 1px color-mix(in srgb, var(--skin-accent-color) 24%, rgba(255,255,255,0.14)) !important;
 }
 
-.mode-game.theme-light .depth-grid::before {
+.mode-game.theme-light .depth-grid::before,
+.mode-office.theme-light .depth-grid::before {
   border-color: color-mix(in srgb, var(--skin-accent-color) 20%, transparent) !important;
   background:
     linear-gradient(135deg, rgba(255,255,255,0.03), color-mix(in srgb, var(--skin-accent-color) 8%, transparent)) !important;
 }
 
-.mode-game.theme-light .depth-grid::after {
+.mode-game.theme-light .depth-grid::after,
+.mode-office.theme-light .depth-grid::after {
   background: radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--skin-accent-color) 18%, rgba(255,255,255,0.12)), transparent 55%) !important;
   opacity: 0.38 !important;
 }
@@ -350,11 +394,13 @@ body {
   border-color: var(--glass-border-light);
 }
 
-.mode-game.theme-light #planner-container {
+.mode-game.theme-light #planner-container,
+.mode-office.theme-light #planner-container {
   color: var(--text-primary);
 }
 
-.mode-game.theme-light #planner-container .planner-top-shell {
+.mode-game.theme-light #planner-container .planner-top-shell,
+.mode-office.theme-light #planner-container .planner-top-shell {
   background: var(--planner-top-bg) !important;
   border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 30%, transparent) !important;
   box-shadow:
@@ -362,54 +408,66 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-day-header {
+.mode-game.theme-light #planner-container .planner-day-header,
+.mode-office.theme-light #planner-container .planner-day-header {
   background: var(--planner-day-header-bg) !important;
   color: var(--planner-day-header-text) !important;
   border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 28%, transparent) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-scroll-surface {
+.mode-game.theme-light #planner-container .planner-scroll-surface,
+.mode-office.theme-light #planner-container .planner-scroll-surface {
   background: var(--planner-scroll-bg) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-soft-control {
+.mode-game.theme-light #planner-container .planner-soft-control,
+.mode-office.theme-light #planner-container .planner-soft-control {
   color: var(--planner-soft-control-color) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-soft-control svg {
+.mode-game.theme-light #planner-container .planner-soft-control svg,
+.mode-office.theme-light #planner-container .planner-soft-control svg {
   color: var(--planner-soft-control-color) !important;
   opacity: 0.96;
 }
 
-.mode-game.theme-light #planner-container .planner-soft-control:hover {
+.mode-game.theme-light #planner-container .planner-soft-control:hover,
+.mode-office.theme-light #planner-container .planner-soft-control:hover {
   color: var(--text-primary) !important;
   background: color-mix(in srgb, var(--skin-accent-color) 10%, rgba(255, 255, 255, 0.54)) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-date-label {
+.mode-game.theme-light #planner-container .planner-date-label,
+.mode-office.theme-light #planner-container .planner-date-label {
   color: var(--planner-soft-control-color) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-pill-switch {
+.mode-game.theme-light #planner-container .planner-pill-switch,
+.mode-office.theme-light #planner-container .planner-pill-switch {
   background: var(--planner-pill-bg) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 24%, rgba(255,255,255,0.08)) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-pill-switch .planner-view-btn {
+.mode-game.theme-light #planner-container .planner-pill-switch .planner-view-btn,
+.mode-office.theme-light #planner-container .planner-pill-switch .planner-view-btn {
   color: var(--ui-shell-muted) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-pill-switch .planner-view-btn[data-active="true"] {
+.mode-game.theme-light #planner-container .planner-pill-switch .planner-view-btn[data-active="true"],
+.mode-office.theme-light #planner-container .planner-pill-switch .planner-view-btn[data-active="true"] {
   background: var(--planner-pill-active-bg) !important;
   color: var(--planner-day-header-text) !important;
 }
 
-.mode-game.theme-dark #planner-container .planner-pill-switch .planner-view-btn[data-active="true"] {
+.mode-game.theme-dark #planner-container .planner-pill-switch .planner-view-btn[data-active="true"],
+.mode-office.theme-dark #planner-container .planner-pill-switch .planner-view-btn[data-active="true"] {
   color: var(--planner-day-header-text) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-planner-surface,
-.mode-game.theme-light #planner-container .weekly-planner-grid {
+.mode-game.theme-light #planner-container .weekly-planner-grid,
+.mode-office.theme-light #planner-container .daily-planner-surface,
+.mode-office.theme-light #planner-container .weekly-planner-grid {
   background: var(--planner-surface-bg) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 28%, rgba(255,255,255,0.1)) !important;
   box-shadow:
@@ -418,46 +476,59 @@ body {
 }
 
 .mode-game.theme-light #planner-container .daily-hour-label,
-.mode-game.theme-light #planner-container .weekly-hour-label {
+.mode-game.theme-light #planner-container .weekly-hour-label,
+.mode-office.theme-light #planner-container .daily-hour-label,
+.mode-office.theme-light #planner-container .weekly-hour-label {
   color: var(--planner-hour-label-color) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-grid-column,
-.mode-game.theme-light #planner-container .weekly-col {
+.mode-game.theme-light #planner-container .weekly-col,
+.mode-office.theme-light #planner-container .daily-grid-column,
+.mode-office.theme-light #planner-container .weekly-col {
   border-left-color: color-mix(in srgb, var(--skin-accent-color) 30%, rgba(255,255,255,0.02)) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-hour-slice,
-.mode-game.theme-light #planner-container .weekly-hour-slice {
+.mode-game.theme-light #planner-container .weekly-hour-slice,
+.mode-office.theme-light #planner-container .daily-hour-slice,
+.mode-office.theme-light #planner-container .weekly-hour-slice {
   border-top-color: color-mix(in srgb, var(--skin-accent-color) 30%, rgba(255,255,255,0.03)) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-quarter-line,
-.mode-game.theme-light #planner-container .weekly-quarter-line {
+.mode-game.theme-light #planner-container .weekly-quarter-line,
+.mode-office.theme-light #planner-container .daily-quarter-line,
+.mode-office.theme-light #planner-container .weekly-quarter-line {
   border-top-color: color-mix(in srgb, var(--skin-accent-color) 18%, rgba(255,255,255,0.02)) !important;
 }
 
-.mode-game.theme-light #planner-container .weekly-day-header {
+.mode-game.theme-light #planner-container .weekly-day-header,
+.mode-office.theme-light #planner-container .weekly-day-header {
   background: var(--planner-weekday-header-bg) !important;
   color: var(--planner-day-header-text) !important;
   border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 28%, transparent) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-oracle-input {
+.mode-game.theme-light #planner-container .planner-oracle-input,
+.mode-office.theme-light #planner-container .planner-oracle-input {
   background: color-mix(in srgb, var(--skin-accent-color) 14%, rgba(245, 248, 252, 0.88)) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 24%, rgba(170, 184, 201, 0.24)) !important;
   color: color-mix(in srgb, var(--skin-accent-color) 22%, #2b3c50) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-oracle-input::placeholder {
+.mode-game.theme-light #planner-container .planner-oracle-input::placeholder,
+.mode-office.theme-light #planner-container .planner-oracle-input::placeholder {
   color: color-mix(in srgb, var(--skin-accent-color) 30%, rgba(87, 102, 122, 0.64)) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-oracle-helper {
+.mode-game.theme-light #planner-container .planner-oracle-helper,
+.mode-office.theme-light #planner-container .planner-oracle-helper {
   color: var(--game-muted-text) !important;
 }
 
-.mode-game.theme-light #planner-container .planner-floating-stack {
+.mode-game.theme-light #planner-container .planner-floating-stack,
+.mode-office.theme-light #planner-container .planner-floating-stack {
   background: var(--planner-floating-bg) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 26%, rgba(170, 184, 201, 0.24)) !important;
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16) !important;
@@ -467,50 +538,66 @@ body {
 .mode-game.theme-light #planner-container .planner-top-shell .text-gray-500,
 .mode-game.theme-light #planner-container .planner-floating-stack .text-white,
 .mode-game.theme-light #planner-container .planner-floating-stack .text-gray-400,
-.mode-game.theme-light #planner-container .planner-floating-stack .text-gray-500 {
+.mode-game.theme-light #planner-container .planner-floating-stack .text-gray-500,
+.mode-office.theme-light #planner-container .planner-top-shell .text-gray-400,
+.mode-office.theme-light #planner-container .planner-top-shell .text-gray-500,
+.mode-office.theme-light #planner-container .planner-floating-stack .text-white,
+.mode-office.theme-light #planner-container .planner-floating-stack .text-gray-400,
+.mode-office.theme-light #planner-container .planner-floating-stack .text-gray-500 {
   color: var(--ui-shell-strong) !important;
 }
 
-.mode-game.theme-light .mercado-pago-modal {
+.mode-game.theme-light .mercado-pago-modal,
+.mode-office.theme-light .mercado-pago-modal {
   color: var(--text-primary);
 }
 
-.mode-game.theme-light .mercado-pago-modal .mercado-pago-sheet {
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-sheet,
+.mode-office.theme-light .mercado-pago-modal .mercado-pago-sheet {
   border-color: rgba(128, 98, 49, 0.18) !important;
   box-shadow: 0 20px 40px rgba(122, 91, 34, 0.14) !important;
 }
 
 .mode-game.theme-light .mercado-pago-modal .mercado-pago-header,
-.mode-game.theme-light .mercado-pago-modal .mercado-pago-footer {
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-footer,
+.mode-office.theme-light .mercado-pago-modal .mercado-pago-header,
+.mode-office.theme-light .mercado-pago-modal .mercado-pago-footer {
   background: rgba(247, 240, 229, 0.94) !important;
   border-color: rgba(128, 98, 49, 0.12) !important;
 }
 
 .mode-game.theme-light .mercado-pago-modal .mercado-pago-body,
-.mode-game.theme-light .mercado-pago-modal .mercado-pago-panel {
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-panel,
+.mode-office.theme-light .mercado-pago-modal .mercado-pago-body,
+.mode-office.theme-light .mercado-pago-modal .mercado-pago-panel {
   background: rgba(249, 243, 235, 0.94) !important;
 }
 
-.mode-game.theme-light .mercado-pago-modal .mercado-pago-copybox {
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-copybox,
+.mode-office.theme-light .mercado-pago-modal .mercado-pago-copybox {
   background: rgba(255, 255, 255, 0.8) !important;
   border-color: rgba(128, 98, 49, 0.16) !important;
 }
 
-.mode-game.theme-light .mercado-pago-modal .mercado-pago-input {
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-input,
+.mode-office.theme-light .mercado-pago-modal .mercado-pago-input {
   background: rgba(255, 255, 255, 0.84) !important;
   border-color: rgba(128, 98, 49, 0.16) !important;
   color: var(--text-primary) !important;
 }
 
-.mode-game.theme-light .mercado-pago-modal .mercado-pago-input::placeholder {
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-input::placeholder,
+.mode-office.theme-light .mercado-pago-modal .mercado-pago-input::placeholder {
   color: rgba(103, 86, 62, 0.58) !important;
 }
 
-.mode-game.theme-light .mercado-pago-modal .mercado-pago-processing {
+.mode-game.theme-light .mercado-pago-modal .mercado-pago-processing,
+.mode-office.theme-light .mercado-pago-modal .mercado-pago-processing {
   background: rgba(249, 243, 232, 0.9) !important;
 }
 
-.mode-game.theme-light .mercado-pago-modal .text-white {
+.mode-game.theme-light .mercado-pago-modal .text-white,
+.mode-office.theme-light .mercado-pago-modal .text-white {
   color: var(--text-primary) !important;
 }
 
@@ -519,15 +606,23 @@ body {
 .mode-game.theme-light .mercado-pago-modal .text-gray-500,
 .mode-game.theme-light .mercado-pago-modal .text-white\/40,
 .mode-game.theme-light .mercado-pago-modal .text-white\/56,
-.mode-game.theme-light .mercado-pago-modal .text-white\/80 {
+.mode-game.theme-light .mercado-pago-modal .text-white\/80,
+.mode-office.theme-light .mercado-pago-modal .text-gray-300,
+.mode-office.theme-light .mercado-pago-modal .text-gray-400,
+.mode-office.theme-light .mercado-pago-modal .text-gray-500,
+.mode-office.theme-light .mercado-pago-modal .text-white\/40,
+.mode-office.theme-light .mercado-pago-modal .text-white\/56,
+.mode-office.theme-light .mercado-pago-modal .text-white\/80 {
   color: var(--game-muted-text) !important;
 }
 
-.mode-game.theme-light .arena-detail-modal-overlay {
+.mode-game.theme-light .arena-detail-modal-overlay,
+.mode-office.theme-light .arena-detail-modal-overlay {
   background: rgba(82, 61, 30, 0.24) !important;
 }
 
-.mode-game.theme-light .arena-detail-modal-root {
+.mode-game.theme-light .arena-detail-modal-root,
+.mode-office.theme-light .arena-detail-modal-root {
   background-image:
     radial-gradient(circle at 50% 0%, rgba(255,255,255,0.78), rgba(255,255,255,0.18) 24%, transparent 46%),
     radial-gradient(circle at 18% 14%, rgba(255,255,255,0.34), transparent 26%),
@@ -542,23 +637,32 @@ body {
 
 .mode-game.theme-light .arena-detail-modal .arena-detail-modal-header,
 .mode-game.theme-light .arena-detail-modal .arena-link-panel,
-.mode-game.theme-light .arena-detail-modal .arena-detail-field-card {
+.mode-game.theme-light .arena-detail-modal .arena-detail-field-card,
+.mode-office.theme-light .arena-detail-modal .arena-detail-modal-header,
+.mode-office.theme-light .arena-detail-modal .arena-link-panel,
+.mode-office.theme-light .arena-detail-modal .arena-detail-field-card {
   background: rgba(248, 242, 233, 0.86) !important;
   border-color: rgba(128, 98, 49, 0.14) !important;
 }
 
-.mode-game.theme-light .arena-detail-modal .arena-detail-section-label {
+.mode-game.theme-light .arena-detail-modal .arena-detail-section-label,
+.mode-office.theme-light .arena-detail-modal .arena-detail-section-label {
   background: rgba(241, 233, 220, 0.96) !important;
 }
 
-.mode-game.theme-light .arena-detail-modal .text-white {
+.mode-game.theme-light .arena-detail-modal .text-white,
+.mode-office.theme-light .arena-detail-modal .text-white {
   color: var(--text-primary) !important;
 }
 
 .mode-game.theme-light .arena-detail-modal .text-gray-300,
 .mode-game.theme-light .arena-detail-modal .text-gray-400,
 .mode-game.theme-light .arena-detail-modal .text-gray-500,
-.mode-game.theme-light .arena-detail-modal .text-white\/72 {
+.mode-game.theme-light .arena-detail-modal .text-white\/72,
+.mode-office.theme-light .arena-detail-modal .text-gray-300,
+.mode-office.theme-light .arena-detail-modal .text-gray-400,
+.mode-office.theme-light .arena-detail-modal .text-gray-500,
+.mode-office.theme-light .arena-detail-modal .text-white\/72 {
   color: var(--game-muted-text) !important;
 }
 
@@ -568,7 +672,14 @@ body {
 .mode-game.theme-light .arena-detail-modal [class*="bg-black/35"],
 .mode-game.theme-light .arena-detail-modal [class*="bg-black/40"],
 .mode-game.theme-light .arena-detail-modal [class*="bg-black/50"],
-.mode-game.theme-light .arena-detail-modal [class*="bg-black/70"] {
+.mode-game.theme-light .arena-detail-modal [class*="bg-black/70"],
+.mode-office.theme-light .arena-detail-modal [class*="bg-black/20"],
+.mode-office.theme-light .arena-detail-modal [class*="bg-black/25"],
+.mode-office.theme-light .arena-detail-modal [class*="bg-black/30"],
+.mode-office.theme-light .arena-detail-modal [class*="bg-black/35"],
+.mode-office.theme-light .arena-detail-modal [class*="bg-black/40"],
+.mode-office.theme-light .arena-detail-modal [class*="bg-black/50"],
+.mode-office.theme-light .arena-detail-modal [class*="bg-black/70"] {
   background-color: rgba(246, 239, 228, 0.82) !important;
 }
 
@@ -581,51 +692,62 @@ body {
 }
 
 .mode-game.theme-light .mundo-view-root,
-.mode-game.theme-light .settings-view-root {
+.mode-game.theme-light .settings-view-root,
+.mode-office.theme-light .mundo-view-root,
+.mode-office.theme-light .settings-view-root {
   background: var(--app-background);
 }
 
-.mode-game.theme-light .assets-view-root {
+.mode-game.theme-light .assets-view-root,
+.mode-office.theme-light .assets-view-root {
   --fog-color: var(--skin-accent-color);
   --fog-tint-strength: 1;
   --fog-alpha-max: 0.82;
   background: var(--app-background);
 }
 
-.mode-game.theme-light .assets-detail-root {
+.mode-game.theme-light .assets-detail-root,
+.mode-office.theme-light .assets-detail-root {
   background:
     radial-gradient(circle at 20% 14%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 18%),
     linear-gradient(180deg, rgba(238, 243, 246, 0.92) 0%, rgba(220, 227, 233, 0.95) 100%);
 }
 
-.mode-game.theme-light .assets-view-shell {
+.mode-game.theme-light .assets-view-shell,
+.mode-office.theme-light .assets-view-shell {
   background: transparent !important;
 }
 
-.mode-game.theme-light .assets-sephirot-backdrop {
+.mode-game.theme-light .assets-sephirot-backdrop,
+.mode-office.theme-light .assets-sephirot-backdrop {
   background:
     radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 20%),
     radial-gradient(circle at 82% 20%, color-mix(in srgb, var(--skin-accent-color) 8%, rgba(176, 190, 204, 0.14)), rgba(176, 190, 204, 0) 22%),
     radial-gradient(circle at 54% 72%, rgba(226, 232, 237, 0.08), rgba(226, 232, 237, 0) 24%) !important;
 }
 
-.mode-game.theme-light .assets-view-root :is(.text-white, [class*="text-white/"]) {
+.mode-game.theme-light .assets-view-root :is(.text-white, [class*="text-white/"]),
+.mode-office.theme-light .assets-view-root :is(.text-white, [class*="text-white/"]) {
   color: var(--text-primary) !important;
 }
 
-.mode-game.theme-light .assets-detail-root :is(.text-white, [class*="text-white/"]) {
+.mode-game.theme-light .assets-detail-root :is(.text-white, [class*="text-white/"]),
+.mode-office.theme-light .assets-detail-root :is(.text-white, [class*="text-white/"]) {
   color: rgba(248, 250, 252, 0.94) !important;
 }
 
-.mode-game.theme-light .assets-detail-root :is(.text-gray-300, .text-gray-400, .text-gray-500, .text-white\/45, .text-white\/62, .text-white\/80) {
+.mode-game.theme-light .assets-detail-root :is(.text-gray-300, .text-gray-400, .text-gray-500, .text-white\/45, .text-white\/62, .text-white\/80),
+.mode-office.theme-light .assets-detail-root :is(.text-gray-300, .text-gray-400, .text-gray-500, .text-white\/45, .text-white\/62, .text-white\/80) {
   color: rgba(203, 213, 225, 0.86) !important;
 }
 
-.mode-game.theme-light .assets-detail-root [class*="bg-black/"] {
+.mode-game.theme-light .assets-detail-root [class*="bg-black/"],
+.mode-office.theme-light .assets-detail-root [class*="bg-black/"] {
   background-color: rgba(15, 19, 27, 0.4) !important;
 }
 
-.mode-game.theme-light .sephirot-name-label {
+.mode-game.theme-light .sephirot-name-label,
+.mode-office.theme-light .sephirot-name-label {
   color: #f6e8bf !important;
   background: rgba(25, 31, 40, 0.72) !important;
   border-color: rgba(255, 255, 255, 0.16) !important;
@@ -642,7 +764,8 @@ body {
   box-shadow: 0 0 25px color-mix(in srgb, var(--skin-accent-color) 18%, transparent) !important;
 }
 
-.mode-game.theme-light .relationship-hub-sheet {
+.mode-game.theme-light .relationship-hub-sheet,
+.mode-office.theme-light .relationship-hub-sheet {
   color: var(--text-primary);
   background:
     radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.16) 22%, transparent 48%),
@@ -651,7 +774,8 @@ body {
   box-shadow: 0 24px 64px rgba(73, 88, 112, 0.16) !important;
 }
 
-.mode-game.theme-light .relationship-hub-sheet :is(.text-white, [class~="text-white"]) {
+.mode-game.theme-light .relationship-hub-sheet :is(.text-white, [class~="text-white"]),
+.mode-office.theme-light .relationship-hub-sheet :is(.text-white, [class~="text-white"]) {
   color: var(--text-primary) !important;
 }
 
@@ -673,27 +797,51 @@ body {
   [class*="text-white/72"],
   [class*="text-white/76"],
   [class*="text-white/84"]
-) {
+ ),
+.mode-office.theme-light .relationship-hub-sheet :is(
+  [class*="text-white/28"],
+  [class*="text-white/36"],
+  [class*="text-white/38"],
+  [class*="text-white/40"],
+  [class*="text-white/42"],
+  [class*="text-white/44"],
+  [class*="text-white/46"],
+  [class*="text-white/50"],
+  [class*="text-white/52"],
+  [class*="text-white/56"],
+  [class*="text-white/58"],
+  [class*="text-white/62"],
+  [class*="text-white/64"],
+  [class*="text-white/70"],
+  [class*="text-white/72"],
+  [class*="text-white/76"],
+  [class*="text-white/84"]
+ ) {
   color: var(--game-muted-text) !important;
 }
 
-.mode-game.theme-light .relationship-hub-sheet :is(.text-gray-300, .text-gray-400, .text-gray-500) {
+.mode-game.theme-light .relationship-hub-sheet :is(.text-gray-300, .text-gray-400, .text-gray-500),
+.mode-office.theme-light .relationship-hub-sheet :is(.text-gray-300, .text-gray-400, .text-gray-500) {
   color: var(--game-muted-text) !important;
 }
 
-.mode-game.theme-light .relationship-hub-sheet [class*="bg-black/"] {
+.mode-game.theme-light .relationship-hub-sheet [class*="bg-black/"],
+.mode-office.theme-light .relationship-hub-sheet [class*="bg-black/"] {
   background-color: rgba(244, 248, 252, 0.82) !important;
 }
 
-.mode-game.theme-light .relationship-hub-sheet [class*="bg-white/"] {
+.mode-game.theme-light .relationship-hub-sheet [class*="bg-white/"],
+.mode-office.theme-light .relationship-hub-sheet [class*="bg-white/"] {
   background-color: rgba(100, 116, 139, 0.08) !important;
 }
 
-.mode-game.theme-light .relationship-hub-sheet [class*="border-white/"] {
+.mode-game.theme-light .relationship-hub-sheet [class*="border-white/"],
+.mode-office.theme-light .relationship-hub-sheet [class*="border-white/"] {
   border-color: rgba(100, 116, 139, 0.16) !important;
 }
 
-.mode-game.theme-light .relationship-hub-modal .relationship-hub-section {
+.mode-game.theme-light .relationship-hub-modal .relationship-hub-section,
+.mode-office.theme-light .relationship-hub-modal .relationship-hub-section {
   background: rgba(246, 249, 253, 0.84) !important;
   border-color: rgba(100, 116, 139, 0.16) !important;
   box-shadow: 0 10px 24px rgba(73, 88, 112, 0.08) !important;
@@ -701,14 +849,19 @@ body {
 
 .mode-game.theme-light .relationship-hub-sheet input,
 .mode-game.theme-light .relationship-hub-sheet textarea,
-.mode-game.theme-light .relationship-hub-sheet select {
+.mode-game.theme-light .relationship-hub-sheet select,
+.mode-office.theme-light .relationship-hub-sheet input,
+.mode-office.theme-light .relationship-hub-sheet textarea,
+.mode-office.theme-light .relationship-hub-sheet select {
   color: var(--text-primary) !important;
   background-color: rgba(255, 255, 255, 0.86) !important;
   border-color: rgba(100, 116, 139, 0.16) !important;
 }
 
 .mode-game.theme-light .relationship-hub-sheet input::placeholder,
-.mode-game.theme-light .relationship-hub-sheet textarea::placeholder {
+.mode-game.theme-light .relationship-hub-sheet textarea::placeholder,
+.mode-office.theme-light .relationship-hub-sheet input::placeholder,
+.mode-office.theme-light .relationship-hub-sheet textarea::placeholder {
   color: rgba(101, 116, 133, 0.58) !important;
 }
 

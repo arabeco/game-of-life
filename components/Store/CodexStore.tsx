@@ -3,6 +3,7 @@ import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { CheckIcon, LightbulbIcon } from '../Icons';
 import { CampaignsCodex } from '../CampaignsCodex';
+import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
 import { CampaignArenaStack } from '../CampaignArenaStack';
 import {
@@ -122,6 +123,7 @@ export const CodexStore: React.FC = () => {
     const { userCodexes, codexCatalog, buyCodex, showToast, assets } = useGame();
     const [purchasing, setPurchasing] = useState<string | null>(null);
     const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
+    const [pendingPurchase, setPendingPurchase] = useState<{ id: string; title: string; goldPrice: number } | null>(null);
     const [accessTab, setAccessTab] = useState<AccessTab>('free');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState<string>('all');
@@ -132,24 +134,31 @@ export const CodexStore: React.FC = () => {
     };
 
     const handlePurchase = async (catalogId: string) => {
-        if (purchasing) return;
-        setPurchasing(catalogId);
+        const catalogItem = codexCatalog.find((codex) => codex.id === catalogId);
+        if (!catalogItem) return;
+
+        const isOwned = userCodexes.some((userCodex) => userCodex.catalog_id === catalogItem.id || userCodex.name === catalogItem.title);
+        if (isOwned) {
+            showToast('Voce ja possui esta campanha.');
+            return;
+        }
+
+        const goldPrice = Number(catalogItem.price_gold ?? Math.round(catalogItem.price_brl ?? 0));
+        setPendingPurchase({ id: catalogItem.id, title: catalogItem.title, goldPrice });
+    };
+
+    const handleConfirmPurchase = async () => {
+        if (!pendingPurchase || purchasing) return;
+        setPurchasing(pendingPurchase.id);
 
         try {
-            const catalogItem = codexCatalog.find((codex) => codex.id === catalogId);
-            const isOwned = userCodexes.some((userCodex) => userCodex.catalog_id === catalogItem?.id || userCodex.name === catalogItem?.title);
-
-            if (isOwned) {
-                showToast('Voce ja possui esta campanha.');
-                return;
-            }
-
-            await buyCodex(catalogId);
+            await buyCodex(pendingPurchase.id);
         } catch (error) {
             console.error('Failed to purchase campaign', error);
             showToast('Erro ao adquirir campanha.');
         } finally {
             setPurchasing(null);
+            setPendingPurchase(null);
         }
     };
 
@@ -448,6 +457,17 @@ export const CodexStore: React.FC = () => {
                             : 'Pronta para instalar pela loja.',
                         hideArenaDetails: true,
                     }}
+                />
+            )}
+            {pendingPurchase && (
+                <ConfirmationModal
+                    title="Confirmar campanha"
+                    message={pendingPurchase.goldPrice <= 0
+                        ? `${pendingPurchase.title} sera adicionada a sua biblioteca sem custo. Deseja continuar?`
+                        : `${pendingPurchase.title} vai debitar ${pendingPurchase.goldPrice} ouro da sua conta. Deseja continuar?`}
+                    confirmLabel={pendingPurchase.goldPrice <= 0 ? 'INSTALAR' : `COMPRAR · ${pendingPurchase.goldPrice} 🪙`}
+                    onConfirm={() => { void handleConfirmPurchase(); }}
+                    onCancel={() => setPendingPurchase(null)}
                 />
             )}
         </>

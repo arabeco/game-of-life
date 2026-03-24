@@ -30,7 +30,10 @@ import {
     getSeasonTransitionStorageKey,
     resolveRuntimeSeasonTransition,
 } from '../utils/seasonPresentation';
+import { getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess, isPremiumInLastDay } from '../utils/premiumAccess';
 import { buildUiSkinTokens } from '../utils/uiSkinTokens';
+import { GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
+import { ConfirmationModal } from './ConfirmationModal';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -143,6 +146,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const historyReady = useRef(false);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
+    const effectiveUiSkin = activeUIMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
     const canUseAssetsView = !isBuilderMode;
     const availableViews = useMemo(() => getAvailableViews(canUseAssetsView, isBuilderMode), [canUseAssetsView, isBuilderMode]);
     const [currentView, setCurrentView] = useState<View>(() => getDefaultView(canUseAssetsView, isBuilderMode));
@@ -479,14 +483,14 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         : `mode-game theme-${(activeTheme || 'DARK').toLowerCase()}`;
 
     useLayoutEffect(() => {
-        const skin = userProfile.skin || 'default';
+        const skin = effectiveUiSkin || 'BASIC';
         document.body.setAttribute('data-skin', skin);
         document.documentElement.setAttribute('data-skin', skin);
-    }, [userProfile.skin]);
+    }, [effectiveUiSkin]);
 
     useLayoutEffect(() => {
         const root = document.documentElement;
-        const tokens = buildUiSkinTokens(userProfile.skin || 'default', activeTheme === 'LIGHT' ? 'light' : 'dark');
+        const tokens = buildUiSkinTokens(effectiveUiSkin || 'BASIC', activeTheme === 'LIGHT' ? 'light' : 'dark');
 
         root.style.setProperty('--ui-accent-gradient-border', tokens.accentGradientBorder || tokens.buttonBackground);
         root.style.setProperty('--ui-button-primary-bg', tokens.buttonBackground);
@@ -521,13 +525,13 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         root.style.setProperty('--planner-pill-active-bg', tokens.plannerPillActiveBackground);
         root.style.setProperty('--planner-soft-control-color', tokens.plannerSoftControlColor);
         root.style.setProperty('--planner-hour-label-color', tokens.plannerHourLabelColor);
-    }, [activeTheme, userProfile.skin]);
+    }, [activeTheme, effectiveUiSkin]);
 
     return (
         <div
             id="app-root"
             className={`auth-app-root flex flex-col overflow-hidden font-sans text-gray-200 ${isBuilderMode ?'auth-app-root--builder' : ''} ${themeClass}`}
-            data-skin={userProfile.skin || 'default'}
+            data-skin={effectiveUiSkin || 'BASIC'}
         >
             <Suspense fallback={null}>
                 <OracleTutorialOverlay />
@@ -612,8 +616,10 @@ const MainApp: React.FC = () => {
         achievementUnlocked,
         setAchievementUnlocked,
         userProfile,
+        appMode,
         updateUserProfile,
         addProfileFlag,
+        buyStoreItem,
         toast,
         hideToast,
         isProfileLoaded,
@@ -623,7 +629,17 @@ const MainApp: React.FC = () => {
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ?true : navigator.onLine);
     const { trigger } = useSensoryFeedback();
     const [forceShowTerms, setForceShowTerms] = useState(false);
+    const [goldShortagePrompt, setGoldShortagePrompt] = useState<{
+        requiredGold: number;
+        currentGold: number;
+        label: string;
+        storeTab?: string;
+        section?: string | null;
+    } | null>(null);
+    const [premiumRenewalOfferSeen, setPremiumRenewalOfferSeen] = useState(false);
+    const [premiumRenewalBusy, setPremiumRenewalBusy] = useState(false);
     const lastToastSignatureRef = useRef('');
+    const effectiveUiSkin = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
 
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
@@ -647,6 +663,29 @@ const MainApp: React.FC = () => {
         window.addEventListener('openTermsOverlay', handleOpenTerms);
         return () => window.removeEventListener('openTermsOverlay', handleOpenTerms);
     }, []);
+
+    useEffect(() => {
+        const handleGoldShortage = (event: Event) => {
+            const detail = (event as CustomEvent<{
+                requiredGold?: number;
+                currentGold?: number;
+                label?: string;
+                storeTab?: string;
+                section?: string | null;
+            }>).detail || {};
+
+            setGoldShortagePrompt({
+                requiredGold: Number(detail.requiredGold || 0),
+                currentGold: Number(detail.currentGold || userProfile.wallet?.gold || 0),
+                label: detail.label || 'essa compra',
+                storeTab: detail.storeTab || 'store',
+                section: detail.section || 'packs',
+            });
+        };
+
+        window.addEventListener('gold-shortage', handleGoldShortage);
+        return () => window.removeEventListener('gold-shortage', handleGoldShortage);
+    }, [userProfile.wallet?.gold]);
 
     const completed = userProfile.completedSeasonMissions || [];
     const acceptedTerms = completed.includes(PROFILE_FLAG_TERMS_ACCEPTED);
@@ -760,6 +799,65 @@ const MainApp: React.FC = () => {
         !!userProfile.premiumRewardPending &&
         hasPremiumRewardPayload;
 
+    const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
+    const discountedPremiumPrice = getDiscountedPremiumPrice(GOLD_PREMIUM_PRODUCT.priceGold, 0.1);
+    const premiumRenewalOfferStorageKey = userProfile.premiumExpiresAt
+        ? `glyph:premium-renewal-offer:${userProfile.id}:${userProfile.premiumExpiresAt}`
+        : null;
+    const shouldShowPremiumRenewalOffer =
+        !showTerms &&
+        !isFirstUseOnboardingActive &&
+        !shouldHoldVanguardWelcome &&
+        !shouldShowVanguardWelcome &&
+        !shouldShowPremiumReward &&
+        !claimToken &&
+        hasPremiumAccess(userProfile) &&
+        isPremiumInLastDay(userProfile) &&
+        !premiumRenewalOfferSeen;
+
+    useEffect(() => {
+        if (!premiumRenewalOfferStorageKey || typeof window === 'undefined') {
+            setPremiumRenewalOfferSeen(false);
+            return;
+        }
+
+        setPremiumRenewalOfferSeen(window.localStorage.getItem(premiumRenewalOfferStorageKey) === 'seen');
+    }, [premiumRenewalOfferStorageKey]);
+
+    const handleDismissPremiumRenewalOffer = useCallback(() => {
+        if (premiumRenewalOfferStorageKey && typeof window !== 'undefined') {
+            window.localStorage.setItem(premiumRenewalOfferStorageKey, 'seen');
+        }
+        setPremiumRenewalOfferSeen(true);
+    }, [premiumRenewalOfferStorageKey]);
+
+    const handleConfirmPremiumRenewalOffer = useCallback(async () => {
+        const currentGold = Number(userProfile.wallet?.gold || 0);
+        if (currentGold < discountedPremiumPrice) {
+            window.dispatchEvent(new CustomEvent('gold-shortage', {
+                detail: {
+                    requiredGold: discountedPremiumPrice,
+                    currentGold,
+                    label: 'renovar o premium com desconto',
+                    storeTab: 'store',
+                    section: 'packs',
+                },
+            }));
+            return;
+        }
+
+        setPremiumRenewalBusy(true);
+        try {
+            await buyStoreItem('premium_30d', 'premium', {
+                costOverrideGold: discountedPremiumPrice,
+                successMessage: `Renovação premium com 10% de desconto confirmada por ${discountedPremiumPrice} ouro.`,
+            });
+            handleDismissPremiumRenewalOffer();
+        } finally {
+            setPremiumRenewalBusy(false);
+        }
+    }, [buyStoreItem, discountedPremiumPrice, handleDismissPremiumRenewalOffer, userProfile.wallet?.gold]);
+
     const handleAcceptTerms = () => {
         const acceptedAt = new Date().toISOString();
         const nextCompleted = (userProfile.completedSeasonMissions || []).filter((flag) => flag !== PROFILE_FLAG_TERMS_PENDING);
@@ -819,9 +917,20 @@ const MainApp: React.FC = () => {
         if (toast.type === 'error') trigger('error');
     }, [toast.message, toast.type, toast.visible, trigger]);
 
+    const handleOpenGoldStoreFromPrompt = useCallback(() => {
+        if (!goldShortagePrompt) return;
+        window.dispatchEvent(new CustomEvent('navigate-to-store', {
+            detail: {
+                tab: goldShortagePrompt.storeTab || 'store',
+                section: goldShortagePrompt.section || 'packs',
+            },
+        }));
+        setGoldShortagePrompt(null);
+    }, [goldShortagePrompt]);
+
     if (!isProfileLoaded) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-black text-white" data-skin={userProfile.skin || 'default'}>
+            <div className="flex min-h-screen items-center justify-center bg-black text-white" data-skin={effectiveUiSkin || 'BASIC'}>
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--skin-accent-color)] border-t-transparent" />
                     <p className="text-[11px] font-black uppercase tracking-[0.3em] text-white/60">Carregando</p>
@@ -873,6 +982,26 @@ const MainApp: React.FC = () => {
                         fallbackButtonLabel="Continuar"
                         fallbackItemSectionTitle="Itens desta renovação"
                         fallbackEmptyMessage="A renovação foi concluída e nenhum cosmético novo precisava ser entregue agora."
+                    />
+                )}
+                {shouldShowPremiumRenewalOffer && (
+                    <ConfirmationModal
+                        title="Último dia do premium"
+                        message={`Seu premium termina em ${premiumDaysRemaining || 1} dia. Se quiser renovar agora, você garante 10% de desconto e fecha por ${discountedPremiumPrice} ouro.`}
+                        confirmLabel={premiumRenewalBusy ? 'RENOVANDO...' : `RENOVAR · ${discountedPremiumPrice} \u{1FA99}`}
+                        cancelLabel="AGORA NÃO"
+                        onConfirm={() => { void handleConfirmPremiumRenewalOffer(); }}
+                        onCancel={handleDismissPremiumRenewalOffer}
+                    />
+                )}
+                {goldShortagePrompt && (
+                    <ConfirmationModal
+                        title="Saldo insuficiente"
+                        message={`Você tem ${goldShortagePrompt.currentGold} de ouro, mas precisa de ${goldShortagePrompt.requiredGold} para ${goldShortagePrompt.label}. Deseja abrir a recarga agora?`}
+                        confirmLabel="RECARREGAR OURO"
+                        cancelLabel="DEPOIS"
+                        onConfirm={handleOpenGoldStoreFromPrompt}
+                        onCancel={() => setGoldShortagePrompt(null)}
                     />
                 )}
             </Suspense>

@@ -321,6 +321,24 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }, [sortedReports]);
 
     const getUserId = () => (isUuid(userProfile.id) ?userProfile.id : null);
+    const isEraMetadataRemoteUnsupported = (rawMessage: unknown) => {
+        const message = String(rawMessage || '').toLowerCase();
+        return (
+            (message.includes('era_metadata') && (
+                message.includes('does not exist')
+                || message.includes('relation')
+                || message.includes('column')
+                || message.includes('bad request')
+                || message.includes('could not find')
+                || message.includes('pgrst')
+            ))
+            || (message.includes('column') && (
+                message.includes('skin_id')
+                || message.includes('description')
+                || message.includes('final_summary')
+            ))
+        );
+    };
     const eraMetadataStorageKey = `${ERA_METADATA_STORAGE_PREFIX}:${String(userProfile.id || 'local-user')}`;
     const legacyPlaqueStorageKey = `${LEGACY_PLAQUE_STORAGE_PREFIX}:${String(userProfile.id || 'local-user')}`;
 
@@ -399,8 +417,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 .eq('user_id', userId);
 
             if (error) {
-                const message = String(error.message || '').toLowerCase();
-                if (message.includes('era_metadata') && (message.includes('does not exist') || message.includes('relation'))) {
+                if (isEraMetadataRemoteUnsupported(error.message)) {
                     eraMetadataRemoteMissingRef.current = true;
                     return;
                 }
@@ -667,8 +684,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }, 0);
     };
 
-    const handleForceClose = useCallback((event?: React.MouseEvent<HTMLButtonElement>) => {
-        event?.stopPropagation();
+    const handleForceClose = useCallback((event?: { preventDefault?: () => void; stopPropagation?: () => void }) => {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
         setView('hub');
         setSelectedReport(null);
         setReportsToCompare(null);
@@ -1153,8 +1171,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         if (!entry?.name && !entry?.skinId && !entry?.description && !entry?.finalSummary) {
             const { error } = await supabase.from('era_metadata').delete().match({ user_id: userId, era_key: key });
             if (error) {
-                const message = String(error.message || '').toLowerCase();
-                if (message.includes('era_metadata') && (message.includes('does not exist') || message.includes('relation'))) {
+                if (isEraMetadataRemoteUnsupported(error.message)) {
                     eraMetadataRemoteMissingRef.current = true;
                     return;
                 }
@@ -1174,8 +1191,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }, { onConflict: 'user_id,era_key' });
 
         if (error) {
-            const message = String(error.message || '').toLowerCase();
-            if (message.includes('era_metadata') && (message.includes('does not exist') || message.includes('relation'))) {
+            if (isEraMetadataRemoteUnsupported(error.message)) {
                 eraMetadataRemoteMissingRef.current = true;
                 return;
             }
@@ -1190,8 +1206,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         const { error: deleteError } = await supabase.from('era_metadata').delete().eq('user_id', userId);
         if (deleteError) {
-            const message = String(deleteError.message || '').toLowerCase();
-            if (message.includes('era_metadata') && (message.includes('does not exist') || message.includes('relation'))) {
+            if (isEraMetadataRemoteUnsupported(deleteError.message)) {
                 eraMetadataRemoteMissingRef.current = true;
                 return;
             }
@@ -1212,8 +1227,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         const { error } = await supabase.from('era_metadata').upsert(payload, { onConflict: 'user_id,era_key' });
         if (error) {
-            const message = String(error.message || '').toLowerCase();
-            if (message.includes('era_metadata') && (message.includes('does not exist') || message.includes('relation'))) {
+            if (isEraMetadataRemoteUnsupported(error.message)) {
                 eraMetadataRemoteMissingRef.current = true;
                 return;
             }
@@ -1874,20 +1888,40 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
 
     if (showNewCycleSetup) {
-        return <NewCycleSetupView onComplete={onClose} onCancel={() => { setShowNewCycleSetup(false); setView('hub'); }} />
-    }
-
-    return (
-        <>
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={handleCloseDynamic}>
+        return (
+            <>
                 <button
                     type="button"
                     aria-label="Fechar historico"
                     onClick={handleForceClose}
-                    className="fixed right-4 top-[calc(var(--safe-area-top)+12px)] z-[80] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white/90 shadow-[0_10px_28px_rgba(0,0,0,0.34)] transition-colors hover:bg-white/10 hover:text-white"
+                    onPointerUp={handleForceClose}
+                    onTouchEnd={handleForceClose}
+                    onMouseUp={handleForceClose}
+                    className="fixed right-4 top-[calc(var(--safe-area-top)+12px)] z-[10005] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white/90 shadow-[0_10px_28px_rgba(0,0,0,0.34)] transition-colors hover:bg-white/10 hover:text-white"
+                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                 >
                     <XIcon />
                 </button>
+                <NewCycleSetupView onComplete={onClose} onCancel={() => { setShowNewCycleSetup(false); setView('hub'); }} />
+            </>
+        );
+    }
+
+    return (
+        <>
+            <button
+                type="button"
+                aria-label="Fechar historico"
+                onClick={handleForceClose}
+                onPointerUp={handleForceClose}
+                onTouchEnd={handleForceClose}
+                onMouseUp={handleForceClose}
+                className="fixed right-4 top-[calc(var(--safe-area-top)+12px)] z-[10005] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white/90 shadow-[0_10px_28px_rgba(0,0,0,0.34)] transition-colors hover:bg-white/10 hover:text-white"
+                style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+            >
+                <XIcon />
+            </button>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={handleCloseDynamic}>
                 <div className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4 pr-12">
                         <div className="flex items-center space-x-2">
@@ -1896,7 +1930,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             )}
                             <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
                         </div>
-                        <div className="h-10 w-10" />
+                        <button
+                            type="button"
+                            aria-label="Fechar historico"
+                            onClick={handleForceClose}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition-colors hover:bg-white/10"
+                            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                        >
+                            <XIcon />
+                        </button>
                     </div>
                     <div className="flex-grow overflow-y-auto relative overflow-hidden">
                         {renderContent()}
@@ -1978,9 +2020,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
-
-
 
 
 

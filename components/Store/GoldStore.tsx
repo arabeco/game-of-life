@@ -4,11 +4,17 @@ import { GlassCard } from '../GlassCard';
 import { GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG, GOLD_PREMIUM_PRODUCT } from '../../constants/goldCatalog';
 import { CheckIcon, CrownIcon } from '../Icons';
 import { MercadoPagoBrick } from './MercadoPagoBrick';
+import { getPremiumDaysRemaining, hasPremiumAccess } from '../../utils/premiumAccess';
 
 export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: number } | null }> = ({ scrollRequest = null }) => {
     const { buyStoreItem, userProfile } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
     const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number } | null>(null);
+    const isPremium = hasPremiumAccess(userProfile);
+    const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
+    const premiumExpiresLabel = userProfile.premiumExpiresAt
+        ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(userProfile.premiumExpiresAt))
+        : null;
 
     const handleBuyPack = async (packId: string) => {
         const pack = GOLD_PACK_CATALOG.find(p => p.id === packId);
@@ -54,21 +60,19 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                     </div>
 
                     <div className="flex flex-col items-center gap-2 min-w-[150px]">
-                        {userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm' ? (
-                            <button disabled className="w-full py-3 bg-green-500/20 border border-green-500/50 text-green-400 font-black uppercase tracking-wider rounded-xl cursor-default">
-                                ATIVO
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleBuyPremium}
-                                disabled={!!loading}
-                                className="luxe-skin-button inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-3 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                <span className="text-[12px] leading-none">🪙</span>
-                                <span>{loading === 'premium' ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
-                            </button>
-                        )}
-                        <span className="text-[10px] text-gray-500 uppercase font-bold">30 dias</span>
+                        <button
+                            onClick={handleBuyPremium}
+                            disabled={!!loading}
+                            className="luxe-skin-button inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <span className="text-[12px] leading-none">🪙</span>
+                            <span>{loading === 'premium' ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
+                        </button>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">
+                            {isPremium && premiumExpiresLabel
+                                ? `${premiumDaysRemaining ?? 0}d · até ${premiumExpiresLabel}`
+                                : '30 dias'}
+                        </span>
                     </div>
                 </div>
             </GlassCard>

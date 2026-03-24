@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, FolderIcon, FolderStarIcon, LightbulbIcon, PlusIcon, MinusIcon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, FolderIcon, FolderStarIcon, ListRowsIcon, PlusIcon, MinusIcon } from '../components/Icons';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType } from '../types';
 import { ChecklistModal } from '../components/ChecklistModal';
@@ -200,7 +200,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
             <div
-                className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${isFreeAction ?'free-action-shell text-slate-100' : task.completed ?'text-white/80 font-bold' : 'text-orange-200'}`}
+                className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${isFreeAction ?'free-action-shell text-slate-100' : task.completed ?'text-white/80 font-bold' : 'text-[var(--ui-card-text)]'}`}
                 style={isFreeAction ?undefined : backgroundStyle}
             >
                 <div className={`absolute inset-0 transition-opacity duration-300 ${isFreeAction ?'bg-black/45' : 'bg-black/60'} ${task.completed ?'opacity-100' : 'opacity-0'}`}></div>
@@ -309,7 +309,7 @@ const TacticalHUD: React.FC = () => {
                         <span className="text-[var(--skin-accent-color)]">{Math.round(progress)}%</span>
                     </div>
                     <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white/80 transition-all duration-500 shadow-[0_0_10px_var(--skin-accent-color)]" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+                        <div className="h-full bg-[var(--ui-button-primary-bg)] transition-all duration-500 shadow-[0_0_10px_var(--skin-accent-color)]" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
                     </div>
                 </div>
             </div>
@@ -1216,8 +1216,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             <button onClick={() => setChecklistVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors">
                                 {allTasksCompleted ?<FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}
                             </button>
-                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
-                                <LightbulbIcon className="w-4 h-4" />
+                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Painel diario">
+                                <ListRowsIcon className="w-4 h-4" />
                             </button>
                             <button id="report-button" onClick={onReportsClick} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
                                 <ClockIcon className="w-4 h-4" />
@@ -1308,7 +1308,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                     />
                                     <button
                                         onClick={handleOracleSubmit}
-                                        className="p-2 bg-[var(--skin-accent-color)] text-black rounded-lg hover:brightness-110 transition-colors"
+                                        className="p-2 bg-[var(--ui-button-primary-bg)] text-[var(--ui-text-on-accent)] rounded-lg hover:brightness-110 transition-colors"
                                     >
                                         <PlusIcon className="w-4 h-4" />
                                     </button>
@@ -1325,7 +1325,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <button
                         id="focus-mode-button"
                         onClick={() => setShowOracleInput(!showOracleInput)}
-                        className={`planner-soft-control p-2 rounded-full transition-all ${showOracleInput ?'bg-[var(--skin-accent-color)] text-black' : 'text-white hover:bg-white/10'}`}
+                        className={`planner-soft-control p-2 rounded-full transition-all ${showOracleInput ?'bg-[var(--ui-button-primary-bg)] text-[var(--ui-text-on-accent)]' : 'text-white hover:bg-white/10'}`}
                         title="Adicionar por texto"
                     >
                         <span className="text-lg">{'\u{1F4DD}'}</span>

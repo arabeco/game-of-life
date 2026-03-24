@@ -21,6 +21,7 @@ export const ArsenalView: React.FC = () => {
                     </button>
                     <button 
                         onClick={() => setActiveTab('library')}
+                        id="arsenal-library-button"
                         className={`px-6 py-2 text-xs font-bold rounded-md transition-colors ${activeTab === 'library' ? 'bg-green-500/20 text-green-400' : 'text-gray-500 hover:text-gray-300'}`}
                     >
                         BIBLIOTECA

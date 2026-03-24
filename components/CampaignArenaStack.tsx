@@ -5,11 +5,20 @@ import { ArenaCard } from './ArenaCard';
 
 interface CampaignArenaStackProps {
     arenas: Arena[];
-    size?: 'sm' | 'md';
+    size?: 'xs' | 'sm' | 'md';
     actions?: Action[];
 }
 
 const STACK_SIZE = {
+    xs: {
+        scale: 0.58,
+        step: 58,
+        width: 186,
+        height: 74,
+        cardWidth: 150,
+        cardHeight: 96,
+        badgeClass: 'text-[8px] px-1.5 py-0.5',
+    },
     sm: {
         scale: 0.98,
         step: 94,

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RewardModalPayload } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
 import { getGoldBoostProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
@@ -24,12 +24,13 @@ import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscrib
 import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, taskMatchesOperationalDate } from '../utils/operationalDay.js';
-import { hasPremiumAccess } from '../utils/premiumAccess';
+import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive } from '../utils/premiumAccess';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, isBadgeNotification } from '../constants/oracleNotificationPolicy';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
+import { resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -126,6 +127,9 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     mood: 50,
     role: 'user',
     isPremium: false,
+    premiumExpiresAt: null,
+    premiumRewardPending: false,
+    premiumRewardPayload: null,
     skin: 'BASIC',
     unlockedSkins: { BASIC: true },
     inventory: [],
@@ -162,6 +166,19 @@ const DEFAULT_USER_PROFILE: UserProfile = {
 };
 
 const defaultChecklistItems: ChecklistItem[] = [];
+const PREMIUM_REWARD_CHEST: ChestType = 'Raro';
+const PREMIUM_GENESIS_REWARD_ITEM_IDS = [
+    'item_skin_season_001',
+    'item_border_genesis_01',
+    'item_banner_origin_01',
+    'item_theme_nebulosa',
+] as const;
+
+const formatPremiumExpiryLabel = (expiresAt: string): string => {
+    const parsed = new Date(expiresAt);
+    if (Number.isNaN(parsed.getTime())) return '30 dias ativos';
+    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(parsed);
+};
 
 type TaskPoolItem = {
     actionId: string;
@@ -1784,8 +1801,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } else if (type === 'codex') {
             grantUserUnlock('codexes', itemId);
         } else if (type === 'premium') {
-            updateUserProfile({ isPremium: true });
-            unlockPremiumPack();
+            const premiumExpiresAt = getNextPremiumExpiryAt(userProfile.premiumExpiresAt);
+            const premiumRewardPayload = await unlockPremiumPack(premiumExpiresAt);
+            updateUserProfile({
+                isPremium: true,
+                premiumExpiresAt,
+                premiumRewardPending: true,
+                premiumRewardPayload,
+            });
+            showToast(`Debito de ${cost} Ouro confirmado. Premium renovado por 30 dias.`, "success");
+            return;
         }
 
         showToast(`Débito de ${cost} Ouro. Ativo adicionado ao Arsenal.`, "success");
@@ -3130,6 +3155,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const normalizedRole = typeof camelProfile.role === 'string' ?camelProfile.role.toLowerCase() : undefined;
                 const role = normalizedRole === 'admin' || normalizedRole === 'gm' ?normalizedRole : (normalizedRole || 'user');
                 const normalizedSkin = !camelProfile.skin || camelProfile.skin === 'default' ?'BASIC' : camelProfile.skin;
+                const normalizedPremium = role === 'admin' || role === 'gm'
+                    ? true
+                    : isPremiumActive({
+                        isPremium: camelProfile.isPremium,
+                        premiumExpiresAt: camelProfile.premiumExpiresAt,
+                        role,
+                    });
                 const normalizedUnlockedSkins = {
                     ...(camelProfile.unlockedSkins || {}),
                     BASIC: true,
@@ -3139,6 +3171,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         ...prev,
                         ...camelProfile,
                         role,
+                        isPremium: normalizedPremium,
                         skin: normalizedSkin,
                         unlockedSkins: normalizedUnlockedSkins,
                     } as UserProfile;
@@ -4399,7 +4432,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!codex || !codex.template || !Array.isArray(codex.template.levels)) return;
 
         const template = codex.template;
-        const assetId = assets.find(a => a.id === 'fisico')?.id || assets[0]?.id || 'geral';
+        const catalogRefId = codex.catalog_id || codex.origin_codex_id || codex.id;
+        const templateMeta = resolveTemplateCampaignMeta(catalogRefId, template);
+        const preferredAssetId = templateMeta.primaryAssetId || 'fisico';
+        const assetId =
+            assets.find(a => a.id === preferredAssetId)?.id ||
+            assets.find(a => a.id === 'fisico')?.id ||
+            assets[0]?.id ||
+            'geral';
         const arenaIds: string[] = [];
         const createdArenaIds: string[] = [];
         const createdActionIds: string[] = [];
@@ -5437,6 +5477,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'completedSeasonMissions',
                 'role',
                 'isPremium',
+                'premiumExpiresAt',
+                'premiumRewardPending',
+                'premiumRewardShownAt',
+                'premiumRewardPayload',
                 'appMode',
                 'themePreference',
                 'arenasViewMode',
@@ -5465,6 +5509,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
     };
+
+    useEffect(() => {
+        if (!hasHydratedFromSupabase) return;
+        if (!userProfile.isPremium) return;
+        if (!userProfile.premiumExpiresAt) return;
+        if (userProfile.role === 'admin' || userProfile.role === 'gm') return;
+        if (isPremiumActive(userProfile)) return;
+
+        updateUserProfile({ isPremium: false });
+    }, [hasHydratedFromSupabase, updateUserProfile, userProfile]);
 
     const updateMood = (mood: number) => updateUserProfile({ mood });
 
@@ -5590,23 +5644,87 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return { item: null, granted: false };
     };
 
-    // === Premium Genesis Pack ===
-    const unlockPremiumPack = async () => {
-        const userId = getSupabaseUserId();
-        if (!userId) return;
-        const storageKey = `premiumPackClaimed_${userId}`;
-        if (localStorage.getItem(storageKey)) return; // Already claimed
+    const grantPremiumRewardItem = async (itemId: string): Promise<boolean> => {
+        const itemDef = resolveItemDef(itemId);
+        if (!itemDef) return false;
 
-        // Grant 3 Genesis items
-        const genesisIds = ['item_border_genesis_01', 'item_banner_origin_01', 'item_theme_nebulosa'];
-        for (const itemId of genesisIds) {
-            await grantInventoryItem(itemId, true); // silent
+        if (itemDef.category === 'insignia' || itemDef.category === 'insignias') {
+            grantUserUnlock('insignias', itemId);
         }
-        // Grant 1 Rare Chest
-        await addChest('Raro');
 
-        localStorage.setItem(storageKey, 'true');
-        showToast('Pack G\u00EAnesis desbloqueado: seu legado Premium come\u00E7a agora!', 'success');
+        const result = await grantInventoryItem(itemId, true);
+        return result.granted;
+    };
+
+    const getPremiumSeasonRewardItemIds = (): string[] => {
+        const activeSeason = activeRuntimeSeasonConfig;
+        if (!activeSeason) return [];
+
+        return Array.from(
+            new Set([
+                ...(activeSeason.launchHighlights?.itemIds || []),
+                ...(activeSeason.launchRewardItemIds || []),
+            ]),
+        );
+    };
+
+    const buildPremiumRewardPayload = (
+        expiresAt: string,
+        grantedItemIds: string[],
+        chestGranted: boolean,
+    ): RewardModalPayload => {
+        const activeSeasonName = activeRuntimeSeasonConfig?.name || 'Temporada atual';
+        const grantedSeasonRewards = grantedItemIds.length > 0;
+
+        return {
+            eyebrow: 'Renova\u00e7\u00e3o premium',
+            title: 'Recompensas da assinatura',
+            summary: grantedSeasonRewards
+                ? `Seu Premium foi renovado por mais 30 dias. Os cosm\u00e9ticos reais da ${activeSeasonName} que ainda faltavam j\u00e1 foram integrados ao seu Arsenal.`
+                : 'Seu Premium foi renovado por mais 30 dias. Como voc\u00ea j\u00e1 tinha os cosm\u00e9ticos dispon\u00edveis desta fase, a renova\u00e7\u00e3o consolidou o ba\u00fa raro e manteve sua trilha ativa.',
+            buttonLabel: 'Continuar',
+            itemSectionTitle: 'Itens desta renova\u00e7\u00e3o',
+            emptyMessage: chestGranted
+                ? 'Nenhum cosm\u00e9tico novo era necess\u00e1rio nesta renova\u00e7\u00e3o. O ba\u00fa raro j\u00e1 foi entregue ao seu invent\u00e1rio.'
+                : 'Sua assinatura foi renovada e nenhum cosm\u00e9tico novo precisava ser entregue agora.',
+            metricCards: [
+                {
+                    label: 'Acesso',
+                    value: '30 dias',
+                    detail: 'renova\u00e7\u00e3o manual',
+                },
+                {
+                    label: 'Ba\u00fa',
+                    value: chestGranted ? PREMIUM_REWARD_CHEST : 'Integrado',
+                    detail: chestGranted ? 'recompensa real' : 'sem extra',
+                },
+                {
+                    label: 'Ativo at\u00e9',
+                    value: formatPremiumExpiryLabel(expiresAt),
+                    detail: 'Premium soberano',
+                },
+            ],
+            chestType: chestGranted ? PREMIUM_REWARD_CHEST : null,
+            itemIds: grantedItemIds,
+        };
+    };
+
+    const unlockPremiumPack = async (expiresAt: string): Promise<RewardModalPayload> => {
+        const candidateItemIds = Array.from(
+            new Set([
+                ...PREMIUM_GENESIS_REWARD_ITEM_IDS,
+                ...getPremiumSeasonRewardItemIds(),
+            ]),
+        );
+
+        const grantedItemIds: string[] = [];
+        for (const itemId of candidateItemIds) {
+            const granted = await grantPremiumRewardItem(itemId);
+            if (granted) grantedItemIds.push(itemId);
+        }
+
+        const chestGranted = await addChest(PREMIUM_REWARD_CHEST);
+        return buildPremiumRewardPayload(expiresAt, grantedItemIds, chestGranted);
     };
 
     const addCompletedMission = (mission: SeasonMission) => {
@@ -6296,7 +6414,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const addChest = async (chestType: ChestType) => {
         const userId = getSupabaseUserId();
-        if (!userId) return;
+        if (!userId) return false;
 
         // Use RPC or direct insert
         const { error } = await supabase.rpc('grant_chest', {
@@ -6306,7 +6424,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error adding chest:", error);
-            return;
+            return false;
         }
 
         // Optimistically update or refetch profile
@@ -6325,6 +6443,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             return { ...prev, chests: newChests };
         });
+        return true;
     };
 
     const deleteCycle = async (cycleId: string) => {
@@ -8123,7 +8242,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     } = taskDomain;
 
     const mapClanCreateErrorMessage = (message?: string) => {
-        switch (message) {
+        const normalizedMessage = String(message || '').trim();
+        const lowerMessage = normalizedMessage.toLowerCase();
+
+        switch (normalizedMessage) {
             case 'AUTH_REQUIRED':
                 return 'Voce precisa estar autenticado para criar um grupo.';
             case 'CLAN_NAME_REQUIRED':
@@ -8135,7 +8257,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             case 'Saldo insuficiente de Ouro.':
                 return `Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`;
             default:
-                return 'Nao foi possivel criar o grupo.';
+                if (lowerMessage.includes('duplicate') || lowerMessage.includes('already exists')) {
+                    return 'Ja existe um grupo com esse nome.';
+                }
+                if (lowerMessage.includes('insufficient') || lowerMessage.includes('saldo insuficiente')) {
+                    return `Voce precisa de ${GOLD_CLAN_CREATION_COST} ouro para criar um grupo.`;
+                }
+                if (lowerMessage.includes('joined') || lowerMessage.includes('participa')) {
+                    return 'Voce ja participa de um grupo.';
+                }
+                if (lowerMessage.includes('auth') || lowerMessage.includes('row-level security')) {
+                    return 'Voce precisa estar autenticado para criar um grupo.';
+                }
+                return normalizedMessage
+                    ? `Nao foi possivel criar o grupo. ${normalizedMessage.slice(0, 140)}`
+                    : 'Nao foi possivel criar o grupo.';
         }
     };
 

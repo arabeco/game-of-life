@@ -7,6 +7,7 @@ import { ClanType, RecruitmentStatus } from '../types';
 import { DEFAULT_SANCTUARY_BACKGROUND } from '../constants';
 import { GOLD_CLAN_CREATION_COST } from '../constants/goldCatalog';
 import { Portal } from './Portal';
+import { ConfirmationModal } from './ConfirmationModal';
 
 const clanTypes: ClanType[] = ['Casual', 'Office'];
 const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
@@ -22,6 +23,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [backgroundUrl, setBackgroundUrl] = useState(DEFAULT_SANCTUARY_BACKGROUND);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isConfirmingDebit, setIsConfirmingDebit] = useState(false);
     const canAffordClanCreation = (userProfile.wallet?.gold || 0) >= GOLD_CLAN_CREATION_COST;
 
     const officeBackgrounds = [
@@ -30,7 +32,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
         { id: 'office3', label: 'Escritorio 3', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office3.jpg' },
     ];
 
-    const handleSave = async () => {
+    const performSave = async () => {
         if (!name.trim()) {
             alert('O nome do grupo nao pode estar vazio.');
             return;
@@ -48,6 +50,20 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleSave = async () => {
+        if (isSubmitting || !canAffordClanCreation) return;
+        if (!name.trim()) {
+            alert('O nome do grupo nao pode estar vazio.');
+            return;
+        }
+        setIsConfirmingDebit(true);
+    };
+
+    const handleConfirmDebit = async () => {
+        setIsConfirmingDebit(false);
+        await performSave();
     };
 
     return (
@@ -157,6 +173,14 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                         setIsIconPickerOpen(false);
                     }}
                     onClose={() => setIsIconPickerOpen(false)}
+                />
+            )}
+            {isConfirmingDebit && (
+                <ConfirmationModal
+                    title="Confirmar criacao"
+                    message={`Criar este grupo vai debitar ${GOLD_CLAN_CREATION_COST} ouro da sua conta. Deseja continuar?`}
+                    onConfirm={handleConfirmDebit}
+                    onCancel={() => setIsConfirmingDebit(false)}
                 />
             )}
         </>

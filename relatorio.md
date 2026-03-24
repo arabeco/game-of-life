@@ -1,5 +1,5 @@
 ============================================================
-           GLYPH: MASTER SYSTEM STATE (23/03/26)
+           GLYPH: MASTER SYSTEM STATE (24/03/26)
 ============================================================
 STATUS: [X] ALPHA  |  [ ] BETA  |  [ ] LIVE
 FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
@@ -12,9 +12,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 - Trilha oficial do Marco 1: `T1 Fundacao -> T2 O Cerco -> T3 A Ascensao`.
 
 ## 2. SCORECARD DE AUDITORIA
-- **EXECUCAO REAL: 9.8** (Build/Type-check ok. `Ativos`, `Modo Jogo` e tutorial passaram por uma rodada estrutural sem quebrar o core).
-- **ID VISUAL: 9.7** (Tela de `Ativos` ficou mais painel e menos cena, com leitura melhor em dark/light e palette por ativo mais coerente).
-- **FLUXO USUARIO: 9.7** (Onboarding/tutoriais agora conversam com `Modo Jogo`, sem escolha inicial de modo. Pendente: QA real de onboarding, `e-mail/Convite` e D2).
+- **EXECUCAO REAL: 9.8** (Build/Type-check ok. `Campanhas`, `Premium` e o ritual de recompensa foram religados sem quebrar o core).
+- **ID VISUAL: 9.7** (A UI ficou mais coerente: `Vinculos` no `Social`, `Campanhas` mais visiveis e `Premium` finalmente no trilho de assinatura real).
+- **FLUXO USUARIO: 9.8** (A descoberta de campanhas melhorou, o `Premium` ganhou validade real de 30 dias e o modal de renovacao entrou no mesmo padrao da `Vanguarda`. Pendente: QA real de onboarding, `e-mail/Convite`, D2 e renovacao remota).
 - **RETENCAO: --** (Aguardando Beta)
 - **AQUISICAO: --** (Aguardando Videos)
 
@@ -26,13 +26,36 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [v] Reestruturar a tela de `Ativos` como painel operacional: resumo fino do ciclo, cards por ativo nas posicoes oficiais, barrinhas finas de progresso, tint sutil por ativo e leitura melhor em dark/light. - Responsavel: PROTOCOLO
 [v] Iniciar a convergencia publica `GAME/BASIC -> Modo Jogo`: nave unificada, `Ativos` voltando para todos, perfil em `Resumo/Widgets/Maestria` e `Modo Jogo` centralizado em `Preferencias`. - Responsavel: PROTOCOLO
 [v] Revisar onboarding e tutoriais para o novo modelo `core + Modo Jogo`, com cards `1/2` no basico, cards `3/4` ligados ao toggle, copy alinhada e checagem final de anchors, `type-check` e `build`. - Responsavel: PROTOCOLO
+[x] Reorganizar a arquitetura interna das superficies premium: `Campanhas` com acesso principal em `Arenas`, `Vinculos` com botao/modal proprio no `Social` e aba `Premium` reduzida para status, beneficios e renovacao. - Responsavel: PROTOCOLO
+[x] Refatorar a loja/catalogo de `Campanhas`: grid compacto mobile, separacao `Gratis/Premium`, filtros por ativo/tipo/tema, primeiras microaulas de `Aprendizado` via `Anotacao` e seed de campanhas gratis base. - Responsavel: PROTOCOLO
+[x] Implementar assinatura `Premium` real de `30 dias`, com expiracao persistida no perfil, renovacao acumulando validade, modal de recompensa no padrao da `Vanguarda` e entrega real de bau/cosmeticos sazonais quando faltarem. - Responsavel: PROTOCOLO
 
 ## 4. MATRIZ DE EXECUCAO (PENDENCIAS & PRIORIDADES)
-### COMANDO (METAS IMEDIATAS & DONO)
+### CHECK FINAL ABSOLUTO (BLOQUEIA O BETA)
+[ ] Fazer a checagem final absoluta do loop principal do app: login, termos, onboarding, criar `1 arena`, criar `1 acao`, iniciar `1 ciclo`, fechar `1 ciclo`, abrir `Historico` e retornar ao app sem travas nem telas mortas. - Responsavel: SENTINELA
 [ ] Rodar QA completo do onboarding sem seletor inicial de modo: validar fim do onboarding, `Tutoriais` 1/2 no basico, ativacao de `Modo Jogo` em `Preferencias` e desbloqueio correto dos cards 3/4. - Responsavel: SENTINELA
+[ ] Fazer a checagem final absoluta de retorno e persistencia: trocar o dia, reabrir o app, retomar cronometro/foco, ver transicao de `Temporada`, autoencerramento de ciclo e memoria de modais/rituais sem repetir ou quebrar entre aparelhos. - Responsavel: SENTINELA
+[ ] Fazer a checagem final absoluta da navegacao mobile: `Ativos`, `Arenas`, `Planner`, `Mundo` e `Config`, com modais abrindo/fechando direito, `X` clicavel, scroll consistente e nenhum layout critico quebrando por modelo de celular. - Responsavel: SENTINELA
+[ ] Fazer a checagem final absoluta das skins UI: contraste de texto, bordas, planner, patentes, modais de ativo e leitura em `modo claro/escuro` nas skins principais, fechando o ultimo refinamento visual sem deixar caso isolado passar. - Responsavel: SENTINELA
+[ ] Rodar QA completo do novo leitor paginado de `Anotacao`: textos longos, swipe direita/esquerda, setas pequenas, preview no modal, separacao `[[page]]` e conforto real no mobile. - Responsavel: SENTINELA
+[ ] Fechar a conta nova real restante: ramo `e-mail/Convite` e primeiro retorno `D2` sem ruido. - Responsavel: TRONO
+[ ] Fechar o teste real de e-mail via GM Panel e isolar o erro exato se a entrega nao chegar. - Responsavel: PROTOCOLO
 [ ] Rodar o QA final da `Mentoria basica` em `2 contas`: convite, aceite, recusa, revogacao, refund, abertura da relacao, arena extra por `50 ouro` e campanha exclusiva por `100 ouro`, sem slots. - Responsavel: SENTINELA
 [ ] Validar `Solicitacoes` no Social com amizade + vinculo no mesmo lugar, badge de relacao no card do amigo e notificacao/push coerentes no fluxo. - Responsavel: SENTINELA
-[ ] Fechar a conta nova real restante: ramo `e-mail/Convite` e primeiro retorno `D2` sem ruido. - Responsavel: TRONO
+[ ] Fazer a checagem final absoluta da malha social: amizade, `Vinculos`, `Grupo`, convite, entrar/sair, criar grupo comum, criar `Equipe`, entrar em grupo social no basico e leitura coerente dos chips/tags em todos os cards. - Responsavel: PROTOCOLO
+[ ] Fazer a checagem final absoluta da camada compartilhada: acao de grupo, arena compartilhada, fluxos de `Mentoria`, `Parceria` e `Competicao`, criacao, execucao, reflexo no board e leitura correta para os dois lados. - Responsavel: PROTOCOLO
+[ ] Fazer a checagem final absoluta de `Campanhas`: descobrir, filtrar, abrir detalhe, comprar, instalar, operar arenas do pacote, navegar entre `Gratis/Premium` e confirmar que a campanha entra no lugar certo sem duplicar arena nem perder metadata. - Responsavel: PROTOCOLO
+[ ] Fazer a checagem final absoluta da economia de campanhas: custo em `Ouro`, aba `Gratis/Premium`, install do pacote, premio de onboarding se existir, e retorno claro quando faltar saldo ou quando a compra der certo. - Responsavel: TESOURO
+[ ] Fazer a revisao curatorial da vitrine de `Campanhas`: checar preco, numero de acoes, duracao e texto de cada campanha, e decidir/ligar o ganho de `1 campanha gratis` no onboarding para a primeira conta. - Responsavel: TESOURO
+[ ] Fechar o pipeline de recarga de `Ouro`: vitrine, modo de pagamento, confirmacao, credito no saldo e retorno claro para a compra de premium/campanhas sem quebrar o fluxo. - Responsavel: TESOURO
+[ ] Fazer a checagem final absoluta do `PIX` e da recarga de Ouro: gerar cobranca, pagar, confirmar, creditar saldo, refletir na carteira e voltar ao fluxo de compra sem ruido. - Responsavel: TESOURO
+[ ] Aplicar no Supabase a migration da assinatura premium e validar em `2 aparelhos` a expiracao real, a renovacao acumulada e o modal de recompensa com os itens sazonais corretos. - Responsavel: PROTOCOLO
+[ ] Fazer a checagem final absoluta da economia premium: comprar `Premium`, renovar antes de vencer, renovar vencido, receber recompensas reais, ganhar skin/borda/banner sazonal se ainda faltar e cair no modal certo em vez de toast seco. - Responsavel: TESOURO
+[ ] Fazer a checagem final absoluta do `Modo Jogo`: ligar/desligar, ver o que some e o que continua, confirmar `quests`, `patentes`, `Hall`, `inventario`, `soberano` e `baus` no estado correto sem quebrar o core para quem fica no basico. - Responsavel: PROTOCOLO
+[ ] Validar em uso real a leitura de Ouro direto da camada social (`Mentoria 100`, `Parceria 50`, `Competicao 50`, arena extra `50`) e garantir que nenhuma copy/regra de slot reapareca. - Responsavel: TESOURO
+
+### COMANDO (METAS IMEDIATAS & DONO)
+[ ] Executar o bloco `CHECK FINAL ABSOLUTO` acima em aparelho real e consolidar os achados para congelar o hot path do Beta. - Responsavel: SENTINELA
 [ ] Rodar a passada final de QA mobile em `Season`, `Genesis/Aurora` e hierarquia visual das vitrines para congelar o padrao. - Responsavel: SENTINELA
 
 ### TRONO (Governanca & Decisao)
@@ -44,12 +67,11 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Fechar o teste real de e-mail via GM Panel e isolar o erro exato se a entrega nao chegar. - Responsavel: PROTOCOLO
 [ ] Concluir a ultima passada de pt-BR residual e acabamento fino do cadastro manual apos o novo ritual de Termos pos-login. - Responsavel: PROTOCOLO
 
-### DOMINIO (Marketing & Presenca)
+### DOMINIO (FORA DO HOT PATH)
 [ ] Criar e publicar videos curtos/Reels dos fluxos principais, usando isso para apresentar os 5 primeiros acessos e abrir a narrativa publica do GLYPH.
 [ ] Fazer uma vistoria do site/landing para alinhar copy, fluxo e apresentacao publica antes de empurrar mais trafego.
 
 ### TESOURO (Produto & Economia)
-[ ] Validar em uso real a leitura de Ouro direto da camada social (`Mentoria 100`, `Parceria 50`, `Competicao 50`, arena extra `50`) e garantir que nenhuma copy/regra de slot reapareca. - Responsavel: TESOURO
 [ ] Decidir so os complementos da economia leve (`campanha para outro`, `cosmetico`, `aceleracao`) sem reintroduzir slots ou micro-regras. - Responsavel: TESOURO
 
 ## 5. MARCO 1: PROVA (DEZ/2026)
@@ -80,9 +102,9 @@ Monitor complementar:
 [ ] Friccao mobile critica (P0/P1): 0/0
 
 ## 7. RESUMO ATUALIZADO
-- Data: 23/03/2026
+- Data: 24/03/2026
 - Atualizado por: GPT-5 Codex
-- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e o fechamento de 23/03 puxou a experiencia para um trilho mais unificado: a tela de `Ativos` virou painel operacional com resumo do ciclo e cards por ativo, a convergencia publica `GAME/BASIC -> Modo Jogo` comecou a tomar forma em `Preferencias`, o perfil foi reorganizado e o onboarding/tutoriais passaram a ensinar `core primeiro` e `Modo Jogo depois`. O foco seguinte ficou claro: QA real do novo onboarding sem seletor de modo, QA da mentoria em `2 contas`, validacao de `Solicitacoes`, prova real do ramo `e-mail/Convite` e a ultima rodada de limpeza do pacote `Modo Jogo`.
+- Resumo: O GLYPH segue em ALPHA na Fundacao (T1) e o fechamento de 24/03 empurrou tres frentes importantes: `Campanhas` e `Vinculos` foram realocados para casas mais naturais da navegacao, a loja/catalogo de campanhas ganhou uma estrutura melhor para descoberta com campanhas gratis base e microaulas de `Aprendizado`, e o `Premium` saiu do estado de booleano solto para virar uma assinatura real de `30 dias`, com renovacao acumulada, recompensa concreta e modal no padrao da `Vanguarda`. O foco seguinte ficou claro: QA forte do leitor paginado, revisao curatorial de precos/textos/acoes das campanhas, apply da migration premium no Supabase, pipeline de recarga de Ouro e a ultima rodada de QA real do onboarding/mentoria.
 - Texto do relatorio: atualizado a cada fechamento.
 
 ## 8. MODO DE USO DO RELATORIO
@@ -114,6 +136,9 @@ Monitor complementar:
 [ ] Acabamento final mobile ainda pede ultima passada em `Season`, `Genesis/Aurora`, pt-BR residual e hierarquia visual.
 [ ] Economia social agora pede validacao em uso real para garantir que o modelo de Ouro direto segure sem reintroduzir slot ou micro-regra.
 [ ] A convergencia final de `Modo Jogo` ainda pede esconder todo o pacote de metajogo por um unico toggle e remover o resto dos branches legados.
+[ ] A assinatura premium agora pede apply da migration no Supabase e QA remoto para validar expirar, renovar e receber as recompensas certas entre aparelhos.
+[ ] A nova vitrine de `Campanhas` ainda pede uma rodada curatorial de preco, quantidade de acoes, textos e gatilho de uma campanha gratis no onboarding.
+[ ] O acabamento visual agora pede uma checagem final absoluta das skins UI em claro/escuro para fechar contraste, planner, patentes e modais sem deixar excecao viva.
 
 Legenda rapida:
 - `[ ]` = pendente

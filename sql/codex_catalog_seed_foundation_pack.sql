@@ -307,18 +307,18 @@ values (
     "levels": [
       {
         "level": 1,
-        "title": "Fase 1: Diagnostico Sephirot",
-        "description": "Veja com honestidade onde o reino interno esta desalinhado.",
+        "title": "Fase 1: Microaula de Diagnostico",
+        "description": "Entenda primeiro o que significa diagnosticar a propria maestria com honestidade.",
         "actions": [
           {
-            "name": "Diagnostico Sephirot",
-            "description": "Analise profunda das 10 areas e recalibragem do quiz.",
+            "name": "Ler microaula: Diagnostico de Maestria",
+            "description": "Leia a microaula, entenda a funcao do diagnostico e marque quando terminar.",
             "icon": "🔟",
-            "duration": 20,
+            "duration": 15,
             "repetitions": 1,
             "actionType": "Ação Recorrente",
-            "difficulty": 4,
-            "briefing": "Onde voce esta falhando com voce mesmo?",
+            "difficulty": 2,
+            "briefing": "Diagnostico de Maestria e o processo de olhar honestamente para as principais areas da sua vida e identificar onde voce esta, onde deveria estar e o que esta faltando. Nao e uma analise academica — e um raio-X pessoal que exige coragem para encarar o que esta sendo evitado.\n\nA maioria das pessoas vive reagindo. Vai resolvendo o que aparece, apagando incendio, e nunca para para perguntar: Em que nivel eu realmente estou? O que eu quero dominar? O que esta me segurando? Sem esse diagnostico, voce pode passar anos se esforcando na direcao errada.\n\nO erro mais comum e confundir movimento com progresso. Estar ocupado nao significa estar evoluindo. O diagnostico serve exatamente para diferenciar o que parece produtivo do que realmente move o ponteiro nas areas que importam para voce.\n\nA regra simples e: escolha as areas centrais da sua vida (saude, mente, relacoes, financas, proposito) e de uma nota honesta para cada uma. Nao para se punir — mas para saber onde direcionar energia com intencao.\n\nO diagnostico nao e o fim — e o comeco. Ele transforma vago em especifico, ansiedade em foco, e desejo em direcao. Agora faca a proxima acao para fixar isso na pratica: sua Consagracao de Era comeca com o que voce acabou de enxergar.",
             "preFlight": ["Silencio", "Caderno aberto", "Ultimo ciclo em maos"],
             "context": { "energyLevel": "medium", "timeOfDay": "evening" },
             "scheduledDays": ["DOM"],
@@ -328,8 +328,8 @@ values (
       },
       {
         "level": 2,
-        "title": "Fase 2: Consagracao de Era",
-        "description": "Defina quem governa esta fase e escreva o pacto da nova identidade.",
+        "title": "Fase 2: Aplicacao do pacto",
+        "description": "Depois do diagnostico, transforme leitura em direcao concreta.",
         "actions": [
           {
             "name": "Consagracao de Era",
@@ -339,7 +339,7 @@ values (
             "repetitions": 1,
             "actionType": "Ação Recorrente",
             "difficulty": 5,
-            "briefing": "Defina quem voce sera nesta nova fase.",
+            "briefing": "Aplicacao: seu pacto precisa responder tres coisas. O que voce vai parar, o que vai proteger e o que vai construir neste ciclo. Se o texto nao virar regra pratica, ele e so uma frase bonita. O manifesto bom corta, prioriza e governa.",
             "preFlight": ["Manifesto anterior revisado", "Intencao do ciclo", "Frase de soberania"],
             "context": { "energyLevel": "high", "timeOfDay": "morning" },
             "scheduledDays": ["SEG"],

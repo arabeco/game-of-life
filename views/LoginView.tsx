@@ -257,6 +257,9 @@ export const LoginView: React.FC = () => {
                     inventory: [],
                     role: 'user',
                     isPremium: false,
+                    premiumExpiresAt: null,
+                    premiumRewardPending: false,
+                    premiumRewardPayload: null,
                     starterRewardsPending: true,
                     vanguardWelcomePending: false,
                     vanguardWelcomePayload: null,
@@ -304,6 +307,9 @@ export const LoginView: React.FC = () => {
                         vanguard_welcome_payload: newProfile.vanguardWelcomePayload ?? {},
                         role: newProfile.role,
                         is_premium: newProfile.isPremium ?? false,
+                        premium_expires_at: newProfile.premiumExpiresAt,
+                        premium_reward_pending: newProfile.premiumRewardPending ?? false,
+                        premium_reward_payload: newProfile.premiumRewardPayload ?? {},
                     }]);
 
                 if (profileError) throw profileError;
@@ -466,6 +472,9 @@ export const LoginView: React.FC = () => {
                         inventory: [],
                         role: profile.role,
                         isPremium: profile.is_premium ?? false,
+                        premiumExpiresAt: profile.premium_expires_at ?? null,
+                        premiumRewardPending: profile.premium_reward_pending ?? false,
+                        premiumRewardPayload: profile.premium_reward_payload ?? null,
                     };
                 }
             }

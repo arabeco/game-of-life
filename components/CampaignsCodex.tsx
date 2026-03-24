@@ -61,6 +61,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     // Expandable Description State
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
+    const handleOpenCampaignStore = () => {
+        window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'codexes' } }));
+        onClose();
+    };
+
     const allArenas = getArenas();
     const effectivePreviewCampaign: Campaign | null = previewCampaign
         ? {
@@ -404,25 +409,29 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         return (
             <Portal>
                 <div className="fixed inset-0 z-[230] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-                    <GlassCard variant="neutral" className="relative flex max-h-[82vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.7rem]" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                            <h2 className="text-lg font-bold uppercase tracking-[0.22em] text-white">Campanhas</h2>
-                            <button onClick={onClose} className="luxe-skin-button flex h-11 min-w-[3.25rem] items-center justify-center rounded-2xl px-4 text-sm font-bold">
-                                <CheckIcon className="h-5 w-5" />
-                            </button>
-                            {!isReadOnlyCodexCampaign && !isPreviewCampaign && isEditing && visiblePhaseCount < 5 && (
-                                <button
-                                    onClick={handleAddPhase}
-                                    className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all ${
-                                        isLinkingMode 
-                                            ?'border-blue-500 bg-blue-500/20 text-blue-300 shadow-[0_0_24px_rgba(59,130,246,0.3)]' 
-                                            : 'border-white/10 bg-white/5 text-gray-400 hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white'
-                                    }`}
-                                    title={isLinkingMode ?'Modo de vínculo ativo' : 'Ativar vínculos'}
-                                >
-                                    <LinkIcon className="w-4 h-4" />
-                                </button>
-                            )}
+                    <GlassCard variant="neutral" className="dossier-bg relative flex max-h-[82vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.7rem] border border-[color:var(--skin-accent-color)]/16 shadow-2xl shadow-black/60" onClick={e => e.stopPropagation()}>
+                        <div className="border-b border-white/10 bg-black/20 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Campanhas</div>
+                                    <h2 className="mt-1 text-lg font-black uppercase tracking-[0.08em] text-white">Painel de campanhas</h2>
+                                    <p className="mt-1 text-xs leading-relaxed text-white/58">
+                                        Veja suas campanhas e abra a loja para navegar por trilhas novas.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenCampaignStore}
+                                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10"
+                                    >
+                                        Loja de campanhas
+                                    </button>
+                                    <button onClick={onClose} className="luxe-skin-button flex h-11 min-w-[3.25rem] items-center justify-center rounded-2xl px-4 text-sm font-bold">
+                                        <CheckIcon className="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         
                         <div className="overflow-y-auto p-4">
@@ -548,7 +557,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     return (
         <Portal>
                 <div className="fixed inset-0 z-[230] flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-                 <GlassCard variant="neutral" className="relative flex max-h-[92vh] w-full max-w-[40rem] flex-col overflow-hidden rounded-[1.45rem] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.24),rgba(255,255,255,0.10)_22%,transparent_48%),radial-gradient(circle_at_38%_18%,rgba(255,255,255,0.12),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(109,40,217,0.18),transparent_34%),linear-gradient(145deg,rgba(102,109,120,0.98)_0%,rgba(132,139,151,0.95)_26%,rgba(82,88,101,0.94)_48%,rgba(38,33,53,0.96)_78%,rgba(16,11,28,0.99)_100%)]" onClick={e => e.stopPropagation()}>
+                 <GlassCard variant="neutral" className="dossier-bg relative flex max-h-[92vh] w-full max-w-[40rem] flex-col overflow-hidden rounded-[1.45rem] border border-[color:var(--skin-accent-color)]/18 shadow-2xl shadow-black/70" onClick={e => e.stopPropagation()}>
                      <div
                         className="modal-aura-overlay"
                         style={{ '--modal-aura-color': 'rgba(154, 122, 255, 0.16)' } as React.CSSProperties}
@@ -559,7 +568,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                      />
                     {/* Header */}
                     {isPreviewCampaign ? (
-                        <div className="shrink-0 border-b border-white/10 bg-black/25 p-2.5">
+                        <div className="shrink-0 border-b border-white/10 bg-black/25 p-3">
                             <div className="flex items-start gap-2.5">
                                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[0.95rem] border border-white/10 bg-black/35">
                                     {isProbablyImageUrl(previewMeta?.coverImage) ? (
@@ -578,6 +587,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
+                                            <div className="mb-1 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/62">
+                                                {previewMeta?.badgeLabel || 'Campanha'}
+                                            </div>
                                             <h1
                                                 className="text-left font-black uppercase tracking-[0.05em] text-[17px] leading-[0.94] text-[color:var(--skin-accent-color)]"
                                                 style={{ overflowWrap: 'anywhere', wordBreak: 'normal' }}
@@ -591,14 +603,29 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                             )}
                                         </div>
 
-                                        <button onClick={onClose} className="shrink-0 rounded-xl px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] luxe-skin-button">
-                                            OK
-                                        </button>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleOpenCampaignStore}
+                                                className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10"
+                                            >
+                                                Loja
+                                            </button>
+                                            <button onClick={onClose} className="shrink-0 rounded-xl px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] luxe-skin-button">
+                                                OK
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-white/68">
                                         {displayCampaignDescription || 'Sem descrição.'}
                                     </p>
+
+                                    {previewMeta?.note && (
+                                        <div className="mt-1.5 rounded-xl border border-white/8 bg-white/5 px-2.5 py-2 text-[10px] leading-relaxed text-white/62">
+                                            {previewMeta.note}
+                                        </div>
+                                    )}
 
                                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                                         <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/64">
@@ -689,6 +716,13 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                             </div>
 
                             <div className="flex flex-col items-center gap-1 pr-0.5">
+                                <button
+                                    type="button"
+                                    onClick={handleOpenCampaignStore}
+                                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10"
+                                >
+                                    Loja
+                                </button>
                                 <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
                                     OK
                                 </button>

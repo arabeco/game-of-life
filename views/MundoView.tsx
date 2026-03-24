@@ -6,7 +6,7 @@ import { CreateClanModal } from '../components/CreateClanModal';
 import { Clan, RelationshipLink, RelationshipLinkInvite, UserProfile } from '../types';
 import { ClanDetailModal } from '../components/ClanDetailModal';
 import { SocialCard } from '../components/SocialCard';
-import { PlusIcon, CheckIcon, XIcon, TrophyIcon, ShoppingBagIcon, CalendarIcon, UsersIcon, ArchiveBoxIcon } from '../components/Icons';
+import { PlusIcon, CheckIcon, XIcon, TrophyIcon, ShoppingBagIcon, CalendarIcon, UsersIcon, ArchiveBoxIcon, LinkIcon } from '../components/Icons';
 import { ClanSearchResultCard } from '../components/ClanSearchResultCard';
 import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
 import { HallOfFameView } from './HallOfFameView';
@@ -15,6 +15,7 @@ import { ArsenalView } from './ArsenalView';
 import { SeasonView } from './SeasonView';
 import { UserAvatar } from '../components/UserAvatar';
 import { ProfileView } from './ProfileView';
+import { RelationshipHubModal } from '../components/RelationshipHubModal';
 import './mundo-ui.css';
 
 const RELATION_LABELS: Record<'mentoria' | 'parceria' | 'competicao', string> = {
@@ -211,6 +212,7 @@ const SocialTab: React.FC = () => {
     const [relationshipInvites, setRelationshipInvites] = useState<RelationshipLinkInvite[]>([]);
     const [relationshipLinks, setRelationshipLinks] = useState<RelationshipLink[]>([]);
     const [relationshipProfiles, setRelationshipProfiles] = useState<Record<string, UserProfile>>({});
+    const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
 
     const relationshipCount = friendRequestsIncoming.length + friendRequestsOutgoing.length + relationshipInvites.length;
 
@@ -464,7 +466,20 @@ const SocialTab: React.FC = () => {
             )}
 
             <div className="space-y-4">
-                <h3 className="text-center font-bold uppercase tracking-wider text-sm text-gray-400">Aliados e Grupos</h3>
+                <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Aliados e Grupos</h3>
+                    <button
+                        id="links-button"
+                        onClick={() => setRelationshipHubOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/32 hover:bg-[var(--skin-accent-color)]/16"
+                    >
+                        <LinkIcon className="h-3.5 w-3.5" />
+                        <span>Vínculos</span>
+                        <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-black/16 px-1.5 py-0.5 text-[9px] font-black text-white/82">
+                            {relationshipLinks.length + relationshipInvites.length}
+                        </span>
+                    </button>
+                </div>
                 <SocialSearch friends={friends} onSearchResults={setSearchResults} onQueryChange={setSearchQuery} />
 
                 <div className="flex gap-2">
@@ -667,6 +682,7 @@ const SocialTab: React.FC = () => {
             </div>
             {modal === 'create' && <CreateClanModal onClose={() => setModal(null)} />}
             {selectedProfile && <ProfileView profile={selectedProfile} onClose={() => setSelectedProfile(null)} />}
+            {isRelationshipHubOpen && <RelationshipHubModal onClose={() => setRelationshipHubOpen(false)} />}
         </div>
     );
 };

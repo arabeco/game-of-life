@@ -43,6 +43,27 @@
   --ui-button-secondary-bg-hover: rgba(255, 255, 255, 0.1);
   --ui-button-secondary-border: var(--glass-border);
   --ui-button-secondary-border-hover: var(--glass-border-light);
+  --dossier-bg-surface: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08) 0%, rgba(255, 255, 255, 0) 40%), #101010;
+  --ui-card-text: var(--text-primary);
+  --ui-card-text-soft: var(--text-secondary);
+  --ui-core-surface-bg: var(--glass-bg);
+  --ui-core-surface-strong-bg: rgba(10, 10, 10, 0.82);
+  --ui-core-surface-border: var(--glass-border);
+  --ui-core-surface-border-strong: var(--glass-border-light);
+  --ui-core-pill-bg: var(--glass-bg);
+  --ui-core-label-color: var(--ui-card-text-soft);
+  --ui-core-caption-color: var(--ui-card-text-soft);
+  --planner-top-bg: linear-gradient(180deg, rgba(18, 24, 32, 0.96), rgba(8, 12, 18, 0.98));
+  --planner-day-header-bg: linear-gradient(180deg, rgba(24, 31, 40, 0.96), rgba(10, 14, 20, 0.98));
+  --planner-day-header-text: #e8eef6;
+  --planner-scroll-bg: linear-gradient(180deg, rgba(14, 19, 26, 0.98), rgba(8, 12, 18, 0.99));
+  --planner-surface-bg: linear-gradient(180deg, rgba(31, 39, 50, 0.98), rgba(10, 14, 20, 0.99));
+  --planner-weekday-header-bg: linear-gradient(180deg, rgba(24, 31, 40, 0.96), rgba(10, 14, 20, 0.98));
+  --planner-floating-bg: linear-gradient(180deg, rgba(24, 31, 40, 0.96), rgba(12, 16, 22, 0.98));
+  --planner-pill-bg: rgba(255, 255, 255, 0.06);
+  --planner-pill-active-bg: rgba(255, 255, 255, 0.14);
+  --planner-soft-control-color: #d2dbe6;
+  --planner-hour-label-color: #edf4fb;
 }
 
 /* Office Mode Variables - Light Theme */
@@ -279,23 +300,19 @@ body {
 }
 
 /* Force solid backgrounds in Office Mode */
-.mode-office .glass-card, 
-.mode-office .glass-panel {
-  background: var(--bg-secondary) !important;
-  border: var(--card-border) !important;
+.mode-office .glass-card,
+.mode-office .glass-panel,
+.mode-game .glass-card,
+.mode-game .glass-panel {
+  background: var(--glass-bg) !important;
+  border-color: var(--glass-border) !important;
   backdrop-filter: none !important;
 }
 
-.mode-game.theme-light .glass-card,
-.mode-game.theme-light .glass-panel {
-  background: var(--glass-bg) !important;
-  border-color: var(--glass-border) !important;
-}
-
-.mode-game.theme-light .dossier-bg {
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.2) 38%, transparent 66%),
-    linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(240, 231, 216, 0.96));
+.mode-office .dossier-bg,
+.mode-game .dossier-bg {
+  background: var(--dossier-bg-surface);
+  border-color: var(--glass-border);
 }
 
 .mode-game.theme-light .depth-grid {
@@ -338,12 +355,7 @@ body {
 }
 
 .mode-game.theme-light #planner-container .planner-top-shell {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--skin-accent-color) 10%, rgba(190, 201, 214, 0.97)),
-      color-mix(in srgb, var(--skin-accent-color) 24%, rgba(111, 126, 145, 0.96))
-    ) !important;
+  background: var(--planner-top-bg) !important;
   border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 30%, transparent) !important;
   box-shadow:
     0 10px 24px rgba(15, 23, 42, 0.16),
@@ -351,43 +363,21 @@ body {
 }
 
 .mode-game.theme-light #planner-container .planner-day-header {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--skin-accent-color) 14%, rgba(184, 196, 210, 0.97)),
-      color-mix(in srgb, var(--skin-accent-color) 30%, rgba(88, 103, 122, 0.96))
-    ) !important;
-  color: color-mix(in srgb, var(--skin-accent-color) 18%, #edf4fb) !important;
+  background: var(--planner-day-header-bg) !important;
+  color: var(--planner-day-header-text) !important;
   border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 28%, transparent) !important;
 }
 
 .mode-game.theme-light #planner-container .planner-scroll-surface {
-  background:
-    radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--skin-accent-color) 10%, rgba(198, 209, 222, 0.14)), rgba(198, 209, 222, 0) 18%),
-    radial-gradient(circle at 82% 24%, color-mix(in srgb, var(--skin-accent-color) 12%, rgba(166, 180, 196, 0.12)), rgba(166, 180, 196, 0) 22%),
-    repeating-linear-gradient(
-      128deg,
-      color-mix(in srgb, var(--skin-accent-color) 10%, rgba(255, 255, 255, 0.03)) 0 1px,
-      rgba(255, 255, 255, 0) 1px 48px
-    ),
-    repeating-linear-gradient(
-      132deg,
-      color-mix(in srgb, var(--skin-accent-color) 8%, rgba(255, 255, 255, 0.02)) 0 1px,
-      rgba(255, 255, 255, 0) 1px 88px
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--skin-accent-color) 10%, rgba(180, 192, 206, 0.98)) 0%,
-      color-mix(in srgb, var(--skin-accent-color) 28%, rgba(88, 104, 123, 0.99)) 100%
-    ) !important;
+  background: var(--planner-scroll-bg) !important;
 }
 
 .mode-game.theme-light #planner-container .planner-soft-control {
-  color: var(--ui-shell-strong) !important;
+  color: var(--planner-soft-control-color) !important;
 }
 
 .mode-game.theme-light #planner-container .planner-soft-control svg {
-  color: var(--ui-shell-strong) !important;
+  color: var(--planner-soft-control-color) !important;
   opacity: 0.96;
 }
 
@@ -397,11 +387,11 @@ body {
 }
 
 .mode-game.theme-light #planner-container .planner-date-label {
-  color: var(--ui-shell-strong) !important;
+  color: var(--planner-soft-control-color) !important;
 }
 
 .mode-game.theme-light #planner-container .planner-pill-switch {
-  background: color-mix(in srgb, var(--skin-accent-color) 10%, rgba(174, 187, 201, 0.5)) !important;
+  background: var(--planner-pill-bg) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 24%, rgba(255,255,255,0.08)) !important;
 }
 
@@ -410,20 +400,17 @@ body {
 }
 
 .mode-game.theme-light #planner-container .planner-pill-switch .planner-view-btn[data-active="true"] {
-  background: color-mix(in srgb, var(--skin-accent-color) 20%, rgba(198, 211, 225, 0.74)) !important;
-  color: var(--ui-shell-strong) !important;
+  background: var(--planner-pill-active-bg) !important;
+  color: var(--planner-day-header-text) !important;
+}
+
+.mode-game.theme-dark #planner-container .planner-pill-switch .planner-view-btn[data-active="true"] {
+  color: var(--planner-day-header-text) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-planner-surface,
 .mode-game.theme-light #planner-container .weekly-planner-grid {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--skin-accent-color) 12%, rgba(171, 184, 199, 0.99)) 0%,
-      color-mix(in srgb, var(--skin-accent-color) 20%, rgba(124, 139, 159, 0.97)) 18%,
-      color-mix(in srgb, var(--skin-accent-color) 24%, rgba(80, 95, 114, 0.98)) 42%,
-      color-mix(in srgb, var(--skin-accent-color) 30%, rgba(47, 59, 76, 0.99)) 100%
-    ) !important;
+  background: var(--planner-surface-bg) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 28%, rgba(255,255,255,0.1)) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
@@ -432,7 +419,7 @@ body {
 
 .mode-game.theme-light #planner-container .daily-hour-label,
 .mode-game.theme-light #planner-container .weekly-hour-label {
-  color: color-mix(in srgb, var(--skin-accent-color) 18%, #f3f7fb) !important;
+  color: var(--planner-hour-label-color) !important;
 }
 
 .mode-game.theme-light #planner-container .daily-grid-column,
@@ -451,13 +438,8 @@ body {
 }
 
 .mode-game.theme-light #planner-container .weekly-day-header {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--skin-accent-color) 12%, rgba(181, 193, 207, 0.96)),
-      color-mix(in srgb, var(--skin-accent-color) 28%, rgba(84, 99, 118, 0.96))
-    ) !important;
-  color: color-mix(in srgb, var(--skin-accent-color) 18%, #edf4fb) !important;
+  background: var(--planner-weekday-header-bg) !important;
+  color: var(--planner-day-header-text) !important;
   border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 28%, transparent) !important;
 }
 
@@ -476,12 +458,7 @@ body {
 }
 
 .mode-game.theme-light #planner-container .planner-floating-stack {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--skin-accent-color) 18%, rgba(246, 249, 253, 0.96)),
-      color-mix(in srgb, var(--skin-accent-color) 26%, rgba(186, 199, 214, 0.94))
-    ) !important;
+  background: var(--planner-floating-bg) !important;
   border-color: color-mix(in srgb, var(--skin-accent-color) 26%, rgba(170, 184, 201, 0.24)) !important;
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16) !important;
 }
@@ -745,11 +722,33 @@ body {
   .arena-detail-modal .arena-detail-modal-header,
   .arena-detail-modal .arena-link-panel,
   .arena-detail-modal .arena-detail-field-card
+),
+.mode-office :is(
+  .dossier-bg,
+  .glass-card,
+  .glass-panel,
+  .mercado-pago-sheet,
+  .relationship-hub-sheet,
+  .arena-detail-modal-root,
+  .arena-detail-modal .arena-detail-modal-header,
+  .arena-detail-modal .arena-link-panel,
+  .arena-detail-modal .arena-detail-field-card
 ) {
-  color: var(--text-primary);
+  color: var(--ui-card-text);
 }
 
 .mode-game :is(
+  .dossier-bg,
+  .glass-card,
+  .glass-panel,
+  .mercado-pago-sheet,
+  .relationship-hub-sheet,
+  .arena-detail-modal-root,
+  .arena-detail-modal .arena-detail-modal-header,
+  .arena-detail-modal .arena-link-panel,
+  .arena-detail-modal .arena-detail-field-card
+) :is(.accent-text, .ui-text-accent, .luxe-title-ornate),
+.mode-office :is(
   .dossier-bg,
   .glass-card,
   .glass-panel,
@@ -773,6 +772,17 @@ body {
   .arena-detail-modal .arena-detail-modal-header,
   .arena-detail-modal .arena-link-panel,
   .arena-detail-modal .arena-detail-field-card
+) :is(.ui-text-accent-soft),
+.mode-office :is(
+  .dossier-bg,
+  .glass-card,
+  .glass-panel,
+  .mercado-pago-sheet,
+  .relationship-hub-sheet,
+  .arena-detail-modal-root,
+  .arena-detail-modal .arena-detail-modal-header,
+  .arena-detail-modal .arena-link-panel,
+  .arena-detail-modal .arena-detail-field-card
 ) :is(.ui-text-accent-soft) {
   color: var(--ui-text-accent-soft) !important;
 }
@@ -787,8 +797,19 @@ body {
   .arena-detail-modal .arena-detail-modal-header,
   .arena-detail-modal .arena-link-panel,
   .arena-detail-modal .arena-detail-field-card
+) :is(.text-white, [class~="text-white"]),
+.mode-office :is(
+  .dossier-bg,
+  .glass-card,
+  .glass-panel,
+  .mercado-pago-sheet,
+  .relationship-hub-sheet,
+  .arena-detail-modal-root,
+  .arena-detail-modal .arena-detail-modal-header,
+  .arena-detail-modal .arena-link-panel,
+  .arena-detail-modal .arena-detail-field-card
 ) :is(.text-white, [class~="text-white"]) {
-  color: var(--text-primary) !important;
+  color: var(--ui-card-text) !important;
 }
 
 .mode-game :is(
@@ -811,8 +832,29 @@ body {
   .text-white\/60,
   .text-white\/72,
   .text-white\/80
+),
+.mode-office :is(
+  .dossier-bg,
+  .glass-card,
+  .glass-panel,
+  .mercado-pago-sheet,
+  .relationship-hub-sheet,
+  .arena-detail-modal-root,
+  .arena-detail-modal .arena-detail-modal-header,
+  .arena-detail-modal .arena-link-panel,
+  .arena-detail-modal .arena-detail-field-card
+) :is(
+  .text-gray-300,
+  .text-gray-400,
+  .text-gray-500,
+  .text-white\/40,
+  .text-white\/56,
+  .text-white\/58,
+  .text-white\/60,
+  .text-white\/72,
+  .text-white\/80
 ) {
-  color: var(--game-muted-text) !important;
+  color: var(--ui-card-text-soft) !important;
 }
 
 /* Custom Scrollbar */

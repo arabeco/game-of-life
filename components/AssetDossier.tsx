@@ -238,7 +238,10 @@ export const AssetDossier: React.FC<{
                                     ) : null}
                                     {showHeader && (
                                         <>
-                                            <h2 className={`${embedded ? 'text-base' : 'text-lg'} luxe-title-ornate font-black uppercase tracking-widest text-[color:var(--skin-accent-color)] luxe-title-shadow truncate px-2 text-center`}>
+                                            <h2
+                                                className={`${embedded ? 'text-base' : 'text-lg'} luxe-title-ornate font-black uppercase tracking-widest luxe-title-shadow truncate px-2 text-center`}
+                                                style={{ color: 'var(--ui-card-text)' }}
+                                            >
                                                 {asset.name}
                                             </h2>
                                             {embedded ? (
@@ -308,7 +311,7 @@ export const AssetDossier: React.FC<{
                     {/* Fixed Arenas Footer - Takes only necessary space */}
                     {showArenas && (
                     <div className="flex-shrink-0 flex flex-col min-h-0 pt-3 border-t border-[var(--skin-accent-color)]/30 relative mt-auto" style={panelStyle}>
-                        <h3 className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#101010] px-2 text-[10px] font-black text-[var(--skin-accent-color)] uppercase tracking-widest z-10 border border-[var(--skin-accent-color)]/30 rounded-full">
+                        <h3 className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#101010] px-2 text-[10px] font-black uppercase tracking-widest z-10 border border-[var(--skin-accent-color)]/30 rounded-full" style={{ color: 'var(--ui-card-text)' }}>
                             Arenas
                         </h3>
 

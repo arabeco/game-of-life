@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'rea
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
+import { GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, ProfileVisibilityScope, Arena, Action, ScheduledTask } from '../types';
 import { ChevronRightIcon, XIcon, LightbulbIcon, ClockIcon, TrashIcon, CheckIcon, SendIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
@@ -17,6 +18,7 @@ import { RelationshipHubModal } from '../components/RelationshipHubModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
+import { getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
 import './settings-ui.css';
 
 const OracleChat = lazy(() =>
@@ -1232,32 +1234,32 @@ const NobrezaHierarchyView: React.FC = () => {
     return (
         <div className="space-y-6">
             <GlassCard variant="accent" className="text-center">
-                <p className="text-sm uppercase tracking-wider">NOBREZA</p>
-                <h2 className="text-3xl font-black accent-text">{currentRank?.name || 'Vagante'}</h2>
+                <p className="text-sm uppercase tracking-wider" style={{ color: 'var(--ui-card-text-soft)' }}>NOBREZA</p>
+                <h2 className="text-3xl font-black" style={{ color: 'var(--ui-card-text)' }}>{currentRank?.name || 'Vagante'}</h2>
                 <div className="mt-4">
-                    <div className="flex justify-between text-xs font-bold">
+                    <div className="flex justify-between text-xs font-bold" style={{ color: 'var(--ui-card-text-soft)' }}>
                         <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
                         <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP` : 'Topo'}</span>
                     </div>
                     <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
                         <div className="bg-[var(--skin-accent-color)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div>
                     </div>
-                    <div className="flex justify-between text-[10px] font-bold text-white/70 mt-2">
+                    <div className="mt-2 flex justify-between text-[10px] font-bold" style={{ color: 'var(--ui-card-text-soft)' }}>
                         <span>{currentRank ? `${currentRank.expTotalRequired.toLocaleString('pt-BR')} XP (patente)` : ''}</span>
                         <span>{nextRank ? `${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP (próxima)` : 'Topo'}</span>
                     </div>
                 </div>
             </GlassCard>
             <div>
-                <h3 className="text-lg font-bold tracking-wider mb-2">Hierarquia da Nobreza</h3>
+                <h3 className="mb-2 text-lg font-bold tracking-wider" style={{ color: 'var(--ui-card-text)' }}>Hierarquia da Nobreza</h3>
                 <div className="space-y-2">
                     {nobilityRanks.map(rank => (
                         <GlassCard key={rank.id} variant="neutral" className={`p-3 ${rank.id === currentRank?.id ? 'ring-2 ring-[var(--skin-accent-color)]' : 'opacity-70'}`}>
                             <div className="flex justify-between items-center">
-                                <span className="font-bold">{rank.name}</span>
-                                <span className="text-sm text-gray-400">{rank.expTotalRequired.toLocaleString('pt-BR')} XP</span>
+                                <span className="font-bold" style={{ color: 'var(--ui-card-text)' }}>{rank.name}</span>
+                                <span className="text-sm" style={{ color: 'var(--ui-card-text-soft)' }}>{rank.expTotalRequired.toLocaleString('pt-BR')} XP</span>
                             </div>
-                            <div className="flex justify-between items-center text-[10px] font-bold text-white/60 mt-1">
+                            <div className="mt-1 flex justify-between items-center text-[10px] font-bold" style={{ color: 'var(--ui-card-text-soft)' }}>
                                 <span>{rank.expTotalRequired.toLocaleString('pt-BR')} XP total</span>
                             </div>
                         </GlassCard>
@@ -1433,11 +1435,11 @@ const GeralTab: React.FC = () => {
             <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group shadow-[0_0_20px_var(--sephirot-glow-color-soft)]" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color,rgba(0,0,0,0))] to-black/60 pointer-events-none" />
                 <div className="relative z-10 p-2">
-                    <p className="text-[10px] uppercase tracking-[0.2em] accent-text mb-1 opacity-70">Sua Patente</p>
-                    <h2 className="text-3xl font-black accent-text drop-shadow-lg tracking-tighter">{currentRank?.name || 'Vagante'}</h2>
+                    <p className="mb-1 text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--ui-card-text-soft)' }}>Sua Patente</p>
+                    <h2 className="text-3xl font-black drop-shadow-lg tracking-tighter" style={{ color: 'var(--ui-card-text)' }}>{currentRank?.name || 'Vagante'}</h2>
 
                     <div className="mt-6 px-2">
-                        <div className="flex justify-between text-[10px] font-bold tracking-wider accent-text opacity-80 mb-2">
+                        <div className="mb-2 flex justify-between text-[10px] font-bold tracking-wider" style={{ color: 'var(--ui-card-text-soft)' }}>
                             <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
                             <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')}` : 'MÁXIMO'}</span>
                         </div>
@@ -1674,35 +1676,26 @@ const PreferenciasTab: React.FC = () => {
                     >
                         <GlassCard
                             variant="neutral"
-                            className={`p-4 space-y-4 ${highlightModeGame ? 'ring-1 ring-[var(--skin-accent-color)] shadow-[0_0_24px_var(--sephirot-glow-color-soft)]' : ''}`}
+                            className={`p-4 space-y-3 ${highlightModeGame ? 'ring-1 ring-[var(--skin-accent-color)] shadow-[0_0_24px_var(--sephirot-glow-color-soft)]' : ''}`}
                         >
                             <div className="flex justify-between items-center">
                                 <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Modo Jogo</h3>
                                 <div className={`text-[10px] px-2 py-0.5 rounded font-mono ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-white/10 text-gray-300'}`}>{appMode === 'GAME' ? 'LIGADO' : 'DESLIGADO'}</div>
                             </div>
-                            <p className="text-[11px] leading-relaxed text-gray-500">O core fica sempre ligado. O Modo Jogo adiciona quests, patentes, baus, inventario, Hall da Fama e soberano.</p>
 
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 p-1 bg-black/20 rounded-lg">
                                 <button
                                     onClick={() => setAppMode('BASIC')}
-                                    className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden group ${appMode === 'BASIC' ? 'bg-white text-black shadow-lg ring-1 ring-white/50' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
+                                    className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${appMode === 'BASIC' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
-                                    <div className="relative z-10 flex flex-col items-center">
-                                        <span className="text-xl mb-1">OFF</span>
-                                        <span className="text-xs tracking-widest">DESLIGADO</span>
-                                    </div>
-                                    {appMode === 'BASIC' && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
+                                    MODO BÁSICO
                                 </button>
 
                                 <button
                                     onClick={() => setAppMode('GAME')}
-                                    className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_var(--sephirot-glow-color)] ring-1 ring-white/20' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
+                                    className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)] text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
-                                    <div className="relative z-10 flex flex-col items-center">
-                                        <span className="text-xl mb-1">ON</span>
-                                        <span className="text-xs tracking-widest">LIGADO</span>
-                                    </div>
-                                    {appMode === 'GAME' && <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none" />}
+                                    MODO JOGO
                                 </button>
                             </div>
 
@@ -1771,14 +1764,14 @@ const PreferenciasTab: React.FC = () => {
     );
 };
 
-const PremiumTab: React.FC = () => {
+const LegacyPremiumTab: React.FC = () => {
     const { userProfile, oraclePreferences, isProfileLoaded } = useGame();
     const [isLinksOpen, setLinksOpen] = useState(false);
     const [isOracleSettingsOpen, setOracleSettingsOpen] = useState(false);
     const [showCampaignsCodex, setShowCampaignsCodex] = useState(false);
     const [isOracleChatOpen, setOracleChatOpen] = useState(false);
     const [isCodexOpen, setCodexOpen] = useState(false);
-    const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
+    const isPremium = hasPremiumAccess(userProfile);
     const isStaff = isProfileLoaded && (userProfile.role === 'admin' || userProfile.role === 'gm');
     const isIAEnabled = oraclePreferences?.iaEnabled ?? true;
 
@@ -1886,6 +1879,107 @@ const PremiumTab: React.FC = () => {
                 <Suspense fallback={<div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm" />}>
                     <CampaignsCodex onClose={() => setShowCampaignsCodex(false)} />
                 </Suspense>
+            )}
+        </div>
+    );
+};
+
+const PremiumTab: React.FC = () => {
+    const { userProfile, isProfileLoaded } = useGame();
+    const isPremium = hasPremiumAccess(userProfile);
+    const isStaff = isProfileLoaded && (userProfile.role === 'admin' || userProfile.role === 'gm');
+    const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÍVEL';
+    const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
+    const premiumExpiresLabel = userProfile.premiumExpiresAt
+        ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(userProfile.premiumExpiresAt))
+        : null;
+    const premiumCycleLabel = isStaff
+        ? 'controle GM'
+        : premiumDaysRemaining != null
+            ? `${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'} restantes`
+            : isPremium
+                ? 'legado ativo'
+                : '30 dias';
+
+    const handleOpenPremiumStore = () => {
+        window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'store' } }));
+    };
+
+    return (
+        <div className="space-y-8 animate-fade-in pb-10">
+            <section className="space-y-4">
+                <div className="flex items-center justify-between px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">
+                    <h2 className="text-sm font-bold accent-text uppercase tracking-widest">Premium</h2>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded ${isPremium ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-white/5 text-gray-500'}`}>
+                        {premiumLabel}
+                    </span>
+                </div>
+
+                <GlassCard variant="neutral" className="overflow-hidden border-[var(--skin-accent-color)]/16">
+                    <div className="border-b border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(0,0,0,0.14)_100%)] p-4">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Assinatura</div>
+                                <h3 className="text-lg font-black uppercase tracking-[0.08em] text-white">Soberania premium</h3>
+                                <p className="max-w-[28rem] text-xs leading-relaxed text-white/58">
+                                    Benefícios ativos, validade real de 30 dias e recompensas concretas de renovação dentro do próprio ritual premium.
+                                </p>
+                            </div>
+                            <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-white/10 bg-white/5 text-white/65'}`}>
+                                {premiumLabel}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 p-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3">
+                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Validade</div>
+                                <div className="mt-1 text-xl font-black text-white">{premiumCycleLabel}</div>
+                                <div className="text-[11px] text-white/55">
+                                    {isPremium && premiumExpiresLabel ? `até ${premiumExpiresLabel}` : 'por ativação'}
+                                </div>
+                            </div>
+                            <div className="rounded-2xl border border-[var(--skin-accent-color)]/16 bg-[var(--skin-accent-color)]/10 px-3 py-3">
+                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)]/80">Custo</div>
+                                <div className="mt-1 inline-flex items-center gap-1.5 text-xl font-black text-[var(--ui-text-accent)]">
+                                    <span className="text-[14px] leading-none">🪙</span>
+                                    <span>{GOLD_PREMIUM_PRODUCT.priceGold}</span>
+                                </div>
+                                <div className="text-[11px] text-[var(--ui-text-accent)]/72">renovação manual</div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Benefícios ativos</div>
+                            <div className="grid gap-2">
+                                {GOLD_PREMIUM_PRODUCT.benefits.map((benefit) => (
+                                    <div key={benefit} className="flex items-start gap-2 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
+                                        <span className="mt-0.5 text-[var(--skin-accent-color)]">
+                                            <CheckIcon className="h-4 w-4" />
+                                        </span>
+                                        <span className="text-xs leading-relaxed text-white/78">{benefit}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleOpenPremiumStore}
+                            className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em]"
+                        >
+                            <span>{isPremium ? 'Renovar premium' : 'Ativar premium'}</span>
+                        </button>
+                    </div>
+                </GlassCard>
+            </section>
+
+            {isStaff && (
+                <div className="pt-6 mt-6 border-t border-[var(--skin-accent-color)]/30">
+                    <Suspense fallback={<div className="h-24 rounded-2xl bg-black/20 animate-pulse" />}>
+                        <SovereignPanelView />
+                    </Suspense>
+                </div>
             )}
         </div>
     );

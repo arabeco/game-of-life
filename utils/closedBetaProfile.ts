@@ -68,6 +68,9 @@ export const buildClosedBetaProfilePayload = (session: Session) => {
     codex_creation_slots_purchased: 0,
     role: 'user',
     is_premium: false,
+    premium_expires_at: null,
+    premium_reward_pending: false,
+    premium_reward_payload: {},
   };
 };
 

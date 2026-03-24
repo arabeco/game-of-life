@@ -2,7 +2,7 @@
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, DayOfWeek, ActionType } from '../types';
 import { GlassCard } from './GlassCard';
-import { ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
 import { WheelPicker } from './inputs/WheelPicker';
 import { ImageUploadSlot } from './inputs/ImageUploadSlot';
@@ -40,6 +40,71 @@ const hexToRgb = (hex: string) => {
 const rgbaString = (hex: string, alpha: number) => {
     const { r, g, b } = hexToRgb(hex);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const splitBriefingParagraph = (paragraph: string, maxChars: number) => {
+    const trimmed = paragraph.trim();
+    if (!trimmed) return [];
+    if (trimmed.length <= maxChars) return [trimmed];
+
+    const sentences = trimmed.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map(sentence => sentence.trim()).filter(Boolean) ?? [];
+    if (sentences.length <= 1) {
+        const chunks = trimmed.match(new RegExp(`.{1,${maxChars}}(?:\\s|$)`, 'g'));
+        return chunks?.map(chunk => chunk.trim()).filter(Boolean) ?? [trimmed];
+    }
+
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    sentences.forEach(sentence => {
+        const nextChunk = currentChunk ? `${currentChunk} ${sentence}` : sentence;
+        if (currentChunk && nextChunk.length > maxChars) {
+            chunks.push(currentChunk);
+            currentChunk = sentence;
+            return;
+        }
+        currentChunk = nextChunk;
+    });
+
+    if (currentChunk) chunks.push(currentChunk);
+    return chunks;
+};
+
+const paginateBriefing = (text?: string, maxChars = 860) => {
+    const normalized = text?.replace(/\r\n/g, '\n').trim();
+    if (!normalized) return [];
+
+    const pages: string[] = [];
+    const manualSections = normalized
+        .split(/\n\s*\[\[page\]\]\s*\n/gi)
+        .map(section => section.trim())
+        .filter(Boolean);
+
+    manualSections.forEach(section => {
+        const segments = section
+            .split(/\n\s*\n/)
+            .map(paragraph => paragraph.trim())
+            .filter(Boolean)
+            .flatMap(paragraph => splitBriefingParagraph(paragraph, maxChars));
+
+        if (segments.length === 0) return;
+
+        let currentPage = '';
+
+        segments.forEach(segment => {
+            const nextPage = currentPage ? `${currentPage}\n\n${segment}` : segment;
+            if (currentPage && nextPage.length > maxChars) {
+                pages.push(currentPage);
+                currentPage = segment;
+                return;
+            }
+            currentPage = nextPage;
+        });
+
+        if (currentPage) pages.push(currentPage);
+    });
+
+    return pages;
 };
 
 interface ActionModalProps {
@@ -117,11 +182,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     // New View Mode State
     const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
     const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'note' | 'checklist' | 'context'>('media');
+    const [isBriefingReaderOpen, setIsBriefingReaderOpen] = useState(false);
+    const [briefingPageIndex, setBriefingPageIndex] = useState(0);
+    const [briefingPageStage, setBriefingPageStage] = useState<'idle' | 'out-next' | 'out-prev' | 'in-next' | 'in-prev'>('idle');
 
     const nameInputRef = useRef<HTMLInputElement>(null);
     const durationInputRef = useRef<HTMLDivElement>(null);
     const repsInputRef = useRef<HTMLDivElement>(null);
     const saveButtonRef = useRef<HTMLButtonElement>(null);
+    const briefingReaderPointerStartRef = useRef<number | null>(null);
+    const briefingReaderTurnTimeoutRef = useRef<number | null>(null);
     const startNowHoldIntervalRef = useRef<number | null>(null);
     const [startNowHoldProgress, setStartNowHoldProgress] = useState(0);
     const [startNowTriggered, setStartNowTriggered] = useState(false);
@@ -148,6 +218,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         return () => {
             if (startNowHoldIntervalRef.current) {
                 window.clearInterval(startNowHoldIntervalRef.current);
+            }
+            if (briefingReaderTurnTimeoutRef.current) {
+                window.clearTimeout(briefingReaderTurnTimeoutRef.current);
             }
         };
     }, []);
@@ -460,6 +533,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     }, [activeTab, isEditingTaskInstance]);
 
     const displayAction = mode === 'view' ?action : editableAction;
+    const briefingPages = React.useMemo(() => paginateBriefing(displayAction?.briefing), [displayAction?.briefing]);
+    const briefingPreviewText = React.useMemo(() => {
+        const previewPage = briefingPages[0] || displayAction?.briefing || '';
+        return previewPage.replace(/\n\s*\[\[page\]\]\s*\n/gi, '\n\n').trim();
+    }, [briefingPages, displayAction?.briefing]);
 
     // Merge task duration if editing a specific task
     const effectiveDuration = hasTaskInstanceContext && (mode === 'view' || isEditingTaskInstance) ?currentTask.duration : (displayAction?.duration || 60);
@@ -468,6 +546,148 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco', 'Livre'];
+
+    useEffect(() => {
+        if (advancedSubTab !== 'note' || mode !== 'view') {
+            setIsBriefingReaderOpen(false);
+        }
+    }, [advancedSubTab, mode]);
+
+    useEffect(() => {
+        setBriefingPageIndex(0);
+    }, [displayAction?.briefing]);
+
+    useEffect(() => {
+        if (!isBriefingReaderOpen) {
+            setBriefingPageStage('idle');
+            briefingReaderPointerStartRef.current = null;
+        }
+    }, [isBriefingReaderOpen]);
+
+    useEffect(() => {
+        if (!isBriefingReaderOpen || briefingPages.length === 0) return;
+
+        const handleReaderKeydown = (event: KeyboardEvent) => {
+            if (event.key === 'ArrowRight') {
+                navigateBriefingPage(briefingPageIndex + 1);
+            } else if (event.key === 'ArrowLeft') {
+                navigateBriefingPage(briefingPageIndex - 1);
+            } else if (event.key === 'Escape') {
+                setIsBriefingReaderOpen(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleReaderKeydown);
+        return () => window.removeEventListener('keydown', handleReaderKeydown);
+    }, [isBriefingReaderOpen, briefingPages.length, briefingPageIndex, briefingPageStage]);
+
+    const briefingPageTurnStyle: React.CSSProperties = (() => {
+        switch (briefingPageStage) {
+            case 'out-next':
+                return {
+                    opacity: 0,
+                    filter: 'blur(1.5px)',
+                    transformOrigin: 'left center',
+                    transform: 'perspective(2200px) translateX(-4%) rotateY(-28deg) rotateZ(-1deg) scale(0.992)',
+                    boxShadow: '18px 22px 44px rgba(54,33,11,0.18), inset 1px 0 0 rgba(255,255,255,0.25)',
+                };
+            case 'out-prev':
+                return {
+                    opacity: 0,
+                    filter: 'blur(1.5px)',
+                    transformOrigin: 'right center',
+                    transform: 'perspective(2200px) translateX(4%) rotateY(28deg) rotateZ(1deg) scale(0.992)',
+                    boxShadow: '-18px 22px 44px rgba(54,33,11,0.18), inset -1px 0 0 rgba(255,255,255,0.25)',
+                };
+            case 'in-next':
+                return {
+                    opacity: 0,
+                    filter: 'blur(1.5px)',
+                    transformOrigin: 'right center',
+                    transform: 'perspective(2200px) translateX(7%) rotateY(24deg) rotateZ(0.8deg) scale(0.995)',
+                    boxShadow: '-18px 22px 40px rgba(54,33,11,0.16), inset -1px 0 0 rgba(255,255,255,0.2)',
+                };
+            case 'in-prev':
+                return {
+                    opacity: 0,
+                    filter: 'blur(1.5px)',
+                    transformOrigin: 'left center',
+                    transform: 'perspective(2200px) translateX(-7%) rotateY(-24deg) rotateZ(-0.8deg) scale(0.995)',
+                    boxShadow: '18px 22px 40px rgba(54,33,11,0.16), inset 1px 0 0 rgba(255,255,255,0.2)',
+                };
+            default:
+                return {
+                    opacity: 1,
+                    filter: 'blur(0px)',
+                    transformOrigin: 'center center',
+                    transform: 'perspective(2200px) translateX(0) rotateY(0deg) rotateZ(0deg) scale(1)',
+                    boxShadow: '0 18px 40px rgba(84,58,21,0.12), inset 0 1px 0 rgba(255,255,255,0.5)',
+                };
+        }
+    })();
+
+    const briefingPageStackStyle: React.CSSProperties = (() => {
+        const isAnimating = briefingPageStage !== 'idle';
+        const movingToNext = briefingPageStage.includes('next');
+        return {
+            opacity: isAnimating ? 0.42 : 0.22,
+            transform: movingToNext ? 'translateX(1.8%) scale(0.992)' : 'translateX(-1.8%) scale(0.992)',
+        };
+    })();
+
+    const briefingPageFoldGlowStyle: React.CSSProperties = (() => {
+        if (briefingPageStage === 'out-next' || briefingPageStage === 'in-prev') {
+            return {
+                left: 0,
+                right: 'auto',
+                opacity: 0.92,
+                background: 'linear-gradient(90deg, rgba(93,63,22,0.34) 0%, rgba(164,123,59,0.2) 34%, rgba(255,246,214,0.18) 65%, rgba(255,246,214,0) 100%)',
+            };
+        }
+        if (briefingPageStage === 'out-prev' || briefingPageStage === 'in-next') {
+            return {
+                left: 'auto',
+                right: 0,
+                opacity: 0.92,
+                background: 'linear-gradient(270deg, rgba(93,63,22,0.34) 0%, rgba(164,123,59,0.2) 34%, rgba(255,246,214,0.18) 65%, rgba(255,246,214,0) 100%)',
+            };
+        }
+        return {
+            left: '50%',
+            transform: 'translateX(-50%)',
+            opacity: 0.26,
+            background: 'linear-gradient(90deg, rgba(93,63,22,0) 0%, rgba(93,63,22,0.18) 50%, rgba(93,63,22,0) 100%)',
+        };
+    })();
+
+    const navigateBriefingPage = (targetIndex: number) => {
+        if (briefingPages.length === 0) return;
+        const boundedIndex = Math.max(0, Math.min(briefingPages.length - 1, targetIndex));
+        if (boundedIndex === briefingPageIndex || briefingPageStage !== 'idle') return;
+
+        const direction = boundedIndex > briefingPageIndex ? 'next' : 'prev';
+        setBriefingPageStage(direction === 'next' ? 'out-next' : 'out-prev');
+
+        if (briefingReaderTurnTimeoutRef.current) {
+            window.clearTimeout(briefingReaderTurnTimeoutRef.current);
+        }
+
+        briefingReaderTurnTimeoutRef.current = window.setTimeout(() => {
+            setBriefingPageIndex(boundedIndex);
+            setBriefingPageStage(direction === 'next' ? 'in-next' : 'in-prev');
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                    setBriefingPageStage('idle');
+                });
+            });
+        }, 170);
+    };
+
+    const insertBriefingPageBreak = () => {
+        const currentBriefing = editableAction.briefing?.trim() || '';
+        const separator = currentBriefing ? '\n\n[[page]]\n\n' : '';
+        setEditableAction(prev => ({ ...prev, briefing: `${currentBriefing}${separator}` }));
+    };
 
     if (!displayAction && mode === 'view') return null;
 
@@ -1022,17 +1242,59 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                     {advancedSubTab === 'note' && (
                                         <div className="p-4 h-full flex flex-col">
                                             {mode === 'edit' ?(
-                                                <textarea
-                                                    value={editableAction.briefing || ''}
-                                                    onChange={e => setEditableAction(prev => ({ ...prev, briefing: e.target.value }))}
-                                                    className="w-full flex-1 p-4 bg-black/30 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-200 resize-none min-h-[300px]"
-                                                    placeholder="Digite suas anotações aqui..."
-                                                />
+                                                <div className="flex flex-1 flex-col gap-3">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500">
+                                                            Escreva a aula ou anotação
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={insertBriefingPageBreak}
+                                                            className="px-3 py-2 rounded-xl border border-[var(--skin-line-color)]/60 bg-white/5 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ui-text-accent)] hover:bg-white/10 transition-colors"
+                                                        >
+                                                            Nova página
+                                                        </button>
+                                                    </div>
+                                                    <textarea
+                                                        value={editableAction.briefing || ''}
+                                                        onChange={e => setEditableAction(prev => ({ ...prev, briefing: e.target.value }))}
+                                                        className="w-full flex-1 p-4 bg-black/30 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-200 resize-none min-h-[300px]"
+                                                        placeholder="Digite suas anotações aqui..."
+                                                    />
+                                                    <div className="text-[11px] text-gray-500 leading-relaxed">
+                                                        Use <span className="font-black text-gray-300">Nova página</span> para separar trechos manuais. O leitor em tela cheia também continua paginando sozinho quando o texto crescer demais.
+                                                    </div>
+                                                </div>
                                             ) : (
-                                                <div className="bg-[#1a1512] rounded-xl p-6 border border-white/5 shadow-inner min-h-[300px]">
-                                                    <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono">
-                                                        {displayAction?.briefing || "Nenhuma anotação disponível."}
-                                                    </p>
+                                                <div className="flex flex-1 flex-col gap-3">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500">
+                                                            Leitura
+                                                        </div>
+                                                        {briefingPages.length > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setBriefingPageIndex(0);
+                                                                    setIsBriefingReaderOpen(true);
+                                                                }}
+                                                                className="px-3 py-2 rounded-xl border border-[var(--skin-line-color)]/70 bg-[var(--skin-accent-color)]/10 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ui-text-accent)] hover:bg-[var(--skin-accent-color)]/18 transition-colors"
+                                                            >
+                                                                Ler em tela cheia
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="relative overflow-hidden bg-[#1a1512] rounded-xl p-6 border border-white/5 shadow-inner min-h-[300px]">
+                                                        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#1a1512] via-[#1a1512]/92 to-transparent pointer-events-none" />
+                                                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono">
+                                                            {briefingPreviewText || "Nenhuma anotação disponível."}
+                                                        </p>
+                                                        {briefingPages.length > 1 && (
+                                                            <div className="absolute bottom-4 right-4 rounded-full border border-[var(--skin-line-color)]/50 bg-black/35 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--ui-text-accent)]">
+                                                                {briefingPages.length} páginas
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -1295,6 +1557,129 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     onConfirm={confirmDelete}
                     onCancel={() => setConfirmDeleteOpen(false)}
                 />
+            )}
+            {isBriefingReaderOpen && briefingPages.length > 0 && (
+                <div
+                    className="fixed inset-0 z-[230] bg-black/80 backdrop-blur-md px-4 py-6 sm:px-8"
+                    onClick={(event) => {
+                        if (event.target === event.currentTarget) {
+                            setIsBriefingReaderOpen(false);
+                        }
+                    }}
+                >
+                    <div className="mx-auto flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-[#6f5a31]/40 bg-[radial-gradient(circle_at_top,_rgba(255,245,214,0.94)_0%,_rgba(245,228,186,0.98)_38%,_rgba(230,206,156,0.98)_100%)] shadow-[0_40px_120px_rgba(0,0,0,0.55)]">
+                        <div className="flex items-center justify-between border-b border-[#8a6b38]/25 bg-[linear-gradient(180deg,rgba(255,251,234,0.84),rgba(241,219,174,0.78))] px-5 py-4 sm:px-7">
+                            <div className="min-w-0">
+                                <div className="text-[11px] font-bold uppercase tracking-[0.36em] text-[#7e6234]">
+                                    Leitura guiada
+                                </div>
+                                <div className="truncate pt-1 text-base font-black uppercase tracking-[0.14em] text-[#3f2b13] sm:text-lg">
+                                    {displayAction?.name || 'Anotação'}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-full border border-[#8a6b38]/30 bg-white/30 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#6d532b]">
+                                    Página {briefingPageIndex + 1}/{briefingPages.length}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsBriefingReaderOpen(false)}
+                                    className="flex h-11 w-11 items-center justify-center rounded-full border border-[#8a6b38]/35 bg-white/35 text-[#4b3318] transition-colors hover:bg-white/55"
+                                    aria-label="Fechar leitura"
+                                >
+                                    <XIcon className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div
+                            className="relative flex-1 overflow-hidden bg-[linear-gradient(180deg,rgba(255,250,235,0.86),rgba(243,224,184,0.92))]"
+                            onPointerDown={(event) => {
+                                briefingReaderPointerStartRef.current = event.clientX;
+                            }}
+                            onPointerUp={(event) => {
+                                if (briefingReaderPointerStartRef.current === null) return;
+                                const deltaX = event.clientX - briefingReaderPointerStartRef.current;
+                                briefingReaderPointerStartRef.current = null;
+                                if (Math.abs(deltaX) < 50) return;
+                                if (deltaX < 0) {
+                                    navigateBriefingPage(briefingPageIndex + 1);
+                                } else {
+                                    navigateBriefingPage(briefingPageIndex - 1);
+                                }
+                            }}
+                            onPointerCancel={() => {
+                                briefingReaderPointerStartRef.current = null;
+                            }}
+                        >
+                            <div
+                                className="pointer-events-none absolute inset-0 opacity-60"
+                                style={{
+                                    backgroundImage: 'linear-gradient(180deg, rgba(136,103,52,0.08) 0, rgba(136,103,52,0.08) 1px, transparent 1px, transparent 34px)',
+                                    backgroundSize: '100% 34px',
+                                }}
+                            />
+                            <div className="relative mx-auto flex h-full max-w-3xl flex-col px-6 py-6 sm:px-10 sm:py-10">
+                                <div className="relative flex-1 overflow-y-auto pr-1">
+                                    <div
+                                        className="pointer-events-none absolute inset-x-10 top-10 bottom-[6.5rem] rounded-[1.7rem] border border-[#6c5029]/12 bg-[linear-gradient(180deg,rgba(195,159,97,0.16),rgba(123,89,42,0.06))] shadow-[0_20px_40px_rgba(69,46,17,0.12)]"
+                                        style={briefingPageStackStyle}
+                                    />
+                                    <div
+                                        className="relative overflow-hidden rounded-[1.6rem] border border-[#7a5e34]/18 bg-[linear-gradient(180deg,rgba(255,253,244,0.8),rgba(248,236,206,0.58))] px-6 py-7 transition-[transform,opacity,filter,box-shadow] duration-300 ease-out will-change-transform sm:px-10 sm:py-10"
+                                        style={briefingPageTurnStyle}
+                                    >
+                                        <div
+                                            className="pointer-events-none absolute inset-y-0 w-20"
+                                            style={briefingPageFoldGlowStyle}
+                                        />
+                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,rgba(255,255,255,0.32),rgba(255,255,255,0))]" />
+                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-[linear-gradient(0deg,rgba(104,75,33,0.08),rgba(104,75,33,0))]" />
+                                        <div
+                                            className="rounded-[1.6rem] bg-[linear-gradient(180deg,rgba(255,253,244,0.04),rgba(248,236,206,0))]"
+                                        >
+                                            {briefingPages[briefingPageIndex]
+                                                .split(/\n\s*\n/)
+                                                .filter(Boolean)
+                                                .map((paragraph, index) => (
+                                                    <p
+                                                        key={`${briefingPageIndex}-${index}`}
+                                                        className="relative mb-5 text-[15px] leading-8 text-[#3d2a14] last:mb-0 sm:text-[17px] sm:leading-9"
+                                                    >
+                                                        {paragraph}
+                                                    </p>
+                                                ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-5 flex items-center justify-center gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => navigateBriefingPage(briefingPageIndex - 1)}
+                                        disabled={briefingPageIndex === 0}
+                                        className="luxe-button-secondary inline-flex h-10 min-w-[3rem] items-center justify-center rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
+                                        aria-label="Página anterior"
+                                    >
+                                        <ChevronLeftIcon className="h-4 w-4" />
+                                    </button>
+                                    <div className="text-center text-[11px] font-bold uppercase tracking-[0.28em] text-[#7d6237]">
+                                        Arraste ou use as setas
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => navigateBriefingPage(briefingPageIndex + 1)}
+                                        disabled={briefingPageIndex >= briefingPages.length - 1}
+                                        className="luxe-skin-button inline-flex h-10 min-w-[3rem] items-center justify-center rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
+                                        aria-label="Próxima página"
+                                    >
+                                        <ChevronRightIcon className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </Portal>
     );

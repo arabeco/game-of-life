@@ -15,6 +15,9 @@ export interface CodexTemplate {
   levels: CodexLevel[];
   coverImage?: string; // Emoji or URL
   tags: string[];
+  primaryAssetId?: string;
+  campaignType?: string;
+  campaignTheme?: string;
 }
 
 export interface CodexCatalogItem {
@@ -250,11 +253,27 @@ export interface UserWallet {
   fragments: number;
 }
 
-export interface VanguardWelcomePayload {
-  inviteCode?: string | null;
+export interface RewardMetricCard {
+  label: string;
+  value: string;
+  detail?: string;
+}
+
+export interface RewardModalPayload {
   gold?: number;
   chestType?: ChestType | null;
   itemIds?: string[];
+  eyebrow?: string;
+  title?: string;
+  summary?: string;
+  buttonLabel?: string;
+  itemSectionTitle?: string;
+  emptyMessage?: string;
+  metricCards?: RewardMetricCard[];
+}
+
+export interface VanguardWelcomePayload extends RewardModalPayload {
+  inviteCode?: string | null;
 }
 
 export interface SovereignConfig {
@@ -356,6 +375,10 @@ export interface UserProfile {
   vanguardWelcomePending?: boolean;
   vanguardWelcomeShownAt?: string;
   vanguardWelcomePayload?: VanguardWelcomePayload | null;
+  premiumExpiresAt?: string | null;
+  premiumRewardPending?: boolean;
+  premiumRewardShownAt?: string;
+  premiumRewardPayload?: RewardModalPayload | null;
   codexCreationSlotsPurchased?: number;
   partnershipSlotsPurchased?: number;
   competitionSlotsPurchased?: number;

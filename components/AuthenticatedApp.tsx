@@ -8,6 +8,7 @@ import { CodexBuilderProvider, useCodexBuilder } from '../contexts/CodexBuilderC
 import { TutorialProvider, useTutorial } from '../contexts/TutorialContext';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { updateInstalledAppBadge } from '../utils/appBadge';
+import { buildPremiumRewardsToast } from '../utils/premiumRewards';
 import { buildVanguardRewardsToast } from '../utils/vanguardRewards';
 import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
 import {
@@ -29,6 +30,7 @@ import {
     getSeasonTransitionStorageKey,
     resolveRuntimeSeasonTransition,
 } from '../utils/seasonPresentation';
+import { buildUiSkinTokens } from '../utils/uiSkinTokens';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -45,6 +47,7 @@ const TermsOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) =>
 const OfflineOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.OfflineOverlay })));
 const FirstUseOnboardingOverlay = React.lazy(() => import('./FirstUseOnboardingOverlay').then((m) => ({ default: m.FirstUseOnboardingOverlay })));
 const CodexClaimModal = React.lazy(() => import('./CodexClaimModal').then((m) => ({ default: m.CodexClaimModal })));
+const RewardPackModal = React.lazy(() => import('./RewardPackModal').then((m) => ({ default: m.RewardPackModal })));
 const VanguardWelcomeModal = React.lazy(() => import('./VanguardWelcomeModal').then((m) => ({ default: m.VanguardWelcomeModal })));
 const SeasonTransitionModal = React.lazy(() => import('./SeasonDetailModal').then((m) => ({ default: m.SeasonTransitionModal })));
 
@@ -481,6 +484,45 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         document.documentElement.setAttribute('data-skin', skin);
     }, [userProfile.skin]);
 
+    useLayoutEffect(() => {
+        const root = document.documentElement;
+        const tokens = buildUiSkinTokens(userProfile.skin || 'default', activeTheme === 'LIGHT' ? 'light' : 'dark');
+
+        root.style.setProperty('--ui-accent-gradient-border', tokens.accentGradientBorder || tokens.buttonBackground);
+        root.style.setProperty('--ui-button-primary-bg', tokens.buttonBackground);
+        root.style.setProperty('--ui-button-primary-border', tokens.borderColor);
+        root.style.setProperty('--ui-button-primary-glow', tokens.buttonGlow);
+        root.style.setProperty('--ui-text-on-accent', tokens.buttonText);
+        root.style.setProperty('--ui-text-accent', tokens.accentTextColor);
+        root.style.setProperty('--ui-text-accent-soft', tokens.accentSoftTextColor);
+        root.style.setProperty('--ui-border-accent', tokens.borderColor);
+        root.style.setProperty('--ui-border-accent-soft', tokens.borderSoftColor);
+        root.style.setProperty('--glass-bg', tokens.cardBackground);
+        root.style.setProperty('--glass-border', tokens.borderSoftColor);
+        root.style.setProperty('--glass-border-light', tokens.borderColor);
+        root.style.setProperty('--dossier-bg-surface', tokens.cardStrongBackground);
+        root.style.setProperty('--ui-card-text', tokens.cardTextColor);
+        root.style.setProperty('--ui-card-text-soft', tokens.cardTextSoftColor);
+        root.style.setProperty('--ui-core-surface-bg', tokens.cardBackground);
+        root.style.setProperty('--ui-core-surface-strong-bg', tokens.cardStrongBackground);
+        root.style.setProperty('--ui-core-surface-border', tokens.borderSoftColor);
+        root.style.setProperty('--ui-core-surface-border-strong', tokens.borderColor);
+        root.style.setProperty('--ui-core-pill-bg', tokens.cardBackground);
+        root.style.setProperty('--ui-core-label-color', tokens.cardTextSoftColor);
+        root.style.setProperty('--ui-core-caption-color', tokens.cardTextSoftColor);
+        root.style.setProperty('--planner-top-bg', tokens.plannerTopBackground);
+        root.style.setProperty('--planner-day-header-bg', tokens.plannerDayHeaderBackground);
+        root.style.setProperty('--planner-day-header-text', tokens.plannerDayHeaderText);
+        root.style.setProperty('--planner-scroll-bg', tokens.plannerScrollBackground);
+        root.style.setProperty('--planner-surface-bg', tokens.plannerSurfaceBackground);
+        root.style.setProperty('--planner-weekday-header-bg', tokens.plannerWeekdayHeaderBackground);
+        root.style.setProperty('--planner-floating-bg', tokens.plannerFloatingBackground);
+        root.style.setProperty('--planner-pill-bg', tokens.plannerPillBackground);
+        root.style.setProperty('--planner-pill-active-bg', tokens.plannerPillActiveBackground);
+        root.style.setProperty('--planner-soft-control-color', tokens.plannerSoftControlColor);
+        root.style.setProperty('--planner-hour-label-color', tokens.plannerHourLabelColor);
+    }, [activeTheme, userProfile.skin]);
+
     return (
         <div
             id="app-root"
@@ -687,6 +729,14 @@ const MainApp: React.FC = () => {
         });
     }, [showToast, updateUserProfile, userProfile.vanguardWelcomePayload]);
 
+    const handleClosePremiumReward = useCallback(() => {
+        showToast(buildPremiumRewardsToast(userProfile.premiumRewardPayload), 'success');
+        updateUserProfile({
+            premiumRewardPending: false,
+            premiumRewardShownAt: new Date().toISOString(),
+        });
+    }, [showToast, updateUserProfile, userProfile.premiumRewardPayload]);
+
     const hasVanguardPayload =
         !!userProfile.vanguardWelcomePayload &&
         Object.keys(userProfile.vanguardWelcomePayload).length > 0;
@@ -697,6 +747,18 @@ const MainApp: React.FC = () => {
         !shouldHoldVanguardWelcome &&
         !!userProfile.vanguardWelcomePending &&
         hasVanguardPayload;
+
+    const hasPremiumRewardPayload =
+        !!userProfile.premiumRewardPayload &&
+        Object.keys(userProfile.premiumRewardPayload).length > 0;
+
+    const shouldShowPremiumReward =
+        !showTerms &&
+        !isFirstUseOnboardingActive &&
+        !shouldHoldVanguardWelcome &&
+        !shouldShowVanguardWelcome &&
+        !!userProfile.premiumRewardPending &&
+        hasPremiumRewardPayload;
 
     const handleAcceptTerms = () => {
         const acceptedAt = new Date().toISOString();
@@ -797,6 +859,20 @@ const MainApp: React.FC = () => {
                         mode={userProfile.appMode}
                         payload={userProfile.vanguardWelcomePayload}
                         onClose={handleCloseVanguardWelcome}
+                    />
+                )}
+                {shouldShowPremiumReward && (
+                    <RewardPackModal
+                        open={shouldShowPremiumReward}
+                        mode={userProfile.appMode}
+                        payload={userProfile.premiumRewardPayload}
+                        onClose={handleClosePremiumReward}
+                        fallbackEyebrow="Renovação premium"
+                        fallbackTitle="Recompensas da assinatura"
+                        fallbackSummary="Sua renovação foi processada e os bônus reais desta fase já foram entregues."
+                        fallbackButtonLabel="Continuar"
+                        fallbackItemSectionTitle="Itens desta renovação"
+                        fallbackEmptyMessage="A renovação foi concluída e nenhum cosmético novo precisava ser entregue agora."
                     />
                 )}
             </Suspense>

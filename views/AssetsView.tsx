@@ -105,7 +105,7 @@ export const AssetsView: React.FC = () => {
     const overviewLayout = useAssetsOverviewLayoutConfig();
 
     const isBasicMode = appMode === 'BASIC';
-    const basicSephirotLevelColor = '#3b2412';
+    const basicSephirotLevelColor = '#f5efe2';
     const selectedAsset = assets.find(a => a.id === selectedAssetId) || null;
     const selectedAssetAccent = selectedAsset
         ? ASSET_ACCENT_COLORS[selectedAsset.id as keyof typeof ASSET_ACCENT_COLORS] || '#4b5563'
@@ -302,7 +302,15 @@ export const AssetsView: React.FC = () => {
 
     if (selectedAsset) {
         return (
-            <div className="assets-detail-root h-full overflow-y-auto px-4 pb-4">
+            <div
+                className="assets-detail-root h-full overflow-y-auto px-4 pb-4"
+                style={{
+                    '--ui-card-text': 'rgba(248, 250, 252, 0.94)',
+                    '--ui-card-text-soft': 'rgba(203, 213, 225, 0.86)',
+                    '--ui-text-accent': 'rgba(244, 248, 252, 0.96)',
+                    '--ui-text-accent-soft': 'rgba(214, 223, 233, 0.84)',
+                } as React.CSSProperties}
+            >
                 <div className="mx-auto max-w-[520px]">
                     <div
                         className="dossier-bg relative flex flex-col overflow-hidden rounded-[28px] border border-[color:var(--skin-accent-color)] px-4 pb-4 pt-4 shadow-2xl shadow-black/50"
@@ -368,7 +376,10 @@ export const AssetsView: React.FC = () => {
                         </div>
 
                         <div className="min-w-0 pb-3 pt-2 text-center">
-                            <p className="luxe-title-ornate truncate px-6 text-lg font-black uppercase tracking-[0.18em] text-[color:var(--skin-accent-color)] luxe-title-shadow">
+                            <p
+                                className="luxe-title-ornate truncate px-6 text-lg font-black uppercase tracking-[0.18em] luxe-title-shadow"
+                                style={{ color: 'var(--ui-card-text)' }}
+                            >
                                 {selectedAsset.name}
                             </p>
                         </div>

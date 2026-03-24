@@ -15,7 +15,7 @@ export const GOLD_PREMIUM_PRODUCT = {
         'Deep Focus Audio: 9 faixas exclusivas',
         'Oraculo: todos os modos (Tatico, Reflexivo...)',
         'Bonus de Legado: +10% XP em tudo',
-        'Pack Genesis: 4 itens exclusivos',
+        'Renovacao com bau raro e cosmeticos da temporada se faltarem',
     ],
 } as const;
 

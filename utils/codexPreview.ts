@@ -27,6 +27,7 @@ type CodexTemplateLevel = {
 type CodexTemplateLike = {
   title?: string;
   description?: string;
+  primaryAssetId?: string;
   levels?: CodexTemplateLevel[];
 };
 
@@ -72,6 +73,10 @@ export const buildCodexCampaignPreview = (
   campaignId = `__codex_preview_${codexId}__`
 ): CodexCampaignPreview => {
   const levels = Array.isArray(template?.levels) ? template.levels : [];
+  const primaryAssetId =
+    typeof template?.primaryAssetId === 'string' && template.primaryAssetId.trim().length > 0
+      ? template.primaryAssetId
+      : 'geral';
   const arenas: Arena[] = [];
   const actions: Action[] = [];
   const arenaIds: string[] = [];
@@ -85,7 +90,7 @@ export const buildCodexCampaignPreview = (
 
     const arena: Arena = {
       id: arenaId,
-      assetId: 'geral',
+      assetId: primaryAssetId,
       name: level?.title || `Fase ${levelNumber}`,
       description: level?.description || '',
       icon: suggestEmojiForLabel(level?.title, 'arena', {

@@ -106,6 +106,7 @@ export const ArenasView: React.FC = () => {
 
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+    const [isCampaignHubOpen, setCampaignHubOpen] = useState(false);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const [arenaPresentationMode, setArenaPresentationMode] = useState<'cards' | 'list'>('cards');
@@ -1605,10 +1606,21 @@ export const ArenasView: React.FC = () => {
                         )}
                     </div>
                 )}
-                <div className="flex items-center justify-end gap-2 mb-4 z-[60]" id="campaigns-section">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 z-[60]" id="campaigns-section">
+                    <button
+                        id="campaigns-button"
+                        onClick={() => setCampaignHubOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/32 hover:bg-[var(--skin-accent-color)]/16"
+                    >
+                        <LayersIcon className="h-3.5 w-3.5" />
+                        <span>Campanhas</span>
+                        <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-black/16 px-1.5 py-0.5 text-[9px] font-black text-white/82">
+                            {campaigns.length}
+                        </span>
+                    </button>
                     <button
                         onClick={handleCreateCampaignClick}
-                        className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        className={`px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
                             isSelectionMode
                                 ? 'bg-[var(--skin-accent-color)] text-black animate-pulse'
                                 : 'bg-white/10 text-gray-400 hover:bg-white/20'
@@ -1906,6 +1918,9 @@ export const ArenasView: React.FC = () => {
                     previewActions={selectedReceivedCampaignPreview.actions}
                     onClose={() => setSelectedReceivedCampaignPreview(null)}
                 />
+            )}
+            {isCampaignHubOpen && (
+                <CampaignsCodex onClose={() => setCampaignHubOpen(false)} />
             )}
             {selectedCampaign && (
                 <CampaignsCodex

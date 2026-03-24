@@ -184,12 +184,14 @@
 
     [data-skin="CYBER"] {
       --skin-accent-color: #7cd9ff;
-      --skin-line-color: rgba(124, 217, 255, 0.24);
-      --metal-gold: linear-gradient(135deg, #143345 0%, #7cd9ff 50%, #143345 100%);
+      --skin-line-color: rgba(255, 94, 218, 0.28);
+      --metal-gold: linear-gradient(135deg, #07111d 0%, #15314d 28%, #35d8ff 60%, #ff56d8 100%);
+      --luxe-button-text-color: #f7f0ff;
+      --luxe-button-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
       --sephirot-bg-gradient: radial-gradient(circle, #102533 0%, #07131b 100%);
       --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/cyber.jpg');
-      --sephirot-border-color: #8ae4ff;
-      --sephirot-glow-color: rgba(124, 217, 255, 0.28);
+      --sephirot-border-color: #ff62d9;
+      --sephirot-glow-color: rgba(255, 86, 216, 0.22);
       --sephirot-text-color: #eefaff;
       --fog-color: #c95cff;
       --fog-tint-strength: 1;
@@ -212,12 +214,14 @@
 
     [data-skin="EMBER"] {
       --skin-accent-color: #a61f1b;
-      --skin-line-color: rgba(143, 24, 22, 0.42);
-      --metal-gold: linear-gradient(135deg, #2f080b 0%, #5d1013 34%, #96211e 72%, #4f0e18 100%);
+      --skin-line-color: rgba(196, 96, 24, 0.4);
+      --metal-gold: linear-gradient(135deg, #2a0709 0%, #5d1013 28%, #a12a17 62%, #d26c1d 100%);
+      --luxe-button-text-color: #f8ede3;
+      --luxe-button-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
       --sephirot-bg-gradient: radial-gradient(circle, #4d2000 0%, #2e1300 100%);
       --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/ember.png');
-      --sephirot-border-color: #991d1a;
-      --sephirot-glow-color: rgba(116, 18, 20, 0.34);
+      --sephirot-border-color: #cf6519;
+      --sephirot-glow-color: rgba(186, 90, 22, 0.28);
       --sephirot-text-color: #ffc9a6;
       --fog-color: #b22a23;
       --fog-tint-strength: 1;
@@ -279,6 +283,23 @@
       --fog-color: #7c43c2;
       --fog-tint-strength: 1;
       --fog-alpha-max: 0.18;
+    }
+
+    [data-skin="ITEM_THEME_NEBULOSA"] {
+      --skin-accent-color: #8db8ff;
+      --skin-line-color: rgba(100, 118, 232, 0.54);
+      --arena-card-border-color: #3650a6;
+      --metal-gold: linear-gradient(135deg, #0c1026 0%, #253c7a 34%, #6f58ff 62%, #7ee7ff 100%);
+      --luxe-button-text-color: #f4f7ff;
+      --luxe-button-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+      --sephirot-bg-gradient: radial-gradient(circle, #1c2453 0%, #090d1c 100%);
+      --sephirot-bg-image: url('https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/genesis.png');
+      --sephirot-border-color: #5f77da;
+      --sephirot-glow-color: rgba(112, 128, 255, 0.26);
+      --sephirot-text-color: #eef6ff;
+      --fog-color: #7b69ff;
+      --fog-tint-strength: 1;
+      --fog-alpha-max: 0.2;
     }
 
 
@@ -346,10 +367,16 @@
       transition: transform 0.2s ease, box-shadow 0.2s ease, background-image 0.2s ease;
     }
 
+    [data-skin="CYBER"] .luxe-skin-button[class*="text-black"],
+    [data-skin="EMBER"] .luxe-skin-button[class*="text-black"],
     [data-skin="VOID"] .luxe-skin-button[class*="text-black"],
     [data-skin="GENESIS"] .luxe-skin-button[class*="text-black"],
+    [data-skin="ITEM_THEME_NEBULOSA"] .luxe-skin-button[class*="text-black"],
+    [data-skin="CYBER"] .luxe-skin-button [class*="text-black"],
+    [data-skin="EMBER"] .luxe-skin-button [class*="text-black"],
     [data-skin="VOID"] .luxe-skin-button [class*="text-black"],
-    [data-skin="GENESIS"] .luxe-skin-button [class*="text-black"] {
+    [data-skin="GENESIS"] .luxe-skin-button [class*="text-black"],
+    [data-skin="ITEM_THEME_NEBULOSA"] .luxe-skin-button [class*="text-black"] {
       color: var(--luxe-button-text-color) !important;
     }
 

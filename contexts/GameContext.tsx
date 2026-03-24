@@ -26,6 +26,7 @@ import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getExpBoostMultiplier, getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive } from '../utils/premiumAccess';
+import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
@@ -5441,7 +5442,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
     useEffect(() => {
-        document.body.setAttribute('data-skin', appMode === 'BASIC' ? 'BASIC' : userProfile.skin);
+        document.body.setAttribute('data-skin', resolveUiSkinId(appMode === 'BASIC' ? 'BASIC' : userProfile.skin));
     }, [appMode, userProfile.skin]);
 
     useEffect(() => {

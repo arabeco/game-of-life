@@ -31,7 +31,7 @@ import {
     resolveRuntimeSeasonTransition,
 } from '../utils/seasonPresentation';
 import { getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess, isPremiumInLastDay } from '../utils/premiumAccess';
-import { buildUiSkinTokens } from '../utils/uiSkinTokens';
+import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import { GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 import { ConfirmationModal } from './ConfirmationModal';
 import './auth-shell.css';
@@ -146,7 +146,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const historyReady = useRef(false);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
-    const effectiveUiSkin = activeUIMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
+    const effectiveUiSkin = resolveUiSkinId(activeUIMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC'));
     const canUseAssetsView = !isBuilderMode;
     const availableViews = useMemo(() => getAvailableViews(canUseAssetsView, isBuilderMode), [canUseAssetsView, isBuilderMode]);
     const [currentView, setCurrentView] = useState<View>(() => getDefaultView(canUseAssetsView, isBuilderMode));

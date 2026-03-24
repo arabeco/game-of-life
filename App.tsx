@@ -16,6 +16,7 @@ import { parseBooleanEnvFlag } from './utils/envFlags';
 import { startInstallPromptCapture } from './utils/installPrompt';
 import { signOutAndClearSupabaseSession } from './utils/authSession';
 import { ensureClosedBetaUserProfile } from './utils/closedBetaProfile';
+import { resolveUiSkinId } from './utils/uiSkinTokens';
 
 const LoginView = React.lazy(() => import('./views/LoginView').then((m) => ({ default: m.LoginView })));
 const LegacyRenderView = React.lazy(() => import('./views/LegacyRenderView').then((m) => ({ default: m.LegacyRenderView })));
@@ -493,7 +494,7 @@ const App: React.FC = () => {
     }, [isGoldenInviteGateEnabled]);
 
     useLayoutEffect(() => {
-        const skin = bootVisuals.mode === 'BASIC' ? 'default' : bootVisuals.skin;
+        const skin = resolveUiSkinId(bootVisuals.mode === 'BASIC' ? 'default' : bootVisuals.skin);
         document.body.setAttribute('data-skin', skin);
         document.documentElement.setAttribute('data-skin', skin);
     }, [bootVisuals]);

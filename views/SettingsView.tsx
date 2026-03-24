@@ -19,7 +19,7 @@ import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
-import { buildUiSkinTokens } from '../utils/uiSkinTokens';
+import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import './settings-ui.css';
 
 const OracleChat = lazy(() =>
@@ -47,6 +47,19 @@ const CampaignsCodex = lazy(() =>
 type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
 type ProfileVisibilityOption = ProfileVisibilityScope;
+
+const UI_SKIN_SELECTOR_ORDER = ['BASIC', 'GOLD', 'FROST', 'EMBER', 'CYBER', 'AURORA', 'VOID', 'GENESIS', 'item_theme_nebulosa'] as const;
+const UI_SKIN_SELECTOR_META: Record<string, { label: string; title: string; previewSkinId?: string; prefersLightText?: boolean; }> = {
+    BASIC: { label: 'BÁSICO', title: 'Básico Profissional' },
+    GOLD: { label: 'OURO', title: 'Ouro Soberano' },
+    FROST: { label: 'GELO', title: 'Gelo Eterno' },
+    EMBER: { label: 'CHAMA', title: 'Chama Viva', prefersLightText: true },
+    CYBER: { label: 'CYBER', title: 'Cyberpunk', prefersLightText: true },
+    AURORA: { label: 'AURORA', title: 'Aurora Boreal', prefersLightText: true },
+    VOID: { label: 'VAZIO', title: 'Vazio Primordial', prefersLightText: true },
+    GENESIS: { label: 'GÊNESIS', title: 'Gênesis', prefersLightText: true },
+    item_theme_nebulosa: { label: 'NEBULOSA', title: 'Nebulosa Astral', prefersLightText: true },
+};
 
 const notificationModes: { id: NotificationMode, name: string, icon: string, description: string }[] = [
     { id: 'Silencioso', name: 'O Monge', icon: '🧘', description: "Nenhuma notificação será enviada. O sistema aguarda sua busca ativa." },
@@ -1636,7 +1649,13 @@ const PreferenciasTab: React.FC = () => {
     const completedFlags = userProfile.completedSeasonMissions || [];
     const termsStatus = completedFlags.includes(PROFILE_FLAG_TERMS_ACCEPTED) ? 'Aceito' : 'Pendente';
     const tutorialStatus = completedFlags.includes(PROFILE_FLAG_TUTORIAL_COMPLETED) ? 'Assistido' : 'Pendente';
-    const uiSkinCatalog = useMemo(() => getCatalogItemsByCategory('ui_skin'), []);
+    const uiSkinCatalog = useMemo(() => {
+        const byId = new Map(getCatalogItemsByCategory('ui_skin').map((item) => [item.id, item]));
+        return UI_SKIN_SELECTOR_ORDER.flatMap((id) => {
+            const item = byId.get(id);
+            return item ? [item] : [];
+        });
+    }, []);
     const unlockedUiSkinIds = useMemo(() => {
         const unlocked = new Set<string>(['BASIC', userProfile.skin || 'BASIC']);
         inventory.forEach((item) => unlocked.add(item.id));
@@ -1712,15 +1731,22 @@ const PreferenciasTab: React.FC = () => {
                                     <div className="mb-2 flex items-center justify-between">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Skin UI</h4>
                                         <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
-                                            {appMode === 'BASIC' ? 'Modo básico usa Básico' : 'Modo jogo usa sua skin'}
+                                            {appMode === 'BASIC' ? 'Modo basico usa Basico' : 'Modo jogo usa sua skin'}
                                         </span>
                                     </div>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="flex flex-wrap gap-2">
                                         {uiSkinCatalog.map((skin) => {
+                                            const skinMeta: { label: string; title: string; previewSkinId?: string; prefersLightText?: boolean; } = UI_SKIN_SELECTOR_META[skin.id] || {
+                                                label: skin.name.replace(/^Tema:\s*/i, '').replace(/^Interface\s*/i, '').toUpperCase(),
+                                                title: skin.name,
+                                            };
                                             const unlocked = unlockedUiSkinIds.has(skin.id);
                                             const selected = effectiveUiSkinId === skin.id;
                                             const disabledByMode = appMode === 'BASIC' && skin.id !== 'BASIC';
-                                            const previewTokens = buildUiSkinTokens(skin.id, activeTheme === 'LIGHT' ? 'light' : 'dark');
+                                            const previewSkinId = skinMeta.previewSkinId || resolveUiSkinId(skin.id);
+                                            const previewTokens = buildUiSkinTokens(previewSkinId, activeTheme === 'LIGHT' ? 'light' : 'dark');
+                                            const usesLightLabel = !!skinMeta.prefersLightText;
+                                            const chipTextColor = usesLightLabel ? '#F8F3EF' : '#111827';
 
                                             return (
                                                 <button
@@ -1728,29 +1754,22 @@ const PreferenciasTab: React.FC = () => {
                                                     type="button"
                                                     disabled={!unlocked || disabledByMode}
                                                     onClick={() => setCurrentSkin(skin.id)}
-                                                    title={skin.name}
-                                                    className={`relative overflow-hidden rounded-lg border px-2 py-2 text-center transition-all ${
+                                                    title={skinMeta.title}
+                                                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all ${
                                                         selected
-                                                            ? 'ring-1 ring-[var(--ui-border-accent)] shadow-[0_0_14px_var(--ui-button-primary-glow)]'
-                                                            : 'hover:scale-[1.02]'
+                                                            ? 'shadow-[0_0_12px_var(--ui-button-primary-glow)]'
+                                                            : 'hover:brightness-[1.04]'
                                                     } ${!unlocked || disabledByMode ? 'cursor-default' : ''}`}
                                                     style={{
-                                                        background: previewTokens.cardStrongBackground,
+                                                        background: previewTokens.buttonBackground,
                                                         borderColor: selected ? 'var(--ui-border-accent)' : previewTokens.borderSoftColor,
-                                                        opacity: unlocked ? (disabledByMode ? 0.38 : 1) : 0.28,
+                                                        color: chipTextColor,
+                                                        opacity: unlocked ? (disabledByMode ? 0.42 : 1) : 0.28,
+                                                        textShadow: usesLightLabel ? '0 1px 6px rgba(0,0,0,0.42)' : '0 1px 4px rgba(255,255,255,0.18)',
                                                     }}
                                                 >
-                                                    <div
-                                                        className="mb-1 h-1.5 rounded-full"
-                                                        style={{ background: previewTokens.buttonBackground }}
-                                                    />
-                                                    <div className="text-[11px] leading-none">{skin.icon}</div>
-                                                    <div
-                                                        className="mt-1 text-[8px] font-black uppercase tracking-[0.14em]"
-                                                        style={{ color: previewTokens.cardTextColor }}
-                                                    >
-                                                        {skin.id}
-                                                    </div>
+                                                    <span className="text-[11px] leading-none">{skin.icon}</span>
+                                                    <span>{skinMeta.label}</span>
                                                 </button>
                                             );
                                         })}

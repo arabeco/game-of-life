@@ -1,14 +1,15 @@
 import { AppMode, Notification, NotificationType, OracleMode } from '../types';
+import { getOracleModeConfig, OracleAttentionProfile } from './oracle';
 
 export type NotificationLane = 'essential' | 'progress' | 'feed';
+export type NotificationPriority = 'critical' | 'actionable' | 'progress' | 'ambient';
 
 interface NotificationPolicy {
   lane: NotificationLane;
+  priority: NotificationPriority;
   badge: boolean;
   basicVisible: boolean;
   gameVisible: boolean;
-  coachVisible?: boolean;
-  tacticalVisible?: boolean;
   icon: string;
   label: string;
 }
@@ -16,6 +17,7 @@ interface NotificationPolicy {
 const POLICY: Record<NotificationType, NotificationPolicy> = {
   mentor_invite: {
     lane: 'essential',
+    priority: 'critical',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -24,6 +26,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   friend_request: {
     lane: 'essential',
+    priority: 'critical',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -32,6 +35,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   friend_response: {
     lane: 'essential',
+    priority: 'actionable',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -40,6 +44,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   friend_accepted: {
     lane: 'feed',
+    priority: 'ambient',
     badge: false,
     basicVisible: false,
     gameVisible: true,
@@ -48,6 +53,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   clan_invite: {
     lane: 'essential',
+    priority: 'critical',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -56,6 +62,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   clan_response: {
     lane: 'essential',
+    priority: 'actionable',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -64,6 +71,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   clan_join: {
     lane: 'feed',
+    priority: 'ambient',
     badge: false,
     basicVisible: false,
     gameVisible: true,
@@ -72,6 +80,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   clan_mission_update: {
     lane: 'essential',
+    priority: 'critical',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -80,6 +89,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   cycle_ending: {
     lane: 'essential',
+    priority: 'critical',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -88,6 +98,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   cycle_finalized: {
     lane: 'progress',
+    priority: 'progress',
     badge: false,
     basicVisible: false,
     gameVisible: true,
@@ -96,6 +107,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   season_ending: {
     lane: 'essential',
+    priority: 'critical',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -104,6 +116,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   reward_ready: {
     lane: 'essential',
+    priority: 'actionable',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -112,6 +125,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   mission_redeemable: {
     lane: 'essential',
+    priority: 'actionable',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -120,6 +134,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   level_up: {
     lane: 'progress',
+    priority: 'progress',
     badge: false,
     basicVisible: false,
     gameVisible: true,
@@ -128,6 +143,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   title_unlocked: {
     lane: 'progress',
+    priority: 'progress',
     badge: false,
     basicVisible: false,
     gameVisible: true,
@@ -136,16 +152,16 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   oracle_prompt: {
     lane: 'feed',
+    priority: 'ambient',
     badge: false,
     basicVisible: false,
     gameVisible: true,
-    coachVisible: true,
-    tacticalVisible: true,
     icon: 'O',
     label: 'Oraculo',
   },
   codex_gift: {
     lane: 'essential',
+    priority: 'actionable',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -154,6 +170,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   partnership_invite: {
     lane: 'essential',
+    priority: 'critical',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -162,6 +179,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   arena_access: {
     lane: 'progress',
+    priority: 'actionable',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -170,6 +188,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   competition_result: {
     lane: 'essential',
+    priority: 'critical',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -178,6 +197,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
   },
   system: {
     lane: 'essential',
+    priority: 'critical',
     badge: true,
     basicVisible: true,
     gameVisible: true,
@@ -196,6 +216,7 @@ export const isBadgeNotification = (notificationOrType: Notification | Notificat
 };
 
 export const getNotificationLane = (type: NotificationType): NotificationLane => getPolicy(type).lane;
+export const getNotificationPriority = (type: NotificationType): NotificationPriority => getPolicy(type).priority;
 
 export const getNotificationIcon = (type: NotificationType): string => getPolicy(type).icon;
 
@@ -363,13 +384,23 @@ export const getNotificationBody = (
   }
 };
 
-const canModeSeeFeed = (type: NotificationType, oracleMode: OracleMode): boolean => {
-  const policy = getPolicy(type);
-  if (policy.basicVisible || policy.gameVisible) return true;
-  if (oracleMode === 'coach') return Boolean(policy.coachVisible);
-  if (oracleMode === 'tatico' || oracleMode === 'estrategico') return Boolean(policy.tacticalVisible);
-  return false;
+const PROFILE_VISIBILITY: Record<OracleAttentionProfile, NotificationPriority[]> = {
+  essencial: ['critical', 'actionable'],
+  equilibrado: ['critical', 'actionable', 'progress'],
+  ativo: ['critical', 'actionable', 'progress', 'ambient'],
 };
+
+const PROFILE_PUSH: Record<OracleAttentionProfile, NotificationPriority[]> = {
+  essencial: ['critical'],
+  equilibrado: ['critical', 'actionable'],
+  ativo: ['critical', 'actionable', 'ambient'],
+};
+
+const profileIncludesPriority = (
+  profile: OracleAttentionProfile,
+  priority: NotificationPriority,
+  visibilityMap: Record<OracleAttentionProfile, NotificationPriority[]>,
+): boolean => visibilityMap[profile].includes(priority);
 
 export const shouldShowNotificationForProfile = (
   type: NotificationType,
@@ -382,11 +413,31 @@ export const shouldShowNotificationForProfile = (
     return policy.basicVisible;
   }
 
-  if (policy.gameVisible) {
-    return true;
+  if (!policy.gameVisible) {
+    return false;
   }
 
-  return canModeSeeFeed(type, oracleMode);
+  return profileIncludesPriority(
+    getOracleModeConfig(oracleMode).attentionProfile,
+    policy.priority,
+    PROFILE_VISIBILITY,
+  );
+};
+
+export const shouldPushNotificationForProfile = (
+  notification: Notification,
+  appMode: AppMode,
+  oracleMode: OracleMode,
+): boolean => {
+  if (notification.read) return false;
+  if (!shouldShowNotificationForProfile(notification.type, appMode, oracleMode)) return false;
+
+  const policy = getPolicy(notification.type);
+  return profileIncludesPriority(
+    getOracleModeConfig(oracleMode).pushProfile,
+    policy.priority,
+    PROFILE_PUSH,
+  );
 };
 
 export const getVisibleNotificationsForProfile = (

@@ -7,7 +7,7 @@ import { getGoldBoostProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } fr
 import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
 import { NOBILITY_RANKS, RANK_REWARDS } from '../constants/nobility';
 import { supabase } from '../supabaseClient';
-import { ORACLE_MODES } from '../constants/oracle';
+import { deriveLegacySentinelMode, getOracleModeConfig, ORACLE_MODES } from '../constants/oracle';
 import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
@@ -30,7 +30,7 @@ import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
-import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, isBadgeNotification } from '../constants/oracleNotificationPolicy';
+import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, shouldPushNotificationForProfile } from '../constants/oracleNotificationPolicy';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import { resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
 
@@ -367,6 +367,77 @@ const resolveManualOracleCategory = (enabledCategories: OracleCategory[] = []): 
     const manualPool = normalizeOracleManualCategories(enabledCategories);
     const randomIndex = Math.floor(Math.random() * manualPool.length);
     return manualPool[randomIndex] || 'frases_inspiradoras';
+};
+
+const hasOracleStructuralNeed = (contextData: ReturnType<typeof buildOracleOperationalContext>) => (
+    !contextData.hasCycle ||
+    contextData.needsFirstArena ||
+    contextData.needsFirstAction ||
+    contextData.needsFirstTask ||
+    contextData.needsSitrepClosure
+);
+
+const resolveAutomaticOracleCategory = (
+    mode: OracleMode,
+    contextData: ReturnType<typeof buildOracleOperationalContext>,
+): OracleCategory => {
+    if (hasOracleStructuralNeed(contextData)) {
+        return 'dicas_produtividade';
+    }
+
+    const categoryProfile = getOracleModeConfig(mode).automaticCategories;
+
+    if (contextData.cycleRisk === 'alto') {
+        return contextData.overdueActions > 0 ? categoryProfile.critical : categoryProfile.high;
+    }
+
+    if (contextData.cycleRisk === 'medio') {
+        return categoryProfile.medium;
+    }
+
+    return categoryProfile.low;
+};
+
+const shouldSkipAutomaticOracle = (
+    mode: OracleMode,
+    triggerType: 'app_open' | 'cron' | 'manual',
+    contextData: ReturnType<typeof buildOracleOperationalContext>,
+    isCriticalTrigger: boolean,
+): boolean => {
+    if (triggerType === 'manual') return false;
+
+    const automationProfile = getOracleModeConfig(mode).automationProfile;
+    const hasStructuralNeed = hasOracleStructuralNeed(contextData);
+    const hasHighRisk = contextData.cycleRisk === 'alto';
+
+    if (automationProfile === 'proativo') {
+        return false;
+    }
+
+    if (automationProfile === 'equilibrado') {
+        return triggerType === 'cron' && !isCriticalTrigger && !hasStructuralNeed && !hasHighRisk;
+    }
+
+    if (triggerType === 'cron') {
+        return !isCriticalTrigger;
+    }
+
+    return !isCriticalTrigger && !hasStructuralNeed && !hasHighRisk;
+};
+
+const shouldPushOracleFeedMessage = (message: OracleMessage): boolean => {
+    const modeConfig = getOracleModeConfig(message.mode);
+    const presentation = message.contextSnapshot?.presentation;
+
+    if (modeConfig.pushProfile === 'essencial') {
+        return false;
+    }
+
+    if (modeConfig.pushProfile === 'equilibrado') {
+        return presentation === 'info_card';
+    }
+
+    return true;
 };
 
 export interface GameContextType {
@@ -930,13 +1001,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, []);
     const getSentinelStorageKey = (userId: string) => `glyph_sentinel_mode_${userId}`;
     const getPushStorageKey = (userId: string) => `glyph_oracle_push_${userId}`;
-    const getSentinelMode = (userId: string): OraclePreferences['sentinelMode'] => {
-        const saved = localStorage.getItem(getSentinelStorageKey(userId));
-        if (saved === 'apenas_necessarias' || saved === 'nao_ia' || saved === 'soberano_ativo') {
-            return saved;
-        }
-        return 'soberano_ativo';
-    };
     const getPushEnabled = (userId: string): boolean => {
         const saved = localStorage.getItem(getPushStorageKey(userId));
         if (saved === 'true') return true;
@@ -954,22 +1018,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const hasOfficeUrgentAlert = clan?.clanType === 'Office' && notifications.some(n => !n.read && n.type === 'clan_mission_update');
 
         return hasCycleClosingRisk || hasOfficeUrgentAlert;
-    };
-
-    const pushSystemOracleMessage = async (userId: string, content: string) => {
-        const newMessage: OracleMessage = {
-            id: crypto.randomUUID(),
-            userId,
-            category: 'dicas_produtividade',
-            content,
-            mode: 'neutro',
-            deliveryType: 'feed',
-            read: false,
-            createdAt: new Date().toISOString()
-        };
-
-        setOracleMessages(prev => [newMessage, ...prev]);
-        await supabase.from('oracle_messages').insert(mapToSnakeCase(newMessage));
     };
 
     const maybeNotifyVillageDuty = (userId: string) => {
@@ -1025,10 +1073,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (data) {
             const mapped = mapToCamelCase(data) as OraclePreferences;
+            const nextMode = mapped.activeMode || 'neutro';
+            const nextIaEnabled = mapped.iaEnabled ?? true;
             setOraclePreferences({
                 ...mapped,
                 enabledCategories: normalizeOracleManualCategories(mapped.enabledCategories || []),
-                sentinelMode: getSentinelMode(userId),
+                sentinelMode: deriveLegacySentinelMode(nextMode, nextIaEnabled),
                 pushEnabled: getPushEnabled(userId),
             });
         } else {
@@ -1041,7 +1091,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 animationsEnabled: true,
                 soundsEnabled: true,
                 hapticsEnabled: true,
-                sentinelMode: getSentinelMode(userId),
+                sentinelMode: deriveLegacySentinelMode('neutro', true),
                 enabledCategories: [...ORACLE_MANUAL_LIBRARY_CATEGORIES],
                 activeMode: 'neutro',
                 quietHoursStart: '22:00',
@@ -1062,7 +1112,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return;
 
-        const nextSentinelMode = (prefs.sentinelMode ?? oraclePreferences?.sentinelMode ?? 'soberano_ativo') as OraclePreferences['sentinelMode'];
+        const nextMode = (prefs.activeMode ?? oraclePreferences?.activeMode ?? 'neutro') as OracleMode;
+        const nextIaEnabled = Boolean(prefs.iaEnabled ?? oraclePreferences?.iaEnabled ?? true);
+        const nextSentinelMode = deriveLegacySentinelMode(nextMode, nextIaEnabled);
         const nextPushEnabled = Boolean(prefs.pushEnabled ?? oraclePreferences?.pushEnabled ?? false);
         localStorage.setItem(getSentinelStorageKey(userId), nextSentinelMode || 'soberano_ativo');
         localStorage.setItem(getPushStorageKey(userId), nextPushEnabled ?'true' : 'false');
@@ -1133,7 +1185,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const now = new Date();
         const quota = getOracleFeedQuotaStatus(oracleMessages, oraclePreferences, now);
         const isPremiumUser = hasPremiumAccess(userProfile);
-        const sentinelMode = oraclePreferences.sentinelMode ?? getSentinelMode(userId);
+        const selectedMode = oraclePreferences.activeMode || 'neutro';
 
         if (triggerType === 'app_open') {
             maybeNotifyVillageDuty(userId);
@@ -1146,18 +1198,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (triggerType !== 'manual' && !oraclePreferences.notificationsEnabled) {
             return { status: 'disabled', ...quota };
-        }
-
-        if (sentinelMode === 'apenas_necessarias' && triggerType !== 'manual' && !isOracleCriticalTrigger(userId)) {
-            return { status: 'skipped', ...quota };
-        }
-
-        if (sentinelMode === 'nao_ia' && triggerType !== 'manual') {
-            const content = isOracleCriticalTrigger(userId)
-                ? 'Alerta do Sistema: prioridade critica detectada. Revise pendencias de ciclo ou missao Office.'
-                : 'Mensagem do Sistema: status estavel. Sem intervencao do Oraculo.';
-            await pushSystemOracleMessage(userId, content);
-            return { status: 'skipped', ...quota };
         }
 
         if (!oraclePreferences.iaEnabled) {
@@ -1205,7 +1245,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const totalChests = userProfile.chests?.reduce((acc: any, c: any) => acc + c.count, 0) || 0;
-        const hour = now.getHours();
         const contextData = buildOracleOperationalContext({
             now,
             assets,
@@ -1223,29 +1262,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             pendingChests: totalChests,
             dailyCommitment,
         });
+        const isCriticalTrigger = isOracleCriticalTrigger(userId);
+
+        if (shouldSkipAutomaticOracle(selectedMode, triggerType, contextData, isCriticalTrigger)) {
+            return { status: 'skipped', ...quota };
+        }
+
         let category: OracleCategory = triggerType === 'manual'
             ? resolveManualOracleCategory(oraclePreferences.enabledCategories || [])
             : 'dicas_produtividade';
         const enabled = oraclePreferences.enabledCategories || [];
 
         if (triggerType !== 'manual') {
-            if (!activeCycle || contextData.needsFirstArena || contextData.needsFirstAction || contextData.needsFirstTask || contextData.needsSitrepClosure) {
-                category = 'dicas_produtividade';
-            } else if (contextData.cycleRisk === 'alto') {
-                category = contextData.overdueActions > 0 ? 'provocacoes' : 'dicas_produtividade';
-            } else if (contextData.cycleRisk === 'medio') {
-                category = 'analise_padroes';
-            } else {
-                category = 'dicas_produtividade';
-            }
+            category = resolveAutomaticOracleCategory(selectedMode, contextData);
         } else if (enabled.length > 0 && !enabled.includes(category as any)) {
             category = enabled[0];
         }
 
         // 6. Generate Prompt
         // The selected assistant mode should stay stable across feed/chat.
-        const selectedMode = oraclePreferences.activeMode || 'neutro';
-
         const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
         const systemPrompt = modeConfig.systemPromptTemplate(contextData);
         const presentation = resolveOraclePresentation(category, triggerType);
@@ -1527,7 +1562,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const activeOracleMode = oraclePreferences.activeMode || 'neutro';
         const visibleNotifications = getVisibleNotificationsForProfile(unseenNotifications, appMode, activeOracleMode)
-            .filter((notification) => !notification.read && isBadgeNotification(notification));
+            .filter((notification) => shouldPushNotificationForProfile(notification, appMode, activeOracleMode));
 
         if (visibleNotifications.length === 0) {
             return;
@@ -1578,7 +1613,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             .slice()
             .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0];
 
-        if (!latestMessage) {
+        if (!latestMessage || !shouldPushOracleFeedMessage(latestMessage)) {
             return;
         }
 

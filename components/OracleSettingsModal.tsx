@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { OracleMode, OracleCategory, OraclePreferences } from '../types';
+import { OracleCategory, OracleMode, OraclePreferences } from '../types';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, CheckIcon } from './Icons';
@@ -19,18 +19,20 @@ interface OracleSettingsModalProps {
 type SettingsTab = 'modos' | 'categorias';
 type ToggleKey = 'iaEnabled' | 'notificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
 
-const SENTINEL_LABELS: Record<NonNullable<OraclePreferences['sentinelMode']>, string> = {
-    soberano_ativo: 'Soberano Ativo',
-    apenas_necessarias: 'Apenas Necessárias',
-    nao_ia: 'Não-IA',
-};
-
 const PUSH_PERMISSION_LABEL: Record<ReturnType<typeof getLocalNotificationPermission>, string> = {
-    default: 'Aguardando permissão',
+    default: 'Aguardando permissao',
     granted: 'Permitido no navegador',
     denied: 'Bloqueado no navegador',
     unsupported: 'Sem suporte neste aparelho',
 };
+
+const MANUAL_LIBRARY_CATEGORIES: { id: OracleCategory; label: string; icon: string }[] = [
+    { id: 'frases_inspiradoras', label: 'Frases Inspiradoras', icon: '🔥' },
+    { id: 'reflexoes_filosoficas', label: 'Reflexoes Filosoficas', icon: '🧠' },
+    { id: 'fragmentos_sabedoria', label: 'Fragmentos de Sabedoria', icon: '📜' },
+    { id: 'rituais_lifestyle', label: 'Dicas de Vida', icon: '🌿' },
+    { id: 'sussurros_maestria', label: 'Sussurros da Maestria', icon: '👁️' },
+];
 
 export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     onClose,
@@ -45,7 +47,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
     const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
     const activeModeConfig = ORACLE_MODES[oraclePreferences.activeMode] || ORACLE_MODES.neutro;
-    const currentSentinelMode = oraclePreferences.sentinelMode || 'soberano_ativo';
 
     const handleToggle = (key: ToggleKey) => {
         updateOraclePreferences({ [key]: !Boolean(oraclePreferences[key]) } as Partial<OraclePreferences>);
@@ -65,7 +66,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
         if (permission !== 'granted') {
             await updateOraclePreferences({ pushEnabled: false });
-            showToast('Permissão de push negada. Os avisos continuam dentro do app.', 'warning');
+            showToast('Permissao de push negada. Os avisos continuam dentro do app.', 'warning');
             return;
         }
 
@@ -83,10 +84,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
             ? current.filter(c => c !== category)
             : [...current, category];
         updateOraclePreferences({ enabledCategories: next });
-    };
-
-    const handleSentinelModeSelect = (mode: NonNullable<OraclePreferences['sentinelMode']>) => {
-        updateOraclePreferences({ sentinelMode: mode });
     };
 
     const renderSwitchRow = ({
@@ -121,16 +118,22 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         </div>
     );
 
+    const renderModeSummaryCard = () => (
+        <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Modo Atual</div>
+            <div className="mt-2 text-sm font-bold text-white">{activeModeConfig.name}</div>
+            <p className="mt-1 text-xs text-gray-400">{activeModeConfig.description}</p>
+            <div className="mt-3 space-y-2 text-[11px] leading-relaxed text-gray-500">
+                <p><span className="font-semibold text-gray-300">Cards:</span> {activeModeConfig.cardSummary}</p>
+                <p><span className="font-semibold text-gray-300">Avisos:</span> {activeModeConfig.notificationSummary}</p>
+                <p><span className="font-semibold text-gray-300">Push:</span> {activeModeConfig.pushSummary}</p>
+            </div>
+        </div>
+    );
+
     const renderModes = () => (
         <div className="space-y-4">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Leitura Atual</div>
-                <div className="mt-2 text-sm font-bold text-white">{activeModeConfig.name}</div>
-                <p className="mt-1 text-xs text-gray-400">{activeModeConfig.description}</p>
-                <p className="mt-2 text-xs text-gray-500">
-                    Os avisos do Oráculo seguem esse modo junto do Sentinela em <span className="font-semibold text-gray-300">{SENTINEL_LABELS[currentSentinelMode]}</span>.
-                </p>
-            </div>
+            {renderModeSummaryCard()}
 
             <div className="grid grid-cols-1 gap-2">
                 {Object.values(ORACLE_MODES).map((mode) => {
@@ -161,6 +164,11 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                         )}
                                     </div>
                                     <p className="mt-1 text-xs text-gray-500">{mode.description}</p>
+                                    <div className="mt-2 space-y-1 text-[11px] leading-relaxed text-gray-500">
+                                        <p><span className="font-semibold text-gray-300">Cards:</span> {mode.cardSummary}</p>
+                                        <p><span className="font-semibold text-gray-300">Avisos:</span> {mode.notificationSummary}</p>
+                                        <p><span className="font-semibold text-gray-300">Push:</span> {mode.pushSummary}</p>
+                                    </div>
                                 </div>
                             </div>
                         </button>
@@ -170,98 +178,49 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
             {oraclePreferences.activeMode === 'personalizado' && (
                 <div className="animate-fade-in rounded-xl border border-white/10 bg-black/20 p-4">
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-400">Instruções Personalizadas</label>
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-400">Instrucoes Personalizadas</label>
                     <textarea
                         className="h-24 w-full resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-gray-200 focus:border-[var(--skin-accent-color)] focus:outline-none"
-                        placeholder="Ex: Fale como um mestre zen, use metáforas de água..."
+                        placeholder="Ex: Fale como um mestre zen, use metaforas de agua..."
                         value={oraclePreferences.customModeInstructions || ''}
                         onChange={(e) => updateOraclePreferences({ customModeInstructions: e.target.value })}
                     />
-                    <p className="mt-2 text-[10px] text-gray-600">O Oráculo tentará seguir esse tom nas mensagens.</p>
+                    <p className="mt-2 text-[10px] text-gray-600">O Oraculo segue esse tom sem perder a leitura operacional.</p>
                 </div>
             )}
         </div>
     );
 
-    const renderCategories = () => {
-        const categories: { id: OracleCategory; label: string; icon: string }[] = [
-            { id: 'frases_inspiradoras', label: 'Frases Inspiradoras', icon: '🔥' },
-            { id: 'reflexoes_filosoficas', label: 'Reflexões Filosóficas', icon: '🧠' },
-            { id: 'fragmentos_sabedoria', label: 'Sabedoria Antiga', icon: '📜' },
-            { id: 'dicas_produtividade', label: 'Produtividade', icon: '🎯' },
-            { id: 'rituais_lifestyle', label: 'Lifestyle e Rituais', icon: '🌿' },
-            { id: 'provocacoes', label: 'Provocações', icon: '⚡' },
-            { id: 'sussurros_maestria', label: 'Sussurros da Maestria', icon: '👁️' },
-            { id: 'analise_padroes', label: 'Análise de Padrões', icon: '🔄' },
-        ];
-
-        return (
-            <div className="space-y-2">
-                {categories.map((cat) => {
-                    const isEnabled = oraclePreferences.enabledCategories.includes(cat.id);
-                    return (
-                        <button
-                            key={cat.id}
-                            onClick={() => handleCategoryToggle(cat.id)}
-                            className={`flex w-full items-center justify-between rounded-xl border p-3 transition-all ${
-                                isEnabled
-                                    ? 'border-white/20 bg-white/10'
-                                    : 'border-transparent bg-black/20 hover:bg-black/30'
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <span className="text-lg">{cat.icon}</span>
-                                <span className={`text-sm font-medium ${isEnabled ? 'text-white' : 'text-gray-400'}`}>{cat.label}</span>
-                            </div>
-                            {isEnabled && <CheckIcon className="h-4 w-4 text-[var(--skin-accent-color)]" />}
-                        </button>
-                    );
-                })}
+    const renderManualLibraryCategories = () => (
+        <div className="space-y-3">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Biblioteca manual</div>
+                <p className="mt-2 text-xs leading-relaxed text-gray-400">
+                    Esses sao os cards do botao manual. O automatico segue o modo do Oraculo e escolhe o tom sozinho.
+                </p>
             </div>
-        );
-    };
-
-    const renderManualLibraryCategories = () => {
-        const categories: { id: OracleCategory; label: string; icon: string }[] = [
-            { id: 'frases_inspiradoras', label: 'Frases Inspiradoras', icon: '🔥' },
-            { id: 'reflexoes_filosoficas', label: 'Reflexões Filosóficas', icon: '🧠' },
-            { id: 'fragmentos_sabedoria', label: 'Fragmentos de Sabedoria', icon: '📜' },
-            { id: 'rituais_lifestyle', label: 'Dicas de Vida', icon: '🌿' },
-            { id: 'sussurros_maestria', label: 'Sussurros da Maestria', icon: '👁️' },
-        ];
-
-        return (
-            <div className="space-y-3">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Biblioteca manual</div>
-                    <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                        Esses são os cards de frases, reflexão e vida do botão manual.
-                        Foco, análise e choque continuam no disparo automático do Oráculo.
-                    </p>
-                </div>
-                {categories.map((cat) => {
-                    const isEnabled = oraclePreferences.enabledCategories.includes(cat.id);
-                    return (
-                        <button
-                            key={cat.id}
-                            onClick={() => handleCategoryToggle(cat.id)}
-                            className={`flex w-full items-center justify-between rounded-xl border p-3 transition-all ${
-                                isEnabled
-                                    ? 'border-white/20 bg-white/10'
-                                    : 'border-transparent bg-black/20 hover:bg-black/30'
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <span className="text-lg">{cat.icon}</span>
-                                <span className={`text-sm font-medium ${isEnabled ? 'text-white' : 'text-gray-400'}`}>{cat.label}</span>
-                            </div>
-                            {isEnabled && <CheckIcon className="h-4 w-4 text-[var(--skin-accent-color)]" />}
-                        </button>
-                    );
-                })}
-            </div>
-        );
-    };
+            {MANUAL_LIBRARY_CATEGORIES.map((cat) => {
+                const isEnabled = oraclePreferences.enabledCategories.includes(cat.id);
+                return (
+                    <button
+                        key={cat.id}
+                        onClick={() => handleCategoryToggle(cat.id)}
+                        className={`flex w-full items-center justify-between rounded-xl border p-3 transition-all ${
+                            isEnabled
+                                ? 'border-white/20 bg-white/10'
+                                : 'border-transparent bg-black/20 hover:bg-black/30'
+                        }`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="text-lg">{cat.icon}</span>
+                            <span className={`text-sm font-medium ${isEnabled ? 'text-white' : 'text-gray-400'}`}>{cat.label}</span>
+                        </div>
+                        {isEnabled && <CheckIcon className="h-4 w-4 text-[var(--skin-accent-color)]" />}
+                    </button>
+                );
+            })}
+        </div>
+    );
 
     return (
         <Portal>
@@ -274,7 +233,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                 >
                     <div className="flex flex-shrink-0 items-center justify-between border-b border-white/10 p-4">
                         <h2 className="text-sm font-black uppercase tracking-widest text-[var(--skin-accent-color)]">
-                            {variant === 'preferences' ? 'Preferências do Oráculo' : 'Configurar Oráculo'}
+                            {variant === 'preferences' ? 'Preferencias do Oraculo' : 'Configurar Oraculo'}
                         </h2>
                         <button onClick={onClose} className="rounded-full p-2 transition-colors hover:bg-white/10">
                             <XIcon className="h-5 w-5 text-gray-400" />
@@ -303,25 +262,30 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         {variant === 'preferences' ? (
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Oráculo</h3>
+                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Modo do Oraculo</h3>
+                                    {renderModes()}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Oraculo</h3>
                                     {renderSwitchRow({
                                         icon: '✨',
-                                        label: 'Oráculo IA',
+                                        label: 'Oraculo IA',
                                         description: `Gera mensagens personalizadas no modo ${activeModeConfig.name}.`,
                                         enabled: Boolean(oraclePreferences.iaEnabled),
                                         onToggle: () => handleToggle('iaEnabled'),
                                     })}
                                     {renderSwitchRow({
                                         icon: '🔔',
-                                        label: 'Avisos do Oráculo',
-                                        description: `Controla avisos internos, feed e chamadas do Sentinela em ${SENTINEL_LABELS[currentSentinelMode]}.`,
+                                        label: 'Avisos do Oraculo',
+                                        description: `Controla cards automaticos e avisos internos. A entrega segue o modo ${activeModeConfig.name}.`,
                                         enabled: Boolean(oraclePreferences.notificationsEnabled),
                                         onToggle: () => handleToggle('notificationsEnabled'),
                                     })}
                                     {renderSwitchRow({
                                         icon: '📲',
                                         label: 'Push no aparelho',
-                                        description: `${PUSH_PERMISSION_LABEL[pushPermission]}. Usa os avisos liberados pelo Oráculo fora do app.`,
+                                        description: `${PUSH_PERMISSION_LABEL[pushPermission]}. O que vira push segue o modo ${activeModeConfig.name}.`,
                                         enabled: Boolean(oraclePreferences.pushEnabled),
                                         onToggle: handlePushToggle,
                                         accentClass: 'bg-emerald-500/70',
@@ -332,8 +296,8 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Sensorial</h3>
                                     {renderSwitchRow({
                                         icon: '✨',
-                                        label: 'Animações',
-                                        description: 'Mantém glows, sheens e transições do sistema.',
+                                        label: 'Animacoes',
+                                        description: 'Mantem glows, sheens e transicoes do sistema.',
                                         enabled: Boolean(oraclePreferences.animationsEnabled),
                                         onToggle: () => handleToggle('animationsEnabled'),
                                     })}
@@ -346,35 +310,10 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     })}
                                     {renderSwitchRow({
                                         icon: '📳',
-                                        label: 'Vibração',
-                                        description: 'Usa resposta tátil em eventos importantes, quando suportado.',
+                                        label: 'Vibracao',
+                                        description: 'Usa resposta tatil em eventos importantes, quando suportado.',
                                         enabled: Boolean(oraclePreferences.hapticsEnabled),
                                         onToggle: () => handleToggle('hapticsEnabled'),
-                                    })}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Oráculo Sentinela</h3>
-                                    {[
-                                        { id: 'soberano_ativo', label: 'Soberano Ativo', desc: 'Proativo, com alertas de fadiga, streak e santuário.' },
-                                        { id: 'apenas_necessarias', label: 'Apenas Necessárias', desc: 'Filtra tudo, exceto gatilhos críticos de ciclo e Office.' },
-                                        { id: 'nao_ia', label: 'Não-IA', desc: 'Troca as falas do Oráculo por avisos sistêmicos.' },
-                                    ].map((mode) => {
-                                        const selected = currentSentinelMode === mode.id;
-                                        return (
-                                            <button
-                                                key={mode.id}
-                                                onClick={() => handleSentinelModeSelect(mode.id as NonNullable<OraclePreferences['sentinelMode']>)}
-                                                className={`w-full rounded-xl border p-3 text-left transition-all ${
-                                                    selected
-                                                        ? 'border-[var(--skin-accent-color)] bg-white/10 text-white'
-                                                        : 'border-white/10 bg-black/20 text-gray-300 hover:bg-black/30'
-                                                }`}
-                                            >
-                                                <div className="text-sm font-semibold">{mode.label}</div>
-                                                <div className="mt-1 text-xs text-gray-400">{mode.desc}</div>
-                                            </button>
-                                        );
                                     })}
                                 </div>
                             </div>

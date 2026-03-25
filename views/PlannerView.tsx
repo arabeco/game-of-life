@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, FolderIcon, FolderStarIcon, ListRowsIcon, PlusIcon, MinusIcon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, MinusIcon, SquareCheckIcon, PanelIcon } from '../components/Icons';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType } from '../types';
 import { ChecklistModal } from '../components/ChecklistModal';
@@ -1213,11 +1213,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 <div className="bg-transparent">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 text-lg font-bold h-11 mt-1">
                         <div className="flex items-center space-x-1 min-w-0" id="planner-tools">
-                            <button onClick={() => setChecklistVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors">
-                                {allTasksCompleted ?<FolderStarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" /> : <FolderIcon className="w-4 h-4" />}
+                            <button onClick={() => setChecklistVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors" title="Checklist diario">
+                                <SquareCheckIcon className={`w-4 h-4 ${allTasksCompleted ? 'text-[var(--skin-accent-color)]' : ''}`} />
                             </button>
                             <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Painel diario">
-                                <ListRowsIcon className="w-4 h-4" />
+                                <PanelIcon className="w-4 h-4" />
                             </button>
                             <button id="report-button" onClick={onReportsClick} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors">
                                 <ClockIcon className="w-4 h-4" />

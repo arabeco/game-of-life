@@ -358,6 +358,15 @@ export const ArenaDetailModal: React.FC<{
         setActionModalState({ action: null, mode: 'edit', key: `new-action-modal-${Date.now()}` });
     };
 
+    useEffect(() => {
+        const handleTutorialRequestActionModal = () => {
+            openNewAction();
+        };
+
+        window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.requestActionModalOpen, handleTutorialRequestActionModal);
+        return () => window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.requestActionModalOpen, handleTutorialRequestActionModal);
+    });
+
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) {
             onClose();

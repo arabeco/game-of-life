@@ -8,6 +8,12 @@ const IconWrapper: React.FC<{ children: React.ReactNode; className?: string }> =
 
 export const EditIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></IconWrapper>);
 export const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><polyline points="20 6 9 17 4 12"></polyline></IconWrapper>);
+export const SquareCheckIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <IconWrapper className={className}>
+        <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
+        <polyline points="8 12 11 15 16 9"></polyline>
+    </IconWrapper>
+);
 export const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></IconWrapper>);
 export const ChevronLeftIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><polyline points="15 18 9 12 15 6"></polyline></IconWrapper>);
 export const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><polyline points="9 18 15 12 9 6"></polyline></IconWrapper>);
@@ -34,6 +40,13 @@ export const ListRowsIcon: React.FC<{ className?: string }> = ({ className }) =>
         <circle cx="4" cy="7" r="1.25"></circle>
         <circle cx="4" cy="12" r="1.25"></circle>
         <circle cx="4" cy="17" r="1.25"></circle>
+    </IconWrapper>
+);
+export const PanelIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <IconWrapper className={className}>
+        <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
+        <line x1="3" y1="9" x2="21" y2="9"></line>
+        <line x1="9" y1="9" x2="9" y2="20"></line>
     </IconWrapper>
 );
 export const RefreshCwIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></IconWrapper>);

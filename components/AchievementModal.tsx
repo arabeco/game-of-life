@@ -19,7 +19,7 @@ const getAchievementDetails = (type: FeedEventType, data: any) => {
         case 'MILESTONE_COMPLETED':
             return { title: 'Marco concluído!', icon: data.icon || '\u{1F3C1}', message: `Você concluiu o marco "${data.name}".` };
         case 'ARENA_COMPLETED':
-            return { title: 'Meta da arena atingida!', icon: data.icon || '\u{1F3DF}\uFE0F', message: `Você cumpriu todas as ações da arena "${data.name}".` };
+            return { title: 'ARENA COMPLETA', icon: data.icon || '\u{1F3DF}\uFE0F', message: `Você concluiu a arena "${data.name}".` };
         case 'PLAYER_RANK_UP':
             return { title: 'PARABÉNS!', icon: '\u{1F451}', message: `Você subiu de patente para ${data.name}!` };
         case 'QUEST_COMPLETED':
@@ -37,16 +37,18 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     const { addFeedEvent, userProfile, showToast, appMode } = useGame();
     const { title, icon, message } = getAchievementDetails(achievement.type, achievement.data);
     const cardRef = useRef<HTMLDivElement>(null);
+    const isArenaComplete = achievement.type === 'ARENA_COMPLETED';
+    const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
+    const canRenderAchievement = appMode === 'GAME' || isGM || isArenaComplete;
+    const canShareAchievement = appMode === 'GAME' || isGM;
 
     useEffect(() => {
-        const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
-        if (appMode !== 'GAME' && !isGM) {
+        if (!canRenderAchievement) {
             onClose();
         }
-    }, [appMode, onClose, userProfile.role]);
+    }, [canRenderAchievement, onClose]);
 
-    const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
-    if (appMode !== 'GAME' && !isGM) return null;
+    if (!canRenderAchievement) return null;
 
     const userSkin = SKINS_DATA.find((skin) => skin.id === userProfile.skin);
     const skinColor = userSkin?.color || '#ffffff';
@@ -69,6 +71,8 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     };
 
     const handlePostToFeed = () => {
+        if (!canShareAchievement) return;
+
         let content;
         switch (achievement.type) {
             case 'MILESTONE_COMPLETED':
@@ -292,21 +296,23 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 )}
 
                                 <div className="space-y-3">
-                                    <button
-                                        onClick={handlePostToFeed}
-                                        className="luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-                                    >
-                                        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-                                        <ShareIcon className="h-4 w-4" />
-                                        Compartilhar Feito
-                                    </button>
+                                    {canShareAchievement && (
+                                        <button
+                                            onClick={handlePostToFeed}
+                                            className="luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                        >
+                                            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+                                            <ShareIcon className="h-4 w-4" />
+                                            Compartilhar no Feed
+                                        </button>
+                                    )}
 
                                     <button
                                         onClick={handleClose}
                                         className="luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                                     >
                                         <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-                                        Prosseguir
+                                        {isArenaComplete ? 'OK' : 'Prosseguir'}
                                     </button>
                                 </div>
                             </div>
@@ -317,5 +323,4 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         </Portal>
     );
 };
-
 

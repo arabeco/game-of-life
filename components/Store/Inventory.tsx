@@ -5,10 +5,11 @@ import { ItemDef, resolveItemDef, isItemCatalogVisible } from '../../constants/i
 import { CheckIcon, SovereignIcon } from '../Icons';
 import { SovereignCustomizer } from '../SovereignCustomizer';
 import { ItemDetailModal } from '../ItemDetailModal';
-import { ChestType } from '../../types';
-import { ChestOpeningModal } from '../ChestOpeningModal';
+import { ChestType, RewardModalPayload } from '../../types';
 import { getChestVisual, getTierVisual, normalizeVisualRarity, withAlpha } from '../../constants/rarityVisuals';
 import { ItemArt } from '../ItemArt';
+import { RewardPackModal } from '../RewardPackModal';
+import { buildChestRewardPayload } from '../../utils/chestRewardPresentation';
 
 type InventoryTab = 'all' | 'sovereign' | 'glyph' | 'interface' | 'insignias' | 'chests';
 type InventoryEntry = {
@@ -29,13 +30,13 @@ const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
 ];
 
 export const Inventory: React.FC = () => {
-    const { inventory, userProfile, updateUserProfile, appMode } = useGame();
+    const { inventory, userProfile, updateUserProfile, appMode, openChest } = useGame();
     const [activeTab, setActiveTab] = useState<InventoryTab>('all');
     
     // --- Editors State ---
     const [showSovereignEditor, setShowSovereignEditor] = useState(false);
     const [selectedItem, setSelectedItem] = useState<{ def: ItemDef, instanceId: string } | null>(null);
-    const [showChestOpeningModal, setShowChestOpeningModal] = useState<ChestType | null>(null);
+    const [inventoryRewardPayload, setInventoryRewardPayload] = useState<RewardModalPayload | null>(null);
 
     // Filter Tabs based on App Mode
     const visibleTabs = useMemo(() => {
@@ -157,6 +158,28 @@ export const Inventory: React.FC = () => {
         };
     };
 
+    const resolveChestTypeFromName = (chestName: string): ChestType => {
+        let type: ChestType = 'Comum';
+        const normalized = chestName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+        if (normalized.includes('skin') && normalized.includes('comum')) type = 'Skin Comum';
+        else if (normalized.includes('incomum')) type = 'Incomum';
+        else if (normalized.includes('raro') || normalized.includes('radiante')) type = 'Raro';
+        else if (normalized.includes('ciclo')) type = 'Ciclo';
+        else if (normalized.includes('epico')) type = 'Épico';
+        else if (normalized.includes('season')) type = 'Season';
+        else if (normalized.includes('lendario') || normalized.includes('legendary')) type = 'Lendário';
+
+        return type;
+    };
+
+    const handleInventoryChestOpen = async (chestName: string) => {
+        const chestType = resolveChestTypeFromName(chestName);
+        const result = await openChest(chestType);
+        if (!result) return;
+        setInventoryRewardPayload(buildChestRewardPayload(result, chestType));
+    };
+
     return (
         <div className="flex flex-col h-full space-y-4 animate-fade-in pb-2">
             {/* --- ACTION BUTTONS (Editors) --- */}
@@ -276,29 +299,20 @@ export const Inventory: React.FC = () => {
                     onClose={() => setSelectedItem(null)}
                     onOpen={() => {
                         if (selectedItem.def.category === 'chest') {
-                            const chestName = selectedItem.def.name;
-                            let type: ChestType = 'Comum';
-                            const normalized = chestName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-                            
-                            if (normalized.includes('skin') && normalized.includes('comum')) type = 'Skin Comum';
-                            else if (normalized.includes('incomum')) type = 'Incomum';
-                            else if (normalized.includes('raro') || normalized.includes('radiante')) type = 'Raro';
-                            else if (normalized.includes('ciclo')) type = 'Ciclo';
-                            else if (normalized.includes('epico')) type = '\u00C9pico';
-                            else if (normalized.includes('season')) type = 'Season';
-                            else if (normalized.includes('lendario') || normalized.includes('legendary')) type = 'Lend\u00E1rio';
-                            
-                            setShowChestOpeningModal(type);
+                            void handleInventoryChestOpen(selectedItem.def.name);
                         }
                     }} 
                 />
             )}
-            {showChestOpeningModal && (
-                <ChestOpeningModal
-                    chestType={showChestOpeningModal}
-                    onClose={() => setShowChestOpeningModal(null)}
-                />
-            )}
+            <RewardPackModal
+                open={!!inventoryRewardPayload}
+                payload={inventoryRewardPayload}
+                onClose={() => setInventoryRewardPayload(null)}
+                fallbackEyebrow="RECOMPENSA"
+                fallbackTitle="Baú aberto"
+                fallbackSummary="Seu prêmio já foi integrado ao inventário."
+                fallbackButtonLabel="Fechar"
+            />
             {showSovereignEditor && (
                 <SovereignCustomizer
                     initialConfig={userProfile.sovereign}

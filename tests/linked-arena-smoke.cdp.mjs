@@ -4,6 +4,7 @@ import {
   createFriendship,
   createTempUser,
   getActiveRelationshipLink,
+  getLatestRelationshipInvite,
   getLinkedRelationshipArenas,
   getUserProfile,
   setWallet,
@@ -22,12 +23,28 @@ try {
     p_recipient_id: pupil.userId,
     p_link_type: 'mentoria',
   });
-  if (inviteResult.error || !inviteResult.data?.invite_id) {
-    throw new Error(`Failed to create mentorship invite for linked arena smoke: ${inviteResult.error?.message || 'invite missing'}`);
+  if (inviteResult.error) {
+    throw new Error(`Failed to create mentorship invite for linked arena smoke: ${inviteResult.error.message}`);
+  }
+
+  const inviteId = inviteResult.data?.invite?.id
+    || inviteResult.data?.inviteId
+    || inviteResult.data?.invite_id
+    || (await waitForDb(
+      'linked arena mentorship invite persistence',
+      () => getLatestRelationshipInvite(mentor.client, {
+        senderId: mentor.userId,
+        recipientId: pupil.userId,
+        linkType: 'mentoria',
+      }),
+    ))?.id;
+
+  if (!inviteId) {
+    throw new Error('Failed to resolve mentorship invite id for linked arena smoke.');
   }
 
   const acceptResult = await pupil.client.rpc('respond_relationship_link_invite', {
-    p_invite_id: inviteResult.data.invite_id,
+    p_invite_id: inviteId,
     p_action: 'accept',
   });
   if (acceptResult.error) {
@@ -50,19 +67,51 @@ try {
     await page.login(mentor.email, mentor.password);
     checkpoints.push('mentor-login');
 
-    await page.clickSelector('#nav-settings');
-    await page.waitForSelector('#settings-tab-premium', 20000);
-    await page.clickSelector('#settings-tab-premium');
+    await page.dismissBlockingRuntimeOverlays();
+    await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
     await page.waitForSelector('#relationship-hub-tab-mentoria', 15000);
     await page.clickSelector('#relationship-hub-tab-mentoria');
     await page.waitFor(
-      'linked arena mentor action',
-      `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').toLowerCase().includes('arena vinculada')))()`,
+      'mentorship relationship card',
+      `(() => {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        return buttons.some((node) => {
+          const text = (node.textContent || '').toLowerCase();
+          return text.includes(${JSON.stringify(pupil.nickname.toLowerCase())}) && text.includes('seu pupilo');
+        });
+      })()`,
       20000,
     );
-    await page.clickText('Arena vinculada');
+    await page.evaluate(`(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const target = buttons.find((node) => {
+        const text = (node.textContent || '').toLowerCase();
+        return text.includes(${JSON.stringify(pupil.nickname.toLowerCase())}) && text.includes('seu pupilo');
+      });
+      if (!(target instanceof HTMLElement)) return false;
+      target.click();
+      return true;
+    })()`);
+    await page.waitFor(
+      'linked arena mentor action',
+      `(() => Array.from(document.querySelectorAll('button')).some((node) => {
+        const text = (node.innerText || node.textContent || '').toLowerCase();
+        return text.includes('nova arena') && text.includes('50');
+      }))()`,
+      20000,
+    );
+    await page.evaluate(`(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const target = buttons.find((node) => {
+        const text = (node.innerText || node.textContent || '').toLowerCase();
+        return text.includes('nova arena') && text.includes('50');
+      });
+      if (!(target instanceof HTMLElement)) return false;
+      target.click();
+      return true;
+    })()`);
     await page.waitForSelector('#relationship-linked-arena-name-input', 15000);
     await page.setInputValue('#relationship-linked-arena-name-input', linkedArenaName);
     await page.setInputValue('#relationship-linked-arena-description-input', 'Arena compartilhada criada pelo smoke.');
@@ -80,8 +129,8 @@ try {
   );
 
   const mentorProfile = await getUserProfile(mentor.client, mentor.userId);
-  if (Number(mentorProfile.wallet?.gold || 0) !== 440) {
-    throw new Error(`Expected mentor gold to be 440 after linked arena creation, got ${Number(mentorProfile.wallet?.gold || 0)}.`);
+  if (Number(mentorProfile.wallet?.gold || 0) !== 450) {
+    throw new Error(`Expected mentor gold to be 450 after linked arena creation, got ${Number(mentorProfile.wallet?.gold || 0)}.`);
   }
 
   checkpoints.push('linked-arena-persisted');

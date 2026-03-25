@@ -288,6 +288,7 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => {
         visibleWidgets: Array.isArray(row.visible_widgets) ? row.visible_widgets : (Array.isArray(row.visibleWidgets) ? row.visibleWidgets : []),
         assetsVisibility: row.assets_visibility ?? row.assetsVisibility ?? 'all',
         masteryVisibility: row.mastery_visibility ?? row.masteryVisibility ?? 'all',
+        featsVisibility: row.feats_visibility ?? row.featsVisibility ?? 'friends',
         skin: row.skin ?? 'default',
         sovereign: row.sovereign ?? undefined,
         nobility: row.nobility ?? { exp: 0, rankId: 'vagante' },
@@ -1620,12 +1621,19 @@ const PreferenciasTab: React.FC = () => {
         if (value === 'all' || value === 'friends' || value === 'nobody') return value;
         return 'friends';
     };
+    const normalizeFeatsVisibilityOption = (value?: ProfileVisibilityScope): ProfileVisibilityOption => {
+        if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+        return 'friends';
+    };
 
     const [assetsVisibility, setAssetsVisibility] = useState<ProfileVisibilityOption>(
         normalizeAssetsVisibilityOption(userProfile.assetsVisibility)
     );
     const [masteryVisibility, setMasteryVisibility] = useState<ProfileVisibilityOption>(
         normalizeMasteryVisibilityOption(userProfile.masteryVisibility)
+    );
+    const [featsVisibility, setFeatsVisibility] = useState<ProfileVisibilityOption>(
+        normalizeFeatsVisibilityOption(userProfile.featsVisibility)
     );
 
     useEffect(() => {
@@ -1666,7 +1674,8 @@ const PreferenciasTab: React.FC = () => {
     useEffect(() => {
         setAssetsVisibility(normalizeAssetsVisibilityOption(userProfile.assetsVisibility));
         setMasteryVisibility(normalizeMasteryVisibilityOption(userProfile.masteryVisibility));
-    }, [userProfile.assetsVisibility, userProfile.masteryVisibility]);
+        setFeatsVisibility(normalizeFeatsVisibilityOption(userProfile.featsVisibility));
+    }, [userProfile.assetsVisibility, userProfile.masteryVisibility, userProfile.featsVisibility]);
 
     useEffect(() => {
         const handleFocusModeGame = () => {
@@ -1687,6 +1696,11 @@ const PreferenciasTab: React.FC = () => {
     const handleMasteryVisibilityChange = (value: ProfileVisibilityOption) => {
         setMasteryVisibility(value);
         updateUserProfile({ masteryVisibility: value });
+    };
+
+    const handleFeatsVisibilityChange = (value: ProfileVisibilityOption) => {
+        setFeatsVisibility(value);
+        updateUserProfile({ featsVisibility: value });
     };
 
     return (
@@ -1815,6 +1829,11 @@ const PreferenciasTab: React.FC = () => {
                             label="Arvore de Maestria"
                             value={masteryVisibility}
                             onChange={handleMasteryVisibilityChange}
+                        />
+                        <VisibilityScopeControl
+                            label="Feitos"
+                            value={featsVisibility}
+                            onChange={handleFeatsVisibilityChange}
                         />
                     </div>
                 </div>

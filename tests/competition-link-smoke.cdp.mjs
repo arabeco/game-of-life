@@ -20,12 +20,11 @@ try {
     await page.login(leader.email, leader.password);
     checkpoints.push('leader-login');
 
-    await page.clickSelector('#nav-settings');
-    await page.waitForSelector('#settings-tab-premium', 20000);
-    await page.clickSelector('#settings-tab-premium');
+    await page.dismissBlockingRuntimeOverlays();
+    await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.waitFor(
-      'premium links button enabled',
+      'social links button enabled',
       `(() => {
         const button = document.querySelector('#links-button');
         return button instanceof HTMLButtonElement && !button.disabled;
@@ -37,10 +36,13 @@ try {
     await page.clickSelector('#relationship-hub-tab-competicao');
     await page.waitFor(
       'competition cta',
-      `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').toLowerCase().includes('nova competicao')))()`,
+      `(() => {
+        const button = document.querySelector('#relationship-hub-primary-create-button');
+        return button instanceof HTMLButtonElement && !button.disabled;
+      })()`,
       20000,
     );
-    await page.clickText('Nova competicao');
+    await page.clickSelector('#relationship-hub-primary-create-button');
     await page.waitForSelector('#relationship-friend-search-input', 15000);
     await page.setInputValue('#relationship-friend-search-input', friend.nickname);
     await page.waitForSelector(`#relationship-friend-${friend.userId}`, 15000);
@@ -62,8 +64,8 @@ try {
   }
 
   const leaderProfile = await getUserProfile(leader.client, leader.userId);
-  if (Number(leaderProfile.wallet?.gold || 0) !== 225) {
-    throw new Error(`Expected leader gold to be 225 after competition invite, got ${Number(leaderProfile.wallet?.gold || 0)}.`);
+  if (Number(leaderProfile.wallet?.gold || 0) !== 200) {
+    throw new Error(`Expected leader gold to be 200 after competition invite, got ${Number(leaderProfile.wallet?.gold || 0)}.`);
   }
 
   if (invite.arena_id) {

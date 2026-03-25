@@ -6,7 +6,7 @@ const GENESIS_SEASON_IDS = new Set(['season-genesis-0', 'season_0']);
 
 export const GENESIS_SEASON_IMAGE_URL = `${ROOT_IMAGES_URL}/season_genesis.jpg`;
 
-type SeasonLike = Pick<Season, 'id' | 'name' | 'background_png_url' | 'lore_text'> | null | undefined;
+type SeasonLike = Pick<Season, 'id' | 'name' | 'background_png_url' | 'lore_text' | 'start_date' | 'end_date'> | null | undefined;
 
 const normalizeSeasonLabel = (value: string | null | undefined): string =>
   (value || '')
@@ -30,6 +30,29 @@ export const isGenesisSeason = (season: SeasonLike): boolean => {
 export const getSeasonConfigById = (seasonId?: string | null): SeasonConfig | null => {
   if (!seasonId) return null;
   return SEASONS[seasonId] || null;
+};
+
+export const resolveSeasonConfigForSeason = (season: SeasonLike): SeasonConfig | null => {
+  if (!season) return null;
+
+  if (season.id && SEASONS[season.id]) {
+    return SEASONS[season.id];
+  }
+
+  const normalizedName = normalizeSeasonLabel(season.name);
+  if (normalizedName) {
+    const byName = Object.values(SEASONS).find((config) => normalizeSeasonLabel(config.name) === normalizedName);
+    if (byName) return byName;
+  }
+
+  if (season.start_date && season.end_date) {
+    const byDates = Object.values(SEASONS).find(
+      (config) => config.startDate === season.start_date && config.endDate === season.end_date,
+    );
+    if (byDates) return byDates;
+  }
+
+  return null;
 };
 
 const getSeasonStartTime = (value: string): number => new Date(`${value}T00:00:00`).getTime();
@@ -126,7 +149,10 @@ export const buildSeasonFromConfig = (season: SeasonConfig, isActive = false): S
 export const resolveRuntimeActiveSeason = (seasons: Season[]): Season | null => {
   const byDateConfig = resolveSeasonConfigForTimestamp();
   if (byDateConfig) {
-    const seasonFromState = seasons.find((season) => season.id === byDateConfig.id);
+    const seasonFromState =
+      seasons.find((season) => season.id === byDateConfig.id)
+      || seasons.find((season) => normalizeSeasonLabel(season.name) === normalizeSeasonLabel(byDateConfig.name))
+      || seasons.find((season) => season.start_date === byDateConfig.startDate && season.end_date === byDateConfig.endDate);
     if (seasonFromState) return { ...seasonFromState, is_active: true };
     return buildSeasonFromConfig(byDateConfig, true);
   }

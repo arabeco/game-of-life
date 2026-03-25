@@ -234,7 +234,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   }, [oraclePreferences?.activeMode]);
 
-  // Load initial messages from history and set mode based on last message
+  // Load initial messages from history without overriding the chosen preference mode
   useEffect(() => {
     const history: Message[] = (oracleMessages || [])
       .filter((message) => message.deliveryType === 'feed')
@@ -271,11 +271,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
       return [...previous, ...incomingMessages];
     });
-
-    const lastMsg = history[history.length - 1];
-    if (lastMsg?.mode) {
-      setCurrentMode(lastMsg.mode);
-    }
     isInitialLoadRef.current = false;
   }, [oracleMessages]);
 
@@ -594,10 +589,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             },
           ];
         });
-
-        if (result.message.mode) {
-          setCurrentMode(result.message.mode);
-        }
       } else {
         const statusMessage = buildManualCardStatusMessage(result?.status || 'error', result?.cooldownMs);
         if (statusMessage) {

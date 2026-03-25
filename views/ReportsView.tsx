@@ -3,7 +3,7 @@
 
 import React, { Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { Report, Cycle, ChestType, FeedEvent } from '../types';
+import { Report, Cycle, ChestType, FeedEvent, RewardModalPayload } from '../types';
 import { GlassCard } from '../components/GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, Trash2Icon } from '../components/Icons';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -14,14 +14,15 @@ import { SupabaseService } from '../services/SupabaseService';
 import type { LegacyEraSummary } from '../components/LegacyExportDocument';
 import { LegacyPlaqueArtifact } from '../components/LegacyPlaqueArtifact';
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
-import { ChestOpeningModal } from '../components/ChestOpeningModal';
 import { MetalReportCard } from '../components/MetalReportCard';
 import { Portal } from '../components/Portal';
+import { RewardPackModal } from '../components/RewardPackModal';
 
 import { NOBILITY_RANKS } from '../constants/nobility';
 import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks } from '../utils/fairScoreUtils.js';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
+import { buildChestRewardPayload } from '../utils/chestRewardPresentation';
 const CycleComparator = React.lazy(() => import('../components/CycleComparator').then(m => ({ default: m.CycleComparator })));
 const ReportGenerationModal = React.lazy(() => import('../components/ReportGenerationModal').then(m => ({ default: m.ReportGenerationModal })));
 const LegacyExportDocument = React.lazy(() => import('../components/LegacyExportDocument').then(m => ({ default: m.LegacyExportDocument })));
@@ -271,7 +272,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         reports, activeCycle, startCycle, endCycle, assets, actions,
         applyExp, addChest, addFeedEvent, seasons, userProfile,
         oraclePreferences, showToast, grantInventoryItem, grantUserUnlock,
-        setAchievementUnlocked, deleteCycle, fetchNotifications // Added deleteCycle here
+        setAchievementUnlocked, deleteCycle, fetchNotifications, openChest // Added deleteCycle here
     } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
@@ -287,7 +288,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [cycleShimmer, setCycleShimmer] = useState(false);
     const [scanError, setScanError] = useState<string | null>(null);
     const [scanAttempt, setScanAttempt] = useState(0);
-    const [showChestModal, setShowChestModal] = useState(false);
+    const [postCycleRewardsGranted, setPostCycleRewardsGranted] = useState(false);
+    const [postCycleChestOpened, setPostCycleChestOpened] = useState(false);
+    const [isOpeningPostCycleChest, setIsOpeningPostCycleChest] = useState(false);
+    const [reportRewardPayload, setReportRewardPayload] = useState<RewardModalPayload | null>(null);
     const [isExportingLegacy, setIsExportingLegacy] = useState(false);
     const [showLegacyProjectionModal, setShowLegacyProjectionModal] = useState(false);
     const [eraMetadata, setEraMetadata] = useState<Record<string, EraMetadataEntry>>({});
@@ -547,6 +551,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setEarnedChest(chestType);
         setGrantedInsignias(['insignia_report_comum']);
         setIsPostCycleFlow(true);
+        setPostCycleRewardsGranted(false);
+        setPostCycleChestOpened(false);
+        setReportRewardPayload(null);
+        setIsOpeningPostCycleChest(false);
 
         return { ok: true, chest: chestType };
     }, []);
@@ -645,43 +653,184 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         alert('Postado no feed!');
     };
 
-    const handleStartNewCycleFromResults = () => {
-        const awardedExp = expGained;
+    const buildCycleFinalizedNotificationContent = useCallback((report: Report) => {
+        const cycleName = report.cycleName || 'seu ciclo';
+        const mode = oraclePreferences?.activeMode || 'neutro';
+        const focus = report.highlight?.mostFocusedArena || 'sua arena principal';
+        const score = Math.round(report.performanceScore || 0);
+        const hours = Math.round(report.metrics?.totalHours || 0);
+
+        switch (mode) {
+            case 'coach':
+                return `${cycleName} fechou em ${score}. Agora revisa o que te deu mais resultado em ${focus} e sobe o proximo ciclo.`;
+            case 'tatico':
+                return `${cycleName} encerrou com score ${score}. Consolide o que funcionou em ${focus} e descarte o resto.`;
+            case 'estrategico':
+                return `${cycleName} encerrou com ${hours}h registradas. A revisao fecha a leitura da fase e mostra onde insistir.`;
+            case 'reflexivo':
+                return `${cycleName} foi encerrado. Vale rever o que ${focus} te ensinou nesta fase.`;
+            case 'calmo':
+                return `${cycleName} foi concluido. Seu relatorio ja pode ser revisado com calma.`;
+            case 'personalizado':
+            case 'neutro':
+            default:
+                return `O relatorio de ${cycleName} esta pronto para revisao.`;
+        }
+    }, [oraclePreferences?.activeMode]);
+
+    const buildPostCycleRewardToast = useCallback((awardedExp: number, awardedChest: ChestType | null, awardedInsignias: string[]) => {
+        if (awardedChest) {
+            return awardedInsignias.length > 0
+                ? `📦 Baú ${awardedChest} e ${awardedInsignias.length} insígnia(s) adicionados\n✨ +${awardedExp} XP computados`
+                : `📦 Baú ${awardedChest} adicionado ao inventário\n✨ +${awardedExp} XP computados`;
+        }
+
+        return awardedInsignias.length > 0
+            ? `🏅 ${awardedInsignias.length} insígnia(s) adicionada(s) ao inventário\n✨ +${awardedExp} XP computados`
+            : `✨ +${awardedExp} XP foram computados ao seu perfil`;
+    }, []);
+
+    const ensurePostCycleRewardsGranted = useCallback(async (options?: { suppressToast?: boolean }) => {
         const awardedChest = earnedChest;
         const awardedInsignias = [...grantedInsignias];
+        const awardedExp = expGained;
 
+        if (!isPostCycleFlow) {
+            return {
+                justGranted: false,
+                awardedChest,
+                awardedInsignias,
+                awardedExp,
+                chestReady: Boolean(awardedChest),
+            };
+        }
+
+        if (postCycleRewardsGranted) {
+            return {
+                justGranted: false,
+                awardedChest,
+                awardedInsignias,
+                awardedExp,
+                chestReady: Boolean(awardedChest),
+            };
+        }
+
+        applyExp(awardedExp);
+
+        if (awardedInsignias.length > 0) {
+            awardedInsignias.forEach(insigniaId => {
+                grantUserUnlock('insignias', insigniaId);
+                void grantInventoryItem(insigniaId, true);
+            });
+        }
+
+        let chestReady = true;
+        if (awardedChest) {
+            chestReady = Boolean(await addChest(awardedChest));
+        }
+
+        setAchievementUnlocked({
+            type: 'REPORT_COMPLETED',
+            data: {
+                title: `Relatório de Ciclo - ${selectedReport?.performanceScore || 0}%`,
+                reward: {
+                    exp: awardedExp,
+                    items: [...awardedInsignias],
+                    chest: awardedChest
+                }
+            }
+        });
+
+        if (userProfile?.id && selectedReport && oraclePreferences?.notificationsEnabled !== false) {
+            try {
+                await SupabaseService.createNotification(
+                    userProfile.id,
+                    'cycle_finalized',
+                    buildCycleFinalizedNotificationContent(selectedReport),
+                );
+                await fetchNotifications();
+            } catch (error) {
+                console.error('Erro ao criar notificação de ciclo finalizado:', error);
+            }
+        }
+
+        setPostCycleRewardsGranted(true);
+
+        if (!options?.suppressToast) {
+            showToast(buildPostCycleRewardToast(awardedExp, awardedChest, awardedInsignias));
+        }
+
+        return {
+            justGranted: true,
+            awardedChest,
+            awardedInsignias,
+            awardedExp,
+            chestReady,
+        };
+    }, [
+        earnedChest,
+        grantedInsignias,
+        expGained,
+        isPostCycleFlow,
+        postCycleRewardsGranted,
+        applyExp,
+        grantUserUnlock,
+        grantInventoryItem,
+        addChest,
+        selectedReport,
+        userProfile?.id,
+        oraclePreferences?.notificationsEnabled,
+        fetchNotifications,
+        showToast,
+        buildPostCycleRewardToast,
+        buildCycleFinalizedNotificationContent,
+        setAchievementUnlocked,
+    ]);
+
+    const handleOpenPostCycleChest = useCallback(async () => {
+        if (!earnedChest || postCycleChestOpened || isOpeningPostCycleChest) return;
+
+        setIsOpeningPostCycleChest(true);
+        try {
+            const rewardState = await ensurePostCycleRewardsGranted({ suppressToast: true });
+            if (!rewardState.chestReady) {
+                showToast('Não foi possível preparar o baú deste ciclo.', 'error');
+                return;
+            }
+
+            const result = await openChest(earnedChest);
+            if (!result) return;
+
+            setPostCycleChestOpened(true);
+            setReportRewardPayload(buildChestRewardPayload(result, earnedChest));
+        } catch (error) {
+            console.error('Erro ao abrir o baú do ciclo:', error);
+            showToast('Não foi possível abrir o baú deste ciclo.', 'error');
+        } finally {
+            setIsOpeningPostCycleChest(false);
+        }
+    }, [
+        earnedChest,
+        postCycleChestOpened,
+        isOpeningPostCycleChest,
+        ensurePostCycleRewardsGranted,
+        openChest,
+        showToast,
+    ]);
+
+    const handleStartNewCycleFromResults = async () => {
         setShowNewCycleSetup(true);
+
+        try {
+            await ensurePostCycleRewardsGranted();
+        } catch (error) {
+            console.error('Erro ao preparar o novo ciclo a partir do relatório:', error);
+            showToast('O novo ciclo foi aberto, mas houve falha ao processar algumas recompensas.');
+        }
+
         setIsPostCycleFlow(false);
         setGrantedInsignias([]);
-
-        window.setTimeout(() => {
-            try {
-                applyExp(awardedExp);
-
-                if (awardedInsignias.length > 0) {
-                    awardedInsignias.forEach(insigniaId => {
-                        grantUserUnlock('insignias', insigniaId);
-                        void grantInventoryItem(insigniaId, true);
-                    });
-                }
-
-                if (awardedChest) {
-                    void addChest(awardedChest);
-                    const msg = awardedInsignias.length > 0
-                        ? `\u{1F4E6} Ba\u00FA ${awardedChest} e ${awardedInsignias.length} ins\u00EDgnia(s) adicionados\n\u2728 +${awardedExp} XP computados`
-                        : `\u{1F4E6} Ba\u00FA ${awardedChest} adicionado ao invent\u00E1rio\n\u2728 +${awardedExp} XP computados`;
-                    showToast(msg);
-                } else {
-                    const msg = awardedInsignias.length > 0
-                        ? `\u{1F3C5} ${awardedInsignias.length} ins\u00EDgnia(s) adicionada(s) ao invent\u00E1rio\n\u2728 +${awardedExp} XP computados`
-                        : `\u2728 +${awardedExp} XP foram computados ao seu perfil`;
-                    showToast(msg);
-                }
-            } catch (error) {
-                console.error('Erro ao preparar o novo ciclo a partir do relat?rio:', error);
-                showToast('O novo ciclo foi aberto, mas houve falha ao processar algumas recompensas.');
-            }
-        }, 0);
+        setReportRewardPayload(null);
     };
 
     const handleForceClose = useCallback((event?: { preventDefault?: () => void; stopPropagation?: () => void }) => {
@@ -694,6 +843,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setShowConfirmEndCycle(false);
         setScanError(null);
         setIsPostCycleFlow(false);
+        setPostCycleRewardsGranted(false);
+        setPostCycleChestOpened(false);
+        setIsOpeningPostCycleChest(false);
+        setReportRewardPayload(null);
         if (typeof window !== 'undefined') {
             (window as any).__glyphPendingCycleResults = null;
         }
@@ -724,72 +877,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleCloseDynamic]);
 
-    const buildCycleFinalizedNotificationContent = (report: Report) => {
-        const cycleName = report.cycleName || 'seu ciclo';
-        const mode = oraclePreferences?.activeMode || 'neutro';
-        const focus = report.highlight?.mostFocusedArena || 'sua arena principal';
-        const score = Math.round(report.performanceScore || 0);
-        const hours = Math.round(report.metrics?.totalHours || 0);
-
-        switch (mode) {
-            case 'coach':
-                return `${cycleName} fechou em ${score}. Agora revisa o que te deu mais resultado em ${focus} e sobe o proximo ciclo.`;
-            case 'tatico':
-                return `${cycleName} encerrou com score ${score}. Consolide o que funcionou em ${focus} e descarte o resto.`;
-            case 'estrategico':
-                return `${cycleName} encerrou com ${hours}h registradas. A revisao fecha a leitura da fase e mostra onde insistir.`;
-            case 'reflexivo':
-                return `${cycleName} foi encerrado. Vale rever o que ${focus} te ensinou nesta fase.`;
-            case 'calmo':
-                return `${cycleName} foi concluido. Seu relatorio ja pode ser revisado com calma.`;
-            case 'personalizado':
-            case 'neutro':
-            default:
-                return `O relatorio de ${cycleName} esta pronto para revisao.`;
-        }
-    };
-
-    const handlePostCycleResultsOk = () => {
-        applyExp(expGained);
-
-        const earnedItems: string[] = [];
-
-        if (grantedInsignias.length > 0) {
-            grantedInsignias.forEach(insigniaId => {
-                grantUserUnlock('insignias', insigniaId);
-                grantInventoryItem(insigniaId, true);
-                earnedItems.push(insigniaId);
-            });
-        }
-
-        if (earnedChest) {
-            addChest(earnedChest);
-        }
-
-        const allEarnedItems: string[] = [...earnedItems];
-
-        setAchievementUnlocked({
-            type: 'REPORT_COMPLETED',
-            data: {
-                title: `Relat\u00F3rio de Ciclo - ${selectedReport?.performanceScore || 0}%`,
-                reward: {
-                    exp: expGained,
-                    items: allEarnedItems,
-                    chest: earnedChest
-                }
-            }
-        });
-
-        if (userProfile?.id && selectedReport && oraclePreferences?.notificationsEnabled !== false) {
-            void SupabaseService.createNotification(
-                userProfile.id,
-                'cycle_finalized',
-                buildCycleFinalizedNotificationContent(selectedReport),
-            ).then(() => fetchNotifications());
-        }
-
+    const handlePostCycleResultsOk = async () => {
+        await ensurePostCycleRewardsGranted({ suppressToast: true });
         setIsPostCycleFlow(false);
         setGrantedInsignias([]);
+        setReportRewardPayload(null);
         setView('hub');
     };
 
@@ -1850,7 +1942,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 return selectedReport ?(
                     <ReportResultCarousel
                         report={selectedReport}
-                        onOk={isPostCycleFlow ?handlePostCycleResultsOk : handleCloseDynamic}
+                        onOk={isPostCycleFlow ?() => { void handlePostCycleResultsOk(); } : handleCloseDynamic}
                         onCompare={() => { setReportForComparison(selectedReport); setView('hub'); }}
                         onShare={() => handleShareReport(selectedReport)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
@@ -1865,6 +1957,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         chest={isPostCycleFlow ?earnedChest : null}
                         expGained={isPostCycleFlow ?expGained : undefined}
                         insignias={isPostCycleFlow ?grantedInsignias : []}
+                        onOpenChest={isPostCycleFlow && earnedChest ?() => { void handleOpenPostCycleChest(); } : undefined}
+                        chestOpened={postCycleChestOpened}
+                        isOpeningChest={isOpeningPostCycleChest}
                     />
                 ) : <p>Erro ao carregar relat\u00F3rio.</p>;
             case 'comparing':
@@ -2006,29 +2101,14 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     onCancel={() => setShowConfirmEndCycle(false)}
                 />
             )}
-            {showChestModal && earnedChest && (
-                <div className="fixed inset-0 z-[300]">
-                    <ChestOpeningModal
-                        chestType={earnedChest}
-                        onClose={() => {
-                            setShowChestModal(false);
-                            setView('results');
-                        }}
-                    />
-                </div>
-            )}
+            <RewardPackModal
+                open={!!reportRewardPayload}
+                payload={reportRewardPayload}
+                onClose={() => setReportRewardPayload(null)}
+            />
         </>
     );
 };
-
-
-
-
-
-
-
-
-
 
 
 

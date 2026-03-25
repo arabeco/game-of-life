@@ -30,8 +30,6 @@ try {
     await page.clickSelector('#clan-sanctuary button');
     await page.waitForSelector('#clan-tab-quests', 15000);
     await page.clickSelector('#clan-tab-quests');
-    await page.waitForSelector(`#clan-season-quest-card-${mission.id}`, 15000);
-    await page.clickSelector(`#clan-season-quest-card-${mission.id}`);
     await page.waitForSelector(`#clan-quest-activate-${mission.id}`, 15000);
     await page.clickSelector(`#clan-quest-activate-${mission.id}`);
     await new Promise((resolve) => setTimeout(resolve, 2500));
@@ -54,8 +52,8 @@ try {
     await page.clickSelector('#clan-sanctuary button');
     await page.waitForSelector('#clan-tab-quests', 15000);
     await page.clickSelector('#clan-tab-quests');
-    await page.waitForSelector(`#clan-season-quest-card-${mission.id}`, 15000);
-    await page.clickSelector(`#clan-season-quest-card-${mission.id}`);
+    await page.waitForSelector(`#clan-season-quest-open-${mission.id}`, 15000);
+    await page.clickSelector(`#clan-season-quest-open-${mission.id}`);
     await page.waitForSelector(`#clan-quest-join-${mission.id}`, 15000);
     await page.clickSelector(`#clan-quest-join-${mission.id}`);
     await new Promise((resolve) => setTimeout(resolve, 2500));
@@ -74,11 +72,13 @@ try {
   const missionArena = await waitForDb(
     `mission arena "${mission.title}" creation`,
     () => findArenaByName(member.client, { userId: member.userId, name: mission.title }),
+    { timeoutMs: 30000 },
   );
 
   const missionAction = await waitForDb(
     `mission action "${mission.action_name}" creation`,
     () => findActionByName(member.client, { userId: member.userId, name: mission.action_name }),
+    { timeoutMs: 30000 },
   );
 
   checkpoints.push('member-action-and-arena-created');
@@ -109,8 +109,6 @@ try {
     await page.clickSelector('#clan-sanctuary button');
     await page.waitForSelector('#clan-tab-quests', 15000);
     await page.clickSelector('#clan-tab-quests');
-    await page.waitForSelector(`#clan-season-quest-card-${mission.id}`, 15000);
-    await page.clickSelector(`#clan-season-quest-card-${mission.id}`);
     await page.waitForSelector(`#clan-quest-claim-${mission.id}`, 15000);
     await page.clickSelector(`#clan-quest-claim-${mission.id}`);
     await new Promise((resolve) => setTimeout(resolve, 2500));

@@ -4,6 +4,7 @@ import {
   createFriendship,
   createTempUser,
   getActiveRelationshipLink,
+  getLatestRelationshipInvite,
   getUserProfile,
   setWallet,
   waitForDb,
@@ -21,22 +22,21 @@ try {
     await page.login(pupil.email, pupil.password);
     checkpoints.push('free-pupil-login');
 
-    await page.clickSelector('#nav-settings');
-    await page.waitForSelector('#settings-tab-premium', 20000);
-    await page.clickSelector('#settings-tab-premium');
+    await page.dismissBlockingRuntimeOverlays();
+    await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
     await page.waitForSelector('#relationship-hub-tab-mentoria', 15000);
     await page.clickSelector('#relationship-hub-tab-mentoria');
     await page.waitFor(
       'mentor invite disabled button',
-      `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').toLowerCase().includes('convidar pupilo')))()`,
+      `(() => document.querySelector('#relationship-hub-primary-create-button') instanceof HTMLButtonElement)()`,
       20000,
     );
     await page.waitFor(
       'free pupil cannot create mentor invite',
       `(() => {
-        const button = Array.from(document.querySelectorAll('button')).find((node) => (node.innerText || '').toLowerCase().includes('convidar pupilo'));
+        const button = document.querySelector('#relationship-hub-primary-create-button');
         return button instanceof HTMLButtonElement && button.disabled;
       })()`,
       15000,
@@ -48,38 +48,63 @@ try {
     await page.login(mentor.email, mentor.password);
     checkpoints.push('premium-mentor-login');
 
-    await page.clickSelector('#nav-settings');
-    await page.waitForSelector('#settings-tab-premium', 20000);
-    await page.clickSelector('#settings-tab-premium');
+    await page.dismissBlockingRuntimeOverlays();
+    await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
     await page.waitForSelector('#relationship-hub-tab-mentoria', 15000);
     await page.clickSelector('#relationship-hub-tab-mentoria');
     await page.waitFor(
       'mentor cta',
-      `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').toLowerCase().includes('convidar pupilo')))()`,
+      `(() => {
+        const button = document.querySelector('#relationship-hub-primary-create-button');
+        return button instanceof HTMLButtonElement && !button.disabled;
+      })()`,
       20000,
     );
-    await page.clickText('Convidar pupilo');
+    await page.clickSelector('#relationship-hub-primary-create-button');
     await page.waitForSelector('#relationship-friend-search-input', 15000);
     await page.setInputValue('#relationship-friend-search-input', pupil.nickname);
     await page.waitForSelector(`#relationship-friend-${pupil.userId}`, 15000);
     await page.clickSelector(`#relationship-friend-${pupil.userId}`);
+    await page.waitFor(
+      'mentorship confirmation modal',
+      `(() => (document.body?.innerText || '').toLowerCase().includes('confirmar mentoria'))()`,
+      15000,
+    );
+    await page.clickText('Enviar por');
     await new Promise((resolve) => setTimeout(resolve, 1800));
     checkpoints.push('mentorship-invite-created');
   });
+
+  const mentorshipInvite = await waitForDb(
+    'mentorship invite persistence',
+    () => getLatestRelationshipInvite(mentor.client, {
+      senderId: mentor.userId,
+      recipientId: pupil.userId,
+      linkType: 'mentoria',
+    }),
+  ).catch(() => null);
+  if (!mentorshipInvite) {
+    throw new Error('Mentorship invite row was not created in relationship_link_invites.');
+  }
+  checkpoints.push('mentorship-invite-persisted');
 
   await withBrowser({ baseUrl, debugPort: 9240 }, async (page) => {
     await page.login(pupil.email, pupil.password);
     checkpoints.push('pupil-login-to-accept');
 
-    await page.clickSelector('#nav-settings');
-    await page.waitForSelector('#settings-tab-premium', 20000);
-    await page.clickSelector('#settings-tab-premium');
+    await page.dismissBlockingRuntimeOverlays();
+    await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
     await page.waitForSelector('#relationship-hub-tab-mentoria', 15000);
     await page.clickSelector('#relationship-hub-tab-mentoria');
+    await page.waitFor(
+      'accept mentorship invite button',
+      `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || node.textContent || '').toLowerCase().includes('aceitar')))()`,
+      20000,
+    );
     await page.clickText('Aceitar');
     await new Promise((resolve) => setTimeout(resolve, 1800));
     checkpoints.push('mentorship-invite-accepted');
@@ -95,8 +120,8 @@ try {
   );
 
   const mentorProfile = await getUserProfile(mentor.client, mentor.userId);
-  if (Number(mentorProfile.wallet?.gold || 0) !== 150) {
-    throw new Error(`Expected premium mentor gold to be 150 after invite acceptance, got ${Number(mentorProfile.wallet?.gold || 0)}.`);
+  if (Number(mentorProfile.wallet?.gold || 0) !== 100) {
+    throw new Error(`Expected premium mentor gold to be 100 after invite acceptance, got ${Number(mentorProfile.wallet?.gold || 0)}.`);
   }
 
   checkpoints.push('mentorship-link-persisted');

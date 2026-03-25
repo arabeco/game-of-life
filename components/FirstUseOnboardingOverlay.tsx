@@ -58,9 +58,11 @@ const shouldTriggerTargetOnNext = (step: StepDef | undefined) => {
 
 const canAdvanceFromStep = (step: StepDef | undefined) => {
   if (!step) return false;
+  const target = getTargetElement(step.targetSelector);
+  if (step.targetSelector && !target) return false;
   if (!['cycle-name', 'arena-name', 'action-name'].includes(step.id)) return true;
-  const target = getTargetElement(step.targetSelector) as HTMLInputElement | null;
-  return Boolean(target?.value?.trim());
+  const inputTarget = target as HTMLInputElement | HTMLTextAreaElement | null;
+  return Boolean(inputTarget?.value?.trim());
 };
 
 const defaultNavigation: NavigationDetail = {
@@ -452,10 +454,18 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
     const handleCycleCreated = () => {
       jumpToAtLeast('arena-entry');
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.requestArenaModalOpen));
+      }, 280);
     };
 
     const handleArenaModalOpened = () => {
-      jumpToAtLeast('arena-asset');
+      window.setTimeout(() => {
+        const hasArenaModalTarget = !!getTargetElement('#new-arena-asset-button') || !!getTargetElement('#new-arena-name-input');
+        if (hasArenaModalTarget) {
+          jumpToAtLeast('arena-asset');
+        }
+      }, 0);
     };
 
     const handleArenaAssetSelected = () => {
@@ -470,10 +480,18 @@ export const FirstUseOnboardingOverlay: React.FC<{
       const customEvent = event as CustomEvent<{ arenaId?: string }>;
       setCreatedArenaId(customEvent.detail?.arenaId || null);
       jumpToAtLeast('action-entry');
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.requestActionModalOpen));
+      }, 320);
     };
 
     const handleActionModalOpened = () => {
-      jumpToAtLeast('action-name');
+      window.setTimeout(() => {
+        const hasActionModalTarget = !!getTargetElement('#onboarding-action-name-input') || !!getTargetElement('#onboarding-action-type-button');
+        if (hasActionModalTarget) {
+          jumpToAtLeast('action-name');
+        }
+      }, 0);
     };
 
     const handleActionNameCompleted = () => {

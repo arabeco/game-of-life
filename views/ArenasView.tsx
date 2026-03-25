@@ -19,6 +19,7 @@ import { calculateArenaProgress, calculateCampaignProgress } from '../utils/prog
 import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -103,6 +104,15 @@ export const ArenasView: React.FC = () => {
         window.addEventListener('tutorialOpenArena', handleTutorialOpenArena);
         return () => window.removeEventListener('tutorialOpenArena', handleTutorialOpenArena);
     }, [getArenas]);
+
+    useEffect(() => {
+        const handleTutorialRequestArenaModal = () => {
+            setIsCreatingArena(true);
+        };
+
+        window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.requestArenaModalOpen, handleTutorialRequestArenaModal);
+        return () => window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.requestArenaModalOpen, handleTutorialRequestArenaModal);
+    }, []);
 
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
@@ -1607,28 +1617,31 @@ export const ArenasView: React.FC = () => {
                     </div>
                 )}
                 <div className="mb-4 flex items-center gap-1.5 z-[60]" id="campaigns-section">
+                    <div className="flex items-center bg-black/40 rounded-full px-1 border border-white/5">
                     <button
                         id="campaigns-button"
                         onClick={() => setCampaignHubOpen(true)}
-                        className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/32 hover:bg-[var(--skin-accent-color)]/16"
+                        className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--ui-text-accent)] transition-colors hover:bg-white/8"
                         title="Abrir campanhas"
                     >
                         <FolderStarIcon className="h-3.5 w-3.5" />
-                        <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/75 px-1 py-0.5 text-[7px] font-black leading-none text-white">
+                        <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/85 px-1 py-0.5 text-[7px] font-black leading-none text-white">
                             {campaigns.length}
                         </span>
                     </button>
+                    <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
                     <button
                         onClick={handleCreateCampaignClick}
                         title={isSelectionMode ? 'Organização ativa' : 'Gerenciar campanhas'}
-                        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-[0px] before:text-[14px] before:leading-none before:content-['✎'] transition-all ${
+                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${
                             isSelectionMode
-                                ? 'bg-[var(--skin-accent-color)] text-black animate-pulse'
-                                : 'bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white'
+                                ? 'bg-[var(--skin-accent-color)]/18 text-[var(--ui-text-accent)] animate-pulse'
+                                : 'text-gray-400 hover:bg-white/8 hover:text-white'
                         }`}
                     >
-                        {isSelectionMode ? 'Modo Organização (Ativo)' : 'Organizar Campanhas'}
+                        <EditIcon className="w-3.5 h-3.5" />
                     </button>
+                    </div>
                     <div className="ml-auto flex min-w-0 shrink-0 items-center bg-black/40 rounded-full px-1 border border-white/5">
                         <button
                             onClick={handleCycleViewMode}

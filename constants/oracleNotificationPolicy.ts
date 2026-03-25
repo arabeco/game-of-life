@@ -168,6 +168,14 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'A',
     label: 'Arena',
   },
+  competition_result: {
+    lane: 'essential',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'T',
+    label: 'Duelo',
+  },
   system: {
     lane: 'essential',
     badge: true,
@@ -239,6 +247,8 @@ export const getNotificationTitle = (notification: Notification): string => {
       return 'Voce recebeu um convite de parceria.';
     case 'arena_access':
       return 'Uma nova arena foi compartilhada.';
+    case 'competition_result':
+      return 'Seu duelo recebeu um desfecho.';
     case 'system':
     default:
       return 'Aviso do sistema.';
@@ -279,7 +289,8 @@ export const getNotificationBody = (
       notification.type === 'oracle_prompt' ||
       notification.type === 'codex_gift' ||
       notification.type === 'partnership_invite' ||
-      notification.type === 'arena_access'
+      notification.type === 'arena_access' ||
+      notification.type === 'competition_result'
     ) {
       return notification.content;
     }
@@ -345,6 +356,8 @@ export const getNotificationBody = (
       }
     case 'codex_gift':
       return notification.content || 'Uma campanha valiosa foi enviada para a sua biblioteca.';
+    case 'competition_result':
+      return notification.content || 'Seu rival fechou o duelo primeiro e o baú dessa corrida já foi decidido.';
     default:
       return notification.content || 'Ha uma atualizacao importante esperando sua leitura.';
   }

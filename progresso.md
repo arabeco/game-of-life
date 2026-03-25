@@ -1,6 +1,22 @@
-﻿# PROGRESSO HISTORICO: GLYPH
-Data de consolidacao: 23/03/2026
+# PROGRESSO HISTORICO: GLYPH
+Data de consolidacao: 24/03/2026
 Fonte: itens [v] removidos do relatorio operacional
+
+## Fechamento 24/03/2026
+[v] Desligar a economia de `slots` e consolidar a camada social em Ouro direto (`Mentoria 100`, `Parceria 50`, `Competicao 50`, arena extra `50`), com SQL aplicado e copy publica puxada para `Campanha`/`Grupo`.
+[v] Integrar `Tarefas do grupo` ao board oficial de arenas: quest/tarefa aceita vira arena real, abre `ArenaDetailModal` e limpa participacao/arena vazia no retorno.
+[v] Entregar o `modo lista` da `ArenasView`, restaurar o scroll vertical mobile e preservar reorder em `Livre/Prioridades`, com expandir de todas as acoes por arena.
+[v] Lapidar a visualizacao compacta das arenas no mobile: card achatado, tipografia/icone ajustados, badge do ativo nos circulos e limpeza do modulo `Grupo`/copy publica residual.
+[v] Reestruturar a tela de `Ativos` como painel operacional: resumo fino do ciclo, cards por ativo nas posicoes oficiais, barrinhas finas de progresso, tint sutil por ativo e leitura melhor em dark/light.
+[v] Iniciar a convergencia publica `GAME/BASIC -> Modo Jogo`: nave unificada, `Ativos` voltando para todos, perfil em `Resumo/Widgets/Maestria` e `Modo Jogo` centralizado em `Preferencias`.
+[v] Revisar onboarding e tutoriais para o novo modelo `core + Modo Jogo`, com cards `1/2` no basico, cards `3/4` ligados ao toggle, copy alinhada e checagem final de anchors, `type-check` e `build`.
+[v] Reorganizar a arquitetura interna das superficies premium: `Campanhas` com acesso principal em `Arenas`, `Vinculos` com botao/modal proprio no `Social` e aba `Premium` reduzida para status, beneficios e renovacao.
+[v] Refatorar a loja/catalogo de `Campanhas`: grid compacto mobile, separacao `Gratis/Premium`, filtros por ativo/tipo/tema, primeiras microaulas de `Aprendizado` via `Anotacao` e seed de campanhas gratis base.
+[v] Implementar assinatura `Premium` real de `30 dias`, com expiracao persistida no perfil, renovacao acumulando validade, modal de recompensa no padrao da `Vanguarda` e entrega real de bau/cosmeticos sazonais quando faltarem.
+[v] Fechar o onboarding happy-path sob automacao local: termos, ciclo inicial, criacao de arena, criacao de acao e conclusao do onboarding sem seletor inicial de modo, com smoke dedicado validando o trilho principal.
+[v] Fechar a camada social compartilhada de base no remoto: criacao de `Grupo` com Ouro via RPC, missao/tarefa de grupo ativa, `Mentoria` com arena em leitura para o pupilo, `Parceria` com arenas mostradas dos dois lados e `Competicao` espelhada com vencedor, bau e notificacao do perdedor.
+[v] Unificar a abertura de bau no modal padrao de recompensa: inventario e fim de ciclo agora convergem para o mesmo ritual, com CTA de abrir bau direto no relatorio final.
+[v] Amarrar o modal de `Arena Completa` por modo: no basico ele so confirma com `OK`, e no `Modo Jogo` libera o CTA de compartilhar o feito.
 
 ## Entregas consolidadas
 [v] Fechar o laboratorio de notificacoes do GM com 3 botoes previsiveis (`Sistema Agora`, `Card do Oraculo`, `Sistema + Push 15s`) e destaque correto em `Avisos`/Oraculo.

@@ -1063,6 +1063,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     };
     const renderGroupTaskArenaTile = ({
         tileKey,
+        tileId,
         arena,
         actions,
         previewTasks = [],
@@ -1073,6 +1074,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         controls = null,
     }: {
         tileKey: string;
+        tileId?: string;
         arena: Arena;
         actions: Action[];
         previewTasks?: typeof tasks;
@@ -1082,7 +1084,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         meta?: React.ReactNode;
         controls?: React.ReactNode;
     }) => (
-        <div key={tileKey} className="space-y-2">
+        <div key={tileKey} id={tileId} className="space-y-2">
             <div className={muted ? 'opacity-70 saturate-75' : ''}>
                 <ArenaCard
                     arena={arena}
@@ -1451,14 +1453,16 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                     const progress = getQuestProgress(quest);
                                                     const participantCount = clanQuestParticipants[quest.id] || 0;
                                                     const isClaimed = userProfile.completedSeasonMissions?.includes(quest.id);
+                                                    const canClaimQuest = !isClaimed && progress >= 100;
 
                                                     const hasRuntimeArena = Boolean(findQuestArenaAndAction(quest).action);
 
-                                                    return renderGroupTaskArenaTile({
-                                                        tileKey: quest.id,
-                                                        arena: preview.arena,
-                                                        actions: preview.actions,
-                                                        previewTasks: preview.previewTasks,
+                                                        return renderGroupTaskArenaTile({
+                                                            tileKey: quest.id,
+                                                            tileId: `clan-season-quest-card-${quest.id}`,
+                                                            arena: preview.arena,
+                                                            actions: preview.actions,
+                                                            previewTasks: preview.previewTasks,
                                                         onCardClick: () => {
                                                             if (!openSeasonQuestArena(quest)) {
                                                                 setSelectedQuest(quest);
@@ -1488,16 +1492,27 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                             </div>
                                                         ),
                                                         controls: (
-                                                            <button
-                                                                onClick={() => {
-                                                                    if (!openSeasonQuestArena(quest)) {
-                                                                        setSelectedQuest(quest);
-                                                                    }
-                                                                }}
-                                                                className="w-full rounded-lg border border-white/10 bg-white/5 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-200 hover:border-[var(--skin-accent-color)]/40 hover:bg-[var(--skin-accent-color)]/10"
-                                                            >
-                                                                {hasRuntimeArena ? 'Abrir arena' : 'Abrir tarefa'}
-                                                            </button>
+                                                            canClaimQuest ? (
+                                                                <button
+                                                                    id={`clan-quest-claim-${quest.id}`}
+                                                                    onClick={() => handleClaimQuest(quest)}
+                                                                    className="w-full rounded-lg border border-green-500/30 bg-green-500/12 py-2 text-[10px] font-bold uppercase tracking-wider text-green-300 hover:bg-green-500/18"
+                                                                >
+                                                                    Resgatar recompensa
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    id={`clan-season-quest-open-${quest.id}`}
+                                                                    onClick={() => {
+                                                                        if (!openSeasonQuestArena(quest)) {
+                                                                            setSelectedQuest(quest);
+                                                                        }
+                                                                    }}
+                                                                    className="w-full rounded-lg border border-white/10 bg-white/5 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-200 hover:border-[var(--skin-accent-color)]/40 hover:bg-[var(--skin-accent-color)]/10"
+                                                                >
+                                                                    {hasRuntimeArena ? 'Abrir arena' : 'Abrir tarefa'}
+                                                                </button>
+                                                            )
                                                         ),
                                                     });
                                                 })}
@@ -1515,6 +1530,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                         const preview = buildSeasonQuestArenaPreview(quest);
                                                         return renderGroupTaskArenaTile({
                                                             tileKey: `available-${quest.id}`,
+                                                            tileId: `clan-season-quest-card-${quest.id}`,
                                                             arena: preview.arena,
                                                             actions: preview.actions,
                                                             previewTasks: preview.previewTasks,
@@ -1533,6 +1549,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                             ),
                                                             controls: (
                                                                 <button
+                                                                    id={`clan-quest-activate-${quest.id}`}
                                                                     onClick={() => {
                                                                         activateClanQuest(quest.id);
                                                                     }}

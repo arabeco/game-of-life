@@ -403,6 +403,7 @@ export interface UserProfile {
   visibleWidgets: string[];
   assetsVisibility?: ProfileVisibilityScope;
   masteryVisibility?: ProfileVisibilityScope;
+  featsVisibility?: ProfileVisibilityScope;
   skin: string; // ID of the current skin
   lastLevelUpdate?: number; // Timestamp of the last level update
   nobility: Nobility;
@@ -881,6 +882,10 @@ export interface FeedEvent {
   id: string;
   userId: string;
   type: FeedEventType;
+  authorNickname?: string;
+  authorAvatarUrl?: string;
+  authorClanName?: string;
+  authorClanIcon?: string;
   content: {
     title: string;
     icon?: string;
@@ -954,6 +959,24 @@ export interface LinkedRelationshipArena {
   arena?: Arena | null;
   actions?: Action[];
   tasks?: ScheduledTask[];
+}
+
+export interface RelationshipCompetitionChallenge {
+  id: string;
+  relationshipLinkId: string;
+  sourceArenaId?: string | null;
+  challengerUserId: string;
+  opponentUserId: string;
+  challengerArenaId: string;
+  opponentArenaId: string;
+  winnerUserId?: string | null;
+  winnerArenaId?: string | null;
+  rewardChestType?: ChestType | null;
+  rewardGrantedAt?: string | null;
+  loserNotifiedAt?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
+  metadata?: Record<string, any> | null;
 }
 
 export type LinkNotificationType = 'praise' | 'support' | 'scold';
@@ -1072,6 +1095,7 @@ export type NotificationType =
   | 'codex_gift'
   | 'partnership_invite'
   | 'arena_access'
+  | 'competition_result'
   | 'system';
 export interface NotificationMetadata {
   shareId?: string;

@@ -36,8 +36,10 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
     const { friends, userProfile, showToast } = useGame();
     const allUsers = [userProfile, ...friends];
     const author = allUsers.find(u => u.id === event.userId);
+    const authorName = event.authorNickname || author?.nickname || 'Soberano';
+    const authorAvatar = event.authorAvatarUrl || author?.avatarUrl || '';
 
-    if (!author) return null; // Don't render event if we can't find the author
+    if (!author && !event.authorNickname) return null; // Don't render event if we can't identify the author
 
     const timeAgo = (date: Date): string => {
         const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -57,11 +59,11 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
     return (
         <GlassCard id={`feed-event-${event.id}`} variant="neutral" className="p-3 animate-fade-in relative">
             <div className="flex items-start space-x-3">
-                <img src={author.avatarUrl} alt={author.nickname} className="w-10 h-10 rounded-full border-2 border-white/20"/>
+                <img src={authorAvatar} alt={authorName} className="w-10 h-10 rounded-full border-2 border-white/20"/>
                 <div className="flex-grow">
                     <div className="flex justify-between items-baseline">
                         <p className="text-sm pr-6">
-                            <span className="font-bold text-white">{author.nickname}</span>
+                            <span className="font-bold text-white">{authorName}</span>
                             <span className="text-gray-400"> {getEventMessage(event)}</span>
                         </p>
                         <p className="text-xs text-gray-500 flex-shrink-0 ml-2">{timeAgo(new Date(event.timestamp))}</p>
@@ -75,7 +77,7 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                             <button
                                 onClick={() => {
                                     void shareElementWithFeedback(showToast, `feed-event-${event.id}`, {
-                                        title: `Conquista de ${author.nickname} - Life OS`,
+                                        title: `Conquista de ${authorName} - Life OS`,
                                         preparingMessage: 'Preparando compartilhamento da conquista...',
                                         sharedMessage: 'Conquista compartilhada.',
                                         cancelledMessage: 'Compartilhamento cancelado.',

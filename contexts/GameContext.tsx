@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RewardModalPayload } from '../types';
+import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
 import { getGoldBoostProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
@@ -28,7 +28,7 @@ import { formatLocalDateString, getOperationalDateString as getOperationalDateSt
 import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive } from '../utils/premiumAccess';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
-import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason } from '../utils/seasonPresentation';
+import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, isBadgeNotification } from '../constants/oracleNotificationPolicy';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
@@ -60,6 +60,19 @@ const mapToSnakeCase = (obj: any): any => {
         }, {} as any);
     }
     return obj;
+};
+
+const normalizeActionFromDbRow = (row: any): Action => {
+    const action = mapToCamelCase(row) as Action;
+    const schedule = (action.context && typeof action.context === 'object')
+        ? (action.context as Action['context'])?.schedule
+        : undefined;
+
+    return {
+        ...action,
+        scheduledDays: action.scheduledDays ?? schedule?.days,
+        scheduledStartTime: action.scheduledStartTime ?? schedule?.startTime,
+    };
 };
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -112,6 +125,11 @@ const normalizeMasteryVisibilityScope = (value: unknown): ProfileVisibilityScope
     return 'friends';
 };
 
+const normalizeFeatsVisibilityScope = (value: unknown): ProfileVisibilityScope => {
+    if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+    return 'friends';
+};
+
 const DEFAULT_USER_PROFILE: UserProfile = {
     id: 'placeholder_user',
     nickname: 'Soberano',
@@ -124,6 +142,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     visibleWidgets: [],
     assetsVisibility: 'nobody',
     masteryVisibility: 'friends',
+    featsVisibility: 'friends',
     sovereign: DEFAULT_SOVEREIGN_CONFIG,
     nobility: { exp: 0, rankId: 'vagante' },
     mood: 50,
@@ -238,6 +257,18 @@ interface EndCycleResult {
     report: Report;
     expGained: number;
 }
+
+const mapFeedEventFromDbRow = (row: any): FeedEvent => ({
+    id: String(row.id),
+    userId: String(row.user_id ?? row.userId),
+    type: row.event_type ?? row.eventType,
+    authorNickname: row.author_nickname ?? row.authorNickname ?? undefined,
+    authorAvatarUrl: row.author_avatar_url ?? row.authorAvatarUrl ?? undefined,
+    authorClanName: row.author_clan_name ?? row.authorClanName ?? undefined,
+    authorClanIcon: row.author_clan_icon ?? row.authorClanIcon ?? undefined,
+    content: mapToCamelCase(row.content || {}) as FeedEvent['content'],
+    timestamp: row.created_at ?? row.createdAt ?? new Date().toISOString(),
+});
 
 export interface CodexCatalogItem {
     id: string;
@@ -514,12 +545,13 @@ export interface GameContextType {
     buyCodex: (catalogId: string) => Promise<void>;
     buyCodexCreationSlot: () => Promise<boolean>;
     getRelationshipCapacitySummary: () => Promise<RelationshipCapacitySummary | null>;
-    fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; summary: RelationshipCapacitySummary | null }>;
+    fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; competitionChallenges: RelationshipCompetitionChallenge[]; summary: RelationshipCapacitySummary | null }>;
     createRelationshipInvite: (recipientId: string, linkType: RelationshipLinkType) => Promise<boolean>;
     respondToRelationshipInvite: (inviteId: string, action: RelationshipInviteAction) => Promise<boolean>;
     endRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
     buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType) => Promise<boolean>;
     createLinkedRelationshipArena: (relationshipLinkId: string, arenaInput: { assetId: string; name: string; description?: string; icon?: string }) => Promise<Arena | null>;
+    createCompetitionChallenge: (relationshipLinkId: string, sourceArenaId: string) => Promise<Arena | null>;
     createCodexShareLink: (codexId: string) => Promise<{ url: string; token: string; shareId: string } | null>;
     sendCodexToNickname: (codexId: string, nickname: string) => Promise<void>;
     getCodexSharePreview: (input: { token?: string; shareId?: string }) => Promise<CodexSharePreview | null>;
@@ -1203,37 +1235,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         // 6. Generate Prompt
-        // Dynamic Mode Selection based on Category (The "Speak for All" Logic)
-        let selectedMode = oraclePreferences.activeMode;
-
-        if (oraclePreferences.activeMode !== 'personalizado') {
-            switch (category) {
-                case 'dicas_produtividade':
-                    selectedMode = 'coach'; // Coach cobra produtividade
-                    break;
-                case 'frases_inspiradoras':
-                    selectedMode = 'calmo'; // Inspiração serena
-                    break;
-                case 'reflexoes_filosoficas':
-                case 'fragmentos_sabedoria':
-                    selectedMode = 'reflexivo'; // Filósofo reflete
-                    break;
-                case 'rituais_lifestyle':
-                    selectedMode = 'calmo'; // Lifestyle pede calma
-                    break;
-                case 'provocacoes':
-                    selectedMode = 'tatico'; // Provocação direta
-                    break;
-                case 'analise_padroes':
-                    selectedMode = 'estrategico'; // Análise pede estratégia
-                    break;
-                case 'sussurros_maestria':
-                    selectedMode = 'neutro'; // Mistério
-                    break;
-                default:
-                    selectedMode = oraclePreferences.activeMode;
-            }
-        }
+        // The selected assistant mode should stay stable across feed/chat.
+        const selectedMode = oraclePreferences.activeMode || 'neutro';
 
         const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
         const systemPrompt = modeConfig.systemPromptTemplate(contextData);
@@ -2177,6 +2180,46 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [achievementUnlocked, setAchievementUnlocked] = useState<{ type: FeedEventType; data: any; } | null>(null);
     const [feed, setFeed] = useState<FeedEvent[]>(() => []);
 
+    const fetchSocialFeed = useCallback(async () => {
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId)) {
+            setFeed([]);
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('social_feed_events')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(120);
+
+        if (error) {
+            const message = String(error.message || '');
+            if (message.includes('social_feed_events')) {
+                return;
+            }
+            console.error('Error fetching social feed:', error.message);
+            return;
+        }
+
+        setFeed((data || []).map(mapFeedEventFromDbRow));
+    }, [getSupabaseUserId]);
+
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId || !isUuid(userId)) {
+            setFeed([]);
+            return;
+        }
+
+        void fetchSocialFeed();
+        const intervalId = window.setInterval(() => {
+            void fetchSocialFeed();
+        }, 30000);
+
+        return () => window.clearInterval(intervalId);
+    }, [session?.user.id, fetchSocialFeed]);
+
     const [clanQuestProgress, setClanQuestProgress] = useState<Record<string, Record<string, number>>>(() => ({}));
 
     const [clanQuestParticipants, setClanQuestParticipants] = useState<Record<string, number>>({});
@@ -2365,7 +2408,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [seasonMissions, setSeasonMissions] = useState<SeasonMission[]>([]);
     const activeRuntimeSeason = useMemo(() => resolveRuntimeActiveSeason(seasons), [seasons]);
     const activeRuntimeSeasonId = activeRuntimeSeason?.id || ACTIVE_SEASON_ID;
-    const activeRuntimeSeasonConfig = SEASONS[activeRuntimeSeasonId] || null;
+    const activeRuntimeSeasonConfig = useMemo(
+        () => resolveSeasonConfigForSeason(activeRuntimeSeason) || SEASONS[activeRuntimeSeasonId] || null,
+        [activeRuntimeSeason, activeRuntimeSeasonId],
+    );
 
     useEffect(() => {
         if (!activeRuntimeSeason) return;
@@ -3228,6 +3274,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     } as UserProfile;
                     next.assetsVisibility = normalizeAssetsVisibilityScope(next.assetsVisibility);
                     next.masteryVisibility = normalizeMasteryVisibilityScope(next.masteryVisibility);
+                    next.featsVisibility = normalizeFeatsVisibilityScope(next.featsVisibility);
                     const pendingPatch = pendingProfilePatchRef.current;
                     if (pendingPatch) {
                         next = { ...next, ...pendingPatch };
@@ -3303,15 +3350,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             const { data: actionsData, error: actionsError } = actionsResult;
             if (!actionsError && actionsData) {
-                const rawActions = mapToCamelCase(actionsData) as Action[];
-                const normalizedActions = rawActions.map(action => {
-                    const schedule = (action.context && typeof action.context === 'object') ?(action.context as Action['context'])?.schedule : undefined;
-                    return {
-                        ...action,
-                        scheduledDays: action.scheduledDays ?? schedule?.days,
-                        scheduledStartTime: action.scheduledStartTime ?? schedule?.startTime,
-                    };
-                });
+                const normalizedActions = (actionsData || []).map(normalizeActionFromDbRow);
                 if (camelArenas) {
                     const validArenaIds = new Set(camelArenas.map(a => a.id));
                     const validActions = normalizedActions.filter(a => validArenaIds.has(a.arenaId));
@@ -3948,6 +3987,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     };
 
+    const mapCompetitionChallengeRow = (row: any): RelationshipCompetitionChallenge => ({
+        id: row.id,
+        relationshipLinkId: row.relationship_link_id,
+        sourceArenaId: row.source_arena_id ?? null,
+        challengerUserId: row.challenger_user_id,
+        opponentUserId: row.opponent_user_id,
+        challengerArenaId: row.challenger_arena_id,
+        opponentArenaId: row.opponent_arena_id,
+        winnerUserId: row.winner_user_id ?? null,
+        winnerArenaId: row.winner_arena_id ?? null,
+        rewardChestType: row.reward_chest_type ?? null,
+        rewardGrantedAt: row.reward_granted_at ?? null,
+        loserNotifiedAt: row.loser_notified_at ?? null,
+        createdAt: row.created_at,
+        completedAt: row.completed_at ?? null,
+        metadata: row.metadata ?? null,
+    });
+
     const mapRelationshipErrorMessage = (message?: string, fallback = 'Nao foi possivel concluir o vinculo.') => {
         const raw = String(message || '').trim();
         if (!raw) return fallback;
@@ -3960,10 +4017,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (raw.includes('RELATIONSHIP_LINK_NOT_FOUND')) return 'Esse vinculo nao foi encontrado.';
         if (raw.includes('RELATIONSHIP_LINK_ALREADY_ENDED')) return 'Esse vinculo ja foi encerrado.';
         if (raw.includes('RELATIONSHIP_LINK_PERMISSION_DENIED')) return 'Voce nao pode encerrar esse vinculo.';
-        if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Cada arena extra da mentoria custa 50 de ouro. Se isso apareceu, o SQL novo ainda nao foi aplicado.';
-        if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Arena extra da mentoria e paga por unidade: 50 de ouro cada.';
+        if (raw.includes('ACTIVE_SHAREABLE_LINK_REQUIRED')) return 'Esse vinculo nao pode receber arena compartilhada agora.';
+        if (raw.includes('ACTIVE_MENTORIA_LINK_REQUIRED')) return 'So o mentor pode abrir arena nessa mentoria.';
+        if (raw.includes('ACTIVE_PARTNERSHIP_LINK_REQUIRED')) return 'Essa parceria precisa estar ativa para compartilhar arenas.';
+        if (raw.includes('ACTIVE_COMPETITION_LINK_REQUIRED')) return 'Essa competicao precisa estar ativa para lancar um desafio.';
+        if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Cada arena compartilhada custa 50 de ouro por unidade. Se isso apareceu, o SQL novo ainda nao foi aplicado.';
+        if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Cada arena compartilhada custa 50 de ouro por unidade.';
         if (raw.includes('ARENA_NAME_REQUIRED')) return 'Diga o nome da arena vinculada.';
         if (raw.includes('ARENA_ASSET_REQUIRED')) return 'Escolha o ativo da arena vinculada.';
+        if (raw.includes('COMPETITION_SOURCE_ARENA_REQUIRED')) return 'Escolha uma arena sua para espelhar nesse duelo.';
+        if (raw.includes('COMPETITION_SOURCE_ARENA_EMPTY')) return 'Essa arena ainda nao tem acoes suficientes para virar duelo.';
+        if (raw.includes('COMPETITION_CHALLENGE_ALREADY_ACTIVE')) return 'Ja existe um duelo ativo nesse vinculo.';
+        if (raw.includes('COMPETITION_CHALLENGE_NOT_FOUND')) return 'Esse duelo nao foi encontrado.';
         if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'A forja de campanhas da mentoria agora e paga por uso. Se isso apareceu, o banco ainda esta com regra antiga.';
         if (raw.includes('RELATIONSHIP_CAPACITY_DISABLED')) return 'A camada social agora funciona so por ouro.';
         return raw;
@@ -3982,7 +4047,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const fetchRelationshipHubData = async () => {
         const userId = getSupabaseUserId();
         if (!userId || !isUuid(userId)) {
-            return { invites: [], links: [], linkedArenas: [], summary: null };
+            return { invites: [], links: [], linkedArenas: [], competitionChallenges: [], summary: null };
         }
 
         try {
@@ -4017,12 +4082,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const links = (linksResult.data || []).map(mapRelationshipLinkRow);
         const linksById = new Map(links.map((link) => [link.id, link] as const));
         const linkIds = links.map(link => link.id);
+        const competitionLinkIds = links.filter((link) => link.linkType === 'competicao').map((link) => link.id);
         let linkedArenaRows: any[] = [];
+        let competitionChallenges: RelationshipCompetitionChallenge[] = [];
         const arenasById = new Map<string, Arena>();
         const actionsByArenaId = new Map<string, Action[]>();
         const tasksByArenaId = new Map<string, ScheduledTask[]>();
 
         if (linkIds.length > 0) {
+            if (competitionLinkIds.length > 0) {
+                const competitionChallengesResult = await supabase
+                    .from('relationship_competition_challenges')
+                    .select('*')
+                    .in('relationship_link_id', competitionLinkIds)
+                    .order('created_at', { ascending: false });
+
+                if (competitionChallengesResult.error) {
+                    console.error('Error fetching relationship competition challenges:', competitionChallengesResult.error);
+                } else {
+                    competitionChallenges = (competitionChallengesResult.data || []).map(mapCompetitionChallengeRow);
+                }
+            }
+
             const linkedArenasResult = await supabase
                 .from('relationship_link_arenas')
                 .select('*')
@@ -4056,7 +4137,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     console.error('Error fetching linked arena actions:', actionsResult.error);
                 } else {
                     for (const row of actionsResult.data || []) {
-                        const mapped = mapToCamelCase(row) as Action;
+                        const mapped = normalizeActionFromDbRow(row);
                         const arenaId = String((mapped as any).arenaId || row.arena_id || '');
                         if (!arenaId) continue;
                         const nextActions = actionsByArenaId.get(arenaId) || [];
@@ -4092,6 +4173,59 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         }
                     }
                 }
+
+                const ownedLinkedArenas = (arenasResult.data || [])
+                    .filter((row: any) => String(row.user_id || '') === userId)
+                    .map((row: any) => {
+                        const mappedArena = arenasById.get(String(row.id));
+                        if (!mappedArena) return null;
+                        const arenaActions = actionsByArenaId.get(mappedArena.id) || [];
+                        return {
+                            arena: {
+                                ...mappedArena,
+                                actionIds: arenaActions.map((action) => action.id),
+                            },
+                            actions: arenaActions,
+                        };
+                    })
+                    .filter((entry): entry is { arena: Arena; actions: Action[] } => Boolean(entry));
+
+                if (ownedLinkedArenas.length > 0) {
+                    setAssets((prevAssets) => {
+                        let changed = false;
+                        const byArenaId = new Map(ownedLinkedArenas.map((entry) => [entry.arena.id, entry.arena] as const));
+                        const nextAssets = prevAssets.map((asset) => {
+                            const existingArenaIds = new Set(asset.arenas.map((arena) => arena.id));
+                            const updatedArenas = asset.arenas.map((arena) => {
+                                const replacement = byArenaId.get(arena.id);
+                                if (!replacement) return arena;
+                                changed = true;
+                                return replacement;
+                            });
+                            const additions = ownedLinkedArenas
+                                .filter((entry) => entry.arena.assetId === asset.id && !existingArenaIds.has(entry.arena.id))
+                                .map((entry) => entry.arena);
+
+                            if (additions.length > 0) {
+                                changed = true;
+                                return { ...asset, arenas: [...updatedArenas, ...additions] };
+                            }
+
+                            return changed ? { ...asset, arenas: updatedArenas } : asset;
+                        });
+
+                        return changed ? nextAssets : prevAssets;
+                    });
+
+                    setActions((prevActions) => {
+                        const existingIds = new Set(prevActions.map((action) => action.id));
+                        const additions = ownedLinkedArenas
+                            .flatMap((entry) => entry.actions)
+                            .filter((action) => !existingIds.has(action.id));
+
+                        return additions.length > 0 ? [...prevActions, ...additions] : prevActions;
+                    });
+                }
             }
         }
 
@@ -4101,6 +4235,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             invites: (invitesResult.data || []).map(mapRelationshipInviteRow),
             links,
             linkedArenas: linkedArenaRows.map(row => mapLinkedRelationshipArenaRow(row, linksById, arenasById, actionsByArenaId, tasksByArenaId)),
+            competitionChallenges,
             summary,
         };
     };
@@ -4220,10 +4355,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     ): Promise<Arena | null> => {
         if ((userProfile.wallet?.gold || 0) < 50) {
             const missingGold = Math.max(0, 50 - Number(userProfile.wallet?.gold || 0));
-            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para abrir uma nova arena vinculada.`, 'warning');
+            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para compartilhar uma arena nesse vinculo.`, 'warning');
             promptGoldShortage({
                 requiredGold: 50,
-                label: 'abrir uma nova arena vinculada',
+                label: 'compartilhar uma arena nesse vinculo',
                 storeTab: 'store',
                 section: 'packs',
             });
@@ -4245,11 +4380,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+        const linkedArenaType = String((data as any)?.linked_arena?.metadata?.link_type || (data as any)?.link_type || '');
         updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
 
         const arenaRow = (data as any)?.arena;
         if (!arenaRow) {
-            showToast('Arena vinculada criada.', 'success');
+            showToast(linkedArenaType === 'parceria' ? 'Arena compartilhada adicionada a parceria.' : 'Arena vinculada criada.', 'success');
             return null;
         }
 
@@ -4266,8 +4402,120 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 : asset
         ));
 
-        showToast('Arena vinculada criada para a mentoria.', 'success');
+        showToast(linkedArenaType === 'parceria' ? 'Arena compartilhada adicionada a parceria.' : 'Arena vinculada criada para a mentoria.', 'success');
         return nextArena;
+    };
+
+    const syncCompetitionChestLocally = async (chestType: ChestType) => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        const freshChests = await fetchChestsFromDB(userId);
+        if (freshChests) {
+            setUserProfile((prev) => ({ ...prev, chests: freshChests }));
+            return;
+        }
+
+        setUserProfile((prev) => {
+            const existingChests = prev.chests || [];
+            const chestIndex = existingChests.findIndex((entry) => entry.type === chestType);
+            const nextChests = chestIndex >= 0
+                ? existingChests.map((entry, index) => index === chestIndex ? { ...entry, count: entry.count + 1 } : entry)
+                : [...existingChests, { type: chestType, count: 1 }];
+            return { ...prev, chests: nextChests };
+        });
+    };
+
+    const createCompetitionChallenge = async (relationshipLinkId: string, sourceArenaId: string): Promise<Arena | null> => {
+        if (!sourceArenaId) {
+            showToast('Escolha uma arena sua para espelhar nesse duelo.', 'warning');
+            return null;
+        }
+
+        const { data, error } = await supabase.rpc('create_competition_challenge', {
+            p_relationship_link_id: relationshipLinkId,
+            p_source_arena_id: sourceArenaId,
+        });
+
+        if (error) {
+            console.error('Error creating competition challenge:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel lancar esse duelo.'), 'error');
+            return null;
+        }
+
+        const selfArenaRow = (data as any)?.challenger_arena;
+        if (!selfArenaRow) {
+            showToast('Desafio espelhado lancado.', 'success');
+            return null;
+        }
+
+        const mappedArena = mapToCamelCase(selfArenaRow) as Arena;
+        const challengerActions = Array.isArray((data as any)?.challenger_actions)
+            ? ((data as any).challenger_actions as any[]).map(normalizeActionFromDbRow)
+            : [];
+
+        const nextArena: Arena = {
+            ...mappedArena,
+            actionIds: challengerActions.map((action) => action.id),
+            isArchived: mappedArena.isArchived ?? false,
+        };
+
+        setAssets((prevAssets) => prevAssets.map((asset) => {
+            if (asset.id !== nextArena.assetId) return asset;
+            const existingIndex = asset.arenas.findIndex((arena) => arena.id === nextArena.id);
+            if (existingIndex >= 0) {
+                const nextArenas = [...asset.arenas];
+                nextArenas[existingIndex] = nextArena;
+                return { ...asset, arenas: nextArenas };
+            }
+            return { ...asset, arenas: [...asset.arenas, nextArena] };
+        }));
+
+        if (challengerActions.length > 0) {
+            setActions((prevActions) => {
+                const nextById = new Map(prevActions.map((action) => [action.id, action] as const));
+                challengerActions.forEach((action) => {
+                    nextById.set(action.id, action);
+                });
+                return Array.from(nextById.values());
+            });
+        }
+
+        showToast('Duelo espelhado lancado. O primeiro que fechar ganha o bau.', 'success');
+        return nextArena;
+    };
+
+    const resolveCompetitionChallengeOutcome = async (arenaId: string) => {
+        if (!arenaId) return;
+
+        const { data, error } = await supabase.rpc('resolve_competition_challenge_outcome', {
+            p_arena_id: arenaId,
+        });
+
+        if (error) {
+            console.error('Error resolving competition challenge outcome:', error);
+            return;
+        }
+
+        const status = String((data as any)?.status || '');
+        const winnerUserId = String((data as any)?.winner_user_id || '');
+        const opponentNickname = String((data as any)?.opponent_nickname || 'seu rival');
+        const challengeName = String((data as any)?.challenge_name || 'esse duelo');
+        const rewardChestType = ((data as any)?.reward_chest_type || null) as ChestType | null;
+        const rewardGrantedNow = Boolean((data as any)?.reward_granted_now);
+        const currentUserId = getSupabaseUserId();
+
+        if (status === 'winner' && currentUserId && winnerUserId === currentUserId) {
+            if (rewardGrantedNow && rewardChestType) {
+                await syncCompetitionChestLocally(rewardChestType);
+            }
+            showToast(`Parabens! Voce terminou "${challengeName}" antes de @${opponentNickname} e ganhou um Bau ${rewardChestType || 'Comum'}.`, 'success');
+            return;
+        }
+
+        if (status === 'already_lost') {
+            showToast(`@${opponentNickname} concluiu "${challengeName}" antes. Agora esse duelo nao entrega bau na sua chegada.`, 'info');
+        }
     };
 
     const createCodexShareLink = async (codexId: string): Promise<{ url: string; token: string; shareId: string } | null> => {
@@ -4701,14 +4949,48 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
-        const newEvent: FeedEvent = {
+        const localEvent: FeedEvent = {
             id: `feed_${Date.now()}`,
             userId: userProfile.id,
+            authorNickname: userProfile.nickname,
+            authorAvatarUrl: userProfile.avatarUrl,
+            authorClanName: userProfile.clanName,
+            authorClanIcon: userProfile.clanIcon,
             timestamp: new Date().toISOString(),
             type: eventData.type,
             content: eventData.content
         };
-        setFeed(prev => [newEvent, ...prev]);
+
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId)) {
+            setFeed(prev => [localEvent, ...prev]);
+            return;
+        }
+
+        void (async () => {
+            const { error } = await supabase.from('social_feed_events').insert({
+                user_id: userId,
+                event_type: eventData.type,
+                content: eventData.content,
+                author_nickname: userProfile.nickname,
+                author_avatar_url: userProfile.avatarUrl || null,
+                author_clan_name: userProfile.clanName || null,
+                author_clan_icon: userProfile.clanIcon || null,
+            });
+
+            if (error) {
+                const message = String(error.message || '');
+                if (message.includes('social_feed_events')) {
+                    setFeed(prev => [localEvent, ...prev]);
+                    return;
+                }
+                console.error('Error creating feed event:', error.message);
+                setFeed(prev => [localEvent, ...prev]);
+                return;
+            }
+
+            await fetchSocialFeed();
+        })();
     };
 
     const openChest = async (chestType: ChestType): Promise<ChestOpenResult | null> => {
@@ -5570,6 +5852,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'visibleWidgets',
                 'assetsVisibility',
                 'masteryVisibility',
+                'featsVisibility',
                 'skin',
                 'lastLevelUpdate',
                 'nobility',
@@ -6717,6 +7000,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             publicProfile = mapToCamelCase(profileRes.data) as UserProfile;
             publicProfile.assetsVisibility = normalizeAssetsVisibilityScope(publicProfile.assetsVisibility);
             publicProfile.masteryVisibility = normalizeMasteryVisibilityScope(publicProfile.masteryVisibility);
+            publicProfile.featsVisibility = normalizeFeatsVisibilityScope(publicProfile.featsVisibility);
         }
 
         const isOwner = userProfile.id === userId;
@@ -8341,6 +8625,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         showToast,
         updateClanMissionProgress,
         updateCustomClanMissionProgress,
+        handleCompetitionArenaCompletion: resolveCompetitionChallengeOutcome,
         setAchievementUnlocked,
         addFeedEvent,
         getLocalDateString,
@@ -9020,7 +9305,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

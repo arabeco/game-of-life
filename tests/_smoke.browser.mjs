@@ -146,6 +146,53 @@ class SmokeBrowserPage {
     await this.cdp('Page.reload', { ignoreCache: true });
   }
 
+  async dismissBlockingRuntimeOverlays(timeoutMs = 12000) {
+    const started = Date.now();
+
+    while (Date.now() - started < timeoutMs) {
+      const body = String(await this.bodyText() || '');
+      const normalized = body
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase();
+
+      const hasSeasonOverlay =
+        normalized.includes('TEMPORADA ENCERRADA')
+        || normalized.includes('NOVA TEMPORADA')
+        || normalized.includes('PASSAGEM DE ERA');
+
+      if (!hasSeasonOverlay) {
+        return;
+      }
+
+      const dismissed = await this.evaluate(`(() => {
+        const labels = ['FECHAR', 'OK', 'CONTINUAR', 'VER NOVA TEMPORADA'];
+        const buttons = Array.from(document.querySelectorAll('button, [role="button"]'))
+          .filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+
+        for (const label of labels) {
+          const target = [...buttons].reverse().find((node) => {
+            const text = (node.innerText || node.textContent || '').toUpperCase().trim();
+            return text.includes(label);
+          });
+          if (target instanceof HTMLElement) {
+            target.scrollIntoView({ block: 'center', inline: 'center' });
+            target.click();
+            return true;
+          }
+        }
+
+        return false;
+      })()`);
+
+      if (!dismissed) {
+        return;
+      }
+
+      await sleep(700);
+    }
+  }
+
   async login(email, password) {
     const loginReady = await this.evaluate(`(() => document.querySelector('#login-email-input') instanceof HTMLInputElement)()`);
     if (!loginReady) {

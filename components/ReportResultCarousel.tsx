@@ -28,6 +28,8 @@ interface ReportResultCarouselProps {
     expGained?: number;           // Added for reward slide
     insignias?: string[];         // Added for reward slide
     onOpenChest?: () => void;     // Trigger chest opening
+    chestOpened?: boolean;
+    isOpeningChest?: boolean;
     onDelete?: () => void;        // Added for delete action
     autoPlay?: boolean;
 }
@@ -79,6 +81,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     expGained,
     insignias = [],
     onOpenChest,
+    chestOpened = false,
+    isOpeningChest = false,
     onDelete,
     autoPlay = true
 }) => {
@@ -466,7 +470,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 </div>
 
                 <p className={`max-w-[280px] text-[11px] font-black uppercase tracking-[0.18em] text-gray-500 transition-all duration-700 ${rewardReveal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-                    Compartilhe o card ou sele o proximo ciclo.
+                    {chest ? 'Compartilhe o card, abra o bau ou sele o proximo ciclo.' : 'Compartilhe o card ou sele o proximo ciclo.'}
                 </p>
             </div>
         );
@@ -624,6 +628,17 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                         title="Deletar Ciclo"
                                     >
                                         <Trash2Icon className="w-5 h-5" />
+                                    </button>
+                                )}
+
+                                {chest && onOpenChest && (
+                                    <button
+                                        onClick={onOpenChest}
+                                        disabled={chestOpened || isOpeningChest}
+                                        className={`shrink-0 rounded-xl border px-4 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${chestOpened || isOpeningChest ? 'h-12 cursor-default border-white/[0.04] bg-white/[0.03] text-gray-600' : 'h-12 border-white/[0.08] bg-black/60 text-white hover:border-[var(--skin-accent-color)]/40 hover:bg-white/[0.05]'}`}
+                                        title={chestOpened ? 'Baú já aberto' : 'Abrir baú agora'}
+                                    >
+                                        {isOpeningChest ? 'Abrindo...' : chestOpened ? 'Baú aberto' : 'Abrir baú'}
                                     </button>
                                 )}
 

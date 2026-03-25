@@ -44,6 +44,7 @@ interface CreateTaskDomainParams {
     showToast: (message: string, tone: ToastTone) => void;
     updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
     updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
+    handleCompetitionArenaCompletion?: (arenaId: string) => Promise<void>;
     setAchievementUnlocked: (achievement: AchievementState) => void;
     addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
     getLocalDateString: (date?: Date) => string;
@@ -70,6 +71,7 @@ export const createTaskDomain = ({
     showToast,
     updateClanMissionProgress,
     updateCustomClanMissionProgress,
+    handleCompetitionArenaCompletion,
     setAchievementUnlocked,
     addFeedEvent,
     getLocalDateString,
@@ -163,6 +165,19 @@ export const createTaskDomain = ({
             phase: 'celebrate',
             navigateToArenas: true,
         });
+
+        setAchievementUnlocked({
+            type: 'ARENA_COMPLETED',
+            data: {
+                name: arena.name,
+                icon: arena.icon || '🏛️',
+                arenaId: arena.id,
+            }
+        });
+
+        if (handleCompetitionArenaCompletion) {
+            void handleCompetitionArenaCompletion(arena.id);
+        }
     };
 
     const scheduleMultipleTasks = async (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {

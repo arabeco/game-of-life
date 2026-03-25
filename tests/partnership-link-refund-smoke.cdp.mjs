@@ -20,19 +20,21 @@ try {
     await page.login(leader.email, leader.password);
     checkpoints.push('leader-login');
 
-    await page.clickSelector('#nav-settings');
-    await page.waitForSelector('#settings-tab-premium', 20000);
-    await page.clickSelector('#settings-tab-premium');
+    await page.dismissBlockingRuntimeOverlays();
+    await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
     await page.waitForSelector('#relationship-hub-tab-parceria', 15000);
     await page.clickSelector('#relationship-hub-tab-parceria');
     await page.waitFor(
-      'partnership cta',
-      `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').toLowerCase().includes('nova parceria')))()`,
+      'partnership create button',
+      `(() => {
+        const button = document.querySelector('#relationship-hub-primary-create-button');
+        return button instanceof HTMLButtonElement && !button.disabled;
+      })()`,
       20000,
     );
-    await page.clickText('Nova parceria');
+    await page.clickSelector('#relationship-hub-primary-create-button');
     await page.waitForSelector('#relationship-friend-search-input', 15000);
     await page.setInputValue('#relationship-friend-search-input', friend.nickname);
     await page.waitForSelector(`#relationship-friend-${friend.userId}`, 15000);
@@ -51,8 +53,8 @@ try {
   );
 
   const debitedProfile = await getUserProfile(leader.client, leader.userId);
-  if (Number(debitedProfile.wallet?.gold || 0) !== 175) {
-    throw new Error(`Expected leader gold to be 175 after partnership invite, got ${Number(debitedProfile.wallet?.gold || 0)}.`);
+  if (Number(debitedProfile.wallet?.gold || 0) !== 150) {
+    throw new Error(`Expected leader gold to be 150 after partnership invite, got ${Number(debitedProfile.wallet?.gold || 0)}.`);
   }
   checkpoints.push('partnership-gold-debited');
 
@@ -60,13 +62,26 @@ try {
     await page.login(friend.email, friend.password);
     checkpoints.push('friend-login');
 
-    await page.clickSelector('#nav-settings');
-    await page.waitForSelector('#settings-tab-premium', 20000);
-    await page.clickSelector('#settings-tab-premium');
+    await page.dismissBlockingRuntimeOverlays();
+    await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
     await page.waitForSelector('#relationship-hub-tab-parceria', 15000);
     await page.clickSelector('#relationship-hub-tab-parceria');
+    await page.waitFor(
+      'incoming partnership invite',
+      `(() => {
+        const body = (document.body?.innerText || '').toLowerCase();
+        const hasSender = body.includes(${JSON.stringify(friend.nickname.toLowerCase())})
+          || body.includes(${JSON.stringify(leader.nickname.toLowerCase())});
+        const hasDecline = Array.from(document.querySelectorAll('button')).some((node) => {
+          const text = (node.innerText || node.textContent || '').trim().toLowerCase();
+          return text === 'recusar';
+        });
+        return hasSender && hasDecline;
+      })()`,
+      20000,
+    );
     await page.clickText('Recusar');
     await new Promise((resolve) => setTimeout(resolve, 1800));
     checkpoints.push('partnership-invite-declined');

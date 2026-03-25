@@ -213,16 +213,54 @@ export async function addClanMember(member, clanId) {
 }
 
 export async function getActiveClanSeasonMission(client) {
-  const activeSeason = await client.from('seasons').select('id,name').eq('is_active', true).single();
-  if (activeSeason.error || !activeSeason.data) {
-    throw new Error(`active season fetch failed: ${activeSeason.error?.message || 'season missing'}`);
+  const activeSeasonResult = await client
+    .from('seasons')
+    .select('id,name,start_date,end_date,is_active')
+    .eq('is_active', true)
+    .order('start_date', { ascending: false });
+
+  if (activeSeasonResult.error) {
+    throw new Error(`active season fetch failed: ${activeSeasonResult.error.message}`);
   }
 
-  const missions = await client
-    .from('season_missions')
-    .select('*')
-    .eq('season_id', activeSeason.data.id)
-    .eq('type', 'clan');
+  const seasonRows = activeSeasonResult.data?.length
+    ? activeSeasonResult.data
+    : (await client
+      .from('seasons')
+      .select('id,name,start_date,end_date,is_active')
+      .order('start_date', { ascending: false })
+      .limit(10)).data || [];
+
+  const now = Date.now();
+  const activeSeason = seasonRows.length
+    ? seasonRows.find((season) => {
+      const start = season.start_date ? new Date(`${season.start_date}T00:00:00`).getTime() : Number.NaN;
+      const end = season.end_date ? new Date(`${season.end_date}T23:59:59`).getTime() : Number.NaN;
+      return Number.isFinite(start) && Number.isFinite(end) && now >= start && now <= end;
+    }) || seasonRows[0]
+    : null;
+
+  let missions = activeSeason
+    ? await client
+      .from('season_missions')
+      .select('*')
+      .eq('season_id', activeSeason.id)
+      .eq('type', 'clan')
+    : await client
+      .from('season_missions')
+      .select('*')
+      .eq('type', 'clan')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+  if (!missions.error && !(missions.data?.length)) {
+    missions = await client
+      .from('season_missions')
+      .select('*')
+      .eq('type', 'clan')
+      .order('created_at', { ascending: false })
+      .limit(20);
+  }
 
   if (missions.error || !missions.data?.length) {
     throw new Error(`clan season mission fetch failed: ${missions.error?.message || 'mission missing'}`);

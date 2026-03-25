@@ -28,10 +28,27 @@ class SmokeBrowserPage {
     this.ws = ws;
     this.messageId = 0;
     this.pending = new Map();
+    this.consoleMessages = [];
 
     ws.addEventListener('message', (event) => {
       const message = JSON.parse(event.data.toString());
-      if (!message.id) return;
+      if (!message.id) {
+        if (message.method === 'Runtime.consoleAPICalled') {
+          const type = message.params?.type || 'log';
+          const args = Array.isArray(message.params?.args) ? message.params.args : [];
+          const text = args.map((arg) => {
+            if (typeof arg?.value !== 'undefined') return String(arg.value);
+            if (typeof arg?.description !== 'undefined') return String(arg.description);
+            return '';
+          }).filter(Boolean).join(' ');
+
+          this.consoleMessages.push({ type, text });
+          if (this.consoleMessages.length > 200) {
+            this.consoleMessages.shift();
+          }
+        }
+        return;
+      }
       const entry = this.pending.get(message.id);
       if (!entry) return;
       this.pending.delete(message.id);
@@ -71,6 +88,10 @@ class SmokeBrowserPage {
 
   async bodyText() {
     return String(await this.evaluate('document.body ? document.body.innerText : ""'));
+  }
+
+  getConsoleMessages(limit = 40) {
+    return this.consoleMessages.slice(-limit);
   }
 
   async waitFor(description, expression, timeoutMs = 25000, intervalMs = 250) {

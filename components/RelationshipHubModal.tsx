@@ -62,6 +62,10 @@ type RelationshipArenaDetailState = {
     actions?: Action[];
     tasks?: ScheduledTask[];
     readOnly: boolean;
+    relationshipLinkId?: string;
+    relationshipLinkType?: RelationshipLinkType | null;
+    collaborationRole?: 'mentor' | 'pupil' | null;
+    allowLinkedMentorshipEdit?: boolean;
 };
 
 const HUB_TABS: Array<{
@@ -1141,11 +1145,23 @@ export const RelationshipHubModal: React.FC<{
     const buildArenaDetailState = (linkedArena: LinkedRelationshipArena): RelationshipArenaDetailState => {
         const previewArena = getArenaPreviewForLink(linkedArena);
         const liveOwnedArena = ownedArenaIds.has(previewArena.id) ? getLiveOwnedArena(previewArena.id) : null;
+        const relationshipLink = links.find((link) => link.id === linkedArena.relationshipLinkId) || null;
+        const collaborationRole = relationshipLink?.linkType === 'mentoria'
+            ? (relationshipLink.mentorId === sessionUid ? 'mentor' : relationshipLink.pupilId === sessionUid ? 'pupil' : null)
+            : null;
+        const canPupilCollaborate = Boolean(
+            relationshipLink?.linkType === 'mentoria'
+            && collaborationRole === 'pupil'
+        );
 
         if (liveOwnedArena) {
             return {
                 arena: liveOwnedArena,
                 readOnly: false,
+                relationshipLinkId: linkedArena.relationshipLinkId,
+                relationshipLinkType: relationshipLink?.linkType || linkedArena.linkType || null,
+                collaborationRole,
+                allowLinkedMentorshipEdit: false,
             };
         }
 
@@ -1153,13 +1169,31 @@ export const RelationshipHubModal: React.FC<{
             arena: previewArena,
             actions: linkedArena.actions || [],
             tasks: linkedArena.tasks || [],
-            readOnly: true,
+            readOnly: !canPupilCollaborate,
+            relationshipLinkId: linkedArena.relationshipLinkId,
+            relationshipLinkType: relationshipLink?.linkType || linkedArena.linkType || null,
+            collaborationRole,
+            allowLinkedMentorshipEdit: canPupilCollaborate,
         };
     };
 
     const openLinkedArena = (linkedArena: LinkedRelationshipArena) => {
         setSelectedArenaDetail(buildArenaDetailState(linkedArena));
     };
+
+    useEffect(() => {
+        if (!selectedArenaDetail?.relationshipLinkId) return;
+
+        const currentArenaId = selectedArenaDetail.arena.id;
+        const matchingArena = linkedArenas.find((linkedArena) => {
+            if (linkedArena.relationshipLinkId !== selectedArenaDetail.relationshipLinkId) return false;
+            const linkedArenaId = linkedArena.arena?.id || linkedArena.arenaId;
+            return linkedArenaId === currentArenaId;
+        });
+
+        if (!matchingArena) return;
+        setSelectedArenaDetail(buildArenaDetailState(matchingArena));
+    }, [linkedArenas, selectedArenaDetail?.arena.id, selectedArenaDetail?.relationshipLinkId]);
 
     const renderTabBoard = () => {
         const tabLabel = activeTab === 'mentoria' ? 'Mentoria' : activeTab === 'parceria' ? 'Parceria' : 'Competicao';
@@ -1375,8 +1409,8 @@ export const RelationshipHubModal: React.FC<{
                         eyebrow="Arenas da mentoria"
                         title={isMentorSide ? 'Arenas abertas para acompanhar o pupilo' : 'Arenas compartilhadas pelo mentor'}
                         description={isMentorSide
-                            ? 'Aqui ficam as arenas dessa relacao. Toque para abrir, editar ou acompanhar.'
-                            : 'Essas arenas aparecem como uma mini ArenaView da sua mentoria.'}
+                            ? 'Aqui ficam as arenas dessa relacao. Voce pode abrir, ajustar o plano e acompanhar a adaptacao do pupilo.'
+                            : 'Essas arenas viram um plano guiado: voce pode adaptar horario e estrutura, e o mentor acompanha essas mudancas.'}
                         action={isMentorSide ? (
                             <button
                                 onClick={() => setSelectedMentorLinkForArena(link)}
@@ -2227,6 +2261,11 @@ export const RelationshipHubModal: React.FC<{
                     actionsOverride={selectedArenaDetail.actions}
                     tasksOverride={selectedArenaDetail.tasks}
                     readOnly={selectedArenaDetail.readOnly}
+                    linkedRelationshipLinkId={selectedArenaDetail.relationshipLinkId}
+                    linkedRelationshipType={selectedArenaDetail.relationshipLinkType || null}
+                    collaborativeRole={selectedArenaDetail.collaborationRole || null}
+                    allowLinkedMentorshipEdit={selectedArenaDetail.allowLinkedMentorshipEdit}
+                    onLinkedArenaRefresh={refreshHub}
                     onClose={() => setSelectedArenaDetail(null)}
                 />
             )}

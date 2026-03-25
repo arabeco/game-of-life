@@ -20,6 +20,7 @@ import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, cons
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
+import { supabase } from '../supabaseClient';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -75,7 +76,7 @@ type ArenaAttentionState = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, fetchRelationshipHubData, userCodexes, installCodex } = useGame();
+    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, userCodexes, installCodex } = useGame();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     const [sharedLinkedArenas, setSharedLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
@@ -315,15 +316,168 @@ export const ArenasView: React.FC = () => {
                 return;
             }
 
-            try {
-                const hub = await fetchRelationshipHubData();
-                if (!cancelled) {
-                    setSharedLinkedArenas(hub.linkedArenas || []);
+            const maxAttempts = 6;
+
+            for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+                try {
+                    const linksResult = await supabase
+                        .from('relationship_links')
+                        .select('*')
+                        .or(`mentor_id.eq.${userProfile.id},pupil_id.eq.${userProfile.id}`)
+                        .is('ended_at', null)
+                        .order('created_at', { ascending: false });
+
+                    if (linksResult.error) throw linksResult.error;
+
+                    const links = linksResult.data || [];
+                    const linksById = new Map(links.map((link: any) => [String(link.id), link] as const));
+                    const linkIds = links.map((link: any) => String(link.id)).filter(Boolean);
+
+                    if (linkIds.length === 0) {
+                        setSharedLinkedArenas([]);
+                        return;
+                    }
+
+                    const linkedArenasResult = await supabase
+                        .from('relationship_link_arenas')
+                        .select('*')
+                        .in('relationship_link_id', linkIds)
+                        .order('created_at', { ascending: false });
+
+                    if (linkedArenasResult.error) throw linkedArenasResult.error;
+
+                    const linkedArenaRows = linkedArenasResult.data || [];
+                    const arenaIds = [...new Set(linkedArenaRows.map((row: any) => String(row.arena_id || '')).filter(Boolean))];
+
+                    if (arenaIds.length === 0) {
+                        setSharedLinkedArenas([]);
+                        return;
+                    }
+
+                    const [arenasResult, actionsResult] = await Promise.all([
+                        supabase.from('arenas').select('*').in('id', arenaIds),
+                        supabase.from('actions').select('*').in('arena_id', arenaIds),
+                    ]);
+
+                    if (arenasResult.error) throw arenasResult.error;
+                    if (actionsResult.error) throw actionsResult.error;
+
+                    const actionRows = actionsResult.data || [];
+                    const actionIds = actionRows.map((row: any) => String(row.id || '')).filter(Boolean);
+                    const tasksResult = actionIds.length > 0
+                        ? await supabase.from('scheduled_tasks').select('*').in('action_id', actionIds)
+                        : { data: [], error: null } as const;
+
+                    if (tasksResult.error) throw tasksResult.error;
+
+                    const actionsByArenaId = new Map<string, Action[]>();
+                    actionRows.forEach((row: any) => {
+                        const mappedAction: Action = {
+                            id: String(row.id),
+                            arenaId: String(row.arena_id),
+                            name: String(row.name || 'Ação'),
+                            description: String(row.description || ''),
+                            icon: String(row.icon || '📝'),
+                            duration: Number(row.duration || 0),
+                            repetitions: Number(row.repetitions || 1),
+                            actionType: row.action_type,
+                            difficulty: typeof row.difficulty === 'number' ? row.difficulty : row.difficulty ? Number(row.difficulty) : undefined,
+                            briefing: typeof row.briefing === 'string' ? row.briefing : undefined,
+                            assets: Array.isArray(row.assets) ? row.assets : [],
+                            preFlight: Array.isArray(row.pre_flight) ? row.pre_flight : [],
+                            context: row.context && typeof row.context === 'object' ? row.context : {},
+                            originCodexId: row.origin_codex_id ?? undefined,
+                            scheduledDays: row.scheduled_days ?? row.context?.schedule?.days,
+                            scheduledStartTime: row.scheduled_start_time ?? row.context?.schedule?.startTime,
+                        };
+                        const nextActions = actionsByArenaId.get(mappedAction.arenaId) || [];
+                        nextActions.push(mappedAction);
+                        actionsByArenaId.set(mappedAction.arenaId, nextActions);
+                    });
+
+                    const tasksByArenaId = new Map<string, ScheduledTask[]>();
+                    (tasksResult.data || []).forEach((row: any) => {
+                        const actionArenaId = actionRows.find((action: any) => String(action.id) === String(row.action_id))?.arena_id;
+                        if (!actionArenaId) return;
+
+                        const taskOwnerId = String(row.user_id || '');
+                        if (taskOwnerId && taskOwnerId !== userProfile.id) return;
+
+                        const mappedTask: ScheduledTask = {
+                            id: String(row.id),
+                            actionId: String(row.action_id),
+                            date: String(row.date),
+                            startTime: Number(row.start_time || 0),
+                            completed: Boolean(row.completed),
+                            completedAt: row.completed_at ?? null,
+                            userId: row.user_id ?? undefined,
+                        } as ScheduledTask;
+
+                        const nextTasks = tasksByArenaId.get(String(actionArenaId)) || [];
+                        nextTasks.push(mappedTask);
+                        tasksByArenaId.set(String(actionArenaId), nextTasks);
+                    });
+
+                    const arenasById = new Map<string, Arena>();
+                    (arenasResult.data || []).forEach((row: any) => {
+                        const arenaId = String(row.id);
+                        const arenaActions = actionsByArenaId.get(arenaId) || [];
+                        arenasById.set(arenaId, {
+                            id: arenaId,
+                            assetId: String(row.asset_id || 'geral'),
+                            name: String(row.name || 'Arena vinculada'),
+                            description: String(row.description || ''),
+                            icon: String(row.icon || '🏛️'),
+                            actionIds: arenaActions.map((action) => action.id),
+                            isArchived: Boolean(row.is_archived),
+                            folderId: row.folder_id ?? undefined,
+                            originCodexId: row.origin_codex_id ?? undefined,
+                            codexLevel: row.codex_level ?? undefined,
+                            order: typeof row.order === 'number' ? row.order : 0,
+                            priority: row.priority ?? undefined,
+                            priorityOrder: typeof row.priority_order === 'number' ? row.priority_order : 0,
+                        });
+                    });
+
+                    const hub = {
+                        linkedArenas: linkedArenaRows.map((row: any) => {
+                            const link = linksById.get(String(row.relationship_link_id));
+                            const arenaId = String(row.arena_id || '');
+                            return {
+                                id: String(row.id),
+                                relationshipLinkId: String(row.relationship_link_id),
+                                linkType: link?.link_type,
+                                arenaId,
+                                createdByUserId: row.created_by_user_id ?? null,
+                                createdAt: String(row.created_at),
+                                metadata: row.metadata ?? null,
+                                arena: arenasById.get(arenaId) || null,
+                                actions: actionsByArenaId.get(arenaId) || [],
+                                tasks: tasksByArenaId.get(arenaId) || [],
+                            } as LinkedRelationshipArena;
+                        }),
+                    };
+                    if (cancelled) return;
+
+                    const nextLinkedArenas = hub.linkedArenas || [];
+                    setSharedLinkedArenas(nextLinkedArenas);
+
+                    const hasOperationalMentorshipArena = nextLinkedArenas.some((linkedArena) =>
+                        linkedArena.linkType === 'mentoria' && Boolean(linkedArena.arenaId)
+                    );
+
+                    if (hasOperationalMentorshipArena || attempt === maxAttempts - 1) {
+                        return;
+                    }
+                } catch (error) {
+                    if (cancelled) return;
+                    if (attempt === maxAttempts - 1) {
+                        console.error('Failed to load shared relationship arenas for ArenasView:', error);
+                        return;
+                    }
                 }
-            } catch (error) {
-                if (!cancelled) {
-                    console.error('Failed to load shared relationship arenas for ArenasView:', error);
-                }
+
+                await new Promise((resolve) => window.setTimeout(resolve, 1000 * (attempt + 1)));
             }
         };
 

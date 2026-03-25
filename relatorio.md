@@ -31,9 +31,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Leitor paginado: swipe, setas, preview e `[[page]]` no mobile. - Responsavel: SENTINELA
 [ ] Conta nova: `e-mail/Convite` + primeiro `D2`. - Responsavel: TRONO
 [ ] GM Panel: teste real de e-mail. - Responsavel: PROTOCOLO
-[ ] Mentoria 2 contas: recusa, revogacao, refund e pacote final. - Responsavel: SENTINELA
+[-] Mentoria 2 contas: aceite, arena em leitura e base do fluxo ja passaram em smoke; faltam recusa, revogacao, refund e pacote final. - Responsavel: SENTINELA
 [ ] Solicitacoes Social: amizade + vinculo + badges + push. - Responsavel: SENTINELA
-[ ] Malha social: amizade, `Vinculos`, `Grupo`, `Equipe`, entrada/saida e leitura dos chips. - Responsavel: PROTOCOLO
+[-] Malha social: amizade, `Vinculos`, `Grupo`, `Equipe`, entrada/saida e leitura dos chips. Base social ja andou em smoke; falta a rodada integrada final. - Responsavel: PROTOCOLO
 [-] Camada compartilhada: `Grupo`, `Mentoria`, `Parceria`, `Competicao` e reflexo final no board. Base ja validada. - Responsavel: PROTOCOLO
 [ ] Campanhas: descobrir, comprar, instalar e operar sem duplicar nada. - Responsavel: PROTOCOLO
 [ ] Economia de campanhas: custo, `Gratis/Premium`, premio de onboarding e retorno de compra. - Responsavel: TESOURO
@@ -43,7 +43,7 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Premium remoto: migration aplicada + expiracao/renovacao em `2 aparelhos`. - Responsavel: PROTOCOLO
 [ ] Economia premium: comprar, renovar, recompensar e cair no modal certo. - Responsavel: TESOURO
 [ ] `Modo Jogo` final: liga/desliga, some/aparece, inventario, baus e feitos. - Responsavel: PROTOCOLO
-[ ] Ouro social final: validar `Mentoria`, `Parceria`, `Competicao` e arena extra sem resquicio de slot. - Responsavel: TESOURO
+[-] Ouro social final: validar `Mentoria`, `Parceria`, `Competicao` e arena extra sem resquicio de slot. Custos e fluxos-base ja passaram em smoke. - Responsavel: TESOURO
 
 ### COMANDO
 [ ] Rodar o `CHECK FINAL` em aparelho real e congelar o hot path do Beta. - Responsavel: SENTINELA
@@ -100,9 +100,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 4. Nao inventar avancos: so marcar o que foi validado no app ou na infra.
 
 ## 9. BLOQUEIOS ATUAIS
-[ ] Onboarding/tutorial ainda pede passada final em aparelho real.
+[-] Onboarding/tutorial ja passou no smoke principal, mas ainda pede a passada final em aparelho real.
 [ ] Conta nova ainda pede `e-mail/Convite` e prova de `D2`.
 [ ] Premium ainda pede migration aplicada e QA remoto.
 [ ] PIX/Ouro ainda pede fechamento ponta a ponta.
 [ ] Mobile/skins ainda pedem a ultima rodada de contraste e responsividade.
-[ ] Social/vinculos ainda pedem a rodada final integrada de leitura e operacao.
+[-] Social/vinculos ja andaram em smoke, mas ainda pedem a rodada final integrada de leitura e operacao.

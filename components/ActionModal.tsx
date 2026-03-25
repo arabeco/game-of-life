@@ -15,6 +15,7 @@ import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { REST_SCREEN_ACTION_SESSION_EVENT, createRestScreenActionSession } from '../utils/restScreenActionSession';
 import { OPERATIONAL_DAY_START_MINUTE, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes } from '../utils/operationalDay.js';
 import { getArenaDomainFlags } from '../utils/taskDomain';
+import { supabase } from '../supabaseClient';
 
 import { Portal } from './Portal';
 import { EmojiGlyph } from './EmojiGlyph';
@@ -115,6 +116,10 @@ interface ActionModalProps {
     onClose: () => void;
     isPreview?: boolean;
     customThemeColor?: string;
+    lockArenaAssignment?: boolean;
+    collaborativeLinkedArena?: boolean;
+    collaborativeArenaTasks?: ScheduledTask[];
+    onCollaborativeRefresh?: (() => Promise<void>) | (() => void);
 }
 
 type EditScope = 'action' | 'instance';
@@ -144,8 +149,20 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
     </button>
 );
 
-export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskId, initialMode, onClose, isPreview, customThemeColor }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes } = useGame();
+export const ActionModal: React.FC<ActionModalProps> = ({
+    arenaId,
+    action,
+    taskId,
+    initialMode,
+    onClose,
+    isPreview,
+    customThemeColor,
+    lockArenaAssignment = false,
+    collaborativeLinkedArena = false,
+    collaborativeArenaTasks = [],
+    onCollaborativeRefresh,
+}) => {
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, clearPendingTasksForAction, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes } = useGame();
 
     const isNew = !action;
     const isInstalledCodexAction = Boolean(action?.originCodexId && !action.originCodexId.startsWith('assign:'));
@@ -254,6 +271,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     const arenaFlags = React.useMemo(() => getArenaDomainFlags(currentArena), [currentArena]);
     const isReceivedInstalledCodexAction = installedCodex?.source_type === 'gift_link' || installedCodex?.source_type === 'gift_in_app';
     const isLockedFromSource = arenaFlags.isSeasonQuest || isReceivedInstalledCodexAction;
+    const isDetachedCollaborativeArena = collaborativeLinkedArena && !currentArena;
+    const effectiveTaskPool = isDetachedCollaborativeArena ? collaborativeArenaTasks : tasks;
+    const basePendingTask = React.useMemo(() => {
+        if (!action) return null;
+        return effectiveTaskPool.find(task => task.actionId === action.id && !task.completed) || null;
+    }, [action, effectiveTaskPool]);
     const lockedEditMessage = arenaFlags.isSeasonQuest
         ? 'Missoes de temporada sao fixas e nao podem ser editadas.'
         : isReceivedInstalledCodexAction
@@ -326,12 +349,91 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
             };
         };
 
-        const scheduleTasks = async (actionIdToSchedule: string) => {
+        const scheduleCollaborativeTasks = async (actionToSchedule: Action) => {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const userId = sessionData.session?.user.id;
+            if (!userId) return;
+
+            const existingKeys = new Set(
+                collaborativeArenaTasks
+                    .filter(task => task.actionId === actionToSchedule.id && String((task as any).userId || userId) === userId)
+                    .map(task => `${task.actionId}_${task.date}_${task.startTime}`)
+            );
+
+            const pendingTasks: ScheduledTask[] = [];
+            const currentDate = new Date();
+
+            if (editableAction.actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTime && startTime !== 'Sem Horário') {
+                const [hour, minute] = startTime.split(':').map(Number);
+                const startTimeInMinutes = hour * 60 + minute;
+
+                for (let i = 0; i < 365; i += 1) {
+                    const date = new Date(currentDate);
+                    date.setDate(currentDate.getDate() + i);
+                    const dayOfWeek = week[(date.getDay() + 6) % 7];
+                    if (!selectedDays.includes(dayOfWeek)) continue;
+
+                    const dateString = getLocalDateString(date);
+                    const key = `${actionToSchedule.id}_${dateString}_${startTimeInMinutes}`;
+                    if (existingKeys.has(key)) continue;
+
+                    pendingTasks.push({
+                        id: crypto.randomUUID(),
+                        actionId: actionToSchedule.id,
+                        date: dateString,
+                        startTime: startTimeInMinutes,
+                        duration: actionToSchedule.duration,
+                        completed: false,
+                    });
+                    existingKeys.add(key);
+                }
+            }
+
+            if (editableAction.actionType === 'Compromisso' && selectedDate && startTime && startTime !== 'Sem Horário') {
+                const [hour, minute] = startTime.split(':').map(Number);
+                const startTimeInMinutes = hour * 60 + minute;
+                const resolvedOccurrence = resolveOperationalDateTime(selectedDate, startTimeInMinutes);
+                const key = `${actionToSchedule.id}_${resolvedOccurrence.date}_${resolvedOccurrence.startTime}`;
+
+                if (!existingKeys.has(key)) {
+                    pendingTasks.push({
+                        id: crypto.randomUUID(),
+                        actionId: actionToSchedule.id,
+                        date: resolvedOccurrence.date,
+                        startTime: resolvedOccurrence.startTime,
+                        duration: actionToSchedule.duration,
+                        completed: false,
+                    });
+                }
+            }
+
+            if (pendingTasks.length === 0) return;
+
+            const payload = pendingTasks.map(task => ({
+                id: task.id,
+                action_id: task.actionId,
+                date: task.date,
+                start_time: task.startTime,
+                duration: task.duration,
+                completed: false,
+                user_id: userId,
+            }));
+
+            const { error } = await supabase.from('scheduled_tasks').insert(payload);
+            if (error) throw error;
+        };
+
+        const scheduleTasks = async (actionToSchedule: Action) => {
             // Para Ação Recorrente: usa dias da semana
             if (editableAction.actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTime !== null && startTime !== 'Sem Horário') {
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
-                await scheduleMultipleTasks(actionIdToSchedule, selectedDays, startTimeInMinutes);
+                if (isDetachedCollaborativeArena) {
+                    await scheduleCollaborativeTasks(actionToSchedule);
+                } else {
+                    await scheduleMultipleTasks(actionToSchedule, selectedDays, startTimeInMinutes);
+                }
+                return;
             }
 
             // Para Compromisso: usa data específica
@@ -339,7 +441,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                 const [hour, minute] = startTime.split(':').map(Number);
                 const startTimeInMinutes = hour * 60 + minute;
                 const resolvedSchedule = resolveOperationalDateTime(selectedDate, startTimeInMinutes);
-                await scheduleTask(actionIdToSchedule, resolvedSchedule.date, resolvedSchedule.startTime);
+                if (isDetachedCollaborativeArena) {
+                    await scheduleCollaborativeTasks({
+                        ...(actionToSchedule as Action),
+                        scheduledStartTime: resolvedSchedule.startTime,
+                    });
+                } else {
+                    await scheduleTask(actionToSchedule, resolvedSchedule.date, resolvedSchedule.startTime);
+                }
             }
         }
 
@@ -371,14 +480,40 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                     // Let the context generate the ID to ensure consistency
                     const newAction = await addAction(actionData);
                     if (newAction?.id) {
-                        await scheduleTasks(newAction.id);
+                        await scheduleTasks(newAction);
                         window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.actionCreated, { detail: { actionId: newAction.id } }));
                     }
                     showToast('Ação criada.', 'success');
                 } else if (action?.id && typeof updateAction === 'function') {
+                    const nextDaysKey = JSON.stringify([...selectedDays].sort());
+                    const prevDaysKey = JSON.stringify([...(action.scheduledDays || [])].sort());
+                    const nextCommitmentDate = editableAction.actionType === 'Compromisso'
+                        ? (selectedDate ? getLocalDateString(selectedDate) : basePendingTask?.date || null)
+                        : null;
+                    const prevCommitmentDate = action.actionType === 'Compromisso'
+                        ? (basePendingTask?.date || null)
+                        : null;
+                    const scheduleChanged = (
+                        action.actionType !== actionData.actionType
+                        || (action.scheduledStartTime ?? null) !== (scheduledStartTime ?? null)
+                        || prevDaysKey !== nextDaysKey
+                        || (action.duration || 60) !== validDuration
+                        || prevCommitmentDate !== nextCommitmentDate
+                    );
+
                     updateAction(action.id, actionData);
-                    await scheduleTasks(action.id);
+                    if (scheduleChanged) {
+                        await clearPendingTasksForAction(action.id);
+                    }
+                    await scheduleTasks({
+                        ...action,
+                        ...actionData,
+                        arenaId: actionData.arenaId || action.arenaId,
+                    } as Action);
                     showToast('Ação atualizada.', 'success');
+                }
+                if (isDetachedCollaborativeArena) {
+                    await Promise.resolve(onCollaborativeRefresh?.());
                 }
                 onClose();
             } catch (err) {
@@ -439,7 +574,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
     };
 
     const handleDelete = () => { if (action) setConfirmDeleteOpen(true); };
-    const confirmDelete = () => { if (action) { deleteAction(action.id); onClose(); } }
+    const confirmDelete = () => {
+        if (!action) return;
+        deleteAction(action.id);
+        if (isDetachedCollaborativeArena) {
+            void Promise.resolve(onCollaborativeRefresh?.());
+        }
+        onClose();
+    }
 
     const handleCancel = () => {
         if (isNew) onClose();
@@ -469,7 +611,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         setIsActionTypePickerOpen(false);
         handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionTypeSelected, { actionType: type });
     }
-    const handleArenaSelect = (id: string) => { setEditableAction(p => ({ ...p, arenaId: id })); setIsArenaPickerOpen(false); };
+    const handleArenaSelect = (id: string) => {
+        if (lockArenaAssignment) {
+            setIsArenaPickerOpen(false);
+            return;
+        }
+        setEditableAction(p => ({ ...p, arenaId: id }));
+        setIsArenaPickerOpen(false);
+    };
     const handleTimeSelect = (time: string) => { setStartTime(time); };
     const handleDateSelect = (date: Date) => { setSelectedDate(date); setIsDatePickerOpen(false); };
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget) onClose(); };
@@ -518,6 +667,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
         setSelectedDays(nextAction?.scheduledDays || []);
         setEditScope(nextScope);
         syncTemporalStateForScope(nextScope, nextAction);
+        if (nextScope === 'action' && nextAction?.actionType === 'Compromisso' && basePendingTask?.date) {
+            setSelectedDate(getTaskDateValue(basePendingTask.date));
+        }
         const asset = nextAction?.assets?.find(a => a.type === 'image' || a.type === 'video');
         const imageUrl = asset?.url || '';
         const caption = asset?.title || '';
@@ -1056,10 +1208,19 @@ export const ActionModal: React.FC<ActionModalProps> = ({ arenaId, action, taskI
                                             {/* Arena */}
                                             <div>
                                                 <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Arena</label>
-                                                <button onClick={() => setIsArenaPickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                <button
+                                                    onClick={() => !lockArenaAssignment && setIsArenaPickerOpen(true)}
+                                                    disabled={lockArenaAssignment}
+                                                    className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
                                                     <span className="text-sm">{currentArena?.icon} {currentArena?.name || 'Selecionar Arena'}</span>
                                                     <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                 </button>
+                                                {lockArenaAssignment && (
+                                                    <p className="mt-1 px-1 text-[10px] leading-relaxed text-white/46">
+                                                        Esta ação segue presa a esta arena guiada da mentoria.
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Type */}

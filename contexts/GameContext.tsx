@@ -258,6 +258,12 @@ interface EndCycleResult {
     expGained: number;
 }
 
+const normalizeArenasViewMode = (value: unknown): ArenasViewMode => {
+    if (value === 'free' || value === 'priorities' || value === 'assets') return value;
+    if (value === 'asset' || value === 'by_asset' || value === 'byAsset') return 'assets';
+    return 'free';
+};
+
 const mapFeedEventFromDbRow = (row: any): FeedEvent => ({
     id: String(row.id),
     userId: String(row.user_id ?? row.userId),
@@ -439,6 +445,7 @@ export interface GameContextType {
     deleteAction: (actionId: string) => void;
     scheduleTask: (actionOrId: string | Action, date: string, startTime: number) => Promise<ScheduledTask | undefined>;
     scheduleMultipleTasks: (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => Promise<void>;
+    clearPendingTasksForAction: (actionId: string) => Promise<void>;
     scheduleAndCompleteNow: (actionId: string, taskId?: string) => Promise<void>;
     scheduleAndCompleteMilestoneNow: (actionId: string) => Promise<void>;
     returnTaskToPool: (taskId: string) => void;
@@ -623,8 +630,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [session]);
 
     const setArenasViewMode = async (mode: ArenasViewMode) => {
-        setArenasViewModeState(mode);
-        updateUserProfile({ arenasViewMode: mode });
+        const nextMode = normalizeArenasViewMode(mode);
+        setArenasViewModeState(nextMode);
+        updateUserProfile({ arenasViewMode: nextMode });
     };
     const [aldeiaSlots, setAldeiaSlots] = useState<AldeiaSlot[]>([]);
     const [aldeiaPresence, setAldeiaPresence] = useState<AldeiaPresence[]>([]);
@@ -659,7 +667,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     useEffect(() => {
         if (userProfile?.arenasViewMode) {
-            setArenasViewModeState(userProfile.arenasViewMode);
+            setArenasViewModeState(normalizeArenasViewMode(userProfile.arenasViewMode));
         }
     }, [userProfile?.arenasViewMode]);
 
@@ -3149,9 +3157,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // Ref to hold the latest migration function
     const migrateGuestDataToSupabaseRef = useRef(migrateGuestDataToSupabase);
+    const relationshipOperationalSyncRef = useRef<string | null>(null);
     useEffect(() => {
         migrateGuestDataToSupabaseRef.current = migrateGuestDataToSupabase;
     }, [migrateGuestDataToSupabase]);
+
+    useEffect(() => {
+        if (!isProfileLoaded || !hasHydratedFromSupabase) return;
+
+        const userId = getSupabaseUserId();
+        if (!userId) {
+            relationshipOperationalSyncRef.current = null;
+            return;
+        }
+        if (relationshipOperationalSyncRef.current === userId) return;
+
+        relationshipOperationalSyncRef.current = userId;
+
+        void fetchRelationshipHubData().catch((error) => {
+            relationshipOperationalSyncRef.current = null;
+            console.error('Failed to pre-sync relationship operational data:', error);
+        });
+        // fetchRelationshipHubData is intentionally omitted to avoid effect loops.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [getSupabaseUserId, hasHydratedFromSupabase, isProfileLoaded, userProfile.id]);
 
     // --- Supabase Data Sync ---
     useEffect(() => {
@@ -3354,10 +3383,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (camelArenas) {
                     const validArenaIds = new Set(camelArenas.map(a => a.id));
                     const validActions = normalizedActions.filter(a => validArenaIds.has(a.arenaId));
-                    setActions(validActions);
                     loadedActions = validActions;
                 } else {
-                    setActions(normalizedActions);
                     loadedActions = normalizedActions;
                 }
             }
@@ -3365,9 +3392,97 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { data: tasksData, error: tasksError } = tasksResult;
             if (!tasksError && tasksData) {
                 const tasks = mapToCamelCase(tasksData) as ScheduledTask[];
-                setTasks(tasks);
                 loadedTasks = tasks;
             }
+
+            try {
+                const mentorshipLinksResult = await supabase
+                    .from('relationship_links')
+                    .select('*')
+                    .eq('pupil_id', userId)
+                    .eq('link_type', 'mentoria')
+                    .is('ended_at', null);
+
+                if (!mentorshipLinksResult.error && mentorshipLinksResult.data && mentorshipLinksResult.data.length > 0) {
+                    const mentorshipLinkIds = mentorshipLinksResult.data.map((row: any) => String(row.id)).filter(Boolean);
+                    const linkedMentorshipArenasResult = await supabase
+                        .from('relationship_link_arenas')
+                        .select('*')
+                        .in('relationship_link_id', mentorshipLinkIds);
+
+                    if (!linkedMentorshipArenasResult.error && linkedMentorshipArenasResult.data && linkedMentorshipArenasResult.data.length > 0) {
+                        const linkedArenaIds = [...new Set(linkedMentorshipArenasResult.data.map((row: any) => String(row.arena_id || '')).filter(Boolean))];
+
+                        if (linkedArenaIds.length > 0) {
+                            const [mentorshipArenasResult, mentorshipActionsResult] = await Promise.all([
+                                supabase.from('arenas').select('*').in('id', linkedArenaIds),
+                                supabase.from('actions').select('*').in('arena_id', linkedArenaIds),
+                            ]);
+
+                            const mentorshipActions = !mentorshipActionsResult.error && mentorshipActionsResult.data
+                                ? mentorshipActionsResult.data.map(normalizeActionFromDbRow)
+                                : [];
+                            const mentorshipActionIds = mentorshipActions.map((action) => action.id);
+
+                            let mentorshipTasks: ScheduledTask[] = [];
+                            if (mentorshipActionIds.length > 0) {
+                                const mentorshipTasksResult = await supabase
+                                    .from('scheduled_tasks')
+                                    .select('*')
+                                    .in('action_id', mentorshipActionIds);
+
+                                if (!mentorshipTasksResult.error && mentorshipTasksResult.data) {
+                                    mentorshipTasks = (mapToCamelCase(mentorshipTasksResult.data) as ScheduledTask[]).filter((task) => {
+                                        const taskOwnerId = String((task as any).userId || '');
+                                        return !taskOwnerId || taskOwnerId === userId;
+                                    });
+                                }
+                            }
+
+                            if (!mentorshipArenasResult.error && mentorshipArenasResult.data) {
+                                const mentorshipArenaActionsById = new Map<string, Action[]>();
+                                mentorshipActions.forEach((action) => {
+                                    const nextActions = mentorshipArenaActionsById.get(action.arenaId) || [];
+                                    nextActions.push(action);
+                                    mentorshipArenaActionsById.set(action.arenaId, nextActions);
+                                });
+
+                                const mergedArenaMap = new Map((camelArenas || []).map((arena) => [arena.id, arena] as const));
+                                mentorshipArenasResult.data.forEach((row: any) => {
+                                    const mappedArena = mapToCamelCase(row) as Arena;
+                                    const arenaActions = mentorshipArenaActionsById.get(String(mappedArena.id)) || [];
+                                    mergedArenaMap.set(String(mappedArena.id), {
+                                        ...mappedArena,
+                                        actionIds: arenaActions.map((action) => action.id),
+                                        isArchived: mappedArena.isArchived ?? false,
+                                    });
+                                });
+
+                                camelArenas = Array.from(mergedArenaMap.values());
+                                loadedArenas = camelArenas;
+
+                                const mergedActionMap = new Map(loadedActions.map((action) => [action.id, action] as const));
+                                mentorshipActions.forEach((action) => {
+                                    mergedActionMap.set(action.id, action);
+                                });
+                                loadedActions = Array.from(mergedActionMap.values());
+
+                                const mergedTaskMap = new Map(loadedTasks.map((task) => [task.id, task] as const));
+                                mentorshipTasks.forEach((task) => {
+                                    mergedTaskMap.set(task.id, task);
+                                });
+                                loadedTasks = Array.from(mergedTaskMap.values());
+
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to hydrate mentorship arenas into the operational state:', error);
+            }
+
+            setActions(loadedActions);
+            setTasks(loadedTasks);
 
             const { data: slotsData, error: slotsError } = slotsResult;
             const { data: levelsData, error: levelsError } = levelsResult;
@@ -4118,6 +4233,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             const arenaIds = [...new Set(linkedArenaRows.map(row => row.arena_id).filter(Boolean))];
             if (arenaIds.length > 0) {
+                const linkByArenaId = new Map<string, RelationshipLink | undefined>();
+                for (const linkedArenaRow of linkedArenaRows) {
+                    linkByArenaId.set(String(linkedArenaRow.arena_id), linksById.get(String(linkedArenaRow.relationship_link_id)));
+                }
+
                 const arenasResult = await supabase.from('arenas').select('*').in('id', arenaIds);
                 if (arenasResult.error) {
                     console.error('Error fetching linked arenas:', arenasResult.error);
@@ -4166,6 +4286,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                 const mapped = mapToCamelCase(row) as ScheduledTask;
                                 const arenaId = arenaIdByActionId.get(String((mapped as any).actionId || row.action_id || ''));
                                 if (!arenaId) continue;
+                                const linkedArenaOwner = arenasById.get(arenaId) as (Arena & { userId?: string }) | undefined;
+                                const linkedArenaLink = linkByArenaId.get(arenaId);
+                                const isMentorshipArena = linkedArenaLink?.linkType === 'mentoria';
+                                const shouldKeepTask = !isMentorshipArena || String(row.user_id || '') === userId || String(linkedArenaOwner?.userId || '') === userId;
+                                if (!shouldKeepTask) continue;
                                 const nextTasks = tasksByArenaId.get(arenaId) || [];
                                 nextTasks.push(mapped);
                                 tasksByArenaId.set(arenaId, nextTasks);
@@ -4174,26 +4299,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     }
                 }
 
-                const ownedLinkedArenas = (arenasResult.data || [])
-                    .filter((row: any) => String(row.user_id || '') === userId)
+                const operationalLinkedArenas = (arenasResult.data || [])
+                    .filter((row: any) => {
+                        const ownerId = String(row.user_id || '');
+                        if (ownerId === userId) return true;
+                        const link = linkByArenaId.get(String(row.id));
+                        return Boolean(link?.linkType === 'mentoria' && link.pupilId === userId);
+                    })
                     .map((row: any) => {
                         const mappedArena = arenasById.get(String(row.id));
                         if (!mappedArena) return null;
                         const arenaActions = actionsByArenaId.get(mappedArena.id) || [];
+                        const arenaTasks = (tasksByArenaId.get(mappedArena.id) || []).filter(task => {
+                            const taskOwnerId = String((task as any).userId || '');
+                            return !taskOwnerId || taskOwnerId === userId;
+                        });
                         return {
                             arena: {
                                 ...mappedArena,
                                 actionIds: arenaActions.map((action) => action.id),
                             },
                             actions: arenaActions,
+                            tasks: arenaTasks,
                         };
                     })
-                    .filter((entry): entry is { arena: Arena; actions: Action[] } => Boolean(entry));
+                    .filter((entry): entry is { arena: Arena; actions: Action[]; tasks: ScheduledTask[] } => Boolean(entry));
 
-                if (ownedLinkedArenas.length > 0) {
+                if (operationalLinkedArenas.length > 0) {
                     setAssets((prevAssets) => {
                         let changed = false;
-                        const byArenaId = new Map(ownedLinkedArenas.map((entry) => [entry.arena.id, entry.arena] as const));
+                        const byArenaId = new Map(operationalLinkedArenas.map((entry) => [entry.arena.id, entry.arena] as const));
                         const nextAssets = prevAssets.map((asset) => {
                             const existingArenaIds = new Set(asset.arenas.map((arena) => arena.id));
                             const updatedArenas = asset.arenas.map((arena) => {
@@ -4202,7 +4337,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                 changed = true;
                                 return replacement;
                             });
-                            const additions = ownedLinkedArenas
+                            const additions = operationalLinkedArenas
                                 .filter((entry) => entry.arena.assetId === asset.id && !existingArenaIds.has(entry.arena.id))
                                 .map((entry) => entry.arena);
 
@@ -4218,12 +4353,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     });
 
                     setActions((prevActions) => {
-                        const existingIds = new Set(prevActions.map((action) => action.id));
-                        const additions = ownedLinkedArenas
-                            .flatMap((entry) => entry.actions)
-                            .filter((action) => !existingIds.has(action.id));
+                        const linkedActionIds = new Set(operationalLinkedArenas.flatMap((entry) => entry.actions.map((action) => action.id)));
+                        const preservedActions = prevActions.filter((action) => !linkedActionIds.has(action.id));
+                        const mergedLinkedActions = operationalLinkedArenas.flatMap((entry) => entry.actions);
+                        return [...preservedActions, ...mergedLinkedActions];
+                    });
 
-                        return additions.length > 0 ? [...prevActions, ...additions] : prevActions;
+                    setTasks((prevTasks) => {
+                        const linkedActionIds = new Set(operationalLinkedArenas.flatMap((entry) => entry.actions.map((action) => action.id)));
+                        const preservedTasks = prevTasks.filter((task) => !linkedActionIds.has(task.actionId));
+                        const mergedLinkedTasks = operationalLinkedArenas.flatMap((entry) => entry.tasks);
+                        return [...preservedTasks, ...mergedLinkedTasks];
                     });
                 }
             }
@@ -8649,6 +8789,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         completeTutorialMission,
     } = taskDomain;
 
+    const clearPendingTasksForAction = async (actionId: string) => {
+        const pendingTaskIds = tasks
+            .filter(task => task.actionId === actionId && !task.completed)
+            .map(task => task.id);
+
+        if (pendingTaskIds.length === 0) return;
+
+        setTasks(prevTasks => prevTasks.filter(task => !(task.actionId === actionId && !task.completed)));
+        setDailyCommitmentState(prev => ({
+            ...prev,
+            taskIds: prev.taskIds.filter(taskId => !pendingTaskIds.includes(taskId))
+        }));
+
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        const { error } = await supabase
+            .from('scheduled_tasks')
+            .delete()
+            .eq('action_id', actionId)
+            .eq('completed', false)
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error('Error clearing pending action tasks:', error.message);
+            showToast('Nao foi possivel limpar os agendamentos antigos dessa acao.', 'error');
+        }
+    };
+
     const mapClanCreateErrorMessage = (message?: string) => {
         const normalizedMessage = String(message || '').trim();
         const lowerMessage = normalizedMessage.toLowerCase();
@@ -9303,7 +9472,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,
-            addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,

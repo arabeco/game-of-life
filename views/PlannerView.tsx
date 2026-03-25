@@ -343,7 +343,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         addArena,
         activeCycle,
         userProfile,
-        getActionBackgroundStyle
+        getActionBackgroundStyle,
+        fetchRelationshipHubData,
     } = useGame();
     const { isTutorialActive, currentStep, nextStep } = useTutorial();
     const [currentDate, setCurrentDate] = useState(() => buildLocalDateFromString(getOperationalDateString()));
@@ -373,6 +374,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         window.addEventListener('planner:focus-date', handlePlannerFocusDate as EventListener);
         return () => window.removeEventListener('planner:focus-date', handlePlannerFocusDate as EventListener);
     }, []);
+
+    useEffect(() => {
+        if (!userProfile?.id) return;
+        void fetchRelationshipHubData().catch((error) => {
+            console.error('Planner mentorship sync failed:', error);
+        });
+    }, [userProfile?.id]);
     const [showOracleInput, setShowOracleInput] = useState(false);
     const [oracleInput, setOracleInput] = useState('');
     const oracleInputRef = useRef<HTMLInputElement>(null);

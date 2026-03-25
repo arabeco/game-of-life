@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Arena, Action, ScheduledTask } from '../types';
+import { Arena, Action, ScheduledTask, RelationshipLinkType } from '../types';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { PlusIcon, EditIcon, CheckIcon, LinkIcon, Trash2Icon, UsersIcon, SendIcon } from './Icons';
 import { ActionModal } from './ActionModal';
@@ -128,7 +128,23 @@ export const ArenaDetailModal: React.FC<{
     actionsOverride?: Action[];
     tasksOverride?: ScheduledTask[];
     readOnly?: boolean;
-}> = ({ arena, onClose, actionsOverride, tasksOverride, readOnly = false }) => {
+    linkedRelationshipLinkId?: string;
+    linkedRelationshipType?: RelationshipLinkType | null;
+    collaborativeRole?: 'mentor' | 'pupil' | null;
+    allowLinkedMentorshipEdit?: boolean;
+    onLinkedArenaRefresh?: (() => Promise<void>) | (() => void);
+}> = ({
+    arena,
+    onClose,
+    actionsOverride,
+    tasksOverride,
+    readOnly = false,
+    linkedRelationshipLinkId,
+    linkedRelationshipType = null,
+    collaborativeRole = null,
+    allowLinkedMentorshipEdit = false,
+    onLinkedArenaRefresh,
+}) => {
     const { getActionsForArena, assets, updateArena, deleteArena, tasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -138,7 +154,8 @@ export const ArenaDetailModal: React.FC<{
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const newActionRef = useRef<HTMLButtonElement>(null);
-    const [currentLinkType, setCurrentLinkType] = useState<string | null>(null);
+    const [currentLinkType, setCurrentLinkType] = useState<string | null>(linkedRelationshipType);
+    const [currentCollaborativeRole, setCurrentCollaborativeRole] = useState<'mentor' | 'pupil' | null>(collaborativeRole);
     const [selectionType, setSelectionType] = useState<'mentoria' | 'competicao' | 'parceria'>('mentoria');
 
     useEffect(() => {
@@ -158,10 +175,10 @@ export const ArenaDetailModal: React.FC<{
                 .eq('arena_id', arena.id)
                 .maybeSingle();
 
-            const linkedRelationshipId = linkedArenaResult.data?.relationship_link_id || null;
+            const linkedRelationshipId = linkedRelationshipLinkId || linkedArenaResult.data?.relationship_link_id || null;
 
             const { data } = await supabase.from('relationship_links')
-                .select('link_type')
+                .select('link_type, mentor_id, pupil_id')
                 .or(`mentor_id.eq.${uid},pupil_id.eq.${uid}`)
                 .eq(linkedRelationshipId ? 'id' : 'arena_id', linkedRelationshipId || arena.id)
                 .is('ended_at', null)
@@ -169,16 +186,27 @@ export const ArenaDetailModal: React.FC<{
 
             if (data) {
                 setCurrentLinkType(data.link_type);
+                setCurrentCollaborativeRole(
+                    data.link_type === 'mentoria'
+                        ? (data.mentor_id === uid ? 'mentor' : data.pupil_id === uid ? 'pupil' : null)
+                        : null
+                );
             }
         };
         fetchLinkType();
-    }, [arena.id]);
+    }, [arena.id, linkedRelationshipLinkId]);
 
     const localArenaExists = useMemo(
         () => assets.some((asset) => asset.arenas.some((candidate) => candidate.id === arena.id)),
         [arena.id, assets]
     );
-    const isReadOnlyArena = readOnly || !localArenaExists;
+    const isDetachedMentorshipCollab = Boolean(
+        allowLinkedMentorshipEdit &&
+        (linkedRelationshipType === 'mentoria' || currentLinkType === 'mentoria') &&
+        !localArenaExists
+    );
+    const isPupilMentorshipArena = (linkedRelationshipType === 'mentoria' || currentLinkType === 'mentoria') && currentCollaborativeRole === 'pupil';
+    const isReadOnlyArena = readOnly || (!localArenaExists && !isDetachedMentorshipCollab);
     const activeAssetId = isEditing ? editableArena.assetId : arena.assetId;
     const parentAsset = assets.find(a => a.id === activeAssetId);
     const formatAssetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
@@ -283,6 +311,7 @@ export const ArenaDetailModal: React.FC<{
     const allCompletedInstances = arenaProgressState.totalCompleted || 0;
     const progress = arenaProgressState.progressPercent || 0;
     const isRelationshipArena = currentLinkType === 'mentoria' || currentLinkType === 'competicao' || currentLinkType === 'parceria';
+    const allowRelationshipArenaDelete = !isPupilMentorshipArena;
     const deleteDialogTitle = isSpecialArena
         ? 'Sair da Missao'
         : arena.isArchived
@@ -321,6 +350,9 @@ export const ArenaDetailModal: React.FC<{
                 description: editableArena.description,
                 icon: editableArena.icon,
             });
+            if (isDetachedMentorshipCollab) {
+                void Promise.resolve(onLinkedArenaRefresh?.());
+            }
             showToast('Arena atualizada.', 'success');
         }
         setIsEditing(!isEditing);
@@ -465,7 +497,7 @@ export const ArenaDetailModal: React.FC<{
                                     </button>
                                 )}
 
-                                {!isReadOnlyArena && (isSpecialArena || isRelationshipArena || arena.isArchived) && !isEditing && (
+                                {!isReadOnlyArena && allowRelationshipArenaDelete && (isSpecialArena || isRelationshipArena || arena.isArchived) && !isEditing && (
                                     <button
                                         onClick={() => setShowDeleteConfirmation(true)}
                                         className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
@@ -520,6 +552,11 @@ export const ArenaDetailModal: React.FC<{
                                         <span>ðŸ‘ï¸</span> MENTORIA
                                     </div>
                                 )}
+                                {currentLinkType === 'mentoria' && currentCollaborativeRole === 'pupil' && (
+                                    <div className="bg-emerald-500/16 border border-emerald-300/30 text-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mt-1">
+                                        Plano guiado
+                                    </div>
+                                )}
                                 {isReadOnlyArena && (
                                     <div className="bg-white/8 border border-white/14 text-white/72 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mt-1">
                                         Somente leitura
@@ -550,7 +587,7 @@ export const ArenaDetailModal: React.FC<{
                                 )}
                             </div>
                             {/* Right side actions - redundant delete button removed if we moved it to left for special arenas, but kept for consistency in edit mode */}
-                            {!isReadOnlyArena && isEditing && (
+                            {!isReadOnlyArena && allowRelationshipArenaDelete && isEditing && (
                                 <button
                                     onClick={() => setShowDeleteConfirmation(true)}
                                     className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
@@ -713,6 +750,10 @@ export const ArenaDetailModal: React.FC<{
                     arenaId={arena.id}
                     action={actionModalState.action}
                     initialMode={actionModalState.mode}
+                    lockArenaAssignment={isPupilMentorshipArena}
+                    collaborativeLinkedArena={isDetachedMentorshipCollab}
+                    collaborativeArenaTasks={isDetachedMentorshipCollab ? (tasksOverride || []) : undefined}
+                    onCollaborativeRefresh={isDetachedMentorshipCollab ? onLinkedArenaRefresh : undefined}
                     onClose={() => setActionModalState(null)}
                 />
             )}

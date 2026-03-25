@@ -85,7 +85,7 @@ function buildProfilePayload({ userId, email, nickname, isPremium = true, appMod
     is_premium: isPremium,
     app_mode: appMode,
     theme_preference: 'dark',
-    arenas_view_mode: 'cards',
+    arenas_view_mode: 'free',
     wallet: { gold, fragments },
   };
 }

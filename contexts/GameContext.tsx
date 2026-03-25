@@ -549,7 +549,7 @@ export interface GameContextType {
     userCodexes: UserCodex[];
     codexCatalog: CodexCatalogItem[];
     refreshCodexes: () => Promise<void>;
-    buyCodex: (catalogId: string) => Promise<void>;
+    buyCodex: (catalogId: string) => Promise<UserCodex | null>;
     buyCodexCreationSlot: () => Promise<boolean>;
     getRelationshipCapacitySummary: () => Promise<RelationshipCapacitySummary | null>;
     fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; competitionChallenges: RelationshipCompetitionChallenge[]; summary: RelationshipCapacitySummary | null }>;
@@ -3399,19 +3399,46 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const mentorshipLinksResult = await supabase
                     .from('relationship_links')
                     .select('*')
-                    .eq('pupil_id', userId)
                     .eq('link_type', 'mentoria')
+                    .or(`mentor_id.eq.${userId},pupil_id.eq.${userId}`)
                     .is('ended_at', null);
 
                 if (!mentorshipLinksResult.error && mentorshipLinksResult.data && mentorshipLinksResult.data.length > 0) {
-                    const mentorshipLinkIds = mentorshipLinksResult.data.map((row: any) => String(row.id)).filter(Boolean);
+                    const pupilMentorshipLinkIds = mentorshipLinksResult.data
+                        .filter((row: any) => String(row.pupil_id || '') === userId)
+                        .map((row: any) => String(row.id))
+                        .filter(Boolean);
+                    const mentorMentorshipLinkIds = mentorshipLinksResult.data
+                        .filter((row: any) => String(row.mentor_id || '') === userId)
+                        .map((row: any) => String(row.id))
+                        .filter(Boolean);
+                    const mentorshipLinkIds = [...new Set([...pupilMentorshipLinkIds, ...mentorMentorshipLinkIds])];
                     const linkedMentorshipArenasResult = await supabase
                         .from('relationship_link_arenas')
                         .select('*')
                         .in('relationship_link_id', mentorshipLinkIds);
 
                     if (!linkedMentorshipArenasResult.error && linkedMentorshipArenasResult.data && linkedMentorshipArenasResult.data.length > 0) {
-                        const linkedArenaIds = [...new Set(linkedMentorshipArenasResult.data.map((row: any) => String(row.arena_id || '')).filter(Boolean))];
+                        const mentorMentorshipArenaIds = new Set(
+                            linkedMentorshipArenasResult.data
+                                .filter((row: any) => mentorMentorshipLinkIds.includes(String(row.relationship_link_id || '')))
+                                .map((row: any) => String(row.arena_id || ''))
+                                .filter(Boolean)
+                        );
+                        if (mentorMentorshipArenaIds.size > 0) {
+                            if (camelArenas) {
+                                camelArenas = camelArenas.filter((arena) => !mentorMentorshipArenaIds.has(arena.id));
+                                loadedArenas = camelArenas;
+                            }
+                            loadedActions = loadedActions.filter((action) => !mentorMentorshipArenaIds.has(action.arenaId));
+                            const keptActionIds = new Set(loadedActions.map((action) => action.id));
+                            loadedTasks = loadedTasks.filter((task) => keptActionIds.has(task.actionId));
+                        }
+
+                        const pupilLinkedRows = linkedMentorshipArenasResult.data.filter((row: any) =>
+                            pupilMentorshipLinkIds.includes(String(row.relationship_link_id || ''))
+                        );
+                        const linkedArenaIds = [...new Set(pupilLinkedRows.map((row: any) => String(row.arena_id || '')).filter(Boolean))];
 
                         if (linkedArenaIds.length > 0) {
                             const [mentorshipArenasResult, mentorshipActionsResult] = await Promise.all([
@@ -3930,12 +3957,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         void refreshCodexes();
     }, [notifications, refreshCodexes, session?.user.id]);
 
-    const buyCodex = async (catalogId: string) => {
+    const buyCodex = async (catalogId: string): Promise<UserCodex | null> => {
         const userId = getSupabaseUserId();
-        if (!userId) return;
+        if (!userId) return null;
 
         const catalogItem = codexCatalog.find(c => c.id === catalogId);
-        if (!catalogItem) return;
+        if (!catalogItem) return null;
         const priceGold = Number(catalogItem.price_gold ?? Math.round(catalogItem.price_brl ?? 0));
 
         if ((userProfile.wallet?.gold || 0) < priceGold) {
@@ -3947,7 +3974,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 storeTab: 'store',
                 section: 'packs',
             });
-            return;
+            return null;
         }
 
         const { data, error } = await supabase.rpc('buy_codex_catalog_item', {
@@ -3957,25 +3984,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             console.error('Error buying codex:', error);
             showToast(error.message || 'Erro ao adquirir campanha.');
-            return;
+            return null;
         }
 
         if ((data as any)?.success === false) {
             showToast(String((data as any)?.error || 'Erro ao adquirir campanha.'), 'error');
-            return;
+            return null;
         }
 
         const purchasedCodex = (data as any)?.codex;
         const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+        let normalizedPurchasedCodex: UserCodex | null = null;
 
         if (purchasedCodex) {
-            setUserCodexes(prev => [normalizeUserCodexRow(purchasedCodex, codexCatalog), ...prev]);
+            normalizedPurchasedCodex = normalizeUserCodexRow(purchasedCodex, codexCatalog);
+            setUserCodexes(prev => [normalizedPurchasedCodex!, ...prev]);
         }
 
         updateUserProfile({
             wallet: { ...userProfile.wallet, gold: nextGold },
         });
         showToast(`Campanha "${catalogItem.title}" adquirida!`);
+        return normalizedPurchasedCodex;
     };
 
     const buyCodexCreationSlot = async (): Promise<boolean> => {
@@ -4286,10 +4316,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                 const mapped = mapToCamelCase(row) as ScheduledTask;
                                 const arenaId = arenaIdByActionId.get(String((mapped as any).actionId || row.action_id || ''));
                                 if (!arenaId) continue;
-                                const linkedArenaOwner = arenasById.get(arenaId) as (Arena & { userId?: string }) | undefined;
                                 const linkedArenaLink = linkByArenaId.get(arenaId);
                                 const isMentorshipArena = linkedArenaLink?.linkType === 'mentoria';
-                                const shouldKeepTask = !isMentorshipArena || String(row.user_id || '') === userId || String(linkedArenaOwner?.userId || '') === userId;
+                                const shouldKeepTask = !isMentorshipArena
+                                    || Boolean(linkedArenaLink && (linkedArenaLink.mentorId === userId || linkedArenaLink.pupilId === userId));
                                 if (!shouldKeepTask) continue;
                                 const nextTasks = tasksByArenaId.get(arenaId) || [];
                                 nextTasks.push(mapped);
@@ -4301,10 +4331,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                 const operationalLinkedArenas = (arenasResult.data || [])
                     .filter((row: any) => {
-                        const ownerId = String(row.user_id || '');
-                        if (ownerId === userId) return true;
                         const link = linkByArenaId.get(String(row.id));
-                        return Boolean(link?.linkType === 'mentoria' && link.pupilId === userId);
+                        if (link?.linkType === 'mentoria') {
+                            return link.pupilId === userId;
+                        }
+                        const ownerId = String(row.user_id || '');
+                        return ownerId === userId;
                     })
                     .map((row: any) => {
                         const mappedArena = arenasById.get(String(row.id));
@@ -4530,17 +4562,37 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const mapped = mapToCamelCase(arenaRow) as Arena;
+        const sessionUserId = getSupabaseUserId();
+        const arenaOwnerId = String((arenaRow as any)?.user_id || '');
         const nextArena: Arena = {
             ...mapped,
             actionIds: mapped.actionIds || [],
             isArchived: mapped.isArchived ?? false,
         };
 
-        setAssets(prevAssets => prevAssets.map(asset =>
-            asset.id === nextArena.assetId
-                ? { ...asset, arenas: asset.arenas.some(arena => arena.id === nextArena.id) ? asset.arenas : [...asset.arenas, nextArena] }
-                : asset
-        ));
+        const shouldAttachArenaToCurrentUser = Boolean(
+            linkedArenaType !== 'mentoria'
+            || !sessionUserId
+            || arenaOwnerId === sessionUserId
+        );
+
+        if (shouldAttachArenaToCurrentUser) {
+            setAssets(prevAssets => prevAssets.map(asset =>
+                asset.id === nextArena.assetId
+                    ? { ...asset, arenas: asset.arenas.some(arena => arena.id === nextArena.id) ? asset.arenas : [...asset.arenas, nextArena] }
+                    : asset
+            ));
+        } else {
+            setAssets(prevAssets => prevAssets.map(asset => ({
+                ...asset,
+                arenas: asset.arenas.filter(arena => arena.id !== nextArena.id),
+            })));
+            setActions(prevActions => prevActions.filter(action => action.arenaId !== nextArena.id));
+            setTasks(prevTasks => prevTasks.filter(task => {
+                const linkedAction = actions.find((action) => action.id === task.actionId);
+                return linkedAction?.arenaId !== nextArena.id;
+            }));
+        }
 
         showToast(linkedArenaType === 'parceria' ? 'Arena compartilhada adicionada a parceria.' : 'Arena vinculada criada para a mentoria.', 'success');
         return nextArena;

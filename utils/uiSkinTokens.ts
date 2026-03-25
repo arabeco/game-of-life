@@ -303,7 +303,7 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
       : isNebulosa
         ? 'linear-gradient(180deg, rgba(154, 169, 226, 0.97) 0%, rgba(108, 126, 192, 0.96) 100%)'
       : `linear-gradient(180deg, ${rgbToString(plannerHeader, 0.97)} 0%, ${rgbToString(mixRgb(plannerAccent, plannerBase, 0.22), 0.96)} 100%)`,
-    plannerDayHeaderText: isEmber ? '#f6e5df' : isCyber ? '#1b2238' : isNebulosa ? '#18223a' : rgbToString(mixRgb(accent, hexToRgb('#edf4fb'), 0.22)),
+    plannerDayHeaderText: isEmber ? '#f6e5df' : isCyber ? '#162235' : isNebulosa ? '#182742' : rgbToString(mixRgb(accent, safeDark, 0.62)),
     plannerScrollBackground: isEmber
       ? 'linear-gradient(180deg, rgba(189, 183, 188, 0.985) 0%, rgba(82, 64, 74, 0.99) 100%)'
       : isNebulosa
@@ -326,7 +326,7 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
       : `linear-gradient(180deg, ${rgbToString(plannerFloating, 0.96)} 0%, ${rgbToString(mixRgb(plannerAccent, plannerBase, 0.18), 0.95)} 100%)`,
     plannerPillBackground: isEmber ? 'rgba(81, 38, 44, 0.42)' : isCyber ? 'rgba(255, 255, 255, 0.42)' : isNebulosa ? 'rgba(255, 255, 255, 0.46)' : rgbToString(plannerPill, 0.56),
     plannerPillActiveBackground: isEmber ? 'rgba(179, 98, 32, 0.74)' : isCyber ? 'rgba(103, 146, 214, 0.72)' : isNebulosa ? 'rgba(94, 106, 192, 0.72)' : rgbToString(plannerPillActive, 0.72),
-    plannerSoftControlColor: isEmber ? '#f4e0d9' : isCyber ? '#19243d' : isNebulosa ? '#1d2742' : rgbToString(accentText),
-    plannerHourLabelColor: isEmber ? 'rgba(242, 222, 214, 0.9)' : isCyber ? '#eef7ff' : isNebulosa ? '#eef6ff' : rgbToString(mixRgb(accent, hexToRgb('#edf4fb'), 0.18)),
+    plannerSoftControlColor: isEmber ? '#f4e0d9' : isCyber ? '#162235' : isNebulosa ? '#1b2944' : rgbToString(mixRgb(accent, safeDark, 0.58)),
+    plannerHourLabelColor: isEmber ? 'rgba(242, 222, 214, 0.9)' : isCyber ? '#162235' : isNebulosa ? '#1b2944' : rgbToString(mixRgb(accent, safeDark, 0.54)),
   };
 };

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz de Campanhas</title>
+  <link rel="stylesheet" href="/codex-quiz.css" />
+</head>
+<body>
+  <div class="quiz-app">
+    <header class="quiz-header">
+      <div id="headerIndex">01 / 07</div>
+      <div class="progress-shell" aria-hidden="true">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div id="headerProgress">Pergunta 1 de 7</div>
+    </header>
+
+    <main class="quiz-stage">
+      <section class="quiz-frame" id="quizFrame" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <div class="catalog-modal" id="catalogModal" aria-hidden="true">
+    <div class="catalog-panel">
+      <div class="catalog-header">
+        <div>
+          <h2 class="catalog-title">Cat&aacute;logo gratuito</h2>
+          <p class="catalog-subtitle">
+            Esta primeira vers&atilde;o do quiz est&aacute; calibrada s&oacute; para as campanhas b&aacute;sicas gratuitas.
+            O trilho j&aacute; est&aacute; pronto para abrir o matching completo depois.
+          </p>
+        </div>
+        <button class="catalog-close" id="catalogClose" type="button">Fechar</button>
+      </div>
+      <div class="catalog-grid" id="catalogGrid"></div>
+    </div>
+  </div>
+
+  <script src="/codex-quiz.js"></script>
+</body>
+</html>

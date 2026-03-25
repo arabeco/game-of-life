@@ -13,6 +13,7 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_link public.relationship_links%rowtype;
+  v_owner_user_id uuid;
   v_new_gold integer;
   v_arena public.arenas%rowtype;
   v_linked public.relationship_link_arenas%rowtype;
@@ -49,9 +50,11 @@ begin
   if v_link.link_type = 'parceria' then
     v_ledger_id := 'partnership_linked_arena';
     v_reason := 'Arena compartilhada de parceria';
+    v_owner_user_id := v_uid;
   else
     v_ledger_id := 'mentor_linked_arena';
     v_reason := 'Arena vinculada de mentoria';
+    v_owner_user_id := v_link.pupil_id;
   end if;
 
   v_new_gold := public._codex_debit_gold(
@@ -71,7 +74,7 @@ begin
     id, user_id, asset_id, name, description, icon, is_archived
   ) values (
     extensions.gen_random_uuid(),
-    v_uid,
+    v_owner_user_id,
     p_asset_id,
     trim(p_name),
     coalesce(trim(p_description), ''),
@@ -89,6 +92,7 @@ begin
     now(),
     jsonb_build_object(
       'link_type', v_link.link_type,
+      'owner_user_id', v_owner_user_id,
       'asset_id', v_arena.asset_id,
       'name', v_arena.name,
       'description', coalesce(v_arena.description, ''),

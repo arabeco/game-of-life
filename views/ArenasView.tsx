@@ -1616,6 +1616,64 @@ export const ArenasView: React.FC = () => {
         <>
             {renderDragPreview()}
             <div className="arenas-view-root h-full overflow-y-auto overflow-x-hidden px-4 pb-4 pt-4 relative min-h-0 custom-scrollbar">
+                <div className="mb-4 flex items-center gap-1.5 z-[60]" id="campaigns-section-top">
+                    <div className="flex items-center bg-black/40 rounded-full px-1 border border-white/5">
+                    <button
+                        id="campaigns-button-top"
+                        onClick={() => setCampaignHubOpen(true)}
+                        className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--ui-text-accent)] transition-colors hover:bg-white/8"
+                        title="Abrir campanhas"
+                    >
+                        <FolderStarIcon className="h-3.5 w-3.5" />
+                        <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/85 px-1 py-0.5 text-[7px] font-black leading-none text-white">
+                            {campaigns.length}
+                        </span>
+                    </button>
+                    <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
+                    <button
+                        onClick={handleCreateCampaignClick}
+                        title={isSelectionMode ? 'OrganizaÃ§Ã£o ativa' : 'Gerenciar campanhas'}
+                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+                            isSelectionMode
+                                ? 'bg-[var(--skin-accent-color)]/18 text-[var(--ui-text-accent)] animate-pulse'
+                                : 'text-gray-400 hover:bg-white/8 hover:text-white'
+                        }`}
+                    >
+                        <EditIcon className="w-3.5 h-3.5" />
+                    </button>
+                    </div>
+                    <div className="ml-auto flex min-w-0 shrink-0 items-center bg-black/40 rounded-full px-1 border border-white/5">
+                        <button
+                            onClick={handleCycleViewMode}
+                            className={`px-1.5 py-1 rounded-full transition-colors flex items-center gap-1 ${arenasViewMode !== 'free' ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
+                            title={`Modo: ${arenasViewMode === 'free' ? 'Livre' : arenasViewMode === 'priorities' ? 'Prioridades' : 'Por Ativo'}`}
+                        >
+                            <LayersIcon className="w-3.5 h-3.5" />
+                            <span className="text-[8px] font-black uppercase tracking-[0.08em] w-10 text-center truncate">
+                                {arenasViewMode === 'free' ? 'Livre' : arenasViewMode === 'priorities' ? 'Prios' : 'Ativo'}
+                            </span>
+                        </button>
+                        <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
+                        <button
+                            onClick={() => setArenaPresentationMode((current) => current === 'cards' ? 'list' : 'cards')}
+                            className={`p-1.5 rounded-full transition-colors ${arenaPresentationMode === 'list' ? 'text-white' : 'text-gray-500'}`}
+                            title={arenaPresentationMode === 'list' ? 'Voltar para miniaturas' : 'Modo lista'}
+                        >
+                            <ListRowsIcon className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
+                        <button onClick={() => setShowArchived(s => !s)} className={`p-1.5 rounded-full transition-colors ${showArchived ? 'text-white' : 'text-gray-500'}`} title={showArchived ? 'Ocultar arquivadas' : 'Mostrar arquivadas'}>
+                            <ArchiveBoxIcon className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                </div>
+
+                {isSelectionMode && (
+                    <div className="mb-4 p-3 bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 rounded-xl">
+                        {/* Prompt removed per user request */}
+                    </div>
+                )}
+
                 {receivedMentorCampaigns.length > 0 && (
                     <div className="mb-6 space-y-2">
                         <div className="flex items-center gap-2 px-2">
@@ -1770,6 +1828,8 @@ export const ArenasView: React.FC = () => {
                         )}
                     </div>
                 )}
+                {false && (
+                <>
                 <div className="mb-4 flex items-center gap-1.5 z-[60]" id="campaigns-section">
                     <div className="flex items-center bg-black/40 rounded-full px-1 border border-white/5">
                     <button
@@ -1826,6 +1886,8 @@ export const ArenasView: React.FC = () => {
                     <div className="mb-4 p-3 bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 rounded-xl">
                         {/* Prompt removed per user request */}
                     </div>
+                )}
+                </>
                 )}
 
                 <div id="arenas-container" className={arenaPresentationMode === 'list' ? 'space-y-4' : 'space-y-8'}>

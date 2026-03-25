@@ -1,3 +1,5 @@
+begin;
+
 create or replace function public.create_linked_relationship_arena(
   p_relationship_link_id uuid,
   p_asset_id text,
@@ -120,3 +122,85 @@ end;
 $$;
 
 grant execute on function public.create_linked_relationship_arena(uuid, text, text, text, text) to authenticated;
+
+update public.arenas arena
+set user_id = link.pupil_id
+from public.relationship_link_arenas linked
+join public.relationship_links link
+  on link.id = linked.relationship_link_id
+where linked.arena_id = arena.id
+  and link.link_type = 'mentoria'
+  and link.ended_at is null
+  and arena.user_id::text <> link.pupil_id::text;
+
+update public.actions action_row
+set user_id = link.pupil_id
+from public.relationship_link_arenas linked
+join public.relationship_links link
+  on link.id = linked.relationship_link_id
+where linked.arena_id = action_row.arena_id
+  and link.link_type = 'mentoria'
+  and link.ended_at is null
+  and action_row.user_id::text <> link.pupil_id::text;
+
+update public.scheduled_tasks task_row
+set user_id = link.pupil_id
+from public.actions action_row
+join public.relationship_link_arenas linked
+  on linked.arena_id = action_row.arena_id
+join public.relationship_links link
+  on link.id = linked.relationship_link_id
+where task_row.action_id::text = action_row.id::text
+  and link.link_type = 'mentoria'
+  and link.ended_at is null
+  and task_row.user_id::text <> link.pupil_id::text;
+
+update public.relationship_link_arenas linked
+set metadata = coalesce(linked.metadata, '{}'::jsonb)
+  || jsonb_build_object('owner_user_id', link.pupil_id, 'link_type', 'mentoria')
+from public.relationship_links link
+where link.id = linked.relationship_link_id
+  and link.link_type = 'mentoria'
+  and link.ended_at is null;
+
+drop policy if exists "Mentorship participants can insert linked actions" on public.actions;
+create policy "Mentorship participants can insert linked actions"
+on public.actions
+for insert
+with check (
+  exists (
+    select 1
+    from public.arenas linked_arena
+    join public.relationship_link_arenas rla
+      on rla.arena_id = linked_arena.id
+    join public.relationship_links rl
+      on rl.id = rla.relationship_link_id
+    where linked_arena.id = actions.arena_id
+      and linked_arena.user_id::text = actions.user_id::text
+      and rl.link_type = 'mentoria'
+      and rl.ended_at is null
+      and (rl.mentor_id = auth.uid() or rl.pupil_id = auth.uid())
+  )
+);
+
+drop policy if exists "Mentorship participants can insert linked scheduled tasks" on public.scheduled_tasks;
+create policy "Mentorship participants can insert linked scheduled tasks"
+on public.scheduled_tasks
+for insert
+with check (
+  exists (
+    select 1
+    from public.actions action_row
+    join public.relationship_link_arenas linked
+      on linked.arena_id = action_row.arena_id
+    join public.relationship_links link
+      on link.id = linked.relationship_link_id
+    where action_row.id::text = scheduled_tasks.action_id::text
+      and action_row.user_id::text = scheduled_tasks.user_id::text
+      and link.link_type = 'mentoria'
+      and link.ended_at is null
+      and (link.mentor_id = auth.uid() or link.pupil_id = auth.uid())
+  )
+);
+
+commit;

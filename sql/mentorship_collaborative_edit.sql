@@ -86,13 +86,15 @@ begin
     on public.actions
     for insert
     with check (
-      auth.uid()::text = user_id::text
-      and exists (
+      exists (
         select 1
-        from public.relationship_link_arenas rla
+        from public.arenas linked_arena
+        join public.relationship_link_arenas rla
+          on rla.arena_id = linked_arena.id
         join public.relationship_links rl
           on rl.id = rla.relationship_link_id
-        where rla.arena_id = actions.arena_id
+        where linked_arena.id = actions.arena_id
+          and linked_arena.user_id::text = actions.user_id::text
           and rl.link_type = 'mentoria'
           and rl.ended_at is null
           and (rl.mentor_id = auth.uid() or rl.pupil_id = auth.uid())
@@ -186,8 +188,7 @@ begin
     on public.scheduled_tasks
     for insert
     with check (
-      auth.uid()::text = user_id::text
-      and exists (
+      exists (
         select 1
         from public.actions a
         join public.relationship_link_arenas rla
@@ -195,10 +196,11 @@ begin
         join public.relationship_links rl
           on rl.id = rla.relationship_link_id
         where a.id::text = scheduled_tasks.action_id::text
+          and a.user_id::text = scheduled_tasks.user_id::text
           and rl.link_type = 'mentoria'
           and rl.ended_at is null
           and (rl.mentor_id = auth.uid() or rl.pupil_id = auth.uid())
-      )
+        )
     );
   end if;
 end

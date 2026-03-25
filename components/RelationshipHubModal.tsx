@@ -66,6 +66,7 @@ type RelationshipArenaDetailState = {
     relationshipLinkType?: RelationshipLinkType | null;
     collaborationRole?: 'mentor' | 'pupil' | null;
     allowLinkedMentorshipEdit?: boolean;
+    collaborativeOwnerUserId?: string | null;
 };
 
 const HUB_TABS: Array<{
@@ -369,7 +370,7 @@ const InviteCard: React.FC<{
                         disabled={busy}
                         className="rounded-xl border border-amber-300/18 bg-amber-400/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-200 transition-all hover:bg-amber-400/14 disabled:opacity-50"
                     >
-                        Revogar + refund
+                        Revogar + reembolso
                     </button>
                 )}
             </div>
@@ -415,7 +416,7 @@ const RelationshipInvitePicker: React.FC<{
                         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/44">Entrada</div>
                         <p className="mt-1 text-sm text-white/58">
                             {linkType === 'mentoria'
-                                ? `A mentoria basica cobra ${COIN_GLYPH} ${LINK_LABELS.mentoria.cost} no envio. O refund acontece se a pessoa recusar, se voce revogar ou se expirar.`
+                                ? `A mentoria basica cobra ${COIN_GLYPH} ${LINK_LABELS.mentoria.cost} no envio. O reembolso acontece se a pessoa recusar, se voce revogar ou se expirar.`
                                 : `O custo so sai quando voce confirmar o envio: ${COIN_GLYPH} ${LINK_LABELS[linkType].cost}.`}
                         </p>
                     </div>
@@ -522,7 +523,7 @@ const RelationshipInviteConfirmModal: React.FC<{
                     <div className={`mt-4 grid gap-2 ${isMentoria ? 'grid-cols-3' : 'grid-cols-2'}`}>
                         <MiniStatCard label="Custo agora" value={`${COIN_GLYPH} ${label.cost}`} tone="text-[var(--skin-accent-color)]" />
                         {isMentoria && <MiniStatCard label="Modo" value="basica" tone="text-white" />}
-                        <MiniStatCard label="Refund" value="se recusar" tone="text-emerald-300" />
+                        <MiniStatCard label="Reembolso" value="se recusar" tone="text-emerald-300" />
                     </div>
 
                     <div className="mt-4 rounded-[18px] border border-emerald-300/16 bg-emerald-400/10 px-4 py-3 text-[12px] leading-relaxed text-emerald-100/84">
@@ -1149,12 +1150,19 @@ export const RelationshipHubModal: React.FC<{
         const collaborationRole = relationshipLink?.linkType === 'mentoria'
             ? (relationshipLink.mentorId === sessionUid ? 'mentor' : relationshipLink.pupilId === sessionUid ? 'pupil' : null)
             : null;
-        const canPupilCollaborate = Boolean(
+        const canMentorshipCollaborate = Boolean(
             relationshipLink?.linkType === 'mentoria'
-            && collaborationRole === 'pupil'
+            && (collaborationRole === 'pupil' || collaborationRole === 'mentor')
         );
+        const shouldForceHubMentorshipMode = Boolean(
+            relationshipLink?.linkType === 'mentoria'
+            && collaborationRole === 'mentor'
+        );
+        const collaborativeOwnerUserId = relationshipLink?.linkType === 'mentoria'
+            ? relationshipLink.pupilId
+            : null;
 
-        if (liveOwnedArena) {
+        if (liveOwnedArena && !shouldForceHubMentorshipMode) {
             return {
                 arena: liveOwnedArena,
                 readOnly: false,
@@ -1162,6 +1170,7 @@ export const RelationshipHubModal: React.FC<{
                 relationshipLinkType: relationshipLink?.linkType || linkedArena.linkType || null,
                 collaborationRole,
                 allowLinkedMentorshipEdit: false,
+                collaborativeOwnerUserId,
             };
         }
 
@@ -1169,11 +1178,12 @@ export const RelationshipHubModal: React.FC<{
             arena: previewArena,
             actions: linkedArena.actions || [],
             tasks: linkedArena.tasks || [],
-            readOnly: !canPupilCollaborate,
+            readOnly: !canMentorshipCollaborate,
             relationshipLinkId: linkedArena.relationshipLinkId,
             relationshipLinkType: relationshipLink?.linkType || linkedArena.linkType || null,
             collaborationRole,
-            allowLinkedMentorshipEdit: canPupilCollaborate,
+            allowLinkedMentorshipEdit: canMentorshipCollaborate,
+            collaborativeOwnerUserId,
         };
     };
 
@@ -2265,6 +2275,7 @@ export const RelationshipHubModal: React.FC<{
                     linkedRelationshipType={selectedArenaDetail.relationshipLinkType || null}
                     collaborativeRole={selectedArenaDetail.collaborationRole || null}
                     allowLinkedMentorshipEdit={selectedArenaDetail.allowLinkedMentorshipEdit}
+                    collaborativeOwnerUserId={selectedArenaDetail.collaborativeOwnerUserId || null}
                     onLinkedArenaRefresh={refreshHub}
                     onClose={() => setSelectedArenaDetail(null)}
                 />

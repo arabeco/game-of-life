@@ -30,6 +30,25 @@
   line-height: 1.4;
 }
 
+.sitrep-neutral-panel {
+  background: rgba(7, 10, 14, 0.74);
+  border: 1px solid color-mix(in srgb, var(--skin-accent-color) 22%, rgba(255, 255, 255, 0.12));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 14px 28px rgba(0, 0, 0, 0.22);
+}
+
+.sitrep-neutral-pill {
+  background: rgba(7, 10, 14, 0.58);
+  border: 1px solid color-mix(in srgb, var(--skin-accent-color) 22%, rgba(255, 255, 255, 0.12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.sitrep-neutral-track {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid color-mix(in srgb, var(--skin-accent-color) 18%, rgba(255, 255, 255, 0.1));
+}
+
 .free-action-shell {
   background:
     linear-gradient(180deg, rgba(184, 196, 212, 0.16), rgba(39, 47, 57, 0.82)),

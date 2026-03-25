@@ -1094,59 +1094,35 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 <div className="flex-1 flex flex-col items-center justify-start w-full max-w-md px-4 z-10 animate-fade-in overflow-hidden h-full min-h-0 mb-2">
                     <div className="relative w-full h-full flex flex-col group">
                         {/* Decorative background glow */}
-                        <div className={`absolute inset-0 rounded-3xl -z-10 transition-all duration-500 ${isBasicMode ? 'bg-[var(--ui-core-surface-bg)]/60 blur-xl' : 'bg-[var(--skin-accent-color)]/5 blur-2xl'}`} />
+                        <div className="absolute inset-0 rounded-3xl -z-10 bg-black/20 blur-2xl transition-all duration-500" />
 
                         <GlassCard
                             id="sitrep-embedded-card"
-                            variant={isBasicMode ? 'neutral' : 'gold'}
-                            className={`rounded-[2rem] p-4 flex flex-col gap-2 shadow-2xl relative overflow-hidden h-full ${
-                                isBasicMode
-                                    ? 'core-surface-strong'
-                                    : 'bg-black/60 backdrop-blur-md border border-white/10'
-                            }`}
+                            variant="neutral"
+                            className="restscreen-neutral-shell rounded-[2rem] p-4 flex flex-col gap-2 shadow-2xl relative overflow-hidden h-full"
                         >
                             {/* Header / Lock Control */}
-                            <div className={`flex items-center justify-between pb-2 shrink-0 ${isBasicMode ? 'border-b border-[var(--ui-core-surface-border)]' : 'border-b border-white/5'}`}>
+                            <div className="flex items-center justify-between border-b border-white/8 pb-2 shrink-0">
                                 <div className="flex items-center gap-2">
-                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                        isBasicMode
-                                            ? 'bg-[var(--ui-core-surface-bg)] border border-[var(--ui-core-surface-border)]'
-                                            : 'bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30'
-                                    }`}>
+                                    <div className="restscreen-neutral-pill w-8 h-8 rounded-xl flex items-center justify-center">
                                         <CheckCircleIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                     </div>
                                     <div>
-                                        <h2 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isBasicMode ? 'text-[color:var(--ui-card-text-soft)]' : 'text-gray-400'}`}>PAINEL DIÁRIO</h2>
-                                        <div className={`text-xs font-bold uppercase tracking-wider ${isBasicMode ? 'text-[color:var(--ui-card-text)]' : 'text-white'}`}>
+                                        <h2 className="restscreen-neutral-label text-[10px] font-black uppercase tracking-[0.2em]">PAINEL DIÁRIO</h2>
+                                        <div className="restscreen-neutral-title text-xs font-bold uppercase tracking-wider">
                                             {dailyCommitment.stage === 'planning' ? 'Planejamento' : dailyCommitment.stage === 'battle' ? 'Combate' : 'Julgamento'}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <div className={`hidden sm:flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${
-                                        isBasicMode
-                                            ? isSitrepLocked
-                                                ? 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'
-                                                : 'border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)]'
-                                            : isSitrepLocked
-                                                ? 'border-amber-300/25 bg-amber-300/10 text-amber-200 shadow-[0_0_16px_rgba(251,191,36,0.10)]'
-                                                : 'border-emerald-300/25 bg-emerald-300/10 text-emerald-200 shadow-[0_0_16px_rgba(52,211,153,0.10)]'
-                                    }`}>
+                                    <div className={`restscreen-neutral-pill hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] sm:flex ${isSitrepLocked ? 'text-gray-300' : 'text-[var(--skin-accent-color)]'}`}>
                                         {isSitrepLocked ? <EyeIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
                                         <span>{sitrepStatusLabel}</span>
                                     </div>
                                     <button
                                         onClick={() => setIsSitrepLocked(!isSitrepLocked)}
-                                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all ${
-                                            isBasicMode
-                                                ? isSitrepLocked
-                                                    ? 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text)] hover:bg-[var(--ui-core-surface-strong-bg)]'
-                                                    : 'bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)] border border-[var(--skin-accent-color)]/22 hover:bg-[var(--skin-accent-color)]/18'
-                                                : isSitrepLocked
-                                                    ? 'border-amber-300/30 bg-amber-300/12 text-amber-100 shadow-[0_0_20px_rgba(251,191,36,0.14)] hover:bg-amber-300/18'
-                                                    : 'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border border-[var(--skin-accent-color)]/30 shadow-[0_0_20px_rgba(212,175,55,0.14)]'
-                                        }`}
+                                        className={`restscreen-neutral-pill inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all hover:bg-black/70 ${isSitrepLocked ? 'text-white' : 'text-[var(--skin-accent-color)]'}`}
                                     >
                                         {isSitrepLocked ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
                                         <span className="text-[9px] font-black uppercase tracking-[0.18em]">{sitrepStatusLabel}</span>

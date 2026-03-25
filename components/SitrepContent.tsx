@@ -55,7 +55,7 @@ const CycleHeader: React.FC = () => {
     const daysElapsed = Math.max(0, daysBetween(startDate, today) + 1);
 
     return (
-        <div className="text-center space-y-2 text-xs p-2 rounded-xl core-surface">
+        <div className="text-center space-y-2 text-xs p-2 rounded-xl sitrep-neutral-panel">
             <h3 className="arena-title-text text-[11px] text-white leading-tight tracking-[0.08em]">{activeCycle.name} · Dia {daysElapsed}/{totalDays}</h3>
         </div>
     );
@@ -133,8 +133,8 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
 
     const [isAdjusting, setIsAdjusting] = useState(false);
     const isBasicMode = appMode === 'BASIC';
-    const softPanelClass = isBasicMode ? 'core-surface' : 'bg-black/20 border border-white/6';
-    const progressTrackClass = isBasicMode ? 'bg-[var(--ui-core-surface-bg)] border border-[var(--ui-core-surface-border)]' : 'bg-black/30';
+    const softPanelClass = 'sitrep-neutral-panel';
+    const progressTrackClass = 'sitrep-neutral-track';
 
     const arenas = getArenas();
     const isClanQuestActionId = (actionId: string) => isClanQuestAction(actionId, actions, arenas);
@@ -228,7 +228,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         <>
             <CycleHeader />
 
-            <div className="core-surface p-3 rounded-xl">
+            <div className="sitrep-neutral-panel p-3 rounded-xl">
                 <h3 className="core-label text-center mb-2">Tarefas disponíveis</h3>
                 <div className="max-h-24 overflow-y-auto pr-1 space-y-1">
                     {groupedAvailableOptions.map((group) => {
@@ -250,7 +250,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 </div>
             </div>
 
-            <div className="core-surface p-3 rounded-xl">
+            <div className="sitrep-neutral-panel p-3 rounded-xl">
                 <h3 className="core-label text-center mb-2">Metas de hoje</h3>
                 <div className="max-h-24 overflow-y-auto pr-1 space-y-1">
                     {commitmentStats.committedTasks.map(task => {
@@ -300,7 +300,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         <EditIcon className="w-5 h-5" />
                     </button>
                     <div className="flex-1 text-center">
-                        <div className={`inline-block text-[10px] uppercase tracking-[0.2em] rounded-lg px-2 py-1 ${isBasicMode ? 'core-surface text-[color:var(--ui-card-text-soft)]' : 'text-gray-400 bg-white/5 border border-white/5'}`}>
+                        <div className="sitrep-neutral-pill inline-block text-[10px] uppercase tracking-[0.2em] rounded-lg px-2 py-1 text-gray-300">
                             Hoje {todayStr}
                         </div>
                     </div>
@@ -319,11 +319,11 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
 
                 {coreTotal > 0 && (
                     <div className="grid grid-cols-2 gap-2 my-2">
-                        <div className="core-surface p-2 rounded-lg text-center">
+                        <div className="sitrep-neutral-panel p-2 rounded-lg text-center">
                             <p className="core-label">{coreLabel}</p>
                             <p className={`text-xl arena-title-text leading-tight ${coreScore >= 80 ? 'text-green-400' : 'text-white'}`}>{coreScore.toFixed(0)}%</p>
                         </div>
-                        <div className="core-surface p-2 rounded-lg text-center">
+                        <div className="sitrep-neutral-panel p-2 rounded-lg text-center">
                             <p className="core-label">Feitas</p>
                             <p className="text-xl arena-title-text text-white leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
                         </div>
@@ -331,7 +331,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 )}
 
                 {dailyArenaFocus && (
-                    <div className="core-surface p-2 rounded-lg text-center mb-2">
+                    <div className="sitrep-neutral-panel p-2 rounded-lg text-center mb-2">
                         <p className="core-label">Arena foco do dia</p>
                         <p className="text-sm font-bold text-white truncate">{dailyArenaFocus.name}</p>
                         <p className="text-[10px] text-gray-500">{dailyArenaFocus.completed}/{dailyArenaFocus.total} ações concluídas</p>
@@ -426,7 +426,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                             <p className={`text-9xl font-black italic tracking-tighter ${rankColor} transition-all duration-1000 animate-in zoom-in-50 fade-in duration-700`}>
                                 {rankLetter}
                             </p>
-                            <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full border ${isBasicMode ? 'core-surface-strong' : 'bg-black/40 backdrop-blur-md border border-white/10'}`}>
+                            <div className="sitrep-neutral-pill absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full border">
                                 <p className={`text-sm font-mono tracking-[0.3em] ${isBasicMode ? 'text-[color:var(--ui-card-text)]' : 'text-white/80'}`}>SCORE: {score}</p>
                             </div>
                         </div>
@@ -440,17 +440,17 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 pt-4 text-center">
-                            <div className="core-surface p-2 rounded-xl">
+                            <div className="sitrep-neutral-panel p-2 rounded-xl">
                                 <p className="core-label">Feitas</p>
                                 <p className="text-lg arena-title-text text-white leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
                                 <p className="text-[10px] text-gray-500">travadas</p>
                             </div>
-                            <div className="core-surface p-2 rounded-xl">
+                            <div className="sitrep-neutral-panel p-2 rounded-xl">
                                 <p className="core-label">Arena foco</p>
                                 <p className="text-xs font-bold text-white leading-tight line-clamp-2 min-h-[2rem] flex items-center justify-center">{dailyArenaFocus?.name || 'Nenhuma'}</p>
                                 <p className="text-[10px] text-gray-500">{dailyArenaFocus ? `${dailyArenaFocus.completed}/${dailyArenaFocus.total}` : '0/0'}</p>
                             </div>
-                            <div className="core-surface p-2 rounded-xl">
+                            <div className="sitrep-neutral-panel p-2 rounded-xl">
                                 <p className="core-label">Checklist</p>
                                 <p className="text-lg arena-title-text text-white leading-tight">{checklistDone}/{checklistTotal}</p>
                                 <p className="text-[10px] text-gray-500">itens</p>

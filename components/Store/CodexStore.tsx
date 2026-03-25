@@ -6,6 +6,7 @@ import { CampaignsCodex } from '../CampaignsCodex';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
 import { CampaignArenaStack } from '../CampaignArenaStack';
+import { CampaignRecommendationQuizModal } from './CampaignRecommendationQuizModal';
 import {
     CATEGORY_LABELS,
     THEME_CATEGORY_ORDER,
@@ -89,6 +90,7 @@ const TAG_THEME_FALLBACK: Array<{ id: CampaignThemeId; keys: string[] }> = [
     { id: 'esportes', keys: ['esporte', 'competicao', 'atletico'] },
     { id: 'estrategia', keys: ['planejamento', 'governanca', 'ordem', 'logistica', 'ambiente'] },
     { id: 'socializacao', keys: ['social', 'amizade', 'familia', 'conexoes'] },
+    { id: 'expressao', keys: ['arte', 'expressao', 'criatividade', 'escrita', 'desenho', 'musica', 'fotografia'] },
     { id: 'exploracao', keys: ['exploracao', 'descoberta', 'ferramenta', 'novo'] },
     { id: 'produtividade', keys: ['foco', 'flow', 'deep-work', 'eficiencia'] },
 ];
@@ -124,13 +126,14 @@ export const CodexStore: React.FC = () => {
     const [purchasing, setPurchasing] = useState<string | null>(null);
     const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
     const [pendingPurchase, setPendingPurchase] = useState<{ id: string; title: string; goldPrice: number } | null>(null);
+    const [isRecommendationQuizOpen, setRecommendationQuizOpen] = useState(false);
     const [accessTab, setAccessTab] = useState<AccessTab>('free');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState<string>('all');
     const [selectedCategory, setSelectedCategory] = useState<'all' | CampaignCategoryId>('all');
 
     const handleQuizTeaser = () => {
-        showToast('Quiz de recomendacao de campanhas em breve.');
+        setRecommendationQuizOpen(true);
     };
 
     const handlePurchase = async (catalogId: string) => {
@@ -469,6 +472,9 @@ export const CodexStore: React.FC = () => {
                     onConfirm={() => { void handleConfirmPurchase(); }}
                     onCancel={() => setPendingPurchase(null)}
                 />
+            )}
+            {isRecommendationQuizOpen && (
+                <CampaignRecommendationQuizModal onClose={() => setRecommendationQuizOpen(false)} />
             )}
         </>
     );

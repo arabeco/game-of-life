@@ -118,6 +118,7 @@ interface ActionModalProps {
     customThemeColor?: string;
     lockArenaAssignment?: boolean;
     collaborativeLinkedArena?: boolean;
+    collaborativeOwnerUserId?: string | null;
     collaborativeArenaTasks?: ScheduledTask[];
     onCollaborativeRefresh?: (() => Promise<void>) | (() => void);
 }
@@ -159,6 +160,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     customThemeColor,
     lockArenaAssignment = false,
     collaborativeLinkedArena = false,
+    collaborativeOwnerUserId = null,
     collaborativeArenaTasks = [],
     onCollaborativeRefresh,
 }) => {
@@ -272,6 +274,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const isReceivedInstalledCodexAction = installedCodex?.source_type === 'gift_link' || installedCodex?.source_type === 'gift_in_app';
     const isLockedFromSource = arenaFlags.isSeasonQuest || isReceivedInstalledCodexAction;
     const isDetachedCollaborativeArena = collaborativeLinkedArena && !currentArena;
+    const collaborativePersistUserId = collaborativeOwnerUserId || null;
     const effectiveTaskPool = isDetachedCollaborativeArena ? collaborativeArenaTasks : tasks;
     const basePendingTask = React.useMemo(() => {
         if (!action) return null;
@@ -351,7 +354,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
         const scheduleCollaborativeTasks = async (actionToSchedule: Action) => {
             const { data: sessionData } = await supabase.auth.getSession();
-            const userId = sessionData.session?.user.id;
+            const userId = collaborativePersistUserId || sessionData.session?.user.id;
             if (!userId) return;
 
             const existingKeys = new Set(
@@ -423,6 +426,52 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             if (error) throw error;
         };
 
+        const clearDetachedCollaborativePendingTasks = async (actionId: string) => {
+            if (!collaborativePersistUserId) {
+                throw new Error('COLLABORATIVE_OWNER_REQUIRED');
+            }
+
+            const { error } = await supabase
+                .from('scheduled_tasks')
+                .delete()
+                .eq('action_id', actionId)
+                .eq('completed', false)
+                .eq('user_id', collaborativePersistUserId);
+
+            if (error) throw error;
+        };
+
+        const buildCollaborativeActionPayload = (actionToPersist: Action) => ({
+            id: actionToPersist.id,
+            user_id: collaborativePersistUserId,
+            arena_id: actionToPersist.arenaId,
+            name: actionToPersist.name,
+            description: actionToPersist.description || null,
+            icon: actionToPersist.icon,
+            duration: actionToPersist.duration,
+            repetitions: actionToPersist.repetitions,
+            action_type: actionToPersist.actionType,
+            difficulty: actionToPersist.difficulty || null,
+            briefing: actionToPersist.briefing || null,
+            assets: actionToPersist.assets || [],
+            pre_flight: actionToPersist.preFlight || [],
+            context: {
+                ...(actionToPersist.context || {}),
+                ...(
+                    actionToPersist.scheduledDays !== undefined || actionToPersist.scheduledStartTime !== undefined
+                        ? {
+                            schedule: {
+                                ...(actionToPersist.context?.schedule || {}),
+                                ...(actionToPersist.scheduledDays !== undefined ? { days: actionToPersist.scheduledDays } : {}),
+                                ...(actionToPersist.scheduledStartTime !== undefined ? { startTime: actionToPersist.scheduledStartTime } : {}),
+                            },
+                        }
+                        : {}
+                ),
+            },
+            origin_codex_id: actionToPersist.originCodexId || null,
+        });
+
         const scheduleTasks = async (actionToSchedule: Action) => {
             // Para Ação Recorrente: usa dias da semana
             if (editableAction.actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTime !== null && startTime !== 'Sem Horário') {
@@ -477,11 +526,26 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     });
                     showToast('Ocorrência atualizada.', 'success');
                 } else if (isNew && typeof addAction === 'function') {
-                    // Let the context generate the ID to ensure consistency
-                    const newAction = await addAction(actionData);
-                    if (newAction?.id) {
+                    if (isDetachedCollaborativeArena) {
+                        if (!collaborativePersistUserId) {
+                            throw new Error('COLLABORATIVE_OWNER_REQUIRED');
+                        }
+
+                        const newAction: Action = { ...actionData, id: crypto.randomUUID() };
+                        const { error } = await supabase
+                            .from('actions')
+                            .insert(buildCollaborativeActionPayload(newAction));
+
+                        if (error) throw error;
+
                         await scheduleTasks(newAction);
-                        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.actionCreated, { detail: { actionId: newAction.id } }));
+                    } else {
+                        // Let the context generate the ID to ensure consistency
+                        const newAction = await addAction(actionData);
+                        if (newAction?.id) {
+                            await scheduleTasks(newAction);
+                            window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.actionCreated, { detail: { actionId: newAction.id } }));
+                        }
                     }
                     showToast('Ação criada.', 'success');
                 } else if (action?.id && typeof updateAction === 'function') {
@@ -501,15 +565,39 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         || prevCommitmentDate !== nextCommitmentDate
                     );
 
-                    updateAction(action.id, actionData);
-                    if (scheduleChanged) {
-                        await clearPendingTasksForAction(action.id);
-                    }
-                    await scheduleTasks({
+                    const nextAction = {
                         ...action,
                         ...actionData,
                         arenaId: actionData.arenaId || action.arenaId,
-                    } as Action);
+                    } as Action;
+
+                    if (isDetachedCollaborativeArena) {
+                        if (!collaborativePersistUserId) {
+                            throw new Error('COLLABORATIVE_OWNER_REQUIRED');
+                        }
+
+                        const updatePayload = buildCollaborativeActionPayload(nextAction);
+                        delete (updatePayload as { id?: string }).id;
+                        delete (updatePayload as { user_id?: string | null }).user_id;
+
+                        const { error } = await supabase
+                            .from('actions')
+                            .update(updatePayload)
+                            .eq('id', action.id);
+
+                        if (error) throw error;
+
+                        if (scheduleChanged) {
+                            await clearDetachedCollaborativePendingTasks(action.id);
+                        }
+                    } else {
+                        updateAction(action.id, actionData);
+                        if (scheduleChanged) {
+                            await clearPendingTasksForAction(action.id);
+                        }
+                    }
+
+                    await scheduleTasks(nextAction);
                     showToast('Ação atualizada.', 'success');
                 }
                 if (isDetachedCollaborativeArena) {
@@ -574,8 +662,39 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     };
 
     const handleDelete = () => { if (action) setConfirmDeleteOpen(true); };
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (!action) return;
+        if (isDetachedCollaborativeArena) {
+            try {
+                if (!collaborativePersistUserId) {
+                    throw new Error('COLLABORATIVE_OWNER_REQUIRED');
+                }
+
+                const { error: tasksDeleteError } = await supabase
+                    .from('scheduled_tasks')
+                    .delete()
+                    .eq('action_id', action.id)
+                    .eq('user_id', collaborativePersistUserId);
+
+                if (tasksDeleteError) throw tasksDeleteError;
+
+                const { error: actionDeleteError } = await supabase
+                    .from('actions')
+                    .delete()
+                    .eq('id', action.id);
+
+                if (actionDeleteError) throw actionDeleteError;
+
+                await Promise.resolve(onCollaborativeRefresh?.());
+                showToast('Ação removida.', 'success');
+                onClose();
+                return;
+            } catch (error) {
+                console.error('Error deleting collaborative linked action:', error);
+                showToast('Não foi possível excluir a ação.', 'error');
+                return;
+            }
+        }
         deleteAction(action.id);
         if (isDetachedCollaborativeArena) {
             void Promise.resolve(onCollaborativeRefresh?.());
@@ -1726,7 +1845,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                 <ConfirmationModal
                     title="Confirmar exclusao"
                     message={`Tem certeza que deseja excluir a acao "${action?.name}"?`}
-                    onConfirm={confirmDelete}
+                    onConfirm={() => { void confirmDelete(); }}
                     onCancel={() => setConfirmDeleteOpen(false)}
                 />
             )}

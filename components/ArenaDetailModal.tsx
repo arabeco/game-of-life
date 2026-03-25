@@ -132,6 +132,7 @@ export const ArenaDetailModal: React.FC<{
     linkedRelationshipType?: RelationshipLinkType | null;
     collaborativeRole?: 'mentor' | 'pupil' | null;
     allowLinkedMentorshipEdit?: boolean;
+    collaborativeOwnerUserId?: string | null;
     onLinkedArenaRefresh?: (() => Promise<void>) | (() => void);
 }> = ({
     arena,
@@ -143,6 +144,7 @@ export const ArenaDetailModal: React.FC<{
     linkedRelationshipType = null,
     collaborativeRole = null,
     allowLinkedMentorshipEdit = false,
+    collaborativeOwnerUserId = null,
     onLinkedArenaRefresh,
 }) => {
     const { getActionsForArena, assets, updateArena, deleteArena, tasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
@@ -205,7 +207,8 @@ export const ArenaDetailModal: React.FC<{
         (linkedRelationshipType === 'mentoria' || currentLinkType === 'mentoria') &&
         !localArenaExists
     );
-    const isPupilMentorshipArena = (linkedRelationshipType === 'mentoria' || currentLinkType === 'mentoria') && currentCollaborativeRole === 'pupil';
+    const isMentorshipLinkedArena = (linkedRelationshipType === 'mentoria' || currentLinkType === 'mentoria');
+    const isPupilMentorshipArena = isMentorshipLinkedArena && currentCollaborativeRole === 'pupil';
     const isReadOnlyArena = readOnly || (!localArenaExists && !isDetachedMentorshipCollab);
     const activeAssetId = isEditing ? editableArena.assetId : arena.assetId;
     const parentAsset = assets.find(a => a.id === activeAssetId);
@@ -750,8 +753,9 @@ export const ArenaDetailModal: React.FC<{
                     arenaId={arena.id}
                     action={actionModalState.action}
                     initialMode={actionModalState.mode}
-                    lockArenaAssignment={isPupilMentorshipArena}
+                    lockArenaAssignment={isMentorshipLinkedArena}
                     collaborativeLinkedArena={isDetachedMentorshipCollab}
+                    collaborativeOwnerUserId={isDetachedMentorshipCollab ? collaborativeOwnerUserId : null}
                     collaborativeArenaTasks={isDetachedMentorshipCollab ? (tasksOverride || []) : undefined}
                     onCollaborativeRefresh={isDetachedMentorshipCollab ? onLinkedArenaRefresh : undefined}
                     onClose={() => setActionModalState(null)}

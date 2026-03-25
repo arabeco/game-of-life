@@ -10,6 +10,9 @@ import { GlassCard } from './GlassCard';
 import { CampaignArenaStack } from './CampaignArenaStack';
 import { calculateCampaignProgress, getCampaignArenaStates } from '../utils/progressUtils';
 import { EmojiGlyph } from './EmojiGlyph';
+import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
+import { CATEGORY_LABELS, resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
+import { UserCodex } from '../types';
 
 interface CampaignsCodexProps {
     onClose: () => void;
@@ -45,7 +48,7 @@ const PreviewArenaMiniCard: React.FC<{ arena: Arena; actions: Action[] }> = ({ a
 );
 
 export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId, previewCampaign, previewArenas = [], previewActions = [], previewMeta }) => {
-    const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, addCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes } = useGame();
+    const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, addCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, installCodex, showToast } = useGame();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -57,6 +60,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     const [isLinkingMode] = useState(false);
     const [linkingSourceId] = useState<string | null>(null);
     const [visiblePhaseCount, setVisiblePhaseCount] = useState(1);
+    const [libraryPreview, setLibraryPreview] = useState<CodexCampaignPreview | null>(null);
+    const [libraryPreviewCodex, setLibraryPreviewCodex] = useState<UserCodex | null>(null);
 
     // Expandable Description State
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -67,6 +72,49 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     };
 
     const allArenas = getArenas();
+    const installedCodexIds = useMemo(
+        () => new Set(allArenas.map((arena) => arena.originCodexId).filter(Boolean)),
+        [allArenas],
+    );
+    const installableLibraryEntries = useMemo(() => (
+        userCodexes
+            .filter((codex) => Array.isArray(codex.template?.levels) && codex.template.levels.length > 0)
+            .filter((codex) => !installedCodexIds.has(codex.id))
+            .sort((left, right) => new Date(right.updated_at || right.created_at).getTime() - new Date(left.updated_at || left.created_at).getTime())
+            .map((codex) => {
+                const catalogRefId = codex.catalog_id || codex.origin_codex_id || codex.id;
+                const preview = buildCodexCampaignPreview(codex.id, codex.template);
+                const templateMeta = resolveTemplateCampaignMeta(catalogRefId, codex.template);
+                const campaignType = templateMeta.campaignType || 'pratica';
+                const sourceLabel = codex.source_type === 'catalog'
+                    ? 'Loja'
+                    : (codex.source_type === 'gift_link' || codex.source_type === 'gift_in_app')
+                        ? 'Recebida'
+                        : 'Forja';
+
+                return {
+                    codex,
+                    preview,
+                    actionCount: preview.actions.length,
+                    arenaCount: preview.arenas.length,
+                    durationDays: Number(codex.template?.durationDays ?? 7),
+                    typeLabel: CATEGORY_LABELS[campaignType],
+                    sourceLabel,
+                };
+            })
+    ), [installedCodexIds, userCodexes]);
+    const handleInstallLibraryCampaign = async (codex: UserCodex) => {
+        if (installedCodexIds.has(codex.id)) {
+            showToast('Essa campanha ja esta instalada nas suas campanhas.', 'info');
+            return;
+        }
+
+        await installCodex(codex.id);
+    };
+    const handlePreviewLibraryCampaign = (codex: UserCodex) => {
+        setLibraryPreviewCodex(codex);
+        setLibraryPreview(buildCodexCampaignPreview(codex.id, codex.template));
+    };
     const effectivePreviewCampaign: Campaign | null = previewCampaign
         ? {
             ...previewCampaign,
@@ -435,6 +483,93 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                         </div>
                         
                         <div className="overflow-y-auto p-4">
+                            {installableLibraryEntries.length > 0 && (
+                                <div className="mb-4 space-y-3">
+                                    <div className="flex items-end justify-between gap-3">
+                                        <div>
+                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Biblioteca pronta para instalar</div>
+                                            <p className="mt-1 text-xs leading-relaxed text-white/58">
+                                                Campanhas que ja sao suas, mas ainda nao entraram em execucao. Elas aparecem aqui mesmo se voce sair do quiz sem instalar agora.
+                                            </p>
+                                        </div>
+                                        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/65">
+                                            {installableLibraryEntries.length} na fila
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {installableLibraryEntries.map(({ codex, preview, actionCount, arenaCount, durationDays, typeLabel, sourceLabel }) => (
+                                            <GlassCard
+                                                key={`library-${codex.id}`}
+                                                variant="neutral"
+                                                className="overflow-hidden border-white/10 p-3"
+                                            >
+                                                <div className="flex h-full flex-col gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handlePreviewLibraryCampaign(codex)}
+                                                        className="rounded-[1.15rem] border border-white/10 bg-black/20 px-3 py-3 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.05]"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="min-w-0">
+                                                                <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/64">
+                                                                    {sourceLabel}
+                                                                </div>
+                                                                <div className="mt-2 text-base font-black uppercase tracking-[0.05em] leading-tight text-white">
+                                                                    {codex.name}
+                                                                </div>
+                                                                <div className="mt-1 text-xs leading-relaxed text-white/50 line-clamp-2">
+                                                                    {codex.description || 'Campanha pronta para entrar na sua execucao.'}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-[2rem] leading-none">
+                                                                {codex.template?.coverImage || '📜'}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="mt-3 flex items-center justify-center rounded-[1rem] border border-white/8 bg-black/20 px-2 py-2">
+                                                            <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="sm" />
+                                                        </div>
+
+                                                        <div className="mt-3 flex flex-wrap gap-1.5">
+                                                            <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
+                                                                {typeLabel}
+                                                            </span>
+                                                            <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
+                                                                {durationDays} dias
+                                                            </span>
+                                                            <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
+                                                                {arenaCount} arenas
+                                                            </span>
+                                                            <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
+                                                                {actionCount} acoes
+                                                            </span>
+                                                        </div>
+                                                    </button>
+
+                                                    <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/6 pt-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handlePreviewLibraryCampaign(codex)}
+                                                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10"
+                                                        >
+                                                            Ver
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { void handleInstallLibraryCampaign(codex); }}
+                                                            className="luxe-skin-button px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em]"
+                                                        >
+                                                            Instalar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </GlassCard>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {/* Create New Button */}
                                 <button 
@@ -961,6 +1096,25 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                         <ArenaDetailModal 
                             arena={selectedArena}
                             onClose={() => setSelectedArenaId(null)}
+                        />
+                    )}
+
+                    {libraryPreview && (
+                        <CampaignsCodex
+                            onClose={() => {
+                                setLibraryPreview(null);
+                                setLibraryPreviewCodex(null);
+                            }}
+                            initialCampaignId={libraryPreview.campaign.id}
+                            previewCampaign={libraryPreview.campaign}
+                            previewArenas={libraryPreview.arenas}
+                            previewActions={libraryPreview.actions}
+                            previewMeta={{
+                                coverImage: libraryPreviewCodex?.template?.coverImage,
+                                badgeLabel: 'Biblioteca',
+                                author: libraryPreviewCodex?.author || 'Autor desconhecido',
+                                note: 'Essa campanha ja e sua e pode ser instalada a qualquer momento.',
+                            }}
                         />
                     )}
                 </GlassCard>

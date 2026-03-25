@@ -7,6 +7,7 @@ export type CampaignThemeId =
   | 'esportes'
   | 'estrategia'
   | 'socializacao'
+  | 'expressao'
   | 'exploracao'
   | 'produtividade'
   | 'psicologia';
@@ -28,6 +29,7 @@ export const THEME_CATEGORY_ORDER: CampaignThemeId[] = [
   'esportes',
   'estrategia',
   'socializacao',
+  'expressao',
   'exploracao',
   'produtividade',
 ];
@@ -45,6 +47,7 @@ export const CATEGORY_LABELS: Record<CampaignCategoryId, string> = {
   esportes: 'Esportes',
   estrategia: 'Estrategia',
   socializacao: 'Socializacao',
+  expressao: 'Arte / Expressao',
   exploracao: 'Exploracao',
   produtividade: 'Produtividade',
 };
@@ -130,6 +133,86 @@ const KNOWN_CATALOG_META: Record<string, CampaignCatalogMeta> = {
     campaignType: 'pratica',
     campaignTheme: 'socializacao',
   },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c01': {
+    primaryAssetId: 'fisico',
+    campaignType: 'aprendizado',
+    campaignTheme: 'bem_estar',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c02': {
+    primaryAssetId: 'consciencia',
+    campaignType: 'aprendizado',
+    campaignTheme: 'produtividade',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c03': {
+    primaryAssetId: 'fisico',
+    campaignType: 'pratica',
+    campaignTheme: 'exercicio',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c04': {
+    primaryAssetId: 'financas',
+    campaignType: 'aprendizado',
+    campaignTheme: 'estrategia',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c05': {
+    primaryAssetId: 'conexoes',
+    campaignType: 'pratica',
+    campaignTheme: 'socializacao',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c06': {
+    primaryAssetId: 'espaco-mental',
+    campaignType: 'manutencao',
+    campaignTheme: 'psicologia',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c07': {
+    primaryAssetId: 'conexoes',
+    campaignType: 'pratica',
+    campaignTheme: 'socializacao',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c08': {
+    primaryAssetId: 'consciencia',
+    campaignType: 'aprendizado',
+    campaignTheme: 'psicologia',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c09': {
+    primaryAssetId: 'fisico',
+    campaignType: 'pratica',
+    campaignTheme: 'exercicio',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c10': {
+    primaryAssetId: 'consciencia',
+    campaignType: 'pratica',
+    campaignTheme: 'produtividade',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d08': {
+    primaryAssetId: 'conexoes',
+    campaignType: 'pratica',
+    campaignTheme: 'socializacao',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d09': {
+    primaryAssetId: 'financas',
+    campaignType: 'manutencao',
+    campaignTheme: 'estrategia',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d10': {
+    primaryAssetId: 'consciencia',
+    campaignType: 'pratica',
+    campaignTheme: 'expressao',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e03': {
+    primaryAssetId: 'fisico',
+    campaignType: 'pratica',
+    campaignTheme: 'exercicio',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e04': {
+    primaryAssetId: 'trabalho',
+    campaignType: 'aprendizado',
+    campaignTheme: 'estrategia',
+  },
+  '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e05': {
+    primaryAssetId: 'financas',
+    campaignType: 'aprendizado',
+    campaignTheme: 'estrategia',
+  },
 };
 
 const isCampaignType = (value: unknown): value is CampaignTypeId =>
@@ -144,6 +227,7 @@ const isCampaignTheme = (value: unknown): value is CampaignThemeId =>
   value === 'esportes' ||
   value === 'estrategia' ||
   value === 'socializacao' ||
+  value === 'expressao' ||
   value === 'exploracao' ||
   value === 'produtividade';
 

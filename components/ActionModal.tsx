@@ -1173,7 +1173,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             {displayAction.actionType === 'Ação Recorrente' && (
                                                 <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
                                                     <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Repetições</div>
-                                                    <div className="text-xs font-bold text-white text-center w-full">{displayAction.repetitions}x pool</div>
+                                                    <div className="text-xs font-bold text-white text-center w-full">{displayAction.repetitions}x</div>
                                                 </div>
                                             )}
                                             <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">

@@ -2096,7 +2096,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             {showConfirmEndCycle && (
                 <ConfirmationModal
                     title="Encerrar Ciclo?"
-                    message="Ao fechar este ciclo, suas ações não concluídas no grid serão movidas para o pool de ações e suas arenas serão revisadas."
+                    message="Ao fechar este ciclo, suas ações não concluídas no grid serão movidas para o estoque de ações e suas arenas serão revisadas."
                     onConfirm={confirmEndCycle}
                     onCancel={() => setShowConfirmEndCycle(false)}
                 />
@@ -2109,7 +2109,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
 
 
 

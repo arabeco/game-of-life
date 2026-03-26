@@ -527,15 +527,25 @@ export const AssetsView: React.FC = () => {
                                             </div>
                                             <div className="-mt-0.5 relative z-10 flex w-full justify-center">
                                                 <div
-                                                    className="max-w-full rounded-[10px] border border-white/10 px-2 py-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.22)] backdrop-blur-md"
+                                                    className="w-[108px] rounded-[10px] border border-white/10 px-2 py-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.22)]"
                                                     style={{
                                                         backgroundColor: rgbaString(accentRgb, 0.096),
                                                         boxShadow: `0 8px 18px rgba(0,0,0,0.22), inset 0 1px 0 ${rgbaString(accentRgb, 0.064)}`,
+                                                        transform: 'translateZ(0)',
+                                                        backfaceVisibility: 'hidden',
+                                                        WebkitFontSmoothing: 'antialiased',
+                                                        isolation: 'isolate',
                                                     }}
                                                 >
                                                     <p
-                                                        className="max-w-[104px] truncate px-0.5 text-[8.15px] font-black uppercase leading-[0.88] tracking-[0.008em]"
-                                                        style={{ color: rgbString(titleColor) }}
+                                                        className="w-full truncate px-0.5 text-center text-[8px] font-black uppercase leading-none tracking-[0.02em]"
+                                                        style={{
+                                                            color: rgbString(titleColor),
+                                                            transform: 'translateZ(0)',
+                                                            backfaceVisibility: 'hidden',
+                                                            WebkitFontSmoothing: 'antialiased',
+                                                            textRendering: 'geometricPrecision',
+                                                        }}
                                                     >
                                                         {asset.name}
                                                     </p>

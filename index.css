@@ -399,20 +399,73 @@ body {
   color: var(--text-primary);
 }
 
+.planner-header-plane {
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--skin-accent-color) 18%, rgba(255,255,255,0.05)), transparent 34%),
+    linear-gradient(180deg, rgba(10, 14, 20, 0.92), rgba(7, 10, 15, 0.96));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 20px 42px rgba(0,0,0,0.32),
+    0 0 0 1px color-mix(in srgb, var(--skin-accent-color) 12%, rgba(255,255,255,0.02));
+}
+
+.planner-header-glow {
+  background:
+    radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--skin-accent-color) 16%, transparent) 0%, transparent 28%),
+    radial-gradient(circle at 82% 14%, color-mix(in srgb, var(--skin-accent-color) 12%, transparent) 0%, transparent 24%);
+}
+
+.planner-header-noise {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.025), transparent 36%),
+    linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.018) 100%);
+}
+
+.planner-header-band {
+  border-top: 1px solid rgba(255,255,255,0.05);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.008));
+}
+
+.planner-header-footer {
+  border-top: 1px solid rgba(255,255,255,0.05);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.006));
+}
+
 .mode-game.theme-light #planner-container .planner-top-shell,
 .mode-office.theme-light #planner-container .planner-top-shell {
-  background: var(--planner-top-bg) !important;
-  border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 30%, transparent) !important;
+  background: transparent !important;
+  border-bottom-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.mode-game.theme-light #planner-container .planner-header-plane,
+.mode-office.theme-light #planner-container .planner-header-plane {
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--skin-accent-color) 15%, rgba(255,255,255,0.22)), transparent 36%),
+    var(--planner-top-bg) !important;
+  border-color: color-mix(in srgb, var(--skin-accent-color) 26%, rgba(255,255,255,0.1)) !important;
   box-shadow:
-    0 10px 24px rgba(15, 23, 42, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    0 14px 30px rgba(15, 23, 42, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 1px color-mix(in srgb, var(--skin-accent-color) 10%, transparent) !important;
 }
 
 .mode-game.theme-light #planner-container .planner-day-header,
 .mode-office.theme-light #planner-container .planner-day-header {
   background: var(--planner-day-header-bg) !important;
   color: var(--planner-day-header-text) !important;
-  border-bottom-color: color-mix(in srgb, var(--skin-accent-color) 28%, transparent) !important;
+  border-bottom-color: transparent !important;
+}
+
+.mode-game.theme-light #planner-container .planner-header-band,
+.mode-office.theme-light #planner-container .planner-header-band,
+.mode-game.theme-light #planner-container .planner-header-footer,
+.mode-office.theme-light #planner-container .planner-header-footer {
+  border-top-color: color-mix(in srgb, var(--skin-accent-color) 20%, rgba(255,255,255,0.08)) !important;
 }
 
 .mode-game.theme-light #planner-container .planner-scroll-surface,

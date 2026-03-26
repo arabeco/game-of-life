@@ -22,7 +22,7 @@ import { EmojiGlyph } from '../components/EmojiGlyph';
 const DayHeader: React.FC<{ currentDate: Date }> = ({ currentDate }) => {
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' });
     return (
-        <div className="planner-day-header text-center text-[12px] font-semibold text-gray-400 py-2 bg-[#0f0f10] tracking-[0.04em] capitalize border-b border-white/6">
+        <div className="planner-day-header planner-header-footer text-center text-[12px] font-semibold text-gray-300 py-2 tracking-[0.04em] capitalize">
             {day}
         </div>
     );
@@ -1217,9 +1217,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 </div>
             )}
 
-            <div className="planner-top-shell sticky top-0 z-30 flex-shrink-0 bg-[#0f0f10]/95 backdrop-blur-md border-b border-white/6 transition-all duration-300 relative pt-2 shadow-[0_10px_24px_rgba(0,0,0,0.28)]">
-                <div className="bg-transparent">
-                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 text-lg font-bold h-11 mt-1">
+            <div className="planner-top-shell sticky top-0 z-30 flex-shrink-0 px-2 pt-2 pb-1 transition-all duration-300 relative">
+                <div className="planner-header-plane relative overflow-hidden rounded-[30px] border border-white/10 shadow-[0_18px_38px_rgba(0,0,0,0.34)]">
+                    <div className="planner-header-glow absolute inset-0 pointer-events-none" />
+                    <div className="planner-header-noise absolute inset-0 pointer-events-none opacity-60" />
+                    <div className="relative z-10">
+                    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 pt-2 text-lg font-bold h-11">
                         <div className="flex items-center space-x-1 min-w-0" id="planner-tools">
                             <button onClick={() => setChecklistVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors" title="Checklist diario">
                                 <SquareCheckIcon className={`w-4 h-4 ${allTasksCompleted ? 'text-[var(--skin-accent-color)]' : ''}`} />
@@ -1242,7 +1245,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         </div>
                     </div>
 
-                    <div className={`flex items-center space-x-2 my-0 w-full overflow-visible pb-1 px-2 transition-all duration-300`}>
+                    <div className={`planner-header-band flex items-center space-x-2 my-0 w-full overflow-visible px-2 pb-2 pt-1 transition-all duration-300`}>
                         <div
                             id="planner-pool"
                             data-testid="bay-area"
@@ -1265,8 +1268,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 core-surface-strong rounded-xl p-2 space-y-1 z-50 animate-fade-in"><h4 className="core-label text-center pb-1 border-b border-white/6">Marcos</h4>{milestoneActions.length > 0 ?milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
                         </div>
                     </div>
+                    {viewMode === 'day' && <DayHeader currentDate={currentDate} />}
+                    </div>
                 </div>
-                {viewMode === 'day' && <DayHeader currentDate={currentDate} />}
             </div>
 
             <div

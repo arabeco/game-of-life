@@ -5,7 +5,7 @@ import React, { Suspense, useState, useEffect, useMemo, useRef, useCallback } fr
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Report, Cycle, ChestType, FeedEvent, RewardModalPayload } from '../types';
 import { GlassCard } from '../components/GlassCard';
-import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, Trash2Icon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, Trash2Icon, EditIcon } from '../components/Icons';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { NewCycleSetupView } from './NewCycleSetupView';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
@@ -107,7 +107,7 @@ const getReportMetaCounts = (report: Report) => {
 const getReportPresenceDays = (report: Report) => report.metrics?.fairness?.activeDays ?? report.metrics.consistencyDays ?? 0;
 
 // --- Sub-components for Active Cycle HUD ---
-const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
+const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => void }> = ({ cycle, onEdit }) => {
     const { tasks, assets, actions, reports, deleteCycle } = useGame();
     const startDate = cycle.startDate;
     const endDate = cycle.endDate;
@@ -148,6 +148,16 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
             </div>
             <div className="relative">
                 <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(cycle);
+                    }}
+                    className="absolute left-3 top-3 z-20 rounded-full p-1.5 text-white/75 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100"
+                    title="Editar data final do ciclo"
+                >
+                    <EditIcon className="w-4 h-4" />
+                </button>
+                <button
                     onClick={handleDelete}
                     className="absolute right-3 top-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-full text-red-500"
                     title="Excluir Ciclo"
@@ -170,6 +180,56 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle }> = ({ cycle }) => {
                 />
             </div>
         </div>
+    );
+};
+const EditCycleEndDateModal: React.FC<{
+    cycle: Cycle;
+    onClose: () => void;
+    onSave: (endDate: string) => Promise<void>;
+}> = ({ cycle, onClose, onSave }) => {
+    const [endDate, setEndDate] = useState(cycle.endDate);
+    const [isSaving, setIsSaving] = useState(false);
+    const minDate = cycle.startDate || getLocalDateString();
+
+    const handleSave = async () => {
+        if (!endDate || isSaving) return;
+        setIsSaving(true);
+        try {
+            await onSave(endDate);
+            onClose();
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <Portal>
+            <div className="fixed inset-0 z-[10010] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm p-4 space-y-4" onClick={(event) => event.stopPropagation()}>
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Editar ciclo</p>
+                        <h2 className="mt-2 text-lg font-black uppercase text-white">{cycle.name || 'Ciclo ativo'}</h2>
+                        <p className="mt-1 text-sm text-gray-400">Ajuste apenas a data final.</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Data final</div>
+                        <input
+                            type="date"
+                            value={endDate}
+                            min={minDate}
+                            onChange={(event) => setEndDate(event.target.value)}
+                            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white"
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={onClose} className="flex-1 py-3 rounded-xl luxe-button-secondary text-xs">Cancelar</button>
+                        <button onClick={() => { void handleSave(); }} disabled={!endDate || isSaving} className="flex-1 py-3 rounded-xl luxe-skin-button text-xs disabled:opacity-50">
+                            {isSaving ? 'SALVANDO...' : 'SALVAR'}
+                        </button>
+                    </div>
+                </GlassCard>
+            </div>
+        </Portal>
     );
 };
 const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, endDate: string) => void; }> = ({ onClose, onStart }) => {
@@ -269,7 +329,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const {
-        reports, activeCycle, startCycle, endCycle, assets, actions,
+        reports, activeCycle, startCycle, updateCycle, endCycle, assets, actions,
         applyExp, addChest, addFeedEvent, seasons, userProfile,
         oraclePreferences, showToast, grantInventoryItem, grantUserUnlock,
         setAchievementUnlocked, deleteCycle, fetchNotifications, openChest // Added deleteCycle here
@@ -281,6 +341,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [reportsToCompare, setReportsToCompare] = useState<[Report, Report] | null>(null);
     const [reportForComparison, setReportForComparison] = useState<Report | null>(null);
     const [showNewCycleSetup, setShowNewCycleSetup] = useState(false);
+    const [cycleBeingEdited, setCycleBeingEdited] = useState<Cycle | null>(null);
     const [expGained, setExpGained] = useState(0);
     const [grantedInsignias, setGrantedInsignias] = useState<string[]>([]);
     const [earnedChest, setEarnedChest] = useState<ChestType | null>(null);
@@ -1808,7 +1869,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                 <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>
                                                             </div>
                                                             <div className={isEditingEras ?'scale-[0.98]' : ''}>
-                                                                <SimplifiedCycleHUD cycle={item.cycle} />
+                                                                <SimplifiedCycleHUD cycle={item.cycle} onEdit={setCycleBeingEdited} />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2093,6 +2154,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
             )}
             {isStartingCycle && <StartCycleModal onClose={() => setIsStartingCycle(false)} onStart={startCycle} />}
+            {cycleBeingEdited && (
+                <EditCycleEndDateModal
+                    cycle={cycleBeingEdited}
+                    onClose={() => setCycleBeingEdited(null)}
+                    onSave={async (endDate) => {
+                        await updateCycle(cycleBeingEdited.id, { endDate });
+                    }}
+                />
+            )}
             {showConfirmEndCycle && (
                 <ConfirmationModal
                     title="Encerrar Ciclo?"
@@ -2109,10 +2179,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
-
-
-
 
 
 

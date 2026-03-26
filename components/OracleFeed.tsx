@@ -1,9 +1,7 @@
 ﻿import React, { Suspense, lazy, useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
-import { XIcon, SparklesIcon, MessageIcon, TrashIcon, UsersIcon } from './Icons';
-import { ClanChat } from './ClanChat';
-import { DirectMessages } from './DirectMessages';
+import { XIcon, SparklesIcon, MessageIcon, TrashIcon, UsersIcon, EditIcon } from './Icons';
 import { Notification, OracleMode } from '../types';
 import { Portal } from './Portal';
 import { CodexClaimModal } from './CodexClaimModal';
@@ -20,13 +18,19 @@ import {
 const OracleChat = lazy(() =>
     import('./OracleChat').then((module) => ({ default: module.OracleChat }))
 );
+const OracleAction = lazy(() =>
+    import('./OracleAction').then((module) => ({ default: module.OracleAction }))
+);
+const OracleSocialPanel = lazy(() =>
+    import('./OracleSocialPanel').then((module) => ({ default: module.OracleSocialPanel }))
+);
 
 interface OracleFeedProps {
     onClose: () => void;
     initialTab?: Tab;
 }
 
-type Tab = 'chat' | 'notifications' | 'clan' | 'dms';
+type Tab = 'chat' | 'action' | 'social' | 'notifications' | 'clan' | 'dms';
 
 export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'chat' }) => {
     const {
@@ -40,10 +44,10 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'c
         appMode,
         oraclePreferences,
     } = useGame();
-    const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+    const [activeTab, setActiveTab] = useState<Tab>(initialTab === 'clan' || initialTab === 'dms' ? 'social' : initialTab);
 
     useEffect(() => {
-        setActiveTab(initialTab);
+        setActiveTab(initialTab === 'clan' || initialTab === 'dms' ? 'social' : initialTab);
     }, [initialTab]);
 
     const activeOracleMode = oraclePreferences?.activeMode || 'neutro';
@@ -92,19 +96,19 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'c
                         </button>
 
                         <button 
-                            onClick={() => setActiveTab('clan')}
-                            className={`flex-none sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'clan' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
+                            onClick={() => setActiveTab('action')}
+                            className={`flex-none sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'action' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <UsersIcon className="w-4 h-4" />
-                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">GRUPO</span>
+                            <EditIcon className="w-4 h-4" />
+                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">AÇÃO</span>
                         </button>
 
                         <button 
-                            onClick={() => setActiveTab('dms')}
-                            className={`flex-none sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'dms' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
+                            onClick={() => setActiveTab('social')}
+                            className={`flex-none sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'social' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                         >
-                            <MessageIcon className="w-4 h-4" />
-                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">MENSAGENS</span>
+                            <UsersIcon className="w-4 h-4" />
+                            <span className="text-[10px] font-bold tracking-wider hidden sm:inline">SOCIAL</span>
                             {unreadDMs > 0 && (
                                 <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white shadow-lg border border-black/20 animate-in zoom-in-50 duration-300">
                                   {unreadDMs}
@@ -144,15 +148,19 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'c
                         </div>
                     )}
 
-                    {activeTab === 'clan' && (
+                    {activeTab === 'action' && (
                         <div className="absolute inset-0 animate-in slide-in-from-right-4 duration-200 bg-black/20 p-2">
-                             <ClanChat />
+                            <Suspense fallback={<div className="absolute inset-0 bg-black/30 animate-pulse" />}>
+                                <OracleAction />
+                            </Suspense>
                         </div>
                     )}
 
-                    {activeTab === 'dms' && (
+                    {activeTab === 'social' && (
                         <div className="absolute inset-0 animate-in slide-in-from-right-4 duration-200">
-                             <DirectMessages />
+                            <Suspense fallback={<div className="absolute inset-0 bg-black/30 animate-pulse" />}>
+                                <OracleSocialPanel />
+                            </Suspense>
                         </div>
                     )}
                     

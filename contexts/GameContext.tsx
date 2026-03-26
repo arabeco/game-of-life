@@ -536,6 +536,7 @@ export interface GameContextType {
     cancelFriendRequest: (requestId: string) => Promise<void>;
     updateAllAssetLevels: (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>) => boolean;
     startCycle: (name: string, endDate: string) => void;
+    updateCycle: (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => Promise<void>;
     endCycle: (currentAssets: Asset[], currentActions: Action[]) => EndCycleResult;
     applyExp: (expGained: number) => void;
     addChest: (chestType: ChestType) => Promise<void>;
@@ -6573,6 +6574,44 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (error) console.error("Supabase start cycle error:", error.message);
         });
     };
+    const updateCycle = async (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        const sanitizedUpdates: Partial<Pick<Cycle, 'name' | 'endDate'>> = {};
+        if (typeof updates.name === 'string' && updates.name.trim()) {
+            sanitizedUpdates.name = updates.name.trim();
+        }
+        if (typeof updates.endDate === 'string' && updates.endDate.trim()) {
+            sanitizedUpdates.endDate = updates.endDate.trim();
+        }
+
+        if (Object.keys(sanitizedUpdates).length === 0) {
+            return;
+        }
+
+        const previousCycleSnapshot = activeCycle?.id === cycleId ? activeCycle : null;
+        if (previousCycleSnapshot) {
+            setActiveCycle(prev => (prev?.id === cycleId ? { ...prev, ...sanitizedUpdates } : prev));
+        }
+
+        const { error } = await supabase
+            .from('cycles')
+            .update(mapToSnakeCase(sanitizedUpdates))
+            .eq('id', cycleId)
+            .eq('user_id', userId);
+
+        if (error) {
+            if (previousCycleSnapshot) {
+                setActiveCycle(prev => (prev?.id === cycleId ? previousCycleSnapshot : prev));
+            }
+            console.error('Supabase update cycle error:', error.message);
+            showToast('Erro ao atualizar ciclo.', 'error');
+            throw error;
+        }
+
+        showToast('Ciclo atualizado.', 'success');
+    };
     const endCycle = (currentAssets: Asset[], currentActions: Action[]): EndCycleResult => {
         const cycle = activeCycle;
         const supabaseUserId = getSupabaseUserId();
@@ -9558,7 +9597,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,
-            addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,

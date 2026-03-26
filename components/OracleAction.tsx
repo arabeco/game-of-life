@@ -371,6 +371,29 @@ export const OracleAction: React.FC = () => {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const handleGuidance = (event: Event) => {
+      const detail = (event as CustomEvent<{ assistant?: string; prompt?: string }>).detail;
+      if (!detail) return;
+
+      if (detail.assistant?.trim()) {
+        setMessages((previous) => [
+          ...previous,
+          { id: createMessageId(), role: 'assistant', content: detail.assistant.trim() },
+        ]);
+      }
+
+      if (typeof detail.prompt === 'string') {
+        setInput(detail.prompt);
+      }
+
+      requestAnimationFrame(() => inputRef.current?.focus());
+    };
+
+    window.addEventListener('oracle-action-guidance', handleGuidance as EventListener);
+    return () => window.removeEventListener('oracle-action-guidance', handleGuidance as EventListener);
+  }, []);
+
   const appendAssistant = (content: string, tone: AssistantTone = 'neutral') => {
     setMessages((previous) => [...previous, { id: createMessageId(), role: 'assistant', content, tone }]);
   };

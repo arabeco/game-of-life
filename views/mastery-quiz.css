@@ -117,6 +117,67 @@
   padding: 28px;
 }
 
+.mastery-quiz-overview {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+}
+
+.mastery-quiz-overview-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.mastery-quiz-overview-title {
+  margin: 0;
+  max-width: 18ch;
+  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+  color: #fcf7eb;
+  text-wrap: balance;
+}
+
+.mastery-quiz-overview-note {
+  margin: 0;
+  max-width: 46rem;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: rgba(255, 245, 227, 0.68);
+  text-wrap: balance;
+}
+
+.mastery-quiz-overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mastery-quiz-overview-metric {
+  display: flex;
+  min-height: 7.5rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+  text-align: center;
+}
+
+.mastery-quiz-overview-stat {
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  font-weight: 800;
+  color: #fcf7eb;
+  letter-spacing: 0.02em;
+}
+
 .mastery-quiz-decagon-frame {
   display: flex;
   justify-content: center;
@@ -173,6 +234,10 @@
   line-height: 0.92;
   color: var(--mastery-accent);
   text-shadow: 0 0 24px color-mix(in srgb, var(--mastery-accent) 35%, transparent);
+}
+
+.mastery-quiz-total-value--hero {
+  font-size: clamp(2.6rem, 5vw, 4.4rem);
 }
 
 .mastery-quiz-progress {
@@ -318,6 +383,13 @@
   gap: 12px;
 }
 
+.mastery-quiz-actions--single {
+  width: 100%;
+  max-width: 24rem;
+  margin-inline: auto;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .mastery-quiz-nav-button {
   display: inline-flex;
   align-items: center;
@@ -396,6 +468,18 @@
   .mastery-quiz-panel-inner {
     padding: 18px;
     gap: 14px;
+  }
+
+  .mastery-quiz-overview {
+    justify-content: flex-start;
+  }
+
+  .mastery-quiz-overview-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mastery-quiz-overview-metric {
+    min-height: 0;
   }
 
   .mastery-quiz-decagon-square {

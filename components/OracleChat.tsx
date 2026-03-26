@@ -10,6 +10,22 @@ import { isTaskInPool } from '../utils/taskDomain.js';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
+import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQuizModal';
+
+type OracleTabTarget = 'chat' | 'action' | 'social' | 'notifications';
+type OracleQuickActionId = 'campaign_quiz' | 'manual_start' | 'adjust_existing';
+
+interface MessageQuickAction {
+  id: OracleQuickActionId;
+  label: string;
+  description: string;
+  variant?: 'primary' | 'secondary';
+}
+
+interface PendingClarification {
+  type: 'campaign_route';
+  originalInput: string;
+}
 
 interface Message {
   role: 'user' | 'assistant';
@@ -21,7 +37,93 @@ interface Message {
   feedPresentation?: 'ambient_pulse' | 'info_card';
   feedSummary?: string;
   feedTrigger?: 'app_open' | 'cron' | 'manual';
+  quickActions?: MessageQuickAction[];
 }
+
+const normalizeOracleText = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const ORACLE_ROUTE_ACTIONS: MessageQuickAction[] = [
+  {
+    id: 'campaign_quiz',
+    label: 'Fazer quiz',
+    description: 'Descobrir a campanha certa antes de montar a estrutura.',
+    variant: 'primary',
+  },
+  {
+    id: 'manual_start',
+    label: 'Montar manual',
+    description: 'Ir para Ação e construir o começo com perguntas curtas.',
+    variant: 'secondary',
+  },
+  {
+    id: 'adjust_existing',
+    label: 'Ajustar o que já existe',
+    description: 'Editar ciclo, arena, ação ou agenda sem recriar nada.',
+    variant: 'secondary',
+  },
+];
+
+const detectCampaignRouteIntent = (rawInput: string): PendingClarification | null => {
+  const normalized = normalizeOracleText(rawInput);
+  if (!normalized) return null;
+
+  const operationalIntent = /\b(cria(?:r)?|edita(?:r)?|ajusta(?:r)?|muda(?:r)?|agenda(?:r)?|programa(?:r)?|completa(?:r)?|conclu(?:ir|i)|instala(?:r)?|compra(?:r)?|organiza(?:r)? meu dia)\b/.test(normalized);
+  if (operationalIntent) return null;
+
+  const broadStarter = /\b(quero|preciso|gostaria|me ajuda|me ajude|como comeco|como faco|to querendo|estou querendo|quero voltar|quero comecar|quero melhorar|quero organizar)\b/.test(normalized);
+  const trackedDomain = /\b(trein|treino|correr|corrida|academia|calisten|ler|leitura|estud|foco|produt|dorm|sono|aliment|nutri|finance|dinheiro|relac|conex|medit|rotin|habit|disciplina|corpo)\b/.test(normalized);
+
+  if (!broadStarter || !trackedDomain) {
+    return null;
+  }
+
+  return {
+    type: 'campaign_route',
+    originalInput: rawInput.trim(),
+  };
+};
+
+const resolveCampaignRouteChoice = (rawInput: string): OracleQuickActionId | null => {
+  const normalized = normalizeOracleText(rawInput);
+  if (!normalized) return null;
+
+  if (
+    normalized === '1'
+    || normalized.includes('fazer quiz')
+    || normalized.includes('faca o quiz')
+    || normalized.includes('quiz')
+    || normalized.includes('campanha certa')
+  ) {
+    return 'campaign_quiz';
+  }
+
+  if (
+    normalized === '2'
+    || normalized.includes('montar manual')
+    || normalized.includes('manual')
+    || normalized.includes('comeco manual')
+    || normalized.includes('comecar manual')
+  ) {
+    return 'manual_start';
+  }
+
+  if (
+    normalized === '3'
+    || normalized.includes('ajustar')
+    || normalized.includes('ja existe')
+    || normalized.includes('já existe')
+  ) {
+    return 'adjust_existing';
+  }
+
+  return null;
+};
+
 const readResponseBody = async (response: Response): Promise<unknown> => {
   try {
     return await response.clone().json();
@@ -191,12 +293,14 @@ const resolveFeedPresentation = (
     return 'ambient_pulse';
 };
 
-export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
+export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false, onNavigateTab }) => {
   const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, addArena, addAction, triggerOracle } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
+  const [isCampaignQuizOpen, setIsCampaignQuizOpen] = useState(false);
+  const [pendingClarification, setPendingClarification] = useState<PendingClarification | null>(null);
   const isInitialLoadRef = useRef(true);
   const firstConversationNotice = 'Aviso: o Oráculo usa IA externa. Evite compartilhar dados sensíveis nas conversas.';
   
@@ -363,6 +467,104 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     return `${mentalAssetName} pedindo contenção às ${hourLabel}. Vejo ${bayLine} e ${pendingLine}. ${cycleLine} Amanhã, preserve só 1 missão crítica e encaixe 30 min de Tela de Descanso antes de reacelerar.`;
   }, [activeCycle, assets, bayAreaVisibleCount, cycleProgress, tasks]);
 
+  const buildCampaignRouteMessage = useCallback((rawInput: string) => {
+    const normalized = normalizeOracleText(rawInput);
+    const mentionsSomethingAlreadyBuilt = /\b(voltar|retomar|ajustar|melhorar)\b/.test(normalized);
+    const opener = mentionsSomethingAlreadyBuilt
+      ? 'Isso parece uma frente que pode passar por diagnóstico antes de mexer na estrutura.'
+      : 'Isso parece uma frente nova, não uma execução direta.';
+
+    return [
+      opener,
+      'Posso te ajudar de 3 jeitos:',
+      '1. Fazer o quiz para eu indicar a campanha certa',
+      '2. Montar um começo manual agora',
+      '3. Ajustar algo que você já tem',
+      'Se preferir, responda 1, 2 ou 3.',
+    ].join('\n');
+  }, []);
+
+  const openActionTabWithGuidance = useCallback((detail: { assistant: string; prompt?: string }) => {
+    onNavigateTab?.('action');
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('oracle-action-guidance', { detail }));
+    }, 120);
+  }, [onNavigateTab]);
+
+  const handleCampaignRouteSelection = useCallback((selection: OracleQuickActionId, clarification: PendingClarification | null) => {
+    setPendingClarification(null);
+
+    if (selection === 'campaign_quiz') {
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: 'assistant',
+          content: 'Perfeito. Vou abrir o quiz normal de campanhas para indicar a trilha mais coerente para esse momento.',
+          timestamp: new Date(),
+          mode: currentMode,
+        },
+      ]);
+      setIsCampaignQuizOpen(true);
+      return;
+    }
+
+    if (selection === 'manual_start') {
+      const helperText = clarification?.originalInput
+        ? `Vamos montar isso manualmente na aba Ação. A partir do seu pedido (${clarification.originalInput}), eu sugiro começar por ciclo, arena ou primeira ação.`
+        : 'Vamos montar isso manualmente na aba Ação.';
+
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: 'assistant',
+          content: onNavigateTab
+            ? 'Abrindo a aba Ação. Lá eu monto a estrutura com perguntas curtas e confirmação antes de aplicar.'
+            : `${helperText}\n\nAbra a aba Ação para seguir com a execução guiada.`,
+          timestamp: new Date(),
+          mode: currentMode,
+        },
+      ]);
+
+      if (onNavigateTab) {
+        openActionTabWithGuidance({
+          assistant: `${helperText}\n\nMe diga o que você quer criar primeiro: ciclo, arena, ação ou organização do dia.`,
+        });
+      }
+      return;
+    }
+
+    const adjustText = 'Certo. Vamos olhar o que já existe sem recriar nada.';
+    setMessages((previous) => [
+      ...previous,
+      {
+        role: 'assistant',
+        content: onNavigateTab
+          ? 'Abrindo a aba Ação para ajustar o que você já tem.'
+          : `${adjustText}\n\nAbra a aba Ação e me diga o que quer ajustar: data final do ciclo, arena, ação ou agenda.`,
+        timestamp: new Date(),
+        mode: currentMode,
+      },
+    ]);
+
+    if (onNavigateTab) {
+      openActionTabWithGuidance({
+        assistant: `${adjustText}\n\nMe diga o que você quer ajustar: data final do ciclo, arena, ação ou agenda.`,
+      });
+    }
+  }, [currentMode, onNavigateTab, openActionTabWithGuidance]);
+
+  const handleQuickActionClick = useCallback((action: MessageQuickAction) => {
+    setMessages((previous) => [
+      ...previous,
+      {
+        role: 'user',
+        content: action.label,
+        timestamp: new Date(),
+      },
+    ]);
+    handleCampaignRouteSelection(action.id, pendingClarification);
+  }, [handleCampaignRouteSelection, pendingClarification]);
+
   const handleCommand = async (cmd: string): Promise<string | null> => {
     const lowerCmd = cmd.toLowerCase().trim();
     
@@ -452,15 +654,25 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    const nextInput = input.trim();
+    if (!nextInput || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input, timestamp: new Date() };
+    const userMessage: Message = { role: 'user', content: nextInput, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
-    if (input.startsWith('?') || input.startsWith('!')) {
-        const commandResponse = await handleCommand(input);
+    const routeChoice = pendingClarification ? resolveCampaignRouteChoice(nextInput) : null;
+    if (routeChoice) {
+      handleCampaignRouteSelection(routeChoice, pendingClarification);
+      setIsLoading(false);
+      return;
+    }
+
+    setPendingClarification(null);
+
+    if (nextInput.startsWith('?') || nextInput.startsWith('!')) {
+        const commandResponse = await handleCommand(nextInput);
         if (commandResponse) {
              setTimeout(() => {
                  setMessages(prev => [...prev, { role: 'assistant', content: commandResponse, timestamp: new Date() }]);
@@ -470,7 +682,24 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         }
     }
 
-    const recoveryFastPath = buildRecoveryFastPath(input);
+    const campaignRouteIntent = detectCampaignRouteIntent(nextInput);
+    if (campaignRouteIntent) {
+      setPendingClarification(campaignRouteIntent);
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: 'assistant',
+          content: buildCampaignRouteMessage(nextInput),
+          timestamp: new Date(),
+          mode: currentMode,
+          quickActions: ORACLE_ROUTE_ACTIONS,
+        },
+      ]);
+      setIsLoading(false);
+      return;
+    }
+
+    const recoveryFastPath = buildRecoveryFastPath(nextInput);
     if (recoveryFastPath) {
       window.setTimeout(() => {
         setMessages(prev => [...prev, {
@@ -755,13 +984,33 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
               ) : (
                 <div 
                   className={`
-                    max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed
+                    max-w-[85%] whitespace-pre-line p-3 rounded-2xl text-sm leading-relaxed
                     ${visuals.bg} ${visuals.color.replace('text-', 'text-white/90 ')} rounded-tl-sm border ${visuals.border} shadow-inner
                   `}
                 >
                   {msg.content}
                 </div>
               )}
+              {msg.role === 'assistant' && msg.quickActions?.length ? (
+                <div className="mt-2 flex w-full max-w-[92%] flex-col gap-2">
+                  {msg.quickActions.map((action) => (
+                    <button
+                      key={`${idx}-${action.id}`}
+                      type="button"
+                      onClick={() => handleQuickActionClick(action)}
+                      disabled={isLoading}
+                      className={`w-full rounded-2xl border px-3 py-3 text-left transition-all ${
+                        action.variant === 'primary'
+                          ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/18'
+                          : 'border-white/10 bg-white/5 text-white/85 hover:bg-white/10'
+                      } ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}
+                    >
+                      <div className="text-[11px] font-black uppercase tracking-[0.16em]">{action.label}</div>
+                      <div className="mt-1 text-[11px] leading-relaxed text-white/55">{action.description}</div>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           )})}
           
@@ -834,11 +1083,17 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   );
 
   if (isEmbedded) {
-      return <div className="flex flex-col h-full w-full">{content}</div>;
+      return (
+        <div className="flex flex-col h-full w-full">
+          {content}
+          {isCampaignQuizOpen && <CampaignRecommendationQuizModal onClose={() => setIsCampaignQuizOpen(false)} />}
+        </div>
+      );
   }
 
   return (
     <Portal>
+        <>
         <div className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6 pointer-events-none">
             {/* Backdrop for mobile mostly, but let's keep it clickable through except the chat */}
             <div className="absolute inset-0 bg-transparent" onClick={onClose} />
@@ -847,6 +1102,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                 {content}
             </div>
         </div>
+        {isCampaignQuizOpen && <CampaignRecommendationQuizModal onClose={() => setIsCampaignQuizOpen(false)} />}
+        </>
     </Portal>
   );
 };

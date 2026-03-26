@@ -221,7 +221,10 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
 
     return (
         <>
-            <header className="shell-header fixed left-0 right-0 z-40 safe-area-top" style={{ top: topOffsetPx }}>
+            <header
+                className="shell-header fixed left-0 right-0 z-40"
+                style={{ top: topOffsetPx, paddingTop: 'var(--safe-area-top)' }}
+            >
                 <div className="max-w-7xl mx-auto relative flex items-center justify-between h-[76px] px-4 text-xs font-semibold text-gray-300">
                     {/* Date Chip */}
                     <div className={chipStyle}>

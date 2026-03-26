@@ -143,7 +143,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'c
                     {activeTab === 'chat' && (
                         <div className="absolute inset-0 animate-in slide-in-from-left-4 duration-200">
                             <Suspense fallback={<div className="absolute inset-0 bg-black/30 animate-pulse" />}>
-                                <OracleChat onClose={onClose} isEmbedded={true} />
+                                <OracleChat onClose={onClose} isEmbedded={true} onNavigateTab={setActiveTab} />
                             </Suspense>
                         </div>
                     )}

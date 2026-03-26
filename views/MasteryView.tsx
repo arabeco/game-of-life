@@ -14,12 +14,13 @@ type MasteryMode = 'LEGADO' | 'SOBERANO';
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
-    const { assets, updateAllAssetLevels, showToast } = useGame();
+    const { assets, updateAllAssetLevels, showToast, userProfile } = useGame();
     const [mode, setMode] = useState<MasteryMode>('LEGADO');
     const [tempLevels, setTempLevels] = useState<Record<string, number>>({});
     const [tempPhrases, setTempPhrases] = useState<Record<string, string[]>>({});
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [currentAssetIndex, setCurrentAssetIndex] = useState(0);
+    const [isAssessmentActive, setIsAssessmentActive] = useState(false);
 
     const filteredAssets = useMemo(() => assets.filter((asset) => asset.id !== 'geral'), [assets]);
     const currentAsset = filteredAssets[currentAssetIndex];
@@ -56,6 +57,16 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
     const currentDescriptions = useMemo(() => (
         currentAsset ? (MASTERY_LEVEL_DESCRIPTIONS[currentAsset.id] || []) : []
     ), [currentAsset]);
+
+    const hasExistingAssessment = useMemo(() => (
+        Boolean(userProfile.lastLevelUpdate)
+        || filteredAssets.some((asset) => Number(asset.level || 1) > 1)
+    ), [filteredAssets, userProfile.lastLevelUpdate]);
+
+    const assessmentButtonLabel = hasExistingAssessment ? 'Reavaliar' : 'Autoavaliar';
+    const lastAssessmentLabel = userProfile.lastLevelUpdate
+        ? new Date(userProfile.lastLevelUpdate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : null;
 
     if (!currentAsset) return null;
 
@@ -99,6 +110,11 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
         if (currentAssetIndex > 0) {
             setCurrentAssetIndex((prev) => prev - 1);
         }
+    };
+
+    const startAssessment = () => {
+        setCurrentAssetIndex(0);
+        setIsAssessmentActive(true);
     };
 
     return (
@@ -155,82 +171,129 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
 
                 <div className="mastery-quiz-panel">
                     <div className="mastery-quiz-panel-inner">
-                        <div className="mastery-quiz-decagon-frame">
-                            <div className="mastery-quiz-decagon-square">
-                                <Suspense fallback={<div className="h-full w-full rounded-[1.4rem] bg-white/5" />}>
-                                    <AssetDecagon assets={assets} tempLevels={tempLevels} size="100%" />
-                                </Suspense>
-                            </div>
-                        </div>
+                        {!isAssessmentActive ? (
+                            <div className="mastery-quiz-overview">
+                                <div className="mastery-quiz-decagon-frame">
+                                    <div className="mastery-quiz-decagon-square">
+                                        <Suspense fallback={<div className="h-full w-full rounded-[1.4rem] bg-white/5" />}>
+                                            <AssetDecagon assets={assets} tempLevels={tempLevels} size="100%" />
+                                        </Suspense>
+                                    </div>
+                                </div>
 
-                        <div className="mastery-quiz-meta">
-                            <div>
-                                <div className="mastery-quiz-kicker">Area atual</div>
-                                <h1 className="mastery-quiz-asset-name">{currentAsset.name}</h1>
-                            </div>
-                            <div className="mastery-quiz-meta-side">
-                                <div className="mastery-quiz-total-label">Nivel total</div>
-                                <div className="mastery-quiz-total-value">{totalLevel}</div>
-                            </div>
-                        </div>
+                                <div className="mastery-quiz-overview-copy">
+                                    <div className="mastery-quiz-kicker">Maestria atual</div>
+                                    <h1 className="mastery-quiz-overview-title">Visao geral do seu decagono</h1>
+                                    <p className="mastery-quiz-overview-note">
+                                        Veja seu nivel geral antes de iniciar a calibragem. O quiz so comeca quando voce tocar em {assessmentButtonLabel.toLowerCase()}.
+                                    </p>
+                                </div>
 
-                        <div className="mastery-quiz-progress">
-                            <div className="mastery-quiz-progress-labels">
-                                <span>{String(currentAssetIndex + 1).padStart(2, '0')} / {String(filteredAssets.length).padStart(2, '0')}</span>
-                                <span>{currentProgress}%</span>
-                            </div>
-                            <div className="mastery-quiz-progress-track">
-                                <div className="mastery-quiz-progress-fill" style={{ width: `${currentProgress}%` }} />
-                            </div>
-                        </div>
+                                <div className="mastery-quiz-overview-metrics">
+                                    <div className="mastery-quiz-overview-metric">
+                                        <div className="mastery-quiz-total-label">Nivel geral</div>
+                                        <div className="mastery-quiz-total-value mastery-quiz-total-value--hero">{totalLevel}</div>
+                                    </div>
+                                    <div className="mastery-quiz-overview-metric">
+                                        <div className="mastery-quiz-total-label">Areas</div>
+                                        <div className="mastery-quiz-overview-stat">{filteredAssets.length}</div>
+                                    </div>
+                                    <div className="mastery-quiz-overview-metric">
+                                        <div className="mastery-quiz-total-label">Ultima avaliacao</div>
+                                        <div className="mastery-quiz-overview-stat">{lastAssessmentLabel || 'Ainda nao feita'}</div>
+                                    </div>
+                                </div>
 
-                        <div className="mastery-quiz-phrase-shell">
-                            <div className="mastery-quiz-level-chip">Nivel {currentLevel}</div>
-                            <div className="mastery-quiz-phrase">
-                                {currentPhrase}
+                                <div className="mastery-quiz-actions mastery-quiz-actions--single">
+                                    <button
+                                        onClick={startAssessment}
+                                        className="luxe-skin-button mastery-quiz-nav-button"
+                                    >
+                                        {assessmentButtonLabel}
+                                        <ChevronRightIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <>
+                                <div className="mastery-quiz-decagon-frame">
+                                    <div className="mastery-quiz-decagon-square">
+                                        <Suspense fallback={<div className="h-full w-full rounded-[1.4rem] bg-white/5" />}>
+                                            <AssetDecagon assets={assets} tempLevels={tempLevels} size="100%" />
+                                        </Suspense>
+                                    </div>
+                                </div>
 
-                        <div className="mastery-quiz-slider-shell">
-                            <div className="mastery-quiz-slider-label-row">
-                                <span>Baixo</span>
-                                <span>Ajuste pelo deslize</span>
-                                <span>Alto</span>
-                            </div>
-                            <input
-                                type="range"
-                                min={1}
-                                max={sliderMax}
-                                value={currentLevel}
-                                onChange={(event) => handleLevelChange(parseInt(event.target.value, 10))}
-                                className="mastery-quiz-range"
-                            />
-                            <div className="mastery-quiz-slider-scale">
-                                {Array.from({ length: sliderMax }).map((_, index) => (
-                                    <span key={`${currentAsset.id}-${index + 1}`} className={currentLevel === index + 1 ? 'is-active' : ''}>
-                                        {index + 1}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
+                                <div className="mastery-quiz-meta">
+                                    <div>
+                                        <div className="mastery-quiz-kicker">Area atual</div>
+                                        <h1 className="mastery-quiz-asset-name">{currentAsset.name}</h1>
+                                    </div>
+                                    <div className="mastery-quiz-meta-side">
+                                        <div className="mastery-quiz-total-label">Nivel total</div>
+                                        <div className="mastery-quiz-total-value">{totalLevel}</div>
+                                    </div>
+                                </div>
 
-                        <div className="mastery-quiz-actions">
-                            <button
-                                onClick={prevStep}
-                                disabled={currentAssetIndex === 0}
-                                className="luxe-skin-button mastery-quiz-nav-button disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                                <ChevronLeftIcon className="w-4 h-4" />
-                                Anterior
-                            </button>
-                            <button
-                                onClick={nextStep}
-                                className="luxe-skin-button mastery-quiz-nav-button"
-                            >
-                                {currentAssetIndex === filteredAssets.length - 1 ? 'Finalizar' : 'Proximo'}
-                                <ChevronRightIcon className="w-4 h-4" />
-                            </button>
-                        </div>
+                                <div className="mastery-quiz-progress">
+                                    <div className="mastery-quiz-progress-labels">
+                                        <span>{String(currentAssetIndex + 1).padStart(2, '0')} / {String(filteredAssets.length).padStart(2, '0')}</span>
+                                        <span>{currentProgress}%</span>
+                                    </div>
+                                    <div className="mastery-quiz-progress-track">
+                                        <div className="mastery-quiz-progress-fill" style={{ width: `${currentProgress}%` }} />
+                                    </div>
+                                </div>
+
+                                <div className="mastery-quiz-phrase-shell">
+                                    <div className="mastery-quiz-level-chip">Nivel {currentLevel}</div>
+                                    <div className="mastery-quiz-phrase">
+                                        {currentPhrase}
+                                    </div>
+                                </div>
+
+                                <div className="mastery-quiz-slider-shell">
+                                    <div className="mastery-quiz-slider-label-row">
+                                        <span>Baixo</span>
+                                        <span>Ajuste pelo deslize</span>
+                                        <span>Alto</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min={1}
+                                        max={sliderMax}
+                                        value={currentLevel}
+                                        onChange={(event) => handleLevelChange(parseInt(event.target.value, 10))}
+                                        className="mastery-quiz-range"
+                                    />
+                                    <div className="mastery-quiz-slider-scale" style={{ gridTemplateColumns: `repeat(${sliderMax}, minmax(0, 1fr))` }}>
+                                        {Array.from({ length: sliderMax }).map((_, index) => (
+                                            <span key={`${currentAsset.id}-${index + 1}`} className={currentLevel === index + 1 ? 'is-active' : ''}>
+                                                {index + 1}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="mastery-quiz-actions">
+                                    <button
+                                        onClick={prevStep}
+                                        disabled={currentAssetIndex === 0}
+                                        className="luxe-skin-button mastery-quiz-nav-button disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        <ChevronLeftIcon className="w-4 h-4" />
+                                        Anterior
+                                    </button>
+                                    <button
+                                        onClick={nextStep}
+                                        className="luxe-skin-button mastery-quiz-nav-button"
+                                    >
+                                        {currentAssetIndex === filteredAssets.length - 1 ? 'Finalizar' : 'Proximo'}
+                                        <ChevronRightIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

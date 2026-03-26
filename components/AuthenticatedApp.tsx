@@ -474,7 +474,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
     const baseTopPadding = isBuilderMode ?124 : 76;
     const baseBottomPadding = 64;
-    const mainPaddingTop = `calc(${baseTopPadding}px + var(--safe-area-top))`;
+    const mainPaddingTop = `${baseTopPadding}px`;
     const mainPaddingBottom = currentView === 'assets'
         ?'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;

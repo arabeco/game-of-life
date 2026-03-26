@@ -96,7 +96,7 @@ type InlineEraEditorState = {
     eraIndex: number;
 };
 
-const OFFICIAL_COMPACT_HISTORY_CARD_CLASS = 'w-[12.35rem] max-w-full';
+const OFFICIAL_COMPACT_HISTORY_CARD_CLASS = 'mx-auto w-[15.5rem] max-w-full';
 
 const getReportMetaCounts = (report: Report) => {
     const sealedMetas = report.metrics.sealedMetas ?? report.metrics.goalsMet ?? 0;
@@ -107,7 +107,7 @@ const getReportMetaCounts = (report: Report) => {
 const getReportPresenceDays = (report: Report) => report.metrics?.fairness?.activeDays ?? report.metrics.consistencyDays ?? 0;
 
 // --- Sub-components for Active Cycle HUD ---
-const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => void }> = ({ cycle, onEdit }) => {
+const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => void; showTimelineMarker?: boolean }> = ({ cycle, onEdit, showTimelineMarker = true }) => {
     const { tasks, assets, actions, reports, deleteCycle } = useGame();
     const startDate = cycle.startDate;
     const endDate = cycle.endDate;
@@ -142,10 +142,12 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
     const scoreInfo = getScoreGrade(currentScore, fairScoreResult.fairness as Report['metrics']['fairness']);
 
     return (
-        <div className="relative pl-5 group">
-            <div className="absolute left-0 top-3 w-5 h-5 rounded-full border-2 border-[var(--skin-accent-color)] bg-black flex items-center justify-center z-10">
-                <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] animate-pulse" />
-            </div>
+        <div className={`relative ${showTimelineMarker ? 'pl-4' : ''} group`}>
+            {showTimelineMarker && (
+                <div className="absolute left-0 top-3 w-5 h-5 rounded-full border-2 border-[var(--skin-accent-color)] bg-black flex items-center justify-center z-10">
+                    <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] animate-pulse" />
+                </div>
+            )}
             <div className="relative">
                 <button
                     onClick={(e) => {
@@ -279,14 +281,14 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
 
 // --- Timeline Components ---
 
-const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean, eraLabel?: string, eraSkinId?: string, isSelectedForEraEdit?: boolean }> = ({ report, isLatest, onClick, seasonName, isEditing, eraLabel, eraSkinId, isSelectedForEraEdit }) => {
+const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean, eraLabel?: string, eraSkinId?: string, isSelectedForEraEdit?: boolean, showTimelineMarker?: boolean }> = ({ report, isLatest, onClick, seasonName, isEditing, eraLabel, eraSkinId, isSelectedForEraEdit, showTimelineMarker = true }) => {
     const scoreInfo = getScoreGrade(report.performanceScore, report.metrics?.fairness);
     const startDate = formatDate(report.startDate);
     const endDate = formatDate(report.endDate);
     const { sealedMetas, plannedMetas } = getReportMetaCounts(report);
     const presenceDays = getReportPresenceDays(report);
     const eraSkin = getEraRibbonSkin(eraSkinId);
-    const hasEraAccent = Boolean(eraLabel && eraSkinId);
+    const hasEraAccent = isEditing ? Boolean(eraSkinId && isSelectedForEraEdit) : Boolean(eraLabel && eraSkinId);
     const wrapperStyle = hasEraAccent ?{
         boxShadow: `0 0 0 1px ${eraSkin.edge}12, 0 14px 30px ${eraSkin.baseBottom}55`,
     } : undefined;
@@ -295,10 +297,12 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
     } : undefined;
 
     return (
-        <div className="relative pl-5">
-            <div className={`absolute left-0 top-3 w-5 h-5 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ?'bg-black border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)] scale-110' : 'bg-black border-white/20'}`}>
-                {isLatest && <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>}
-            </div>
+        <div className={`relative ${showTimelineMarker ? 'pl-4' : ''}`}>
+            {showTimelineMarker && (
+                <div className={`absolute left-0 top-3 w-5 h-5 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ?'bg-black border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)] scale-110' : 'bg-black border-white/20'}`}>
+                    {isLatest && <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>}
+                </div>
+            )}
             <button
                 onClick={onClick}
                 style={{ ...wrapperStyle, ...editHighlightStyle }}
@@ -1252,17 +1256,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     );
     const historyStartDate = eraSummaries[eraSummaries.length - 1]?.startDate;
     const historyEndDate = eraSummaries[0]?.endDate;
-    const bestEra = useMemo(() => [...eraSummaries].sort((a, b) => (b.avgScore - a.avgScore) || (b.totalHours - a.totalHours))[0] || null, [eraSummaries]);
     const legacyPlaqueUnlocked = useMemo(() => !!userProfile.isPremium || eraSummaries.length >= 3, [eraSummaries.length, userProfile.isPremium]);
-    const legacyPlaqueUnlockSeenRef = useRef(false);
-    const legacySummaryLine = useMemo(() => {
-        if (sortedReports.length === 0) return 'Sem ciclos concluidos ainda. O legado comeca quando o primeiro ciclo fecha.';
-
-        const spanLabel = historyStartDate && historyEndDate
-            ?`${formatDate(historyStartDate)} - ${formatDate(historyEndDate)}`
-            : 'periodo em consolidacao';
-        return `${sortedReports.length} ciclos, ${eraSummaries.length} eras e ${Math.round(totalHistoricalHours)}h acumuladas em ${spanLabel}. Era em destaque: ${bestEra?.label || 'Sem era dominante'}.`;
-    }, [bestEra, eraSummaries.length, historyEndDate, historyStartDate, sortedReports.length, totalHistoricalHours]);
 
     const openInlineEraEditor = (payload: InlineEraEditorState, initialName: string, initialSkinId: string) => {
         setInlineEraEditor(payload);
@@ -1463,22 +1457,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setInlineEraEditor(null);
     };
 
-    useEffect(() => {
-        if (!hasLoadedLegacyPlaqueState) return;
-        if (!legacyPlaqueUnlocked) {
-            legacyPlaqueUnlockSeenRef.current = false;
-            return;
-        }
-        if (view !== 'hub' || legacyPlaqueForged || showLegacyPlaqueForgeModal || showLegacyPlaqueModal) {
-            legacyPlaqueUnlockSeenRef.current = true;
-            return;
-        }
-        if (!legacyPlaqueUnlockSeenRef.current) {
-            legacyPlaqueUnlockSeenRef.current = true;
-            setShowLegacyPlaqueForgeModal(true);
-        }
-    }, [hasLoadedLegacyPlaqueState, legacyPlaqueForged, legacyPlaqueUnlocked, showLegacyPlaqueForgeModal, showLegacyPlaqueModal, view]);
-
     const handleLegacyPlaqueForged = () => {
         setLegacyPlaqueForged(true);
         setShowLegacyPlaqueForgeModal(false);
@@ -1506,33 +1484,31 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const renderLegacySummary = () => {
         return (
-            <GlassCard variant="neutral" className="mb-4 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                        <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--skin-accent-color)] font-black">Hist?rico</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">
-                            <span>{sortedReports.length} ciclos</span>
-                            <span className="text-white/15">/</span>
-                            <span>{effectiveEraCount} eras</span>
-                            <span className="text-white/15">/</span>
-                            <span>{Math.round(totalHistoricalHours)}h</span>
-                            <span className="text-white/15">/</span>
-                            <span>score {Math.round(historicalAverageScore)}</span>
-                        </div>
+            <GlassCard variant="neutral" className="mb-4 px-4 py-3">
+                <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">
+                        <span className="text-[var(--skin-accent-color)]">Legado</span>
+                        <span>{sortedReports.length} ciclos</span>
+                        <span className="text-white/15">/</span>
+                        <span>{effectiveEraCount} eras</span>
+                        <span className="text-white/15">/</span>
+                        <span>{Math.round(totalHistoricalHours)}h</span>
+                        <span className="text-white/15">/</span>
+                        <span>score {Math.round(historicalAverageScore)}</span>
                     </div>
-                    <div className="flex shrink-0 flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <button
                             onClick={handleStartLegacyExport}
                             className="rounded-xl luxe-skin-button px-4 py-3 text-xs"
                         >
-                            VER LEGADO
+                            ABRIR LEGADO
                         </button>
                         <button
                             onClick={() => { void handleExportLegacy(); }}
                             disabled={isExportingLegacy}
                             className="rounded-xl luxe-button-secondary px-4 py-3 text-xs disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            {isExportingLegacy ?'EXPORTANDO...' : 'REGISTRO COMPLETO'}
+                            {isExportingLegacy ?'EXPORTANDO...' : 'COMPARTILHAR'}
                         </button>
                     </div>
                 </div>
@@ -1626,7 +1602,31 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         };
         setDraftEraSlots((previous) => [...previous, slot]);
         setActiveDraftEraId(slot.id);
-        openDraftEraInlineEditor(slot, index);
+        setInlineEraEditor(null);
+    };
+
+    const handleRemoveActiveDraftEra = () => {
+        if (!activeDraftEraId || draftEraSlots.length <= 1) return;
+        const currentIndex = draftEraSlots.findIndex((slot) => slot.id === activeDraftEraId);
+        if (currentIndex === -1) return;
+
+        const fallbackSlot = draftEraSlots[currentIndex - 1] || draftEraSlots[currentIndex + 1] || draftEraSlots[0];
+        if (!fallbackSlot) return;
+
+        setDraftReportEraIds((previous) => {
+            const next = { ...previous };
+            sortedReports.forEach((report) => {
+                if (next[report.id] === activeDraftEraId) {
+                    next[report.id] = fallbackSlot.id;
+                }
+            });
+            return next;
+        });
+        setDraftEraSlots((previous) => previous.filter((slot) => slot.id !== activeDraftEraId));
+        setActiveDraftEraId(fallbackSlot.id);
+        if (inlineEraEditor?.key === activeDraftEraId) {
+            setInlineEraEditor(null);
+        }
     };
 
     const handleAssignReportToDraftEra = (reportIndex: number) => {
@@ -1636,26 +1636,29 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         setDraftReportEraIds((previous) => {
             const next = { ...previous };
-            const assignedIndexes = sortedReports.reduce<number[]>((accumulator, currentReport, currentIndex) => {
-                if ((previous[currentReport.id] || draftEraSlots[0]?.id) === activeDraftEraId) {
-                    accumulator.push(currentIndex);
-                }
-                return accumulator;
-            }, []);
+            const fallbackSlotId = draftEraSlots[0]?.id;
+            const currentSlotId = previous[report.id] || fallbackSlotId;
+            if (!currentSlotId) return previous;
 
-            if (assignedIndexes.length === 0) {
-                next[report.id] = activeDraftEraId;
+            if (currentSlotId === activeDraftEraId) {
+                if (draftEraSlots.length <= 1) {
+                    return previous;
+                }
+
+                const previousNeighbor = reportIndex > 0 ? (previous[sortedReports[reportIndex - 1].id] || fallbackSlotId) : null;
+                const nextNeighbor = reportIndex < sortedReports.length - 1 ? (previous[sortedReports[reportIndex + 1].id] || fallbackSlotId) : null;
+                const reassignmentSlotId = [previousNeighbor, nextNeighbor, ...draftEraSlots.map((slot) => slot.id)]
+                    .find((slotId) => !!slotId && slotId !== activeDraftEraId);
+
+                if (!reassignmentSlotId) {
+                    return previous;
+                }
+
+                next[report.id] = reassignmentSlotId;
                 return next;
             }
 
-            const minIndex = Math.min(...assignedIndexes);
-            const maxIndex = Math.max(...assignedIndexes);
-            const start = Math.min(minIndex, reportIndex);
-            const end = Math.max(maxIndex, reportIndex);
-            for (let index = start; index <= end; index += 1) {
-                const candidate = sortedReports[index];
-                if (candidate) next[candidate.id] = activeDraftEraId;
-            }
+            next[report.id] = activeDraftEraId;
             return next;
         });
     };
@@ -1716,25 +1719,28 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const renderEraControls = () => {
         if (sortedReports.length === 0 && !activeCycle) return null;
+        const activeDraftEraSlot = draftEraSlots.find((slot) => slot.id === activeDraftEraId) || draftEraSlots[0] || null;
+        const primaryEraSummary = eraSummaries[0];
+        const eraStatusLabel = sortedReports.length === 0 && activeCycle
+            ?'Era 1 pronta'
+            : primaryEraSummary && eraSummaries.length === 1
+                ?`${primaryEraSummary.label} - ${primaryEraSummary.cycleCount} ciclos`
+                : hasCustomEras
+                    ?`${effectiveEraCount} eras - manual`
+                    : `${effectiveEraCount} eras - automaticas`;
 
         if (!isEditingEras) {
             return (
-                <div className="relative z-20 mt-3 rounded-[22px] border border-white/10 bg-black/20 p-4">
-                    <div className="flex items-center justify-between gap-4">
+                <div className="relative z-20 mt-3 rounded-[20px] border border-white/10 bg-black/20 px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Eras</p>
-                            <p className="mt-2 text-sm font-black text-white">
-                                {sortedReports.length === 0 && activeCycle
-                                    ?'ERA 1 criada automaticamente para o primeiro ciclo'
-                                    : hasCustomEras
-                                        ?'Cortes manuais ativos'
-                                        : 'Cortes automaticos por temporada'}
-                            </p>
+                            <p className="mt-1 text-xs font-semibold text-gray-300">{eraStatusLabel}</p>
                         </div>
-                        <div className="flex shrink-0 gap-2">
-                            <button id="eras-button" onClick={beginEraEditing} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs">{sortedReports.length === 0 ?'EDITAR ERA 1' : 'AJUSTAR ERAS'}</button>
-                            {sortedReports.length > 0 && (
-                                <button onClick={handleResetEras} disabled={!hasCustomEras} className="rounded-xl luxe-button-secondary px-4 py-3 text-xs disabled:opacity-40">VOLTAR AO PADRAO</button>
+                        <div className="flex shrink-0 flex-wrap gap-2">
+                            <button id="eras-button" onClick={beginEraEditing} className="rounded-xl luxe-button-secondary px-4 py-2.5 text-xs">{sortedReports.length === 0 ?'EDITAR' : 'ORGANIZAR'}</button>
+                            {sortedReports.length > 0 && hasCustomEras && (
+                                <button onClick={handleResetEras} className="rounded-xl luxe-button-secondary px-4 py-2.5 text-xs">RESTAURAR</button>
                             )}
                         </div>
                     </div>
@@ -1743,36 +1749,56 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
 
         return (
-            <div className="relative z-20 mt-3 rounded-[22px] border border-[var(--skin-accent-color)]/20 bg-[linear-gradient(180deg,_rgba(212,175,55,0.08),_rgba(255,255,255,0.02))] p-4 space-y-4">
-                <div className="flex items-center justify-between gap-4">
+            <div className="relative z-20 mt-3 rounded-[20px] border border-[var(--skin-accent-color)]/18 bg-[linear-gradient(180deg,_rgba(212,175,55,0.06),_rgba(255,255,255,0.02))] px-4 py-3 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[var(--skin-accent-color)]">Ajustar Eras</p>
-                        <p className="mt-2 text-sm font-black text-white">Escolha a Era ativa e clique nos ciclos.</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[var(--skin-accent-color)]">Organizar Eras</p>
+                        <p className="mt-1 text-[11px] font-semibold text-gray-400">A barrinha dourada mostra os ciclos da Era ativa. Toque para incluir ou tirar.</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                        <button type="button" onClick={handleAddDraftEra} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">NOVA ERA</button>
+                        {draftEraSlots.length < Math.max(sortedReports.length, 1) && <button type="button" onClick={handleAddDraftEra} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">+ ERA</button>}
+                        {draftEraSlots.length > 1 && <button type="button" onClick={handleRemoveActiveDraftEra} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">APAGAR ERA</button>}
                         <button type="button" onClick={handleCancelEraEdit} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">CANCELAR</button>
-                        <button type="button" onClick={handleResetEras} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">VOLTAR AO PADRAO</button>
-                        <button type="button" onClick={() => { void handleConfirmEraEdit(); }} className="rounded-xl luxe-skin-button px-3 py-2 text-[11px]">SALVAR ERAS</button>
+                        {hasCustomEras && <button type="button" onClick={handleResetEras} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">RESTAURAR</button>}
+                        <button type="button" onClick={() => { void handleConfirmEraEdit(); }} className="rounded-xl luxe-skin-button px-3 py-2 text-[11px]">SALVAR</button>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                {activeDraftEraSlot && (
+                    <div className="rounded-[16px] border border-white/8 bg-black/18 px-3 py-2 text-[11px] text-gray-300">
+                        <span className="font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Era ativa:</span>{' '}
+                        <span className="font-semibold text-white">{activeDraftEraSlot.name?.trim() || activeDraftEraSlot.defaultLabel}</span>
+                    </div>
+                )}
+
+                <div className="flex gap-2 overflow-x-auto pb-1">
                     {draftEraSelectionSummary.map(({ slot, count, newest, oldest }, index) => {
                         const active = activeDraftEraId === slot.id;
                         return (
-                            <button
-                                key={slot.id}
-                                type="button"
-                                onClick={() => setActiveDraftEraId(slot.id)}
-                                className={`rounded-2xl border px-3 py-2 text-left transition-all ${active ?'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10 text-white' : 'border-white/10 bg-black/20 text-gray-300'}`}
-                            >
-                                <div className="flex items-center gap-2">
-                                    <span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getEraRibbonSkin(slot.skinId).edge }} />
-                                    <span className="text-[11px] font-black uppercase tracking-[0.18em]">{slot.name?.trim() || slot.defaultLabel}</span>
-                                </div>
-                                <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ?` · ${formatDate(oldest)} - ${formatDate(newest)}` : ''}</p>
-                            </button>
+                            <div key={slot.id} className="relative min-w-[160px] shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveDraftEraId(slot.id)}
+                                    className={`w-full rounded-[18px] border px-3 py-2.5 pr-10 text-left transition-all ${active ?'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10 text-white shadow-[0_0_0_1px_rgba(212,175,55,0.16),0_16px_32px_rgba(0,0,0,0.22)]' : 'border-white/10 bg-black/20 text-gray-300'}`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: getEraRibbonSkin(slot.skinId).edge }} />
+                                        <span className="text-[11px] font-black uppercase tracking-[0.18em]">{slot.name?.trim() || slot.defaultLabel}</span>
+                                    </div>
+                                    <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-gray-500">{count} ciclos{count > 0 && newest && oldest ?` - ${formatDate(oldest)} a ${formatDate(newest)}` : ''}</p>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        openDraftEraInlineEditor(slot, index);
+                                    }}
+                                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-black/50 text-white/75 transition hover:border-[var(--skin-accent-color)]/45 hover:text-white"
+                                    title="Editar nome e skin da Era"
+                                >
+                                    <EditIcon className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
                         );
                     })}
                 </div>
@@ -1854,16 +1880,43 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                         {renderEraControls()}
 
-                        {(sortedReports.length > 0 || activeCycle) && (
+                        {isEditingEras ? (
+                            <div className="mt-4 space-y-3">
+                                {sortedReports.map((report, reportIndex) => {
+                                    const assignedEra = draftEraByReportIndex.get(reportIndex);
+                                    const isAssignedToActiveEra = assignedEra?.id === activeDraftEraId;
+                                    const season = getSeasonById(report.seasonId) || getSeasonByDate(report.endDate);
+
+                                    return (
+                                        <div
+                                            key={`era-edit-${report.id}`}
+                                            className={`flex flex-col items-center gap-2 transition-transform ${isAssignedToActiveEra ?'scale-[1.01]' : 'opacity-90'}`}
+                                        >
+                                            <TimelineCard
+                                                report={report}
+                                                isLatest={reportIndex === 0 && !activeCycle}
+                                                onClick={() => handleAssignReportToDraftEra(reportIndex)}
+                                                seasonName={season?.name}
+                                                isEditing
+                                                eraLabel={assignedEra ?(assignedEra.name?.trim() || assignedEra.defaultLabel) : undefined}
+                                                eraSkinId={assignedEra?.skinId}
+                                                isSelectedForEraEdit={isAssignedToActiveEra}
+                                                showTimelineMarker={false}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (sortedReports.length > 0 || activeCycle) && (
                             <div className="relative mt-6">
-                                <div className="grid grid-cols-[20px_minmax(0,1fr)_24px] gap-x-1">
+                                <div className={`grid ${displayedEraBands.length > 1 || isEditingEras ? 'grid-cols-[16px_minmax(0,1fr)_18px]' : 'grid-cols-[16px_minmax(0,1fr)]'} gap-x-1`}>
                                     {items.map((item, rowIndex) => {
                                         if (item.type === 'active') {
                                             return (
                                                 <React.Fragment key={`active-${item.cycle.id}`}>
                                                     <div className="relative py-3"></div>
                                                     <div className="relative py-3">
-                                                        <div className="absolute left-[8px] top-0 bottom-0 w-px bg-white/10"></div>
+                                                        <div className="absolute left-[6px] top-0 bottom-0 w-px bg-white/10"></div>
                                                         <div className="relative pl-5">
                                                             <div className="absolute left-0 top-3 w-5 h-5 rounded-full border-2 border-[var(--skin-accent-color)] bg-black shadow-[0_0_15px_var(--sephirot-glow-color)] flex items-center justify-center">
                                                                 <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>
@@ -1873,7 +1926,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="relative py-3"></div>
+                                                    {(displayedEraBands.length > 1 || isEditingEras) && <div className="relative py-3"></div>}
                                                 </React.Fragment>
                                             );
                                         }
@@ -1884,7 +1937,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 <React.Fragment key={item.report.id}>
                                                     <div className="relative py-3"></div>
                                                     <div className="relative py-3">
-                                                        <div className="absolute left-[8px] top-0 bottom-0 w-px bg-white/10"></div>
+                                                        <div className="absolute left-[6px] top-0 bottom-0 w-px bg-white/10"></div>
                                                         <TimelineCard
                                                             report={item.report}
                                                             isLatest={item.reportIndex === 0 && !activeCycle}
@@ -1896,14 +1949,14 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                             isSelectedForEraEdit={!!eraDisplay?.isActive}
                                                         />
                                                     </div>
-                                                    <div className="relative py-3"></div>
+                                                    {(displayedEraBands.length > 1 || isEditingEras) && <div className="relative py-3"></div>}
                                                 </React.Fragment>
                                             );
                                         }
 
                                         return null;
                                     })}
-                                    {displayedEraBands.map((band) => {
+                                    {(displayedEraBands.length > 1 || isEditingEras) && displayedEraBands.map((band) => {
                                         const rowStart = band.start < 0 ?activeRowIndex : reportRowIndexMap.get(band.start);
                                         const rowEnd = band.end < 0 ?activeRowIndex : reportRowIndexMap.get(band.end);
                                         if (rowStart == null || rowEnd == null) return null;
@@ -1931,7 +1984,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         <EraRibbon
                                                             label={band.label}
                                                             skinId={band.skinId}
-                                                            className={band.isActive ?'shadow-[0_0_0_1px_rgba(212,175,55,0.55),0_0_24px_rgba(212,175,55,0.16)]' : ''}
+                                                            className={`w-5 ${band.isActive ?'shadow-[0_0_0_1px_rgba(212,175,55,0.55),0_0_24px_rgba(212,175,55,0.16)]' : ''}`}
                                                         />
                                                     </button>
                                                     <button
@@ -1949,41 +2002,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         title="Editar nome e skin da Era"
                                                         className="absolute -right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-black/75 text-[10px] text-white/80 shadow-[0_8px_18px_rgba(0,0,0,0.35)] transition hover:border-[var(--skin-accent-color)]/45 hover:text-white"
                                                     >
-                                                        ✦
+                                                        <EditIcon className="h-3 w-3" />
                                                     </button>
-                                                    {inlineEraEditor?.key === band.key && (
-                                                        <div className="absolute left-full top-2 z-20 ml-3 w-56 rounded-[20px] border border-white/10 bg-black/90 p-3 shadow-[0_18px_44px_rgba(0,0,0,0.45)] backdrop-blur-md">
-                                                            <p className="text-[9px] font-black uppercase tracking-[0.24em] text-gray-500">Era</p>
-                                                            <input
-                                                                value={inlineEraName}
-                                                                onChange={(event) => setInlineEraName(event.target.value.slice(0, 48))}
-                                                                placeholder={inlineEraEditor.defaultLabel}
-                                                                className="mt-3 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs outline-none transition-colors focus:border-[var(--skin-accent-color)]"
-                                                            />
-                                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                                {ERA_RIBBON_SKINS.map((skin) => {
-                                                                    const locked = skin.isPremium && !userProfile.isPremium;
-                                                                    const active = inlineEraSkinId === skin.id;
-                                                                    return (
-                                                                        <button
-                                                                            key={skin.id}
-                                                                            type="button"
-                                                                            disabled={locked}
-                                                                            onClick={() => setInlineEraSkinId(skin.id)}
-                                                                            className={`flex h-8 w-8 items-center justify-center rounded-full border text-[9px] ${active ?'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10' : 'border-white/10 bg-black/25'} ${locked ?'cursor-not-allowed opacity-40' : ''}`}
-                                                                            title={locked ?'Disponivel no premium' : skin.name}
-                                                                        >
-                                                                            <span className="inline-flex h-3 w-3 rounded-full" style={{ backgroundColor: skin.edge }} />
-                                                                        </button>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                            <div className="mt-3 flex gap-2">
-                                                                <button type="button" onClick={() => setInlineEraEditor(null)} className="flex-1 rounded-xl luxe-button-secondary px-3 py-2 text-[10px]">Cancelar</button>
-                                                                <button type="button" onClick={() => { void handleSaveInlineEraEditor(); }} className="flex-1 rounded-xl luxe-skin-button px-3 py-2 text-[10px]">Salvar</button>
-                                                            </div>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -2079,28 +2099,66 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </button>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={handleCloseDynamic}>
                 <div className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
-                    <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4 pr-12">
+                    <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
                             {(view === 'results' || view === 'comparing') && (
                                 <button id="reports-view-back-button" onClick={handleCloseDynamic} className="p-2 -ml-2"><ChevronLeftIcon /></button>
                             )}
                             <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
                         </div>
-                        <button
-                            type="button"
-                            aria-label="Fechar historico"
-                            onClick={handleForceClose}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition-colors hover:bg-white/10"
-                            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                        >
-                            <XIcon />
-                        </button>
                     </div>
                     <div className="flex-grow overflow-y-auto relative overflow-hidden">
                         {renderContent()}
                     </div>
                 </div>
             </div>
+            {inlineEraEditor && (
+                <Portal>
+                    <div className="fixed inset-0 z-[10020] flex items-center justify-center bg-black/72 backdrop-blur-sm p-4" onClick={() => setInlineEraEditor(null)}>
+                        <GlassCard variant="neutral" className="w-full max-w-sm p-4 space-y-4" onClick={(event) => event.stopPropagation()}>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Era</p>
+                                <h2 className="mt-2 text-lg font-black uppercase text-white">{inlineEraEditor.defaultLabel}</h2>
+                                <p className="mt-1 text-sm text-gray-400">Ajuste o nome e a skin da Era.</p>
+                            </div>
+                            <div className="rounded-[18px] border border-white/10 bg-black/20 p-3">
+                                <label className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Nome</label>
+                                <input
+                                    value={inlineEraName}
+                                    onChange={(event) => setInlineEraName(event.target.value.slice(0, 48))}
+                                    placeholder={inlineEraEditor.defaultLabel}
+                                    className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm outline-none transition-colors focus:border-[var(--skin-accent-color)]"
+                                />
+                                <div className="mt-4">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Skin</p>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        {ERA_RIBBON_SKINS.map((skin) => {
+                                            const locked = skin.isPremium && !userProfile.isPremium;
+                                            const active = inlineEraSkinId === skin.id;
+                                            return (
+                                                <button
+                                                    key={skin.id}
+                                                    type="button"
+                                                    disabled={locked}
+                                                    onClick={() => setInlineEraSkinId(skin.id)}
+                                                    className={`flex h-9 w-9 items-center justify-center rounded-full border ${active ?'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10' : 'border-white/10 bg-black/25'} ${locked ?'cursor-not-allowed opacity-40' : ''}`}
+                                                    title={locked ?'Disponivel no premium' : skin.name}
+                                                >
+                                                    <span className="inline-flex h-4 w-4 rounded-full" style={{ backgroundColor: skin.edge }} />
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button type="button" onClick={() => setInlineEraEditor(null)} className="flex-1 rounded-xl luxe-button-secondary px-3 py-3 text-xs">Cancelar</button>
+                                <button type="button" onClick={() => { void handleSaveInlineEraEditor(); }} className="flex-1 rounded-xl luxe-skin-button px-3 py-3 text-xs">Salvar</button>
+                            </div>
+                        </GlassCard>
+                    </div>
+                </Portal>
+            )}
             {showLegacyProjectionModal && (
                 <LegacyProjectionModal
                     eras={eraSummaries}
@@ -2179,9 +2237,3 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </>
     );
 };
-
-
-
-
-
-

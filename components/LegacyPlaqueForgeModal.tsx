@@ -12,11 +12,11 @@ interface LegacyPlaqueForgeModalProps {
 }
 
 const PHRASES = [
-    { threshold: 20, text: 'Extraindo a pedra-base...' },
-    { threshold: 42, text: 'Esculpindo as Eras...' },
+    { threshold: 20, text: 'Condensando a base...' },
+    { threshold: 42, text: 'Organizando as Eras...' },
     { threshold: 66, text: 'Gravando score e memoria...' },
-    { threshold: 88, text: 'Selando o glyph...' },
-    { threshold: 100, text: 'Placa do Legado forjada.' },
+    { threshold: 88, text: 'Selando o registro...' },
+    { threshold: 100, text: 'Placa do Legado pronta.' },
 ];
 
 export const LegacyPlaqueForgeModal: React.FC<LegacyPlaqueForgeModalProps> = ({ eras, sovereignName, onComplete, onClose }) => {
@@ -71,15 +71,15 @@ export const LegacyPlaqueForgeModal: React.FC<LegacyPlaqueForgeModalProps> = ({ 
     return (
         <Portal>
             <div className={`fixed inset-0 z-[10002] flex items-center justify-center bg-black/92 backdrop-blur-xl transition-opacity duration-500 ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
-                <GlassCard variant="neutral" className={`relative m-4 w-full max-w-4xl overflow-hidden border-[var(--skin-accent-color)]/20 transition-all duration-500 ${isClosing ? 'scale-[0.985] opacity-0' : 'scale-100 opacity-100'}`}>
+                <GlassCard variant="neutral" className={`relative m-4 max-h-[92vh] w-full max-w-4xl overflow-y-auto border-[var(--skin-accent-color)]/20 transition-all duration-500 ${isClosing ? 'scale-[0.985] opacity-0' : 'scale-100 opacity-100'}`}>
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.14),_transparent_42%),radial-gradient(circle_at_center,_rgba(255,255,255,0.04),_transparent_60%)]" />
-                    <div className="relative z-10 grid gap-6 p-6 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)] lg:p-8">
+                    <div className="relative z-10 grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)] lg:p-8">
                         <div className="flex flex-col justify-between gap-5">
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.38em] text-[var(--skin-accent-color)]">Ritual de Forja</p>
-                                <h2 className="mt-3 text-3xl font-black tracking-tight text-white">Placa do Legado</h2>
+                                <p className="text-[10px] font-black uppercase tracking-[0.38em] text-[var(--skin-accent-color)]">Placa do Legado</p>
+                                <h2 className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">Forjando o registro final</h2>
                                 <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-300">
-                                    O atlas historico agora se condensa em uma unica pedra de memoria. Nao e mais um card: e um artefato de soberania.
+                                    Suas Eras estao sendo condensadas em uma unica placa. Depois disso, ela fica pronta para abrir e compartilhar quando voce quiser.
                                 </p>
                             </div>
 
@@ -91,19 +91,21 @@ export const LegacyPlaqueForgeModal: React.FC<LegacyPlaqueForgeModalProps> = ({ 
                                         style={{ width: `${progress}%` }}
                                     />
                                 </div>
-                                <p className="text-[10px] uppercase tracking-[0.24em] text-gray-500">Forja ceremonial do registro final</p>
+                                <p className="text-[10px] uppercase tracking-[0.24em] text-gray-500">Preparando a placa final</p>
                             </div>
                         </div>
 
-                        <div className="relative">
+                        <div className="relative flex items-center justify-center">
                             <div className="absolute inset-0 rounded-[34px] bg-[radial-gradient(circle_at_center,_rgba(212,175,55,0.18),_transparent_55%)] blur-2xl" />
-                            <LegacyPlaqueArtifact
-                                eras={eras}
-                                sovereignName={sovereignName}
-                                plaqueUnlocked={true}
-                                compact={true}
-                                className={`mx-auto max-w-[520px] transition-all duration-500 ${isClosing ? 'scale-[1.02] blur-[1px]' : 'scale-100'}`}
-                            />
+                            <div className="w-full max-w-[280px] sm:max-w-[520px]">
+                                <LegacyPlaqueArtifact
+                                    eras={eras}
+                                    sovereignName={sovereignName}
+                                    plaqueUnlocked={true}
+                                    compact={true}
+                                    className={`mx-auto transition-all duration-500 ${isClosing ? 'scale-[1.02] blur-[1px]' : 'scale-100'}`}
+                                />
+                            </div>
                         </div>
                     </div>
                 </GlassCard>

@@ -2,9 +2,10 @@
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { createTempUser, DEFAULT_SMOKE_URL } from './_smoke.supabase.mjs';
 
 const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const BASE_URL = process.env.SMOKE_URL || 'http://127.0.0.1:3005/';
+const BASE_URL = process.env.SMOKE_URL || DEFAULT_SMOKE_URL;
 const DEBUG_PORT = 9224;
 const userDataDir = mkdtempSync(path.join(tmpdir(), 'glyph-cycle-smoke-'));
 
@@ -87,6 +88,34 @@ async function evaluate(expression) {
     throw new Error(result.exceptionDetails.text || 'Runtime evaluation failed');
   }
   return result.result?.value;
+}
+
+async function getSession(client) {
+  const { data, error } = await client.auth.getSession();
+  if (error || !data.session) {
+    throw new Error(`session fetch failed: ${error?.message || 'missing session'}`);
+  }
+  return data.session;
+}
+
+async function seedSession(session) {
+  const serialized = Buffer.from(JSON.stringify(session), 'utf8').toString('base64');
+  await cdp('Page.navigate', { url: BASE_URL });
+  await waitFor(
+    'smoke base url',
+    `(() => location.href.startsWith(${JSON.stringify(BASE_URL)}))()`,
+    20000,
+  );
+  const ok = await evaluate(`(() => {
+    localStorage.setItem('gol-supabase-auth', atob(${JSON.stringify(serialized)}));
+    return true;
+  })()`);
+
+  if (!ok) {
+    throw new Error('Failed to seed browser session.');
+  }
+
+  await cdp('Page.reload', { ignoreCache: true });
 }
 
 async function bodyText() {
@@ -291,53 +320,29 @@ async function clickReportPrimaryAction() {
   if (!ok) throw new Error(`Could not click report primary action\n\n${await bodyText()}`);
 }
 
-const email = `cycle-smoke-${Date.now()}@example.com`;
-const password = 'SmokeTest1!';
 const cycleName = `Smoke Cycle ${Date.now()}`;
 const today = new Date().toISOString().slice(0, 10);
 const checkpoints = [];
+let user = null;
 
 try {
-  await waitFor('login screen', `(() => document.body && document.body.innerText.includes('GLYPH') && Array.from(document.querySelectorAll('input')).some((node) => (node.getAttribute('placeholder') || '').includes('Email')))()`);
-  checkpoints.push('login-loaded');
+  user = await createTempUser({
+    label: 'cycle-report',
+    isPremium: false,
+    appMode: 'BASIC',
+    gold: 0,
+    fragments: 0,
+  });
+  const session = await getSession(user.client);
+  await seedSession(session);
+  checkpoints.push('session-seeded');
 
-  await clickByText('Cadastrar');
-  await sleep(300);
-  await setField('Email ou Nickname', email);
-  await setField('Senha', password);
-  await setField('Nickname', 'CycleSmoke');
-  await clickByText('CRIAR PERFIL');
-  await waitFor('signup transition', `(() => document.body && (document.body.innerText.includes('Cadastro realizado') || document.body.innerText.includes('O DESPERTAR DO SOBERANO') || document.body.innerText.includes('O DESPERTAR')))()`, 30000);
-  checkpoints.push('signup-ok');
-
-  const termsAlreadyVisible = await evaluate(`(() => document.body && (document.body.innerText.includes('O DESPERTAR DO SOBERANO') || document.body.innerText.includes('O DESPERTAR')))()`);
-  if (!termsAlreadyVisible) {
-    await clickByText('ENTRAR');
-    await waitFor('terms overlay or main app', `(() => document.body && (document.body.innerText.includes('O DESPERTAR DO SOBERANO') || document.body.innerText.includes('O DESPERTAR')))()`, 30000);
-  }
-  checkpoints.push('login-ok');
-
-  for (let i = 0; i < 4; i += 1) {
-    await clickTermsPrimary();
-    await sleep(350);
-    await clickTermsPrimary();
-    await sleep(350);
-  }
-  await clickTermsPrimary();
-  await sleep(150);
-  await holdTermsPrimary(1100);
-  await waitFor('mode selection or app shell', `(() => document.body && ((document.body.innerText.includes('CONFIRMAR') && document.body.innerText.includes('MODO')) || document.querySelector('#nav-planner') instanceof HTMLElement))()`, 20000);
-  checkpoints.push('terms-accepted');
-
-  const modeSelectionVisible = await evaluate(`(() => document.body && document.body.innerText.includes('CONFIRMAR') && document.body.innerText.includes('MODO'))()`);
-  if (modeSelectionVisible) {
-    await clickByText('MODO B');
-    await sleep(250);
-    await clickByText('CONFIRMAR');
-    checkpoints.push('mode-selected');
-  } else {
-    checkpoints.push('mode-already-selected');
-  }
+  await waitFor(
+    'authenticated shell',
+    `(() => document.querySelector('#nav-planner') instanceof HTMLElement && document.querySelector('#nav-settings') instanceof HTMLElement)()`,
+    40000,
+  );
+  checkpoints.push('shell-authenticated');
 
   await sleep(1500);
   try { await pressEscape(); } catch {}
@@ -355,12 +360,33 @@ try {
   const hasActiveCycle = await evaluate(`(() => document.querySelector('#end-cycle-button') instanceof HTMLElement)()`);
   if (!hasActiveCycle) {
     await clickSelector('#start-new-cycle-button');
-    await waitFor('start cycle modal', `(() => Array.from(document.querySelectorAll('input')).some((node) => (node.getAttribute('placeholder') || '').includes('Conquista de Fevereiro')))()`, 10000);
-    await setField('Conquista de Fevereiro', cycleName);
-    await setDateField(today);
-    await clickByText('INICIAR CICLO');
-    await waitFor('active cycle button', `(() => document.querySelector('#end-cycle-button') instanceof HTMLElement)()`, 15000);
+    await waitFor(
+      'start cycle setup',
+      `(() => document.querySelector('#new-cycle-name-input') instanceof HTMLInputElement && document.querySelector('#new-cycle-submit-button') instanceof HTMLElement)()`,
+      15000,
+    );
+    await setField('Nome do Novo Ciclo', cycleName);
+    await clickSelector('#new-cycle-submit-button');
+    await waitFor(
+      'start cycle confirmation',
+      `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').includes('CONFIRMAR')))()`,
+      10000,
+    );
+    await clickByText('CONFIRMAR');
+    await waitFor(
+      'active cycle planner state',
+      `(() => {
+        const body = document.body?.innerText || '';
+        return body.includes(${JSON.stringify(cycleName)}) || body.includes('Dia 0/');
+      })()`,
+      15000,
+    );
     checkpoints.push('cycle-started');
+
+    await waitFor('report button after cycle start', `(() => document.querySelector('#report-button') instanceof HTMLElement)()`, 15000);
+    await clickSelector('#report-button');
+    await waitFor('reports view with active cycle', `(() => document.querySelector('#end-cycle-button') instanceof HTMLElement)()`, 15000);
+    checkpoints.push('reports-reopened');
   } else {
     checkpoints.push('cycle-already-active');
   }
@@ -381,7 +407,7 @@ try {
   await waitFor('new cycle setup view', `(() => { const text = (document.body?.innerText || '').toLowerCase(); return text.includes('setup de ciclo') && text.includes('iniciar novo ciclo'); })()` , 15000);
   checkpoints.push('new-cycle-setup-open');
 
-  console.log(JSON.stringify({ success: true, email, cycleName, checkpoints }, null, 2));
+  console.log(JSON.stringify({ success: true, email: user?.email || null, cycleName, checkpoints }, null, 2));
 } catch (error) {
   console.error(JSON.stringify({
     success: false,

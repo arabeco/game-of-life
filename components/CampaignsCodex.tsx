@@ -8,7 +8,7 @@ import { ArenaDetailModal } from './ArenaDetailModal';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { CampaignArenaStack } from './CampaignArenaStack';
-import { calculateCampaignProgress, getCampaignArenaStates } from '../utils/progressUtils';
+import { calculateCampaignProgressSummary, getCampaignArenaStates } from '../utils/progressUtils';
 import { EmojiGlyph } from './EmojiGlyph';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 import { CATEGORY_LABELS, resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
@@ -243,12 +243,20 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
             getSharedActionPoolProgress,
         });
     }, [selectedCampaign, campaignArenasSource, campaignActionsSource, cycleScopedTasks, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress]);
-    const selectedCampaignProgress = useMemo(() => {
-        if (!selectedCampaign) return 0;
+    const selectedCampaignProgressSummary = useMemo(() => {
+        if (!selectedCampaign) {
+            return {
+                progressPercent: 0,
+                totalCompleted: 0,
+                totalPlanned: 0,
+                clearedArenaCount: 0,
+                totalArenaCount: 0,
+            };
+        }
         const arenasById = Object.fromEntries(campaignArenasSource.map(arena => [arena.id, arena]));
         const actionsByArena = Object.fromEntries(campaignArenasSource.map(arena => [arena.id, campaignActionsSource.filter(action => action.arenaId === arena.id)]));
 
-        return calculateCampaignProgress({
+        return calculateCampaignProgressSummary({
             campaign: selectedCampaign,
             arenasById,
             actionsByArena,
@@ -258,6 +266,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
             getSharedActionPoolProgress,
         });
     }, [selectedCampaign, campaignArenasSource, campaignActionsSource, cycleScopedTasks, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress]);
+    const selectedCampaignProgress = selectedCampaignProgressSummary.progressPercent;
     const arenaPhaseRows = useMemo(() => {
         if (!selectedCampaign || sortedArenas.length === 0) return [];
 
@@ -1070,14 +1079,18 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                 </div>
                             </div>
                             <div className="px-1 pt-3">
-                                <div className="mb-1 text-center text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
-                                    {selectedCampaignProgress}%
+                                <div className="mb-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--skin-accent-color)]">
+                                    <span>{selectedCampaignProgressSummary.totalCompleted}/{selectedCampaignProgressSummary.totalPlanned} acoes</span>
+                                    <span>{selectedCampaignProgress}%</span>
                                 </div>
                                 <div className="h-[5px] w-full overflow-hidden rounded-full border border-white/10 bg-white/10">
                                     <div
                                         className="h-full rounded-full bg-[var(--skin-accent-color)] transition-all duration-300"
                                         style={{ width: `${selectedCampaignProgress}%` }}
                                     />
+                                </div>
+                                <div className="mt-1 text-center text-[9px] font-semibold uppercase tracking-[0.12em] text-white/40">
+                                    {selectedCampaignProgressSummary.clearedArenaCount}/{selectedCampaignProgressSummary.totalArenaCount} arenas concluidas
                                 </div>
                             </div>
                             </>

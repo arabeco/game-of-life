@@ -17,15 +17,25 @@ interface MissionCompletionModalProps {
 }
 
 export const MissionCompletionModal: React.FC<MissionCompletionModalProps> = ({ mission, onOk, onClose, insignia }) => {
-    const { userProfile, showToast } = useGame();
+    const { userProfile, showToast, appMode } = useGame();
     const { trigger } = useSensoryFeedback();
     const userSkin = SKINS_DATA.find((skin) => skin.id === userProfile.skin);
     const skinColor = userSkin?.color || '#ffffff';
+    const isBasicMode = appMode === 'BASIC';
     const { showVideoStage, showContentStage, isVideoFading, triggerReveal } = useVideoStageTransition({
-        enabled: true,
+        enabled: !isBasicMode,
         revealDelayMs: 4500,
         fadeDurationMs: 320,
     });
+    const headingClass = isBasicMode
+        ? 'text-[1.35rem] font-bold leading-tight tracking-[0.14em] text-white'
+        : 'text-2xl font-black uppercase leading-tight tracking-[0.3em] text-white';
+    const descriptionClass = isBasicMode
+        ? 'mx-auto max-w-[85%] text-[11px] font-medium leading-relaxed tracking-[0.04em] text-gray-300/88'
+        : 'mx-auto max-w-[85%] text-[10px] font-bold uppercase italic leading-relaxed tracking-[0.1em] text-gray-400 opacity-70';
+    const primaryButtonClass = isBasicMode
+        ? 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl py-4 text-[11px] font-bold tracking-[0.16em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]'
+        : 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
 
     useEffect(() => {
         trigger('fanfare');
@@ -100,10 +110,10 @@ export const MissionCompletionModal: React.FC<MissionCompletionModalProps> = ({ 
 
                             <div className="relative z-20 px-8 pb-6 pt-10 text-center">
                                 <h2
-                                    className="text-2xl font-black uppercase leading-tight tracking-[0.3em] text-white"
+                                    className={headingClass}
                                     style={{ textShadow: `0 0 20px ${skinColor}40` }}
                                 >
-                                    MISSAO CONCLUIDA!
+                                    {isBasicMode ? 'Missão concluída' : 'MISSAO CONCLUIDA!'}
                                 </h2>
                                 <div className="mx-auto mt-4 h-0.5 w-12 bg-[var(--skin-accent-color)] shadow-[0_0_10px_var(--skin-accent-color)]" />
                             </div>
@@ -124,7 +134,7 @@ export const MissionCompletionModal: React.FC<MissionCompletionModalProps> = ({ 
 
                             <div className="relative z-10 space-y-6 p-6 text-center">
                                 <div className="relative py-2">
-                                    <p className="mx-auto max-w-[85%] text-[10px] font-bold uppercase italic leading-relaxed tracking-[0.1em] text-gray-400 opacity-70">
+                                    <p className={descriptionClass}>
                                         {mission.description || mission.title}
                                     </p>
                                 </div>
@@ -172,10 +182,10 @@ export const MissionCompletionModal: React.FC<MissionCompletionModalProps> = ({ 
                                 <div className="space-y-3">
                                     <button
                                         onClick={handleConfirm}
-                                        className="luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                        className={primaryButtonClass}
                                     >
                                         <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-                                        Prosseguir
+                                        Continuar
                                     </button>
                                 </div>
                             </div>

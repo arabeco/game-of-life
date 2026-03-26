@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { CheckIcon } from './Icons';
-import { useGame } from '../contexts/GameContext';
+import { PROFILE_FLAG_TUTORIAL_COMPLETED, useGame } from '../contexts/GameContext';
 import { Season, SeasonMission, SeasonQuest } from '../types';
-import { MissionCompletionModal } from './MissionCompletionModal';
 import { Portal } from './Portal';
 import type { SeasonConfig, SeasonLaunchHighlights } from '../constants/seasonContent';
 import { buildSeasonFromConfig, getEraCalendarYears, getNextSeasonConfig, getSeasonConfigById, isGenesisSeason, resolveSeasonArchiveLogEntry, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
+import { calculateArenaProgress } from '../utils/progressUtils';
 
 const DetailModalShell: React.FC<{
     title: string;
@@ -406,12 +406,11 @@ const SeasonTransitionModal: React.FC<{
 };
 
 export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; onOpenTransition?: () => void }> = ({ season, onClose, onOpenTransition }) => {
-    const { claimSeasonMission, claimSeasonQuest, acceptSeasonQuest, abortSeasonQuest, userProfile, seasonMissions, seasonQuests, tasks, getArenas, getActionsForArena, getClanQuestProgress, userMissionParticipations, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
+    const { claimSeasonMission, claimSeasonQuest, acceptSeasonQuest, abortSeasonQuest, userProfile, seasonMissions, seasonQuests, tasks, reports, activeCycle, getArenas, getActionsForArena, getClanQuestProgress, getClanQuestsForArena, userMissionParticipations, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
     const [selectedMission, setSelectedMission] = useState<SeasonMission | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
-    const [completedMission, setCompletedMission] = useState<SeasonMission | null>(null);
-    const [earnedInsignia, setEarnedInsignia] = useState<string | null>(null);
 
+    const completedFlags = useMemo(() => new Set(userProfile.completedSeasonMissions || []), [userProfile.completedSeasonMissions]);
     const missionItems = useMemo(() => seasonMissions.filter((mission) => mission.season_id === season.id), [seasonMissions, season.id]);
     const questItems = useMemo(() => seasonQuests.filter((quest) => !quest.season_id || quest.season_id === season.id), [seasonQuests, season.id]);
     const allArenas = getArenas();
@@ -422,6 +421,28 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
     const seasonArchiveEntry = resolveSeasonArchiveLogEntry(season);
     const eraCalendarYears = useMemo(() => getEraCalendarYears(), []);
     const nextSeason = getNextSeasonConfig(season.id);
+    const tutorialCompleted = completedFlags.has(PROFILE_FLAG_TUTORIAL_COMPLETED) || tasks.some((task) => task.actionId === 'action_tutorial_01' && task.completed);
+    const hasInstalledCampaign = allArenas.some((arena) => Boolean(arena.originCodexId));
+    const hasCreatedCycle = Boolean(activeCycle) || reports.length > 0;
+    const hasCompletedCycle = reports.length > 0;
+    const hasClearedArena = useMemo(() => {
+        return allArenas.some((arena) => {
+            const arenaActions = getActionsForArena(arena.id);
+            const clanQuestsForArena = getClanQuestsForArena?.(arena, arenaActions) || [];
+            const progress = calculateArenaProgress({
+                arena,
+                actions: arenaActions,
+                tasks,
+                clanQuests: clanQuestsForArena,
+                getClanQuestProgress,
+            });
+            return progress.isCleared;
+        });
+    }, [allArenas, getActionsForArena, getClanQuestsForArena, getClanQuestProgress, tasks]);
+    const claimedQuestCount = useMemo(
+        () => questItems.filter((quest) => completedFlags.has(quest.id)).length,
+        [questItems, completedFlags]
+    );
 
     useEffect(() => {
         questItems.filter((quest) => quest.type === 'clan').forEach((quest) => {
@@ -438,41 +459,58 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
     const hasQuestAction = (actionName?: string, fallbackTitle?: string) => allActions.some((action) => action.name === actionName || action.name === fallbackTitle);
 
     const getMissionProgress = (mission: SeasonMission) => {
+        if (completedFlags.has(mission.id)) return 100;
+
         const goal = mission.requirements?.clanGoal || mission.goal_value || 1;
-        if ((mission.type || 'individual') === 'clan') return Math.min(100, Math.round(((getClanQuestProgress?.(mission.id) || 0) / goal) * 100));
-        if (mission.goal_type === 'actions_completed') return Math.min(100, Math.round((countCompletedTasksForActionName(mission.action_name, mission.title) / goal) * 100));
-        return userProfile.completedSeasonMissions?.includes(mission.id) ? 100 : 0;
+        const goalType = String(mission.goal_type || '');
+
+        if ((mission.type || 'individual') === 'clan') {
+            return Math.min(100, Math.round(((getClanQuestProgress?.(mission.id) || 0) / goal) * 100));
+        }
+
+        if (goalType === 'actions_completed' || goalType === 'milestones_completed') {
+            return Math.min(100, Math.round((countCompletedTasksForActionName(mission.action_name, mission.title) / goal) * 100));
+        }
+
+        if (goalType === 'tutorial_completed') return tutorialCompleted ? 100 : 0;
+        if (goalType === 'cycle_created') return hasCreatedCycle ? 100 : 0;
+        if (goalType === 'campaign_installed') return hasInstalledCampaign ? 100 : 0;
+        if (goalType === 'arena_completed' || goalType === 'arena_cleared') return hasClearedArena ? 100 : 0;
+        if (goalType === 'cycle_completed' || goalType === 'report_completed') return hasCompletedCycle ? 100 : 0;
+        if (goalType === 'quests_claimed') return Math.min(100, Math.round((claimedQuestCount / Math.max(goal, 1)) * 100));
+
+        return 0;
     };
 
     const getQuestProgress = (quest: SeasonQuest) => {
+        if (completedFlags.has(quest.id)) return 100;
+
         const goal = quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1;
         if (quest.type === 'clan') return Math.min(100, Math.round(((getClanQuestProgress?.(quest.id) || 0) / goal) * 100));
         return Math.min(100, Math.round((countCompletedTasksForActionName(quest.actionTemplate?.name, quest.title) / goal) * 100));
     };
 
-    const isMissionCompleted = (mission: SeasonMission) => userProfile.completedSeasonMissions?.includes(mission.id) || false;
-    const isQuestCompleted = (quest: SeasonQuest) => userProfile.completedSeasonMissions?.includes(quest.id) || false;
+    const isMissionCompleted = (mission: SeasonMission) => completedFlags.has(mission.id);
+    const isQuestCompleted = (quest: SeasonQuest) => completedFlags.has(quest.id);
     const canClaimMission = (mission: SeasonMission) => getMissionProgress(mission) >= 100 && !isMissionCompleted(mission);
     const canClaimQuest = (quest: SeasonQuest) => getQuestProgress(quest) >= 100 && !isQuestCompleted(quest);
     const isQuestActive = (quest: SeasonQuest) => quest.type === 'clan' ? !!userMissionParticipations?.[quest.id] || hasQuestAction(quest.actionTemplate?.name, quest.title) : hasQuestAction(quest.actionTemplate?.name, quest.title);
 
     const handleClaimMission = async (mission: SeasonMission) => {
         await claimSeasonMission(mission.id);
-        setEarnedInsignia('insignia_quest_master');
-        setCompletedMission(mission);
         setSelectedMission(null);
     };
 
     const handleClaimQuest = async (quest: SeasonQuest) => {
         await claimSeasonQuest(quest.id);
-        setEarnedInsignia('insignia_quest_incomum');
-        setCompletedMission({ id: quest.id, season_id: season.id, title: quest.title, description: quest.description, icon: quest.actionTemplate.icon, reward_type: 'exp', reward_value: quest.rewards.xp || 0, goal_value: quest.goal_value || quest.requirements.totalReps || 1, goal_type: 'actions_completed', type: quest.type, requirements: quest.requirements });
         setSelectedQuest(null);
     };
 
     const totalTrackableIds = new Set([...missionItems, ...questItems].map((item) => item.id));
-    const totalClaimed = Array.from(totalTrackableIds).filter((id) => userProfile.completedSeasonMissions?.includes(id)).length;
+    const totalClaimed = Array.from(totalTrackableIds).filter((id) => completedFlags.has(id)).length;
     const seasonProgressPercent = totalTrackableIds.size > 0 ? Math.round((totalClaimed / totalTrackableIds.size) * 100) : 0;
+    const visibleMissionItems = useMemo(() => missionItems.filter((mission) => !completedFlags.has(mission.id)), [missionItems, completedFlags]);
+    const visibleQuestItems = useMemo(() => questItems.filter((quest) => !completedFlags.has(quest.id)), [questItems, completedFlags]);
 
     return (
         <Portal>
@@ -600,23 +638,23 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                                     </div>
                                 </div>
                             )}
-                            {missionItems.length > 0 && (
+                            {visibleMissionItems.length > 0 && (
                                 <div className="space-y-3">
                                     <SectionTitle title="Missoes da temporada" tone="white" />
                                     <div className="space-y-2">
-                                        {missionItems.map((mission) => <CompactSeasonEntryCard key={mission.id} title={mission.title} icon={mission.icon} metaLabel={mission.type === 'clan' ? 'Missao de grupo' : 'Missao de temporada'} progress={getMissionProgress(mission)} isClaimed={isMissionCompleted(mission)} onClick={() => setSelectedMission(mission)} />)}
+                                        {visibleMissionItems.map((mission) => <CompactSeasonEntryCard key={mission.id} title={mission.title} icon={mission.icon} metaLabel={mission.type === 'clan' ? 'Missao de grupo' : 'Missao de temporada'} progress={getMissionProgress(mission)} isClaimed={false} onClick={() => setSelectedMission(mission)} />)}
                                     </div>
                                 </div>
                             )}
-                            {questItems.length > 0 && (
+                            {visibleQuestItems.length > 0 && (
                                 <div className="space-y-3">
                                     <SectionTitle title="Jornada" />
                                     <div className="space-y-2">
-                                        {questItems.map((quest) => <CompactSeasonEntryCard key={quest.id} title={quest.title} icon={quest.actionTemplate?.icon} metaLabel={quest.type === 'clan' ? 'Jornada de grupo' : 'Jornada pessoal'} progress={getQuestProgress(quest)} isClaimed={isQuestCompleted(quest)} participants={quest.type === 'clan' ? clanQuestParticipants[quest.id] : undefined} onClick={() => setSelectedQuest(quest)} />)}
+                                        {visibleQuestItems.map((quest) => <CompactSeasonEntryCard key={quest.id} title={quest.title} icon={quest.actionTemplate?.icon} metaLabel={quest.type === 'clan' ? 'Jornada de grupo' : 'Jornada pessoal'} progress={getQuestProgress(quest)} isClaimed={false} participants={quest.type === 'clan' ? clanQuestParticipants[quest.id] : undefined} onClick={() => setSelectedQuest(quest)} />)}
                                     </div>
                                 </div>
                             )}
-                            {missionItems.length === 0 && questItems.length === 0 && (
+                            {visibleMissionItems.length === 0 && visibleQuestItems.length === 0 && (
                                 <div className="flex flex-col items-center justify-center gap-3 rounded-[16px] border border-white/8 bg-black/24 py-10 text-center text-white/50">
                                     <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/8 bg-white/5 text-xl">?</div>
                                     <p className="text-[11px] font-black uppercase tracking-[0.2em]">Nenhum conteudo disponivel</p>
@@ -627,7 +665,6 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                 </div>
                 {selectedMission && <MissionDetailModal mission={selectedMission} progress={getMissionProgress(selectedMission)} isCompleted={isMissionCompleted(selectedMission)} onClose={() => setSelectedMission(null)} onClaim={() => handleClaimMission(selectedMission)} />}
                 {selectedQuest && <QuestDetailModal quest={selectedQuest} progress={getQuestProgress(selectedQuest)} isActive={isQuestActive(selectedQuest)} participants={clanQuestParticipants[selectedQuest.id]} onClose={() => setSelectedQuest(null)} onTake={() => { acceptSeasonQuest(selectedQuest.id); setSelectedQuest(null); }} onAbandon={() => { abortSeasonQuest(selectedQuest.id); setSelectedQuest(null); }} onClaim={() => handleClaimQuest(selectedQuest)} canClaim={canClaimQuest(selectedQuest)} />}
-                {completedMission && <MissionCompletionModal mission={completedMission} insignia={earnedInsignia} onOk={() => { setCompletedMission(null); setEarnedInsignia(null); }} onClose={() => { setCompletedMission(null); setEarnedInsignia(null); }} />}
             </div>
         </Portal>
     );

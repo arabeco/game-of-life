@@ -34,7 +34,7 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const config = { ...DEFAULT_SOVEREIGN_CONFIG, ...sovereignConfig };
-    const { body, skinTone, hairStyle, hairColor, outfit, head_under, helmet, head_over, artifact, glyph, aura, orb, sovereignPlate, artifactPlate, glyphPlate } = config;
+    const { body, skinTone, hairStyle, hairColor, outfit, artifact, glyph, aura, orb, sovereignPlate, artifactPlate, glyphPlate } = config;
 
     const getAssetUrl = (category: keyof typeof SOVEREIGN_ASSETS | 'orbs' | 'plates', id: string | null) => {
         if (!id || id === 'none') return null;
@@ -201,18 +201,7 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 if (!isMounted) return;
 
-                // 4. Head Under (Below Hair)
-                const headUnderUrl = getAssetUrl('head_under_items', head_under);
-                const isBelowHairAccessory = head_under === 'glasses' || head_under === 'aviators' || head_under === 'mask';
-                if (isBelowHairAccessory) {
-                    await loadAndDrawImage(headUnderUrl);
-                }
-
-                if (!isMounted) return;
-
-                // 5. Hair (Tinted or Pre-colored)
-                const showHair = (!helmet || helmet === 'none');
-                if (showHair) {
+                // 4. Hair (Tinted or Pre-colored)
                     const newHairDef = HAIR_DB.find(h => h.id === hairStyle);
                     if (newHairDef) {
                          // New system
@@ -233,30 +222,10 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                             await loadAndDrawImage(hairUrl, { filter });
                         }
                     }
-                }
 
                 if (!isMounted) return;
 
-                // 6. Head Under (Above Hair)
-                if (!isBelowHairAccessory) {
-                    await loadAndDrawImage(headUnderUrl);
-                }
-
-                if (!isMounted) return;
-
-                // 7. Helmet
-                const helmetUrl = getAssetUrl('helmets', helmet);
-                await loadAndDrawImage(helmetUrl);
-
-                if (!isMounted) return;
-
-                // 8. Head Over
-                const headOverUrl = getAssetUrl('head_over_items', head_over);
-                await loadAndDrawImage(headOverUrl);
-
-                if (!isMounted) return;
-
-                // 8.5. Artifact Plate
+                // 5. Artifact Plate
                 const artifactPlateUrl = getAssetUrl('plates', artifactPlate);
                 if (artifactPlateUrl) {
                     await loadAndDrawImage(artifactPlateUrl);
@@ -264,13 +233,13 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 if (!isMounted) return;
 
-                // 9. Artifact
+                // 6. Artifact
                 const artifactUrl = getAssetUrl('artifacts', artifact);
                 await loadAndDrawImage(artifactUrl);
 
                 if (!isMounted) return;
 
-                // 9.5. Glyph Plate
+                // 7. Glyph Plate
                 const glyphPlateUrl = getAssetUrl('plates', glyphPlate);
                 if (glyphPlateUrl) {
                     await loadAndDrawImage(glyphPlateUrl);
@@ -278,7 +247,7 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 if (!isMounted) return;
 
-                // 10. Glyph (Foreground - at feet/side)
+                // 8. Glyph (Foreground - at feet/side)
                 const glyphUrl = getAssetUrl('glyphs', glyph);
                 const glyphLoaded = await loadAndDrawImage(glyphUrl);
                 if (!glyphLoaded) {
@@ -290,7 +259,7 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 if (!isMounted) return;
 
-                // 11. Orb
+                // 9. Orb
                 const orbUrl = getAssetUrl('orbs', orb);
                 if (orbUrl) {
                     await loadAndDrawImage(orbUrl);

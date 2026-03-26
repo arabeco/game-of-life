@@ -1,5 +1,5 @@
 import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType } from '../types';
-import { ITEMS_DB, getCatalogItemsByCategory, getCatalogItems, isItemCatalogVisible } from './items';
+import { ITEMS_DB, getCatalogItemsByCategory, getCatalogItems, isItemCatalogVisible, isRankRewardItem } from './items';
 import { ACTIVE_SEASON_ID, GM_SEASONS, GM_SEASON_MISSIONS, GM_SEASON_QUESTS, SEASONS } from './seasonContent';
 
 // ==========================================
@@ -46,18 +46,6 @@ export const SOVEREIGN_ASSETS = {
     { id: 'none', name: 'Nenhuma', url: '', rarity: 'common' as ItemRarity },
     ...getCatalogItemsByCategory('skin').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
   ],
-  head_under_items: [
-    { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-    // Adicione itens aqui se houver no ITEMS_DB com categoria 'head_under_item'
-  ],
-  helmets: [
-    { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-     // Adicione itens aqui se houver no ITEMS_DB com categoria 'helmet'
-  ],
-  head_over_items: [
-    { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
-     // Adicione itens aqui se houver no ITEMS_DB com categoria 'head_over_item'
-  ],
   artifacts: [
     { id: 'none', name: 'Nenhum', url: '', rarity: 'common' as ItemRarity },
     ...getCatalogItemsByCategory('artifact').map(i => ({ id: i.id, name: i.name, url: i.imageUrl || '', rarity: i.rarity })),
@@ -82,7 +70,7 @@ export const SOVEREIGN_ASSETS = {
 
 export const DEFAULT_SOVEREIGN_CONFIG: SovereignConfig = {
     body: 'body_masc_1', skinTone: '#FBE5D5', hairStyle: 'none', hairColor: '#2C1608',
-    outfit: 'none', head_under: 'none', helmet: 'none', head_over: 'none', artifact: 'none',
+    outfit: 'none', artifact: 'none',
     glyph: 'none', aura: 'none', orb: 'none',
     sovereignPlate: 'none', artifactPlate: 'none', glyphPlate: 'none'
 };
@@ -91,9 +79,6 @@ export const getItemCategory = (itemId: string): UnlockCategory | null => {
   if (SOVEREIGN_ASSETS.bodyStyles.some(i => i.id === itemId)) return 'bodyStyles';
   if (SOVEREIGN_ASSETS.hairStyles.some(i => i.id === itemId)) return 'hairStyles';
   if (SOVEREIGN_ASSETS.outfits.some(i => i.id === itemId)) return 'outfits';
-  if (SOVEREIGN_ASSETS.head_under_items.some(i => i.id === itemId)) return 'head_under_items';
-  if (SOVEREIGN_ASSETS.helmets.some(i => i.id === itemId)) return 'helmets';
-  if (SOVEREIGN_ASSETS.head_over_items.some(i => i.id === itemId)) return 'head_over_items';
   if (SOVEREIGN_ASSETS.artifacts.some(i => i.id === itemId)) return 'artifacts';
   if (SOVEREIGN_ASSETS.glyphs.some(i => i.id === itemId)) return 'glyphs';
   if (SOVEREIGN_ASSETS.plates.some(i => i.id === itemId)) return 'plates';
@@ -108,9 +93,6 @@ export const buildDefaultLevelUnlocks = (): LevelUnlocks => ({
   bodyStyles: buildUnlockMap(SOVEREIGN_ASSETS.bodyStyles),
   hairStyles: buildUnlockMap(SOVEREIGN_ASSETS.hairStyles),
   outfits: buildUnlockMap(SOVEREIGN_ASSETS.outfits),
-  head_under_items: buildUnlockMap(SOVEREIGN_ASSETS.head_under_items),
-  helmets: buildUnlockMap(SOVEREIGN_ASSETS.helmets),
-  head_over_items: buildUnlockMap(SOVEREIGN_ASSETS.head_over_items),
   artifacts: buildUnlockMap(SOVEREIGN_ASSETS.artifacts),
   glyphs: buildUnlockMap(SOVEREIGN_ASSETS.glyphs),
   codexes: {},
@@ -134,7 +116,7 @@ export const GM_CONFIG = {
   chestDrops: {
     itemDropChanceByChest: { Comum: 0.005, Raro: 0.01, Épico: 0.02, Lendário: 0.03 } as Partial<Record<ChestType, number>>,
     skinDropChanceByChest: { Comum: 0.005, Raro: 0.02, Épico: 0.05, Lendário: 0.1 } as Partial<Record<ChestType, number>>,
-    itemPool: { categories: ['bodyStyles', 'hairStyles', 'outfits', 'head_under_items', 'helmets', 'head_over_items', 'artifacts', 'glyphs', 'auras', 'orbs'] as UnlockCategory[], excludeIds: ['none'] },
+    itemPool: { categories: ['bodyStyles', 'hairStyles', 'outfits', 'artifacts', 'glyphs', 'auras', 'orbs'] as UnlockCategory[], excludeIds: ['none'] },
   },
   cosmetics: {
     skins: [
@@ -174,18 +156,18 @@ export const BANNERS_DATA = GM_CONFIG.cosmetics.banners;
 
 export const SKIN_UNLOCKS_BY_RANK: Record<string, string[]> = { vagante: ['FROST'], escudeiro: ['CYBER'], cavaleiro: ['EMBER'], lorde: ['AURORA'] };
 export const BORDER_UNLOCKS_BY_RANK: Record<string, string[]> = { 
-    escudeiro: getCatalogItems(item => item.category === 'border' && item.tier === 1).map(i => i.id),
-    cavaleiro: getCatalogItems(item => item.category === 'border' && item.tier === 2).map(i => i.id),
-    lorde: getCatalogItems(item => item.category === 'border' && item.tier === 3).map(i => i.id),
-    barao: getCatalogItems(item => item.category === 'border' && item.tier === 4).map(i => i.id),
-    soberano: getCatalogItems(item => item.category === 'border' && item.tier === 5).map(i => i.id)
+    escudeiro: getCatalogItems(item => item.category === 'border' && item.tier === 1 && isRankRewardItem(item)).map(i => i.id),
+    cavaleiro: getCatalogItems(item => item.category === 'border' && item.tier === 2 && isRankRewardItem(item)).map(i => i.id),
+    lorde: getCatalogItems(item => item.category === 'border' && item.tier === 3 && isRankRewardItem(item)).map(i => i.id),
+    barao: getCatalogItems(item => item.category === 'border' && item.tier === 4 && isRankRewardItem(item)).map(i => i.id),
+    soberano: getCatalogItems(item => item.category === 'border' && item.tier === 5 && isRankRewardItem(item)).map(i => i.id)
 };
 export const BANNER_UNLOCKS_BY_RANK: Record<string, string[]> = { 
-    escudeiro: getCatalogItems(item => item.category === 'banner' && item.tier === 1).map(i => i.id),
-    cavaleiro: getCatalogItems(item => item.category === 'banner' && item.tier === 2).map(i => i.id),
-    lorde: getCatalogItems(item => item.category === 'banner' && item.tier === 3).map(i => i.id),
-    barao: getCatalogItems(item => item.category === 'banner' && item.tier === 4).map(i => i.id),
-    soberano: getCatalogItems(item => item.category === 'banner' && item.tier === 5).map(i => i.id)
+    escudeiro: getCatalogItems(item => item.category === 'banner' && item.tier === 1 && isRankRewardItem(item)).map(i => i.id),
+    cavaleiro: getCatalogItems(item => item.category === 'banner' && item.tier === 2 && isRankRewardItem(item)).map(i => i.id),
+    lorde: getCatalogItems(item => item.category === 'banner' && item.tier === 3 && isRankRewardItem(item)).map(i => i.id),
+    barao: getCatalogItems(item => item.category === 'banner' && item.tier === 4 && isRankRewardItem(item)).map(i => i.id),
+    soberano: getCatalogItems(item => item.category === 'banner' && item.tier === 5 && isRankRewardItem(item)).map(i => i.id)
 };
 export const SKIN_SEASON_UNLOCKS: Record<string, string[]> = { GOLD: ['sm_3'] };
 export const SKIN_CHEST_POOL = ['VOID'].filter(id => isItemCatalogVisible(id));

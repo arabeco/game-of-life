@@ -8,6 +8,8 @@
     "build": "vite build",
     "test": "npm run test:core-loop",
     "test:core-loop": "node tests/core-loop.regression.mjs",
+    "test:launch": "node tests/launch-readiness.mjs",
+    "test:launch:full": "node tests/launch-readiness.mjs --suite=full",
     "check:encoding": "node scripts/check-encoding.mjs",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
-import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isItemCatalogVisible } from '../constants/items';
+import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { getGoldBoostProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 
 import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
@@ -170,9 +170,6 @@ const DEFAULT_USER_PROFILE: UserProfile = {
         bodyStyles: {},
         hairStyles: {},
         outfits: {},
-        head_under_items: {},
-        helmets: {},
-        head_over_items: {},
         artifacts: {},
         codexes: {},
         skins: {},
@@ -192,10 +189,8 @@ const DEFAULT_USER_PROFILE: UserProfile = {
 const defaultChecklistItems: ChecklistItem[] = [];
 const PREMIUM_REWARD_CHEST: ChestType = 'Raro';
 const PREMIUM_GENESIS_REWARD_ITEM_IDS = [
-    'item_skin_season_001',
     'item_border_genesis_01',
     'item_banner_origin_01',
-    'item_theme_nebulosa',
 ] as const;
 
 const formatPremiumExpiryLabel = (expiresAt: string): string => {
@@ -5227,7 +5222,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Lógica especial para o Baú de Skin Comum (Exclusivo para Skins)
         if (chestType === 'Skin Comum') {
             // Filtrar apenas skins
-            const allSkins = getCatalogItemsByCategory('skin').filter(i => !i.isGoldExclusive && !i.isSeasonExclusive);
+            const allSkins = getCatalogItemsByCategory('skin').filter(i => isChestEligibleItem(i));
 
             // Rarity weights for Skin Comum chest
             // 75% Common, 20% Uncommon, 5% Rare
@@ -6019,7 +6014,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                 rewardNames.push(reward.name);
                             }
                         });
-                        if (rewardNames.length > 0) {
+                        if (appMode === 'BASIC') {
+                            showToast(`Patente ${newRank.name} alcançada.`, 'success');
+                        } else if (rewardNames.length > 0) {
                             showToast(`Patente ${newRank.name} alcançada. Itens de Legado integrados ao Arsenal: ${rewardNames.join(', ')}.`, 'success');
                         }
                     }
@@ -6027,7 +6024,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
             updateUserProfile({ nobility: { ...userProfile.nobility, rankId: newRankId } });
         }
-    }, [userProfile.nobility.exp, userProfile.nobility.rankId, hasHydratedFromSupabase]);
+    }, [userProfile.nobility.exp, userProfile.nobility.rankId, hasHydratedFromSupabase, appMode]);
 
     const updateUserProfile = (profileData: Partial<UserProfile>) => {
         if (profileData.avatarUrl) {
@@ -6162,9 +6159,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             bodyStyles: {},
             hairStyles: {},
             outfits: {},
-            head_under_items: {},
-            helmets: {},
-            head_over_items: {},
             artifacts: {},
             codexes: {},
             skins: {},
@@ -6397,9 +6391,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             bodyStyles: {},
             hairStyles: {},
             outfits: {},
-            head_under_items: {},
-            helmets: {},
-            head_over_items: {},
             artifacts: {},
             codexes: {},
             skins: {},
@@ -8741,7 +8732,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Grant items if it's an item reward
         const earnedItemIds: string[] = [];
-        let earnedChest: ChestType | undefined = undefined;
+        let earnedChest: ChestType | undefined =
+            mission.description.includes("BaÃº Comum") ? 'Comum'
+            : mission.description.includes("BaÃº Incomum") ? 'Incomum'
+            : mission.description.includes("BaÃº Ciclo") ? 'Ciclo'
+            : mission.description.includes("BaÃº Raro") ? 'Raro'
+            : mission.description.includes("Ba\u00FA \u00C9pico") ? '\u00C9pico'
+            : mission.description.includes("Ba\u00FA Lend\u00E1rio") ? 'Lend\u00E1rio'
+            : undefined;
         if (mission.reward_type === 'item_id' && typeof mission.reward_value === 'string') {
             const itemId = mission.reward_value;
             const def = resolveItemDef(itemId);
@@ -8803,7 +8801,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     title: mission.title,
                     reward: {
                         exp: addedExp,
-                        items: allEarnedItems
+                        items: allEarnedItems,
+                        chest: earnedChest
                     }
                 }
             });

@@ -282,9 +282,6 @@ export interface SovereignConfig {
   hairStyle: string;
   hairColor: string;
   outfit: string;
-  head_under: string; // mascara, oculos, tapa-olho
-  helmet: string; // elmos
-  head_over: string; // coroa, bone, chapeu
   artifact: string;
   glyph: string; // NEW: Glifo slot
   aura: string; // NEW: Aura slot
@@ -295,7 +292,7 @@ export interface SovereignConfig {
   primaryDisplay?: 'sovereign' | 'item' | 'glyph'; // Preferred miniature display
 }
 
-export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'head_under_items' | 'helmets' | 'head_over_items' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates' | 'ornament' | 'insignias' | 'ui_skins';
+export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates' | 'ornament' | 'insignias' | 'ui_skins';
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
@@ -823,7 +820,20 @@ export interface SeasonMission {
   season_id: string;
   title: string;
   description: string;
-  goal_type: 'km_run' | 'books_read' | 'meditation_days' | 'actions_completed';
+  goal_type:
+    | 'km_run'
+    | 'books_read'
+    | 'meditation_days'
+    | 'actions_completed'
+    | 'milestones_completed'
+    | 'tutorial_completed'
+    | 'cycle_created'
+    | 'campaign_installed'
+    | 'arena_completed'
+    | 'arena_cleared'
+    | 'cycle_completed'
+    | 'report_completed'
+    | 'quests_claimed';
   goal_value: number;
   reward_type: 'exp' | 'item_id';
   reward_value: number | string;
@@ -867,7 +877,17 @@ export interface SeasonQuest {
     collectiveGoal: number;
   };
   season_id?: string;
-  goal_type?: 'actions_completed' | 'milestones_completed'; // Optional for compatibility if needed
+  goal_type?:
+    | 'actions_completed'
+    | 'milestones_completed'
+    | 'tutorial_completed'
+    | 'cycle_created'
+    | 'campaign_installed'
+    | 'arena_completed'
+    | 'arena_cleared'
+    | 'cycle_completed'
+    | 'report_completed'
+    | 'quests_claimed'; // Optional for compatibility if needed
   goal_value?: number;
   reward_type?: 'exp' | 'item_id' | 'chest';
   reward_value?: number | string;

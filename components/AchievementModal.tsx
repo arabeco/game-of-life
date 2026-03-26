@@ -14,32 +14,40 @@ interface AchievementModalProps {
     onClose: () => void;
 }
 
-const getAchievementDetails = (type: FeedEventType, data: any) => {
+const BASIC_VISIBLE_ACHIEVEMENTS: FeedEventType[] = [
+    'MILESTONE_COMPLETED',
+    'ARENA_COMPLETED',
+    'QUEST_COMPLETED',
+    'REPORT_COMPLETED',
+];
+
+const getAchievementDetails = (type: FeedEventType, data: any, isBasicMode: boolean) => {
     switch (type) {
         case 'MILESTONE_COMPLETED':
-            return { title: 'Marco concluído!', icon: data.icon || '\u{1F3C1}', message: `Você concluiu o marco "${data.name}".` };
+            return { title: isBasicMode ? 'Marco concluído' : 'Marco concluído!', icon: data.icon || '\u{1F3C1}', message: `Você concluiu o marco "${data.name}".` };
         case 'ARENA_COMPLETED':
-            return { title: 'ARENA COMPLETA', icon: data.icon || '\u{1F3DF}\uFE0F', message: `Você concluiu a arena "${data.name}".` };
+            return { title: isBasicMode ? 'Arena concluída' : 'ARENA COMPLETA', icon: data.icon || '\u{1F3DF}\uFE0F', message: `Você concluiu a arena "${data.name}".` };
         case 'PLAYER_RANK_UP':
-            return { title: 'PARABÉNS!', icon: '\u{1F451}', message: `Você subiu de patente para ${data.name}!` };
+            return { title: isBasicMode ? 'Parabéns' : 'PARABÉNS!', icon: '\u{1F451}', message: `Você subiu de patente para ${data.name}!` };
         case 'QUEST_COMPLETED':
-            return { title: 'MISSÃO CONCLUÍDA!', icon: data.icon || '\u{1F3AF}', message: `Você concluiu a missão "${data.title}".` };
+            return { title: isBasicMode ? 'Missão concluída' : 'MISSÃO CONCLUÍDA!', icon: data.icon || '\u{1F3AF}', message: `Você concluiu a missão "${data.title}".` };
         case 'REPORT_COMPLETED':
-            return { title: 'RELATÓRIO CONCLUÍDO!', icon: '\u{1F4DC}', message: 'Você selou seu relatório de ciclo com sucesso!' };
+            return { title: isBasicMode ? 'Relatório concluído' : 'RELATÓRIO CONCLUÍDO!', icon: '\u{1F4DC}', message: 'Você fechou seu relatório de ciclo com sucesso.' };
         case 'CLAN_RANK_UP':
-            return { title: 'Patente do grupo aumentou!', icon: '\u{1F6E1}\uFE0F', message: `Seu grupo agora e um ${data.name}!` };
+            return { title: isBasicMode ? 'Grupo avançou' : 'Patente do grupo aumentou!', icon: '\u{1F6E1}\uFE0F', message: `Seu grupo agora e um ${data.name}!` };
         default:
-            return { title: 'Conquista!', icon: '\u2728', message: 'Você realizou um feito notável.' };
+            return { title: isBasicMode ? 'Concluído' : 'Conquista!', icon: '\u2728', message: 'Você realizou um feito notável.' };
     }
 };
 
 export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement, onClose }) => {
     const { addFeedEvent, userProfile, showToast, appMode } = useGame();
-    const { title, icon, message } = getAchievementDetails(achievement.type, achievement.data);
+    const isBasicMode = appMode === 'BASIC';
+    const { title, icon, message } = getAchievementDetails(achievement.type, achievement.data, isBasicMode);
     const cardRef = useRef<HTMLDivElement>(null);
     const isArenaComplete = achievement.type === 'ARENA_COMPLETED';
     const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
-    const canRenderAchievement = appMode === 'GAME' || isGM || isArenaComplete;
+    const canRenderAchievement = appMode === 'GAME' || isGM || BASIC_VISIBLE_ACHIEVEMENTS.includes(achievement.type);
     const canShareAchievement = appMode === 'GAME' || isGM;
 
     useEffect(() => {
@@ -55,7 +63,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     const isRankUp = achievement.type === 'PLAYER_RANK_UP';
     const isQuestComplete = achievement.type === 'QUEST_COMPLETED';
     const isReportComplete = achievement.type === 'REPORT_COMPLETED';
-    const showVideo = isRankUp || isQuestComplete || isReportComplete;
+    const showVideo = !isBasicMode && (isRankUp || isQuestComplete || isReportComplete);
     const { showVideoStage, showContentStage, isVideoFading, triggerReveal } = useVideoStageTransition({
         enabled: showVideo,
         revealDelayMs: 4500,
@@ -69,6 +77,16 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         ornament: rawRewards.ornament,
         items: rawRewards.items || (rawRewards.item ?[rawRewards.item] : []),
     };
+    const headingClass = isBasicMode
+        ? 'text-[1.35rem] font-bold leading-tight tracking-[0.14em] text-white'
+        : 'text-2xl font-black uppercase leading-tight tracking-[0.3em] text-white';
+    const messageClass = isBasicMode
+        ? 'mx-auto max-w-[85%] text-[11px] font-medium leading-relaxed tracking-[0.04em] text-gray-300/88'
+        : 'mx-auto max-w-[85%] text-[10px] font-bold uppercase italic leading-relaxed tracking-[0.1em] text-gray-400 opacity-70';
+    const primaryButtonLabel = isBasicMode ? 'Continuar' : (isArenaComplete ? 'OK' : 'Prosseguir');
+    const primaryButtonClass = isBasicMode
+        ? 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl py-4 text-[11px] font-bold tracking-[0.16em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]'
+        : 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
 
     const handlePostToFeed = () => {
         if (!canShareAchievement) return;
@@ -191,7 +209,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
 
                             <div className="relative z-20 px-8 pb-6 pt-10 text-center">
                                 <h2
-                                    className="text-2xl font-black uppercase leading-tight tracking-[0.3em] text-white"
+                                    className={headingClass}
                                     style={{ textShadow: `0 0 20px ${skinColor}40` }}
                                 >
                                     {title}
@@ -215,7 +233,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
 
                             <div className="relative z-10 space-y-6 p-6 text-center">
                                 <div className="relative py-2">
-                                    <p className="mx-auto max-w-[85%] text-[10px] font-bold uppercase italic leading-relaxed tracking-[0.1em] text-gray-400 opacity-70">
+                                    <p className={messageClass}>
                                         {message}
                                     </p>
                                 </div>
@@ -309,10 +327,10 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
 
                                     <button
                                         onClick={handleClose}
-                                        className="luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                        className={primaryButtonClass}
                                     >
                                         <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-                                        {isArenaComplete ? 'OK' : 'Prosseguir'}
+                                        {primaryButtonLabel}
                                     </button>
                                 </div>
                             </div>
@@ -323,4 +341,3 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         </Portal>
     );
 };
-

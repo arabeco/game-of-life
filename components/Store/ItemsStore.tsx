@@ -32,7 +32,7 @@ const RARITY_STYLES: Record<string, string> = {
 };
 
 export const ItemsStore: React.FC = () => {
-    const { buyStoreItem } = useGame();
+    const { buyStoreItem, inventory } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<ItemDef | null>(null);
     const [pendingPurchaseItem, setPendingPurchaseItem] = useState<ItemDef | null>(null);
@@ -49,9 +49,11 @@ export const ItemsStore: React.FC = () => {
         });
     }, []);
 
+    const ownedItemIds = useMemo(() => new Set(inventory.map((item) => item.id)), [inventory]);
+
     const handleBuy = async (event: React.MouseEvent<HTMLButtonElement>, item: ItemDef) => {
         event.stopPropagation();
-        if (loading || !item.costGold) return;
+        if (loading || !item.costGold || ownedItemIds.has(item.id)) return;
         setPendingPurchaseItem(item);
     };
 
@@ -74,16 +76,20 @@ export const ItemsStore: React.FC = () => {
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h3 className="text-lg font-bold text-white">Itens por Ouro</h3>
-                        <p className="text-sm text-gray-500">Seleção compacta de skins, orbes e banners fortes.</p>
+                        <p className="text-sm text-gray-500">Vitrine ampliada com foco em bordas, skins e banners, sem misturar recompensas de patente.</p>
                     </div>
                     <div className="px-3 py-1 rounded-full border border-yellow-500/20 bg-yellow-500/10 text-xs font-bold uppercase tracking-[0.2em] text-yellow-300">
-                        5 a 50
+                        10 a 500
                     </div>
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                    {items.map((item) => (
-                        <div key={item.id} className="space-y-2">
+                    {items.map((item) => {
+                        const alreadyOwns = ownedItemIds.has(item.id);
+                        const isBusy = loading === item.id;
+
+                        return (
+                            <div key={item.id} className="space-y-2">
                             <GlassCard
                                 onClick={() => setSelectedItem(item)}
                                 className="relative group aspect-square p-2 flex flex-col items-center justify-center transition-all border cursor-pointer hover:border-white/50"
@@ -114,14 +120,29 @@ export const ItemsStore: React.FC = () => {
 
                             <button
                                 onClick={(event) => handleBuy(event, item)}
-                                disabled={!!loading || !item.costGold}
-                                className="luxe-skin-button h-8 w-full rounded-xl text-[10px] font-black uppercase tracking-[0.18em] inline-flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!!loading || alreadyOwns || !item.costGold}
+                                className={`h-8 w-full rounded-xl text-[10px] font-black uppercase tracking-[0.18em] inline-flex items-center justify-center gap-1.5 transition-all ${
+                                    alreadyOwns
+                                        ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 cursor-default'
+                                        : 'luxe-skin-button'
+                                } ${
+                                    !alreadyOwns && (!!loading || !item.costGold)
+                                        ? 'opacity-50 cursor-not-allowed'
+                                        : ''
+                                }`}
                             >
-                                <span className="text-[11px] leading-none">🪙</span>
-                                <span>{loading === item.id ? '...' : item.costGold}</span>
+                                {alreadyOwns ? (
+                                    <span>Ja possui</span>
+                                ) : (
+                                    <>
+                                        <span className="text-[11px] leading-none">🪙</span>
+                                        <span>{isBusy ? '...' : item.costGold}</span>
+                                    </>
+                                )}
                             </button>
-                        </div>
-                    ))}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 

@@ -1,6 +1,13 @@
 # PROGRESSO HISTORICO: GLYPH
-Data de consolidacao: 24/03/2026
+Data de consolidacao: 25/03/2026
 Fonte: itens [v] removidos do relatorio operacional
+
+## Fechamento 25/03/2026
+[v] Disparar os 5 primeiros Bilhetes Dourados e tirar a ativacao inicial do campo de promessa.
+[v] Validar conta nova com `e-mail/Convite` e primeiro `D2`, tirando esse setup da frente critica.
+[v] Fechar a curadoria base de campanhas: preco, acoes, duracao, texto e campanha gratis inicial.
+[v] Fechar o ouro social final de `Mentoria`, `Parceria`, `Competicao` e arena extra.
+[v] Fechar o pacote principal de conteudo de Dominio e deixar a fila preparada; restam `3 reels` no empurrao final para liberar `~75 posts`.
 
 ## Fechamento 24/03/2026
 [v] Desligar a economia de `slots` e consolidar a camada social em Ouro direto (`Mentoria 100`, `Parceria 50`, `Competicao 50`, arena extra `50`), com SQL aplicado e copy publica puxada para `Campanha`/`Grupo`.

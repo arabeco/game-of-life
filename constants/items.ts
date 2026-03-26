@@ -2,6 +2,16 @@
 import { ACTIVE_GOLD_ITEM_PRICE_BY_ID, GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG } from './goldCatalog';
 
 export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest' | 'insignia' | 'insignias';
+export type ItemSeasonSlot = 'skin' | 'border' | 'banner' | 'glyph' | 'orb' | 'plate' | 'insignia' | 'ui_skin';
+
+export interface SeasonCollectionDef {
+    id: string;
+    name: string;
+    retired?: boolean;
+    premiumLegacy?: boolean;
+    storeMode?: 'seasonal_high';
+    slots: Record<ItemSeasonSlot, string | null>;
+}
 
 export interface ItemDef {
     id: string;
@@ -17,6 +27,13 @@ export interface ItemDef {
     isSeasonExclusive?: boolean;
     isRankExclusive?: boolean; // Items unlocked ONLY via Nobility Rank - blocked from chests and store
     isPremiumOnly?: boolean; // Items given ONLY via Premium Pack - blocked from chests
+    isChestExclusive?: boolean; // Items unlocked ONLY via chests - blocked from store/forge
+    isLegacyRetired?: boolean; // Legacy collectible: existing owners keep it, but it no longer enters acquisition flows
+    isGmExclusive?: boolean; // Hidden from public acquisition flows; reserved for GM/admin use
+    isQuestExclusive?: boolean; // Items granted ONLY via quests/season missions
+    isReportExclusive?: boolean; // Items granted ONLY via cycle reports
+    seasonKey?: string; // Seasonal collection bucket, ex: aurora_1_2026
+    seasonSlot?: ItemSeasonSlot; // Slot inside the seasonal collection
 }
 
 const BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
@@ -133,7 +150,7 @@ export const ITEMS_DB: ItemDef[] = [
     avatarItem('skin', { id: 'item_skin_5_001', name: 'Entidade de Luz', tier: 5, rarity: 'legendary', icon: 'âœ¨', asset: 'SKIN_T5_ENTIDADE_LUZ.png', isRankExclusive: true }),
 
     // Season
-    { id: 'item_skin_season_001', name: 'O Criador', category: 'skin', tier: 4, rarity: 'epic', icon: 'ðŸŽ¨', isSeasonExclusive: true, imageUrl: avatarPngAsset('SKIN_SEASON_CRIADOR') },
+    { id: 'item_skin_season_001', name: 'O Criador', category: 'skin', tier: 4, rarity: 'epic', icon: 'ðŸŽ¨', isGmExclusive: true, imageUrl: avatarPngAsset('SKIN_SEASON_CRIADOR') },
 
     // --- ARTIFACTS (Ferramentas, Armas, RelÃ­quias, Companions) ---
     // T1
@@ -177,7 +194,7 @@ export const ITEMS_DB: ItemDef[] = [
 
     // TIER 4 - Epic
     { id: 'anime_spikes', name: 'Anime Spiky', category: 'hair', tier: 4, rarity: 'epic', icon: 'âš¡', isRankExclusive: true },
-    { id: 'princesa', name: 'Princesa', category: 'hair', tier: 4, rarity: 'epic', icon: 'ðŸ‘¸' },
+    { id: 'princesa', name: 'Princesa', category: 'hair', tier: 4, rarity: 'epic', icon: 'ðŸ‘¸', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.princesa },
 
     // TIER 5 - Legendary
     { id: 'fluxo_espiritual', name: 'Fluxo Espiritual', category: 'hair', tier: 5, rarity: 'legendary', icon: 'âœ¨', isRankExclusive: true },
@@ -185,48 +202,48 @@ export const ITEMS_DB: ItemDef[] = [
     // --- BORDAS ---
     // T1
     { id: 'item_border_1_001', name: 'Pupilo (Beta)', category: 'border', tier: 1, rarity: 'common', icon: 'ðŸ”°' },
-    { id: 'item_border_1_002', name: 'Disciplinado', category: 'border', tier: 1, rarity: 'common', icon: 'ðŸ“', imageUrl: `${INTERFACE_BASE_URL}/borda_disciplinado.png` },
+    { id: 'item_border_1_002', name: 'Disciplinado', category: 'border', tier: 1, rarity: 'common', icon: 'ðŸ“', imageUrl: `${INTERFACE_BASE_URL}/borda_disciplinado.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_1_002 },
     { id: 'item_border_1_003', name: 'Vanguardista', category: 'border', tier: 1, rarity: 'common', icon: 'ðŸš©' },
     { id: 'item_border_1_004', name: 'RÃºstico', category: 'border', tier: 1, rarity: 'common', icon: 'ðŸªµ' },
     // Novos T1
-    { id: 'item_border_t1_aprendiz', name: 'Aprendiz', category: 'border', tier: 1, rarity: 'common', icon: 'ðŸŽ“', imageUrl: `${INTERFACE_BASE_URL}/borda_t1_aprendiz.png` },
+    { id: 'item_border_t1_aprendiz', name: 'Aprendiz', category: 'border', tier: 1, rarity: 'common', icon: 'ðŸŽ“', imageUrl: `${INTERFACE_BASE_URL}/borda_t1_aprendiz.png`, isRankExclusive: true },
 
     // T2
-    { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 2, rarity: 'uncommon', icon: 'ðŸŒŸ', imageUrl: `${INTERFACE_BASE_URL}/borda_popular.png` },
+    { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 2, rarity: 'uncommon', icon: 'ðŸŒŸ', imageUrl: `${INTERFACE_BASE_URL}/borda_popular.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_2_001 },
     { id: 'item_border_2_002', name: 'Protetor', category: 'border', tier: 2, rarity: 'uncommon', icon: 'ðŸ›¡ï¸' },
     // Novos T2
-    { id: 'item_border_t2_veterano', name: 'Veterano', category: 'border', tier: 2, rarity: 'uncommon', icon: 'ðŸŽ–ï¸', imageUrl: `${INTERFACE_BASE_URL}/borda_t2_veterano.png` },
+    { id: 'item_border_t2_veterano', name: 'Veterano', category: 'border', tier: 2, rarity: 'uncommon', icon: 'ðŸŽ–ï¸', imageUrl: `${INTERFACE_BASE_URL}/borda_t2_veterano.png`, isRankExclusive: true },
 
     // T3
-    { id: 'item_border_3_001', name: 'ImparÃ¡vel', category: 'border', tier: 3, rarity: 'rare', icon: 'ðŸš€', imageUrl: `${INTERFACE_BASE_URL}/borda_imparavel.png` },
+    { id: 'item_border_3_001', name: 'ImparÃ¡vel', category: 'border', tier: 3, rarity: 'rare', icon: 'ðŸš€', imageUrl: `${INTERFACE_BASE_URL}/borda_imparavel.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_3_001 },
     { id: 'item_border_3_002', name: 'ArquÃ©tipo', category: 'border', tier: 3, rarity: 'rare', icon: 'ðŸŽ­' },
     // Novos T3
-    { id: 'item_border_t3_mistico', name: 'MÃ­stico', category: 'border', tier: 3, rarity: 'rare', icon: 'ðŸ”®', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_mistico.png` },
-    { id: 'item_border_t3_transcendente', name: 'Transcendente', category: 'border', tier: 3, rarity: 'rare', icon: 'âœ¨', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_transcendente.png` },
+    { id: 'item_border_t3_mistico', name: 'MÃ­stico', category: 'border', tier: 3, rarity: 'rare', icon: 'ðŸ”®', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_mistico.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t3_mistico },
+    { id: 'item_border_t3_transcendente', name: 'Transcendente', category: 'border', tier: 3, rarity: 'rare', icon: 'âœ¨', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_transcendente.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t3_transcendente },
     { id: 'item_border_vanguarda_01', name: 'Borda Vanguarda', category: 'border', tier: 3, rarity: 'rare', icon: 'ðŸ›¡ï¸', imageUrl: `${INTERFACE_BASE_URL}/borda_vanguarda.png`, isRankExclusive: true },
 
     // T4
-    { id: 'item_border_4_001', name: 'Lenda Viva', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸ¦', imageUrl: `${INTERFACE_BASE_URL}/borda_lendaviva.png` },
+    { id: 'item_border_4_001', name: 'Lenda Viva', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸ¦', imageUrl: `${INTERFACE_BASE_URL}/borda_lendaviva.png`, isRankExclusive: true },
     { id: 'item_border_4_002', name: 'Soberano', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸ‘‘' },
     // Novos T4
-    { id: 'item_border_t4_celestial', name: 'Celestial', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸ‘¼', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_celestial.png` },
-    { id: 'item_border_t4_guardia', name: 'GuardiÃ£', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸ›¡ï¸', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_guardia.png` },
-    { id: 'item_border_t4_oraculo', name: 'OrÃ¡culo', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸ‘ï¸', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_oraculo.png` },
+    { id: 'item_border_t4_celestial', name: 'Celestial', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸ‘¼', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_celestial.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t4_celestial },
+    { id: 'item_border_t4_guardia', name: 'GuardiÃ£', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸ›¡ï¸', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_guardia.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t4_guardia },
+    { id: 'item_border_t4_oraculo', name: 'OrÃ¡culo', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸ‘ï¸', imageUrl: `${INTERFACE_BASE_URL}/borda_t4_oraculo.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t4_oraculo },
 
     // T5
-    { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: 'ðŸ²', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png` },
+    { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: 'ðŸ²', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png`, isGmExclusive: true },
     // Novos T5
     { id: 'item_border_t5_genesis', name: 'GÃªnesis', category: 'border', tier: 5, rarity: 'legendary', icon: 'ðŸŒ‹', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
-    { id: 'item_border_aurora_1_2026', name: 'Aurora I', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸŒ…', imageUrl: `${INTERFACE_BASE_URL}/borda_auroraI.png`, isSeasonExclusive: true },
+    { id: 'item_border_aurora_1_2026', name: 'Aurora I', category: 'border', tier: 4, rarity: 'epic', icon: 'ðŸŒ…', imageUrl: `${INTERFACE_BASE_URL}/borda_auroraI.png`, isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border' },
 
     // --- BANNERS ---
     // T1
-    { id: 'item_banner_disciplinado', name: 'Disciplinado', category: 'banner', tier: 1, rarity: 'common', icon: 'ðŸ“', imageUrl: `${INTERFACE_BASE_URL}/banner_disciplinado.png` },
-    { id: 'item_banner_t1_aprendiz', name: 'Aprendiz', category: 'banner', tier: 1, rarity: 'common', icon: 'ðŸŽ“', imageUrl: `${INTERFACE_BASE_URL}/banner_t1_aprendiz.png` },
+    { id: 'item_banner_disciplinado', name: 'Disciplinado', category: 'banner', tier: 1, rarity: 'common', icon: 'ðŸ“', imageUrl: `${INTERFACE_BASE_URL}/banner_disciplinado.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_disciplinado },
+    { id: 'item_banner_t1_aprendiz', name: 'Aprendiz', category: 'banner', tier: 1, rarity: 'common', icon: 'ðŸŽ“', imageUrl: `${INTERFACE_BASE_URL}/banner_t1_aprendiz.png`, isRankExclusive: true },
 
     // T2
-    { id: 'item_banner_popular', name: 'Popular', category: 'banner', tier: 2, rarity: 'uncommon', icon: 'ðŸŒŸ', imageUrl: `${INTERFACE_BASE_URL}/banner_popular.png` },
-    { id: 'item_banner_t2_veterano', name: 'Veterano', category: 'banner', tier: 2, rarity: 'uncommon', icon: 'ðŸŽ–ï¸', imageUrl: `${INTERFACE_BASE_URL}/banner_t2_veterano.png` },
+    { id: 'item_banner_popular', name: 'Popular', category: 'banner', tier: 2, rarity: 'uncommon', icon: 'ðŸŒŸ', imageUrl: `${INTERFACE_BASE_URL}/banner_popular.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_popular },
+    { id: 'item_banner_t2_veterano', name: 'Veterano', category: 'banner', tier: 2, rarity: 'uncommon', icon: 'ðŸŽ–ï¸', imageUrl: `${INTERFACE_BASE_URL}/banner_t2_veterano.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t2_veterano },
 
     // T3
     { id: 'item_banner_imparavel', name: 'ImparÃ¡vel', category: 'banner', tier: 3, rarity: 'rare', icon: 'ðŸš€', imageUrl: `${INTERFACE_BASE_URL}/banner_imparavel.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_imparavel },
@@ -235,31 +252,31 @@ export const ITEMS_DB: ItemDef[] = [
 
     // T4
     { id: 'item_banner_lendaviva', name: 'Lenda Viva', category: 'banner', tier: 4, rarity: 'epic', icon: 'ðŸ¦', imageUrl: `${INTERFACE_BASE_URL}/banner_lendaviva.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_lendaviva },
-    { id: 'item_banner_t4_celestial', name: 'Celestial', category: 'banner', tier: 4, rarity: 'epic', icon: 'ðŸ‘¼', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_celestial.png` },
-    { id: 'item_banner_t4_guardia', name: 'GuardiÃ£', category: 'banner', tier: 4, rarity: 'epic', icon: 'ðŸ›¡ï¸', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_guardia.png` },
+    { id: 'item_banner_t4_celestial', name: 'Celestial', category: 'banner', tier: 4, rarity: 'epic', icon: 'ðŸ‘¼', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_celestial.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t4_celestial },
+    { id: 'item_banner_t4_guardia', name: 'GuardiÃ£', category: 'banner', tier: 4, rarity: 'epic', icon: 'ðŸ›¡ï¸', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_guardia.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t4_guardia },
     { id: 'item_banner_t4_oraculo', name: 'OrÃ¡culo', category: 'banner', tier: 4, rarity: 'epic', icon: 'ðŸ‘ï¸', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_oraculo.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t4_oraculo },
-    { id: 'item_banner_t4_transcendente', name: 'Transcendente', category: 'banner', tier: 4, rarity: 'epic', icon: 'âœ¨', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_transcendente.png` },
+    { id: 'item_banner_t4_transcendente', name: 'Transcendente', category: 'banner', tier: 4, rarity: 'epic', icon: 'âœ¨', imageUrl: `${INTERFACE_BASE_URL}/banner_t4_transcendente.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t4_transcendente },
 
     // T5
-    { id: 'item_banner_gm', name: 'GrÃ£o Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: 'ðŸ²', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png` },
+    { id: 'item_banner_gm', name: 'GrÃ£o Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: 'ðŸ²', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png`, isGmExclusive: true },
     { id: 'item_banner_t5_genesis', name: 'GÃªnesis', category: 'banner', tier: 5, rarity: 'legendary', icon: 'ðŸŒ‹', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
-    { id: 'item_banner_aurora_1_2026', name: 'Aurora I', category: 'banner', tier: 4, rarity: 'epic', icon: 'ðŸŒ…', imageUrl: `${INTERFACE_BASE_URL}/banner_auroraI.png`, isSeasonExclusive: true },
+    { id: 'item_banner_aurora_1_2026', name: 'Aurora I', category: 'banner', tier: 4, rarity: 'epic', icon: 'ðŸŒ…', imageUrl: `${INTERFACE_BASE_URL}/banner_auroraI.png`, isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner' },
 
     // --- GLIFOS ---
     // T1
     { id: 'item_glyph_1_001', name: 'TÃ¡bua Aprendiz', category: 'glyph', tier: 1, rarity: 'common', icon: 'ðŸªµ', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_TABUA_APRENDIZ.png`, isRankExclusive: true },
-    { id: 'item_glyph_1_002', name: 'Manuscrito', category: 'glyph', tier: 1, rarity: 'common', icon: 'ðŸ“œ', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_MANUSCRITO_HOD.png` },
-    { id: 'item_glyph_1_003', name: 'Lajota', category: 'glyph', tier: 1, rarity: 'common', icon: 'ðŸ§±', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_LAJOTA_CALCARIO.png` },
+    { id: 'item_glyph_1_002', name: 'Manuscrito', category: 'glyph', tier: 1, rarity: 'common', icon: 'ðŸ“œ', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_MANUSCRITO_HOD.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_1_002 },
+    { id: 'item_glyph_1_003', name: 'Lajota', category: 'glyph', tier: 1, rarity: 'common', icon: 'ðŸ§±', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_LAJOTA_CALCARIO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_1_003 },
     // T2
     { id: 'item_glyph_2_002', name: 'Granito RÃºnico', category: 'glyph', tier: 2, rarity: 'uncommon', icon: 'ðŸª¨', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T2_GRANITO_RUNICO.png`, isRankExclusive: true },
     // T3
-    { id: 'item_glyph_3_002', name: 'Mecanismo Bronze', category: 'glyph', tier: 3, rarity: 'rare', icon: 'âš™ï¸', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_BRONZE.png` },
+    { id: 'item_glyph_3_002', name: 'Mecanismo Bronze', category: 'glyph', tier: 3, rarity: 'rare', icon: 'âš™ï¸', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_BRONZE.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_3_002 },
     { id: 'item_glyph_3_003', name: 'Mecanismo RÃºnico', category: 'glyph', tier: 3, rarity: 'rare', icon: 'âš™ï¸', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_RUNICO.png`, isRankExclusive: true },
     // T5
     { id: 'item_glyph_4_001', name: 'Crisol GeomÃ¢ntico', category: 'glyph', tier: 4, rarity: 'epic', icon: 'ðŸ”·', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISOL_GEOMANTICO.png`, isRankExclusive: true },
-    { id: 'item_glyph_4_002', name: 'Cristal Branco', category: 'glyph', tier: 4, rarity: 'epic', icon: 'ðŸ’Ž', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISTAL_BRANCO.png` },
+    { id: 'item_glyph_4_002', name: 'Cristal Branco', category: 'glyph', tier: 4, rarity: 'epic', icon: 'ðŸ’Ž', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISTAL_BRANCO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_4_002 },
     { id: 'item_glyph_5_001', name: 'A FORJA - Losango 3D', category: 'glyph', tier: 5, rarity: 'legendary', icon: 'ðŸ’ ', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_A_FORJA.png`, isRankExclusive: true },
-    { id: 'item_glyph_5_002', name: 'Artefato Sombrio', category: 'glyph', tier: 5, rarity: 'legendary', icon: 'ðŸ•³ï¸', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_ARTEFATO_SOMBRIO.png` },
+    { id: 'item_glyph_5_002', name: 'Artefato Sombrio', category: 'glyph', tier: 5, rarity: 'legendary', icon: 'ðŸ•³ï¸', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_ARTEFATO_SOMBRIO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_5_002 },
 
     // --- AURAS ---
     // T1
@@ -286,59 +303,59 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_orb_4_001', name: 'Orbe de Diamante', category: 'orb', tier: 4, rarity: 'epic', icon: 'ðŸ’Ž', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T4_DIAMANTE.png`, isRankExclusive: true },
     // T5
     { id: 'item_orb_5_001', name: 'Orbe GÃªnese', category: 'orb', tier: 5, rarity: 'legendary', icon: 'âš›ï¸', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T5_GENESE.png`, isRankExclusive: true },
-    { id: 'item_orb_5_002', name: 'Orbe Soberano', category: 'orb', tier: 5, rarity: 'legendary', icon: 'ðŸ‘‘', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T5_SOBERANO.png` },
+    { id: 'item_orb_5_002', name: 'Orbe Soberano', category: 'orb', tier: 5, rarity: 'legendary', icon: 'ðŸ‘‘', imageUrl: `${GLYPHS_BASE_URL}/ORBE_T5_SOBERANO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_orb_5_002 },
 
     // --- PLACAS ---
-    { id: 'item_plate_1_001', name: 'Placa Madeira', category: 'plate', tier: 1, rarity: 'common', icon: 'ðŸªµ', imageUrl: `${GLYPHS_BASE_URL}/PLACA_MADEIRA.png` },
-    { id: 'item_plate_2_001', name: 'Placa Pedra', category: 'plate', tier: 2, rarity: 'uncommon', icon: 'ðŸª¨', imageUrl: `${GLYPHS_BASE_URL}/PLACA_PEDRA.png` },
-    { id: 'item_plate_3_001', name: 'Placa Prata', category: 'plate', tier: 3, rarity: 'rare', icon: 'ðŸ¥ˆ', imageUrl: `${GLYPHS_BASE_URL}/PLACA_PRATA.png` },
-    { id: 'item_plate_4_001', name: 'Placa Roxa', category: 'plate', tier: 4, rarity: 'epic', icon: 'ðŸŸª', imageUrl: `${GLYPHS_BASE_URL}/PLACA_ROXA.png` },
-    { id: 'item_plate_5_001', name: 'Placa Ouro', category: 'plate', tier: 5, rarity: 'legendary', icon: 'ðŸ¥‡', imageUrl: `${GLYPHS_BASE_URL}/PLACA_OURO.png` },
-    { id: 'item_plate_5_002', name: 'Placa Gelo', category: 'plate', tier: 5, rarity: 'legendary', icon: 'â„ï¸', imageUrl: `${GLYPHS_BASE_URL}/PLACA_GELO.png` },
+    { id: 'item_plate_1_001', name: 'Placa Madeira', category: 'plate', tier: 1, rarity: 'common', icon: 'ðŸªµ', imageUrl: `${GLYPHS_BASE_URL}/PLACA_MADEIRA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_1_001 },
+    { id: 'item_plate_2_001', name: 'Placa Pedra', category: 'plate', tier: 2, rarity: 'uncommon', icon: 'ðŸª¨', imageUrl: `${GLYPHS_BASE_URL}/PLACA_PEDRA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_2_001 },
+    { id: 'item_plate_3_001', name: 'Placa Prata', category: 'plate', tier: 3, rarity: 'rare', icon: 'ðŸ¥ˆ', imageUrl: `${GLYPHS_BASE_URL}/PLACA_PRATA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_3_001 },
+    { id: 'item_plate_4_001', name: 'Placa Roxa', category: 'plate', tier: 4, rarity: 'epic', icon: 'ðŸŸª', imageUrl: `${GLYPHS_BASE_URL}/PLACA_ROXA.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_4_001 },
+    { id: 'item_plate_5_001', name: 'Placa Ouro', category: 'plate', tier: 5, rarity: 'legendary', icon: 'ðŸ¥‡', imageUrl: `${GLYPHS_BASE_URL}/PLACA_OURO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_5_001 },
+    { id: 'item_plate_5_002', name: 'Placa Gelo', category: 'plate', tier: 5, rarity: 'legendary', icon: 'â„ï¸', imageUrl: `${GLYPHS_BASE_URL}/PLACA_GELO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_5_002 },
 
     // --- UI SKINS (Temas) ---
     // T1
     themeCatalogItem({ id: 'BASIC', name: 'Tema: BÃ¡sico Profissional', tier: 1, rarity: 'common', icon: '\u25FB\uFE0F', asset: 'basic.png' }),
     // T3
-    themeCatalogItem({ id: 'GOLD', name: 'Tema: Ouro Soberano', tier: 3, rarity: 'rare', icon: '\u269C\uFE0F', asset: 'gold.png' }),
-    themeCatalogItem({ id: 'FROST', name: 'Tema: Gelo Eterno', tier: 3, rarity: 'rare', icon: '\u2744\uFE0F', asset: 'frost.png' }),
+    themeCatalogItem({ id: 'GOLD', name: 'Tema: Ouro Soberano', tier: 3, rarity: 'rare', icon: '\u269C\uFE0F', asset: 'gold.png', isRankExclusive: true }),
+    themeCatalogItem({ id: 'FROST', name: 'Tema: Gelo Eterno', tier: 3, rarity: 'rare', icon: '\u2744\uFE0F', asset: 'frost.png', isRankExclusive: true }),
     // T4
-    themeCatalogItem({ id: 'EMBER', name: 'Tema: Chama Viva', tier: 4, rarity: 'epic', icon: '\uD83D\uDD25', asset: 'ember.png' }),
-    themeCatalogItem({ id: 'CYBER', name: 'Tema: Cyberpunk', tier: 4, rarity: 'epic', icon: '\uD83E\uDDBE', asset: 'cyber.jpg' }),
-    themeCatalogItem({ id: 'AURORA', name: 'Tema: Aurora Boreal', tier: 4, rarity: 'epic', icon: '\uD83C\uDF0C', asset: 'aurora.png' }),
+    themeCatalogItem({ id: 'EMBER', name: 'Tema: Chama Viva', tier: 4, rarity: 'epic', icon: '\uD83D\uDD25', asset: 'ember.png', isRankExclusive: true }),
+    themeCatalogItem({ id: 'CYBER', name: 'Tema: Cyberpunk', tier: 4, rarity: 'epic', icon: '\uD83E\uDDBE', asset: 'cyber.jpg', isRankExclusive: true }),
+    themeCatalogItem({ id: 'AURORA', name: 'Tema: Aurora Boreal', tier: 4, rarity: 'epic', icon: '\uD83C\uDF0C', asset: 'aurora.png', isRankExclusive: true }),
     // T5
-    themeCatalogItem({ id: 'VOID', name: 'Tema: Vazio Primordial', tier: 5, rarity: 'legendary', icon: '\uD83D\uDD2E', asset: 'void.png' }),
+    themeCatalogItem({ id: 'VOID', name: 'Tema: Vazio Primordial', tier: 5, rarity: 'legendary', icon: '\uD83D\uDD2E', asset: 'void.png', isRankExclusive: true }),
     themeCatalogItem({ id: 'GENESIS', name: 'Tema: Genesis', tier: 5, rarity: 'legendary', icon: '\u2726', asset: 'genesis.png' }),
 
     // --- EXCLUSIVOS (Store) ---
     // Itens legacy preservados para inventarios antigos, fora do catalogo ativo de ouro.
-    catalogItem('skin', { id: 'item_skin_exclusive_001', name: 'Empreendedor', tier: 4, rarity: 'epic', icon: 'ðŸ’¼', isGoldExclusive: true }),
+    catalogItem('skin', { id: 'item_skin_exclusive_001', name: 'Empreendedor', tier: 4, rarity: 'epic', icon: 'ðŸ’¼' }),
     catalogItem('aura', { id: 'item_aura_exclusive_001', name: 'FÃªnix Dourada', tier: 5, rarity: 'legendary', icon: 'ðŸ¦', isGoldExclusive: true }),
-    catalogItem('border', { id: 'item_border_exclusive_001', name: 'Fundador', tier: 4, rarity: 'epic', icon: 'ðŸ›ï¸', isGoldExclusive: true }),
+    catalogItem('border', { id: 'item_border_exclusive_001', name: 'Fundador', tier: 4, rarity: 'epic', icon: 'ðŸ›ï¸' }),
 
     // --- INSÃGNIAS ---
     // NOBREZA (Ouro)
-    { id: 'insignia_rank_1_vagante', name: 'Ouro: Vagante', category: 'insignia', tier: 1, rarity: 'common', icon: 'ðŸ‘¤', description: "Patente de Ouro: Reconhecimento inicial para aqueles que comeÃ§am sua jornada." },
-    { id: 'insignia_rank_2_escudeiro', name: 'Ouro: Escudeiro', category: 'insignia', tier: 1, rarity: 'common', icon: 'ðŸ›¡ï¸', description: "Patente de Ouro: Concedida aos que demonstraram compromisso inicial com a ordem." },
-    { id: 'insignia_rank_3_cavaleiro', name: 'Ouro: Cavaleiro', category: 'insignia', tier: 2, rarity: 'uncommon', icon: 'âš”ï¸', description: "Patente de Ouro: Dada aos guerreiros que provaram sua constÃ¢ncia em batalha." },
-    { id: 'insignia_rank_4_lorde', name: 'Ouro: Lorde', category: 'insignia', tier: 3, rarity: 'rare', icon: 'ðŸ°', description: "Patente de Ouro: Um tÃ­tulo de nobreza para quem lidera pelo exemplo." },
-    { id: 'insignia_rank_5_barao', name: 'Ouro: BarÃ£o', category: 'insignia', tier: 4, rarity: 'epic', icon: 'ðŸ‘‘', description: "Patente de Ouro: Elite da nobreza, reservada aos mestres da disciplina." },
-    { id: 'insignia_rank_6_conde', name: 'Ouro: Conde', category: 'insignia', tier: 4, rarity: 'epic', icon: 'ðŸŽ–ï¸', description: "Patente de Ouro: Reconhecimento por serviÃ§os notÃ¡veis prestados ao reino." },
-    { id: 'insignia_rank_7_duque', name: 'Ouro: Duque', category: 'insignia', tier: 5, rarity: 'legendary', icon: 'ðŸ…', description: "Patente de Ouro: Um alto tÃ­tulo de nobreza, concedido apenas aos mais dignos." },
-    { id: 'insignia_rank_8_principe', name: 'Ouro: PrÃ­ncipe', category: 'insignia', tier: 5, rarity: 'legendary', icon: 'ðŸ’Ž', description: "Patente de Ouro: Sangue real. Seu nome Ã© conhecido em todas as terras." },
-    { id: 'insignia_rank_9_rei', name: 'Ouro: Rei', category: 'insignia', tier: 5, rarity: 'legendary', icon: 'ðŸ‘‘', description: "Patente de Ouro: A autoridade mÃ¡xima. Sua palavra Ã© lei." },
-    { id: 'insignia_rank_10_soberano', name: 'Ouro: Soberano', category: 'insignia', tier: 5, rarity: 'legendary', icon: 'âšœï¸', description: "Patente de Ouro: O Ã¡pice da maestria. Poucos alcanÃ§am este patamar de soberania." },
+    { id: 'insignia_rank_1_vagante', name: 'Ouro: Vagante', category: 'insignia', tier: 1, rarity: 'common', icon: 'ðŸ‘¤', description: "Patente de Ouro: Reconhecimento inicial para aqueles que comeÃ§am sua jornada.", isRankExclusive: true },
+    { id: 'insignia_rank_2_escudeiro', name: 'Ouro: Escudeiro', category: 'insignia', tier: 1, rarity: 'common', icon: 'ðŸ›¡ï¸', description: "Patente de Ouro: Concedida aos que demonstraram compromisso inicial com a ordem.", isRankExclusive: true },
+    { id: 'insignia_rank_3_cavaleiro', name: 'Ouro: Cavaleiro', category: 'insignia', tier: 2, rarity: 'uncommon', icon: 'âš”ï¸', description: "Patente de Ouro: Dada aos guerreiros que provaram sua constÃ¢ncia em batalha.", isRankExclusive: true },
+    { id: 'insignia_rank_4_lorde', name: 'Ouro: Lorde', category: 'insignia', tier: 3, rarity: 'rare', icon: 'ðŸ°', description: "Patente de Ouro: Um tÃ­tulo de nobreza para quem lidera pelo exemplo.", isRankExclusive: true },
+    { id: 'insignia_rank_5_barao', name: 'Ouro: BarÃ£o', category: 'insignia', tier: 4, rarity: 'epic', icon: 'ðŸ‘‘', description: "Patente de Ouro: Elite da nobreza, reservada aos mestres da disciplina.", isRankExclusive: true },
+    { id: 'insignia_rank_6_conde', name: 'Ouro: Conde', category: 'insignia', tier: 4, rarity: 'epic', icon: 'ðŸŽ–ï¸', description: "Patente de Ouro: Reconhecimento por serviÃ§os notÃ¡veis prestados ao reino.", isRankExclusive: true },
+    { id: 'insignia_rank_7_duque', name: 'Ouro: Duque', category: 'insignia', tier: 5, rarity: 'legendary', icon: 'ðŸ…', description: "Patente de Ouro: Um alto tÃ­tulo de nobreza, concedido apenas aos mais dignos.", isRankExclusive: true },
+    { id: 'insignia_rank_8_principe', name: 'Ouro: PrÃ­ncipe', category: 'insignia', tier: 5, rarity: 'legendary', icon: 'ðŸ’Ž', description: "Patente de Ouro: Sangue real. Seu nome Ã© conhecido em todas as terras.", isRankExclusive: true },
+    { id: 'insignia_rank_9_rei', name: 'Ouro: Rei', category: 'insignia', tier: 5, rarity: 'legendary', icon: 'ðŸ‘‘', description: "Patente de Ouro: A autoridade mÃ¡xima. Sua palavra Ã© lei.", isRankExclusive: true },
+    { id: 'insignia_rank_10_soberano', name: 'Ouro: Soberano', category: 'insignia', tier: 5, rarity: 'legendary', icon: 'âšœï¸', description: "Patente de Ouro: O Ã¡pice da maestria. Poucos alcanÃ§am este patamar de soberania.", isRankExclusive: true },
 
     // RELATORIOS (Bronze)
 
     // QUESTS (Prata)
-    { id: 'insignia_quest_master', name: 'Prata: Mestre de Quests', category: 'insignia', tier: 3, rarity: 'rare', icon: 'ðŸ“œ', description: "MissÃ£o de Prata: Concedida ao completar missÃµes desafiadoras da temporada." },
+    { id: 'insignia_quest_master', name: 'Prata: Mestre de Quests', category: 'insignia', tier: 3, rarity: 'rare', icon: 'ðŸ“œ', description: "MissÃ£o de Prata: Concedida ao completar missÃµes desafiadoras da temporada.", isQuestExclusive: true },
 
     // NOVAS INSÃGNIAS (Recompensas AutomÃ¡ticas)
-    { id: 'insignia_report_comum', name: 'Bronze: Relatorio de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: 'ðŸ¥‰', description: "Relatorio de Bronze: Concedida por concluir um ciclo e selar o relatorio final." },
-    { id: 'insignia_quest_incomum', name: 'Prata: MissÃ£o Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: 'ðŸ¥ˆ', description: "MissÃ£o de Prata: Concedida ao concluir uma missÃ£o da temporada." },
-    { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: 'ðŸ¥‡', description: "Patente de Ouro: Concedida ao atingir um novo nÃ­vel de excelÃªncia." },
-    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 4, rarity: 'epic', icon: 'ðŸŸ£', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true },
+    { id: 'insignia_report_comum', name: 'Bronze: Relatorio de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: 'ðŸ¥‰', description: "Relatorio de Bronze: Concedida por concluir um ciclo e selar o relatorio final.", isReportExclusive: true },
+    { id: 'insignia_quest_incomum', name: 'Prata: MissÃ£o Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: 'ðŸ¥ˆ', description: "MissÃ£o de Prata: Concedida ao concluir uma missÃ£o da temporada.", isQuestExclusive: true },
+    { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: 'ðŸ¥‡', description: "Patente de Ouro: Concedida ao atingir um novo nÃ­vel de excelÃªncia.", isRankExclusive: true },
+    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 4, rarity: 'epic', icon: 'ðŸŸ£', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia' },
 ];
 
 const LEGACY_ITEM_ID_ALIASES: Record<string, string> = {
@@ -362,6 +379,88 @@ export const resolveItemDef = (itemId: string): ItemDef | undefined => {
         return stripRasterExt(url).endsWith(`/${normalized}`);
     });
 };
+
+const resolveItemInput = (itemOrId?: ItemDef | string): ItemDef | undefined => {
+    if (!itemOrId) return undefined;
+    return typeof itemOrId === 'string' ? resolveItemDef(itemOrId) : itemOrId;
+};
+
+export const isLegacyRetiredItem = (itemOrId?: ItemDef | string): boolean => Boolean(resolveItemInput(itemOrId)?.isLegacyRetired);
+export const isGmExclusiveItem = (itemOrId?: ItemDef | string): boolean => Boolean(resolveItemInput(itemOrId)?.isGmExclusive);
+export const isSeasonCatalogItem = (itemOrId?: ItemDef | string): boolean => {
+    const item = resolveItemInput(itemOrId);
+    return Boolean(item?.isSeasonExclusive && !item?.isLegacyRetired);
+};
+export const isRankRewardItem = (itemOrId?: ItemDef | string): boolean => Boolean(resolveItemInput(itemOrId)?.isRankExclusive);
+export const isChestOnlyItem = (itemOrId?: ItemDef | string): boolean => Boolean(resolveItemInput(itemOrId)?.isChestExclusive);
+export const isQuestRewardItem = (itemOrId?: ItemDef | string): boolean => Boolean(resolveItemInput(itemOrId)?.isQuestExclusive);
+export const isReportRewardItem = (itemOrId?: ItemDef | string): boolean => Boolean(resolveItemInput(itemOrId)?.isReportExclusive);
+export const isGoldStorePurchasableItem = (itemOrId?: ItemDef | string): boolean => {
+    const item = resolveItemInput(itemOrId);
+    return Boolean(
+        item
+        && typeof item.costGold === 'number'
+        && !item.isLegacyRetired
+        && !item.isGmExclusive
+        && !item.isRankExclusive
+        && !item.isSeasonExclusive
+        && !item.isPremiumOnly
+        && !item.isChestExclusive
+        && !item.isQuestExclusive
+        && !item.isReportExclusive
+    );
+};
+export const isForgeEligibleItem = (itemOrId?: ItemDef | string): boolean => {
+    const item = resolveItemInput(itemOrId);
+    if (!item) return false;
+    return !item.isGoldExclusive && !item.isSeasonExclusive && !item.isRankExclusive && !item.isChestExclusive && !item.isLegacyRetired && !item.isGmExclusive;
+};
+export const isChestEligibleItem = (itemOrId?: ItemDef | string): boolean => {
+    const item = resolveItemInput(itemOrId);
+    if (!item) return false;
+    return !item.isGoldExclusive && !item.isSeasonExclusive && !item.isRankExclusive && !item.isPremiumOnly && !item.isLegacyRetired && !item.isGmExclusive;
+};
+
+export const SEASON_COLLECTION_SLOTS: ItemSeasonSlot[] = ['skin', 'border', 'banner', 'glyph', 'orb', 'plate', 'insignia', 'ui_skin'];
+export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
+    aurora_1_2026: {
+        id: 'aurora_1_2026',
+        name: 'Aurora I',
+        storeMode: 'seasonal_high',
+        slots: {
+            skin: null,
+            border: 'item_border_aurora_1_2026',
+            banner: 'item_banner_aurora_1_2026',
+            glyph: null,
+            orb: null,
+            plate: null,
+            insignia: 'insignia_season_aurora_1',
+            ui_skin: null,
+        },
+    },
+    genesis_legacy: {
+        id: 'genesis_legacy',
+        name: 'Genesis Legacy',
+        retired: true,
+        premiumLegacy: true,
+        slots: {
+            skin: null,
+            border: 'item_border_genesis_01',
+            banner: 'item_banner_origin_01',
+            glyph: null,
+            orb: null,
+            plate: null,
+            insignia: null,
+            ui_skin: 'item_theme_nebulosa',
+        },
+    },
+};
+
+export const getSeasonCollectionItems = (seasonKey: string): ItemDef[] => getCatalogItems(item => item.seasonKey === seasonKey);
+export const getActiveSeasonCollectionItems = (seasonKey: string): ItemDef[] =>
+    getCatalogItems(item => item.seasonKey === seasonKey && !item.isLegacyRetired);
+export const getRetiredSeasonCollectionItems = (seasonKey: string): ItemDef[] =>
+    getCatalogItems(item => item.seasonKey === seasonKey && !!item.isLegacyRetired);
 
 export const GOLD_PACKS = GOLD_PACK_CATALOG.map((pack) => ({
     id: pack.id,
@@ -395,6 +494,9 @@ const GENESIS_BORDER: ItemDef = interfaceCatalogItem('border', {
     tier: 4, rarity: 'epic', icon: 'âœ¦',
     description: 'Recompensa de Temporada e Quest de alto valor.',
     isSeasonExclusive: true,
+    isLegacyRetired: true,
+    seasonKey: 'genesis_legacy',
+    seasonSlot: 'border',
     asset: 'borda_t5_genesis.png',
 });
 const GENESIS_BANNER: ItemDef = interfaceCatalogItem('banner', {
@@ -402,16 +504,19 @@ const GENESIS_BANNER: ItemDef = interfaceCatalogItem('banner', {
     tier: 4, rarity: 'epic', icon: 'â›Š',
     description: 'Recompensa de Temporada e Quest de alto valor.',
     isSeasonExclusive: true,
+    isLegacyRetired: true,
+    seasonKey: 'genesis_legacy',
+    seasonSlot: 'banner',
     asset: 'banner_origem.png',
 });
 const GENESIS_THEME: ItemDef = catalogItem('ui_skin', {
     id: 'item_theme_nebulosa', name: 'Tema: Nebulosa Astral',
     tier: 4, rarity: 'epic', icon: '🌌',
     description: 'Interface visual de camadas cÃ³smicas.',
-    isPremiumOnly: true, isRankExclusive: true,
+    isRankExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'ui_skin',
 });
 
-export const PREMIUM_PACK_GENESIS = [GENESIS_BORDER, GENESIS_BANNER, GENESIS_THEME];
+export const PREMIUM_PACK_GENESIS = [GENESIS_BORDER, GENESIS_BANNER];
 
 // Add Genesis items to main DB
 ITEMS_DB.push(GENESIS_BORDER, GENESIS_BANNER, GENESIS_THEME);

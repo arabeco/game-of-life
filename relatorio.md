@@ -1,5 +1,5 @@
 ============================================================
-           GLYPH: MASTER SYSTEM STATE (24/03/26)
+           GLYPH: MASTER SYSTEM STATE (25/03/26)
 ============================================================
 STATUS: [X] ALPHA  |  [ ] BETA  |  [ ] LIVE
 FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
@@ -13,9 +13,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 ## 2. SCORECARD DE AUDITORIA
 - **EXECUCAO REAL: 9.8** (`build` e `type-check` ok; core, campanhas e premium religados sem quebrar o app).
 - **ID VISUAL: 9.7** (`Vinculos` no `Social`, `Campanhas` mais acessiveis e `Premium` no trilho certo).
-- **FLUXO USUARIO: 9.8** (onboarding/campanhas/premium andaram; falta QA real de onboarding, `e-mail/Convite`, D2 e premium remoto).
+- **FLUXO USUARIO: 9.8** (a maior parte do QA manual ja foi rodada; o foco agora ficou em aparelho real, premium remoto, PIX/Ouro e acabamento final de mobile/skins).
 - **RETENCAO: --** (Aguardando Beta)
-- **AQUISICAO: --** (Aguardando Videos)
+- **AQUISICAO: --** (Bilhetes enviados e pacote de Dominio quase pronto; faltam `3 reels` para destravar a fila de `~75 posts`.)
 
 ## 3. VITRINE DO CICLO
 - Sem entregas pendentes de consolidacao.
@@ -23,47 +23,38 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 
 ## 4. MATRIZ DE EXECUCAO
 ### CHECK FINAL ABSOLUTO (BLOQUEIA O BETA)
-[-] Loop principal: login -> onboarding -> arena -> acao -> ciclo -> historico em aparelho real. Onboarding local ja passou. - Responsavel: SENTINELA
-[-] Onboarding final: tutoriais 1/2, toggle `Modo Jogo`, cards 3/4, passada visual real. - Responsavel: SENTINELA
+[-] Hot path real: loop principal + maior parte do QA manual ja passaram; falta fechar a rodada final em aparelho real com acabamento mobile. - Responsavel: SENTINELA
+[-] Onboarding final: tutoriais 1/2, toggle `Modo Jogo`, cards 3/4 e passada visual real. - Responsavel: SENTINELA
 [ ] Persistencia: troca de dia, reabertura, cronometro, temporada, modais e rituais. - Responsavel: SENTINELA
 [ ] Mobile final: `Ativos`, `Arenas`, `Planner`, `Mundo`, `Config`, modais e scroll. - Responsavel: SENTINELA
 [ ] Skins UI: contraste final, planner, patentes e modais em claro/escuro. - Responsavel: SENTINELA
 [ ] Leitor paginado: swipe, setas, preview e `[[page]]` no mobile. - Responsavel: SENTINELA
-[ ] Conta nova: `e-mail/Convite` + primeiro `D2`. - Responsavel: TRONO
 [ ] GM Panel: teste real de e-mail. - Responsavel: PROTOCOLO
 [-] Mentoria 2 contas: aceite, arena em leitura e base do fluxo ja passaram em smoke; faltam recusa, revogacao, refund e pacote final. - Responsavel: SENTINELA
-[ ] Solicitacoes Social: amizade + vinculo + badges + push. - Responsavel: SENTINELA
-[-] Malha social: amizade, `Vinculos`, `Grupo`, `Equipe`, entrada/saida e leitura dos chips. Base social ja andou em smoke; falta a rodada integrada final. - Responsavel: PROTOCOLO
+[-] Social integrado: solicitacoes, amizade, `Vinculos`, `Grupo`, `Equipe`, badges/push e leitura final dos chips. Base social ja andou em smoke; falta a rodada final integrada. - Responsavel: PROTOCOLO
 [-] Camada compartilhada: `Grupo`, `Mentoria`, `Parceria`, `Competicao` e reflexo final no board. Base ja validada. - Responsavel: PROTOCOLO
 [ ] Campanhas: descobrir, comprar, instalar e operar sem duplicar nada. - Responsavel: PROTOCOLO
 [ ] Economia de campanhas: custo, `Gratis/Premium`, premio de onboarding e retorno de compra. - Responsavel: TESOURO
-[ ] Curadoria de campanhas: preco, acoes, duracao, texto e campanha gratis inicial. - Responsavel: TESOURO
 [ ] Recarga de Ouro: vitrine, pagamento, credito e retorno ao fluxo. - Responsavel: TESOURO
 [ ] PIX final: cobrar, pagar, creditar e refletir na carteira. - Responsavel: TESOURO
-[ ] Premium remoto: migration aplicada + expiracao/renovacao em `2 aparelhos`. - Responsavel: PROTOCOLO
+[ ] Premium remoto: expiracao/renovacao em `2 aparelhos`. - Responsavel: PROTOCOLO
 [ ] Economia premium: comprar, renovar, recompensar e cair no modal certo. - Responsavel: TESOURO
 [ ] `Modo Jogo` final: liga/desliga, some/aparece, inventario, baus e feitos. - Responsavel: PROTOCOLO
-[-] Ouro social final: validar `Mentoria`, `Parceria`, `Competicao` e arena extra sem resquicio de slot. Custos e fluxos-base ja passaram em smoke. - Responsavel: TESOURO
 
 ### COMANDO
 [ ] Rodar o `CHECK FINAL` em aparelho real e congelar o hot path do Beta. - Responsavel: SENTINELA
 [ ] Fechar a passada final mobile em `Season`, `Genesis/Aurora` e vitrines. - Responsavel: SENTINELA
 
 ### TRONO
-[ ] Disparar os 5 primeiros Bilhetes Dourados.
 [ ] Ler Ativacao, D2 e % de Ciclos reais.
 
 ### PROTOCOLO
-[ ] Fechar a convergencia final do `Modo Jogo` e limpar restos de `GAME/BASIC`. - Responsavel: PROTOCOLO
-[ ] Fechar o teste real de e-mail via GM Panel. - Responsavel: PROTOCOLO
 [ ] Concluir a passada final de pt-BR residual. - Responsavel: PROTOCOLO
+[ ] Melhorar o Oraculo e o parsing de acao para funcionar com robustez e acionar tools corretamente. - Responsavel: PROTOCOLO
 
 ### DOMINIO (FORA DO HOT PATH)
-[ ] Criar Reels/videos curtos dos fluxos principais.
-[ ] Revisar landing/site antes de empurrar trafego.
-
-### TESOURO
-[ ] Decidir os complementos da economia leve sem reintroduzir slots. - Responsavel: TESOURO
+[ ] Fechar os `3 reels` restantes e alinhar landing/site antes de empurrar trafego. Dominio e material-base ja foram enviados; com isso a fila prevista sobe para `~75 posts`.
+[ ] Gerar o pacote das `10 skins` novas e completar os itens faltantes da `Season Aurora` (`skin`, `glifo`, `orbe`, `placa` e `cabelo`; `banner` e `borda` ja existem). - Responsavel: DOMINIO + TESOURO
 
 ## 5. MARCO 1: PROVA (DEZ/2026)
 - Objetivo: sair do estado de projeto e provar produto com retencao real.
@@ -86,9 +77,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Friccao mobile critica (P0/P1): 0/0
 
 ## 7. RESUMO ATUALIZADO
-- Data: 24/03/2026
+- Data: 25/03/2026
 - Atualizado por: GPT-5 Codex
-- Resumo: o GLYPH segue em ALPHA na Fundacao (T1), mas o relatorio agora esta limpo e focado nas ultimas travas reais do beta. O que segura a abertura hoje e QA em aparelho real, `PIX/Ouro`, `Premium` remoto, conta nova com `e-mail/Convite` e polimento final de mobile/skins.
+- Resumo: o GLYPH segue em ALPHA na Fundacao (T1), mas o quadro operacional agora esta bem mais limpo: conta nova, curadoria de campanhas, ouro social final e Bilhetes Dourados ja sairam da frente. O que segura a abertura agora e a rodada final em aparelho real, persistencia, `PIX/Ouro`, premium remoto, polimento final mobile/skins, GM Panel de e-mail e os `3 reels` que faltam para liberar a fila de `~75 posts`.
 
 ## 8. MODO DE USO DO RELATORIO
 1. Ler `relatorio.md`, `status.md`, `roadmap-soberania.md` e `progresso.md` antes de mexer no estado do projeto.
@@ -101,8 +92,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 
 ## 9. BLOQUEIOS ATUAIS
 [-] Onboarding/tutorial ja passou no smoke principal, mas ainda pede a passada final em aparelho real.
-[ ] Conta nova ainda pede `e-mail/Convite` e prova de `D2`.
-[ ] Premium ainda pede migration aplicada e QA remoto.
+[ ] Premium ainda pede QA remoto final em `2 aparelhos`.
 [ ] PIX/Ouro ainda pede fechamento ponta a ponta.
 [ ] Mobile/skins ainda pedem a ultima rodada de contraste e responsividade.
 [-] Social/vinculos ja andaram em smoke, mas ainda pedem a rodada final integrada de leitura e operacao.
+[ ] GM Panel ainda pede o teste real de e-mail.
+[ ] Dominio/conteudo ja enviou quase tudo; faltam `3 reels` para destravar a fila de `~75 posts`.

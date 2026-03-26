@@ -39,9 +39,6 @@ async function testInsert() {
             hairStyle: 'short',
             hairColor: '#2C1810',
             outfit: 'royal_robes',
-            head_under: 'none',
-            helmet: 'none',
-            head_over: 'crown',
             artifact: 'none',
             glyph: 'none',
             aura: 'none'

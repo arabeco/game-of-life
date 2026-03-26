@@ -15,7 +15,7 @@ import { CampaignsCodex } from '../components/CampaignsCodex';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
 import { CampaignArenaStack } from '../components/CampaignArenaStack';
 import { EmojiGlyph } from '../components/EmojiGlyph';
-import { calculateArenaProgress, calculateCampaignProgress } from '../utils/progressUtils';
+import { calculateArenaProgress, calculateCampaignProgress, calculateCampaignProgressSummary } from '../utils/progressUtils';
 import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
@@ -985,11 +985,11 @@ export const ArenasView: React.FC = () => {
             percent: Math.round(progress.progressPercent),
         };
     };
-    const getCampaignProgress = (campaign: Campaign) => {
+    const getCampaignProgressMetrics = (campaign: Campaign) => {
         const arenasById = Object.fromEntries(getArenas().map(arena => [arena.id, arena]));
         const actionsByArena = Object.fromEntries(getArenas().map(arena => [arena.id, getActionsForArena(arena.id)]));
 
-        return calculateCampaignProgress({
+        return calculateCampaignProgressSummary({
             campaign,
             arenasById,
             actionsByArena,
@@ -999,6 +999,7 @@ export const ArenasView: React.FC = () => {
             getSharedActionPoolProgress,
         });
     };
+    const getCampaignProgress = (campaign: Campaign) => getCampaignProgressMetrics(campaign).progressPercent;
     const renderListValue = (value: string, muted = false) => (
         <span className={`min-w-[2.75rem] text-right text-[10px] font-bold uppercase tracking-[0.08em] tabular-nums ${muted ? 'text-white/42' : 'text-white/78'}`}>
             {value}
@@ -1308,6 +1309,7 @@ export const ArenasView: React.FC = () => {
     // Helper to render Campaign Card
     const renderCampaignCard = (campaign: Campaign, isParallel: boolean, progress: number) => {
         const campaignArenas = getArenas().filter(a => campaign.arenaIds.includes(a.id));
+        const progressSummary = getCampaignProgressMetrics(campaign);
         const isDragOver = dragOverId === campaign.id;
         const isDragged = draggedId === campaign.id;
         const isAttentionTarget = arenaAttention?.campaignId === campaign.id;
@@ -1340,18 +1342,27 @@ export const ArenasView: React.FC = () => {
                         <span className="text-sm">📁</span>
                         <span className="text-[9px] font-bold text-gray-300 truncate leading-none pt-0.5">{campaign.title}</span>
                     </div>
-                    <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden shrink-0 ml-1">
-                            <div 
-                                className={progressFillClass}
-                                style={{ width: `${progress}%`, background: 'var(--skin-accent-color)' }}
-                            />
-                        </div>
+                    <div className="inline-flex shrink-0 items-center rounded-full border border-white/10 bg-black/35 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">
+                        {progressSummary.progressPercent}%
+                    </div>
                 </div>
 
                 {/* Content / Thumbnails */}
-                <div className="flex-1 px-2.5 pt-1 pb-2 overflow-hidden">
+                <div className="flex-1 px-2.5 pt-1 pb-1 overflow-hidden">
                     <div className="flex h-full min-h-[7.25rem] items-start justify-center rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.26),rgba(36,25,74,0.2)_55%,rgba(15,15,15,0.18))] pt-0.5">
                         <CampaignArenaStack arenas={campaignArenas} size="md" />
+                    </div>
+                </div>
+                <div className="px-2.5 pb-2">
+                    <div className="mb-1 flex items-center justify-between text-[8px] font-black uppercase tracking-[0.14em] text-white/58">
+                        <span>{progressSummary.totalCompleted}/{progressSummary.totalPlanned} acoes</span>
+                        <span>{progressSummary.clearedArenaCount}/{progressSummary.totalArenaCount} arenas</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full border border-white/10 bg-white/10">
+                        <div
+                            className={progressFillClass}
+                            style={{ width: `${progressSummary.progressPercent}%`, background: 'var(--skin-accent-color)' }}
+                        />
                     </div>
                 </div>
             </div>

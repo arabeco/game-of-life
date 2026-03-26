@@ -2,9 +2,10 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { createTempUser, DEFAULT_SMOKE_URL } from './_smoke.supabase.mjs';
 
 const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const BASE_URL = process.env.SMOKE_URL || 'http://127.0.0.1:3003/';
+const BASE_URL = process.env.SMOKE_URL || DEFAULT_SMOKE_URL;
 const DEBUG_PORT = 9222;
 const userDataDir = mkdtempSync(path.join(tmpdir(), 'glyph-smoke-'));
 
@@ -89,6 +90,34 @@ async function evaluate(expression) {
   return result.result?.value;
 }
 
+async function getSession(client) {
+  const { data, error } = await client.auth.getSession();
+  if (error || !data.session) {
+    throw new Error(`session fetch failed: ${error?.message || 'missing session'}`);
+  }
+  return data.session;
+}
+
+async function seedSession(session) {
+  const serialized = Buffer.from(JSON.stringify(session), 'utf8').toString('base64');
+  await cdp('Page.navigate', { url: BASE_URL });
+  await waitFor(
+    'smoke base url',
+    `(() => location.href.startsWith(${JSON.stringify(BASE_URL)}))()`,
+    20000,
+  );
+  const ok = await evaluate(`(() => {
+    localStorage.setItem('gol-supabase-auth', atob(${JSON.stringify(serialized)}));
+    return true;
+  })()`);
+
+  if (!ok) {
+    throw new Error('Failed to seed browser session.');
+  }
+
+  await cdp('Page.reload', { ignoreCache: true });
+}
+
 async function bodyText() {
   return String(await evaluate('document.body ? document.body.innerText : ""'));
 }
@@ -160,6 +189,24 @@ async function setField(placeholder, value) {
   }
 }
 
+async function setFieldBySelector(selector, value) {
+  const ok = await evaluate(`(() => {
+    const target = document.querySelector(${JSON.stringify(selector)});
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return false;
+    const proto = target instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+    if (!setter) return false;
+    target.focus();
+    setter.call(target, ${JSON.stringify(value)});
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    target.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  if (!ok) {
+    throw new Error(`Could not set field selector: ${selector}\n\n${await bodyText()}`);
+  }
+}
+
 async function clickTermsPrimary() {
   const ok = await evaluate(`(() => {
     const candidates = Array.from(document.querySelectorAll('div')).filter(node => {
@@ -215,45 +262,29 @@ async function pressEscape() {
   })()`);
 }
 
-const email = `smoke-${Date.now()}@example.com`;
-const password = 'SmokeTest1!';
 const arenaName = `Smoke Arena ${Date.now()}`;
 const actionName = `Smoke Action ${Date.now()}`;
 const checkpoints = [];
+let user = null;
 
 try {
-  await waitFor('login screen', `(() => document.body && document.body.innerText.includes('GLYPH') && Array.from(document.querySelectorAll('input')).some(node => (node.getAttribute('placeholder') || '').includes('Email')))()`);
-  checkpoints.push('login-loaded');
+  user = await createTempUser({
+    label: 'ui-shell',
+    isPremium: false,
+    appMode: 'BASIC',
+    gold: 0,
+    fragments: 0,
+  });
+  const session = await getSession(user.client);
+  await seedSession(session);
+  checkpoints.push('session-seeded');
 
-  await clickByText('Cadastrar');
-  await sleep(300);
-  await setField('Email ou Nickname', email);
-  await setField('Senha', password);
-  await setField('Nickname', 'Smoke');
-  await clickByText('CRIAR PERFIL');
-  await waitFor('signup success', `(() => document.body && document.body.innerText.includes('Cadastro realizado'))()`, 30000);
-  checkpoints.push('signup-ok');
-
-  await clickByText('ENTRAR');
-  await waitFor('terms overlay or main app', `(() => document.body && (document.body.innerText.includes('O DESPERTAR DO SOBERANO') || document.body.innerText.includes('O DESPERTAR')))()`, 30000);
-  checkpoints.push('login-ok');
-
-  for (let i = 0; i < 4; i += 1) {
-    await clickTermsPrimary();
-    await sleep(150);
-    await clickTermsPrimary();
-    await sleep(250);
-  }
-  await clickTermsPrimary();
-  await sleep(150);
-  await holdTermsPrimary(1100);
-  await waitFor('mode selection', `(() => document.body && document.body.innerText.includes('CONFIRMAR') && document.body.innerText.includes('MODO'))()`, 20000);
-  checkpoints.push('terms-accepted');
-
-  await clickByText('MODO B');
-  await sleep(250);
-  await clickByText('CONFIRMAR');
-  checkpoints.push('mode-selected');
+  await waitFor(
+    'authenticated shell',
+    `(() => document.querySelector('#nav-arenas') instanceof HTMLElement && document.querySelector('#nav-settings') instanceof HTMLElement)()`,
+    40000,
+  );
+  checkpoints.push('shell-authenticated');
 
   await sleep(1500);
   try { await pressEscape(); } catch {}
@@ -267,17 +298,15 @@ try {
   await clickSelector('#new-action-button');
   await waitFor('new arena modal', `(() => Array.from(document.querySelectorAll('input')).some(node => (node.getAttribute('placeholder') || '').includes('Nome da Arena')))()`, 10000);
   await setField('Nome da Arena', arenaName);
-  await setField('Descri??o da Meta', 'Smoke test arena');
-  await clickByText('CRIAR ARENA');
-  await waitFor('arena visible', `(() => document.body && document.body.innerText.includes(${JSON.stringify(arenaName)}))()`, 15000);
+  await setFieldBySelector('#new-arena-description-input', 'Smoke test arena');
+  await clickSelector('#new-arena-submit-button');
+  await waitFor('arena detail modal', `(() => document.querySelector('#add-action-button') instanceof HTMLElement)()`, 15000);
   checkpoints.push('arena-created');
 
-  await clickByText(arenaName);
-  await waitFor('arena detail modal', `(() => document.querySelector('#add-action-button') instanceof HTMLElement)()`, 10000);
   await clickSelector('#add-action-button');
-  await waitFor('action modal', `(() => Array.from(document.querySelectorAll('input')).some(node => (node.getAttribute('placeholder') || '').includes('Nome da A??o')))()`, 10000);
-  await setField('Nome da A??o', actionName);
-  await clickByText('SALVAR');
+  await waitFor('action modal', `(() => document.querySelector('#onboarding-action-name-input') instanceof HTMLInputElement)()`, 10000);
+  await setFieldBySelector('#onboarding-action-name-input', actionName);
+  await clickSelector('#onboarding-action-save-button');
   await waitFor('action visible', `(() => document.body && document.body.innerText.includes(${JSON.stringify(actionName)}))()`, 15000);
   checkpoints.push('action-created');
 
@@ -289,7 +318,7 @@ try {
   await waitFor('sitrep modal', `(() => document.body && (document.body.innerText.includes('Planejamento') || document.body.innerText.includes('PAINEL DI')))()`, 10000);
   checkpoints.push('sitrep-open');
 
-  console.log(JSON.stringify({ success: true, email, arenaName, actionName, checkpoints }, null, 2));
+  console.log(JSON.stringify({ success: true, email: user?.email || null, arenaName, actionName, checkpoints }, null, 2));
 } catch (error) {
   console.error(JSON.stringify({
     success: false,

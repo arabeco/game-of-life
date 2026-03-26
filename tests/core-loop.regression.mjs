@@ -430,7 +430,7 @@ const tests = [
         },
     },
     {
-        name: 'arena compartilhada usa progresso global e campanha calcula media correta',
+        name: 'arena compartilhada usa progresso global e campanha calcula progresso combinado correto',
         run() {
             const arena = { id: 'arena-shared', assetId: 'asset', name: 'Clan Office Alpha', description: '[SHARED]', icon: 'S', actionIds: [] };
             const actions = [
@@ -476,7 +476,7 @@ const tests = [
                 getSharedActionPoolProgress: (_arenaId, actionId) => actionId === 'action-shared-1' ? 2 : 1,
             });
 
-            assert.equal(percent, 75);
+            assert.equal(percent, 80);
         },
     },
     {

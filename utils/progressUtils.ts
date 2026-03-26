@@ -1,5 +1,5 @@
 import { Action, Arena, Campaign, ScheduledTask, SeasonQuest } from '../types';
-export { calculateArenaProgress, getCampaignArenaStates, calculateCampaignProgress } from './progressUtilsEngine.js';
+export { calculateArenaProgress, getCampaignArenaStates, calculateCampaignProgress, calculateCampaignProgressSummary } from './progressUtilsEngine.js';
 
 type SharedProgressGetter = (arenaId: string, actionId: string) => number;
 
@@ -37,4 +37,12 @@ interface CampaignArenaStatesOptions {
 export interface CampaignArenaState extends ArenaProgressResult {
   isLocked: boolean;
   prerequisiteArenaIds: string[];
+}
+
+export interface CampaignProgressSummary {
+  progressPercent: number;
+  totalCompleted: number;
+  totalPlanned: number;
+  clearedArenaCount: number;
+  totalArenaCount: number;
 }

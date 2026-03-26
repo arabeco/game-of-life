@@ -145,14 +145,38 @@ export const getCampaignArenaStates = ({
 };
 
 export const calculateCampaignProgress = (options) => {
+    return calculateCampaignProgressSummary(options).progressPercent;
+};
+
+export const calculateCampaignProgressSummary = (options) => {
     const arenaStates = getCampaignArenaStates(options);
     const visibleStates = options.campaign.arenaIds
         .map(arenaId => arenaStates[arenaId])
         .filter(Boolean);
 
-    if (visibleStates.length === 0) return 0;
+    if (visibleStates.length === 0) {
+        return {
+            progressPercent: 0,
+            totalCompleted: 0,
+            totalPlanned: 0,
+            clearedArenaCount: 0,
+            totalArenaCount: 0,
+        };
+    }
 
-    const total = visibleStates.reduce((sum, state) => sum + state.progressPercent, 0);
-    return Math.round(total / visibleStates.length);
+    const totalCompleted = visibleStates.reduce((sum, state) => sum + state.totalCompleted, 0);
+    const totalPlanned = visibleStates.reduce((sum, state) => sum + state.totalPlanned, 0);
+    const clearedArenaCount = visibleStates.reduce((sum, state) => sum + (state.isCleared ? 1 : 0), 0);
+    const progressPercent = totalPlanned > 0
+        ? Math.round(Math.min(100, Math.max(0, (totalCompleted / totalPlanned) * 100)))
+        : 0;
+
+    return {
+        progressPercent,
+        totalCompleted,
+        totalPlanned,
+        clearedArenaCount,
+        totalArenaCount: visibleStates.length,
+    };
 };
 

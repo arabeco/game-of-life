@@ -1,7 +1,7 @@
 ﻿import React, { useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { resolveItemDef, getCatalogItems, ItemCategory } from '../../constants/items';
+import { resolveItemDef, getCatalogItems, isForgeEligibleItem, ItemCategory } from '../../constants/items';
 import { ECONOMY } from '../../constants/economy';
 import { RefreshCwIcon, Trash2Icon } from '../Icons';
 import { getTierVisual, withAlpha } from '../../constants/rarityVisuals';
@@ -35,7 +35,7 @@ export const TheForge: React.FC = () => {
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
     const craftableItems = useMemo(() => {
-        return getCatalogItems(item => item.tier === selectedTier && !item.isGoldExclusive && !item.isSeasonExclusive && !item.isRankExclusive);
+        return getCatalogItems(item => item.tier === selectedTier && isForgeEligibleItem(item));
     }, [selectedTier]);
 
     const categories = useMemo(() => {

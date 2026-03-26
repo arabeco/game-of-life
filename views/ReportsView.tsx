@@ -359,6 +359,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [reportRewardPayload, setReportRewardPayload] = useState<RewardModalPayload | null>(null);
     const [isExportingLegacy, setIsExportingLegacy] = useState(false);
     const [showLegacyProjectionModal, setShowLegacyProjectionModal] = useState(false);
+    const [legacyShareUnlocked, setLegacyShareUnlocked] = useState(false);
     const [eraMetadata, setEraMetadata] = useState<Record<string, EraMetadataEntry>>({});
     const [hasLoadedEraMetadata, setHasLoadedEraMetadata] = useState(false);
     const [legacyPlaqueForged, setLegacyPlaqueForged] = useState(false);
@@ -1503,13 +1504,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         >
                             ABRIR LEGADO
                         </button>
-                        <button
-                            onClick={() => { void handleExportLegacy(); }}
-                            disabled={isExportingLegacy}
-                            className="rounded-xl luxe-button-secondary px-4 py-3 text-xs disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {isExportingLegacy ?'EXPORTANDO...' : 'COMPARTILHAR'}
-                        </button>
                     </div>
                 </div>
             </GlassCard>
@@ -1634,23 +1628,64 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const report = sortedReports[reportIndex];
         if (!report) return;
 
+        let toastMessage: string | null = null;
         setDraftReportEraIds((previous) => {
-            const next = { ...previous };
             const fallbackSlotId = draftEraSlots[0]?.id;
-            const currentSlotId = previous[report.id] || fallbackSlotId;
+            if (!fallbackSlotId) return previous;
+
+            const next = { ...previous };
+            const assignments = sortedReports.map((entry) => previous[entry.id] || fallbackSlotId);
+            const currentSlotId = assignments[reportIndex];
             if (!currentSlotId) return previous;
+
+            const activeIndexes = assignments.reduce<number[]>((accumulator, slotId, currentIndex) => {
+                if (slotId === activeDraftEraId) accumulator.push(currentIndex);
+                return accumulator;
+            }, []);
+
+            if (activeIndexes.length === 0) {
+                next[report.id] = activeDraftEraId;
+                return next;
+            }
+
+            const firstIndex = activeIndexes[0];
+            const lastIndex = activeIndexes[activeIndexes.length - 1];
+            const hasGapInsideActiveEra = activeIndexes.length !== (lastIndex - firstIndex + 1);
 
             if (currentSlotId === activeDraftEraId) {
                 if (draftEraSlots.length <= 1) {
+                    toastMessage = 'Com uma Era so, os ciclos precisam ficar nela.';
                     return previous;
                 }
 
-                const previousNeighbor = reportIndex > 0 ? (previous[sortedReports[reportIndex - 1].id] || fallbackSlotId) : null;
-                const nextNeighbor = reportIndex < sortedReports.length - 1 ? (previous[sortedReports[reportIndex + 1].id] || fallbackSlotId) : null;
-                const reassignmentSlotId = [previousNeighbor, nextNeighbor, ...draftEraSlots.map((slot) => slot.id)]
-                    .find((slotId) => !!slotId && slotId !== activeDraftEraId);
+                if (hasGapInsideActiveEra) {
+                    for (let index = firstIndex; index <= lastIndex; index += 1) {
+                        next[sortedReports[index].id] = activeDraftEraId;
+                    }
+                    return next;
+                }
+
+                if (reportIndex !== firstIndex && reportIndex !== lastIndex) {
+                    toastMessage = 'Para manter a Era continua, so da para tirar ciclos pelas pontas.';
+                    return previous;
+                }
+
+                const candidateIds = reportIndex === firstIndex
+                    ? [
+                        firstIndex > 0 ? assignments[firstIndex - 1] : null,
+                        lastIndex < assignments.length - 1 ? assignments[lastIndex + 1] : null,
+                        ...draftEraSlots.map((slot) => slot.id),
+                    ]
+                    : [
+                        lastIndex < assignments.length - 1 ? assignments[lastIndex + 1] : null,
+                        firstIndex > 0 ? assignments[firstIndex - 1] : null,
+                        ...draftEraSlots.map((slot) => slot.id),
+                    ];
+
+                const reassignmentSlotId = candidateIds.find((slotId) => !!slotId && slotId !== activeDraftEraId);
 
                 if (!reassignmentSlotId) {
+                    toastMessage = 'Essa Era precisa continuar como um bloco.';
                     return previous;
                 }
 
@@ -1658,9 +1693,30 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 return next;
             }
 
+            if (reportIndex < firstIndex) {
+                for (let index = reportIndex; index <= firstIndex; index += 1) {
+                    next[sortedReports[index].id] = activeDraftEraId;
+                }
+                return next;
+            }
+
+            if (reportIndex > lastIndex) {
+                for (let index = lastIndex; index <= reportIndex; index += 1) {
+                    next[sortedReports[index].id] = activeDraftEraId;
+                }
+                return next;
+            }
+
+            for (let index = firstIndex; index <= lastIndex; index += 1) {
+                next[sortedReports[index].id] = activeDraftEraId;
+            }
             next[report.id] = activeDraftEraId;
             return next;
         });
+
+        if (toastMessage) {
+            showToast(toastMessage);
+        }
     };
 
     const handleConfirmEraEdit = async () => {
@@ -1753,7 +1809,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[var(--skin-accent-color)]">Organizar Eras</p>
-                        <p className="mt-1 text-[11px] font-semibold text-gray-400">A barrinha dourada mostra os ciclos da Era ativa. Toque para incluir ou tirar.</p>
+                        <p className="mt-1 text-[11px] font-semibold text-gray-400">A barrinha dourada mostra a Era ativa. Ela so cresce ou encolhe pelas pontas.</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap justify-end gap-2">
                         {draftEraSlots.length < Math.max(sortedReports.length, 1) && <button type="button" onClick={handleAddDraftEra} className="rounded-xl luxe-button-secondary px-3 py-2 text-[11px]">+ ERA</button>}
@@ -2174,9 +2230,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     }}
                     onOpenPlaque={() => {
                         setShowLegacyProjectionModal(false);
+                        setLegacyShareUnlocked(true);
                         handleOpenLegacyPlaque();
                     }}
-                    onExportRecord={handleExportLegacy}
                 />
             )}
             {showLegacyPlaqueForgeModal && (
@@ -2192,6 +2248,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     eras={eraSummaries}
                     sovereignName={sovereignName}
                     plaqueForged={legacyPlaqueForged}
+                    shareUnlocked={legacyShareUnlocked}
                     onToast={showToast}
                     onClose={() => setShowLegacyPlaqueModal(false)}
                 />

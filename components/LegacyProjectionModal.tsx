@@ -25,7 +25,6 @@ interface LegacyProjectionModalProps {
     onOpenCycle?: (cycleId: string) => void;
     onOpenEra?: (era: LegacyEraSummary) => void;
     onOpenPlaque?: () => void;
-    onExportRecord?: () => Promise<void> | void;
 }
 
 const LEGACY_PROJECTION_CAPTURE_ID = 'legacy-projection-capture';
@@ -41,14 +40,12 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     onOpenCycle,
     onOpenEra,
     onOpenPlaque,
-    onExportRecord,
 }) => {
     const [projectionActive, setProjectionActive] = useState(false);
     const [showProjectionConfirm, setShowProjectionConfirm] = useState(false);
     const [selectedBackdropSkinId, setSelectedBackdropSkinId] = useState<LegacyBackdropSkinId>(DEFAULT_LEGACY_BACKDROP_SKIN_ID);
     const [isProjectionTransitioning, setIsProjectionTransitioning] = useState(false);
     const [sequenceComplete, setSequenceComplete] = useState(false);
-    const [isExportingRecord, setIsExportingRecord] = useState(false);
     const exportKitRef = useRef<LegacyExportKitHandle | null>(null);
 
     const summary = useMemo(() => buildLegacyPlaqueSummary(eras), [eras]);
@@ -86,20 +83,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     const handleProjectionSequenceComplete = () => {
         setProjectionActive(false);
         setSequenceComplete(true);
-    };
-
-    const handleExportRecord = async () => {
-        if (!onExportRecord) {
-            onToast('Exportacao do registro indisponivel nesta tela.');
-            return;
-        }
-
-        setIsExportingRecord(true);
-        try {
-            await onExportRecord();
-        } finally {
-            setIsExportingRecord(false);
-        }
     };
 
     const renderPreviewStage = () => (
@@ -154,7 +137,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                 <p className="text-[10px] font-black uppercase tracking-[0.32em] text-amber-200/90">Sequencia concluida</p>
                 <h2 className="mt-3 text-2xl font-black tracking-tight text-white sm:text-[2rem]">Legado projetado com sucesso</h2>
                 <p className="mt-2 text-sm leading-relaxed text-gray-300">
-                    Sua linha de ciclos foi exibida ate o fim. Agora voce pode compartilhar o Registro de Soberania ou repetir a projecao.
+                    Sua linha de ciclos foi exibida ate o fim. Toque em OK para voltar para a placa final e compartilhar a partir dela.
                 </p>
 
                 <div
@@ -173,33 +156,18 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
             <div className="absolute inset-x-4 bottom-5 z-20 flex flex-wrap items-center justify-center gap-3">
                 <button
                     type="button"
-                    onClick={onClose}
-                    className="min-w-[170px] rounded-full border border-white/14 bg-white/8 px-5 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-white transition hover:bg-white/12"
-                >
-                    Fechar
-                </button>
-                <button
-                    type="button"
                     onClick={startProjection}
                     className="min-w-[210px] rounded-full border border-white/16 bg-black/45 px-5 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-white transition hover:border-white/24 hover:bg-black/60"
                 >
                     Repetir projecao
                 </button>
-                <button
-                    type="button"
-                    onClick={handleExportRecord}
-                    disabled={isExportingRecord}
-                    className={`min-w-[220px] rounded-full px-6 py-3 text-[11px] font-black uppercase tracking-[0.22em] ${isExportingRecord ? 'cursor-wait border border-white/10 bg-white/8 text-gray-400' : 'luxe-skin-button'}`}
-                >
-                    {isExportingRecord ? 'Processando...' : 'Compartilhar registro'}
-                </button>
                 {onOpenPlaque && (
                     <button
                         type="button"
                         onClick={onOpenPlaque}
-                        className="min-w-[200px] rounded-full border border-amber-300/25 bg-amber-300/10 px-5 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-amber-100 transition hover:bg-amber-300/16"
+                        className="min-w-[220px] rounded-full px-6 py-3 text-[11px] font-black uppercase tracking-[0.22em] luxe-skin-button"
                     >
-                        Abrir placa final
+                        OK
                     </button>
                 )}
             </div>

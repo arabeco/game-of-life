@@ -52,14 +52,17 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoadin
     }, []);
 
     useEffect(() => {
-        if ((!videoEnded && !maxTimeReached) || isFadingOut) return;
-
+        if (!videoEnded && !maxTimeReached) return;
         setProgress(100);
         setIsFadingOut(true);
-        const completeTimeout = window.setTimeout(onComplete, 520);
+    }, [videoEnded, maxTimeReached]);
 
+    useEffect(() => {
+        if (!isFadingOut) return;
+
+        const completeTimeout = window.setTimeout(onComplete, 520);
         return () => window.clearTimeout(completeTimeout);
-    }, [videoEnded, maxTimeReached, onComplete, isFadingOut]);
+    }, [isFadingOut, onComplete]);
 
     const handleVideoEnd = () => {
         setVideoEnded(true);

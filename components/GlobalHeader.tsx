@@ -27,7 +27,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'action' | 'social' | 'notifications'>('chat');
     const [isClanOpen, setClanOpen] = useState(false);
     const [isDeepWorkOpen, setDeepWorkOpen] = useState(false);
-    const [isRestScreenOpen, setRestScreenOpen] = useState(defaultRestScreenOpen);
+    const [isRestScreenOpen, setRestScreenOpen] = useState(false);
     const [restScreenActionSession, setRestScreenActionSession] = useState<RestScreenActionSessionDetail | null>(null);
     const hiddenAtRef = useRef<number | null>(null);
     const isBasicMode = appMode === 'BASIC';

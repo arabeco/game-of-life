@@ -2799,32 +2799,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setUserProfile(prev => ({ ...prev, clanName: undefined, clanIcon: undefined }));
     }, []);
 
-    const refreshClanMembershipState = useCallback(async (userId: string) => {
-        if (!isUuid(userId)) {
-            clearClanRuntimeState();
-            return;
-        }
-
-        const { data: membershipRow, error: membershipError } = await supabase
-            .from('clan_members')
-            .select('clan_id')
-            .eq('user_id', userId)
-            .maybeSingle();
-
-        if (membershipError) {
-            console.error('Error refreshing clan membership state:', membershipError.message);
-            return;
-        }
-
-        if (membershipRow?.clan_id) {
-            await loadClanAndMembers(String(membershipRow.clan_id), true);
-        } else {
-            clearClanRuntimeState();
-        }
-
-        await loadClanJoinRequestsOutgoing(userId);
-    }, [clearClanRuntimeState, loadClanAndMembers, loadClanJoinRequestsOutgoing]);
-
     const deleteClanScopedRows = useCallback(async (table: string, clanId: string) => {
         const { error } = await supabase.from(table).delete().eq('clan_id', clanId);
         if (!error) return;
@@ -3141,6 +3115,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setClanJoinRequestsIncoming([]);
         }
     }, [setClan, setEnrichedClanMembers, fetchClanQuestProgress, session?.user.id, userProfile.id, loadClanJoinRequestsIncoming]);
+
+    const refreshClanMembershipState = useCallback(async (userId: string) => {
+        if (!isUuid(userId)) {
+            clearClanRuntimeState();
+            return;
+        }
+
+        const { data: membershipRow, error: membershipError } = await supabase
+            .from('clan_members')
+            .select('clan_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (membershipError) {
+            console.error('Error refreshing clan membership state:', membershipError.message);
+            return;
+        }
+
+        if (membershipRow?.clan_id) {
+            await loadClanAndMembers(String(membershipRow.clan_id), true);
+        } else {
+            clearClanRuntimeState();
+        }
+
+        await loadClanJoinRequestsOutgoing(userId);
+    }, [clearClanRuntimeState, loadClanAndMembers, loadClanJoinRequestsOutgoing]);
 
     const migrateGuestDataToSupabase = useCallback(async (userId: string, sessionMetadata?: { email: string, nickname: string, avatarUrl: string }) => {
         if (!isUuid(userId)) {

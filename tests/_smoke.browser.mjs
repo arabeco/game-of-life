@@ -29,6 +29,7 @@ class SmokeBrowserPage {
     this.messageId = 0;
     this.pending = new Map();
     this.consoleMessages = [];
+    this.exceptions = [];
 
     ws.addEventListener('message', (event) => {
       const message = JSON.parse(event.data.toString());
@@ -45,6 +46,18 @@ class SmokeBrowserPage {
           this.consoleMessages.push({ type, text });
           if (this.consoleMessages.length > 200) {
             this.consoleMessages.shift();
+          }
+        }
+        if (message.method === 'Runtime.exceptionThrown') {
+          const details = message.params?.exceptionDetails || {};
+          const exceptionText =
+            details.exception?.description
+            || details.exception?.value
+            || details.text
+            || 'Unknown runtime exception';
+          this.exceptions.push(String(exceptionText));
+          if (this.exceptions.length > 80) {
+            this.exceptions.shift();
           }
         }
         return;
@@ -92,6 +105,10 @@ class SmokeBrowserPage {
 
   getConsoleMessages(limit = 40) {
     return this.consoleMessages.slice(-limit);
+  }
+
+  getExceptions(limit = 20) {
+    return this.exceptions.slice(-limit);
   }
 
   async waitFor(description, expression, timeoutMs = 25000, intervalMs = 250) {

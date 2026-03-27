@@ -2496,7 +2496,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 category: q.category,
                 actionTemplate: q.actionTemplate,
                 requirements: q.requirements,
-                rewards: q.rewards
+                rewards: q.rewards,
+                season_id: q.season_id || activeRuntimeSeasonId,
+                goal_type: q.goal_type,
+                goal_value: q.goal_value,
+                reward_type: q.reward_type,
+                reward_value: q.reward_value,
+                maxParticipants: q.maxParticipants,
+                tutorialLevel: q.tutorialLevel,
+                clanConfig: q.clanConfig,
             })) as SeasonQuest[];
         }
 
@@ -2592,6 +2600,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const persistTimeoutRef = useRef<number | null>(null);
     const dataLoadTimeoutRef = useRef<number | null>(null);
     const clanCacheRef = useRef<{ clanId: string; timestamp: number; members: EnrichedClanMember[] } | null>(null);
+    const staleSeasonQuestCleanupKeyRef = useRef<string | null>(null);
     const enableClanQuestProgress = true; // Always enable for now
     const clanQuestProgressTableReadyRef = useRef(enableClanQuestProgress);
     const pendingGuestMigrationRef = useRef<{ fromId: string; toId: string } | null>(null);
@@ -8577,6 +8586,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const quest = findSeasonQuestById(questId);
         if (!quest) return;
 
+        if (quest.season_id && quest.season_id !== activeRuntimeSeasonId) {
+            showToast("Essa jornada pertence a uma temporada encerrada.", 'info');
+            return;
+        }
+
         // Se for quest de cla, garante participacao
         if (quest.type === 'clan') {
             // VERIFICACAO DE SEGURANCA: So permite entrar se o lider ja ativou
@@ -8672,6 +8686,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const claimSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);
         if (!quest) return;
+        if (quest.season_id && quest.season_id !== activeRuntimeSeasonId) {
+            showToast("Essa jornada pertence a uma temporada encerrada.", 'info');
+            return;
+        }
 
         if (userProfile.completedSeasonMissions?.includes(questId)) {
             showToast("Recompensa já resgatada!");
@@ -8684,13 +8702,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const nextExp = currentExp + addedExp;
 
         // Check for chest rewards in description
+        const rewardValue = typeof quest.reward_value === 'string' ? quest.reward_value.trim() : '';
         let earnedChest: ChestType | null = null;
+        if (quest.reward_type === 'chest' && rewardValue) {
+            const normalizedReward = rewardValue.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            if (normalizedReward === 'season' || normalizedReward === 'temporada') earnedChest = 'Season';
+            else if (normalizedReward === 'comum') earnedChest = 'Comum';
+            else if (normalizedReward === 'incomum') earnedChest = 'Incomum';
+            else if (normalizedReward === 'ciclo') earnedChest = 'Ciclo';
+            else if (normalizedReward === 'raro') earnedChest = 'Raro';
+            else if (normalizedReward === 'epico') earnedChest = 'Épico';
+            else if (normalizedReward === 'lendario') earnedChest = 'Lendário';
+            else if (normalizedReward === 'skin comum') earnedChest = 'Skin Comum';
+        }
         if (quest.description.includes("Baú Comum")) earnedChest = 'Comum';
         else if (quest.description.includes("Baú Incomum")) earnedChest = 'Incomum';
         else if (quest.description.includes("Baú Ciclo")) earnedChest = 'Ciclo';
         else if (quest.description.includes("Baú Raro")) earnedChest = 'Raro';
         else if (quest.description.includes("Ba\u00FA \u00C9pico")) earnedChest = '\u00C9pico';
         else if (quest.description.includes("Ba\u00FA Lend\u00E1rio")) earnedChest = 'Lend\u00E1rio';
+
+        if (!earnedChest) {
+            const normalizedDescription = quest.description.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (normalizedDescription.includes('Bau Season') || normalizedDescription.includes('Bau Temporada')) {
+                earnedChest = 'Season';
+            }
+        }
 
         if (earnedChest) await addChest(earnedChest);
 
@@ -8769,6 +8806,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const claimSeasonMission = async (missionId: string) => {
         const mission = findSeasonMissionById(missionId);
         if (!mission) return;
+        if (mission.season_id && mission.season_id !== activeRuntimeSeasonId) {
+            showToast("Essa missao pertence a uma temporada encerrada.", 'info');
+            return;
+        }
 
         if (userProfile.completedSeasonMissions?.includes(missionId)) {
             showToast("Recompensa já resgatada!");
@@ -8806,6 +8847,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
             grantInventoryItem(itemId, true); // Silent
             earnedItemIds.push(itemId);
+        }
+        if (Array.isArray(mission.reward_item_ids)) {
+            for (const itemId of mission.reward_item_ids) {
+                if (!itemId || earnedItemIds.includes(itemId)) continue;
+                const def = resolveItemDef(itemId);
+                if (def?.category === 'insignia') {
+                    grantUserUnlock('insignias', itemId);
+                }
+                grantInventoryItem(itemId, true);
+                earnedItemIds.push(itemId);
+            }
         }
 
         // Grant uncommon insignia for mission completion
@@ -8866,6 +8918,64 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
     };
+
+    useEffect(() => {
+        if (!isProfileLoaded || !hasHydratedFromSupabase) return;
+
+        const staleSeasonQuests = Object.values(SEASONS)
+            .flatMap((season) => season.quests || [])
+            .filter((quest) => quest.season_id && quest.season_id !== activeRuntimeSeasonId);
+
+        if (staleSeasonQuests.length === 0) return;
+
+        const staleMatches = staleSeasonQuests
+            .map((quest) => {
+                const { arena, action } = findSeasonQuestArenaAndAction(quest);
+                if (!action) return null;
+                const arenaActionCount = arena ? actions.filter((candidate) => candidate.arenaId === arena.id).length : 0;
+                return {
+                    quest,
+                    arena,
+                    action,
+                    shouldDeleteArenaAfterAction: Boolean(arena) && arenaActionCount <= 1,
+                };
+            })
+            .filter((entry): entry is {
+                quest: SeasonQuest;
+                arena: Arena | undefined;
+                action: Action;
+                shouldDeleteArenaAfterAction: boolean;
+            } => Boolean(entry));
+
+        const cleanupKey = `${userProfile.id}:${activeRuntimeSeasonId}:${staleMatches.map((entry) => entry.action.id).sort().join('|')}`;
+        if (staleMatches.length === 0 || staleSeasonQuestCleanupKeyRef.current === cleanupKey) return;
+        staleSeasonQuestCleanupKeyRef.current = cleanupKey;
+
+        let cancelled = false;
+
+        void (async () => {
+            for (const entry of staleMatches) {
+                if (cancelled) return;
+                await deleteAction(entry.action.id);
+                if (entry.arena && entry.shouldDeleteArenaAfterAction) {
+                    await deleteArena(entry.arena.id);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        actions,
+        activeRuntimeSeasonId,
+        deleteAction,
+        deleteArena,
+        findSeasonQuestArenaAndAction,
+        hasHydratedFromSupabase,
+        isProfileLoaded,
+        userProfile.id,
+    ]);
 
     const questSharedDomain = useQuestSharedDomain({
         seasonQuests,

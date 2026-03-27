@@ -126,7 +126,13 @@ export const resolveSeasonArchiveLogEntry = (season: SeasonLike) => {
   return SEASON_ARCHIVE_LOG.find((entry) => entry.seasonId === season.id) || null;
 };
 
-export const getEraCalendarYears = () => ERA_CALENDAR;
+export const getEraCalendarYears = () =>
+  ERA_CALENDAR.map((year) => ({
+    ...year,
+    checkpoints: year.checkpoints.filter(
+      (checkpoint) => Boolean(checkpoint?.label) && Boolean(checkpoint?.date),
+    ),
+  })).filter((year) => year.checkpoints.length > 0);
 
 export const getSeasonLaunchRewardFlag = (seasonId: string): string => `__flag_season_launch_reward_${seasonId}`;
 export const getSeasonTransitionSeenFlag = (seasonId: string): string => `__flag_season_transition_seen_${seasonId}`;

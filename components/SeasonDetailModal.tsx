@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { GlassCard } from './GlassCard';
 import { CheckIcon } from './Icons';
 import { PROFILE_FLAG_TUTORIAL_COMPLETED, useGame } from '../contexts/GameContext';
-import { Season, SeasonMission, SeasonQuest } from '../types';
+import { ChestType, Season, SeasonMission, SeasonQuest } from '../types';
 import { Portal } from './Portal';
 import type { SeasonConfig, SeasonLaunchHighlights } from '../constants/seasonContent';
+import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { buildSeasonFromConfig, getEraCalendarYears, getNextSeasonConfig, getSeasonConfigById, isGenesisSeason, resolveSeasonArchiveLogEntry, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
 import { calculateArenaProgress } from '../utils/progressUtils';
 
@@ -66,62 +67,138 @@ export const QuestDetailModal: React.FC<{
     onAbandon?: () => void;
     onClaim?: () => void;
     canClaim?: boolean;
-}> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, onClaim, canClaim }) => (
-    <DetailModalShell
-        title={quest.title}
-        icon={quest.actionTemplate?.icon}
-        description={quest.description}
-        badge={quest.type === 'clan' ? 'Jornada de grupo' : 'Jornada pessoal'}
-        progress={progress}
-        onClose={onClose}
-        footer={
-            canClaim ? (
-                <button onClick={onClaim} className="w-full rounded-xl bg-green-600 py-3 text-xs font-black uppercase tracking-[0.2em] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-colors hover:bg-green-500">
-                    Resgatar
-                </button>
-            ) : !isActive ? (
-                quest.type === 'clan' ? (
-                    <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-white/58">
-                        Ative pelo menu do grupo
+}> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, onClaim, canClaim }) => {
+    const getQuestRewardChest = (targetQuest: SeasonQuest): ChestType | null => {
+        const rewardValue = typeof targetQuest.reward_value === 'string' ? targetQuest.reward_value.trim() : '';
+        if (targetQuest.reward_type === 'chest' && rewardValue) {
+            const normalizedReward = rewardValue.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            if (normalizedReward === 'season' || normalizedReward === 'temporada') return 'Season';
+            if (normalizedReward === 'comum') return 'Comum';
+            if (normalizedReward === 'incomum') return 'Incomum';
+            if (normalizedReward === 'ciclo') return 'Ciclo';
+            if (normalizedReward === 'raro') return 'Raro';
+            if (normalizedReward === 'epico') return 'Ã‰pico';
+            if (normalizedReward === 'lendario') return 'LendÃ¡rio';
+            if (normalizedReward === 'skin comum') return 'Skin Comum';
+        }
+
+        const normalizedDescription = targetQuest.description.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (normalizedDescription.includes('Bau Season') || normalizedDescription.includes('Bau Temporada')) return 'Season';
+        if (normalizedDescription.includes('Bau Comum')) return 'Comum';
+        if (normalizedDescription.includes('Bau Incomum')) return 'Incomum';
+        if (normalizedDescription.includes('Bau Ciclo')) return 'Ciclo';
+        if (normalizedDescription.includes('Bau Raro')) return 'Raro';
+        if (normalizedDescription.includes('Bau Epico')) return 'Ã‰pico';
+        if (normalizedDescription.includes('Bau Lendario')) return 'LendÃ¡rio';
+        return null;
+    };
+
+    const rewardChest = getQuestRewardChest(quest);
+    const rewardLabel = rewardChest === 'Season' ? 'BaÃº Temporada' : rewardChest ? `BaÃº ${rewardChest}` : 'Sem baÃº';
+    const requiredCount = quest.type === 'clan'
+        ? (quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1)
+        : (quest.requirements?.totalReps || quest.goal_value || quest.actionTemplate?.repetitions || 1);
+    const progressLabel = quest.progressLabel || 'registros';
+
+    return (
+        <DetailModalShell
+            title={quest.title}
+            icon={quest.actionTemplate?.icon}
+            description={quest.description}
+            badge={quest.type === 'clan' ? 'Jornada de grupo' : 'Jornada pessoal'}
+            progress={progress}
+            onClose={onClose}
+            footer={
+                canClaim ? (
+                    <button onClick={onClaim} className="w-full rounded-xl bg-green-600 py-3 text-xs font-black uppercase tracking-[0.2em] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-colors hover:bg-green-500">
+                        Resgatar
+                    </button>
+                ) : !isActive ? (
+                    quest.type === 'clan' ? (
+                        <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-white/58">
+                            Ative pelo menu do grupo
+                        </div>
+                    ) : (
+                        <button onClick={onTake} className="w-full rounded-xl py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
+                            Aceitar missao
+                        </button>
+                    )
+                ) : onAbandon ? (
+                    <div className="grid grid-cols-2 gap-3">
+                        <button className="cursor-not-allowed rounded-xl border border-white/8 bg-white/5 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/50">
+                            Em andamento
+                        </button>
+                        <button onClick={onAbandon} className="rounded-xl border border-red-500/20 bg-red-500/10 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-red-300 transition-colors hover:bg-red-500/20">
+                            Abandonar
+                        </button>
                     </div>
                 ) : (
-                    <button onClick={onTake} className="w-full rounded-xl py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
-                        Aceitar missao
+                    <button onClick={onClose} className="w-full rounded-xl border border-white/8 bg-white/5 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/70 transition-colors hover:bg-white/10">
+                        Voltar
                     </button>
                 )
-            ) : onAbandon ? (
-                <div className="grid grid-cols-2 gap-3">
-                    <button className="cursor-not-allowed rounded-xl border border-white/8 bg-white/5 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/50">
-                        Em andamento
-                    </button>
-                    <button onClick={onAbandon} className="rounded-xl border border-red-500/20 bg-red-500/10 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-red-300 transition-colors hover:bg-red-500/20">
-                        Abandonar
-                    </button>
+            }
+        >
+            <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">XP</div>
+                    <div className="mt-1 text-lg font-black text-white">+{quest.rewards.xp}</div>
                 </div>
-            ) : (
-                <button onClick={onClose} className="w-full rounded-xl border border-white/8 bg-white/5 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/70 transition-colors hover:bg-white/10">
-                    Voltar
-                </button>
-            )
-        }
-    >
-        <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
-                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">XP</div>
-                <div className="mt-1 text-lg font-black text-white">+{quest.rewards.xp}</div>
+                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">Meta</div>
+                    <div className="mt-1 text-lg font-black text-white">{requiredCount}x</div>
+                </div>
+                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">Status</div>
+                    <div className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-white/76">{isActive ? 'Ativa' : 'Pendente'}</div>
+                </div>
             </div>
-            <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
-                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">Status</div>
-                <div className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-white/76">{isActive ? 'Ativa' : 'Pendente'}</div>
+            <div className="rounded-[18px] border border-[var(--skin-accent-color)]/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.28))] p-4 text-left">
+                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Arena gerada</div>
+                <div className="mt-2 rounded-[16px] border border-white/10 bg-black/25 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <div className="text-[11px] font-black uppercase tracking-[0.14em] text-white/88">{quest.title}</div>
+                            <div className="mt-1 text-[11px] leading-relaxed text-white/55">Ao aceitar, a jornada cria uma arena dedicada com a aÃ§Ã£o-base abaixo.</div>
+                        </div>
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-white/10 bg-white/8 text-lg">
+                            {quest.actionTemplate?.icon || 'â—¦'}
+                        </div>
+                    </div>
+                    <div className="mt-3 rounded-[14px] border border-white/8 bg-white/[0.04] p-3">
+                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/46">AÃ§Ã£o miniatura</div>
+                        <div className="mt-1 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className="truncate text-[11px] font-black uppercase tracking-[0.12em] text-white/82">{quest.actionTemplate?.name || quest.title}</div>
+                                <div className="mt-1 text-[11px] text-white/58">{quest.actionTemplate?.duration || 0} min • {requiredCount} {progressLabel}</div>
+                            </div>
+                            <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/68">
+                                PrÃ©via
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        {typeof participants === 'number' && (
-            <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center text-xs font-bold text-white/68">
-                {participants} ativos agora
+            <div className="rounded-[18px] border border-amber-400/20 bg-amber-500/10 p-4 text-left">
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">Item bonus</div>
+                        <div className="mt-1 text-sm font-black uppercase tracking-[0.12em] text-white">{rewardLabel}</div>
+                        <div className="mt-1 text-[11px] leading-relaxed text-white/65">A recompensa principal desta jornada entra no inventario no momento do resgate.</div>
+                    </div>
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] border border-amber-300/30 bg-black/20 text-2xl shadow-[0_0_18px_rgba(251,191,36,0.16)]">
+                        ðŸ“¦
+                    </div>
+                </div>
             </div>
-        )}
-    </DetailModalShell>
-);
+            {typeof participants === 'number' && (
+                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center text-xs font-bold text-white/68">
+                    {participants} ativos agora
+                </div>
+            )}
+        </DetailModalShell>
+    );
+};
 
 const MissionDetailModal: React.FC<{
     mission: SeasonMission;
@@ -275,7 +352,7 @@ const SeasonTransitionModal: React.FC<{
     const previousTitle = fromConfig?.celebrationTitle || `${fromSeason.name} encerrada`;
     const previousSummary = fromConfig?.celebrationSummary || 'Parabens por atravessar esta fase do GLYPH.';
     const nextTitle = toSeason.launchTitle || toSeason.name;
-    const nextSummary = toSeason.launchSummary || toSeason.description || 'A proxima Temporada entra agora com uma nova trilha de quests, itens e identidade visual.';
+    const nextSummary = toSeason.launchSummary || toSeason.description || 'A proxima Temporada entra agora com uma nova trilha de jornadas, itens e identidade visual.';
 
     return (
         <Portal>
@@ -370,7 +447,7 @@ const SeasonTransitionModal: React.FC<{
                                         <LaunchHighlightsBlock highlights={toSeason.launchHighlights} />
                                     ) : (
                                         <div className="rounded-[16px] border border-white/8 bg-black/24 p-4 text-[12px] leading-relaxed text-white/72">
-                                            Esta estrutura ja esta pronta para receber quests, itens, banner e borda proprios da nova Temporada, sem misturar com a Genesis.
+                                            Esta estrutura ja esta pronta para receber jornadas, itens, banner e borda proprios da nova Temporada, sem misturar com a Genesis.
                                         </div>
                                     )}
                                 </div>
@@ -411,7 +488,17 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
 
     const completedFlags = useMemo(() => new Set(userProfile.completedSeasonMissions || []), [userProfile.completedSeasonMissions]);
-    const missionItems = useMemo(() => seasonMissions.filter((mission) => mission.season_id === season.id), [seasonMissions, season.id]);
+    const missionItems = useMemo(() => {
+        const dynamicItems = seasonMissions.filter((mission) => mission.season_id === season.id);
+        const staticItems = GM_SEASON_MISSIONS.filter((mission) => mission.season_id === season.id);
+        const merged = [...staticItems, ...dynamicItems];
+        const seen = new Set<string>();
+        return merged.filter((mission) => {
+            if (seen.has(mission.id)) return false;
+            seen.add(mission.id);
+            return true;
+        });
+    }, [seasonMissions, season.id]);
     const questItems = useMemo(() => seasonQuests.filter((quest) => !quest.season_id || quest.season_id === season.id), [seasonQuests, season.id]);
     const allArenas = getArenas();
     const allActions = useMemo(() => allArenas.flatMap((arena) => getActionsForArena(arena.id)), [allArenas, getActionsForArena]);
@@ -477,7 +564,12 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
         if (goalType === 'campaign_installed') return hasInstalledCampaign ? 100 : 0;
         if (goalType === 'arena_completed' || goalType === 'arena_cleared') return hasClearedArena ? 100 : 0;
         if (goalType === 'cycle_completed' || goalType === 'report_completed') return hasCompletedCycle ? 100 : 0;
-        if (goalType === 'quests_claimed') return Math.min(100, Math.round((claimedQuestCount / Math.max(goal, 1)) * 100));
+        if (goalType === 'quests_claimed') {
+            const scopedClaimedCount = Array.isArray(mission.sourceQuestIds) && mission.sourceQuestIds.length > 0
+                ? mission.sourceQuestIds.filter((questId) => completedFlags.has(questId)).length
+                : claimedQuestCount;
+            return Math.min(100, Math.round((scopedClaimedCount / Math.max(goal, 1)) * 100));
+        }
 
         return 0;
     };
@@ -671,3 +763,5 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
 };
 
 export { SeasonTransitionModal };
+
+

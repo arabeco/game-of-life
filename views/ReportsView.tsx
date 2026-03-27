@@ -96,7 +96,7 @@ type InlineEraEditorState = {
     eraIndex: number;
 };
 
-const OFFICIAL_COMPACT_HISTORY_CARD_CLASS = 'mx-auto w-[15.5rem] max-w-full';
+const OFFICIAL_COMPACT_HISTORY_CARD_CLASS = 'mx-auto w-[14.15rem] max-w-full';
 
 const getReportMetaCounts = (report: Report) => {
     const sealedMetas = report.metrics.sealedMetas ?? report.metrics.goalsMet ?? 0;

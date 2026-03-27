@@ -843,6 +843,8 @@ export interface SeasonMission {
   action_name?: string;
   icon?: string;
   requirements?: any;
+  reward_item_ids?: string[];
+  sourceQuestIds?: string[];
 }
 
 export interface QuestActionTemplate {
@@ -891,6 +893,7 @@ export interface SeasonQuest {
     | 'report_completed'
     | 'quests_claimed'; // Optional for compatibility if needed
   goal_value?: number;
+  progressLabel?: string;
   reward_type?: 'exp' | 'item_id' | 'chest';
   reward_value?: number | string;
   maxParticipants?: number;

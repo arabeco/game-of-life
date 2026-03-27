@@ -1417,10 +1417,7 @@ export const RelationshipHubModal: React.FC<{
 
                     <RelationshipSectionCard
                         eyebrow="Arenas da mentoria"
-                        title={isMentorSide ? 'Arenas abertas para acompanhar o pupilo' : 'Arenas compartilhadas pelo mentor'}
-                        description={isMentorSide
-                            ? 'Aqui ficam as arenas dessa relacao. Voce pode abrir, ajustar o plano e acompanhar a adaptacao do pupilo.'
-                            : 'Essas arenas viram um plano guiado: voce pode adaptar horario e estrutura, e o mentor acompanha essas mudancas.'}
+                        title={isMentorSide ? 'Arenas do pupilo' : 'Arenas do mentor'}
                         action={isMentorSide ? (
                             <button
                                 onClick={() => setSelectedMentorLinkForArena(link)}
@@ -1613,7 +1610,6 @@ export const RelationshipHubModal: React.FC<{
                     <RelationshipSectionCard
                         eyebrow="Seu lado"
                         title="Arenas que voce mostrou"
-                        description="Cada arena custa 50 de ouro e entra aqui como vitrine sua dentro da parceria."
                         action={
                             <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200">
                                 {ownArenasForLink.length} arena{ownArenasForLink.length === 1 ? '' : 's'}
@@ -1639,7 +1635,6 @@ export const RelationshipHubModal: React.FC<{
                     <RelationshipSectionCard
                         eyebrow="Lado do aliado"
                         title={`Arenas que ${profile?.nickname || 'seu parceiro'} mostrou`}
-                        description="Tudo que o outro lado decidiu abrir nesta parceria aparece aqui em leitura."
                         action={
                             <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                                 {partnerArenasForLink.length} arena{partnerArenasForLink.length === 1 ? '' : 's'}
@@ -1662,23 +1657,6 @@ export const RelationshipHubModal: React.FC<{
                         )}
                     </RelationshipSectionCard>
 
-                    <GlassCard className="rounded-[22px] border border-white/10 bg-black/22 p-3">
-                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">Como essa parceria funciona</div>
-                        <div className="mt-3 grid gap-3">
-                            <div className="rounded-[18px] border border-white/12 bg-black/20 p-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Observacao mutua</div>
-                                <p className="mt-2 text-[12px] leading-relaxed text-white/56">
-                                    Parceria nao e hierarquica. Cada lado decide o que quer mostrar e acompanha o que o outro resolveu expor.
-                                </p>
-                            </div>
-                            <div className="rounded-[18px] border border-white/12 bg-black/20 p-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Leitura clara</div>
-                                <p className="mt-2 text-[12px] leading-relaxed text-white/56">
-                                    O que e seu abre vivo e editavel. O que veio do parceiro abre em leitura para consulta e acompanhamento.
-                                </p>
-                            </div>
-                        </div>
-                    </GlassCard>
                 </div>
             );
         }
@@ -2194,15 +2172,6 @@ export const RelationshipHubModal: React.FC<{
                                     <XIcon className="w-4 h-4" />
                                 </button>
                             </div>
-
-                            {selectedMentorLinkForArena.linkType === 'parceria' && (
-                                <div className="mt-4 rounded-[20px] border border-cyan-300/14 bg-cyan-400/8 px-4 py-3">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">Observacao mutua</div>
-                                    <p className="mt-1 text-sm text-white/62">
-                                        Essa arena continua sua. O parceiro acompanha em leitura apenas o que voce decidir mostrar por aqui.
-                                    </p>
-                                </div>
-                            )}
 
                             <div className="mt-4 space-y-3">
                                 <div className="rounded-2xl border border-white/10 bg-black/24 px-4 py-3">

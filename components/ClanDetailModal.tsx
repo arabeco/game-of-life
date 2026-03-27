@@ -327,7 +327,7 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 // --- Main Modal ---
 
 export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, deleteAction, deleteArena, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, activateClanQuest, clanQuestProgress, userMissionParticipations, isBasicMode, clan, getAldeiaSlots, getAldeiaPresence, updateAldeiaSlot, performAldeiaDailyUpdate, enterAldeiaSlot, appMode } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, updateAction, deleteAction, deleteArena, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, activateClanQuest, clanQuestProgress, userMissionParticipations, isBasicMode, clan, getAldeiaSlots, getAldeiaPresence, updateAldeiaSlot, performAldeiaDailyUpdate, enterAldeiaSlot, appMode } = useGame();
     const [now, setNow] = useState(new Date());
     useEffect(() => {
         const interval = setInterval(() => setNow(new Date()), 30000); // Update 'now' every 30 seconds
@@ -541,19 +541,18 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
 
             const existingPlannerAction = findCustomQuestPlannerAction(quest);
             if (existingPlannerAction) {
+                const clanArena = await ensureClanAppArena();
+                if (existingPlannerAction.arenaId !== clanArena.id) {
+                    updateAction(existingPlannerAction.id, { arenaId: clanArena.id });
+                }
                 setMyParticipations(prev => Array.from(new Set([...prev, quest.id])));
                 const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
                 if (data) setClanQuests(data as ClanCustomQuest[]);
-                showToast("Tarefa aceita! Verifique seu Planner.");
+                showToast(quest.mission_type === 'singular' ? "Tarefa assumida no seu app." : "ContribuiÃ§Ã£o ativada no seu app.");
                 return;
             }
 
-            const questArena = await addArena(assets[0]?.id || 'geral', {
-                name: quest.title,
-                description: quest.description || 'Tarefa do grupo',
-                icon: getGroupTaskIcon(quest.category),
-                priority: getGroupTaskArenaPriority(quest.priority),
-            });
+            const questArena = await ensureClanAppArena();
 
             const newAction = await addAction({
                 arenaId: questArena.id,
@@ -563,19 +562,35 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 duration: 30,
                 repetitions: Math.max(1, Number(quest.target_value) || 1),
                 actionType: Number(quest.target_value) > 1 ? 'Ação Recorrente' : 'Compromisso',
-                originCodexId: `clan_quest:${quest.id}`
+                originCodexId: `clan_quest:${quest.id}`,
+                context: {
+                    clanTask: {
+                        clanId: clan.id,
+                        missionId: quest.id,
+                        missionType: quest.mission_type,
+                        clanType: isOfficeClan ? 'Office' : 'Casual',
+                    },
+                }
             });
 
             // Auto-schedule if due date exists
+            let scheduledInPlanner = false;
             if (quest.due_date) {
                 const date = new Date(quest.due_date);
-                const dateString = getLocalDateString(date);
-                const timeInMinutes = date.getHours() * 60 + date.getMinutes();
-                scheduleTask(newAction.id, dateString, timeInMinutes);
-                showToast("Tarefa aceita e agendada no Planner!");
-            } else {
-                showToast("Tarefa aceita! Verifique seu Planner.");
+                if (!Number.isNaN(date.getTime()) && date.getTime() >= Date.now()) {
+                    const dateString = getLocalDateString(date);
+                    const timeInMinutes = date.getHours() * 60 + date.getMinutes();
+                    scheduleTask(newAction.id, dateString, timeInMinutes);
+                    scheduledInPlanner = true;
+                }
             }
+
+            const activationText = quest.mission_type === 'singular' ? 'Tarefa assumida' : 'ContribuiÃ§Ã£o ativada';
+            showToast(
+                scheduledInPlanner
+                    ? `${activationText} e agendada no Planner!`
+                    : `${activationText}! Verifique seu app.`,
+            );
 
             setMyParticipations(prev => [...prev, quest.id]);
 
@@ -593,9 +608,12 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         try {
             const runtimeAction = findCustomQuestPlannerAction(quest);
             const runtimeArenaId = runtimeAction?.arenaId;
+            const runtimeArena = runtimeArenaId ? getArenas().find((arena) => arena.id === runtimeArenaId) : undefined;
             const shouldDeleteQuestArena = Boolean(
                 runtimeAction &&
                 runtimeArenaId &&
+                runtimeArena &&
+                normalizeDomainLabel(runtimeArena.name || '') !== normalizeDomainLabel(getClanAppArenaLabel()) &&
                 getActionsForArena(runtimeArenaId).filter(action => action.id !== runtimeAction.id).length === 0
             );
 
@@ -885,6 +903,78 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             : priority === 'medium' ? 'media'
                 : 'alta'
     );
+    const getClanTaskContext = (action?: Action) => {
+        const context = action?.context as (Action['context'] & {
+            clanTask?: {
+                clanId?: string;
+                missionId?: string;
+                missionType?: 'singular' | 'shared';
+                clanType?: 'Casual' | 'Office';
+            };
+        }) | undefined;
+        return context?.clanTask;
+    };
+    const getClanAppArenaLabel = () => (
+        isOfficeClan ? `Equipe: ${clan?.name || 'Grupo'}` : `Grupo: ${clan?.name || 'Grupo'}`
+    );
+    const getClanAppArenaDescription = () => (
+        isOfficeClan
+            ? 'Arena pessoal das tarefas da equipe.'
+            : 'Arena pessoal das tarefas do grupo.'
+    );
+    const getClanAppArenaAssetId = () => (isOfficeClan ? 'trabalho' : 'conexoes');
+    const getClanAppArenaIcon = () => (
+        isOfficeClan
+            ? '🏢'
+            : (clan?.icon && clan.icon.trim()) ? clan.icon.trim()
+                : '👥'
+    );
+    const findClanAppArena = () => {
+        if (!clan) return undefined;
+
+        const linkedAction = allClanActions.find((action) => getClanTaskContext(action)?.clanId === clan.id);
+        if (linkedAction) {
+            const runtimeArena = getArenas().find((arena) => arena.id === linkedAction.arenaId && !arena.isArchived);
+            if (runtimeArena) return runtimeArena;
+        }
+
+        const normalizedArenaName = normalizeDomainLabel(getClanAppArenaLabel());
+        return getArenas().find((arena) =>
+            !arena.isArchived &&
+            normalizeDomainLabel(arena.name || '') === normalizedArenaName
+        );
+    };
+    const ensureClanAppArena = async () => {
+        const desiredName = getClanAppArenaLabel();
+        const desiredDescription = getClanAppArenaDescription();
+        const desiredIcon = getClanAppArenaIcon();
+        const desiredAssetId = getClanAppArenaAssetId();
+        const existingArena = findClanAppArena();
+
+        if (existingArena) {
+            if (
+                existingArena.name !== desiredName ||
+                existingArena.description !== desiredDescription ||
+                existingArena.icon !== desiredIcon ||
+                existingArena.assetId !== desiredAssetId
+            ) {
+                updateArena(existingArena.id, {
+                    name: desiredName,
+                    description: desiredDescription,
+                    icon: desiredIcon,
+                    assetId: desiredAssetId,
+                });
+            }
+            return existingArena;
+        }
+
+        return addArena(desiredAssetId, {
+            name: desiredName,
+            description: desiredDescription,
+            icon: desiredIcon,
+            priority: 'media',
+        });
+    };
     const buildSyntheticCompletedTasks = (actionId: string, completedCount: number, duration: number) => {
         const safeCompleted = Math.max(0, completedCount);
         const safeDuration = Math.max(1, duration || 30);
@@ -914,7 +1004,10 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     };
     const findCustomQuestPlannerAction = (quest: ClanCustomQuest) => {
         const questMarker = `clan_quest:${quest.id}`;
-        return allClanActions.find(action => action.originCodexId === questMarker);
+        return allClanActions.find((action) => {
+            const clanTask = getClanTaskContext(action);
+            return action.originCodexId === questMarker || clanTask?.missionId === quest.id;
+        });
     };
     const buildSeasonQuestArenaPreview = (quest: SeasonQuest): { arena: Arena; actions: Action[]; previewTasks?: typeof tasks } => {
         const { arena: runtimeArena, action: runtimeAction } = findQuestArenaAndAction(quest);
@@ -960,6 +1053,15 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
     const buildCustomQuestArenaPreview = (quest: ClanCustomQuest): { arena: Arena; actions: Action[]; previewTasks: typeof tasks } => {
         const syntheticArenaId = `group-custom-preview:${quest.id}`;
         const runtimeAction = findCustomQuestPlannerAction(quest);
+        const runtimeArena = runtimeAction ? getArenas().find((arena) => arena.id === runtimeAction.arenaId) : undefined;
+        if (runtimeAction && runtimeArena) {
+            const runtimeActions = getActionsForArena(runtimeArena.id);
+            return {
+                arena: runtimeArena,
+                actions: runtimeActions,
+                previewTasks: tasks.filter((task) => runtimeActions.some((action) => action.id === task.actionId)),
+            };
+        }
         const repetitions = Math.max(1, Number(quest.target_value) || 1);
         const icon = getGroupTaskIcon(quest.category);
         const syntheticAction: Action = {
@@ -1627,7 +1729,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                                                         onClick={() => handleOptIn(quest)}
                                                         className="w-full rounded-lg border border-amber-500/30 bg-gradient-to-r from-amber-700/80 to-amber-900/80 py-2 text-[10px] font-bold uppercase tracking-wider text-amber-100 hover:from-amber-600 hover:to-amber-800"
                                                     >
-                                                        Aceitar tarefa
+                                                        {quest.mission_type === 'singular' ? 'Assumir no app' : 'Contribuir no app'}
                                                     </button>
                                                 ) : (
                                                     <div className="space-y-2">
@@ -1737,7 +1839,6 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                     onClose={() => setSelectedSlotForModal(null)}
                     onOccupy={() => {
                         handleSlotClick(selectedSlotForModal);
-                        setSelectedSlotForModal(null);
                     }}
                     userRole={userClanRole || 'member'}
                     onUpdate={() => {

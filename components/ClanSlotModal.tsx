@@ -23,7 +23,7 @@ interface ClanSlotModalProps {
     userRole: 'leader' | 'member';
     onUpdate?: () => void;
     myParticipations?: string[];
-    onOptIn?: (quest: ClanCustomQuest) => void;
+    onOptIn?: (quest: ClanCustomQuest) => void | Promise<void>;
     allSlots?: { id: AldeiaSlotId; label: string; emoji: string; note?: string }[];
 }
 
@@ -43,7 +43,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     onOptIn,
     allSlots = []
 }) => {
-    const { userProfile, showToast, appMode, clan } = useGame();
+    const { userProfile, showToast, appMode, clan, getArenas, getActionsForArena, deleteAction } = useGame();
     const isBasicMode = appMode === 'BASIC';
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
     const [view, setView] = useState<'details' | 'create-quest' | 'edit-slot' | 'move-quest'>('details');
@@ -106,6 +106,78 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
         const totalProgress = memberActiveQuests.reduce((acc, q) => acc + (q.current_value / Math.max(1, q.target_value)), 0);
         return Math.min(100, (totalProgress / memberActiveQuests.length) * 100);
     }, [occupant, clanQuests]);
+
+    const slotQuests = React.useMemo(
+        () => clanQuests.filter(q => q.slot_id === slotId && q.status !== 'completed'),
+        [clanQuests, slotId]
+    );
+
+    const findRuntimeQuestAction = (quest: ClanCustomQuest) => {
+        const marker = `clan_quest:${quest.id}`;
+        return getArenas()
+            .flatMap(arena => getActionsForArena(arena.id))
+            .find(action => {
+                const context = action.context as (typeof action.context & {
+                    clanTask?: {
+                        missionId?: string;
+                    };
+                }) | undefined;
+                return action.originCodexId === marker || context?.clanTask?.missionId === quest.id;
+            });
+    };
+
+    const openQuestInApp = (quest: ClanCustomQuest, attempt: number = 0) => {
+        const runtimeAction = findRuntimeQuestAction(quest);
+        if (!runtimeAction) {
+            if (attempt < 1) {
+                window.setTimeout(() => openQuestInApp(quest, attempt + 1), 220);
+                return;
+            }
+            showToast('Essa tarefa ainda nao entrou no seu app.', 'info');
+            return;
+        }
+
+        window.dispatchEvent(new CustomEvent('tutorialNavigate', {
+            detail: {
+                view: 'arenas',
+                showArenaId: runtimeAction.arenaId,
+            },
+        }));
+        onClose();
+    };
+
+    const handleDeleteQuest = async (quest: ClanCustomQuest) => {
+        if (userRole !== 'leader') return;
+        if (!window.confirm(`Apagar a tarefa "${quest.title}"?`)) return;
+
+        try {
+            const runtimeAction = findRuntimeQuestAction(quest);
+
+            if (runtimeAction) {
+                await deleteAction(runtimeAction.id);
+            }
+
+            await supabase
+                .from('clan_mission_participants')
+                .delete()
+                .eq('clan_id', clanId)
+                .eq('mission_id', quest.id);
+
+            const { error } = await supabase
+                .from('clan_custom_quests')
+                .delete()
+                .eq('clan_id', clanId)
+                .eq('id', quest.id);
+
+            if (error) throw error;
+
+            showToast('Tarefa apagada com sucesso!', 'success');
+            if (onUpdate) onUpdate();
+        } catch (error) {
+            console.error(error);
+            showToast('Erro ao apagar tarefa', 'error');
+        }
+    };
 
     const handleCreateQuest = async () => {
         if (!questTitle.trim()) return showToast("Título obrigatório", "error");
@@ -289,7 +361,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                         )}
 
                         {/* Active Group Tasks on this Slot */}
-                        {(clanQuests.filter(q => q.slot_id === slotId && q.status !== 'completed').length > 0 || userRole === 'leader') && (
+                        {(slotQuests.length > 0 || userRole === 'leader') && (
                             <div className="space-y-4">
                                 <div className='relative text-center flex-shrink-0'>
                                     <hr className="border-t border-gray-800" />
@@ -298,16 +370,15 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                     </h3>
                                 </div>
                                 
-                                <div className="flex overflow-x-auto pb-4 pt-2 gap-2 snap-x hide-scrollbar">
+                                <div className={isOfficeClan ? 'hidden' : 'flex overflow-x-auto pb-4 pt-2 gap-2 snap-x hide-scrollbar'}>
                                     {(() => {
                                         const skinColor = getComputedStyle(document.documentElement).getPropertyValue('--skin-accent-color').trim() || '#F0C843';
                                         const bronzeColor = '#cd7f32';
 
-                                        const quests = clanQuests.filter(q => q.slot_id === slotId && q.status !== 'completed').map(quest => {
+                                        const quests = slotQuests.map(quest => {
                                             const isAssignedToMe = quest.assigned_user_id === userProfile?.id;
                                             const isLocked = quest.status === 'locked';
                                             const isParticipating = myParticipations.includes(quest.id);
-                                            const isAvailable = !isLocked || (isLocked && !quest.assigned_user_id);
                                             const canAccept = !isParticipating && (isAssignedToMe || (!quest.assigned_user_id && quest.status === 'active'));
                                             
                                             const displayIcon = quest.category === 'work' ? '💼' : 
@@ -368,7 +439,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                             ${!canAccept && !isAssignedToMe ? 'cursor-not-allowed' : 'cursor-pointer'}
                                                         `}>
                                                         <div className="text-[10px] font-bold uppercase tracking-widest text-white">
-                                                            {canAccept ? 'Aceitar' : 
+                                                            {canAccept ? (quest.mission_type === 'singular' ? 'Assumir' : 'Contribuir') : 
                                                                 isAssignedToMe 
                                                                 ? (isOfficeClan ? `${quest.current_value || 0}/${quest.target_value || 1}` : '🔒') 
                                                                 : (isOfficeClan ? 'DISP' : 'FREE')
@@ -434,6 +505,17 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                                 Mover
                                                             </button>
                                                         )}
+                                                        {userRole === 'leader' && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    void handleDeleteQuest(quest);
+                                                                }}
+                                                                className="w-full py-1 px-4 rounded-lg text-[9px] font-bold uppercase transition-all shadow-sm bg-red-900/25 text-red-200 border border-red-500/30 hover:bg-red-900/40"
+                                                            >
+                                                                Excluir
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
@@ -461,6 +543,138 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                         return quests;
                                     })()}
                                 </div>
+                                {isOfficeClan && (
+                                    <div className="space-y-3 pt-2">
+                                        {slotQuests.map((quest) => {
+                                            const isAssignedToMe = quest.assigned_user_id === userProfile?.id;
+                                            const isLocked = quest.status === 'locked';
+                                            const isParticipating = myParticipations.includes(quest.id);
+                                            const canAccept = !isParticipating && (isAssignedToMe || (!quest.assigned_user_id && quest.status === 'active'));
+                                            const displayIcon = quest.category === 'work' ? '💼'
+                                                : quest.category === 'meeting' ? '📅'
+                                                    : quest.category === 'report' ? '📊'
+                                                        : quest.category === 'development' ? '👨‍💻'
+                                                            : '✨';
+
+                                            return (
+                                                <div key={`office-${quest.id}`} className="rounded-2xl border border-amber-800/30 bg-amber-950/20 p-3 shadow-[0_10px_24px_rgba(0,0,0,0.18)]">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-700/30 bg-black/25 text-2xl">
+                                                            {displayIcon}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="truncate text-sm font-bold text-amber-100">{quest.title}</div>
+                                                            <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/62">
+                                                                {quest.description || 'Tarefa da mesa.'}
+                                                            </div>
+                                                            <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.12em]">
+                                                                <span className={`rounded border px-2 py-1 ${quest.mission_type === 'singular' ? 'border-purple-500/30 bg-purple-500/10 text-purple-200' : 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200'}`}>
+                                                                    {quest.mission_type === 'singular' ? 'Individual' : 'Grupo'}
+                                                                </span>
+                                                                <span className="rounded border border-white/10 bg-black/20 px-2 py-1 text-white/75">
+                                                                    {quest.current_value || 0}/{quest.target_value || 1}
+                                                                </span>
+                                                                {quest.priority === 'urgent' && (
+                                                                    <span className="rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-red-300">
+                                                                        Urgente
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-3 space-y-2">
+                                                        {!isParticipating ? (
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (!canAccept) return;
+                                                                    await onOptIn?.(quest);
+                                                                    window.setTimeout(() => openQuestInApp(quest), 180);
+                                                                }}
+                                                                disabled={!canAccept}
+                                                                className={`w-full rounded-xl py-2.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                                    canAccept
+                                                                        ? 'border border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/15 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/20'
+                                                                        : 'border border-white/10 bg-black/20 text-white/35 cursor-not-allowed'
+                                                                }`}
+                                                            >
+                                                                {quest.mission_type === 'singular' ? 'Assumir no app' : 'Contribuir no app'}
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => openQuestInApp(quest)}
+                                                                className="w-full rounded-xl border border-purple-500/30 bg-purple-900/30 py-2.5 text-[10px] font-bold uppercase tracking-wider text-purple-200 hover:bg-purple-900/45"
+                                                            >
+                                                                Abrir no app
+                                                            </button>
+                                                        )}
+
+                                                        {(isAssignedToMe || (userRole === 'leader' && isLocked)) ? (
+                                                            <button
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        const updateData: any = { status: 'active', assigned_user_id: null };
+                                                                        if (isBasicMode && quest.mission_type === 'singular') updateData.slot_id = 'fogueira';
+                                                                        const { error } = await supabase.from('clan_custom_quests').update(updateData).eq('id', quest.id);
+                                                                        if (error) throw error;
+                                                                        if (isAssignedToMe) {
+                                                                            await supabase.from('clan_mission_participants').delete().eq('mission_id', quest.id).eq('user_id', userProfile?.id);
+                                                                        } else if (userRole === 'leader') {
+                                                                            await supabase.from('clan_mission_participants').delete().eq('mission_id', quest.id);
+                                                                        }
+                                                                        showToast('Tarefa devolvida', 'success');
+                                                                        if (onUpdate) onUpdate();
+                                                                    } catch (e) {
+                                                                        console.error(e);
+                                                                        showToast('Erro ao processar', 'error');
+                                                                    }
+                                                                }}
+                                                                className="w-full rounded-xl border border-red-500/30 bg-red-600/15 py-2.5 text-[10px] font-bold uppercase tracking-wider text-red-200 hover:bg-red-600/25"
+                                                            >
+                                                                {isBasicMode ? 'Devolver' : 'Cancelar'}
+                                                            </button>
+                                                        ) : (
+                                                            <div className="w-full rounded-xl border border-white/8 bg-black/15 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-white/35">
+                                                                {canAccept ? 'Pronta' : 'Indisponivel'}
+                                                            </div>
+                                                        )}
+
+                                                        {userRole === 'leader' && (
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedQuestToMove(quest);
+                                                                        setView('move-quest');
+                                                                    }}
+                                                                    className="rounded-xl border border-blue-500/30 bg-blue-600/15 py-2 text-[10px] font-bold uppercase tracking-wider text-blue-200 hover:bg-blue-600/25"
+                                                                >
+                                                                    Mover
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => void handleDeleteQuest(quest)}
+                                                                    className="rounded-xl border border-red-500/30 bg-red-900/35 py-2 text-[10px] font-bold uppercase tracking-wider text-red-200 hover:bg-red-900/50"
+                                                                >
+                                                                    Excluir
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {userRole === 'leader' && (
+                                            <button
+                                                onClick={() => setView('create-quest')}
+                                                className="w-full min-h-[88px] rounded-xl border-2 border-dashed border-amber-800/40 text-amber-700 transition-all hover:bg-amber-900/10"
+                                            >
+                                                <div className="flex flex-col items-center justify-center gap-2">
+                                                    <PlusIcon className="w-6 h-6 opacity-50" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Nova tarefa</span>
+                                                </div>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 

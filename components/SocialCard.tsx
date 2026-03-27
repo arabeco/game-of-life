@@ -25,7 +25,7 @@ export const SocialCard: React.FC<{
                 <UserAvatar avatarUrl={profile.avatarUrl} nickname={profile.nickname} className="w-12 h-12" isOnline={false} level={profile.level} borderId={profile.border} />
 
                 <div className="flex-1 min-w-0 flex flex-col justify-center -space-y-0.5">
-                    <h3 className="font-bold text-lg text-white leading-tight truncate">{profile.nickname}</h3>
+                    <h3 className="social-card-title font-bold text-lg text-white leading-tight truncate">{profile.nickname}</h3>
 
                     {badges && (
                         <div className="mt-1 flex flex-wrap gap-1.5">
@@ -45,10 +45,10 @@ export const SocialCard: React.FC<{
                 </div>
 
                 <div className="flex flex-col items-end justify-center text-right pr-2 flex-shrink-0">
-                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest opacity-60 mb-0.5">
+                    <span className="social-card-kicker text-[9px] font-bold text-gray-500 uppercase tracking-widest opacity-60 mb-0.5">
                         {subtitle ? 'INFO' : (profile.clanName ? 'GRUPO' : '')}
                     </span>
-                    <div className="text-[10px] text-gray-300 flex items-center gap-1 opacity-90 bg-black/20 px-1.5 py-0.5 rounded-md border border-white/5">
+                    <div className="social-card-meta text-[10px] text-gray-300 flex items-center gap-1 opacity-90 bg-black/20 px-1.5 py-0.5 rounded-md border border-white/5">
                         {subtitle ?? (
                             <>
                                 {profile.clanIcon && <span className="text-xs">{profile.clanIcon}</span>}

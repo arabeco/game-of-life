@@ -108,6 +108,19 @@
   color: var(--game-muted-text) !important;
 }
 
+.mode-game.theme-light .mundo-view-root .social-card-title,
+.mode-office.theme-light .mundo-view-root .social-card-title {
+  color: #f8fbff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+.mode-game.theme-light .mundo-view-root .social-card-kicker,
+.mode-office.theme-light .mundo-view-root .social-card-kicker,
+.mode-game.theme-light .mundo-view-root .social-card-meta,
+.mode-office.theme-light .mundo-view-root .social-card-meta {
+  color: rgba(240, 246, 255, 0.9) !important;
+}
+
 .mode-game.theme-dark .mundo-view-root .text-gray-300,
 .mode-game.theme-dark .mundo-view-root .text-gray-400,
 .mode-game.theme-dark .mundo-view-root .text-gray-500,

@@ -128,6 +128,12 @@ export interface Action {
       days?: DayOfWeek[];
       startTime?: number;
     };
+    clanTask?: {
+      clanId: string;
+      missionId: string;
+      missionType?: 'singular' | 'shared';
+      clanType?: 'Casual' | 'Office';
+    };
   };
 }
 

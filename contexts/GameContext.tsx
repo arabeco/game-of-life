@@ -549,7 +549,7 @@ export interface GameContextType {
     resetDailyCommitment: () => void;
     openChest: (chestType: ChestType) => Promise<ChestOpenResult | null>;
     createClan: (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => Promise<boolean>;
-    updateClan: (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl'>>) => Promise<void>;
+    updateClan: (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl' | 'recruitmentStatus'>>) => Promise<void>;
     leaveClan: () => Promise<void>;
     transferLeadershipAndLeave: (newLeaderId: string) => Promise<void>;
     deleteClan: () => Promise<void>;
@@ -559,6 +559,7 @@ export interface GameContextType {
     joinClan: (clanToJoin: Clan) => Promise<void>;
     approveClanJoinRequest: (request: ClanJoinRequest) => Promise<void>;
     rejectClanJoinRequest: (request: ClanJoinRequest) => Promise<void>;
+    cancelClanJoinRequest: (requestId: string) => Promise<void>;
     addSeason: (seasonData: Omit<Season, 'id'>) => Promise<void>;
     updateSeason: (seasonId: string, seasonData: Partial<Omit<Season, 'id'>>) => Promise<void>;
     addSeasonMission: (missionData: Omit<SeasonMission, 'id'>) => Promise<void>;
@@ -2264,6 +2265,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const [clanQuestParticipants, setClanQuestParticipants] = useState<Record<string, number>>({});
     const [userMissionParticipations, setUserMissionParticipations] = useState<Record<string, boolean>>({}); // missionId -> boolean
+    const getCurrentClanRole = useCallback((): 'leader' | 'member' | null => {
+        const currentUserId = getSupabaseUserId();
+        if (!currentUserId) return null;
+        return enrichedClanMembers.find((member) => member.id === currentUserId)?.role || null;
+    }, [enrichedClanMembers]);
 
     const fetchClanQuestParticipants = useCallback(async (questId: string, actionName: string) => {
         if (!clan) return;
@@ -7428,17 +7434,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const cancelFriendRequest = async (requestId: string): Promise<void> => {
         const userId = getSupabaseUserId();
         if (!userId) return;
-        // We delete pending requests that we sent
+        const existingRequest = friendRequestsOutgoing.find((request) => request.id === requestId);
+        if (!existingRequest) {
+            showToast('Esse convite já não está mais pendente.', 'info');
+            return;
+        }
+
+        setFriendRequestsOutgoing(prev => prev.filter(request => request.id !== requestId));
+
         const { error } = await supabase.from('friend_requests')
             .delete()
             .eq('id', requestId)
             .eq('sender_id', userId)
-            .eq('status', 'pending'); // Safety check
+            .eq('status', 'pending');
 
         if (error) {
             console.error('Error canceling friend request:', error.message);
+            setFriendRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
+            showToast('Não foi possível cancelar o convite de amizade.', 'error');
             return;
         }
+        showToast('Convite de amizade cancelado.', 'success');
         await loadFriendsAndRequests(userId);
     };
 
@@ -9149,7 +9165,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return false;
         }
 
+        const optimisticClan = {
+            ...(mapToCamelCase(createdClan) as Clan),
+            backgroundUrl: clanDetails.backgroundUrl ?? mapToCamelCase(createdClan).backgroundUrl,
+        } as Clan;
+
+        clanCacheRef.current = null;
+        setClan(optimisticClan);
+        setEnrichedClanMembers([
+            {
+                ...userProfile,
+                clanName: optimisticClan.name,
+                clanIcon: optimisticClan.icon,
+                role: 'leader',
+                joined_at: new Date().toISOString(),
+            } as EnrichedClanMember,
+        ]);
+        setClanJoinRequestsIncoming([]);
+
         updateUserProfile({
+            clanName: optimisticClan.name,
+            clanIcon: optimisticClan.icon,
             wallet: {
                 ...userProfile.wallet,
                 gold: newGold,
@@ -9173,11 +9209,42 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
-    const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl'>>) => {
+    const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl' | 'recruitmentStatus'>>) => {
         const snakeCaseData = mapToSnakeCase(data) as Record<string, unknown>;
         const { error } = await supabase.from('clans').update(snakeCaseData).eq('id', clanId);
-        if (error) { console.error("Error updating clan:", error.message); return; }
-        setClan(prev => (prev && prev.id === clanId) ?{ ...prev, ...data } : prev);
+        if (error) {
+            console.error("Error updating clan:", error.message);
+            showToast('Nao foi possivel atualizar o grupo.', 'error');
+            return;
+        }
+
+        setClan(prev => (prev && prev.id === clanId) ? { ...prev, ...data } : prev);
+
+        if (clanCacheRef.current && clanCacheRef.current.clanId === clanId && clanCacheRef.current.clan) {
+            clanCacheRef.current.clan = {
+                ...clanCacheRef.current.clan,
+                ...data,
+            };
+        }
+
+        if (data.name || data.icon) {
+            setEnrichedClanMembers(prev =>
+                prev.map(member => member.id === userProfile.id
+                    ? {
+                        ...member,
+                        clanName: data.name ?? member.clanName,
+                        clanIcon: data.icon ?? member.clanIcon,
+                    }
+                    : member)
+            );
+
+            updateUserProfile({
+                clanName: data.name ?? userProfile.clanName,
+                clanIcon: data.icon ?? userProfile.clanIcon,
+            });
+        }
+
+        showToast('Grupo atualizado.', 'success');
     };
 
     const leaveClan = async () => {
@@ -9213,26 +9280,97 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const transferLeadershipAndLeave = async (newLeaderId: string) => {
         if (!clan || !session) return;
+        if (getCurrentClanRole() !== 'leader') {
+            showToast('Só a liderança pode transferir o grupo.', 'warning');
+            return;
+        }
         if (!isUuid(newLeaderId)) {
             console.error("Invalid new leader ID");
             return;
         }
+        if (newLeaderId === session.user.id) {
+            showToast('Escolha outra pessoa para assumir a liderança.', 'warning');
+            return;
+        }
         const { error: promoteError } = await supabase.from('clan_members').update({ role: 'leader' }).eq('clan_id', clan.id).eq('user_id', newLeaderId);
-        if (promoteError) { console.error("Error transferring leadership:", promoteError.message); return; }
+        if (promoteError) { console.error("Error transferring leadership:", promoteError.message); showToast('Não foi possível transferir a liderança.', 'error'); return; }
         await leaveClan();
     };
 
     const deleteClan = async () => {
         if (!clan) return;
-        const { error } = await supabase.from('clans').delete().eq('id', clan.id);
-        if (error) { console.error("Error deleting clan:", error.message); return; }
-        await leaveClan(); // Also cleans up the member record
+        const currentUserId = getSupabaseUserId();
+        if (!currentUserId) return;
+        if (getCurrentClanRole() !== 'leader') {
+            showToast('Só a liderança pode apagar o grupo.', 'warning');
+            return;
+        }
+        if (enrichedClanMembers.length > 1) {
+            showToast('Para apagar o grupo, primeiro ele precisa ficar só com você.', 'warning');
+            return;
+        }
+
+        let deleteError: { message?: string } | null = null;
+        const firstDelete = await supabase.from('clans').delete().eq('id', clan.id);
+        deleteError = firstDelete.error || null;
+
+        if (deleteError) {
+            const { error: memberDeleteError } = await supabase
+                .from('clan_members')
+                .delete()
+                .eq('clan_id', clan.id)
+                .eq('user_id', currentUserId);
+            if (memberDeleteError) {
+                console.error("Error deleting leader membership before clan delete:", memberDeleteError.message);
+            }
+
+            const retryDelete = await supabase.from('clans').delete().eq('id', clan.id);
+            deleteError = retryDelete.error || null;
+        }
+
+        if (deleteError) {
+            console.error("Error deleting clan:", deleteError.message);
+            showToast('Não foi possível apagar o grupo agora.', 'error');
+            return;
+        }
+
+        if (clanCacheRef.current && clanCacheRef.current.clanId === clan.id) {
+            clanCacheRef.current.timestamp = 0;
+        }
+        setClan(null);
+        setEnrichedClanMembers([]);
+        setClanJoinRequestsIncoming([]);
+        setClanJoinRequestsOutgoing([]);
+        setClanQuestProgress({});
+        setClanQuestParticipants({});
+        setUserMissionParticipations({});
+        updateUserProfile({ clanName: undefined, clanIcon: undefined });
+        showToast('Grupo apagado com sucesso.', 'success');
     };
 
     const kickClanMember = async (memberId: string) => {
         if (!clan) return;
+        const currentUserId = getSupabaseUserId();
+        if (!currentUserId) return;
+        if (getCurrentClanRole() !== 'leader') {
+            showToast('Só a liderança pode remover pessoas.', 'warning');
+            return;
+        }
         if (!isUuid(memberId)) {
             console.error("Invalid member ID for kicking");
+            return;
+        }
+        if (memberId === currentUserId) {
+            showToast('Use a saída do grupo para você mesmo.', 'info');
+            return;
+        }
+        const targetMember = enrichedClanMembers.find((member) => member.id === memberId);
+        if (!targetMember) {
+            showToast('Essa pessoa já não está mais no grupo.', 'info');
+            return;
+        }
+        if (targetMember.role === 'leader') {
+            showToast('A liderança não pode ser removida por esse atalho.', 'warning');
             return;
         }
 
@@ -9255,7 +9393,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const { error } = await supabase.from('clan_members').delete().eq('user_id', memberId).eq('clan_id', clan.id);
-        if (error) { console.error("Error kicking member:", error.message); return; }
+        if (error) { console.error("Error kicking member:", error.message); showToast('Não foi possível remover essa pessoa.', 'error'); return; }
         setEnrichedClanMembers(prev => prev.filter(m => m.id !== memberId));
         if (participantRows?.length) {
             const affectedMissionIds = participantRows
@@ -9276,6 +9414,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (clanCacheRef.current && clanCacheRef.current.clanId === clan.id) {
             clanCacheRef.current.members = clanCacheRef.current.members.filter(m => m.id !== memberId);
         }
+        showToast('Pessoa removida do grupo.', 'success');
     };
 
     const addClanMember = async (memberId: string) => {
@@ -9351,9 +9490,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) { console.error("User ID not found"); return; }
 
-        const recruitmentStatus = (clanToJoin as any).recruitment_status ?? (clanToJoin as any).recruitmentStatus;
-        if (recruitmentStatus === 'Privado') {
+        const { data: freshClanRow, error: freshClanError } = await supabase
+            .from('clans')
+            .select('id, recruitment_status')
+            .eq('id', clanToJoin.id)
+            .single();
+
+        if (freshClanError) {
+            console.error("Error checking clan recruitment status:", freshClanError.message);
+            showToast('Nao foi possivel verificar a entrada desse grupo.', 'error');
+            return;
+        }
+
+        const recruitmentStatus = String(
+            (freshClanRow as any)?.recruitment_status
+            ?? (clanToJoin as any).recruitment_status
+            ?? (clanToJoin as any).recruitmentStatus
+            ?? ''
+        )
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+        if (recruitmentStatus === 'privado') {
             await requestClanJoin(clanToJoin);
+            showToast('Solicitacao enviada. Agora o lider precisa aprovar sua entrada.', 'success');
             return;
         }
 
@@ -9432,6 +9593,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         );
 
         setClanJoinRequestsIncoming(prev => prev.filter(r => r.id !== request.id));
+    };
+
+    const cancelClanJoinRequest = async (requestId: string): Promise<void> => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+        const existingRequest = clanJoinRequestsOutgoing.find((request) => request.id === requestId);
+        if (!existingRequest) {
+            showToast('Essa solicitação já não está mais pendente.', 'info');
+            return;
+        }
+
+        setClanJoinRequestsOutgoing(prev => prev.filter(request => request.id !== requestId));
+
+        const { error } = await supabase
+            .from('clan_join_requests')
+            .delete()
+            .eq('id', requestId)
+            .eq('user_id', userId)
+            .eq('status', 'pending');
+
+        if (error) {
+            console.error("Error canceling clan join request:", error.message);
+            setClanJoinRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
+            showToast('Não foi possível cancelar a solicitação ao grupo.', 'error');
+            return;
+        }
+
+        showToast('Solicitação ao grupo cancelada.', 'success');
+        await loadClanJoinRequestsOutgoing(userId);
     };
 
     const fetchDMs = useCallback(async () => {
@@ -9726,7 +9916,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,
-            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,

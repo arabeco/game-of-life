@@ -7,7 +7,6 @@ import { Clan, RelationshipLink, RelationshipLinkInvite, UserProfile } from '../
 import { ClanDetailModal } from '../components/ClanDetailModal';
 import { SocialCard } from '../components/SocialCard';
 import { PlusIcon, CheckIcon, XIcon, TrophyIcon, ShoppingBagIcon, CalendarIcon, UsersIcon, ArchiveBoxIcon, LinkIcon } from '../components/Icons';
-import { ClanSearchResultCard } from '../components/ClanSearchResultCard';
 import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
 import { HallOfFameView } from './HallOfFameView';
 import { StoreView } from './StoreView';
@@ -190,6 +189,8 @@ const RequestSection: React.FC<{
 const SocialTab: React.FC = () => {
     const {
         clan,
+        clanRanks,
+        clanJoinRequestsOutgoing,
         friends,
         userProfile,
         friendRequestsIncoming,
@@ -199,6 +200,7 @@ const SocialTab: React.FC = () => {
         declineFriendRequest,
         cancelFriendRequest,
         joinClan,
+        cancelClanJoinRequest,
         fetchRelationshipHubData,
         getUserPublicData,
         respondToRelationshipInvite,
@@ -502,7 +504,58 @@ const SocialTab: React.FC = () => {
                         {searchResults.clans.length > 0 && (
                             <div className="space-y-2">
                                 <h4 className="text-xs font-bold text-gray-500">GRUPOS ENCONTRADOS</h4>
-                                {searchResults.clans.map(c => <ClanSearchResultCard key={c.id} clan={c} onJoin={() => joinClan(c)} />)}
+                                {searchResults.clans.map(c => {
+                                    const rank = clanRanks.find(r => r.id === c.rankId);
+                                    const isMemberOfThisClan = clan?.id === c.id;
+                                    const isMemberOfAnyClan = !!clan;
+                                    const hasPendingRequest = clanJoinRequestsOutgoing.some(request => request.clanId === c.id && request.status === 'pending');
+                                    const pendingRequest = clanJoinRequestsOutgoing.find(request => request.clanId === c.id && request.status === 'pending');
+                                    const isPrivate = c.recruitmentStatus === 'Privado';
+
+                                    let buttonText = 'Entrar';
+                                    let isDisabled = false;
+                                    if (isMemberOfThisClan) {
+                                        buttonText = 'Membro';
+                                        isDisabled = true;
+                                    } else if (isMemberOfAnyClan) {
+                                        buttonText = 'Em um grupo';
+                                        isDisabled = true;
+                                    } else if (hasPendingRequest) {
+                                        buttonText = 'Solicitado';
+                                        isDisabled = true;
+                                    } else if (isPrivate) {
+                                        buttonText = 'Solicitar';
+                                    }
+
+                                    return (
+                                        <GlassCard key={c.id} variant="neutral" className="p-3">
+                                            <div className="flex items-center space-x-4">
+                                                <span className="text-4xl">{c.icon}</span>
+                                                <div className="flex-grow">
+                                                    <h4 className="font-bold text-white">{c.name}</h4>
+                                                    <p className="text-xs text-gray-400">{rank?.name || 'N/A'} · {c.clanType} · Entrada {c.recruitmentStatus}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {hasPendingRequest && !isMemberOfAnyClan && pendingRequest && (
+                                                        <button
+                                                            onClick={() => cancelClanJoinRequest(pendingRequest.id)}
+                                                            className="px-3 py-2 text-[10px] font-bold uppercase rounded-lg bg-black/20 border border-white/10 text-gray-300 hover:bg-red-500/20 hover:border-red-500/30 hover:text-white transition-colors"
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => joinClan(c)}
+                                                        disabled={isDisabled}
+                                                        className="px-4 py-2 bg-white/10 text-sm font-bold rounded-lg hover:bg-white/20 disabled:bg-black/20 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                                    >
+                                                        {buttonText}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </GlassCard>
+                                    );
+                                })}
                             </div>
                         )}
                         {searchResults.players.length > 0 && (

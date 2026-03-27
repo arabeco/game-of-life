@@ -1728,7 +1728,7 @@ export const ArenasView: React.FC = () => {
                                 ))}
                             </div>
                         ) : (
-                        <div className="overflow-x-auto hide-scrollbar pb-1">
+                        <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
                             <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                             {receivedMentorCampaigns.map(({ codex, preview }) => (
                                 <div
@@ -1813,7 +1813,7 @@ export const ArenasView: React.FC = () => {
                                 ))}
                             </div>
                         ) : (
-                        <div className="overflow-x-auto hide-scrollbar pb-1">
+                        <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
                             <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                             {receivedSharedArenas.map((linkedArena) => (
                                 <div key={linkedArena.id}>
@@ -2011,7 +2011,7 @@ export const ArenasView: React.FC = () => {
                                             <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
                                         </div>
                                         {!isCollapsed && (
-                                            <div className={`animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'grid min-h-[80px] border-2 border-dashed border-white/5 rounded-xl place-items-center' : arenaPresentationMode === 'list' ? 'space-y-2' : 'overflow-x-auto hide-scrollbar pb-1'}`}>
+                                            <div className={`animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'grid min-h-[80px] border-2 border-dashed border-white/5 rounded-xl place-items-center' : arenaPresentationMode === 'list' ? 'space-y-2' : 'overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2'}`} style={arenaPresentationMode === 'list' ? undefined : { WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
                                                 {isEmpty ? (
                                                     <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">Arraste aqui</span>
                                                 ) : arenaPresentationMode === 'list' ? (
@@ -2034,7 +2034,7 @@ export const ArenasView: React.FC = () => {
                                                         })}
                                                     </>
                                                 ) : (
-                                                    <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[8.45rem] gap-3 px-2 pt-1">
+                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[8.45rem] gap-3 px-2 pt-1">
                                                         {items.map(item => {
                                                             if (item.itemType === 'campaign') {
                                                                 const campaign = item.value as Campaign;
@@ -2078,7 +2078,7 @@ export const ArenasView: React.FC = () => {
                                                 }))}
                                             </div>
                                         ) : (
-                                        <div className="overflow-x-auto hide-scrollbar pb-1">
+                                        <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
                                             <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                                                 {campaigns.map(campaign => renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign)))}
                                             </div>
@@ -2112,7 +2112,7 @@ export const ArenasView: React.FC = () => {
                                                     }))}
                                                 </div>
                                             ) : (
-                                            <div className="overflow-x-auto hide-scrollbar pb-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                            <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2 animate-in fade-in slide-in-from-top-1 duration-200" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
                                                 <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[8.45rem] gap-3 px-2 pt-1">
                                                     {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                                 </div>

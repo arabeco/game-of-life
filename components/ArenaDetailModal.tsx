@@ -337,7 +337,7 @@ export const ArenaDetailModal: React.FC<{
                 : currentLinkType === 'mentoria'
                     ? 'Voce esta removendo a arena ligada a esta mentoria. A relacao continua ativa, mas esta arena sera apagada de vez. Tem certeza?'
                     : 'Tem certeza que deseja excluir esta arena? Esta acao nao pode ser desfeita.';
-    const handleEditToggle = () => {
+    const handleEditToggle = async () => {
         if (isReadOnlyArena) {
             showToast('Essa arena compartilhada abre aqui apenas para leitura.', 'warning');
             return;
@@ -347,15 +347,36 @@ export const ArenaDetailModal: React.FC<{
             return;
         }
         if (isEditing) {
-            updateArena(arena.id, {
+            const nextArenaData = {
                 assetId: editableArena.assetId,
                 name: editableArena.name,
                 description: editableArena.description,
                 icon: editableArena.icon,
-            });
+            };
+
             if (isDetachedMentorshipCollab) {
-                void Promise.resolve(onLinkedArenaRefresh?.());
+                const { error } = await supabase
+                    .from('arenas')
+                    .update({
+                        asset_id: nextArenaData.assetId,
+                        name: nextArenaData.name,
+                        description: nextArenaData.description,
+                        icon: nextArenaData.icon,
+                    })
+                    .eq('id', arena.id);
+
+                if (error) {
+                    console.error('Supabase collaborative arena update error:', error.message);
+                    showToast('Nao foi possivel atualizar essa arena vinculada.', 'error');
+                    return;
+                }
+
+                await Promise.resolve(onLinkedArenaRefresh?.());
+                window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            } else {
+                updateArena(arena.id, nextArenaData);
             }
+
             showToast('Arena atualizada.', 'success');
         }
         setIsEditing(!isEditing);

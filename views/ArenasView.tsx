@@ -84,8 +84,15 @@ export const ArenasView: React.FC = () => {
         arena: Arena;
         actions: Action[];
         tasks: ScheduledTask[];
+        readOnly?: boolean;
+        relationshipLinkId?: string;
+        relationshipLinkType?: RelationshipLinkType | null;
+        collaborationRole?: 'mentor' | 'pupil' | null;
+        allowLinkedMentorshipEdit?: boolean;
+        collaborativeOwnerUserId?: string | null;
     } | null>(null);
     const [selectedReceivedCampaignPreview, setSelectedReceivedCampaignPreview] = useState<CodexCampaignPreview | null>(null);
+    const [linkedArenaRefreshToken, setLinkedArenaRefreshToken] = useState(0);
 
     useEffect(() => {
         const handleTutorialOpenArena = (e: any) => {
@@ -113,6 +120,15 @@ export const ArenasView: React.FC = () => {
 
         window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.requestArenaModalOpen, handleTutorialRequestArenaModal);
         return () => window.removeEventListener(FIRST_USE_ONBOARDING_EVENTS.requestArenaModalOpen, handleTutorialRequestArenaModal);
+    }, []);
+
+    useEffect(() => {
+        const handleRelationshipRefresh = () => {
+            setLinkedArenaRefreshToken((current) => current + 1);
+        };
+
+        window.addEventListener('glyph:relationships-updated', handleRelationshipRefresh);
+        return () => window.removeEventListener('glyph:relationships-updated', handleRelationshipRefresh);
     }, []);
 
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
@@ -447,6 +463,8 @@ export const ArenasView: React.FC = () => {
                                 id: String(row.id),
                                 relationshipLinkId: String(row.relationship_link_id),
                                 linkType: link?.link_type,
+                                mentorId: link?.mentor_id ? String(link.mentor_id) : undefined,
+                                pupilId: link?.pupil_id ? String(link.pupil_id) : undefined,
                                 arenaId,
                                 createdByUserId: row.created_by_user_id ?? null,
                                 createdAt: String(row.created_at),
@@ -486,7 +504,7 @@ export const ArenasView: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [userProfile?.id]);
+    }, [linkedArenaRefreshToken, userProfile?.id]);
 
     const getAssetNameForSharedArena = (linkedArena: LinkedRelationshipArena) => {
         const assetId = linkedArena.arena?.assetId || String(linkedArena.metadata?.asset_id || '');
@@ -504,6 +522,71 @@ export const ArenasView: React.FC = () => {
             isArchived: false,
         }
     );
+
+    const buildSharedArenaDetailState = (linkedArena: LinkedRelationshipArena) => {
+        const previewArena = getPreviewArenaForSharedArena(linkedArena);
+        const liveOwnedArena = ownedArenaIds.has(previewArena.id)
+            ? assets.flatMap((asset) => asset.arenas).find((arena) => arena.id === previewArena.id) || null
+            : null;
+        const collaborationRole = linkedArena.linkType === 'mentoria'
+            ? (linkedArena.mentorId === userProfile.id ? 'mentor' : linkedArena.pupilId === userProfile.id ? 'pupil' : null)
+            : null;
+        const canMentorshipCollaborate = Boolean(
+            linkedArena.linkType === 'mentoria'
+            && (collaborationRole === 'mentor' || collaborationRole === 'pupil')
+        );
+        const shouldForceMentorshipPreview = Boolean(
+            linkedArena.linkType === 'mentoria'
+            && collaborationRole === 'mentor'
+        );
+        const collaborativeOwnerUserId = linkedArena.linkType === 'mentoria'
+            ? (linkedArena.pupilId || String(linkedArena.metadata?.owner_user_id || '') || null)
+            : null;
+
+        if (liveOwnedArena && !shouldForceMentorshipPreview) {
+            return {
+                arena: liveOwnedArena,
+                actions: linkedArena.actions || [],
+                tasks: linkedArena.tasks || [],
+                readOnly: false,
+                relationshipLinkId: linkedArena.relationshipLinkId,
+                relationshipLinkType: linkedArena.linkType || null,
+                collaborationRole,
+                allowLinkedMentorshipEdit: false,
+                collaborativeOwnerUserId,
+            };
+        }
+
+        return {
+            arena: previewArena,
+            actions: linkedArena.actions || [],
+            tasks: linkedArena.tasks || [],
+            readOnly: !canMentorshipCollaborate,
+            relationshipLinkId: linkedArena.relationshipLinkId,
+            relationshipLinkType: linkedArena.linkType || null,
+            collaborationRole,
+            allowLinkedMentorshipEdit: canMentorshipCollaborate,
+            collaborativeOwnerUserId,
+        };
+    };
+
+    useEffect(() => {
+        if (!selectedSharedArenaDetail?.relationshipLinkId) return;
+
+        const currentArenaId = selectedSharedArenaDetail.arena.id;
+        const matchingArena = sharedLinkedArenas.find((linkedArena) => {
+            if (linkedArena.relationshipLinkId !== selectedSharedArenaDetail.relationshipLinkId) return false;
+            const linkedArenaId = linkedArena.arena?.id || linkedArena.arenaId;
+            return linkedArenaId === currentArenaId;
+        });
+
+        if (!matchingArena) return;
+        setSelectedSharedArenaDetail(buildSharedArenaDetailState(matchingArena));
+    }, [
+        selectedSharedArenaDetail?.arena.id,
+        selectedSharedArenaDetail?.relationshipLinkId,
+        sharedLinkedArenas,
+    ]);
     const renderRelationshipMiniBadge = (linkType?: RelationshipLinkType | null) => {
         if (linkType === 'mentoria') {
             return (
@@ -1728,7 +1811,7 @@ export const ArenasView: React.FC = () => {
                                 ))}
                             </div>
                         ) : (
-                        <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                        <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
                             <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                             {receivedMentorCampaigns.map(({ codex, preview }) => (
                                 <div
@@ -1803,17 +1886,13 @@ export const ArenasView: React.FC = () => {
                                         actionsOverride: linkedArena.actions || [],
                                         tasksOverride: linkedArena.tasks || [],
                                         onOpen: () => {
-                                            setSelectedSharedArenaDetail({
-                                                arena: getPreviewArenaForSharedArena(linkedArena),
-                                                actions: linkedArena.actions || [],
-                                                tasks: linkedArena.tasks || [],
-                                            });
+                                            setSelectedSharedArenaDetail(buildSharedArenaDetailState(linkedArena));
                                         },
                                     })
                                 ))}
                             </div>
                         ) : (
-                        <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                        <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
                             <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                             {receivedSharedArenas.map((linkedArena) => (
                                 <div key={linkedArena.id}>
@@ -1824,11 +1903,7 @@ export const ArenasView: React.FC = () => {
                                         tasks={linkedArena.tasks || []}
                                         relationshipBadgeType={linkedArena.linkType ?? null}
                                         onClick={() => {
-                                            setSelectedSharedArenaDetail({
-                                                arena: getPreviewArenaForSharedArena(linkedArena),
-                                                actions: linkedArena.actions || [],
-                                                tasks: linkedArena.tasks || [],
-                                            });
+                                            setSelectedSharedArenaDetail(buildSharedArenaDetailState(linkedArena));
                                         }}
                                         variant="overview"
                                     />
@@ -2011,7 +2086,7 @@ export const ArenasView: React.FC = () => {
                                             <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
                                         </div>
                                         {!isCollapsed && (
-                                            <div className={`animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'grid min-h-[80px] border-2 border-dashed border-white/5 rounded-xl place-items-center' : arenaPresentationMode === 'list' ? 'space-y-2' : 'overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2'}`} style={arenaPresentationMode === 'list' ? undefined : { WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                                            <div className={`animate-in fade-in slide-in-from-top-1 duration-200 ${isEmpty ? 'grid min-h-[80px] border-2 border-dashed border-white/5 rounded-xl place-items-center' : arenaPresentationMode === 'list' ? 'space-y-2' : 'overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2'}`} style={arenaPresentationMode === 'list' ? undefined : { WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
                                                 {isEmpty ? (
                                                     <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">Arraste aqui</span>
                                                 ) : arenaPresentationMode === 'list' ? (
@@ -2078,7 +2153,7 @@ export const ArenasView: React.FC = () => {
                                                 }))}
                                             </div>
                                         ) : (
-                                        <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                                        <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
                                             <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
                                                 {campaigns.map(campaign => renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign)))}
                                             </div>
@@ -2112,7 +2187,7 @@ export const ArenasView: React.FC = () => {
                                                     }))}
                                                 </div>
                                             ) : (
-                                            <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2 animate-in fade-in slide-in-from-top-1 duration-200" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                                            <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2 animate-in fade-in slide-in-from-top-1 duration-200" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
                                                 <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[8.45rem] gap-3 px-2 pt-1">
                                                     {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                                 </div>
@@ -2147,7 +2222,13 @@ export const ArenasView: React.FC = () => {
                     arena={selectedSharedArenaDetail.arena}
                     actionsOverride={selectedSharedArenaDetail.actions}
                     tasksOverride={selectedSharedArenaDetail.tasks}
-                    readOnly
+                    readOnly={selectedSharedArenaDetail.readOnly}
+                    linkedRelationshipLinkId={selectedSharedArenaDetail.relationshipLinkId}
+                    linkedRelationshipType={selectedSharedArenaDetail.relationshipLinkType || null}
+                    collaborativeRole={selectedSharedArenaDetail.collaborationRole || null}
+                    allowLinkedMentorshipEdit={selectedSharedArenaDetail.allowLinkedMentorshipEdit}
+                    collaborativeOwnerUserId={selectedSharedArenaDetail.collaborativeOwnerUserId || null}
+                    onLinkedArenaRefresh={() => setLinkedArenaRefreshToken((current) => current + 1)}
                     onClose={() => setSelectedSharedArenaDetail(null)}
                 />
             )}

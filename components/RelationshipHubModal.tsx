@@ -797,6 +797,15 @@ export const RelationshipHubModal: React.FC<{
         void refreshHub();
     }, []);
 
+    useEffect(() => {
+        const handleRelationshipRefresh = () => {
+            void refreshHub();
+        };
+
+        window.addEventListener('glyph:relationships-updated', handleRelationshipRefresh);
+        return () => window.removeEventListener('glyph:relationships-updated', handleRelationshipRefresh);
+    }, []);
+
     const profileFor = (id: string) => profilesById[id] || null;
     const otherParticipant = (link: RelationshipLink) => {
         const targetId = link.mentorId === sessionUid ? link.pupilId : link.mentorId;
@@ -1442,7 +1451,10 @@ export const RelationshipHubModal: React.FC<{
                                     : 'Seu mentor ainda nao compartilhou arenas nessa relacao.'}
                             />
                         ) : (
-                            <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
+                            <div
+                                className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
+                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
+                            >
                                 {arenasForLink.map((linkedArena) => (
                                     <RelationshipArenaBoardCard
                                         key={linkedArena.id}
@@ -1619,7 +1631,10 @@ export const RelationshipHubModal: React.FC<{
                         {ownArenasForLink.length === 0 ? (
                             <EmptyState title="Nada exposto ainda" text="Mostre uma arena sua para esse parceiro acompanhar daqui." />
                         ) : (
-                            <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
+                            <div
+                                className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
+                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
+                            >
                                 {ownArenasForLink.map((linkedArena) => (
                                     <RelationshipArenaBoardCard
                                         key={linkedArena.id}
@@ -1644,7 +1659,10 @@ export const RelationshipHubModal: React.FC<{
                         {partnerArenasForLink.length === 0 ? (
                             <EmptyState title="Sem arenas do aliado" text="Esse parceiro ainda nao mostrou nenhuma arena nessa parceria." />
                         ) : (
-                            <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
+                            <div
+                                className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
+                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
+                            >
                                 {partnerArenasForLink.map((linkedArena) => (
                                     <RelationshipArenaBoardCard
                                         key={linkedArena.id}

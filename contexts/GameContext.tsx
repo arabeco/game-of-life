@@ -549,7 +549,7 @@ export interface GameContextType {
     resetDailyCommitment: () => void;
     openChest: (chestType: ChestType) => Promise<ChestOpenResult | null>;
     createClan: (clanDetails: Omit<Clan, 'id' | 'exp' | 'rankId'>) => Promise<boolean>;
-    updateClan: (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl' | 'recruitmentStatus'>>) => Promise<void>;
+    updateClan: (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl' | 'recruitmentStatus'>>) => Promise<boolean>;
     leaveClan: () => Promise<void>;
     transferLeadershipAndLeave: (newLeaderId: string) => Promise<void>;
     deleteClan: () => Promise<void>;
@@ -2757,12 +2757,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         try {
             const result = await rateLimiter.addRequest(() =>
-                supabase.from('clan_join_requests').select('*').eq('user_id', userId)
+                supabase.from('clan_join_requests').select('*').eq('user_id', userId).order('created_at', { ascending: false })
             );
 
             const { data, error } = result;
             if (error || !data) {
                 if (error) console.error('Error fetching outgoing clan join requests:', error.message);
+                setClanJoinRequestsOutgoing([]);
                 return;
             }
             const mapped = mapToCamelCase(data || []) as ClanJoinRequest[];
@@ -2774,9 +2775,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, []);
 
     const loadClanJoinRequestsIncoming = useCallback(async (clanId: string) => {
-        const { data, error } = await supabase.from('clan_join_requests').select('*').eq('clan_id', clanId);
+        const { data, error } = await supabase.from('clan_join_requests').select('*').eq('clan_id', clanId).order('created_at', { ascending: false });
         if (error || !data) {
             if (error) console.error('Error fetching incoming clan join requests:', error.message);
+            setClanJoinRequestsIncoming([]);
             return;
         }
         const mapped = mapToCamelCase(data || []) as ClanJoinRequest[];
@@ -2784,6 +2786,56 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const profilesById = await hydrateProfilesByIds(pending.map(r => r.userId));
         setClanJoinRequestsIncoming(pending.map(req => ({ ...req, requesterProfile: profilesById[req.userId] })));
     }, [hydrateProfilesByIds]);
+
+    const clearClanRuntimeState = useCallback(() => {
+        clanCacheRef.current = null;
+        setClan(null);
+        setEnrichedClanMembers([]);
+        setClanJoinRequestsIncoming([]);
+        setClanJoinRequestsOutgoing([]);
+        setClanQuestProgress({});
+        setClanQuestParticipants({});
+        setUserMissionParticipations({});
+        setUserProfile(prev => ({ ...prev, clanName: undefined, clanIcon: undefined }));
+    }, []);
+
+    const refreshClanMembershipState = useCallback(async (userId: string) => {
+        if (!isUuid(userId)) {
+            clearClanRuntimeState();
+            return;
+        }
+
+        const { data: membershipRow, error: membershipError } = await supabase
+            .from('clan_members')
+            .select('clan_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (membershipError) {
+            console.error('Error refreshing clan membership state:', membershipError.message);
+            return;
+        }
+
+        if (membershipRow?.clan_id) {
+            await loadClanAndMembers(String(membershipRow.clan_id), true);
+        } else {
+            clearClanRuntimeState();
+        }
+
+        await loadClanJoinRequestsOutgoing(userId);
+    }, [clearClanRuntimeState, loadClanAndMembers, loadClanJoinRequestsOutgoing]);
+
+    const deleteClanScopedRows = useCallback(async (table: string, clanId: string) => {
+        const { error } = await supabase.from(table).delete().eq('clan_id', clanId);
+        if (!error) return;
+
+        const message = String(error.message || '');
+        const code = String((error as any)?.code || '');
+        const relationMissing = code === '42P01' || message.includes('relation') || message.includes('does not exist');
+        if (!relationMissing) {
+            console.error(`Error deleting ${table} for clan cleanup:`, error.message);
+        }
+    }, []);
 
     useEffect(() => {
         if (!clan) return;
@@ -4482,6 +4534,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         showToast(linkType === 'mentoria' ? 'Convite de mentoria enviado.' : linkType === 'parceria' ? 'Convite de parceria enviado.' : 'Convite de competicao enviado.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };
 
@@ -4507,6 +4560,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             showToast('Convite aceito.', 'success');
         }
 
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };
 
@@ -4532,6 +4586,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         showToast('Vinculo encerrado.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };
 
@@ -4614,6 +4669,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         showToast(linkedArenaType === 'parceria' ? 'Arena compartilhada adicionada a parceria.' : 'Arena vinculada criada para a mentoria.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return nextArena;
     };
 
@@ -7371,6 +7427,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
         await loadFriendsAndRequests(senderId);
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
     const acceptFriendRequest = async (requestId: string): Promise<void> => {
@@ -7408,6 +7465,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         );
 
         await loadFriendsAndRequests(userId);
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
     const declineFriendRequest = async (requestId: string): Promise<void> => {
@@ -7429,9 +7487,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             );
         }
         await loadFriendsAndRequests(userId);
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
-    const cancelFriendRequest = async (requestId: string): Promise<void> => {
+    const legacyCancelFriendRequest = async (requestId: string): Promise<void> => {
         const userId = getSupabaseUserId();
         if (!userId) return;
         const existingRequest = friendRequestsOutgoing.find((request) => request.id === requestId);
@@ -7456,6 +7515,39 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         showToast('Convite de amizade cancelado.', 'success');
         await loadFriendsAndRequests(userId);
+    };
+
+    const cancelFriendRequest = async (requestId: string): Promise<void> => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+        const existingRequest = friendRequestsOutgoing.find((request) => request.id === requestId);
+        if (!existingRequest) {
+            showToast('Esse convite já não está mais pendente.', 'info');
+            await loadFriendsAndRequests(userId);
+            return;
+        }
+
+        setFriendRequestsOutgoing(prev => prev.filter(request => request.id !== requestId));
+
+        const { data: deletedRows, error } = await supabase
+            .from('friend_requests')
+            .delete()
+            .eq('id', requestId)
+            .eq('sender_id', userId)
+            .eq('status', 'pending')
+            .select('id');
+
+        if (error || !deletedRows || deletedRows.length === 0) {
+            console.error('Error canceling friend request:', error?.message || 'No friend request row deleted');
+            setFriendRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
+            showToast('Não foi possível cancelar o convite de amizade.', 'error');
+            await loadFriendsAndRequests(userId);
+            return;
+        }
+
+        showToast('Convite de amizade cancelado.', 'success');
+        await loadFriendsAndRequests(userId);
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
     const getActionById = (actionId: string) => actions.find(a => a.id === actionId);
@@ -9209,42 +9301,48 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
-    const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl' | 'recruitmentStatus'>>) => {
-        const snakeCaseData = mapToSnakeCase(data) as Record<string, unknown>;
-        const { error } = await supabase.from('clans').update(snakeCaseData).eq('id', clanId);
-        if (error) {
-            console.error("Error updating clan:", error.message);
+    const updateClan = async (clanId: string, data: Partial<Pick<Clan, 'name' | 'icon' | 'description' | 'backgroundUrl' | 'recruitmentStatus'>>): Promise<boolean> => {
+        const normalizedData = {
+            ...data,
+            ...(typeof data.name === 'string' ? { name: data.name.trim() } : {}),
+            ...(typeof data.description === 'string' ? { description: data.description.trim() } : {}),
+        };
+        const snakeCaseData = mapToSnakeCase(normalizedData) as Record<string, unknown>;
+        const { data: updatedClanRow, error } = await supabase
+            .from('clans')
+            .update(snakeCaseData)
+            .eq('id', clanId)
+            .select('*')
+            .maybeSingle();
+
+        if (error || !updatedClanRow) {
+            console.error("Error updating clan:", error?.message || 'No clan row returned');
             showToast('Nao foi possivel atualizar o grupo.', 'error');
-            return;
+            return false;
         }
 
-        setClan(prev => (prev && prev.id === clanId) ? { ...prev, ...data } : prev);
+        const updatedClan = mapToCamelCase(updatedClanRow) as Clan;
+        setClan(updatedClan);
+        clanCacheRef.current = null;
 
-        if (clanCacheRef.current && clanCacheRef.current.clanId === clanId && clanCacheRef.current.clan) {
-            clanCacheRef.current.clan = {
-                ...clanCacheRef.current.clan,
-                ...data,
-            };
-        }
-
-        if (data.name || data.icon) {
+        if (updatedClan.name || updatedClan.icon) {
             setEnrichedClanMembers(prev =>
-                prev.map(member => member.id === userProfile.id
-                    ? {
-                        ...member,
-                        clanName: data.name ?? member.clanName,
-                        clanIcon: data.icon ?? member.clanIcon,
-                    }
-                    : member)
+                prev.map(member => ({
+                    ...member,
+                    clanName: updatedClan.name ?? member.clanName,
+                    clanIcon: updatedClan.icon ?? member.clanIcon,
+                }))
             );
 
             updateUserProfile({
-                clanName: data.name ?? userProfile.clanName,
-                clanIcon: data.icon ?? userProfile.clanIcon,
+                clanName: updatedClan.name ?? userProfile.clanName,
+                clanIcon: updatedClan.icon ?? userProfile.clanIcon,
             });
         }
 
+        await loadClanAndMembers(clanId, true);
         showToast('Grupo atualizado.', 'success');
+        return true;
     };
 
     const leaveClan = async () => {
@@ -9262,23 +9360,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        const { error } = await supabase.from('clan_members').delete().eq('user_id', userId);
-        if (error) { console.error("Error leaving clan:", error.message); return; }
+        const { data: deletedMembershipRows, error } = await supabase
+            .from('clan_members')
+            .delete()
+            .eq('user_id', userId)
+            .eq('clan_id', currentClanId)
+            .select('user_id');
+        if (error) {
+            console.error("Error leaving clan:", error.message);
+            showToast('Não foi possível sair do grupo agora.', 'error');
+            return;
+        }
+        if (!deletedMembershipRows || deletedMembershipRows.length === 0) {
+            showToast('Sua saída do grupo não foi confirmada.', 'warning');
+            await refreshClanMembershipState(userId);
+            return;
+        }
 
         // Invalidate cache for the clan we just left
         if (clan && clanCacheRef.current && clanCacheRef.current.clanId === clan.id) {
             clanCacheRef.current.timestamp = 0;
         }
 
-        setClan(null);
-        setEnrichedClanMembers([]);
-        setClanJoinRequestsIncoming([]);
-        setClanQuestProgress({});
-        setClanQuestParticipants({});
-        setUserMissionParticipations({});
+        await refreshClanMembershipState(userId);
+        showToast('Você saiu do grupo.', 'success');
     };
 
-    const transferLeadershipAndLeave = async (newLeaderId: string) => {
+    const legacyTransferLeadershipAndLeave = async (newLeaderId: string) => {
         if (!clan || !session) return;
         if (getCurrentClanRole() !== 'leader') {
             showToast('Só a liderança pode transferir o grupo.', 'warning');
@@ -9297,7 +9405,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await leaveClan();
     };
 
-    const deleteClan = async () => {
+    const legacyDeleteClan = async () => {
         if (!clan) return;
         const currentUserId = getSupabaseUserId();
         if (!currentUserId) return;
@@ -9345,6 +9453,97 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setClanQuestParticipants({});
         setUserMissionParticipations({});
         updateUserProfile({ clanName: undefined, clanIcon: undefined });
+        showToast('Grupo apagado com sucesso.', 'success');
+    };
+
+    const transferLeadershipAndLeave = async (newLeaderId: string) => {
+        if (!clan || !session) return;
+        if (getCurrentClanRole() !== 'leader') {
+            showToast('Só a liderança pode transferir o grupo.', 'warning');
+            return;
+        }
+        if (!isUuid(newLeaderId)) {
+            console.error("Invalid new leader ID");
+            return;
+        }
+        if (newLeaderId === session.user.id) {
+            showToast('Escolha outra pessoa para assumir a liderança.', 'warning');
+            return;
+        }
+
+        const { error: promoteError } = await supabase
+            .from('clan_members')
+            .update({ role: 'leader' })
+            .eq('clan_id', clan.id)
+            .eq('user_id', newLeaderId);
+
+        if (promoteError) {
+            console.error("Error transferring leadership:", promoteError.message);
+            showToast('Não foi possível transferir a liderança.', 'error');
+            return;
+        }
+
+        await leaveClan();
+    };
+
+    const deleteClan = async () => {
+        if (!clan) return;
+        const currentUserId = getSupabaseUserId();
+        if (!currentUserId) return;
+        if (getCurrentClanRole() !== 'leader') {
+            showToast('Só a liderança pode apagar o grupo.', 'warning');
+            return;
+        }
+        if (enrichedClanMembers.length > 1) {
+            showToast('Para apagar o grupo, primeiro ele precisa ficar só com você.', 'warning');
+            return;
+        }
+
+        await Promise.all([
+            deleteClanScopedRows('clan_mission_participants', clan.id),
+            deleteClanScopedRows('clan_mission_progress', clan.id),
+            deleteClanScopedRows('clan_join_requests', clan.id),
+            deleteClanScopedRows('clan_aldeia_slots', clan.id),
+            deleteClanScopedRows('clan_aldeia_presence', clan.id),
+            deleteClanScopedRows('clan_custom_quests', clan.id),
+            deleteClanScopedRows('sanctuary_positions', clan.id),
+            deleteClanScopedRows('sanctuary_area_stats', clan.id),
+        ]);
+
+        const { error: memberCleanupError } = await supabase
+            .from('clan_members')
+            .delete()
+            .eq('clan_id', clan.id);
+
+        if (memberCleanupError) {
+            console.error("Error deleting clan members before clan delete:", memberCleanupError.message);
+        }
+
+        const { data: deletedClanRows, error: deleteError } = await supabase
+            .from('clans')
+            .delete()
+            .eq('id', clan.id)
+            .select('id');
+
+        if (deleteError) {
+            console.error("Error deleting clan:", deleteError.message);
+            showToast('Não foi possível apagar o grupo agora.', 'error');
+            await refreshClanMembershipState(currentUserId);
+            return;
+        }
+
+        if (!deletedClanRows || deletedClanRows.length === 0) {
+            showToast('A dissolução do grupo não foi confirmada.', 'warning');
+            await refreshClanMembershipState(currentUserId);
+            return;
+        }
+
+        if (clanCacheRef.current && clanCacheRef.current.clanId === clan.id) {
+            clanCacheRef.current.timestamp = 0;
+        }
+
+        clearClanRuntimeState();
+        await loadClanJoinRequestsOutgoing(currentUserId);
         showToast('Grupo apagado com sucesso.', 'success');
     };
 
@@ -9556,11 +9755,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        const { error: updateError } = await supabase
+        const { data: updatedRequestRows, error: updateError } = await supabase
             .from('clan_join_requests')
             .update({ status: 'approved', responded_at: new Date().toISOString() })
-            .eq('id', request.id);
-        if (updateError) { console.error("Error approving clan join request:", updateError.message); return; }
+            .eq('id', request.id)
+            .select('id');
+        if (updateError || !updatedRequestRows || updatedRequestRows.length === 0) { console.error("Error approving clan join request:", updateError?.message || 'No request row updated'); return; }
 
         const { error: insertError } = await supabase.from('clan_members').insert({ user_id: request.userId, clan_id: clan.id, role: 'member' });
         if (insertError) { console.error("Error adding member from request:", insertError.message); return; }
@@ -9580,11 +9780,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const rejectClanJoinRequest = async (request: ClanJoinRequest) => {
         if (!clan || request.clanId !== clan.id) return;
-        const { error } = await supabase
+        const { data: rejectedRows, error } = await supabase
             .from('clan_join_requests')
             .update({ status: 'rejected', responded_at: new Date().toISOString() })
-            .eq('id', request.id);
-        if (error) { console.error("Error rejecting clan join request:", error.message); return; }
+            .eq('id', request.id)
+            .select('id');
+        if (error || !rejectedRows || rejectedRows.length === 0) { console.error("Error rejecting clan join request:", error?.message || 'No request row updated'); return; }
 
         await SupabaseService.createNotification(
             request.userId,
@@ -9592,10 +9793,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             `${clan.name} recusou sua entrada no grupo.`,
         );
 
-        setClanJoinRequestsIncoming(prev => prev.filter(r => r.id !== request.id));
+        await loadClanJoinRequestsIncoming(clan.id);
     };
 
-    const cancelClanJoinRequest = async (requestId: string): Promise<void> => {
+    const legacyCancelClanJoinRequest = async (requestId: string): Promise<void> => {
         const userId = getSupabaseUserId();
         if (!userId) return;
         const existingRequest = clanJoinRequestsOutgoing.find((request) => request.id === requestId);
@@ -9617,6 +9818,38 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             console.error("Error canceling clan join request:", error.message);
             setClanJoinRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
             showToast('Não foi possível cancelar a solicitação ao grupo.', 'error');
+            return;
+        }
+
+        showToast('Solicitação ao grupo cancelada.', 'success');
+        await loadClanJoinRequestsOutgoing(userId);
+    };
+
+    const cancelClanJoinRequest = async (requestId: string): Promise<void> => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+        const existingRequest = clanJoinRequestsOutgoing.find((request) => request.id === requestId);
+        if (!existingRequest) {
+            showToast('Essa solicitação já não está mais pendente.', 'info');
+            await loadClanJoinRequestsOutgoing(userId);
+            return;
+        }
+
+        setClanJoinRequestsOutgoing(prev => prev.filter(request => request.id !== requestId));
+
+        const { data: deletedRows, error } = await supabase
+            .from('clan_join_requests')
+            .delete()
+            .eq('id', requestId)
+            .eq('user_id', userId)
+            .eq('status', 'pending')
+            .select('id');
+
+        if (error || !deletedRows || deletedRows.length === 0) {
+            console.error("Error canceling clan join request:", error?.message || 'No clan join request row deleted');
+            setClanJoinRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
+            showToast('Não foi possível cancelar a solicitação ao grupo.', 'error');
+            await loadClanJoinRequestsOutgoing(userId);
             return;
         }
 

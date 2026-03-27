@@ -326,7 +326,7 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 
 // --- Main Modal ---
 
-export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; }> = ({ clanName, onClose }) => {
+export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void; }> = ({ clanName, onClose }) => {
     const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, updateAction, deleteAction, deleteArena, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, activateClanQuest, clanQuestProgress, userMissionParticipations, isBasicMode, clan, getAldeiaSlots, getAldeiaPresence, updateAldeiaSlot, performAldeiaDailyUpdate, enterAldeiaSlot, appMode } = useGame();
     const [now, setNow] = useState(new Date());
     useEffect(() => {
@@ -334,6 +334,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         return () => clearInterval(interval);
     }, []);
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
+    const resolvedClanName = (clan?.name || clanName || 'seu grupo').trim();
 
     const { trigger } = useSensoryFeedback();
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
@@ -548,7 +549,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 setMyParticipations(prev => Array.from(new Set([...prev, quest.id])));
                 const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
                 if (data) setClanQuests(data as ClanCustomQuest[]);
-                showToast(quest.mission_type === 'singular' ? "Tarefa assumida no seu app." : "ContribuiÃ§Ã£o ativada no seu app.");
+                showToast(quest.mission_type === 'singular' ? "Tarefa assumida no seu app." : "Contribuição ativada no seu app.");
                 return;
             }
 
@@ -585,7 +586,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
                 }
             }
 
-            const activationText = quest.mission_type === 'singular' ? 'Tarefa assumida' : 'ContribuiÃ§Ã£o ativada';
+            const activationText = quest.mission_type === 'singular' ? 'Tarefa assumida' : 'Contribuição ativada';
             showToast(
                 scheduledInPlanner
                     ? `${activationText} e agendada no Planner!`
@@ -754,7 +755,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
         if (slotId === 'trono') {
             // Se for clã office, apenas o líder pode entrar na Sala do Diretor
             if (isOfficeClan && userClanRole !== 'leader') {
-                showToast(isOfficeClan ? "Apenas o diretor pode acessar a Sala do Diretor." : "Apenas o lider do grupo pode acessar a Sala do Diretor.");
+                showToast(isOfficeClan ? "Apenas o diretor pode acessar a Sala do Diretor." : "Apenas o líder do grupo pode acessar a Sala do Diretor.");
                 return;
             }
 
@@ -1816,7 +1817,7 @@ export const ClanDetailModal: React.FC<{ clanName: string; onClose: () => void; 
             {subModal === 'leave' && (
                 <ConfirmationModal
                     title="Sair do Grupo"
-                    message={userClanRole === 'leader' ? `Voce e a ultima pessoa. Sair ira dissolver o grupo "${clanName}". Tem certeza?` : `Tem certeza que deseja sair de ${clanName}?`}
+                    message={userClanRole === 'leader' ? `Você é a última pessoa. Sair vai dissolver o grupo "${resolvedClanName}". Tem certeza?` : `Tem certeza que deseja sair de ${resolvedClanName}?`}
                     onConfirm={handleConfirmLeave}
                     onCancel={() => setSubModal(null)}
                 />

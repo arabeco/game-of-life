@@ -451,6 +451,15 @@ const SocialTab: React.FC = () => {
         void refreshRelationshipState();
     }, [friends]);
 
+    useEffect(() => {
+        const handleRelationshipRefresh = () => {
+            void refreshRelationshipState();
+        };
+
+        window.addEventListener('glyph:relationships-updated', handleRelationshipRefresh);
+        return () => window.removeEventListener('glyph:relationships-updated', handleRelationshipRefresh);
+    }, [friends, userProfile.id]);
+
     // Simple profile builder for fallback
     const buildFallbackProfile = (id: string): UserProfile => ({
         id, nickname: 'Usuário', username: 'usuario', level: 1, avatarUrl: '', border: 'default', backgroundUrl: '', isOnline: false, visibleWidgets: [], assetArtById: {}, assetWidgetValues: {}, skin: 'default', nobility: { exp: 0, rankId: 'vagante' }, mood: 50, wallet: { gold: 0, fragments: 0 }, inventory: [], role: 'user'
@@ -461,7 +470,7 @@ const SocialTab: React.FC = () => {
             {clan ? (
                 <>
                     <ClanInfoBox onClick={() => setModal('sanctuary')} />
-                    {modal === 'sanctuary' && <ClanDetailModal onClose={() => setModal(null)} />}
+                    {modal === 'sanctuary' && <ClanDetailModal clanName={clan.name} onClose={() => setModal(null)} />}
                 </>
             ) : (
                 <JoinClanBox onCreate={() => setModal('create')} />

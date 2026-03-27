@@ -983,6 +983,8 @@ export interface LinkedRelationshipArena {
   id: string;
   relationshipLinkId: string;
   linkType?: RelationshipLinkType;
+  mentorId?: string;
+  pupilId?: string;
   arenaId: string;
   createdByUserId?: string | null;
   createdAt: string;

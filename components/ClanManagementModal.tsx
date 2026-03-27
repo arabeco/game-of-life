@@ -18,6 +18,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [memberToKick, setMemberToKick] = useState<string | null>(null);
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
     const officeBackgrounds = [
@@ -29,8 +30,14 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
     if (!clan) return null;
 
     const handleSave = async () => {
-        await updateClan(clan.id, { name, icon, description, backgroundUrl, recruitmentStatus });
-        onClose();
+        if (isSaving) return;
+        setIsSaving(true);
+        try {
+            const saved = await updateClan(clan.id, { name, icon, description, backgroundUrl, recruitmentStatus });
+            if (saved) onClose();
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleKickMember = async () => {
@@ -42,14 +49,15 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10001] flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                    <div className="flex justify-between items-center flex-shrink-0">
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10001] overflow-y-auto animate-fade-in" onClick={onClose}>
+                <div className="min-h-full flex items-start justify-center p-4">
+                <GlassCard variant="gold" className="w-full max-w-sm space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                    <div className="sticky top-0 z-10 flex justify-between items-center bg-[color:var(--modal-bg,#0a0b0f)]/92 backdrop-blur-md rounded-t-3xl -mx-0 px-0">
                         <h2 className="text-lg font-bold uppercase tracking-wider">Gerenciar Grupo</h2>
                         <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
 
-                    <div className="flex flex-col items-center space-y-4 flex-shrink-0">
+                    <div className="flex flex-col items-center space-y-4">
                         <button onClick={() => setIsIconPickerOpen(true)} className="w-24 h-24 bg-black/20 rounded-2xl flex items-center justify-center text-5xl">
                             {icon}
                         </button>
@@ -60,7 +68,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                             className="w-full h-12 px-4 bg-black/30 border border-[var(--glass-border)] rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-center font-bold"
                         />
                         <textarea
-                            placeholder="Recado / descricao do grupo..."
+                            placeholder="Recado / descrição do grupo..."
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={2}
@@ -110,7 +118,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                         )}
                     </div>
 
-                    <div className="flex-grow overflow-y-auto space-y-2 pr-2">
+                    <div className="space-y-2">
                         <h3 className="text-sm font-bold uppercase text-center text-gray-400">Pessoas</h3>
                         {enrichedClanMembers.map(member => (
                             <div key={member.id} className="bg-black/20 p-2 rounded-xl flex items-center space-x-3">
@@ -130,11 +138,12 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                         ))}
                     </div>
 
-                    <div className="flex-shrink-0 space-y-2">
+                    <div className="space-y-2">
                         <button onClick={() => setIsAddMemberModalOpen(true)} className="w-full py-2 rounded-xl luxe-button-secondary">Gerir Entradas</button>
-                        <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR MUDANCAS</button>
+                        <button onClick={handleSave} disabled={isSaving} className="w-full py-2 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed">{isSaving ? 'SALVANDO...' : 'SALVAR MUDANÇAS'}</button>
                     </div>
                 </GlassCard>
+                </div>
             </div>
             {isIconPickerOpen && <IconPickerModal onSelect={(i) => { setIcon(i); setIsIconPickerOpen(false); }} onClose={() => setIsIconPickerOpen(false)} />}
             {memberToKick && <ConfirmationModal title="Remover Pessoa" message={`Tem certeza que deseja remover ${enrichedClanMembers.find(m => m.id === memberToKick)?.nickname}?`} onConfirm={handleKickMember} onCancel={() => setMemberToKick(null)} />}

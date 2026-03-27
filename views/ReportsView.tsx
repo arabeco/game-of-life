@@ -107,7 +107,7 @@ const getReportMetaCounts = (report: Report) => {
 const getReportPresenceDays = (report: Report) => report.metrics?.fairness?.activeDays ?? report.metrics.consistencyDays ?? 0;
 
 // --- Sub-components for Active Cycle HUD ---
-const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => void; showTimelineMarker?: boolean }> = ({ cycle, onEdit, showTimelineMarker = true }) => {
+const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => void; showTimelineMarker?: boolean; showControls?: boolean }> = ({ cycle, onEdit, showTimelineMarker = true, showControls = true }) => {
     const { tasks, assets, actions, reports, deleteCycle } = useGame();
     const startDate = cycle.startDate;
     const endDate = cycle.endDate;
@@ -149,23 +149,27 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
                 </div>
             )}
             <div className="relative">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(cycle);
-                    }}
-                    className="absolute left-3 top-3 z-20 rounded-full p-1.5 text-white/75 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100"
-                    title="Editar data final do ciclo"
-                >
-                    <EditIcon className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={handleDelete}
-                    className="absolute right-3 top-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-full text-red-500"
-                    title="Excluir Ciclo"
-                >
-                    <Trash2Icon className="w-4 h-4" />
-                </button>
+                {showControls && (
+                    <>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(cycle);
+                            }}
+                            className="absolute left-3 top-3 z-20 rounded-full p-1.5 text-white/75 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100"
+                            title="Editar data final do ciclo"
+                        >
+                            <EditIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            className="absolute right-3 top-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-full text-red-500"
+                            title="Excluir Ciclo"
+                        >
+                            <Trash2Icon className="w-4 h-4" />
+                        </button>
+                    </>
+                )}
                 <MetalReportCard
                     rank={scoreInfo.grade}
                     score={currentScore}
@@ -187,20 +191,44 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
 const EditCycleEndDateModal: React.FC<{
     cycle: Cycle;
     onClose: () => void;
-    onSave: (endDate: string) => Promise<void>;
-}> = ({ cycle, onClose, onSave }) => {
+    onSave: (updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => Promise<void>;
+    onDelete: () => Promise<void>;
+}> = ({ cycle, onClose, onSave, onDelete }) => {
+    const [name, setName] = useState(cycle.name || '');
     const [endDate, setEndDate] = useState(cycle.endDate);
     const [isSaving, setIsSaving] = useState(false);
-    const minDate = cycle.startDate || getLocalDateString();
+    const [isDeleting, setIsDeleting] = useState(false);
+    const today = getLocalDateString();
+    const minDate = cycle.startDate && cycle.startDate > today ? cycle.startDate : today;
+    const todayDate = minDate;
+    const hasChanges = name.trim() !== (cycle.name || '') || endDate !== cycle.endDate;
 
     const handleSave = async () => {
         if (!endDate || isSaving) return;
         setIsSaving(true);
         try {
-            await onSave(endDate);
+            await onSave({
+                name: name.trim() || cycle.name || 'Ciclo ativo',
+                endDate,
+            });
             onClose();
+        } catch (error) {
+            console.error('Erro ao salvar ciclo:', error);
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (isDeleting) return;
+        const confirmed = window.confirm('Tem certeza que deseja excluir este ciclo atual? Isso nao pode ser desfeito.');
+        if (!confirmed) return;
+        setIsDeleting(true);
+        try {
+            await onDelete();
+            onClose();
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -211,10 +239,30 @@ const EditCycleEndDateModal: React.FC<{
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Editar ciclo</p>
                         <h2 className="mt-2 text-lg font-black uppercase text-white">{cycle.name || 'Ciclo ativo'}</h2>
-                        <p className="mt-1 text-sm text-gray-400">Ajuste apenas a data final.</p>
+                        <p className="mt-1 text-sm text-gray-400">Ajuste o nome e a data final do ciclo atual.</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Data final</div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Nome</div>
+                        <input
+                            type="text"
+                            value={name}
+                            maxLength={48}
+                            onChange={(event) => setName(event.target.value)}
+                            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white"
+                            placeholder="Nome do ciclo"
+                        />
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Data final</div>
+                            <button
+                                type="button"
+                                onClick={() => setEndDate(todayDate)}
+                                className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/75"
+                            >
+                                Hoje
+                            </button>
+                        </div>
                         <input
                             type="date"
                             value={endDate}
@@ -223,11 +271,103 @@ const EditCycleEndDateModal: React.FC<{
                             className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white"
                         />
                     </div>
-                    <div className="flex gap-2">
-                        <button onClick={onClose} className="flex-1 py-3 rounded-xl luxe-button-secondary text-xs">Cancelar</button>
-                        <button onClick={() => { void handleSave(); }} disabled={!endDate || isSaving} className="flex-1 py-3 rounded-xl luxe-skin-button text-xs disabled:opacity-50">
-                            {isSaving ? 'SALVANDO...' : 'SALVAR'}
+                    <div className="flex items-center justify-between gap-3">
+                        <button
+                            type="button"
+                            onClick={() => { void handleDelete(); }}
+                            disabled={isDeleting || isSaving}
+                            className="inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-xs font-bold text-red-300 disabled:opacity-50"
+                        >
+                            <Trash2Icon className="h-4 w-4" />
+                            {isDeleting ? 'EXCLUINDO...' : 'EXCLUIR'}
                         </button>
+                        <div className="flex flex-1 gap-2">
+                            <button onClick={onClose} className="flex-1 py-3 rounded-xl luxe-button-secondary text-xs">Cancelar</button>
+                            <button onClick={() => { void handleSave(); }} disabled={!endDate || isSaving || !hasChanges} className="flex-1 py-3 rounded-xl luxe-skin-button text-xs disabled:opacity-50">
+                                {isSaving ? 'SALVANDO...' : 'SALVAR'}
+                            </button>
+                        </div>
+                    </div>
+                </GlassCard>
+            </div>
+        </Portal>
+    );
+};
+
+const EditHistoricalCycleModal: React.FC<{
+    report: Report;
+    onClose: () => void;
+    onSave: (name: string) => Promise<void>;
+    onDelete: () => Promise<void>;
+}> = ({ report, onClose, onSave, onDelete }) => {
+    const [name, setName] = useState(report.cycleName || '');
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const normalizedName = name.trim();
+    const hasChanges = normalizedName.length > 0 && normalizedName !== (report.cycleName || '');
+
+    const handleSave = async () => {
+        if (!hasChanges || isSaving) return;
+        setIsSaving(true);
+        try {
+            await onSave(normalizedName);
+            onClose();
+        } catch (error) {
+            console.error('Erro ao salvar ciclo antigo:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (isDeleting) return;
+        const confirmed = window.confirm(`Excluir o ciclo "${report.cycleName || 'Ciclo'}"? Isso tambem remove o relatorio dele.`);
+        if (!confirmed) return;
+        setIsDeleting(true);
+        try {
+            await onDelete();
+            onClose();
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    return (
+        <Portal>
+            <div className="fixed inset-0 z-[10010] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+                <GlassCard variant="neutral" className="w-full max-w-sm p-4 space-y-4" onClick={(event) => event.stopPropagation()}>
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Editar ciclo</p>
+                        <h2 className="mt-2 text-lg font-black uppercase text-white">{report.cycleName || 'Ciclo'}</h2>
+                        <p className="mt-1 text-sm text-gray-400">Para ciclos fechados, so o nome pode ser alterado.</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Nome</div>
+                        <input
+                            type="text"
+                            value={name}
+                            maxLength={48}
+                            onChange={(event) => setName(event.target.value)}
+                            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white"
+                            placeholder="Nome do ciclo"
+                        />
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                        <button
+                            type="button"
+                            onClick={() => { void handleDelete(); }}
+                            disabled={isDeleting || isSaving}
+                            className="inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-xs font-bold text-red-300 disabled:opacity-50"
+                        >
+                            <Trash2Icon className="h-4 w-4" />
+                            {isDeleting ? 'EXCLUINDO...' : 'EXCLUIR'}
+                        </button>
+                        <div className="flex flex-1 gap-2">
+                            <button onClick={onClose} className="flex-1 py-3 rounded-xl luxe-button-secondary text-xs">Cancelar</button>
+                            <button onClick={() => { void handleSave(); }} disabled={!hasChanges || isSaving} className="flex-1 py-3 rounded-xl luxe-skin-button text-xs disabled:opacity-50">
+                                {isSaving ? 'SALVANDO...' : 'SALVAR'}
+                            </button>
+                        </div>
                     </div>
                 </GlassCard>
             </div>
@@ -281,7 +421,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
 
 // --- Timeline Components ---
 
-const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean, eraLabel?: string, eraSkinId?: string, isSelectedForEraEdit?: boolean, showTimelineMarker?: boolean }> = ({ report, isLatest, onClick, seasonName, isEditing, eraLabel, eraSkinId, isSelectedForEraEdit, showTimelineMarker = true }) => {
+const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean, eraLabel?: string, eraSkinId?: string, isSelectedForEraEdit?: boolean, showTimelineMarker?: boolean, onDelete?: () => void }> = ({ report, isLatest, onClick, seasonName, isEditing, eraLabel, eraSkinId, isSelectedForEraEdit, showTimelineMarker = true, onDelete }) => {
     const scoreInfo = getScoreGrade(report.performanceScore, report.metrics?.fairness);
     const startDate = formatDate(report.startDate);
     const endDate = formatDate(report.endDate);
@@ -297,11 +437,24 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
     } : undefined;
 
     return (
-        <div className={`relative ${showTimelineMarker ? 'pl-4' : ''}`}>
+        <div className={`relative group ${showTimelineMarker ? 'pl-4' : ''}`}>
             {showTimelineMarker && (
                 <div className={`absolute left-0 top-3 w-5 h-5 rounded-full border-2 flex items-center justify-center z-10 transition-all duration-500 ${isLatest ?'bg-black border-[var(--skin-accent-color)] shadow-[0_0_15px_var(--sephirot-glow-color)] scale-110' : 'bg-black border-white/20'}`}>
                     {isLatest && <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>}
                 </div>
+            )}
+            {onDelete && !isEditing && (
+                <button
+                    type="button"
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onDelete();
+                    }}
+                    className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-500/20 bg-black/60 text-red-300 opacity-85 transition hover:bg-red-500/18 hover:text-red-200"
+                    title="Excluir ciclo"
+                >
+                    <Trash2Icon className="h-4 w-4" />
+                </button>
             )}
             <button
                 onClick={onClick}
@@ -346,6 +499,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [reportForComparison, setReportForComparison] = useState<Report | null>(null);
     const [showNewCycleSetup, setShowNewCycleSetup] = useState(false);
     const [cycleBeingEdited, setCycleBeingEdited] = useState<Cycle | null>(null);
+    const [historicalCycleBeingEdited, setHistoricalCycleBeingEdited] = useState<Report | null>(null);
+    const [isEditingHistoryCycles, setIsEditingHistoryCycles] = useState(false);
     const [expGained, setExpGained] = useState(0);
     const [grantedInsignias, setGrantedInsignias] = useState<string[]>([]);
     const [earnedChest, setEarnedChest] = useState<ChestType | null>(null);
@@ -1484,6 +1639,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const renderLegacySummary = () => {
+        if (sortedReports.length === 0) return null;
         return (
             <GlassCard variant="neutral" className="mb-4 px-4 py-3">
                 <div className="flex flex-col gap-3">
@@ -1497,12 +1653,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <span className="text-white/15">/</span>
                         <span>score {Math.round(historicalAverageScore)}</span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex justify-center">
                         <button
                             onClick={handleStartLegacyExport}
-                            className="rounded-xl luxe-skin-button px-4 py-3 text-xs"
+                            className="w-full max-w-[260px] rounded-xl luxe-skin-button px-5 py-3.5 text-xs"
                         >
-                            ABRIR LEGADO
+                            VER LEGADO
                         </button>
                     </div>
                 </div>
@@ -1571,6 +1727,16 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setDraftReportEraIds({});
         setActiveDraftEraId(null);
         setInlineEraEditor(null);
+    };
+
+    const toggleHistoryCycleEditing = () => {
+        if (isEditingEras) {
+            showToast('Finalize a organizacao das Eras antes de editar ciclos.');
+            return;
+        }
+        setIsEditingHistoryCycles((previous) => !previous);
+        setCycleBeingEdited(null);
+        setHistoricalCycleBeingEdited(null);
     };
 
     const handleResetEras = async () => {
@@ -1774,16 +1940,14 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const renderEraControls = () => {
-        if (sortedReports.length === 0 && !activeCycle) return null;
+        if (sortedReports.length === 0) return null;
         const activeDraftEraSlot = draftEraSlots.find((slot) => slot.id === activeDraftEraId) || draftEraSlots[0] || null;
         const primaryEraSummary = eraSummaries[0];
-        const eraStatusLabel = sortedReports.length === 0 && activeCycle
-            ?'Era 1 pronta'
-            : primaryEraSummary && eraSummaries.length === 1
-                ?`${primaryEraSummary.label} - ${primaryEraSummary.cycleCount} ciclos`
-                : hasCustomEras
-                    ?`${effectiveEraCount} eras - manual`
-                    : `${effectiveEraCount} eras - automaticas`;
+        const eraStatusLabel = primaryEraSummary && eraSummaries.length === 1
+            ?`${primaryEraSummary.label} - ${primaryEraSummary.cycleCount} ciclos`
+            : hasCustomEras
+                ?`${effectiveEraCount} eras - manual`
+                : `${effectiveEraCount} eras - automaticas`;
 
         if (!isEditingEras) {
             return (
@@ -1794,7 +1958,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <p className="mt-1 text-xs font-semibold text-gray-300">{eraStatusLabel}</p>
                         </div>
                         <div className="flex shrink-0 flex-wrap gap-2">
-                            <button id="eras-button" onClick={beginEraEditing} className="rounded-xl luxe-button-secondary px-4 py-2.5 text-xs">{sortedReports.length === 0 ?'EDITAR' : 'ORGANIZAR'}</button>
+                            <button id="eras-button" onClick={beginEraEditing} className="rounded-xl luxe-button-secondary px-4 py-2.5 text-xs">ORGANIZAR</button>
                             {sortedReports.length > 0 && hasCustomEras && (
                                 <button onClick={handleResetEras} className="rounded-xl luxe-button-secondary px-4 py-2.5 text-xs">RESTAURAR</button>
                             )}
@@ -1898,16 +2062,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 );
             case 'hub': {
                 const items: Array<
-                    | { type: 'active'; cycle: Cycle }
                     | { type: 'report'; report: Report; reportIndex: number; seasonName?: string }
                 > = [];
                 const reportRowIndexMap = new Map<number, number>();
-                let activeRowIndex: number | null = null;
-
-                if (activeCycle) {
-                    items.push({ type: 'active', cycle: activeCycle });
-                    activeRowIndex = items.length - 1;
-                }
 
                 sortedReports.forEach((report, index) => {
                     const season = getSeasonById(report.seasonId) || getSeasonByDate(report.endDate);
@@ -1921,18 +2078,37 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
 
+                        {activeCycle && (
+                            <GlassCard variant="neutral" className="mb-4 px-4 py-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Ciclo atual</p>
+                                    </div>
+                                </div>
+                                <div
+                                    className={`mt-3 ${isEditingHistoryCycles ? 'cursor-pointer' : ''}`}
+                                    onClick={() => {
+                                        if (isEditingHistoryCycles) {
+                                            setCycleBeingEdited(activeCycle);
+                                        }
+                                    }}
+                                >
+                                    <SimplifiedCycleHUD cycle={activeCycle} onEdit={setCycleBeingEdited} showTimelineMarker={false} showControls={false} />
+                                </div>
+                                <div className="mt-3">
+                                    <button id="end-cycle-button" onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20">ENCERRAR CICLO ATUAL</button>
+                                </div>
+                            </GlassCard>
+                        )}
+
                         {renderLegacySummary()}
 
-                        {activeCycle ?(
-                            <div className="relative z-20 space-y-2">
-                                <button id="end-cycle-button" onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20">ENCERRAR CICLO ATUAL</button>
-                            </div>
-                        ) : (
+                        {!activeCycle ? (
                             <div className="relative z-20 space-y-2">
                                 <button id="start-new-cycle-button" onClick={() => setShowNewCycleSetup(true)} className="w-full py-3 rounded-xl luxe-skin-button mb-4 shadow-lg shadow-[var(--skin-accent-color)]/20">INICIAR NOVO CICLO</button>
                                 {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem legado fechado ainda. Inicie sua jornada.</div>}
                             </div>
-                        )}
+                        ) : null}
 
                         {renderEraControls()}
 
@@ -1950,7 +2126,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         >
                                             <TimelineCard
                                                 report={report}
-                                                isLatest={reportIndex === 0 && !activeCycle}
+                                                isLatest={reportIndex === 0}
                                                 onClick={() => handleAssignReportToDraftEra(reportIndex)}
                                                 seasonName={season?.name}
                                                 isEditing
@@ -1963,30 +2139,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     );
                                 })}
                             </div>
-                        ) : (sortedReports.length > 0 || activeCycle) && (
+                        ) : sortedReports.length > 0 && (
                             <div className="relative mt-6">
                                 <div className={`grid ${displayedEraBands.length > 1 || isEditingEras ? 'grid-cols-[16px_minmax(0,1fr)_18px]' : 'grid-cols-[16px_minmax(0,1fr)]'} gap-x-1`}>
                                     {items.map((item, rowIndex) => {
-                                        if (item.type === 'active') {
-                                            return (
-                                                <React.Fragment key={`active-${item.cycle.id}`}>
-                                                    <div className="relative py-3"></div>
-                                                    <div className="relative py-3">
-                                                        <div className="absolute left-[6px] top-0 bottom-0 w-px bg-white/10"></div>
-                                                        <div className="relative pl-5">
-                                                            <div className="absolute left-0 top-3 w-5 h-5 rounded-full border-2 border-[var(--skin-accent-color)] bg-black shadow-[0_0_15px_var(--sephirot-glow-color)] flex items-center justify-center">
-                                                                <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>
-                                                            </div>
-                                                            <div className={isEditingEras ?'scale-[0.98]' : ''}>
-                                                                <SimplifiedCycleHUD cycle={item.cycle} onEdit={setCycleBeingEdited} />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {(displayedEraBands.length > 1 || isEditingEras) && <div className="relative py-3"></div>}
-                                                </React.Fragment>
-                                            );
-                                        }
-
                                         if (item.type === 'report') {
                                             const eraDisplay = displayedEraByReportIndex.get(item.reportIndex);
                                             return (
@@ -1996,13 +2152,28 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         <div className="absolute left-[6px] top-0 bottom-0 w-px bg-white/10"></div>
                                                         <TimelineCard
                                                             report={item.report}
-                                                            isLatest={item.reportIndex === 0 && !activeCycle}
-                                                            onClick={() => isEditingEras ?handleAssignReportToDraftEra(item.reportIndex) : handleViewReport(item.report)}
+                                                            isLatest={item.reportIndex === 0}
+                                                            onClick={() => {
+                                                                if (isEditingEras) {
+                                                                    handleAssignReportToDraftEra(item.reportIndex);
+                                                                    return;
+                                                                }
+                                                                if (isEditingHistoryCycles) {
+                                                                    setHistoricalCycleBeingEdited(item.report);
+                                                                    return;
+                                                                }
+                                                                handleViewReport(item.report);
+                                                            }}
                                                             seasonName={item.seasonName}
                                                             isEditing={isEditingEras}
                                                             eraLabel={eraDisplay?.label}
                                                             eraSkinId={eraDisplay?.skinId}
                                                             isSelectedForEraEdit={!!eraDisplay?.isActive}
+                                                            onDelete={isEditingHistoryCycles && !isEditingEras ? async () => {
+                                                                const confirmed = window.confirm(`Excluir o ciclo "${item.report.cycleName || 'Ciclo'}"? Isso tambem remove o relatorio dele.`);
+                                                                if (!confirmed) return;
+                                                                await deleteCycle(item.report.cycleId || item.report.id);
+                                                            } : undefined}
                                                         />
                                                     </div>
                                                     {(displayedEraBands.length > 1 || isEditingEras) && <div className="relative py-3"></div>}
@@ -2013,8 +2184,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         return null;
                                     })}
                                     {(displayedEraBands.length > 1 || isEditingEras) && displayedEraBands.map((band) => {
-                                        const rowStart = band.start < 0 ?activeRowIndex : reportRowIndexMap.get(band.start);
-                                        const rowEnd = band.end < 0 ?activeRowIndex : reportRowIndexMap.get(band.end);
+                                        const rowStart = reportRowIndexMap.get(band.start);
+                                        const rowEnd = reportRowIndexMap.get(band.end);
                                         if (rowStart == null || rowEnd == null) return null;
 
                                         return (
@@ -2162,6 +2333,20 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             )}
                             <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
                         </div>
+                        {view === 'hub' && (activeCycle || sortedReports.length > 0) && (
+                            <button
+                                type="button"
+                                onClick={toggleHistoryCycleEditing}
+                                className={`inline-flex h-9 min-w-[3.25rem] items-center justify-center rounded-xl border px-3 text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
+                                    isEditingHistoryCycles
+                                        ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/12 text-white'
+                                        : 'border-white/10 bg-black/35 text-white/80 hover:bg-white/10 hover:text-white'
+                                }`}
+                                title={isEditingHistoryCycles ? 'Finalizar edicao de ciclos' : 'Editar ciclos'}
+                            >
+                                {isEditingHistoryCycles ? 'OK' : <EditIcon className="h-4 w-4" />}
+                            </button>
+                        )}
                     </div>
                     <div className="flex-grow overflow-y-auto relative overflow-hidden">
                         {renderContent()}
@@ -2273,8 +2458,23 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <EditCycleEndDateModal
                     cycle={cycleBeingEdited}
                     onClose={() => setCycleBeingEdited(null)}
-                    onSave={async (endDate) => {
-                        await updateCycle(cycleBeingEdited.id, { endDate });
+                    onSave={async (updates) => {
+                        await updateCycle(cycleBeingEdited.id, updates);
+                    }}
+                    onDelete={async () => {
+                        await deleteCycle(cycleBeingEdited.id);
+                    }}
+                />
+            )}
+            {historicalCycleBeingEdited && (
+                <EditHistoricalCycleModal
+                    report={historicalCycleBeingEdited}
+                    onClose={() => setHistoricalCycleBeingEdited(null)}
+                    onSave={async (name) => {
+                        await updateCycle(historicalCycleBeingEdited.cycleId || historicalCycleBeingEdited.id, { name });
+                    }}
+                    onDelete={async () => {
+                        await deleteCycle(historicalCycleBeingEdited.cycleId || historicalCycleBeingEdited.id);
                     }}
                 />
             )}

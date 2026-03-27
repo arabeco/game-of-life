@@ -58,22 +58,34 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
         currentAsset ? (MASTERY_LEVEL_DESCRIPTIONS[currentAsset.id] || []) : []
     ), [currentAsset]);
 
-    const hasExistingAssessment = useMemo(() => (
-        Boolean(userProfile.lastLevelUpdate)
-        || filteredAssets.some((asset) => Number(asset.level || 1) > 1)
-    ), [filteredAssets, userProfile.lastLevelUpdate]);
+    const lastUpdate = userProfile.lastLevelUpdate || 0;
+    const threeDays = 72 * 60 * 60 * 1000;
+    const oneHour = 60 * 60 * 1000;
+    const tutorialCompletedAt = userProfile.tutorialCompletedAt || 0;
+    const isTutorialActive = typeof window !== 'undefined' && (window.location.search.includes('tutorial=true') || (window as any).__GOL_TUTORIAL_ACTIVE__);
+    const isGracePeriod = (Date.now() - tutorialCompletedAt < oneHour) && tutorialCompletedAt > 0;
+    const bypassMasteryLock = userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm' || isTutorialActive || isGracePeriod;
+    const isMasteryLocked = !bypassMasteryLock && lastUpdate > 0 && (Date.now() - lastUpdate < threeDays);
+    const remainingHours = isMasteryLocked
+        ? Math.ceil((threeDays - (Date.now() - lastUpdate)) / (60 * 60 * 1000))
+        : 0;
 
-    const assessmentButtonLabel = hasExistingAssessment ? 'Reavaliar' : 'Autoavaliar';
     const lastAssessmentLabel = userProfile.lastLevelUpdate
         ? new Date(userProfile.lastLevelUpdate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
         : null;
+
+    const overviewNote = !lastUpdate
+        ? 'Faça sua primeira avaliação. Depois disso, você poderá recalibrar sua maestria a cada 72 horas.'
+        : isMasteryLocked
+            ? `A cada 72 horas, você pode mudar sua maestria. Próxima liberação em ${remainingHours}h.`
+            : 'A cada 72 horas, você pode mudar sua maestria.';
 
     if (!currentAsset) return null;
 
     const accentColor = (ASSET_ACCENT_COLORS as Record<string, string>)[currentAsset.id] || '#C9A84C';
     const sliderMax = Math.max(1, currentDescriptions.length || 10);
     const currentLevel = clamp(tempLevels[currentAsset.id] || 1, 1, sliderMax);
-    const currentPhrase = currentDescriptions[currentLevel - 1] || 'Escolha como esta essa area hoje.';
+    const currentPhrase = currentDescriptions[currentLevel - 1] || 'Escolha como está essa área hoje.';
     const currentProgress = filteredAssets.length > 0 ? Math.round(((currentAssetIndex + 1) / filteredAssets.length) * 100) : 0;
 
     const handleLevelChange = (nextLevel: number) => {
@@ -82,7 +94,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
 
     const handleSave = () => {
         if (Object.keys(tempLevels).length === 0) {
-            showToast('Ajuste pelo menos um nivel antes de salvar.', 'warning');
+            showToast('Ajuste pelo menos um nível antes de salvar.', 'warning');
             return;
         }
 
@@ -183,33 +195,30 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
 
                                 <div className="mastery-quiz-overview-copy">
                                     <div className="mastery-quiz-kicker">Maestria atual</div>
-                                    <h1 className="mastery-quiz-overview-title">Visao geral do seu decagono</h1>
+                                    <h1 className="mastery-quiz-overview-title">Seu decágono atual</h1>
                                     <p className="mastery-quiz-overview-note">
-                                        Veja seu nivel geral antes de iniciar a calibragem. O quiz so comeca quando voce tocar em {assessmentButtonLabel.toLowerCase()}.
+                                        {overviewNote}
                                     </p>
                                 </div>
 
-                                <div className="mastery-quiz-overview-metrics">
+                                <div className="mastery-quiz-overview-metrics mastery-quiz-overview-metrics--compact">
                                     <div className="mastery-quiz-overview-metric">
-                                        <div className="mastery-quiz-total-label">Nivel geral</div>
+                                        <div className="mastery-quiz-total-label">Nível geral</div>
                                         <div className="mastery-quiz-total-value mastery-quiz-total-value--hero">{totalLevel}</div>
                                     </div>
                                     <div className="mastery-quiz-overview-metric">
-                                        <div className="mastery-quiz-total-label">Areas</div>
-                                        <div className="mastery-quiz-overview-stat">{filteredAssets.length}</div>
-                                    </div>
-                                    <div className="mastery-quiz-overview-metric">
-                                        <div className="mastery-quiz-total-label">Ultima avaliacao</div>
-                                        <div className="mastery-quiz-overview-stat">{lastAssessmentLabel || 'Ainda nao feita'}</div>
+                                        <div className="mastery-quiz-total-label">Última avaliação</div>
+                                        <div className="mastery-quiz-overview-stat">{lastAssessmentLabel || 'Ainda não feita'}</div>
                                     </div>
                                 </div>
 
                                 <div className="mastery-quiz-actions mastery-quiz-actions--single">
                                     <button
                                         onClick={startAssessment}
-                                        className="luxe-skin-button mastery-quiz-nav-button"
+                                        disabled={isMasteryLocked}
+                                        className="luxe-skin-button mastery-quiz-nav-button disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        {assessmentButtonLabel}
+                                        {isMasteryLocked ? `Disponível em ${remainingHours}h` : 'Iniciar avaliação'}
                                         <ChevronRightIcon className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -226,11 +235,11 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
 
                                 <div className="mastery-quiz-meta">
                                     <div>
-                                        <div className="mastery-quiz-kicker">Area atual</div>
+                                        <div className="mastery-quiz-kicker">Área atual</div>
                                         <h1 className="mastery-quiz-asset-name">{currentAsset.name}</h1>
                                     </div>
                                     <div className="mastery-quiz-meta-side">
-                                        <div className="mastery-quiz-total-label">Nivel total</div>
+                                        <div className="mastery-quiz-total-label">Nível total</div>
                                         <div className="mastery-quiz-total-value">{totalLevel}</div>
                                     </div>
                                 </div>
@@ -245,8 +254,8 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                                     </div>
                                 </div>
 
-                                <div className="mastery-quiz-phrase-shell">
-                                    <div className="mastery-quiz-level-chip">Nivel {currentLevel}</div>
+                                    <div className="mastery-quiz-phrase-shell">
+                                    <div className="mastery-quiz-level-chip">Nível {currentLevel}</div>
                                     <div className="mastery-quiz-phrase">
                                         {currentPhrase}
                                     </div>
@@ -288,7 +297,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                                         onClick={nextStep}
                                         className="luxe-skin-button mastery-quiz-nav-button"
                                     >
-                                        {currentAssetIndex === filteredAssets.length - 1 ? 'Finalizar' : 'Proximo'}
+                                        {currentAssetIndex === filteredAssets.length - 1 ? 'Finalizar' : 'Próximo'}
                                         <ChevronRightIcon className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -301,14 +310,14 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
             {showConfirmModal && (
                 <div className="mastery-quiz-confirm-overlay" onClick={() => setShowConfirmModal(false)}>
                     <GlassCard variant="accent" className="mastery-quiz-confirm-card" onClick={(event) => event.stopPropagation()}>
-                        <h2 className="mastery-quiz-confirm-title">Confirmar atualizacao</h2>
+                        <h2 className="mastery-quiz-confirm-title">Confirmar atualização</h2>
                         <p className="mastery-quiz-confirm-copy">
-                            Seu nivel geral sera atualizado para <strong>{totalLevel}</strong>.
+                            Seu nível geral será atualizado para <strong>{totalLevel}</strong>.
                         </p>
                         <p className="mastery-quiz-confirm-note">
                             {mode === 'LEGADO'
-                                ? 'Deseja atualizar seu nivel agora? Voce so podera fazer isso novamente em 72 horas.'
-                                : 'Deseja salvar as alteracoes? As frases podem mudar depois, mas o nivel geral so pode ser editado novamente em 72 horas.'}
+                                ? 'Deseja atualizar seu nível agora? Você só poderá fazer isso novamente em 72 horas.'
+                                : 'Deseja salvar as alterações? As frases podem mudar depois, mas o nível geral só pode ser editado novamente em 72 horas.'}
                         </p>
                         <div className="mastery-quiz-confirm-actions">
                             <button onClick={() => setShowConfirmModal(false)} className="luxe-button-secondary w-full py-3 rounded-2xl">

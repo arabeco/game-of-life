@@ -398,6 +398,8 @@ export interface UserProfile {
   bannerUrl?: string; // Flamula-style banner
   isOnline: boolean;
   visibleWidgets: string[];
+  assetArtById?: Partial<Record<string, string>>;
+  assetWidgetValues?: Partial<Record<string, SlotValue>>;
   assetsVisibility?: ProfileVisibilityScope;
   masteryVisibility?: ProfileVisibilityScope;
   featsVisibility?: ProfileVisibilityScope;

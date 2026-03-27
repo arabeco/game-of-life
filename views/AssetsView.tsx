@@ -1,14 +1,15 @@
 ﻿import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { AssetDossier } from '../components/AssetDossier';
+import { useEffect } from 'react';
 import { AssetArenaBoard } from '../components/AssetArenaBoard';
+import { AssetArtButton } from '../components/AssetArtButton';
+import { InputModal } from '../components/inputs/InputModal';
 import { Sephirot } from '../components/Sephirot';
+import { EditIcon, XIcon } from '../components/Icons';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
 import { calculateArenaProgress } from '../utils/progressUtils';
-import type { Asset } from '../types';
-
-type AssetSubview = 'widgets' | 'arenas';
+import type { Asset, Slot, SlotValue } from '../types';
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
     const normalized = String(hex || '').trim();
@@ -70,33 +71,26 @@ const hasRasterSephirotBackground = (value: string | null | undefined): boolean 
     return /url\((['"]?).+\.(png|jpe?g)(?:[?#][^'")]*)?\1\)/i.test(normalized);
 };
 
-const SegmentedButton: React.FC<{
-    active: boolean;
-    icon: React.ReactNode;
-    title: string;
-    onClick: () => void;
-}> = ({ active, icon, title, onClick }) => (
-    <button
-        type="button"
-        title={title}
-        onClick={onClick}
-        className={`rounded-full px-2.5 py-1.5 text-[10px] font-black transition-all ${
-            active
-                ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_6px_16px_rgba(0,0,0,0.22)]'
-                : 'bg-white/5 text-white/55 hover:bg-white/10'
-        }`}
-    >
-        <span aria-hidden="true" className="inline-flex h-3.5 w-3.5 items-center justify-center">
-            {icon}
-        </span>
-    </button>
-);
+const isSlotValueEmpty = (value: SlotValue | undefined): boolean => {
+    if (value === undefined || value === null) return true;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        return normalized.length === 0 || normalized === 'nao definido' || normalized === 'não definido';
+    }
+    if (typeof value === 'number') return false;
+    return !value.imageUrl?.trim();
+};
+
+type AssetSubview = 'widget' | 'arenas';
 
 export const AssetsView: React.FC = () => {
-    const { assets, userProfile, appMode, activeCycle, dailyCommitment, cycleProgress, getArenas, actions, tasks } = useGame();
+    const { assets, userProfile, updateUserProfile, appMode, activeCycle, dailyCommitment, cycleProgress, getArenas, actions, tasks } = useGame();
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
-    const [assetSubview, setAssetSubview] = useState<AssetSubview>('widgets');
-    const [isWidgetEditing, setIsWidgetEditing] = useState(false);
+    const [assetSubview, setAssetSubview] = useState<AssetSubview>('arenas');
+    const [isEditingAssetDetail, setIsEditingAssetDetail] = useState(false);
+    const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
+    const [draftAssetArtUrl, setDraftAssetArtUrl] = useState<string | undefined>(undefined);
+    const [draftAssetWidgetValue, setDraftAssetWidgetValue] = useState<SlotValue | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const cycleSummaryRef = useRef<HTMLButtonElement | null>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -107,9 +101,29 @@ export const AssetsView: React.FC = () => {
     const isBasicMode = appMode === 'BASIC';
     const basicSephirotLevelColor = '#f5efe2';
     const selectedAsset = assets.find(a => a.id === selectedAssetId) || null;
+    const assetWidgetValues = userProfile.assetWidgetValues || {};
+    const assetArtById = userProfile.assetArtById || {};
+    const currentSelectedAssetArtUrl = selectedAsset ? assetArtById[selectedAsset.id] : undefined;
+    const currentSelectedAssetWidgetValue = selectedAsset ? assetWidgetValues[selectedAsset.id] : undefined;
+    const selectedAssetArtUrl = selectedAsset
+        ? (draftAssetArtUrl !== undefined ? draftAssetArtUrl : currentSelectedAssetArtUrl)
+        : undefined;
+    const selectedAssetPrimarySlot = useMemo(() => {
+        if (!selectedAsset?.slots?.[0]) return null;
+        const slot = selectedAsset.slots[0];
+        const storedValue = draftAssetWidgetValue !== undefined
+            ? draftAssetWidgetValue
+            : assetWidgetValues[selectedAsset.id];
+        return {
+            ...slot,
+            value: storedValue !== undefined ? storedValue : slot.value,
+        };
+    }, [selectedAsset, assetWidgetValues, draftAssetWidgetValue]);
     const selectedAssetAccent = selectedAsset
         ? ASSET_ACCENT_COLORS[selectedAsset.id as keyof typeof ASSET_ACCENT_COLORS] || '#4b5563'
         : '#4b5563';
+    const selectedAssetLevel = selectedAsset ? Math.max(1, Number(selectedAsset.level || 1)) : 1;
+    const selectedAssetMasteryPhrase = selectedAsset?.levelDescriptions?.[selectedAssetLevel] || '';
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
     const cycleAccentRgb = hexToRgb(userProfile.skinColor || '#d4af37');
     const cycleLabelColor = lightenToward(cycleAccentRgb, [168, 182, 201], 0.52);
@@ -263,16 +277,35 @@ export const AssetsView: React.FC = () => {
         return () => window.removeEventListener('resize', updateSummaryHeight);
     }, [selectedAssetId, cycleSummary?.name, cycleSummary?.progress, cycleSummary?.totalCompleted, cycleSummary?.totalPlanned, cycleSummary?.activeArenaCount]);
 
+    useEffect(() => {
+        if (!selectedAsset) {
+            setIsEditingAssetDetail(false);
+            setEditingSlot(null);
+            setDraftAssetArtUrl(undefined);
+            setDraftAssetWidgetValue(undefined);
+            return;
+        }
+
+        setIsEditingAssetDetail(false);
+        setEditingSlot(null);
+        setDraftAssetArtUrl(currentSelectedAssetArtUrl);
+        setDraftAssetWidgetValue(
+            currentSelectedAssetWidgetValue !== undefined
+                ? currentSelectedAssetWidgetValue
+                : selectedAsset.slots?.[0]?.value
+        );
+    }, [selectedAssetId, selectedAsset, currentSelectedAssetArtUrl, currentSelectedAssetWidgetValue]);
+
     const handleOpenAsset = (asset: Asset) => {
         setSelectedAssetId(asset.id);
-        setAssetSubview('widgets');
-        setIsWidgetEditing(false);
+        setAssetSubview('arenas');
+        setEditingSlot(null);
     };
 
     const handleBack = () => {
         setSelectedAssetId(null);
-        setAssetSubview('widgets');
-        setIsWidgetEditing(false);
+        setIsEditingAssetDetail(false);
+        setEditingSlot(null);
     };
 
     const handleOpenReports = () => {
@@ -284,20 +317,95 @@ export const AssetsView: React.FC = () => {
         }));
     };
 
-    const handleSubviewChange = (view: AssetSubview) => {
-        setAssetSubview(view);
-        if (view !== 'widgets') {
-            setIsWidgetEditing(false);
-        }
+    const handleEnterAssetDetailEdit = () => {
+        if (!selectedAsset) return;
+        setIsEditingAssetDetail(true);
+        setEditingSlot(null);
+        setDraftAssetArtUrl(currentSelectedAssetArtUrl);
+        setDraftAssetWidgetValue(
+            currentSelectedAssetWidgetValue !== undefined
+                ? currentSelectedAssetWidgetValue
+                : selectedAsset.slots?.[0]?.value
+        );
     };
 
-    const showAssetAura = isBasicMode || assetSubview === 'arenas';
+    const handleCancelAssetDetailEdit = () => {
+        if (!selectedAsset) return;
+        setIsEditingAssetDetail(false);
+        setEditingSlot(null);
+        setDraftAssetArtUrl(currentSelectedAssetArtUrl);
+        setDraftAssetWidgetValue(
+            currentSelectedAssetWidgetValue !== undefined
+                ? currentSelectedAssetWidgetValue
+                : selectedAsset.slots?.[0]?.value
+        );
+    };
+
+    const handleConfirmAssetDetailEdit = () => {
+        if (!selectedAsset) return;
+
+        const profilePatch: Partial<typeof userProfile> = {};
+
+        if ((draftAssetArtUrl || '') !== (currentSelectedAssetArtUrl || '')) {
+            const nextAssetArtById = { ...(userProfile.assetArtById || {}) };
+            if (draftAssetArtUrl) {
+                nextAssetArtById[selectedAsset.id] = draftAssetArtUrl;
+            } else {
+                delete nextAssetArtById[selectedAsset.id];
+            }
+            profilePatch.assetArtById = nextAssetArtById;
+        }
+
+        const fallbackSlotValue = selectedAsset.slots?.[0]?.value;
+        const persistedWidgetValue = currentSelectedAssetWidgetValue !== undefined
+            ? currentSelectedAssetWidgetValue
+            : fallbackSlotValue;
+        if (JSON.stringify(draftAssetWidgetValue ?? null) !== JSON.stringify(persistedWidgetValue ?? null)) {
+            const nextAssetWidgetValues = { ...(userProfile.assetWidgetValues || {}) };
+            if (draftAssetWidgetValue === undefined || draftAssetWidgetValue === null) {
+                delete nextAssetWidgetValues[selectedAsset.id];
+            } else {
+                nextAssetWidgetValues[selectedAsset.id] = draftAssetWidgetValue;
+            }
+            profilePatch.assetWidgetValues = nextAssetWidgetValues;
+        }
+
+        if (Object.keys(profilePatch).length > 0) {
+            updateUserProfile(profilePatch);
+        }
+
+        setIsEditingAssetDetail(false);
+        setEditingSlot(null);
+    };
+
+    const handleSaveAssetArtDraft = (nextUrl: string) => {
+        setDraftAssetArtUrl(nextUrl);
+    };
+
+    const handleSaveAssetWidgetDraft = (nextValue: SlotValue) => {
+        setDraftAssetWidgetValue(nextValue);
+        setEditingSlot(null);
+    };
+
+    const showAssetAura = true;
     const selectedAssetShellStyle: React.CSSProperties = {
-        backgroundImage: `radial-gradient(circle at 16% 0%, rgba(255,246,204,0.42), transparent 29%),
-            radial-gradient(circle at 24% 22%, rgba(226,192,98,0.24), transparent 25%),
-            radial-gradient(circle at 92% 88%, ${rgbaString(selectedAssetAccentRgb, 0.2)}, transparent 24%),
-            linear-gradient(135deg, rgba(224,186,84,0.42) 0%, rgba(255,250,230,0.08) 18%, rgba(8,8,8,0.94) 46%, rgba(2,2,2,0.98) 66%, ${rgbaString(selectedAssetAccentRgb, 0.12)} 100%)`,
+        backgroundImage: `radial-gradient(circle at 16% 0%, rgba(255,246,204,0.26), transparent 29%),
+            radial-gradient(circle at 24% 22%, rgba(226,192,98,0.16), transparent 25%),
+            radial-gradient(circle at 92% 88%, ${rgbaString(selectedAssetAccentRgb, 0.14)}, transparent 24%),
+            linear-gradient(135deg, rgba(224,186,84,0.24) 0%, rgba(255,250,230,0.06) 18%, rgba(8,8,8,0.94) 46%, rgba(2,2,2,0.98) 66%, ${rgbaString(selectedAssetAccentRgb, 0.08)} 100%)`,
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 48px rgba(0,0,0,0.42)',
+    };
+    const selectedAssetCanvasStyle: React.CSSProperties = {
+        backgroundImage: `${selectedAssetArtUrl ? `linear-gradient(180deg, rgba(5,5,7,0.18) 0%, rgba(5,5,7,0.78) 46%, rgba(5,5,7,0.94) 100%), url("${selectedAssetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 16% 0%, rgba(255,246,204,0.28), transparent 29%),
+            radial-gradient(circle at 92% 88%, ${rgbaString(selectedAssetAccentRgb, 0.16)}, transparent 24%),
+            linear-gradient(180deg, rgba(9,11,16,0.9) 0%, rgba(5,6,9,0.96) 100%)`,
+        backgroundSize: selectedAssetArtUrl ? 'cover, cover, auto, auto' : undefined,
+        backgroundPosition: selectedAssetArtUrl ? 'center, center, center, center' : undefined,
+        backgroundRepeat: selectedAssetArtUrl ? 'no-repeat, no-repeat, no-repeat, no-repeat' : undefined,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -40px 90px rgba(0,0,0,0.2)',
+    };
+    const selectedAssetWidgetShellStyle: React.CSSProperties = {
+        backgroundImage: `linear-gradient(150deg, rgba(255,245,220,0.16) 0%, rgba(255,255,255,0.05) 24%, rgba(209,169,80,0.15) 44%, rgba(0,0,0,0.28) 74%, ${rgbaString(selectedAssetAccentRgb, 0.16)} 100%)`,
     };
 
     if (selectedAsset) {
@@ -331,84 +439,154 @@ export const AssetsView: React.FC = () => {
                         />
                         <div className="relative z-10">
                         <div className="grid grid-cols-[auto_1fr_auto] items-start gap-3">
-                            {!isBasicMode && assetSubview === 'widgets' ? (
+                            {isEditingAssetDetail ? (
+                                <AssetArtButton
+                                    assetId={selectedAsset.id}
+                                    assetName={selectedAsset.name}
+                                    currentUrl={selectedAssetArtUrl}
+                                    compact
+                                    iconOnly
+                                    onSave={handleSaveAssetArtDraft}
+                                />
+                            ) : (
+                                <div className="h-8 w-8" />
+                            )}
+
+                            {selectedAssetPrimarySlot ? (
+                                <div className="mx-auto flex w-full max-w-[220px] rounded-2xl border border-white/10 bg-black/35 p-1 backdrop-blur-sm">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAssetSubview('widget')}
+                                        className={`flex-1 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] transition-colors ${assetSubview === 'widget' ? 'bg-white/12 text-white' : 'text-white/55 hover:text-white/75'}`}
+                                    >
+                                        Widget
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAssetSubview('arenas')}
+                                        className={`flex-1 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] transition-colors ${assetSubview === 'arenas' ? 'bg-white/12 text-white' : 'text-white/55 hover:text-white/75'}`}
+                                    >
+                                        Arenas
+                                    </button>
+                                </div>
+                            ) : (
+                                <div />
+                            )}
+
+                            <div className="flex items-center justify-self-end gap-2">
+                                {isEditingAssetDetail ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleCancelAssetDetailEdit}
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-black/32 text-white/80 transition-colors hover:bg-white/10"
+                                        title="Cancelar edição"
+                                    >
+                                        <XIcon className="h-4 w-4" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={handleEnterAssetDetailEdit}
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-black/32 text-white/80 transition-colors hover:bg-white/10"
+                                        title={`Editar ${selectedAsset.name}`}
+                                    >
+                                        <EditIcon className="h-4 w-4" />
+                                    </button>
+                                )}
+
                                 <button
                                     type="button"
-                                    onClick={() => setIsWidgetEditing((value) => !value)}
-                                    className={`justify-self-start rounded-full border border-white/20 p-1.5 transition-colors ${isWidgetEditing ? 'bg-[var(--skin-accent-color)]/20 border-[var(--skin-accent-color)]/40' : 'bg-transparent'}`}
-                                    title="Editar widgets"
+                                    onClick={isEditingAssetDetail ? handleConfirmAssetDetailEdit : handleBack}
+                                    className="justify-self-end px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.22em] rounded-lg luxe-skin-button"
                                 >
-                                    <svg className={`h-4 w-4 ${isWidgetEditing ? 'text-white' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M12 20h9" />
-                                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
-                                    </svg>
+                                    OK
                                 </button>
-                            ) : (
-                                <div className="h-8 w-8 justify-self-start" />
-                            )}
-
-                            {!isBasicMode ? (
-                                <div className="mt-0.5 flex items-center justify-self-center gap-1 rounded-full border border-white/10 bg-black/20 p-1">
-                                    <SegmentedButton
-                                        active={assetSubview === 'widgets'}
-                                        icon={'\u25EB'}
-                                        title="Widgets"
-                                        onClick={() => handleSubviewChange('widgets')}
-                                    />
-                                    <SegmentedButton
-                                        active={assetSubview === 'arenas'}
-                                        icon={'\u25A6'}
-                                        title="Arenas"
-                                        onClick={() => handleSubviewChange('arenas')}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="justify-self-center" />
-                            )}
-
-                            <button
-                                type="button"
-                                onClick={handleBack}
-                                className="justify-self-end px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.22em] rounded-lg luxe-skin-button"
-                            >
-                                OK
-                            </button>
+                            </div>
                         </div>
 
-                        <div className="min-w-0 pb-3 pt-2 text-center">
-                            <p
-                                className="luxe-title-ornate truncate px-6 text-lg font-black uppercase tracking-[0.18em] luxe-title-shadow"
-                                style={{ color: 'var(--ui-card-text)' }}
-                            >
-                                {selectedAsset.name}
-                            </p>
-                        </div>
+                        <div
+                            className="mt-3 overflow-hidden rounded-[24px] border border-white/10"
+                            style={selectedAssetCanvasStyle}
+                        >
+                            <div className="min-w-0 pb-3 pt-4 text-center">
+                                <p
+                                    className="luxe-title-ornate truncate px-6 text-lg font-black uppercase tracking-[0.18em] luxe-title-shadow"
+                                    style={{ color: 'var(--ui-card-text)' }}
+                                >
+                                    {selectedAsset.name}
+                                </p>
+                            </div>
 
-                        <div className="overflow-y-auto pr-1 -mr-1 custom-scrollbar">
-                        {isBasicMode || assetSubview === 'arenas' ? (
-                            <div className="space-y-2">
-                                <div className="pt-0 text-center">
-                                    <p className="text-xs font-medium tracking-[0.08em] text-white/62">Nivel {selectedAsset.level}</p>
+                            <div className="mx-3 mb-3 rounded-[20px] border border-white/10 bg-black/34 px-3 py-3 backdrop-blur-sm">
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-base font-black text-white shadow-[0_10px_24px_rgba(0,0,0,0.24)]"
+                                        style={{
+                                            borderColor: rgbaString(selectedAssetAccentRgb, 0.34),
+                                            background: `linear-gradient(135deg, ${rgbaString(selectedAssetAccentRgb, 0.32)} 0%, rgba(10,12,16,0.92) 100%)`,
+                                        }}
+                                    >
+                                        {selectedAssetLevel}
+                                    </div>
+                                    <div className="min-w-0 text-left">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/42">
+                                            Maestria atual
+                                        </p>
+                                        <p className="mt-1 text-[12px] font-semibold leading-snug text-white/86">
+                                            {selectedAssetMasteryPhrase || 'Essa area ainda nao tem uma frase de maestria definida.'}
+                                        </p>
+                                    </div>
                                 </div>
-                                <AssetArenaBoard asset={selectedAsset} />
+                            </div>
+
+                            <div className="overflow-y-auto pr-1 -mr-1 custom-scrollbar px-1 pb-1">
+                                <div className="space-y-2">
+                                {assetSubview === 'widget' && selectedAssetPrimarySlot ? (
+                                    <div className="rounded-[24px] border border-white/10 bg-black/26 p-4 backdrop-blur-sm">
+                                        <div className="text-center">
+                                            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/88">
+                                                {selectedAssetPrimarySlot.label}
+                                            </p>
+                                        </div>
+
+                                        <div className="mt-3 text-center space-y-0.5 flex flex-col">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!isEditingAssetDetail) return;
+                                                    setEditingSlot(selectedAssetPrimarySlot);
+                                                }}
+                                                className={`relative w-full min-h-[2.75rem] rounded-lg border border-[color:var(--skin-accent-color)] bg-black/40 p-2 text-white transition-colors flex items-center justify-center ${isEditingAssetDetail ? 'hover:bg-black/55' : 'cursor-default'}`}
+                                                style={selectedAssetWidgetShellStyle}
+                                            >
+                                                {isSlotValueEmpty(selectedAssetPrimarySlot.value) ? (
+                                                    <span className="line-clamp-3 px-1 text-center text-sm font-semibold text-white/45">
+                                                        Sem valor
+                                                    </span>
+                                                ) : (
+                                                    <p className="line-clamp-3 px-1 text-center text-base font-semibold text-white">
+                                                        {String(selectedAssetPrimarySlot.value)}
+                                                    </p>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <AssetArenaBoard asset={selectedAsset} showArchived={false} />
+                                )}
                                 </div>
-                            ) : (
-                                <AssetDossier
-                                    asset={selectedAsset}
-                                    onBack={handleBack}
-                                    embedded
-                                    showArenas={false}
-                                    showHeader={false}
-                                    showLevelPanel
-                                    showEditButton={false}
-                                    isEditingOverride={isWidgetEditing}
-                                    onToggleEditing={() => setIsWidgetEditing((value) => !value)}
-                                />
-                            )}
+                            </div>
                         </div>
                         </div>
                     </div>
                 </div>
+                {editingSlot && (
+                    <InputModal
+                        slot={editingSlot}
+                        onClose={() => setEditingSlot(null)}
+                        onSave={handleSaveAssetWidgetDraft}
+                    />
+                )}
             </div>
         );
     }
@@ -483,6 +661,7 @@ export const AssetsView: React.FC = () => {
                             {overviewCoords.map(coord => {
                                 const asset = assets.find(a => a.id === coord.id);
                                 if (!asset) return null;
+                                const assetArtUrl = assetArtById[asset.id];
 
                                 const yNorm = coord.y / 100;
                                 const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
@@ -510,7 +689,9 @@ export const AssetsView: React.FC = () => {
                                             className="group relative flex min-h-[70px] w-[124px] flex-col items-center overflow-visible rounded-[22px] border px-2 pb-0.5 pt-[18px] text-center transition-all duration-300 hover:-translate-y-[2px]"
                                             style={{
                                                 borderColor: rgbaString(accentRgb, 0.42),
-                                                backgroundImage: `radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.96) 18%, rgba(10,12,16,0.985) 100%)`,
+                                                backgroundImage: `${assetArtUrl ? `linear-gradient(180deg, rgba(6,7,10,0.18) 0%, rgba(6,7,10,0.82) 42%, rgba(6,7,10,0.96) 100%), url("${assetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.96) 18%, rgba(10,12,16,0.985) 100%)`,
+                                                backgroundSize: assetArtUrl ? 'cover, auto, auto, auto' : undefined,
+                                                backgroundPosition: assetArtUrl ? 'center, center, center, center' : undefined,
                                                 boxShadow: `0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 999px ${rgbaString(accentRgb, 0.022)}, 0 0 0 1px ${rgbaString(accentRgb, 0.12)}`,
                                             }}
                                         >
@@ -529,7 +710,7 @@ export const AssetsView: React.FC = () => {
                                                 <div
                                                     className="w-[108px] rounded-[10px] border border-white/10 px-2 py-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.22)]"
                                                     style={{
-                                                        backgroundColor: rgbaString(accentRgb, 0.096),
+                                                        backgroundColor: 'rgba(8, 10, 14, 0.74)',
                                                         boxShadow: `0 8px 18px rgba(0,0,0,0.22), inset 0 1px 0 ${rgbaString(accentRgb, 0.064)}`,
                                                         transform: 'translateZ(0)',
                                                         backfaceVisibility: 'hidden',
@@ -554,7 +735,7 @@ export const AssetsView: React.FC = () => {
                                             <div
                                                 className="-mt-0.5 w-full rounded-[12px] border border-white/10 px-2 py-[0.42rem] text-[9px] font-semibold uppercase tracking-[0.06em]"
                                                 style={{
-                                                    backgroundImage: `linear-gradient(180deg, ${rgbaString(accentRgb, 0.072)} 0%, rgba(8,10,14,0.18) 100%)`,
+                                                    backgroundImage: `linear-gradient(180deg, rgba(8,10,14,0.74) 0%, rgba(8,10,14,0.88) 100%)`,
                                                     boxShadow: `inset 0 1px 0 ${rgbaString(accentRgb, 0.064)}`,
                                                 }}
                                             >

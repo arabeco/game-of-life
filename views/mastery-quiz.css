@@ -42,6 +42,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 245, 227, 0.82);
+  border-radius: 18px;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
 }
 
@@ -59,6 +60,10 @@
   padding: 4px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 24px rgba(0, 0, 0, 0.18);
 }
 
 .mastery-quiz-mode-pill {
@@ -68,6 +73,7 @@
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  border-radius: 16px;
   transition: background 180ms ease, color 180ms ease, transform 180ms ease;
 }
 
@@ -89,6 +95,7 @@
   box-shadow:
     0 30px 70px rgba(0, 0, 0, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-radius: 30px;
 }
 
 .mastery-quiz-panel::before {
@@ -115,14 +122,15 @@
   flex-direction: column;
   gap: 18px;
   padding: 28px;
+  overflow-y: auto;
 }
 
 .mastery-quiz-overview {
   display: flex;
   height: 100%;
   flex-direction: column;
-  justify-content: center;
-  gap: 22px;
+  justify-content: flex-start;
+  gap: 18px;
 }
 
 .mastery-quiz-overview-copy {
@@ -146,9 +154,9 @@
 
 .mastery-quiz-overview-note {
   margin: 0;
-  max-width: 46rem;
-  font-size: 0.98rem;
-  line-height: 1.55;
+  max-width: 32rem;
+  font-size: 1.04rem;
+  line-height: 1.52;
   color: rgba(255, 245, 227, 0.68);
   text-wrap: balance;
 }
@@ -159,20 +167,28 @@
   gap: 12px;
 }
 
+.mastery-quiz-overview-metrics--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .mastery-quiz-overview-metric {
   display: flex;
-  min-height: 7.5rem;
+  min-height: 5.2rem;
   flex-direction: column;
   justify-content: center;
-  gap: 10px;
-  padding: 20px 18px;
+  gap: 6px;
+  padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
   text-align: center;
+  border-radius: 24px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 36px rgba(0, 0, 0, 0.16);
 }
 
 .mastery-quiz-overview-stat {
-  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  font-size: clamp(1.08rem, 1.95vw, 1.45rem);
   font-weight: 800;
   color: #fcf7eb;
   letter-spacing: 0.02em;
@@ -196,6 +212,7 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 20px 40px rgba(0, 0, 0, 0.22);
+  border-radius: 28px;
 }
 
 .mastery-quiz-meta {
@@ -277,6 +294,10 @@
   padding: 22px 24px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+  border-radius: 26px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 36px rgba(0, 0, 0, 0.14);
 }
 
 .mastery-quiz-level-chip {
@@ -396,10 +417,12 @@
   justify-content: center;
   gap: 10px;
   min-height: 56px;
+  border-radius: 18px;
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 11px;
   font-weight: 900;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
 }
 
 .mastery-quiz-confirm-overlay {
@@ -416,6 +439,7 @@
 .mastery-quiz-confirm-card {
   width: min(460px, 100%);
   padding: 24px;
+  border-radius: 28px;
 }
 
 .mastery-quiz-confirm-title {
@@ -466,12 +490,12 @@
   }
 
   .mastery-quiz-panel-inner {
-    padding: 18px;
-    gap: 14px;
+    padding: 16px;
+    gap: 12px;
   }
 
   .mastery-quiz-overview {
-    justify-content: flex-start;
+    gap: 14px;
   }
 
   .mastery-quiz-overview-metrics {
@@ -480,10 +504,32 @@
 
   .mastery-quiz-overview-metric {
     min-height: 0;
+    padding: 11px 13px;
   }
 
   .mastery-quiz-decagon-square {
-    width: min(100%, 300px);
+    width: min(100%, 248px);
+  }
+
+  .mastery-quiz-overview-title {
+    font-size: clamp(1.55rem, 8vw, 2.2rem);
+  }
+
+  .mastery-quiz-overview-note {
+    font-size: 0.96rem;
+    line-height: 1.42;
+  }
+
+  .mastery-quiz-total-value--hero {
+    font-size: clamp(2rem, 10vw, 2.8rem);
+  }
+
+  .mastery-quiz-actions--single {
+    position: sticky;
+    bottom: 0;
+    padding-top: 8px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, rgba(8, 10, 15, 0), rgba(8, 10, 15, 0.92) 24%, rgba(8, 10, 15, 0.98));
   }
 
   .mastery-quiz-meta {

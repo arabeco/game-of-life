@@ -1,4 +1,4 @@
-import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType } from '../types';
+import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType, Slot } from '../types';
 import { ITEMS_DB, getCatalogItemsByCategory, getCatalogItems, isItemCatalogVisible, isRankRewardItem } from './items';
 import { ACTIVE_SEASON_ID, GM_SEASONS, GM_SEASON_MISSIONS, GM_SEASON_QUESTS, SEASONS } from './seasonContent';
 
@@ -325,102 +325,146 @@ export const MASTERY_LEVEL_DESCRIPTIONS: Record<string, string[]> = {
   geral: [],
 };
 
-const emptyImage = { imageUrl: '', caption: '' };
+const createPrimaryAssetSlot = (slot: Slot): Slot[] => [slot];
 
-export const ASSETS_DATA: Asset[] = [
+const PRIMARY_ASSET_SLOTS: Record<string, Slot[]> = {
+  consciencia: createPrimaryAssetSlot({
+    id: 'widget_consciencia',
+    label: 'Lema',
+    type: 1,
+    inputType: 'textarea',
+    placeholder: 'Ex.: Disciplina vence impulso.',
+    value: '',
+  }),
+  espiritualidade: createPrimaryAssetSlot({
+    id: 'widget_espiritualidade',
+    label: 'Crenca principal',
+    type: 1,
+    inputType: 'wheelpick',
+    options: ['Nao definido', 'Catolicismo', 'Protestantismo', 'Espiritismo', 'Umbanda / Candomble', 'Budismo', 'Gnosticismo', 'Ateismo / agnosticismo', 'Outro'],
+    value: 'Nao definido',
+  }),
+  'espaco-mental': createPrimaryAssetSlot({
+    id: 'widget_espaco_mental',
+    label: 'Filosofia',
+    type: 1,
+    inputType: 'textarea',
+    placeholder: 'Ex.: Estoicismo, pragmatismo, calma radical.',
+    value: '',
+  }),
+  projetos: createPrimaryAssetSlot({
+    id: 'widget_projetos',
+    label: 'Forma de criacao',
+    type: 1,
+    inputType: 'wheelpick',
+    options: ['Nao definido', 'Escrita', 'Musica', 'Video', 'Arte visual', 'Fotografia', 'Programacao', 'Negocio', 'Outro'],
+    value: 'Nao definido',
+  }),
+  proposito: createPrimaryAssetSlot({
+    id: 'widget_proposito',
+    label: 'Missao',
+    type: 1,
+    inputType: 'wheelpick',
+    options: ['Nao definido', 'Inspirar', 'Criar', 'Servir', 'Liderar', 'Ensinar', 'Curar', 'Proteger', 'Construir', 'Transformar', 'Explorar', 'Conectar', 'Outro'],
+    value: 'Nao definido',
+  }),
+  conexoes: createPrimaryAssetSlot({
+    id: 'widget_conexoes',
+    label: 'Foco relacional',
+    type: 1,
+    inputType: 'wheelpick',
+    options: ['Nao definido', 'Familia', 'Par romantico', 'Amizades', 'Mentores', 'Comunidade', 'Network', 'Solitude', 'Outro'],
+    value: 'Nao definido',
+  }),
+  financas: createPrimaryAssetSlot({
+    id: 'widget_financas',
+    label: 'Momento financeiro',
+    type: 1,
+    inputType: 'wheelpick',
+    options: ['Nao definido', 'Endividado', 'Saindo do negativo', 'Me mantenho', 'Estavel', 'Investindo', 'Prosperando'],
+    value: 'Nao definido',
+  }),
+  trabalho: createPrimaryAssetSlot({
+    id: 'widget_trabalho',
+    label: 'Oficio principal',
+    type: 1,
+    inputType: 'wheelpick',
+    options: [
+      'Nao definido',
+      'Estudante',
+      'Empreendedor',
+      'Desenvolvedor',
+      'Designer',
+      'Marketing',
+      'Vendas / comercial',
+      'Professor',
+      'Advogado',
+      'Medico',
+      'Psicologo',
+      'Enfermeiro',
+      'Engenheiro',
+      'Arquiteto',
+      'Administrador / gestor',
+      'Financeiro / contabil',
+      'RH / recrutamento',
+      'Atendimento / suporte',
+      'Operacoes / logistica',
+      'Produtor de conteudo',
+      'Consultor',
+      'Servidor publico',
+      'Outro',
+    ],
+    value: 'Nao definido',
+  }),
+  hobbies: createPrimaryAssetSlot({
+    id: 'widget_hobbies',
+    label: 'Atividade favorita',
+    type: 1,
+    inputType: 'wheelpick',
+    options: ['Nao definido', 'Leitura', 'Escrita', 'Desenho', 'Musica', 'Games', 'Xadrez', 'Corrida', 'Musculacao', 'Artes marciais', 'Culinaria', 'Fotografia', 'Cinema', 'Programacao', 'Ciclismo', 'Natacao', 'Meditacao', 'Trilha', 'Jardinagem', 'Outro'],
+    value: 'Nao definido',
+  }),
+  fisico: createPrimaryAssetSlot({
+    id: 'widget_fisico',
+    label: 'Forma fisica',
+    type: 1,
+    inputType: 'wheelpick',
+    options: ['Nao definido', 'Em reabilitacao', 'Sedentario', 'Retomando', 'Ativo', 'Em forma', 'Atletico'],
+    value: 'Nao definido',
+  }),
+  geral: [],
+};
+
+const RAW_ASSETS_DATA: Omit<Asset, 'slots'>[] = [
   {
-    id: 'consciencia', name: 'CONSCIÊNCIA', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.consciencia.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'consciencia.lema', label: 'LEMA', type: 1, inputType: 'textarea', value: 'Valor 1' },
-      { id: 'consciencia.crenca1', label: 'CRENÇA 1', type: 1, inputType: 'textarea', value: 'Valor 2' },
-      { id: 'consciencia.crenca2', label: 'CRENÇA 2', type: 1, inputType: 'textarea', value: 'Valor 3' },
-      { id: 'consciencia.crenca3', label: 'CRENÇA 3', type: 1, inputType: 'textarea', value: 'Valor 4' },
-    ]
+    id: 'consciencia', name: 'CONSCIÊNCIA', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.consciencia.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
-    id: 'espiritualidade', name: 'ESPIRITUALIDADE', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.espiritualidade.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'espiritualidade.sistema', label: 'Sistema Espiritual', type: 1, inputType: 'wheelpick', options: ['Cristianismo', 'Islamismo', 'Budismo', 'Hinduísmo', 'Judaísmo', 'Taoísmo', 'Gnosticismo', 'Espiritualismo', 'Agnosticismo', 'Ateísmo'], value: 'Agnosticismo' },
-      { id: 'espiritualidade.santuario1', label: 'Santuário 1', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'espiritualidade.santuario2', label: 'Santuário 2', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'espiritualidade.santuario3', label: 'Santuário 3', type: 2, inputType: 'image', value: emptyImage },
-    ]
+    id: 'espiritualidade', name: 'ESPIRITUALIDADE', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.espiritualidade.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
-    id: 'espaco-mental', name: 'ESPAÇO MENTAL', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS['espaco-mental'].reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'espaco-mental.filosofia', label: 'Filosofia de Vida', type: 1, inputType: 'wheelpick', options: ['Estoicismo', 'Epicurismo', 'Existencialismo', 'Niilismo', 'Humanismo', 'Pragmatismo', 'Idealismo', 'Materialismo', 'Fenomenologia', 'Estruturalismo'], value: 'Estoicismo' },
-    ]
+    id: 'espaco-mental', name: 'ESPAÇO MENTAL', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS['espaco-mental'].reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
-    id: 'projetos', name: 'PROJETOS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.projetos.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'projetos.projeto1', label: 'Projeto 1', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'projetos.projeto2', label: 'Projeto 2', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'projetos.projeto3', label: 'Projeto 3', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'projetos.inspiracao1', label: 'Inspiração 1', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'projetos.inspiracao2', label: 'Inspiração 2', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'projetos.inspiracao3', label: 'Inspiração 3', type: 2, inputType: 'image', value: emptyImage },
-    ]
+    id: 'projetos', name: 'PROJETOS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.projetos.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
-    id: 'proposito', name: 'PROPÓSITO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.proposito.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'proposito.missao', label: 'Missão de Vida', type: 1, inputType: 'textarea', value: 'Minha missão...' },
-      { id: 'proposito.personalidade1', label: 'MBTI', type: 3, inputType: 'wheelpick', options: ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'], value: 'INTJ' },
-      { id: 'proposito.personalidade2', label: 'Signo', type: 3, inputType: 'wheelpick', options: ['Áries', 'Touro', 'Gêmeos', 'Câncer', 'Leão', 'Virgem', 'Libra', 'Escorpião', 'Sagitário', 'Capricórnio', 'Aquário', 'Peixes'], value: 'Áries' },
-      { id: 'proposito.virtude1', label: 'Virtude 1', type: 3, inputType: 'wheelpick', options: ['Coragem', 'Honestidade', 'Compaixão', 'Sabedoria', 'Justiça', 'Temperança', 'Resiliência', 'Humildade', 'Paciência', 'Gratidão', 'Generosidade', 'Lealdade'], value: 'Coragem' },
-      { id: 'proposito.virtude2', label: 'Virtude 2', type: 3, inputType: 'wheelpick', options: ['Coragem', 'Honestidade', 'Compaixão', 'Sabedoria', 'Justiça', 'Temperança', 'Resiliência', 'Humildade', 'Paciência', 'Gratidão', 'Generosidade', 'Lealdade'], value: 'Sabedoria' },
-      { id: 'proposito.virtude3', label: 'Virtude 3', type: 3, inputType: 'wheelpick', options: ['Coragem', 'Honestidade', 'Compaixão', 'Sabedoria', 'Justiça', 'Temperança', 'Resiliência', 'Humildade', 'Paciência', 'Gratidão', 'Generosidade', 'Lealdade'], value: 'Justiça' },
-    ]
+    id: 'proposito', name: 'PROPÓSITO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.proposito.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
-    id: 'conexoes', name: 'CONEXÕES', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.conexoes.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'conexoes.pessoa1', label: 'Pessoa 1', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'conexoes.pessoa2', label: 'Pessoa 2', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'conexoes.pessoa3', label: 'Pessoa 3', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'conexoes.pessoa4', label: 'Pessoa 4', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'conexoes.pessoa5', label: 'Pessoa 5', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'conexoes.pessoa6', label: 'Pessoa 6', type: 2, inputType: 'image', value: emptyImage },
-    ]
+    id: 'conexoes', name: 'CONEXÕES', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.conexoes.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
-    id: 'financas', name: 'FINANÇAS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.financas.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'financas.mentalidade', label: 'Mentalidade', type: 3, inputType: 'wheelpick', options: ['O Corre', 'Acumulador', 'Precavido', 'Bon Vivant', 'Minimalista', 'O Planilheiro', 'Limpar o Nome'], value: 'O Corre' },
-      { id: 'financas.luxos', label: 'Luxos', type: 3, inputType: 'wheelpick', options: ['Comer Bem', 'Conforto em Casa', 'Viagens e Rolês', 'Estética e Shape', 'Pequenos Prazeres', 'Praticidade e Tecnologia', 'Mimar os Outros'], value: 'Comer Bem' },
-      { id: 'financas.status', label: 'Status Financeiro', type: 1, inputType: 'wheelpick', options: ['No Vermelho', 'Zero a Zero', 'Estabilizando', 'No Azul', 'Multiplicando', 'Liberdade Financeira'], value: 'No Vermelho' },
-      { id: 'financas.ativo1', label: 'Ativo 1', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'financas.ativo2', label: 'Ativo 2', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'financas.ativo3', label: 'Ativo 3', type: 2, inputType: 'image', value: emptyImage },
-    ]
+    id: 'financas', name: 'FINANÇAS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.financas.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
-    id: 'trabalho', name: 'TRABALHO/ESTUDOS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.trabalho.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'trabalho.classe1_1', label: 'Classe 1', type: 3, inputType: 'wheelpick', options: ['Médico', 'Enfermeiro', 'Dentista', 'Psicólogo', 'Engenheiro Civil', 'Engenheiro de Software', 'Advogado', 'Juiz', 'Professor', 'Designer Gráfico', 'UX/UI Designer', 'Criador de Conteúdo', 'Social Media', 'Gestor de Tráfego', 'Data Scientist', 'Atleta Profissional', 'Treinador', 'Empreendedor', 'Vendedor', 'Analista Financeiro', 'Contador', 'Chef de Cozinha', 'Arquiteto', 'Fotógrafo', 'Editor de Vídeo', 'Músico', 'Escritor', 'Tradutor', 'Artesão', 'Cientista'], value: 'Engenheiro de Software' },
-      { id: 'trabalho.especialidade1_2', label: 'Expertise 1', type: 3, inputType: 'wheelpick', options: ['Aprendiz', 'Iniciado', 'Praticante', 'Veterano', 'Mestre', 'Lenda'], value: 'Aprendiz' },
-      { id: 'trabalho.classe2_1', label: 'Classe 2', type: 3, inputType: 'wheelpick', options: ['Médico', 'Enfermeiro', 'Dentista', 'Psicólogo', 'Engenheiro Civil', 'Engenheiro de Software', 'Advogado', 'Juiz', 'Professor', 'Designer Gráfico', 'UX/UI Designer', 'Criador de Conteúdo', 'Social Media', 'Gestor de Tráfego', 'Data Scientist', 'Atleta Profissional', 'Treinador', 'Empreendedor', 'Vendedor', 'Analista Financeiro', 'Contador', 'Chef de Cozinha', 'Arquiteto', 'Fotógrafo', 'Editor de Vídeo', 'Músico', 'Escritor', 'Tradutor', 'Artesão', 'Cientista'], value: 'UX/UI Designer' },
-      { id: 'trabalho.especialidade2_2', label: 'Expertise 2', type: 3, inputType: 'wheelpick', options: ['Aprendiz', 'Iniciado', 'Praticante', 'Veterano', 'Mestre', 'Lenda'], value: 'Aprendiz' },
-      { id: 'trabalho.experiencia1', label: 'Experiência 1', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'trabalho.experiencia2', label: 'Experiência 2', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'trabalho.experiencia3', label: 'Experiência 3', type: 2, inputType: 'image', value: emptyImage },
-    ]
+    id: 'trabalho', name: 'TRABALHO/ESTUDOS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.trabalho.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
-    id: 'hobbies', name: 'HOBBIES', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.hobbies.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'hobbies.hobby1', label: 'Hobby 1', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'hobbies.hobby2', label: 'Hobby 2', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'hobbies.hobby3', label: 'Hobby 3', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'hobbies.destaque1', label: 'Destaque 1', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'hobbies.destaque2', label: 'Destaque 2', type: 2, inputType: 'image', value: emptyImage },
-      { id: 'hobbies.destaque3', label: 'Destaque 3', type: 2, inputType: 'image', value: emptyImage },
-    ]
+    id: 'hobbies', name: 'HOBBIES', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.hobbies.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
-    id: 'fisico', name: 'FÍSICO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.fisico.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: [], slots: [
-      { id: 'fisico.basico1', label: 'Idade', type: 3, inputType: 'slider', range: { min: 15, max: 99 }, value: 25 },
-      { id: 'fisico.basico2', label: 'Gênero', type: 3, inputType: 'wheelpick', options: ['Masculino', 'Feminino', 'Não-binário', 'Outro'], value: 'Masculino' },
-      { id: 'fisico.medida1', label: 'Peso (kg)', type: 3, inputType: 'slider', range: { min: 30, max: 200 }, value: 70 },
-      { id: 'fisico.medida2', label: 'Altura (cm)', type: 3, inputType: 'slider', range: { min: 140, max: 220 }, value: 175 },
-      { id: 'fisico.forma', label: 'Forma Física', type: 1, inputType: 'wheelpick', options: ['Sedentário', 'Iniciante', 'Intermediário', 'Avançado', 'Atleta'], value: 'Iniciante' },
-      { id: 'fisico.medida3', label: 'Atributo', type: 4, inputType: 'wheelpick', options: ['Força', 'Agilidade', 'Inteligência', 'Resistência', 'Carisma', 'Sorte'], value: 'Força' },
-      { id: 'fisico.habito1', label: 'Atividade', type: 3, inputType: 'wheelpick', options: ['Musculação', 'Corrida', 'Natação', 'Ciclismo', 'Crossfit', 'Yoga', 'Pilates', 'Artes Marciais', 'Dança', 'Esportes Coletivos', 'Calistenia', 'Caminhada'], value: 'Musculação' },
-      { id: 'fisico.habito2', label: 'Dieta', type: 3, inputType: 'wheelpick', options: ['Balanceada', 'Onívora', 'Vegetariana', 'Vegana', 'Low Carb', 'Cetogênica', 'Jejum Intermitente', 'Flexível'], value: 'Balanceada' },
-    ]
+    id: 'fisico', name: 'FÍSICO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.fisico.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
   },
   {
     id: 'geral',
@@ -429,9 +473,13 @@ export const ASSETS_DATA: Asset[] = [
     levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.geral.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}),
     arenas: [
         { id: 'arena_outros', assetId: 'geral', name: 'Outros', description: 'Arena para ações gerais não categorizadas.', icon: '🗂️', actionIds: [] }
-    ],
-    slots: []
+    ]
   },
 ];
+
+export const ASSETS_DATA: Asset[] = RAW_ASSETS_DATA.map((asset) => ({
+  ...asset,
+  slots: PRIMARY_ASSET_SLOTS[asset.id] ?? [],
+}));
 
 

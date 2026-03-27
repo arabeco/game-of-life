@@ -288,7 +288,9 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => {
         backgroundUrl: row.background_url ?? row.backgroundUrl ?? '',
         bannerUrl: row.banner_url ?? row.bannerUrl ?? undefined,
         isOnline: !!(row.is_online ?? row.isOnline),
-        visibleWidgets: Array.isArray(row.visible_widgets) ? row.visible_widgets : (Array.isArray(row.visibleWidgets) ? row.visibleWidgets : []),
+        visibleWidgets: row.visible_widgets ?? row.visibleWidgets ?? [],
+        assetArtById: row.asset_art_by_id ?? row.assetArtById ?? {},
+        assetWidgetValues: row.asset_widget_values ?? row.assetWidgetValues ?? {},
         assetsVisibility: row.assets_visibility ?? row.assetsVisibility ?? 'all',
         masteryVisibility: row.mastery_visibility ?? row.masteryVisibility ?? 'all',
         featsVisibility: row.feats_visibility ?? row.featsVisibility ?? 'friends',
@@ -1876,7 +1878,7 @@ const PreferenciasTab: React.FC = () => {
                             onChange={handleMasteryVisibilityChange}
                         />
                         <VisibilityScopeControl
-                            label="Feitos"
+                            label="Miniaturas de arenas"
                             value={featsVisibility}
                             onChange={handleFeatsVisibilityChange}
                         />

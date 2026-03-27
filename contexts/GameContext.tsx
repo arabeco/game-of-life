@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Slot, SlotValue, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload } from '../types';
+import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { getGoldBoostProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
@@ -140,6 +140,8 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     backgroundUrl: '',
     isOnline: false,
     visibleWidgets: [],
+    assetArtById: {},
+    assetWidgetValues: {},
     assetsVisibility: 'nobody',
     masteryVisibility: 'friends',
     featsVisibility: 'friends',
@@ -474,7 +476,7 @@ export interface GameContextType {
     updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
     leaveClanMission: (questId: string) => Promise<void>;
     activateClanQuest: (questId: string) => Promise<void>;
-    getUserPublicData: (userId: string) => Promise<{ profile: UserProfile | null, clan: Clan | null, clanRank: ClanRank | undefined, slots: Slot[], levels: Record<string, number> }>;
+    getUserPublicData: (userId: string) => Promise<{ profile: UserProfile | null, clan: Clan | null, clanRank: ClanRank | undefined, levels: Record<string, number>, arenasByAsset: Record<string, Arena[]> }>;
     levelUnlocks: LevelUnlocks;
     setAchievementUnlocked: (achievement: { type: FeedEventType; data: any; } | null) => void;
     updateLevelUnlocks: (next: LevelUnlocks) => void;
@@ -487,7 +489,6 @@ export interface GameContextType {
     addProfileFlag: (flag: string) => void;
     feed: FeedEvent[];
     addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
-    updateAssetSlotValue: (assetId: string, slotId: string, value: SlotValue) => void;
     getArenas: () => Arena[];
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
     updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => void;
@@ -3037,6 +3038,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     backgroundUrl: '',
                     isOnline: false,
                     visibleWidgets: [],
+                    assetArtById: {},
+                    assetWidgetValues: {},
                     skin: 'default',
                     nobility: { exp: 0, rankId: 'vagante' },
                     mood: 50,
@@ -3146,16 +3149,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        const slotsPayload = assets.flatMap(asset => asset.slots.map(slot => ({
-            slot_id: slot.id,
-            user_id: userId,
-            value: typeof slot.value === 'object' ?JSON.stringify(slot.value) : String(slot.value)
-        })));
-        if (slotsPayload.length > 0) {
-            const { error } = await supabase.from('asset_slots').upsert(slotsPayload, { onConflict: 'user_id,slot_id' });
-            if (error) errors.push('asset_slots');
-        }
-
         return errors.length === 0;
     }, [assets, actions, tasks, reports, activeCycle, userProfile, arenaFolders]);
 
@@ -3252,27 +3245,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     arenasCountResult,
                     actionsCountResult,
                     levelsCountResult,
-                    slotsCountResult,
                     clanCountResult,
                 ] = await Promise.all([
                     rateLimiter.addRequest(() => supabase.from('arenas').select('id', { count: 'exact', head: true }).eq('user_id', userId)),
                     rateLimiter.addRequest(() => supabase.from('actions').select('id', { count: 'exact', head: true }).eq('user_id', userId)),
                     rateLimiter.addRequest(() => supabase.from('asset_levels').select('id', { count: 'exact', head: true }).eq('user_id', userId)),
-                    rateLimiter.addRequest(() => supabase.from('asset_slots').select('id', { count: 'exact', head: true }).eq('user_id', userId)),
                     rateLimiter.addRequest(() => supabase.from('clan_members').select('id', { count: 'exact', head: true }).eq('user_id', userId)),
                 ]);
 
                 if (arenasCountResult.error) console.error('Error checking arenas count:', arenasCountResult.error.message);
                 if (actionsCountResult.error) console.error('Error checking actions count:', actionsCountResult.error.message);
                 if (levelsCountResult.error) console.error('Error checking asset levels count:', levelsCountResult.error.message);
-                if (slotsCountResult.error) console.error('Error checking asset slots count:', slotsCountResult.error.message);
                 if (clanCountResult.error) console.error('Error checking clan membership count:', clanCountResult.error.message);
 
                 const counts = [
                     arenasCountResult.count,
                     actionsCountResult.count,
                     levelsCountResult.count,
-                    slotsCountResult.count,
                     clanCountResult.count,
                 ];
                 const hasExistingData = counts.some(count => typeof count === 'number' && count > 0);
@@ -3332,6 +3321,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         skin: normalizedSkin,
                         unlockedSkins: normalizedUnlockedSkins,
                     } as UserProfile;
+                    next.visibleWidgets = Array.isArray(next.visibleWidgets) ? next.visibleWidgets : [];
+                    next.assetArtById = next.assetArtById || {};
+                    next.assetWidgetValues = next.assetWidgetValues || {};
                     next.assetsVisibility = normalizeAssetsVisibilityScope(next.assetsVisibility);
                     next.masteryVisibility = normalizeMasteryVisibilityScope(next.masteryVisibility);
                     next.featsVisibility = normalizeFeatsVisibilityScope(next.featsVisibility);
@@ -3364,7 +3356,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 arenasResult,
                 actionsResult,
                 tasksResult,
-                slotsResult,
                 levelsResult,
                 clanMemberResult,
                 reportsResult,
@@ -3375,7 +3366,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 () => supabase.from('arenas').select('*').eq('user_id', userId),
                 () => supabase.from('actions').select('*').eq('user_id', userId),
                 () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate),
-                () => supabase.from('asset_slots').select('*').eq('user_id', userId),
                 () => supabase.from('asset_levels').select('*').eq('user_id', userId),
                 () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle(),
                 () => supabase.from('cycles').select('*').eq('user_id', userId).not('report_data', 'is', null).order('end_date', { ascending: false }).limit(100),
@@ -3542,32 +3532,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setActions(loadedActions);
             setTasks(loadedTasks);
 
-            const { data: slotsData, error: slotsError } = slotsResult;
             const { data: levelsData, error: levelsError } = levelsResult;
 
-            if ((!arenasError && arenasData) || (!slotsError && slotsData) || (!levelsError && levelsData)) {
+            if ((!arenasError && arenasData) || (!levelsError && levelsData)) {
                 setAssets(() => {
                     let nextAssets = createDefaultAssets(true);
                     if (camelArenas) {
                         nextAssets = nextAssets.map(asset => ({
                             ...asset,
                             arenas: camelArenas.filter(a => a.assetId === asset.id)
-                        }));
-                    }
-                    if (!slotsError && slotsData) {
-                        nextAssets = nextAssets.map(asset => ({
-                            ...asset,
-                            slots: asset.slots.map(slot => {
-                                const dbSlot = slotsData.find(s => s.slot_id === slot.id);
-                                if (dbSlot) {
-                                    try {
-                                        return { ...slot, value: JSON.parse(dbSlot.value) };
-                                    } catch {
-                                        return { ...slot, value: dbSlot.value };
-                                    }
-                                }
-                                return slot;
-                            })
                         }));
                     }
                     if (!levelsError && levelsData) {
@@ -6075,6 +6048,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'bannerUrl',
                 'isOnline',
                 'visibleWidgets',
+                'assetArtById',
+                'assetWidgetValues',
                 'assetsVisibility',
                 'masteryVisibility',
                 'featsVisibility',
@@ -6548,11 +6523,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const startCycle = (name: string, endDate: string, arenaIds?: string[]) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
+        const today = getLocalDateString();
+        const trimmedName = name.trim();
+        const normalizedEndDate = endDate.trim();
+        if (!trimmedName) {
+            showToast('Dê um nome para o ciclo.', 'error');
+            return;
+        }
+        if (!normalizedEndDate || normalizedEndDate < today) {
+            showToast('A data final do ciclo precisa ser hoje ou uma data futura.', 'error');
+            return;
+        }
         const newCycle: Cycle = {
             id: crypto.randomUUID(),
-            name,
-            startDate: getLocalDateString(),
-            endDate: endDate,
+            name: trimmedName,
+            startDate: today,
+            endDate: normalizedEndDate,
             userId: userId,
             arenaIds: arenaIds || assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id)),
             seasonId: activeRuntimeSeasonId
@@ -6577,13 +6563,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const updateCycle = async (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
+        const cycleToEdit = activeCycle?.id === cycleId ? activeCycle : null;
+        const historicalReportToEdit = !cycleToEdit
+            ? reports.find((report) => report.cycleId === cycleId || report.id === cycleId) || null
+            : null;
+        const today = getLocalDateString();
+        const minimumAllowedEndDate = cycleToEdit?.startDate && cycleToEdit.startDate > today
+            ? cycleToEdit.startDate
+            : today;
 
         const sanitizedUpdates: Partial<Pick<Cycle, 'name' | 'endDate'>> = {};
         if (typeof updates.name === 'string' && updates.name.trim()) {
             sanitizedUpdates.name = updates.name.trim();
         }
         if (typeof updates.endDate === 'string' && updates.endDate.trim()) {
-            sanitizedUpdates.endDate = updates.endDate.trim();
+            if (!cycleToEdit) {
+                showToast('Ciclos fechados so permitem editar o nome.', 'error');
+                return;
+            }
+            const normalizedEndDate = updates.endDate.trim();
+            if (normalizedEndDate < minimumAllowedEndDate) {
+                const error = new Error('INVALID_CYCLE_END_DATE');
+                showToast('A data final precisa ser hoje ou depois do início do ciclo.', 'error');
+                throw error;
+            }
+            sanitizedUpdates.endDate = normalizedEndDate;
         }
 
         if (Object.keys(sanitizedUpdates).length === 0) {
@@ -6591,19 +6595,42 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const previousCycleSnapshot = activeCycle?.id === cycleId ? activeCycle : null;
+        const previousHistoricalReportSnapshot = historicalReportToEdit ? { ...historicalReportToEdit } : null;
         if (previousCycleSnapshot) {
             setActiveCycle(prev => (prev?.id === cycleId ? { ...prev, ...sanitizedUpdates } : prev));
+        }
+        if (!previousCycleSnapshot && previousHistoricalReportSnapshot && sanitizedUpdates.name) {
+            setReports(prev => prev.map(report => (
+                report.cycleId === cycleId || report.id === cycleId
+                    ? { ...report, cycleName: sanitizedUpdates.name }
+                    : report
+            )));
+        }
+
+        const dbUpdates: Record<string, any> = mapToSnakeCase(sanitizedUpdates);
+        if (!previousCycleSnapshot && previousHistoricalReportSnapshot && sanitizedUpdates.name) {
+            dbUpdates.report_data = mapToSnakeCase({
+                ...previousHistoricalReportSnapshot,
+                cycleName: sanitizedUpdates.name,
+            });
         }
 
         const { error } = await supabase
             .from('cycles')
-            .update(mapToSnakeCase(sanitizedUpdates))
+            .update(dbUpdates)
             .eq('id', cycleId)
             .eq('user_id', userId);
 
         if (error) {
             if (previousCycleSnapshot) {
                 setActiveCycle(prev => (prev?.id === cycleId ? previousCycleSnapshot : prev));
+            }
+            if (!previousCycleSnapshot && previousHistoricalReportSnapshot) {
+                setReports(prev => prev.map(report => (
+                    report.cycleId === cycleId || report.id === cycleId
+                        ? previousHistoricalReportSnapshot
+                        : report
+                )));
             }
             console.error('Supabase update cycle error:', error.message);
             showToast('Erro ao atualizar ciclo.', 'error');
@@ -7226,18 +7253,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const getUserPublicData = useCallback(async (userId: string) => {
-        if (!isUuid(userId)) return { profile: null, clan: null, clanRank: undefined, slots: [], levels: {} as Record<string, number> };
+        if (!isUuid(userId)) return { profile: null, clan: null, clanRank: undefined, levels: {} as Record<string, number>, arenasByAsset: {} as Record<string, Arena[]> };
 
-        const [clanRes, slotsRes, levelsRes, profileRes] = await Promise.all([
+        const [clanRes, levelsRes, profileRes] = await Promise.all([
             supabase
                 .from('clan_members')
                 .select('clan_id, role, clans(*)')
                 .eq('user_id', userId)
                 .maybeSingle(),
-            supabase
-                .from('asset_slots')
-                .select('*')
-                .eq('user_id', userId),
             supabase
                 .from('asset_levels')
                 .select('*')
@@ -7255,6 +7278,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         let publicProfile: UserProfile | null = null;
         if (profileRes.data) {
             publicProfile = mapToCamelCase(profileRes.data) as UserProfile;
+            publicProfile.visibleWidgets = Array.isArray(publicProfile.visibleWidgets) ? publicProfile.visibleWidgets : [];
+            publicProfile.assetArtById = publicProfile.assetArtById || {};
+            publicProfile.assetWidgetValues = publicProfile.assetWidgetValues || {};
             publicProfile.assetsVisibility = normalizeAssetsVisibilityScope(publicProfile.assetsVisibility);
             publicProfile.masteryVisibility = normalizeMasteryVisibilityScope(publicProfile.masteryVisibility);
             publicProfile.featsVisibility = normalizeFeatsVisibilityScope(publicProfile.featsVisibility);
@@ -7264,21 +7290,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const isFriend = friends.some((friend) => friend.id === userId);
         const assetsVisibility = normalizeAssetsVisibilityScope(publicProfile?.assetsVisibility);
         const masteryVisibility = normalizeMasteryVisibilityScope(publicProfile?.masteryVisibility);
+        const arenaMiniaturesVisibility = normalizeFeatsVisibilityScope(publicProfile?.featsVisibility);
         const canViewAssets = isOwner || assetsVisibility === 'all' || (assetsVisibility === 'friends' && isFriend);
         const canViewMastery = isOwner || masteryVisibility === 'all' || (masteryVisibility === 'friends' && isFriend);
-
-        // Merge slots with defaults to ensure all widgets are available even if not in DB
-        const defaultAssets = createDefaultAssets(true);
-        const allBaseSlots = defaultAssets.flatMap(a => a.slots);
-        const userSlots: Slot[] = allBaseSlots.map(baseSlot => {
-            const dbSlot = slotsRes.data?.find((s: any) => s.slot_id === baseSlot.id);
-            if (dbSlot) {
-                let val = dbSlot.value;
-                try { val = JSON.parse(dbSlot.value); } catch { }
-                return { ...baseSlot, value: val };
-            }
-            return baseSlot;
-        });
+        const canViewArenaMiniatures = isOwner || arenaMiniaturesVisibility === 'all' || (arenaMiniaturesVisibility === 'friends' && isFriend);
 
         const userLevels: Record<string, number> = {};
         if (levelsRes.data) {
@@ -7289,14 +7304,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (publicProfile && !canViewAssets && !isOwner) {
             publicProfile.visibleWidgets = [];
+            publicProfile.assetArtById = {};
+            publicProfile.assetWidgetValues = {};
+        }
+
+        let arenasByAsset: Record<string, Arena[]> = {};
+        if (canViewArenaMiniatures) {
+            const { data: arenasData } = await supabase
+                .from('arenas')
+                .select('id, asset_id, name, description, icon, action_ids, is_archived, order, priority')
+                .eq('user_id', userId);
+
+            if (arenasData) {
+                arenasByAsset = (arenasData as any[]).reduce((acc, row) => {
+                    const arena = mapToCamelCase(row) as Arena;
+                    if (!acc[arena.assetId]) acc[arena.assetId] = [];
+                    acc[arena.assetId].push(arena);
+                    return acc;
+                }, {} as Record<string, Arena[]>);
+            }
         }
 
         return {
             profile: publicProfile,
             clan: clanData,
             clanRank,
-            slots: canViewAssets ? userSlots : [],
             levels: canViewMastery ?userLevels : {},
+            arenasByAsset,
         };
     }, [friends, userProfile.id]);
 
@@ -7470,21 +7504,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
     const deleteChecklistItem = (id: string) => {
         setChecklistItems(prev => prev.filter(item => item.id !== id));
-    };
-
-    const updateAssetSlotValue = (assetId: string, slotId: string, value: SlotValue) => {
-        setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ?{ ...asset, slots: asset.slots.map(slot => slot.id === slotId ?{ ...slot, value } : slot) } : asset));
-        const userId = getSupabaseUserId();
-        if (userId) {
-            // Correct upsert for asset_slots: use user_id and slot_id as composite key or unique identifiers
-            supabase.from('asset_slots').upsert({
-                slot_id: slotId,
-                user_id: userId,
-                value: typeof value === 'object' ?JSON.stringify(value) : String(value)
-            }, { onConflict: 'user_id,slot_id' }).then(({ error }) => {
-                if (error) console.error("Supabase slot update error:", error.message);
-            });
-        }
     };
 
     const getArenas = () => allArenas;
@@ -9597,7 +9616,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,
-            addProfileFlag, feed, addFeedEvent, updateAssetSlotValue, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,

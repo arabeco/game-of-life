@@ -6,6 +6,7 @@ interface SephirotProps {
   asset: Asset;
   onClick: () => void;
   style?: React.CSSProperties;
+  artUrl?: string;
   levelColor?: string;
   useSkinArtworkOnly?: boolean;
   showLabel?: boolean;
@@ -17,6 +18,7 @@ export const Sephirot: React.FC<SephirotProps> = ({
   asset,
   onClick,
   style,
+  artUrl,
   levelColor,
   useSkinArtworkOnly = false,
   showLabel = true,
@@ -37,15 +39,28 @@ export const Sephirot: React.FC<SephirotProps> = ({
   const sphereInsetRing = useSkinArtworkOnly
     ? undefined
     : `inset 0 0 0 var(--sephirot-ring-width, 0.8px) var(--sephirot-border-color)`;
+  const assetArtUrl = artUrl ? artUrl.replace(/"/g, '\\"') : '';
+  const backgroundImage = artUrl
+    ? `linear-gradient(180deg, rgba(5,5,8,0.24) 0%, rgba(5,5,8,0.72) 100%), url("${assetArtUrl}"), ${sphereBackgroundImage}`
+    : sphereBackgroundImage;
+  const backgroundSize = artUrl
+    ? `100% 100%, cover, ${sphereBackgroundSize}`
+    : sphereBackgroundSize;
+  const backgroundPosition = artUrl
+    ? `center, center, ${sphereBackgroundPosition}`
+    : sphereBackgroundPosition;
+  const backgroundRepeat = artUrl
+    ? `no-repeat, no-repeat, ${sphereBackgroundRepeat}`
+    : sphereBackgroundRepeat;
 
   const sphereContent = (
         <div 
             className="relative w-full h-full rounded-full flex items-center justify-center text-center transition-all"
             style={{ 
-                backgroundImage: sphereBackgroundImage,
-                backgroundSize: sphereBackgroundSize,
-                backgroundPosition: sphereBackgroundPosition,
-                backgroundRepeat: sphereBackgroundRepeat,
+                backgroundImage,
+                backgroundSize,
+                backgroundPosition,
+                backgroundRepeat,
                 boxShadow: sphereInsetRing,
             }}
         >

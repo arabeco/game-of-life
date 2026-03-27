@@ -51,7 +51,9 @@ function buildProfilePayload({ userId, email, nickname, isPremium = true, appMod
     background_url: `https://picsum.photos/seed/bg-${userId}/400/150`,
     banner_url: null,
     is_online: true,
-    visible_widgets: ['consciencia.lema'],
+    visible_widgets: [],
+    asset_art_by_id: {},
+    asset_widget_values: {},
     skin: 'BASIC',
     unlocked_skins: { BASIC: true },
     unlocked_items: {

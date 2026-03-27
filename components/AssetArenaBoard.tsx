@@ -18,6 +18,8 @@ const rgbaString = (rgb: [number, number, number] | null, alpha: number): string
 
 interface AssetArenaBoardProps {
     asset: Asset;
+    showArchived?: boolean;
+    interactive?: boolean;
 }
 
 const pileTransform = (index: number) => {
@@ -29,7 +31,7 @@ const pileTransform = (index: number) => {
 const sectionTitleClass = 'text-center text-[10px] font-black uppercase tracking-[0.28em] text-[var(--skin-accent-color)]';
 const emptyClass = 'rounded-2xl border border-dashed border-white/10 bg-black/15 px-4 py-4 text-center text-xs text-white/45';
 
-export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
+export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArchived = true, interactive = true }) => {
     const { getActionsForArena, userProfile, appMode } = useGame();
     const [viewingArenaId, setViewingArenaId] = useState<string | null>(null);
     const assetAccent = ASSET_ACCENT_COLORS[asset.id as keyof typeof ASSET_ACCENT_COLORS] || '#F0C843';
@@ -67,38 +69,41 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
     return (
         <>
             <div className="flex flex-col gap-2.5">
-                <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3" style={sectionStyle}>
-                    <p className={sectionTitleClass}>Arquivadas</p>
+                {showArchived && (
+                    <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3" style={sectionStyle}>
+                        <p className={sectionTitleClass}>Arquivadas</p>
 
-                    {archivedArenas.length > 0 ? (
-                        <div className="mt-2.5 overflow-x-auto pb-1.5">
-                            <div className="flex min-w-max items-end px-1.5">
-                                {archivedArenas.map((arena, index) => (
-                                    <button
-                                        key={arena.id}
-                                        type="button"
-                                        onClick={() => setViewingArenaId(arena.id)}
-                                        className={`w-[4.65rem] shrink-0 ${index > 0 ? '-ml-3.5' : ''}`}
-                                        style={{ transform: pileTransform(index) }}
-                                    >
-                                        <div className="pointer-events-none h-[5.85rem] w-full drop-shadow-[0_10px_20px_rgba(0,0,0,0.32)]">
-                                            <ArenaCard
-                                                arena={arena}
-                                                actions={getActionsForArena(arena.id)}
-                                                onClick={() => setViewingArenaId(arena.id)}
-                                                variant="compact"
-                                            />
-                                        </div>
-                                    </button>
-                                ))}
+                        {archivedArenas.length > 0 ? (
+                            <div className="mt-2.5 overflow-x-auto pb-1.5">
+                                <div className="flex min-w-max items-end px-1.5">
+                                    {archivedArenas.map((arena, index) => (
+                                        <button
+                                            key={arena.id}
+                                            type="button"
+                                            onClick={interactive ? () => setViewingArenaId(arena.id) : undefined}
+                                            disabled={!interactive}
+                                            className={`w-[4.65rem] shrink-0 ${index > 0 ? '-ml-3.5' : ''}`}
+                                            style={{ transform: pileTransform(index) }}
+                                        >
+                                            <div className="pointer-events-none h-[5.85rem] w-full drop-shadow-[0_10px_20px_rgba(0,0,0,0.32)]">
+                                                <ArenaCard
+                                                    arena={arena}
+                                                    actions={getActionsForArena(arena.id)}
+                                                    onClick={interactive ? () => setViewingArenaId(arena.id) : undefined}
+                                                    variant="compact"
+                                                />
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="mt-2.5">
-                            <div className={emptyClass}>Nenhuma arena arquivada ainda.</div>
-                        </div>
-                    )}
-                </section>
+                        ) : (
+                            <div className="mt-2.5">
+                                <div className={emptyClass}>Nenhuma arena arquivada ainda.</div>
+                            </div>
+                        )}
+                    </section>
+                )}
 
                 <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3" style={sectionStyle}>
                     <p className={sectionTitleClass}>Ativas</p>
@@ -111,7 +116,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
                                         <ArenaCard
                                             arena={arena}
                                             actions={getActionsForArena(arena.id)}
-                                            onClick={() => setViewingArenaId(arena.id)}
+                                            onClick={interactive ? () => setViewingArenaId(arena.id) : undefined}
                                             variant="compact"
                                         />
                                     </div>
@@ -126,7 +131,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset }) => {
                 </section>
             </div>
 
-            {viewingArena && (
+            {interactive && viewingArena && (
                 <ArenaDetailModal
                     arena={viewingArena}
                     onClose={() => setViewingArenaId(null)}

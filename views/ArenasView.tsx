@@ -1348,10 +1348,10 @@ export const ArenasView: React.FC = () => {
             const newArena = await addArena(builderAssetId, {
                 name: arenaName.trim(),
                 description: arenaDescription.trim(),
+                isArchived: !arenaActive,
                 icon: arenaIcon || '🏟️',
             });
             
-            if (!arenaActive) updateArena(newArena.id, { isArchived: true });
             
             // Create all actions in parallel
             const actionPromises = [...pendingActions].reverse().map(action => 

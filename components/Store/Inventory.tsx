@@ -263,6 +263,7 @@ export const Inventory: React.FC = () => {
 
                                     <div className="group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg flex items-center justify-center w-full h-full mb-3">
                                         <ItemArt
+                                            itemId={item.id}
                                             src={item.def?.imageUrl}
                                             alt={item.def?.name || item.id}
                                             icon={item.def?.icon}

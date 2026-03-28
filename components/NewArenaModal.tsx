@@ -6,6 +6,7 @@ import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
+import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 
 interface NewArenaModalProps {
     assetId?: string;
@@ -48,7 +49,7 @@ const AssetSelectionModal: React.FC<{ currentAssetId: string; onSelect: (assetId
 };
 
 export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAssetId, isOpen, onClose, onArenaCreated, initialRelationship }) => {
-    const { addArena, assets, showToast } = useGame();
+    const { addArena, assets, showToast, userProfile } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [assetId, setAssetId] = useState(initialAssetId || 'geral');
@@ -61,6 +62,8 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     }, [isOpen]);
 
     if (!isOpen) return null;
+    const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
+    const canCreateArena = !arenaCapacity.isAtLimit;
 
     const handleSave = async () => {
         if (!name.trim() || !assetId) {
@@ -68,23 +71,32 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
             return;
         }
 
+        if (!canCreateArena) {
+            showToast(buildArenaLimitMessage(arenaCapacity), 'warning');
+            return;
+        }
+
         const defaultIcon = suggestEmojiForLabel(name, 'arena', { assetId, fallback: '\u{1F3DB}\uFE0F' });
         const finalDescription = description;
 
-        const newArena = await addArena(assetId, {
-            name,
-            description: finalDescription,
-            icon: defaultIcon,
-        });
+        try {
+            const newArena = await addArena(assetId, {
+                name,
+                description: finalDescription,
+                icon: defaultIcon,
+            });
 
-        showToast('Arena criada.', 'success');
+            showToast('Arena criada.', 'success');
 
-        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaCreated, { detail: { arenaId: newArena.id } }));
+            window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaCreated, { detail: { arenaId: newArena.id } }));
 
-        if (onArenaCreated) {
-            onArenaCreated(newArena);
-        } else {
-            onClose();
+            if (onArenaCreated) {
+                onArenaCreated(newArena);
+            } else {
+                onClose();
+            }
+        } catch (error) {
+            console.error('Error creating arena from modal:', error);
         }
     };
 
@@ -99,6 +111,9 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                         <div className="text-center">
                             <CrownIcon className="w-8 h-8 mx-auto text-[var(--skin-accent-color)]" />
                             <h2 className="text-lg font-bold uppercase tracking-wider mt-2">Nova Arena</h2>
+                            <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+                                Arenas ativas: {arenaCapacity.active}/{arenaCapacity.limit}
+                            </p>
                         </div>
 
                         <div className="space-y-2">
@@ -131,7 +146,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                             <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
                                 CANCELAR
                             </button>
-                            <button id="new-arena-submit-button" onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
+                            <button id="new-arena-submit-button" onClick={handleSave} disabled={!canCreateArena} className="w-full py-2 rounded-xl luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50">
                                 CRIAR ARENA
                             </button>
                         </div>

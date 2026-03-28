@@ -317,14 +317,14 @@ export const ITEMS_DB: ItemDef[] = [
     // T1
     themeCatalogItem({ id: 'BASIC', name: 'Tema: BÃ¡sico Profissional', tier: 1, rarity: 'common', icon: '\u25FB\uFE0F', asset: 'basic.png' }),
     // T3
-    themeCatalogItem({ id: 'GOLD', name: 'Tema: Ouro Soberano', tier: 3, rarity: 'rare', icon: '\u269C\uFE0F', asset: 'gold.png', isRankExclusive: true }),
-    themeCatalogItem({ id: 'FROST', name: 'Tema: Gelo Eterno', tier: 3, rarity: 'rare', icon: '\u2744\uFE0F', asset: 'frost.png', isRankExclusive: true }),
+    themeCatalogItem({ id: 'GOLD', name: 'Tema: Ouro Soberano', tier: 3, rarity: 'rare', icon: '\u269C\uFE0F', asset: 'gold.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.GOLD }),
+    themeCatalogItem({ id: 'FROST', name: 'Tema: Gelo Eterno', tier: 3, rarity: 'rare', icon: '\u2744\uFE0F', asset: 'frost.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.FROST }),
     // T4
-    themeCatalogItem({ id: 'EMBER', name: 'Tema: Chama Viva', tier: 4, rarity: 'epic', icon: '\uD83D\uDD25', asset: 'ember.png', isRankExclusive: true }),
-    themeCatalogItem({ id: 'CYBER', name: 'Tema: Cyberpunk', tier: 4, rarity: 'epic', icon: '\uD83E\uDDBE', asset: 'cyber.jpg', isRankExclusive: true }),
-    themeCatalogItem({ id: 'AURORA', name: 'Tema: Aurora Boreal', tier: 4, rarity: 'epic', icon: '\uD83C\uDF0C', asset: 'aurora.png', isRankExclusive: true }),
+    themeCatalogItem({ id: 'EMBER', name: 'Tema: Chama Viva', tier: 4, rarity: 'epic', icon: '\uD83D\uDD25', asset: 'ember.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.EMBER }),
+    themeCatalogItem({ id: 'CYBER', name: 'Tema: Cyberpunk', tier: 4, rarity: 'epic', icon: '\uD83E\uDDBE', asset: 'cyber.jpg', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.CYBER }),
+    themeCatalogItem({ id: 'AURORA', name: 'Tema: Aurora Boreal', tier: 4, rarity: 'epic', icon: '\uD83C\uDF0C', asset: 'aurora.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.AURORA }),
     // T5
-    themeCatalogItem({ id: 'VOID', name: 'Tema: Vazio Primordial', tier: 5, rarity: 'legendary', icon: '\uD83D\uDD2E', asset: 'void.png', isRankExclusive: true }),
+    themeCatalogItem({ id: 'VOID', name: 'Tema: Vazio Primordial', tier: 5, rarity: 'legendary', icon: '\uD83D\uDD2E', asset: 'void.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.VOID }),
     themeCatalogItem({ id: 'GENESIS', name: 'Tema: Genesis', tier: 5, rarity: 'legendary', icon: '\u2726', asset: 'genesis.png' }),
 
     // --- EXCLUSIVOS (Store) ---

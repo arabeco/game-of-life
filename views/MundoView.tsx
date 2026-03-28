@@ -190,6 +190,7 @@ const SocialTab: React.FC = () => {
     const {
         clan,
         clanRanks,
+        clanJoinRequestsIncoming,
         clanJoinRequestsOutgoing,
         friends,
         userProfile,
@@ -200,6 +201,8 @@ const SocialTab: React.FC = () => {
         declineFriendRequest,
         cancelFriendRequest,
         joinClan,
+        approveClanJoinRequest,
+        rejectClanJoinRequest,
         cancelClanJoinRequest,
         fetchRelationshipHubData,
         getUserPublicData,
@@ -216,7 +219,11 @@ const SocialTab: React.FC = () => {
     const [relationshipProfiles, setRelationshipProfiles] = useState<Record<string, UserProfile>>({});
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
 
-    const relationshipCount = friendRequestsIncoming.length + friendRequestsOutgoing.length + relationshipInvites.length;
+    const requestCount = friendRequestsIncoming.length
+        + friendRequestsOutgoing.length
+        + relationshipInvites.length
+        + clanJoinRequestsIncoming.length
+        + clanJoinRequestsOutgoing.length;
 
     const activeRelationshipsForProfile = (profileId: string) =>
         relationshipLinks.filter(link => link.mentorId === profileId || link.pupilId === profileId);
@@ -244,18 +251,26 @@ const SocialTab: React.FC = () => {
         relationshipProfiles[profileId] ||
         buildFallbackProfile(profileId);
 
+    const buildClanRequestProfile = (request: NonNullable<typeof clanJoinRequestsOutgoing[number]>): UserProfile => ({
+        ...buildFallbackProfile(`clan-request-${request.id}`),
+        nickname: request.clanProfile?.name || 'Grupo',
+        backgroundUrl: request.clanProfile?.backgroundUrl || '',
+        clanName: 'Pedido em aberto',
+        clanIcon: request.clanProfile?.icon || '🛡️',
+    });
+
     const relationshipIncoming = relationshipInvites.filter(invite => invite.recipientId === userProfile.id);
     const relationshipOutgoing = relationshipInvites.filter(invite => invite.senderId === userProfile.id);
-    const incomingRequestCount = friendRequestsIncoming.length + relationshipIncoming.length;
-    const outgoingRequestCount = friendRequestsOutgoing.length + relationshipOutgoing.length;
+    const incomingRequestCount = friendRequestsIncoming.length + relationshipIncoming.length + clanJoinRequestsIncoming.length;
+    const outgoingRequestCount = friendRequestsOutgoing.length + relationshipOutgoing.length + clanJoinRequestsOutgoing.length;
 
     const renderRequestsPanel = () => {
-        if (relationshipCount === 0) {
+        if (requestCount === 0) {
             return (
                 <div className="rounded-[26px] border border-dashed border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-4 py-8 text-center">
                     <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[color:var(--ui-card-text-soft)]">Solicitacoes</div>
                     <div className="mt-2 text-sm font-semibold text-[color:var(--ui-card-text)]">Nenhuma solicitacao pendente.</div>
-                    <div className="mt-1 text-xs text-[color:var(--ui-card-text-soft)]">Amizades e vinculos novos vao aparecer aqui.</div>
+                    <div className="mt-1 text-xs text-[color:var(--ui-card-text-soft)]">Amizades, vinculos e pedidos de grupo vao aparecer aqui.</div>
                 </div>
             );
         }
@@ -266,7 +281,7 @@ const SocialTab: React.FC = () => {
                     <div className="rounded-[22px] border border-[var(--skin-accent-color)]/16 bg-[linear-gradient(180deg,rgba(255,208,0,0.08)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
                         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Para voce</div>
                         <div className="mt-1 text-2xl font-black text-[color:var(--ui-card-text)]">{incomingRequestCount}</div>
-                        <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">amizades e vinculos</div>
+                        <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">amizades, vinculos e grupos</div>
                     </div>
                     <div className="rounded-[22px] border border-[var(--ui-core-surface-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
                         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Em aberto</div>
@@ -290,6 +305,31 @@ const SocialTab: React.FC = () => {
                                         <div className="flex gap-2">
                                             <button onClick={() => acceptFriendRequest(request.id)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
                                             <button onClick={() => declineFriendRequest(request.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
+                                        </div>
+                                    }
+                                />
+                            );
+                        })}
+
+                        {clanJoinRequestsIncoming.map(request => {
+                            const requesterProfile = request.requesterProfile || buildFallbackProfile(request.userId);
+                            return (
+                                <SocialCard
+                                    key={request.id}
+                                    profile={requesterProfile}
+                                    subtitle={`Pedido para ${clan?.name || 'seu grupo'}`}
+                                    badges={
+                                        clan?.name ? (
+                                            <span className="rounded-full border border-amber-400/24 bg-amber-400/12 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-amber-200">
+                                                {clan.icon || '🛡️'} Grupo
+                                            </span>
+                                        ) : undefined
+                                    }
+                                    onClick={() => setSelectedProfile(requesterProfile)}
+                                    actions={
+                                        <div className="flex gap-2">
+                                            <button onClick={() => approveClanJoinRequest(request)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
+                                            <button onClick={() => rejectClanJoinRequest(request)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
                                         </div>
                                     }
                                 />
@@ -353,6 +393,25 @@ const SocialTab: React.FC = () => {
                                     onClick={() => setSelectedProfile(recipientProfile)}
                                     actions={
                                         <button onClick={() => cancelFriendRequest(request.id)} className="px-3 py-2 text-[10px] font-bold rounded-xl bg-black/30 border border-white/10 text-gray-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/30 transition-colors">Cancelar</button>
+                                    }
+                                />
+                            );
+                        })}
+
+                        {clanJoinRequestsOutgoing.map(request => {
+                            const clanProfile = buildClanRequestProfile(request);
+                            return (
+                                <SocialCard
+                                    key={request.id}
+                                    profile={clanProfile}
+                                    subtitle="Pedido de entrada enviado"
+                                    badges={
+                                        <span className="rounded-full border border-amber-400/24 bg-amber-400/12 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-amber-200">
+                                            {request.clanProfile?.icon || '🛡️'} Grupo
+                                        </span>
+                                    }
+                                    actions={
+                                        <button onClick={() => cancelClanJoinRequest(request.id)} className="px-3 py-2 text-[10px] font-bold rounded-xl bg-black/30 border border-white/10 text-gray-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/30 transition-colors">Cancelar</button>
                                     }
                                 />
                             );
@@ -504,7 +563,7 @@ const SocialTab: React.FC = () => {
                         onClick={() => setActiveTab('solicitacoes')}
                         className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'solicitacoes' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
                     >
-                        Solicitações {relationshipCount > 0 ? `(${relationshipCount})` : ''}
+                        Solicitações {requestCount > 0 ? `(${requestCount})` : ''}
                     </button>
                 </div>
 

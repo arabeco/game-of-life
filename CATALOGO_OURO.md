@@ -19,10 +19,16 @@ Regra pratica:
 | `item_skin_3_002` | Alquimista | skin | 3 | 22 |
 | `item_skin_3_003` | Hibrido | skin | 3 | 26 |
 | `item_orb_3_001` | Orbe de Ouro | orb | 3 | 29 |
+| `GOLD` | Tema: Ouro Soberano | ui_skin | 3 | 135 |
+| `FROST` | Tema: Gelo Eterno | ui_skin | 3 | 135 |
 | `item_banner_t3_mistico` | Mistico | banner | 3 | 32 |
+| `EMBER` | Tema: Chama Viva | ui_skin | 4 | 220 |
+| `CYBER` | Tema: Cyberpunk | ui_skin | 4 | 220 |
+| `AURORA` | Tema: Aurora Boreal | ui_skin | 4 | 220 |
 | `item_banner_lendaviva` | Lenda Viva | banner | 4 | 40 |
 | `item_banner_t4_oraculo` | Oraculo | banner | 4 | 48 |
 | `item_skin_4_001` | Armadura Placa | skin | 4 | 50 |
+| `VOID` | Tema: Vazio Primordial | ui_skin | 5 | 420 |
 
 ## Premium e boosts
 

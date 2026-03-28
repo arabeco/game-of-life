@@ -32,7 +32,7 @@ const RARITY_STYLES: Record<string, string> = {
 };
 
 export const ItemsStore: React.FC = () => {
-    const { buyStoreItem, inventory } = useGame();
+    const { buyStoreItem, inventory, userProfile } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<ItemDef | null>(null);
     const [pendingPurchaseItem, setPendingPurchaseItem] = useState<ItemDef | null>(null);
@@ -51,7 +51,13 @@ export const ItemsStore: React.FC = () => {
         });
     }, []);
 
-    const ownedItemIds = useMemo(() => new Set(inventory.map((item) => item.id)), [inventory]);
+    const ownedItemIds = useMemo(() => {
+        const ids = new Set(inventory.map((item) => item.id));
+        Object.entries(userProfile.unlockedItems?.ui_skins || {}).forEach(([itemId, isUnlocked]) => {
+            if (isUnlocked) ids.add(itemId);
+        });
+        return ids;
+    }, [inventory, userProfile.unlockedItems]);
     const availableCategories = useMemo(() => {
         const ids = Array.from(new Set(items.map((item) => item.category)));
         return ids.map((category) => ({
@@ -169,6 +175,7 @@ export const ItemsStore: React.FC = () => {
                             >
                                 <div className="group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg flex items-center justify-center w-full h-full mb-3">
                                     <ItemArt
+                                        itemId={item.id}
                                         src={item.imageUrl}
                                         alt={item.name}
                                         icon={item.icon}

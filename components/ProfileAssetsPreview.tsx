@@ -336,7 +336,7 @@ export const ProfileAssetsPreview: React.FC<{
                                         className="group relative flex min-h-[66px] w-[118px] flex-col items-center overflow-visible rounded-[22px] border px-2 pb-0.5 pt-[16px] text-center transition-all duration-300 hover:-translate-y-[2px]"
                                         style={{
                                             borderColor: rgbaString(accentRgb, 0.42),
-                                            backgroundImage: `${assetArtUrl ? `linear-gradient(180deg, rgba(6,7,10,0.18) 0%, rgba(6,7,10,0.82) 42%, rgba(6,7,10,0.96) 100%), url("${assetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.96) 18%, rgba(10,12,16,0.985) 100%)`,
+                                            backgroundImage: `${assetArtUrl ? `linear-gradient(180deg, rgba(6,7,10,0.12) 0%, rgba(6,7,10,0.68) 42%, rgba(6,7,10,0.9) 100%), url("${assetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.9) 18%, rgba(10,12,16,0.96) 100%)`,
                                             backgroundSize: assetArtUrl ? 'cover, auto, auto, auto' : undefined,
                                             backgroundPosition: assetArtUrl ? 'center, center, center, center' : undefined,
                                             boxShadow: `0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 999px ${rgbaString(accentRgb, 0.022)}, 0 0 0 1px ${rgbaString(accentRgb, 0.12)}`,
@@ -353,16 +353,16 @@ export const ProfileAssetsPreview: React.FC<{
                                             />
                                         </div>
                                         <div className="-mt-0.5 relative z-10 flex w-full justify-center">
-                                            <div className="w-[102px] rounded-[10px] border border-white/10 bg-[rgba(8,10,14,0.82)] px-2 py-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.22)]">
-                                                <p className="w-full truncate px-0.5 text-center text-[8px] font-black uppercase leading-none tracking-[0.02em] text-white/92">
+                                            <div className="w-[102px] rounded-[10px] border border-white/10 bg-[rgba(8,10,14,0.58)] px-2 py-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.18)]">
+                                                <p className="w-full truncate px-0.5 text-center text-[8px] font-black uppercase leading-none tracking-[0.02em] text-white/95 [text-shadow:0_1px_10px_rgba(0,0,0,0.58)]">
                                                     {asset.name}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="-mt-0.5 w-full rounded-[12px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,10,14,0.74)_0%,rgba(8,10,14,0.88)_100%)] px-2 py-[0.42rem] text-[9px] font-semibold uppercase tracking-[0.06em]">
-                                            <div className="flex items-center justify-between gap-2 text-white/78">
-                                                <span><span className="font-black text-white">{activeArenas}</span> arenas</span>
-                                                <span><span className="font-black text-white">{totalActions}</span> ações</span>
+                                        <div className="-mt-0.5 w-full rounded-[12px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,10,14,0.58)_0%,rgba(8,10,14,0.74)_100%)] px-2 py-[0.42rem] text-[9px] font-semibold uppercase tracking-[0.06em]">
+                                            <div className="flex items-center justify-between gap-2 text-white/82 [text-shadow:0_1px_8px_rgba(0,0,0,0.52)]">
+                                                <span><span className="font-black text-white/95">{activeArenas}</span> arenas</span>
+                                                <span><span className="font-black text-white/95">{totalActions}</span> ações</span>
                                             </div>
                                         </div>
                                     </button>

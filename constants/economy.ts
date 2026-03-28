@@ -64,6 +64,7 @@ export const ECONOMY = {
       name: 'Premium (30 dias)',
       cost: 200,
       benefits: [
+        'Ate 25 arenas ativas (vs 15 no plano base)',
         'Dossies ampliados (6 slots vs 3)',
         'Deep Focus Audio: 9 faixas exclusivas',
         'Oraculo: todos os modos (Tatico, Reflexivo...)',

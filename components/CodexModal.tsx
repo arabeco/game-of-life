@@ -13,6 +13,7 @@ import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { EmojiGlyph } from './EmojiGlyph';
 import { supabase } from '../supabaseClient';
 import { getGoldMechanicPrice } from '../constants/goldCatalog';
+import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 
 type CodexDraft = {
   id: string;
@@ -76,7 +77,7 @@ export const CodexModal: React.FC<{
   relationshipLinkId?: string | null;
   onDelivered?: () => void;
 }> = ({ onClose, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
-  const { assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient } = useGame();
+  const { assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient, userProfile } = useGame();
   const isMentorDraftMode = Boolean(recipientId);
   const draftStorageKey = isMentorDraftMode
     ? `mentorCodexDrafts:${relationshipLinkId || recipientId}`
@@ -491,6 +492,12 @@ export const CodexModal: React.FC<{
   const handleApplyCodex = async () => {
     if (!activeCodex) return;
     if (!confirm('Deseja instalar todas as arenas e ações desta campanha no seu jogo?')) return;
+
+    const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
+    if (arenaCapacity.active + activeCodex.arenas.length > arenaCapacity.limit) {
+      setStatus(buildArenaLimitMessage(arenaCapacity, { requestedActiveArenas: activeCodex.arenas.length }));
+      return;
+    }
 
     const arenaIdMap: Record<string, string> = {};
 

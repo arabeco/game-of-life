@@ -3,6 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { CheckIcon, PlusIcon, XIcon } from './Icons';
 import { Portal } from './Portal';
+import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 
 interface ArenaSelectionModalProps {
     currentArenaId: string;
@@ -11,14 +12,20 @@ interface ArenaSelectionModalProps {
 }
 
 export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ currentArenaId, onSelect, onClose }) => {
-    const { assets, addArena } = useGame();
+    const { assets, addArena, userProfile, showToast } = useGame();
     const [isCreating, setIsCreating] = useState(false);
     const [newArenaName, setNewArenaName] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState(assets[0]?.id || 'geral');
+    const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
+    const canCreateArena = !arenaCapacity.isAtLimit;
     const [newArenaIcon, setNewArenaIcon] = useState('🏟️');
 
     const handleCreateArena = async () => {
         if (!newArenaName.trim()) return;
+        if (!canCreateArena) {
+            showToast(buildArenaLimitMessage(arenaCapacity), 'warning');
+            return;
+        }
         
         try {
             const newArena = await addArena(selectedAssetId, {
@@ -49,6 +56,9 @@ export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ curren
 
                 {isCreating ? (
                     <div className="space-y-4">
+                        <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+                            Arenas ativas: {arenaCapacity.active}/{arenaCapacity.limit}
+                        </div>
                         <div>
                             <label className="text-xs font-semibold text-gray-400 uppercase">Nome</label>
                             <input 
@@ -79,7 +89,7 @@ export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ curren
                         <div className="pt-2">
                             <button 
                                 onClick={handleCreateArena}
-                                disabled={!newArenaName.trim()}
+                                disabled={!newArenaName.trim() || !canCreateArena}
                                 className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Criar Arena
@@ -108,8 +118,9 @@ export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ curren
                             ))}
                         </div>
                         <button 
-                            onClick={() => setIsCreating(true)}
-                            className="w-full py-3 rounded-xl border border-dashed border-white/20 text-gray-400 hover:text-white hover:border-white/40 hover:bg-white/5 transition-all flex items-center justify-center space-x-2"
+                            onClick={() => canCreateArena ? setIsCreating(true) : showToast(buildArenaLimitMessage(arenaCapacity), 'warning')}
+                            disabled={!canCreateArena}
+                            className="w-full py-3 rounded-xl border border-dashed border-white/20 text-gray-400 hover:text-white hover:border-white/40 hover:bg-white/5 transition-all flex items-center justify-center space-x-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <PlusIcon className="w-5 h-5" />
                             <span className="font-bold uppercase text-sm">Criar Nova Arena</span>

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { EmojiGlyph } from './EmojiGlyph';
 import { getAuraBackground, getAuraVisual } from '../utils/auraVisuals';
+import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 
 interface ItemArtProps {
+    itemId?: string;
     src?: string;
     alt: string;
     icon?: string;
@@ -17,6 +19,7 @@ interface ItemArtProps {
 }
 
 export const ItemArt: React.FC<ItemArtProps> = ({
+    itemId,
     src,
     alt,
     icon,
@@ -63,6 +66,8 @@ export const ItemArt: React.FC<ItemArtProps> = ({
     }
 
     if (category === 'ui_skin') {
+        const previewTokens = buildUiSkinTokens(resolveUiSkinId(itemId), 'dark');
+
         return (
             <div className={`${className} relative overflow-hidden rounded-[inherit]`}>
                 {src && !hasError ? (
@@ -73,15 +78,26 @@ export const ItemArt: React.FC<ItemArtProps> = ({
                         onError={() => setHasError(true)}
                     />
                 ) : (
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(255,255,255,0.16),transparent_30%),radial-gradient(circle_at_78%_80%,rgba(180,128,255,0.16),transparent_28%),linear-gradient(135deg,#241233_0%,#0d0813_100%)]" />
+                    <div className="absolute inset-0" style={{ background: previewTokens.cardBackground }} />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-black/5 to-black/50" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/12 via-black/10 to-black/55" />
                 <div className="relative z-10 flex h-full w-full items-center justify-center">
-                    <div className="relative aspect-square h-[44%] rounded-full border border-white/75 bg-[radial-gradient(circle,#111118_0%,#040407_100%)] shadow-[0_0_12px_rgba(255,255,255,0.18)]">
-                        <div className="absolute inset-[10%] rounded-full border border-white/15" />
-                        <span className="absolute inset-0 flex items-center justify-center text-[1em] font-black text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
-                            7
-                        </span>
+                    <div
+                        className="relative aspect-square h-[46%] rounded-full border backdrop-blur-sm"
+                        style={{
+                            background: previewTokens.buttonBackground,
+                            borderColor: previewTokens.borderColor,
+                            boxShadow: `0 0 18px ${previewTokens.buttonGlow}`,
+                        }}
+                    >
+                        <div
+                            className="absolute inset-[24%] rounded-full border border-white/25"
+                            style={{
+                                background: previewTokens.accentHex,
+                                boxShadow: `0 0 16px ${previewTokens.accentHex}`,
+                            }}
+                        />
+                        <div className="absolute inset-[10%] rounded-full border border-white/12" />
                     </div>
                 </div>
                 {icon && (

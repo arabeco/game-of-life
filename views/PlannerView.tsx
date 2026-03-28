@@ -73,6 +73,12 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
     const backgroundStyle = action ?getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isMilestone = action?.actionType === 'Marco';
     const isFreeAction = action?.actionType === 'Livre';
+    const standardTaskContentStyle = !isFreeAction
+        ? {
+            color: '#f8fafc',
+            textShadow: '0 1px 6px rgba(2, 6, 23, 0.82)',
+        } as React.CSSProperties
+        : undefined;
     const displayStartTime = getTaskDisplayStartTime(task, operationalDate);
     const top = (displayStartTime - OPERATIONAL_DAY_START_MINUTE) * scaleFactor;
 
@@ -147,7 +153,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 className={`p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80 ${isFreeAction ?'free-action-shell free-action-outline' : ''}`}
             >
                 <div className="text-lg z-10"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
-                <div className="text-sm font-semibold truncate w-full z-10">{action?.name}</div>
+                <div className="text-sm font-semibold truncate w-full z-10 text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]">{action?.name}</div>
             </div>
         );
         const duration = action?.actionType === 'Marco' ?Math.max(15, task.duration) : task.duration;
@@ -202,13 +208,19 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
             <div
-                className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${isFreeAction ?'free-action-shell text-slate-100' : task.completed ?'text-white/80 font-bold' : 'text-[var(--ui-card-text)]'}`}
-                style={isFreeAction ?undefined : backgroundStyle}
+                className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${isFreeAction ?'free-action-shell text-slate-100' : task.completed ?'font-bold' : ''}`}
+                style={isFreeAction ?undefined : { ...backgroundStyle, ...standardTaskContentStyle }}
             >
+                {!isFreeAction && (
+                    <div
+                        className="absolute inset-0"
+                        style={{ background: 'linear-gradient(135deg, rgba(2,6,23,0.1), rgba(2,6,23,0.28) 74%)' }}
+                    />
+                )}
                 <div className={`absolute inset-0 transition-opacity duration-300 ${task.completed ?'opacity-100' : 'opacity-0'}`} style={{ background: isFreeAction ? 'linear-gradient(135deg, rgba(110,231,183,0.14), rgba(15,23,42,0.46) 70%)' : 'linear-gradient(135deg, rgba(110,231,183,0.18), rgba(0,0,0,0.58) 72%)' }}></div>
                 <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${isFreeAction ?`free-action-outline ${task.completed ?'opacity-95 border-emerald-300/80 shadow-[0_0_16px_rgba(110,231,183,0.18)]' : 'opacity-80'}` : task.completed ?'border-emerald-300/80 shadow-[0_0_18px_rgba(110,231,183,0.14)]' : 'border-dashed border-gray-600'}`}></div>
                 <div className="text-lg z-10"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
-                <div className={`text-sm font-semibold truncate w-full z-10 ${task.completed ?'text-white' : isFreeAction ?'text-slate-100' : ''}`}>{action?.name}</div>
+                <div className={`text-sm font-semibold truncate w-full z-10 ${task.completed ?'text-white' : isFreeAction ?'text-slate-100' : 'text-white'}`}>{action?.name}</div>
                 {task.completed && <div className="z-10 shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-emerald-300/65 bg-emerald-500/16 text-emerald-100 shadow-[0_0_12px_rgba(110,231,183,0.22)]"><SquareCheckIcon className="h-3.5 w-3.5" /></div>}
                 {isFreeAction && (
                     <div className={`z-10 shrink-0 ${task.completed ?'hidden' : 'opacity-45 saturate-50'}`}>

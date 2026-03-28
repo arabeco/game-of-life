@@ -26,6 +26,7 @@ import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getExpBoostMultiplier, getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive } from '../utils/premiumAccess';
+import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { emitDailyCompletionPrompt } from '../utils/dailyCompletionPrompt';
@@ -222,7 +223,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
         plates: {},
         ornament: {},
         insignias: {},
-        ui_skins: {},
+        ui_skins: { BASIC: true },
     },
     completedSeasonMissions: []
 };
@@ -788,11 +789,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [userProfile?.arenasViewMode]);
 
     const [assets, setAssets] = useState<Asset[]>(() => createDefaultAssets(true));
+    const assetsRef = useRef<Asset[]>(createDefaultAssets(true));
 
     const [arenaFolders, setArenaFolders] = useState<ArenaFolder[]>(() => []);
 
     const [actions, setActions] = useState<Action[]>(() => createDefaultActions(true));
     const allArenas = useMemo(() => assets.flatMap(asset => asset.arenas), [assets]);
+
+    useEffect(() => {
+        assetsRef.current = assets;
+    }, [assets]);
 
     const [tasks, setTasks] = useState<ScheduledTask[]>(() => []);
 
@@ -2883,7 +2889,34 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 return;
             }
             const mapped = mapToCamelCase(data || []) as ClanJoinRequest[];
-            setClanJoinRequestsOutgoing(mapped.filter(r => r.status === 'pending'));
+            const pending = mapped.filter(r => r.status === 'pending');
+            const clanIds = [...new Set(pending.map(request => request.clanId).filter(isUuid))];
+
+            if (clanIds.length === 0) {
+                setClanJoinRequestsOutgoing(pending);
+                return;
+            }
+
+            const { data: clansData, error: clansError } = await supabase
+                .from('clans')
+                .select('*')
+                .in('id', clanIds);
+
+            if (clansError) {
+                console.error('Error hydrating outgoing clan request clans:', clansError.message);
+                setClanJoinRequestsOutgoing(pending);
+                return;
+            }
+
+            const clansById = (mapToCamelCase(clansData || []) as Clan[]).reduce((acc, nextClan) => {
+                acc[nextClan.id] = nextClan;
+                return acc;
+            }, {} as Record<string, Clan>);
+
+            setClanJoinRequestsOutgoing(pending.map(request => ({
+                ...request,
+                clanProfile: clansById[request.clanId],
+            })));
         } catch (error) {
             console.error('Error in loadClanJoinRequestsOutgoing:', error);
             setClanJoinRequestsOutgoing([]);
@@ -2902,6 +2935,64 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const profilesById = await hydrateProfilesByIds(pending.map(r => r.userId));
         setClanJoinRequestsIncoming(pending.map(req => ({ ...req, requesterProfile: profilesById[req.userId] })));
     }, [hydrateProfilesByIds]);
+
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId || !isUuid(userId)) return;
+
+        const isClanLeader = Boolean(clan && clan.leaderId === userProfile.id);
+        const socialRequestsChannel = supabase
+            .channel(`social-requests-realtime-${userId}-${clan?.id || 'no-clan'}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'friend_requests',
+                filter: `recipient_id=eq.${userId}`,
+            }, () => {
+                void loadFriendsAndRequests(userId);
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'friend_requests',
+                filter: `sender_id=eq.${userId}`,
+            }, () => {
+                void loadFriendsAndRequests(userId);
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'clan_join_requests',
+                filter: `user_id=eq.${userId}`,
+            }, () => {
+                void loadClanJoinRequestsOutgoing(userId);
+            });
+
+        if (clan?.id && isClanLeader) {
+            socialRequestsChannel.on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'clan_join_requests',
+                filter: `clan_id=eq.${clan.id}`,
+            }, () => {
+                void loadClanJoinRequestsIncoming(clan.id);
+            });
+        }
+
+        socialRequestsChannel.subscribe();
+
+        return () => {
+            supabase.removeChannel(socialRequestsChannel);
+        };
+    }, [
+        session?.user.id,
+        clan?.id,
+        clan?.leaderId,
+        userProfile.id,
+        loadFriendsAndRequests,
+        loadClanJoinRequestsOutgoing,
+        loadClanJoinRequestsIncoming,
+    ]);
 
     const clearClanRuntimeState = useCallback(() => {
         clanCacheRef.current = null;
@@ -3539,6 +3630,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     next.assetsVisibility = normalizeAssetsVisibilityScope(next.assetsVisibility);
                     next.masteryVisibility = normalizeMasteryVisibilityScope(next.masteryVisibility);
                     next.featsVisibility = normalizeFeatsVisibilityScope(next.featsVisibility);
+                    const normalizedUnlockedItems = next.unlockedItems || DEFAULT_USER_PROFILE.unlockedItems;
+                    next.unlockedItems = {
+                        ...normalizedUnlockedItems,
+                        ui_skins: {
+                            ...(normalizedUnlockedItems.ui_skins || {}),
+                            BASIC: true,
+                            [normalizedSkin]: true,
+                        },
+                    };
                     const pendingPatch = pendingProfilePatchRef.current;
                     if (pendingPatch) {
                         next = { ...next, ...pendingPatch };
@@ -5231,12 +5331,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const baseCampaignOrder = campaigns.length;
         const baseCampaignPriorityOrder = campaigns.filter(c => (c.priority ?? 'media') === 'media').length;
         const previousCycleArenaIds = activeCycle ?[...activeCycle.arenaIds] : null;
+        const requestedArenaCount = template.levels.length;
+        const arenaCapacity = getArenaCapacitySummary(assetsRef.current, userProfile);
 
         emitArenaAttention({
             arenaIds: [],
             phase: 'populate',
             navigateToArenas: true,
         });
+
+        if (arenaCapacity.active + requestedArenaCount > arenaCapacity.limit) {
+            showToast(buildArenaLimitMessage(arenaCapacity, { requestedActiveArenas: requestedArenaCount }), 'warning');
+            return;
+        }
 
         const rollbackInstalledCodex = async () => {
             const arenaIdSet = new Set(createdArenaIds);
@@ -6444,7 +6551,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             plates: {},
             insignias: {},
             ornament: {},
-            ui_skins: {},
+            ui_skins: { BASIC: true },
         };
         if (unlockedItems[category]?.[itemId]) return;
         const nextUnlockedItems = {
@@ -7756,16 +7863,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         setFriendRequestsOutgoing(prev => prev.filter(request => request.id !== requestId));
 
-        const { data: deletedRows, error } = await supabase
+        const { error } = await supabase
             .from('friend_requests')
             .delete()
             .eq('id', requestId)
             .eq('sender_id', userId)
-            .eq('status', 'pending')
-            .select('id');
+            .eq('status', 'pending');
 
-        if (error || !deletedRows || deletedRows.length === 0) {
-            console.error('Error canceling friend request:', error?.message || 'No friend request row deleted');
+        if (error) {
+            console.error('Error canceling friend request:', error.message);
             setFriendRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
             showToast('Não foi possível cancelar o convite de amizade.', 'error');
             await loadFriendsAndRequests(userId);
@@ -7917,9 +8023,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const getArenas = () => allArenas;
     const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
-        const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: false };
+        const willStartArchived = arenaData.isArchived ?? false;
+        if (!willStartArchived) {
+            const capacity = getArenaCapacitySummary(assetsRef.current, userProfile);
+            if (capacity.isAtLimit) {
+                const message = buildArenaLimitMessage(capacity);
+                showToast(message, 'warning');
+                throw new Error(message);
+            }
+        }
 
-        setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ?{ ...asset, arenas: [...asset.arenas, newArena] } : asset));
+        const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: willStartArchived };
+
+        setAssets(prevAssets => {
+            const nextAssets = prevAssets.map(asset => asset.id === assetId ?{ ...asset, arenas: [...asset.arenas, newArena] } : asset);
+            assetsRef.current = nextAssets;
+            return nextAssets;
+        });
 
         const userId = getSupabaseUserId();
         if (!userId || skipDb) {
@@ -7940,7 +8060,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return newArena;
         } catch (error: any) {
             console.error("Supabase add arena error:", error?.message || error);
-            setAssets(prevAssets => prevAssets.map(asset => asset.id === assetId ?{ ...asset, arenas: asset.arenas.filter(arena => arena.id !== newArena.id) } : asset));
+            setAssets(prevAssets => {
+                const nextAssets = prevAssets.map(asset => asset.id === assetId ?{ ...asset, arenas: asset.arenas.filter(arena => arena.id !== newArena.id) } : asset);
+                assetsRef.current = nextAssets;
+                return nextAssets;
+            });
             showToast("Erro ao salvar arena no servidor: " + (error?.message || 'falha desconhecida'), 'error');
             throw error;
         }
@@ -9982,7 +10106,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) { console.error("Error requesting clan join:", error.message); return; }
         if (data) {
             const mapped = mapToCamelCase(data) as ClanJoinRequest;
-            setClanJoinRequestsOutgoing(prev => [...prev, mapped]);
+            setClanJoinRequestsOutgoing(prev => [...prev, { ...mapped, clanProfile: clanToJoin }]);
         }
     };
 
@@ -10139,16 +10263,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         setClanJoinRequestsOutgoing(prev => prev.filter(request => request.id !== requestId));
 
-        const { data: deletedRows, error } = await supabase
+        const { error } = await supabase
             .from('clan_join_requests')
             .delete()
             .eq('id', requestId)
             .eq('user_id', userId)
-            .eq('status', 'pending')
-            .select('id');
+            .eq('status', 'pending');
 
-        if (error || !deletedRows || deletedRows.length === 0) {
-            console.error("Error canceling clan join request:", error?.message || 'No clan join request row deleted');
+        if (error) {
+            console.error("Error canceling clan join request:", error.message);
             setClanJoinRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
             showToast('Não foi possível cancelar a solicitação ao grupo.', 'error');
             await loadClanJoinRequestsOutgoing(userId);

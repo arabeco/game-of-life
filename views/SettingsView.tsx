@@ -1714,9 +1714,12 @@ const PreferenciasTab: React.FC = () => {
     }, []);
     const unlockedUiSkinIds = useMemo(() => {
         const unlocked = new Set<string>(['BASIC', userProfile.skin || 'BASIC']);
+        Object.entries(userProfile.unlockedItems?.ui_skins || {}).forEach(([skinId, isUnlocked]) => {
+            if (isUnlocked) unlocked.add(skinId);
+        });
         inventory.forEach((item) => unlocked.add(item.id));
         return unlocked;
-    }, [inventory, userProfile.skin]);
+    }, [inventory, userProfile.skin, userProfile.unlockedItems]);
     const effectiveUiSkinId = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
 
     useEffect(() => {
@@ -1749,6 +1752,15 @@ const PreferenciasTab: React.FC = () => {
     const handleFeatsVisibilityChange = (value: ProfileVisibilityOption) => {
         setFeatsVisibility(value);
         updateUserProfile({ featsVisibility: value });
+    };
+
+    const handleUiSkinOptionClick = (skinId: string, unlocked: boolean, disabledByMode: boolean) => {
+        if (disabledByMode) return;
+        if (!unlocked) {
+            window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'items' } }));
+            return;
+        }
+        setCurrentSkin(skinId);
     };
 
     return (
@@ -1807,31 +1819,63 @@ const PreferenciasTab: React.FC = () => {
                                             const disabledByMode = appMode === 'BASIC' && skin.id !== 'BASIC';
                                             const previewSkinId = skinMeta.previewSkinId || resolveUiSkinId(skin.id);
                                             const previewTokens = buildUiSkinTokens(previewSkinId, activeTheme === 'LIGHT' ? 'light' : 'dark');
-                                            const usesLightLabel = !!skinMeta.prefersLightText;
-                                            const chipTextColor = usesLightLabel ? '#F8F3EF' : '#111827';
+                                            const statusLabel = selected
+                                                ? 'ATIVA'
+                                                : disabledByMode
+                                                    ? 'MODO JOGO'
+                                                    : unlocked
+                                                        ? 'PRONTA'
+                                                        : 'LOJA';
 
                                             return (
                                                 <button
                                                     key={skin.id}
                                                     type="button"
-                                                    disabled={!unlocked || disabledByMode}
-                                                    onClick={() => setCurrentSkin(skin.id)}
+                                                    disabled={disabledByMode}
+                                                    onClick={() => handleUiSkinOptionClick(skin.id, unlocked, disabledByMode)}
                                                     title={skinMeta.title}
-                                                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all ${
+                                                    aria-pressed={selected}
+                                                    className={`group inline-flex min-w-[88px] flex-col items-center gap-2 rounded-[20px] border px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-[0.14em] transition-all ${
                                                         selected
-                                                            ? 'shadow-[0_0_12px_var(--ui-button-primary-glow)]'
-                                                            : 'hover:brightness-[1.04]'
-                                                    } ${!unlocked || disabledByMode ? 'cursor-default' : ''}`}
+                                                            ? 'shadow-[0_0_16px_var(--ui-button-primary-glow)]'
+                                                            : unlocked && !disabledByMode
+                                                                ? 'hover:-translate-y-0.5 hover:brightness-[1.04]'
+                                                                : ''
+                                                    } ${disabledByMode ? 'cursor-default' : ''}`}
                                                     style={{
-                                                        background: previewTokens.buttonBackground,
+                                                        background: previewTokens.cardStrongBackground,
                                                         borderColor: selected ? 'var(--ui-border-accent)' : previewTokens.borderSoftColor,
-                                                        color: chipTextColor,
-                                                        opacity: unlocked ? (disabledByMode ? 0.42 : 1) : 0.28,
-                                                        textShadow: usesLightLabel ? '0 1px 6px rgba(0,0,0,0.42)' : '0 1px 4px rgba(255,255,255,0.18)',
+                                                        opacity: disabledByMode ? 0.42 : unlocked ? 1 : 0.72,
+                                                        boxShadow: selected ? `0 0 20px ${previewTokens.buttonGlow}` : undefined,
                                                     }}
                                                 >
-                                                    <span className="text-[11px] leading-none">{skin.icon}</span>
-                                                    <span>{skinMeta.label}</span>
+                                                    <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/78">
+                                                        {skinMeta.label}
+                                                    </span>
+                                                    <span
+                                                        className="relative flex h-10 w-10 items-center justify-center rounded-full border"
+                                                        style={{
+                                                            background: previewTokens.buttonBackground,
+                                                            borderColor: previewTokens.borderColor,
+                                                            boxShadow: `0 0 14px ${previewTokens.buttonGlow}`,
+                                                        }}
+                                                    >
+                                                        <span
+                                                            className="h-[18px] w-[18px] rounded-full border border-white/25"
+                                                            style={{
+                                                                background: previewTokens.accentHex,
+                                                                boxShadow: `0 0 14px ${previewTokens.accentHex}`,
+                                                            }}
+                                                        />
+                                                    </span>
+                                                    <span
+                                                        className="text-[8px] font-black uppercase tracking-[0.18em]"
+                                                        style={{
+                                                            color: selected ? previewTokens.accentTextColor : 'rgba(255,255,255,0.42)',
+                                                        }}
+                                                    >
+                                                        {statusLabel}
+                                                    </span>
                                                 </button>
                                             );
                                         })}

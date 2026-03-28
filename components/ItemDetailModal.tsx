@@ -171,6 +171,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                     <div className={`absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent rounded-full blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500`} />
                     <div className="relative z-10 flex h-32 w-32 items-center justify-center rounded-2xl transition-transform duration-500 group-hover:scale-110">
                         <ItemArt
+                            itemId={currentItem.id}
                             src={currentItem.imageUrl}
                             alt={currentItem.name}
                             icon={currentItem.icon}
@@ -227,6 +228,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                                         <div className={`absolute inset-0 opacity-10 ${relRarityColor}`} />
                                         <div className="relative w-full h-full flex items-center justify-center p-1">
                                             <ItemArt
+                                                itemId={relItem.id}
                                                 src={relItem.imageUrl}
                                                 alt={relItem.name}
                                                 icon={relItem.icon}

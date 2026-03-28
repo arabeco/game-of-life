@@ -241,6 +241,9 @@ export const getNotificationTitle = (notification: Notification): string => {
     case 'mentor_invite':
       return 'Voce recebeu um convite de mentor.';
     case 'clan_invite':
+      if (notification.metadata?.joinRequest) {
+        return 'Novo pedido para o seu grupo.';
+      }
       return 'Voce recebeu um convite de grupo.';
     case 'friend_request':
       return 'Voce recebeu um convite de amizade.';

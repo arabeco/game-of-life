@@ -667,10 +667,6 @@ export const AssetsView: React.FC = () => {
                                 const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
                                 const accent = ASSET_ACCENT_COLORS[asset.id as keyof typeof ASSET_ACCENT_COLORS] || 'var(--skin-accent-color)';
                                 const accentRgb = hexToRgb(accent);
-                                const accentLuminance = relativeLuminance(accentRgb);
-                                const titleColor = lightenToward(accentRgb, [246, 240, 226], accentLuminance > 0.6 ? 0.88 : 0.78);
-                                const statValueColor = lightenToward(accentRgb, [250, 246, 235], accentLuminance > 0.6 ? 0.92 : 0.84);
-                                const statLabelColor = lightenToward(accentRgb, [187, 194, 206], accentLuminance > 0.6 ? 0.68 : 0.54);
                                 const stats = assetStats.get(asset.id) || { activeCount: 0, archivedCount: 0, totalActions: 0, totalCompleted: 0, totalPlanned: 0, progressPercent: 100 };
 
                                 return (
@@ -689,7 +685,7 @@ export const AssetsView: React.FC = () => {
                                             className="group relative flex min-h-[70px] w-[124px] flex-col items-center overflow-visible rounded-[22px] border px-2 pb-0.5 pt-[18px] text-center transition-all duration-300 hover:-translate-y-[2px]"
                                             style={{
                                                 borderColor: rgbaString(accentRgb, 0.42),
-                                                backgroundImage: `${assetArtUrl ? `linear-gradient(180deg, rgba(6,7,10,0.18) 0%, rgba(6,7,10,0.82) 42%, rgba(6,7,10,0.96) 100%), url("${assetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.96) 18%, rgba(10,12,16,0.985) 100%)`,
+                                                backgroundImage: `${assetArtUrl ? `linear-gradient(180deg, rgba(6,7,10,0.12) 0%, rgba(6,7,10,0.68) 42%, rgba(6,7,10,0.9) 100%), url("${assetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.9) 18%, rgba(10,12,16,0.96) 100%)`,
                                                 backgroundSize: assetArtUrl ? 'cover, auto, auto, auto' : undefined,
                                                 backgroundPosition: assetArtUrl ? 'center, center, center, center' : undefined,
                                                 boxShadow: `0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 999px ${rgbaString(accentRgb, 0.022)}, 0 0 0 1px ${rgbaString(accentRgb, 0.12)}`,
@@ -710,8 +706,8 @@ export const AssetsView: React.FC = () => {
                                                 <div
                                                     className="w-[108px] rounded-[10px] border border-white/10 px-2 py-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.22)]"
                                                     style={{
-                                                        backgroundColor: 'rgba(8, 10, 14, 0.74)',
-                                                        boxShadow: `0 8px 18px rgba(0,0,0,0.22), inset 0 1px 0 ${rgbaString(accentRgb, 0.064)}`,
+                                                        backgroundColor: 'rgba(8, 10, 14, 0.58)',
+                                                        boxShadow: `0 8px 18px rgba(0,0,0,0.18), inset 0 1px 0 ${rgbaString(accentRgb, 0.05)}`,
                                                         transform: 'translateZ(0)',
                                                         backfaceVisibility: 'hidden',
                                                         WebkitFontSmoothing: 'antialiased',
@@ -721,7 +717,8 @@ export const AssetsView: React.FC = () => {
                                                     <p
                                                         className="w-full truncate px-0.5 text-center text-[8px] font-black uppercase leading-none tracking-[0.02em]"
                                                         style={{
-                                                            color: rgbString(titleColor),
+                                                            color: 'rgba(248, 250, 253, 0.96)',
+                                                            textShadow: '0 1px 10px rgba(0,0,0,0.58)',
                                                             transform: 'translateZ(0)',
                                                             backfaceVisibility: 'hidden',
                                                             WebkitFontSmoothing: 'antialiased',
@@ -735,16 +732,16 @@ export const AssetsView: React.FC = () => {
                                             <div
                                                 className="-mt-0.5 w-full rounded-[12px] border border-white/10 px-2 py-[0.42rem] text-[9px] font-semibold uppercase tracking-[0.06em]"
                                                 style={{
-                                                    backgroundImage: `linear-gradient(180deg, rgba(8,10,14,0.74) 0%, rgba(8,10,14,0.88) 100%)`,
-                                                    boxShadow: `inset 0 1px 0 ${rgbaString(accentRgb, 0.064)}`,
+                                                    backgroundImage: 'linear-gradient(180deg, rgba(8,10,14,0.58) 0%, rgba(8,10,14,0.74) 100%)',
+                                                    boxShadow: `inset 0 1px 0 ${rgbaString(accentRgb, 0.05)}`,
                                                 }}
                                             >
                                                 <div className="flex items-center justify-between gap-2">
-                                                        <span style={{ color: rgbaString(statLabelColor, 0.88) }}>
-                                                            <span className="font-black" style={{ color: rgbString(statValueColor) }}>{stats.activeCount}</span> arenas
+                                                        <span style={{ color: 'rgba(236, 240, 247, 0.82)', textShadow: '0 1px 8px rgba(0,0,0,0.52)' }}>
+                                                            <span className="font-black" style={{ color: 'rgba(248, 250, 253, 0.96)' }}>{stats.activeCount}</span> arenas
                                                         </span>
-                                                        <span style={{ color: rgbaString(statLabelColor, 0.88) }}>
-                                                            <span className="font-black" style={{ color: rgbString(statValueColor) }}>{stats.totalActions}</span> ações
+                                                        <span style={{ color: 'rgba(236, 240, 247, 0.82)', textShadow: '0 1px 8px rgba(0,0,0,0.52)' }}>
+                                                            <span className="font-black" style={{ color: 'rgba(248, 250, 253, 0.96)' }}>{stats.totalActions}</span> ações
                                                         </span>
                                                     </div>
                                                 <div className="mt-1">

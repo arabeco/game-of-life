@@ -736,6 +736,7 @@ export interface ClanJoinRequest {
   createdAt: string;
   respondedAt?: string | null;
   requesterProfile?: UserProfile;
+  clanProfile?: Clan;
 }
 
 // FIX: Define EnrichedClanMember to resolve role conflict and be reusable.
@@ -1145,7 +1146,14 @@ export interface NotificationMetadata {
   codexId?: string;
   codexName?: string;
   senderNickname?: string;
+  senderId?: string;
   recipientNickname?: string;
+  requesterId?: string;
+  requesterNickname?: string;
+  requestId?: string;
+  joinRequest?: boolean;
+  clanId?: string;
+  clanName?: string;
   email?: string;
   sendEmail?: boolean;
   emailSubject?: string;

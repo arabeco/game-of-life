@@ -924,7 +924,7 @@ export const OracleAction: React.FC = () => {
         duration: payload.duration || 30,
         repetitions: actionType === 'Ação Recorrente' ? (payload.repetitions || 1) : 1,
         actionType,
-        difficulty: payload.difficulty || 3,
+        difficulty: typeof payload.difficulty === 'number' ? payload.difficulty : 2,
         scheduledDays: actionType === 'Ação Recorrente' ? payload.daysOfWeek : undefined,
         scheduledStartTime: actionType !== 'Livre' ? payload.startTime : undefined,
       });

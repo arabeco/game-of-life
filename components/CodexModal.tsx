@@ -455,7 +455,7 @@ export const CodexModal: React.FC<{
       duration: actionDraft.duration || 60,
       repetitions,
       actionType,
-      difficulty: actionDraft.difficulty || 3,
+      difficulty: typeof actionDraft.difficulty === 'number' ? actionDraft.difficulty : 2,
       briefing: actionDraft.briefing,
       assets: actionDraft.assets,
       preFlight: actionDraft.preFlight,

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, MinusIcon, SquareCheckIcon, PanelIcon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, MinusIcon, SquareCheckIcon, PanelIcon, FlameIcon } from '../components/Icons';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType } from '../types';
 import { ChecklistModal } from '../components/ChecklistModal';
@@ -336,6 +336,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         getTasksForDate,
         tasks,
         checklistItems,
+        sequenceItems,
         rescheduleTask,
         returnTaskToPool,
         deleteTask,
@@ -1243,8 +1244,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <div className="relative z-10">
                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-3 pt-2 text-lg font-bold h-11">
                         <div className="flex items-center space-x-1 min-w-0" id="planner-tools">
-                            <button onClick={() => setChecklistVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors" title="Checklist diario">
+                            <button onClick={() => setChecklistVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors" title="Checklist diário">
                                 <SquareCheckIcon className={`w-4 h-4 ${allTasksCompleted ? 'text-[var(--skin-accent-color)]' : ''}`} />
+                                {sequenceItems.length > 0 && (
+                                    <span className="absolute -right-1 -top-1 flex min-w-[1rem] items-center justify-center gap-0.5 rounded-full border border-black/30 bg-[var(--skin-accent-color)] px-1 py-[1px] text-[9px] font-black leading-none text-black shadow-[0_4px_10px_rgba(0,0,0,0.25)]">
+                                        <FlameIcon className="h-2.5 w-2.5" />
+                                        {sequenceItems.length}
+                                    </span>
+                                )}
                             </button>
                             <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Painel diario">
                                 <PanelIcon className="w-4 h-4" />

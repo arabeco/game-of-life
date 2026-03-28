@@ -108,7 +108,7 @@ export interface Action {
   duration: number; // in minutes
   repetitions: number; // For 'Ação Recorrente'
   actionType: ActionType;
-  difficulty?: number; // 1 to 5
+  difficulty?: number; // 0 to 3 (Descanso, Leve, Media, Alta)
   scheduledDays?: DayOfWeek[]; // Days to automatically schedule
   scheduledStartTime?: number; // Time in minutes to automatically schedule
 
@@ -127,6 +127,7 @@ export interface Action {
     schedule?: {
       days?: DayOfWeek[];
       startTime?: number;
+      notifyBeforeMinutes?: number;
     };
     clanTask?: {
       clanId: string;
@@ -404,6 +405,7 @@ export interface UserProfile {
   bannerUrl?: string; // Flamula-style banner
   isOnline: boolean;
   visibleWidgets: string[];
+  sequenceItems?: SequenceItem[];
   assetArtById?: Partial<Record<string, string>>;
   assetWidgetValues?: Partial<Record<string, SlotValue>>;
   assetsVisibility?: ProfileVisibilityScope;
@@ -452,6 +454,14 @@ export interface ChecklistItem {
   id: string;
   text: string;
   completed: boolean;
+}
+
+export interface SequenceItem {
+  id: string;
+  title: string;
+  days: number;
+  lastMarkedDate?: string | null;
+  updatedAt?: string;
 }
 
 export interface ReportAtlasDayArenaBucket {

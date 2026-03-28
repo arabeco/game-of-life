@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload } from '../types';
+import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { getGoldBoostProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
@@ -69,11 +69,34 @@ const normalizeActionFromDbRow = (row: any): Action => {
         ? (action.context as Action['context'])?.schedule
         : undefined;
 
+    const rawDifficulty = Number.isFinite(action.difficulty) ? Number(action.difficulty) : 2;
+    const normalizedDifficulty = Math.min(3, Math.max(0, Math.round(rawDifficulty)));
+
     return {
         ...action,
+        difficulty: normalizedDifficulty,
         scheduledDays: action.scheduledDays ?? schedule?.days,
         scheduledStartTime: action.scheduledStartTime ?? schedule?.startTime,
     };
+};
+
+const normalizeActionDifficulty = (value?: number | null): 0 | 1 | 2 | 3 => {
+    const numeric = Number.isFinite(value) ? Number(value) : 2;
+    return Math.min(3, Math.max(0, Math.round(numeric))) as 0 | 1 | 2 | 3;
+};
+
+const getActionExpMultiplier = (action?: Pick<Action, 'difficulty'> | null): number => {
+    switch (normalizeActionDifficulty(action?.difficulty)) {
+        case 0:
+            return 0;
+        case 2:
+            return 1.05;
+        case 3:
+            return 1.1;
+        case 1:
+        default:
+            return 1;
+    }
 };
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -131,6 +154,20 @@ const normalizeFeatsVisibilityScope = (value: unknown): ProfileVisibilityScope =
     return 'friends';
 };
 
+const normalizeSequenceItems = (value: unknown): SequenceItem[] => {
+    if (!Array.isArray(value)) return [];
+    return value
+        .filter((item): item is SequenceItem => Boolean(item && typeof item.id === 'string' && typeof item.title === 'string'))
+        .map((item) => ({
+            id: item.id,
+            title: item.title.trim(),
+            days: Number.isFinite(item.days) ? Math.max(0, Math.round(item.days)) : 0,
+            lastMarkedDate: typeof item.lastMarkedDate === 'string' ? item.lastMarkedDate : null,
+            updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : undefined,
+        }))
+        .filter((item) => item.title.length > 0);
+};
+
 const DEFAULT_USER_PROFILE: UserProfile = {
     id: 'placeholder_user',
     nickname: 'Soberano',
@@ -141,6 +178,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     backgroundUrl: '',
     isOnline: false,
     visibleWidgets: [],
+    sequenceItems: [],
     assetArtById: {},
     assetWidgetValues: {},
     assetsVisibility: 'nobody',
@@ -190,6 +228,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
 };
 
 const defaultChecklistItems: ChecklistItem[] = [];
+const defaultSequenceItems: SequenceItem[] = [];
 const PREMIUM_REWARD_CHEST: ChestType = 'Raro';
 const PREMIUM_GENESIS_REWARD_ITEM_IDS = [
     'item_border_genesis_01',
@@ -447,6 +486,7 @@ export interface GameContextType {
     tasks: ScheduledTask[];
     taskPool: TaskPoolItem[];
     checklistItems: ChecklistItem[];
+    sequenceItems: SequenceItem[];
     userProfile: UserProfile;
     friends: UserProfile[];
     friendRequestsIncoming: FriendRequest[];
@@ -527,6 +567,12 @@ export interface GameContextType {
     addChecklistItem: (text: string) => void;
     updateChecklistItem: (id: string, text: string) => void;
     deleteChecklistItem: (id: string) => void;
+    addSequenceItem: (title: string) => void;
+    updateSequenceItem: (id: string, title: string) => void;
+    markSequenceItemToday: (id: string) => void;
+    adjustSequenceItemDays: (id: string, delta: number) => void;
+    resetSequenceItem: (id: string) => void;
+    deleteSequenceItem: (id: string) => void;
     updateUserProfile: (profileData: Partial<UserProfile>) => void;
     updateMood: (mood: number) => void;
     setCurrentSkin: (skinId: string) => void;
@@ -1001,6 +1047,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, []);
     const getSentinelStorageKey = (userId: string) => `glyph_sentinel_mode_${userId}`;
     const getPushStorageKey = (userId: string) => `glyph_oracle_push_${userId}`;
+    const getSequenceStorageKey = (userId: string) => `glyph_sequences_${userId}`;
+    const getActionReminderStorageKey = (userId: string, taskId: string, date: string, startTime: number) =>
+        `glyph_action_reminder_${userId}_${taskId}_${date}_${startTime}`;
+    const readLegacySequenceItemsFromStorage = (userId: string): SequenceItem[] => {
+        try {
+            const saved = localStorage.getItem(getSequenceStorageKey(userId));
+            if (!saved) return [];
+            return normalizeSequenceItems(JSON.parse(saved));
+        } catch (error) {
+            console.error('Failed to read legacy sequence items from local storage:', error);
+            return [];
+        }
+    };
     const getPushEnabled = (userId: string): boolean => {
         const saved = localStorage.getItem(getPushStorageKey(userId));
         if (saved === 'true') return true;
@@ -1626,6 +1685,59 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
     }, [oracleMessages, oraclePreferences?.notificationsEnabled, oraclePreferences?.pushEnabled, session?.user.id]);
 
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId || !isUuid(userId) || !oraclePreferences?.pushEnabled) {
+            return;
+        }
+
+        const buildTaskDateTime = (dateString: string, startTime: number) => {
+            const [year, month, day] = dateString.split('-').map(Number);
+            if (!year || !month || !day || !Number.isFinite(startTime) || startTime < 0) return null;
+            const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+            date.setMinutes(startTime);
+            return date;
+        };
+
+        const emitActionReminder = async () => {
+            const now = Date.now();
+            const arenaById = new Map(allArenas.map((arena) => [arena.id, arena] as const));
+
+            for (const task of tasks) {
+                if (task.completed || !Number.isFinite(task.startTime) || task.startTime < 0) continue;
+
+                const action = actions.find(candidate => candidate.id === task.actionId);
+                const reminderMinutes = action?.context?.schedule?.notifyBeforeMinutes;
+                if (!action || reminderMinutes !== 15) continue;
+
+                const taskStartAt = buildTaskDateTime(task.date, task.startTime);
+                if (!taskStartAt) continue;
+
+                const reminderAt = taskStartAt.getTime() - (reminderMinutes * 60 * 1000);
+                if (now < reminderAt || now > taskStartAt.getTime() + (60 * 1000)) continue;
+
+                const reminderKey = getActionReminderStorageKey(userId, task.id, task.date, task.startTime);
+                if (localStorage.getItem(reminderKey) === '1') continue;
+
+                localStorage.setItem(reminderKey, '1');
+                const arena = arenaById.get(action.arenaId);
+                await showLocalNotification({
+                    title: `Em 15 min: ${action.name}`,
+                    body: arena ? `${arena.icon} ${arena.name} comeca em breve.` : 'Sua acao comeca em 15 minutos.',
+                    tag: `glyph-action-reminder-${task.id}`,
+                    url: '/?view=planner',
+                });
+            }
+        };
+
+        void emitActionReminder();
+        const intervalId = window.setInterval(() => {
+            void emitActionReminder();
+        }, 30000);
+
+        return () => window.clearInterval(intervalId);
+    }, [actions, allArenas, oraclePreferences?.pushEnabled, session?.user.id, tasks]);
+
     // --- FORGE SYSTEM ---
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
@@ -2219,6 +2331,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [clanJoinRequestsOutgoing, setClanJoinRequestsOutgoing] = useState<ClanJoinRequest[]>([]);
 
     const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(() => [...defaultChecklistItems]);
+    const [sequenceItems, setSequenceItems] = useState<SequenceItem[]>(() => [...defaultSequenceItems]);
+    const sequenceItemsHydratedRef = useRef(false);
 
     const [achievementUnlocked, setAchievementUnlocked] = useState<{ type: FeedEventType; data: any; } | null>(null);
     const [feed, setFeed] = useState<FeedEvent[]>(() => []);
@@ -3248,6 +3362,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     }, [assets, session?.user.id]);
 
+    useEffect(() => {
+        const userId = session?.user.id;
+        sequenceItemsHydratedRef.current = false;
+        setSequenceItems([...defaultSequenceItems]);
+    }, [session?.user.id]);
+
+    useEffect(() => {
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId) || !hasHydratedFromSupabase || !sequenceItemsHydratedRef.current || suspendPersistenceRef.current) {
+            return;
+        }
+
+        const normalized = normalizeSequenceItems(sequenceItems);
+        supabase
+            .from('user_profiles')
+            .update({ sequence_items: normalized })
+            .eq('id', userId)
+            .then(({ error }) => {
+                if (error) {
+                    console.error('Failed to persist sequence items:', error);
+                }
+            });
+    }, [getSupabaseUserId, hasHydratedFromSupabase, sequenceItems]);
+
     // Ref to hold the latest migration function
     const migrateGuestDataToSupabaseRef = useRef(migrateGuestDataToSupabase);
     const relationshipOperationalSyncRef = useRef<string | null>(null);
@@ -3381,6 +3519,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     ...(camelProfile.unlockedSkins || {}),
                     BASIC: true,
                 };
+                const storedSequenceItems = normalizeSequenceItems(camelProfile.sequenceItems);
+                const legacySequenceItems = storedSequenceItems.length === 0 ? readLegacySequenceItemsFromStorage(userId) : [];
+                const effectiveSequenceItems = storedSequenceItems.length > 0 ? storedSequenceItems : legacySequenceItems;
                 setUserProfile(prev => {
                     let next = {
                         ...prev,
@@ -3389,8 +3530,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         isPremium: normalizedPremium,
                         skin: normalizedSkin,
                         unlockedSkins: normalizedUnlockedSkins,
+                        sequenceItems: effectiveSequenceItems,
                     } as UserProfile;
                     next.visibleWidgets = Array.isArray(next.visibleWidgets) ? next.visibleWidgets : [];
+                    next.sequenceItems = effectiveSequenceItems;
                     next.assetArtById = next.assetArtById || {};
                     next.assetWidgetValues = next.assetWidgetValues || {};
                     next.assetsVisibility = normalizeAssetsVisibilityScope(next.assetsVisibility);
@@ -3409,6 +3552,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     }
                     return next;
                 });
+                setSequenceItems(effectiveSequenceItems);
+                sequenceItemsHydratedRef.current = true;
+                if (legacySequenceItems.length > 0) {
+                    supabase
+                        .from('user_profiles')
+                        .update({ sequence_items: legacySequenceItems })
+                        .eq('id', userId)
+                        .then(({ error }) => {
+                            if (error) {
+                                console.error('Failed to migrate legacy sequence items to Supabase:', error);
+                                return;
+                            }
+                            try {
+                                localStorage.removeItem(getSequenceStorageKey(userId));
+                            } catch (storageError) {
+                                console.error('Failed to clear legacy sequence items from local storage:', storageError);
+                            }
+                        });
+                }
             }
 
             await Promise.all([
@@ -3773,7 +3935,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                 hydrated = true;
             } finally {
-                if (hydrated) setHasHydratedFromSupabase(true);
+                if (hydrated) {
+                    sequenceItemsHydratedRef.current = true;
+                    setHasHydratedFromSupabase(true);
+                }
                 setIsProfileLoaded(true);
                 suspendPersistenceRef.current = false;
                 if (hydrated && pendingProfilePatchRef.current) {
@@ -5569,14 +5734,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     }
 
                     if (dayTasks && dayTasks.length > 0) {
-                        const freeActionIds = new Set(actions.filter(action => action.actionType === 'Livre').map(action => action.id));
                         const completedTasks = dayTasks.filter(t => t.completed);
-                        const scoredTasks = dayTasks.filter(t => !freeActionIds.has(t.action_id));
-                        const completedScoredTasks = scoredTasks.filter(t => t.completed);
                         if (completedTasks.length > 0) {
                             // Calculate EXP similar to endDailyBattle
-                            const baseExp = completedTasks.reduce((acc, t) => acc + (t.duration || 0), 0);
-                            const score = scoredTasks.length > 0 ?Math.round((completedScoredTasks.length / scoredTasks.length) * 100) : 100;
+                            const baseExp = completedTasks.reduce((acc, t) => {
+                                const action = actions.find(candidate => candidate.id === t.action_id);
+                                const weightedDuration = Math.round((t.duration || 0) * getActionExpMultiplier(action));
+                                return acc + weightedDuration;
+                            }, 0);
+                            const score = dayTasks.length > 0 ?Math.round((completedTasks.length / dayTasks.length) * 100) : 100;
                             const bonus = score >= 95 ?SITREP_BONUS_S : score >= 85 ?SITREP_BONUS_A : 0;
                             const totalRetroExp = baseExp + bonus;
 
@@ -5642,19 +5808,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        // Modified to include all completed time, but only scored actions count toward meta score
-        const freeActionIds = new Set(actions.filter(action => action.actionType === 'Livre').map(action => action.id));
         const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && taskMatchesOperationalDate(t, dailyCommitment.date));
-        const scoredCommittedTasks = committedTasks.filter(t => !freeActionIds.has(t.actionId));
-        const completedCount = scoredCommittedTasks.filter(t => t.completed).length;
-        const totalCount = scoredCommittedTasks.length;
+        const completedCount = committedTasks.filter(t => t.completed).length;
+        const totalCount = committedTasks.length;
         const score = totalCount > 0 ?Math.round((completedCount / totalCount) * 100) : 100;
 
         const expDepositBase = committedTasks.reduce((sum, task) => {
             if (!task.completed) return sum;
             const action = actions.find(a => a.id === task.actionId);
             const duration = task.duration > 0 ?task.duration : (Number.isFinite(action?.duration) ?(action?.duration || 0) : 0);
-            return sum + duration;
+            const weightedDuration = Math.round(duration * getActionExpMultiplier(action));
+            return sum + weightedDuration;
         }, 0);
         const sitrepBonus = score >= 95 ?SITREP_BONUS_S : score >= 85 ?SITREP_BONUS_A : 0;
 
@@ -6181,6 +6345,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'bannerUrl',
                 'isOnline',
                 'visibleWidgets',
+                'sequenceItems',
                 'assetArtById',
                 'assetWidgetValues',
                 'assetsVisibility',
@@ -7685,6 +7850,71 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setChecklistItems(prev => prev.filter(item => item.id !== id));
     };
 
+    const addSequenceItem = (title: string) => {
+        const trimmedTitle = title.trim();
+        if (!trimmedTitle) return;
+
+        const now = new Date().toISOString();
+        const newItem: SequenceItem = {
+            id: crypto.randomUUID(),
+            title: trimmedTitle,
+            days: 0,
+            lastMarkedDate: null,
+            updatedAt: now,
+        };
+        setSequenceItems(prev => [...prev, newItem]);
+    };
+
+    const updateSequenceItem = (id: string, title: string) => {
+        const trimmedTitle = title.trim();
+        if (!trimmedTitle) return;
+
+        setSequenceItems(prev => prev.map(item => item.id === id
+            ? { ...item, title: trimmedTitle, updatedAt: new Date().toISOString() }
+            : item));
+    };
+
+    const markSequenceItemToday = (id: string) => {
+        const today = getOperationalDateString();
+        setSequenceItems(prev => prev.map(item => {
+            if (item.id !== id) return item;
+            if (item.lastMarkedDate === today) return item;
+            return {
+                ...item,
+                days: Math.max(0, item.days + 1),
+                lastMarkedDate: today,
+                updatedAt: new Date().toISOString(),
+            };
+        }));
+    };
+
+    const adjustSequenceItemDays = (id: string, delta: number) => {
+        if (!Number.isFinite(delta) || delta === 0) return;
+
+        setSequenceItems(prev => prev.map(item => item.id === id
+            ? {
+                ...item,
+                days: Math.max(0, item.days + delta),
+                updatedAt: new Date().toISOString(),
+            }
+            : item));
+    };
+
+    const resetSequenceItem = (id: string) => {
+        setSequenceItems(prev => prev.map(item => item.id === id
+            ? {
+                ...item,
+                days: 0,
+                lastMarkedDate: null,
+                updatedAt: new Date().toISOString(),
+            }
+            : item));
+    };
+
+    const deleteSequenceItem = (id: string) => {
+        setSequenceItems(prev => prev.filter(item => item.id !== id));
+    };
+
     const getArenas = () => allArenas;
     const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
         const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: false };
@@ -8440,7 +8670,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const addAction = async (actionData: Omit<Action, 'id'>): Promise<Action> => {
-        const newAction: Action = { ...actionData, id: crypto.randomUUID() };
+        const newAction: Action = {
+            ...actionData,
+            id: crypto.randomUUID(),
+            difficulty: normalizeActionDifficulty(actionData.difficulty),
+        };
         const userId = getSupabaseUserId();
         const previousCycleArenaIds = activeCycle ?[...activeCycle.arenaIds] : null;
         const shouldAttachArenaToCycle = Boolean(activeCycle && !activeCycle.arenaIds.includes(newAction.arenaId));
@@ -8496,7 +8730,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 duration: newAction.duration,
                 repetitions: newAction.repetitions,
                 action_type: newAction.actionType,
-                difficulty: newAction.difficulty || null,
+                difficulty: newAction.difficulty ?? null,
                 briefing: newAction.briefing || null,
                 assets: newAction.assets || [],
                 pre_flight: newAction.preFlight || [],
@@ -8541,7 +8775,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 ?actionData.arenaId
                 : a.arenaId;
 
-            return { ...a, ...actionData, arenaId: nextArenaId };
+            return {
+                ...a,
+                ...actionData,
+                arenaId: nextArenaId,
+                ...(actionData.difficulty !== undefined ? { difficulty: normalizeActionDifficulty(actionData.difficulty) } : {}),
+            };
         }));
         const nextArenaId = typeof actionData.arenaId === 'string' && actionData.arenaId.trim()
             ? actionData.arenaId
@@ -8577,7 +8816,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (actionData.duration !== undefined) updatePayload.duration = actionData.duration;
             if (actionData.repetitions !== undefined) updatePayload.repetitions = actionData.repetitions;
             if (actionData.actionType !== undefined) updatePayload.action_type = actionData.actionType;
-            if (actionData.difficulty !== undefined) updatePayload.difficulty = actionData.difficulty;
+            if (actionData.difficulty !== undefined) updatePayload.difficulty = normalizeActionDifficulty(actionData.difficulty);
             if (actionData.briefing !== undefined) updatePayload.briefing = actionData.briefing;
             if (actionData.assets !== undefined) updatePayload.assets = actionData.assets;
             if (actionData.preFlight !== undefined) updatePayload.pre_flight = actionData.preFlight;
@@ -10208,11 +10447,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return (
         <GameContext.Provider value={{
             session,
-            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
+            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,
-            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,

@@ -16,6 +16,7 @@ import { REST_SCREEN_ACTION_SESSION_CLEAR_EVENT, REST_SCREEN_ACTION_SESSION_EVEN
 import { OPERATIONAL_DAY_START_MINUTE, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes } from '../utils/operationalDay.js';
 import { getArenaDomainFlags } from '../utils/taskDomain';
 import { supabase } from '../supabaseClient';
+import { requestLocalNotificationPermission } from '../utils/localNotification';
 
 import { Portal } from './Portal';
 import { EmojiGlyph } from './EmojiGlyph';
@@ -141,6 +142,11 @@ const formatDurationLabel = (value: number) => {
     return `${hours}h ${minutes}m`;
 };
 
+const normalizeActionDifficulty = (value?: number | null): 0 | 1 | 2 | 3 => {
+    const numeric = Number.isFinite(value) ? Number(value) : 2;
+    return Math.min(3, Math.max(0, Math.round(numeric))) as 0 | 1 | 2 | 3;
+};
+
 const getClosestSnapIndex = (value: number, snapValues: number[]) => {
     if (snapValues.length === 0) return 0;
     const exactIndex = snapValues.findIndex(option => option === value);
@@ -203,7 +209,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     collaborativeArenaTasks = [],
     onCollaborativeRefresh,
 }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, clearPendingTasksForAction, scheduleAndCompleteNow, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes } = useGame();
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, clearPendingTasksForAction, scheduleAndCompleteNow, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes, oraclePreferences, updateOraclePreferences } = useGame();
 
     const isNew = !action;
     const isInstalledCodexAction = Boolean(action?.originCodexId && !action.originCodexId.startsWith('assign:'));
@@ -214,7 +220,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     const [mode, setMode] = useState(isNew && !isPreview ?'edit' : initialMode);
     const [editableAction, setEditableAction] = useState<Partial<Action>>(
-        action || { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 }
+        action
+            ? { ...action, difficulty: normalizeActionDifficulty(action.difficulty) }
+            : { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 2 }
     );
 
     // NEW: Task duration override state
@@ -365,6 +373,30 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             return;
         }
 
+        const normalizedDifficulty = normalizeActionDifficulty(editableAction.difficulty);
+        const baseContext = { ...(editableAction.context || {}) };
+        const nextSchedule = { ...(baseContext.schedule || {}) };
+        const { schedule: _ignoredSchedule, ...restContext } = baseContext;
+        if (editableAction.actionType === 'Ação Recorrente') {
+            nextSchedule.days = selectedDays;
+        } else {
+            delete nextSchedule.days;
+        }
+        if (editableAction.actionType === 'Livre') {
+            delete nextSchedule.startTime;
+            delete nextSchedule.notifyBeforeMinutes;
+        } else if (scheduledStartTime !== undefined) {
+            nextSchedule.startTime = scheduledStartTime;
+        } else {
+            delete nextSchedule.startTime;
+            delete nextSchedule.notifyBeforeMinutes;
+        }
+
+        const hasSchedulePayload = Object.keys(nextSchedule).length > 0;
+        const actionContext: Action['context'] | undefined = hasSchedulePayload
+            ? { ...restContext, schedule: nextSchedule }
+            : (Object.keys(restContext).length > 0 ? restContext : undefined);
+
         const actionData: Omit<Action, 'id'> = {
             arenaId: resolvedArenaId,
             name: editableAction.name,
@@ -373,13 +405,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             duration: validDuration,
             repetitions: nextRepetitions,
             actionType: editableAction.actionType || 'Ação Recorrente',
-            difficulty: editableAction.difficulty || 3,
+            difficulty: normalizedDifficulty,
             scheduledDays: editableAction.actionType === 'Ação Recorrente' ?selectedDays : undefined,
             scheduledStartTime: editableAction.actionType === 'Livre' ?undefined : scheduledStartTime,
             briefing: editableAction.briefing?.trim() || undefined,
             assets: editableAction.assets || [],
             preFlight: editableAction.preFlight || [],
-            context: editableAction.context || {}
+            context: actionContext
         };
 
         const resolveOperationalDateTime = (dateValue: Date, startTimeInMinutes: number) => {
@@ -492,7 +524,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             duration: actionToPersist.duration,
             repetitions: actionToPersist.repetitions,
             action_type: actionToPersist.actionType,
-            difficulty: actionToPersist.difficulty || null,
+            difficulty: actionToPersist.difficulty ?? null,
             briefing: actionToPersist.briefing || null,
             assets: actionToPersist.assets || [],
             pre_flight: actionToPersist.preFlight || [],
@@ -803,9 +835,56 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         setEditableAction(p => ({ ...p, arenaId: id }));
         setIsArenaPickerOpen(false);
     };
-    const handleTimeSelect = (time: string) => { setStartTime(time); };
+    const updateScheduleContext = (updater: (schedule: NonNullable<NonNullable<Action['context']>['schedule']>) => NonNullable<NonNullable<Action['context']>['schedule']>) => {
+        setEditableAction(prev => {
+            const nextSchedule = updater({ ...(prev.context?.schedule || {}) });
+            return {
+                ...prev,
+                context: {
+                    ...(prev.context || {}),
+                    schedule: nextSchedule,
+                },
+            };
+        });
+    };
+
+    const clearReminderPreference = () => {
+        updateScheduleContext((schedule) => {
+            const nextSchedule = { ...schedule };
+            delete nextSchedule.notifyBeforeMinutes;
+            return nextSchedule;
+        });
+    };
+
+    const handleTimeSelect = (time: string) => {
+        setStartTime(time);
+        if (time === 'Sem Horário') {
+            clearReminderPreference();
+        }
+    };
     const handleDateSelect = (date: Date) => { setSelectedDate(date); setIsDatePickerOpen(false); };
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget) onClose(); };
+
+    const handleReminderToggle = async () => {
+        const currentlyEnabled = editableAction.context?.schedule?.notifyBeforeMinutes === 15;
+        if (currentlyEnabled) {
+            clearReminderPreference();
+            return;
+        }
+
+        const permission = await requestLocalNotificationPermission();
+        if (permission !== 'granted') {
+            showToast('Permita push no navegador para receber esse aviso.', 'warning');
+            return;
+        }
+
+        if (!oraclePreferences?.pushEnabled) {
+            await updateOraclePreferences({ pushEnabled: true });
+        }
+
+        updateScheduleContext((schedule) => ({ ...schedule, notifyBeforeMinutes: 15 }));
+        showToast('Lembrete de 15 min ativado.', 'success');
+    };
 
     const getStartTimeLabel = (value?: number | null) => {
         if (value === undefined || value === null || value < 0) return null;
@@ -846,7 +925,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     };
 
     const resetFromAction = (nextAction: Action | null, nextScope: EditScope = hasTaskInstanceContext ? 'instance' : 'action') => {
-        const baseAction = nextAction || { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 };
+        const baseAction = nextAction
+            ? { ...nextAction, difficulty: normalizeActionDifficulty(nextAction.difficulty) }
+            : { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 2 };
         setEditableAction(baseAction);
         setSelectedDays(nextAction?.scheduledDays || []);
         setEditScope(nextScope);
@@ -877,7 +958,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         }
     }, [activeTab, isEditingTaskInstance]);
 
-    const displayAction = mode === 'view' ?action : editableAction;
+    const displayAction = mode === 'view' ? action : editableAction;
+    const displayDifficulty = normalizeActionDifficulty(displayAction?.difficulty);
     const briefingPages = React.useMemo(() => paginateBriefing(displayAction?.briefing), [displayAction?.briefing]);
     const briefingPreviewText = React.useMemo(() => {
         const previewPage = briefingPages[0] || displayAction?.briefing || '';
@@ -887,7 +969,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     // Merge task duration if editing a specific task
     const effectiveDuration = hasTaskInstanceContext && (mode === 'view' || isEditingTaskInstance) ?currentTask.duration : (displayAction?.duration || 60);
 
-    const difficultyLabels = ['MUITO FÁCIL', 'FÁCIL', 'NORMAL', 'DIFÁCIL', 'EXTREMO'];
+    const difficultyLabels = ['DESCANSO', 'LEVE', 'MÉDIA', 'ALTA'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco', 'Livre'];
@@ -1237,10 +1319,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             )}
                                             <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Dificuldade</div>
-                                                <div className={`text-xs font-bold text-center w-full ${(displayAction.difficulty || 3) >= 4 ?'text-red-400' :
-                                                    (displayAction.difficulty || 3) <= 2 ?'text-green-400' : 'text-[var(--skin-accent-color)]'
+                                                <div className={`text-xs font-bold text-center w-full ${displayDifficulty === 0
+                                                    ? 'text-slate-300'
+                                                    : displayDifficulty === 1
+                                                        ? 'text-emerald-300'
+                                                        : displayDifficulty === 2
+                                                            ? 'text-[var(--skin-accent-color)]'
+                                                            : 'text-amber-300'
                                                     }`}>
-                                                    {difficultyLabels[(displayAction.difficulty || 3) - 1]}
+                                                    {difficultyLabels[displayDifficulty]}
                                                 </div>
                                             </div>
                                         </div>
@@ -1455,7 +1542,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 />
                                             )}
 
-                                            <StyledRangeInput label="Dificuldade" value={editableAction.difficulty || 3} min={1} max={5} step={1} unit={difficultyLabels[(editableAction.difficulty || 3) - 1]} onChange={val => setEditableAction(p => ({ ...p, difficulty: val }))} />
+                                            <StyledRangeInput
+                                                label="Dificuldade"
+                                                value={normalizeActionDifficulty(editableAction.difficulty)}
+                                                min={0}
+                                                max={3}
+                                                step={1}
+                                                unit={difficultyLabels[normalizeActionDifficulty(editableAction.difficulty)]}
+                                                onChange={val => setEditableAction(p => ({ ...p, difficulty: normalizeActionDifficulty(val) }))}
+                                            />
                                         </ActionSectionCard>
 
                                         {/* Scheduling */}
@@ -1495,6 +1590,31 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         </div>
                                                     )}
                                                 </div>
+
+                                                {!isEditingTaskInstance && startTime && startTime !== 'Sem Horário' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { void handleReminderToggle(); }}
+                                                        className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-left transition-colors hover:bg-black/30"
+                                                    >
+                                                        <div>
+                                                            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/52">Lembrete</div>
+                                                            <div className="mt-1 text-sm font-semibold text-white">Notificar 15 min antes</div>
+                                                        </div>
+                                                        <div className={`relative h-6 w-11 rounded-full border transition-colors ${editableAction.context?.schedule?.notifyBeforeMinutes === 15
+                                                            ? 'border-emerald-400/70 bg-emerald-400/30'
+                                                            : 'border-white/12 bg-white/5'
+                                                            }`}>
+                                                            <div className={`absolute top-0.5 h-[1.125rem] w-[1.125rem] rounded-full bg-white transition-all ${editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'left-[1.35rem]' : 'left-0.5'}`} />
+                                                        </div>
+                                                    </button>
+                                                )}
+
+                                                {isEditingTaskInstance && (
+                                                    <p className="px-1 text-[10px] leading-relaxed text-white/46">
+                                                        O lembrete segue a configuração da ação base.
+                                                    </p>
+                                                )}
                                             </ActionSectionCard>
                                         )}
 

@@ -289,6 +289,7 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => {
         bannerUrl: row.banner_url ?? row.bannerUrl ?? undefined,
         isOnline: !!(row.is_online ?? row.isOnline),
         visibleWidgets: row.visible_widgets ?? row.visibleWidgets ?? [],
+        sequenceItems: row.sequence_items ?? row.sequenceItems ?? [],
         assetArtById: row.asset_art_by_id ?? row.assetArtById ?? {},
         assetWidgetValues: row.asset_widget_values ?? row.assetWidgetValues ?? {},
         assetsVisibility: row.assets_visibility ?? row.assetsVisibility ?? 'all',

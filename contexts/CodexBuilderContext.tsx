@@ -209,7 +209,7 @@ export const CodexBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ 
       duration: actionData.duration || 15,
       repetitions: actionData.repetitions || 1,
       actionType: actionData.actionType || 'Ação Recorrente',
-      difficulty: actionData.difficulty || 1,
+      difficulty: typeof actionData.difficulty === 'number' ? actionData.difficulty : 2,
       scheduledDays: actionData.scheduledDays,
       scheduledStartTime: actionData.scheduledStartTime,
       originCodexId: actionData.originCodexId

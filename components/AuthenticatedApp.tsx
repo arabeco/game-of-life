@@ -62,6 +62,7 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
 const CORE_NAV_VIEWS: View[] = ['assets', 'arenas', 'planner', 'social', 'settings'];
+const PROFILE_SHELL_FALLBACK_MS = 8000;
 
 const getAvailableViews = (canUseAssetsView: boolean, isBuilderMode: boolean): View[] => {
     if (isBuilderMode) return ['arenas'];
@@ -698,8 +699,23 @@ const MainApp: React.FC = () => {
     } | null>(null);
     const [premiumRenewalOfferSeen, setPremiumRenewalOfferSeen] = useState(false);
     const [premiumRenewalBusy, setPremiumRenewalBusy] = useState(false);
+    const [forceShellFallback, setForceShellFallback] = useState(false);
     const lastToastSignatureRef = useRef('');
     const effectiveUiSkin = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
+
+    useEffect(() => {
+        if (isProfileLoaded) {
+            setForceShellFallback(false);
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            console.error('[auth-shell] Profile loading gate fallback released. Rendering the shell with cached/default state.');
+            setForceShellFallback(true);
+        }, PROFILE_SHELL_FALLBACK_MS);
+
+        return () => window.clearTimeout(timer);
+    }, [isProfileLoaded]);
 
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
@@ -988,7 +1004,7 @@ const MainApp: React.FC = () => {
         setGoldShortagePrompt(null);
     }, [goldShortagePrompt]);
 
-    if (!isProfileLoaded) {
+    if (!isProfileLoaded && !forceShellFallback) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-black text-white" data-skin={effectiveUiSkin || 'BASIC'}>
                 <div className="flex flex-col items-center gap-4">
@@ -1006,6 +1022,14 @@ const MainApp: React.FC = () => {
                     defaultRestScreenOpen={shouldOpenRestByDefault}
                     allowSeasonTransition={shouldAllowSeasonTransition}
                 />
+            )}
+            {!isProfileLoaded && forceShellFallback && (
+                <div className="pointer-events-none fixed inset-x-0 top-3 z-[320] flex justify-center px-4">
+                    <div className="flex items-center gap-3 rounded-full border border-white/10 bg-black/72 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/72 shadow-[0_12px_30px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+                        <div className="h-3.5 w-3.5 animate-spin rounded-full border border-white/35 border-t-white/90" />
+                        <span>Sincronizando perfil</span>
+                    </div>
+                </div>
             )}
             <Suspense fallback={null}>
                 <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />

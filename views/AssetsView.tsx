@@ -99,7 +99,7 @@ export const AssetsView: React.FC = () => {
     const overviewLayout = useAssetsOverviewLayoutConfig();
 
     const isBasicMode = appMode === 'BASIC';
-    const basicSephirotLevelColor = '#f5efe2';
+    const basicSephirotLevelColor = '#d9bd82';
     const selectedAsset = assets.find(a => a.id === selectedAssetId) || null;
     const assetWidgetValues = userProfile.assetWidgetValues || {};
     const assetArtById = userProfile.assetArtById || {};

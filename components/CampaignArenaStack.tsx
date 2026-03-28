@@ -11,12 +11,12 @@ interface CampaignArenaStackProps {
 
 const STACK_SIZE = {
     xs: {
-        scale: 0.58,
-        step: 52,
-        width: 170,
-        height: 68,
-        cardWidth: 136,
-        cardHeight: 88,
+        scale: 0.56,
+        step: 48,
+        width: 156,
+        height: 56,
+        cardWidth: 132,
+        cardHeight: 84,
         badgeClass: 'text-[8px] px-1.5 py-0.5',
     },
     sm: {

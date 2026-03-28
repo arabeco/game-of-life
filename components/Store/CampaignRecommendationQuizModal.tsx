@@ -257,6 +257,16 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     const ownedResultCodex = result ? findOwnedCodex(result.entry.catalog.id) : null;
     const isResultInstalled = Boolean(ownedResultCodex && installedCodexIds.has(ownedResultCodex.id));
 
+    useEffect(() => {
+        if (!currentQuestion) {
+            setSelectedOption(null);
+            return;
+        }
+        const savedAnswer = answers[currentQuestion.id] || null;
+        const isStillValid = savedAnswer ? currentOptions.some((option) => option.key === savedAnswer) : false;
+        setSelectedOption(isStillValid ? savedAnswer : null);
+    }, [answers, currentOptions, currentQuestion]);
+
     const ensureCampaignInLibrary = useCallback(async (recommendation: CampaignRecommendation, options: { autoAcquire?: boolean } = {}): Promise<UserCodex | null> => {
         const existing = findOwnedCodex(recommendation.entry.catalog.id);
         if (existing) {
@@ -301,13 +311,17 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         if (!selectedOption) return;
         const nextAnswers = { ...answers, [currentQuestion.id]: selectedOption } as QuizAnswers;
         setAnswers(nextAnswers);
-        setSelectedOption(null);
         if (questionIndex === TOTAL_QUESTIONS - 1) {
             if (quizMode === 'free') markFreeQuizDone();
             setResult(resolveRecommendation(nextAnswers, quizMode === 'free' ? freeCatalog : catalogEntries, quizMode));
             return;
         }
         setQuestionIndex((current) => current + 1);
+    };
+
+    const handlePrevious = () => {
+        if (questionIndex === 0) return;
+        setQuestionIndex((current) => Math.max(0, current - 1));
     };
 
     const handleInstall = async () => {
@@ -341,62 +355,70 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                     <div className="campaign-quiz-header">
                         <div>{String(Math.min(questionIndex + 1, TOTAL_QUESTIONS)).padStart(2, '0')} / 07</div>
                         <div className="campaign-quiz-progress-shell"><div className="campaign-quiz-progress-fill" style={{ width: `${progressPercent}%` }} /></div>
-                        <div>{result ? 'Resultado' : `Pergunta ${Math.min(questionIndex + 1, TOTAL_QUESTIONS)} de 7`}</div>
+                        <div className="campaign-quiz-header-right">
+                            <span>{result ? 'Resultado' : `Pergunta ${Math.min(questionIndex + 1, TOTAL_QUESTIONS)} de 7`}</span>
+                            <button type="button" onClick={onClose} className="campaign-quiz-close" aria-label="Fechar quiz">×</button>
+                        </div>
                     </div>
 
                     <div className="campaign-quiz-stage">
                         {!result ? (
                             <section key={`${quizMode}-${currentQuestion.id}`} className="campaign-quiz-screen">
-                                <div className="campaign-quiz-meta">
-                                    <div className="campaign-quiz-index">{String(questionIndex + 1).padStart(2, '0')} / 07</div>
-                                    <div>{quizMode === 'free' ? 'Filtro inicial: gratuitas' : 'Recomendacao completa'}</div>
-                                </div>
-                                <div className="campaign-quiz-copy">
-                                    <h1 className="campaign-quiz-title">{currentQuestion.title}</h1>
-                                    <p className="campaign-quiz-subtitle">{currentQuestion.subtitle}</p>
-                                </div>
-                                <div className={`campaign-quiz-options ${currentOptions.length <= 4 ? 'is-single-column' : ''}`}>
-                                    {currentOptions.map((option) => (
-                                        <button key={`${currentQuestion.id}-${option.key}`} type="button" onClick={() => setSelectedOption(option.key)} className={`campaign-quiz-option ${selectedOption === option.key ? 'is-active' : ''}`}>
-                                            <span className="campaign-quiz-letter">{option.key}</span>
-                                            <span>
-                                                <span className="campaign-quiz-option-main">{option.title}</span>
-                                                <span className="campaign-quiz-option-sub">{option.subtitle}</span>
-                                            </span>
-                                        </button>
-                                    ))}
+                                <div className="campaign-quiz-scroll">
+                                    <div className="campaign-quiz-meta">
+                                        <div className="campaign-quiz-index">{String(questionIndex + 1).padStart(2, '0')} / 07</div>
+                                        <div>{quizMode === 'free' ? 'Filtro inicial: gratuitas' : 'Recomendacao completa'}</div>
+                                    </div>
+                                    <div className="campaign-quiz-copy">
+                                        <h1 className="campaign-quiz-title">{currentQuestion.title}</h1>
+                                        <p className="campaign-quiz-subtitle">{currentQuestion.subtitle}</p>
+                                    </div>
+                                    <div className={`campaign-quiz-options ${currentOptions.length <= 4 ? 'is-single-column' : ''}`}>
+                                        {currentOptions.map((option) => (
+                                            <button key={`${currentQuestion.id}-${option.key}`} type="button" onClick={() => setSelectedOption(option.key)} className={`campaign-quiz-option ${selectedOption === option.key ? 'is-active' : ''}`}>
+                                                <span className="campaign-quiz-letter">{option.key}</span>
+                                                <span>
+                                                    <span className="campaign-quiz-option-main">{option.title}</span>
+                                                    <span className="campaign-quiz-option-sub">{option.subtitle}</span>
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div className="campaign-quiz-footer">
+                                    <button type="button" onClick={handlePrevious} disabled={questionIndex === 0} className="campaign-quiz-secondary min-w-[10rem] px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-35">Anterior</button>
                                     {selectedOption && <button type="button" onClick={handleContinue} className="luxe-skin-button min-w-[12rem] px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Continuar</button>}
                                 </div>
                             </section>
                         ) : (
                             <section className="campaign-quiz-screen">
-                                <div className="campaign-quiz-meta">
-                                    <div className="campaign-quiz-index">07 / 07</div>
-                                    <div>{quizMode === 'free' ? 'Resultado gratuito' : 'Resultado completo'}</div>
-                                </div>
-                                <div className="campaign-quiz-result">
-                                    <h1 className="campaign-quiz-result-title">Sua campanha foi identificada</h1>
-                                    <p className="campaign-quiz-result-subtitle">Com base nas suas respostas, o sistema encontrou a campanha ideal para o seu momento.</p>
-                                    <div className="campaign-quiz-result-name">{result.entry.title}</div>
-                                    <div className="campaign-quiz-result-pills">
-                                        <span className="campaign-quiz-result-pill">{result.entry.typeLabel}</span>
-                                        <span className="campaign-quiz-result-pill">{result.entry.durationDays} dias</span>
-                                        <span className="campaign-quiz-result-pill">{resultPriceLabel}</span>
+                                <div className="campaign-quiz-scroll campaign-quiz-scroll-result">
+                                    <div className="campaign-quiz-meta">
+                                        <div className="campaign-quiz-index">07 / 07</div>
+                                        <div>{quizMode === 'free' ? 'Resultado gratuito' : 'Resultado completo'}</div>
                                     </div>
-                                    <p className="campaign-quiz-result-copy">{result.entry.description}</p>
-                                    {result.upgradeNote && <div className="campaign-quiz-result-note">{result.upgradeNote}</div>}
-                                    {statusMessage && <div className="campaign-quiz-result-status">{statusMessage}</div>}
-                                    <div className="campaign-quiz-result-actions">
-                                        <button type="button" onClick={handleInstall} disabled={isInstalling || isSyncingLibrary || isResultInstalled} className="luxe-skin-button w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50">
-                                            {isInstalling ? 'Instalando...' : isResultInstalled ? 'Campanha instalada' : 'Instalar Campanha'}
-                                        </button>
-                                        {quizMode === 'free' ? (
-                                            <button type="button" onClick={promoteToFullRecommendation} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver recomendacao completa</button>
-                                        ) : (
-                                            <button type="button" onClick={onClose} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver catalogo completo</button>
-                                        )}
+                                    <div className="campaign-quiz-result">
+                                        <h1 className="campaign-quiz-result-title">Sua campanha foi identificada</h1>
+                                        <p className="campaign-quiz-result-subtitle">Com base nas suas respostas, o sistema encontrou a campanha ideal para o seu momento.</p>
+                                        <div className="campaign-quiz-result-name">{result.entry.title}</div>
+                                        <div className="campaign-quiz-result-pills">
+                                            <span className="campaign-quiz-result-pill">{result.entry.typeLabel}</span>
+                                            <span className="campaign-quiz-result-pill">{result.entry.durationDays} dias</span>
+                                            <span className="campaign-quiz-result-pill">{resultPriceLabel}</span>
+                                        </div>
+                                        <p className="campaign-quiz-result-copy">{result.entry.description}</p>
+                                        {result.upgradeNote && <div className="campaign-quiz-result-note">{result.upgradeNote}</div>}
+                                        {statusMessage && <div className="campaign-quiz-result-status">{statusMessage}</div>}
+                                        <div className="campaign-quiz-result-actions">
+                                            <button type="button" onClick={handleInstall} disabled={isInstalling || isSyncingLibrary || isResultInstalled} className="luxe-skin-button w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50">
+                                                {isInstalling ? 'Instalando...' : isResultInstalled ? 'Campanha instalada' : 'Instalar Campanha'}
+                                            </button>
+                                            {quizMode === 'free' ? (
+                                                <button type="button" onClick={promoteToFullRecommendation} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver recomendacao completa</button>
+                                            ) : (
+                                                <button type="button" onClick={onClose} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver catalogo completo</button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </section>

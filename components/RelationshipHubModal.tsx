@@ -396,16 +396,16 @@ const RelationshipInvitePicker: React.FC<{
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/78 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="ui-modal-backdrop z-[180]" onClick={onClose}>
                 <GlassCard
                     variant="neutral"
-                    className="relationship-hub-sheet w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(206,214,224,0.94)_0%,rgba(114,123,137,0.82)_18%,rgba(27,32,43,0.92)_52%,rgba(8,10,15,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                    className="relationship-hub-sheet ui-modal-panel w-full max-w-md p-4"
                     onClick={(event) => event.stopPropagation()}
                 >
                     <div className="flex items-center justify-between gap-3">
                         <div>
-                            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/42">Convite</div>
-                            <h3 className="mt-1 text-base font-black uppercase tracking-[0.14em] text-white">{title}</h3>
+                            <div className="ui-modal-eyebrow text-white/52">Convite</div>
+                            <h3 className="ui-modal-title mt-1 text-left text-white">{title}</h3>
                         </div>
                         <button onClick={onClose} className="rounded-full border border-white/12 bg-black/20 p-2 text-white/70 hover:text-white">
                             <XIcon className="w-4 h-4" />
@@ -488,16 +488,16 @@ const RelationshipInviteConfirmModal: React.FC<{
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-[190] flex items-center justify-center bg-black/82 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="ui-modal-backdrop z-[190]" onClick={onClose}>
                 <GlassCard
                     variant="neutral"
-                    className="relationship-hub-sheet w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                    className="relationship-hub-sheet ui-modal-panel w-full max-w-md p-4"
                     onClick={(event) => event.stopPropagation()}
                 >
                     <div className="flex items-center justify-between gap-3">
                         <div>
-                            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/42">Confirmacao</div>
-                            <h3 className="mt-1 text-base font-black uppercase tracking-[0.14em] text-white">
+                            <div className="ui-modal-eyebrow text-white/52">Confirmação</div>
+                            <h3 className="ui-modal-title mt-1 text-left text-white">
                                 {isMentoria ? 'Confirmar mentoria' : `Confirmar ${label.singular.toLowerCase()}`}
                             </h3>
                         </div>
@@ -534,14 +534,14 @@ const RelationshipInviteConfirmModal: React.FC<{
                         <button
                             onClick={onClose}
                             disabled={busy}
-                            className="luxe-button-secondary w-full rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
+                            className="ui-modal-button luxe-button-secondary disabled:opacity-50"
                         >
                             Cancelar
                         </button>
                         <button
                             onClick={onConfirm}
                             disabled={busy}
-                            className="luxe-skin-button w-full rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
+                            className="ui-modal-button luxe-skin-button disabled:opacity-50"
                         >
                             {busy ? 'Enviando...' : `Enviar por ${COIN_GLYPH} ${label.cost}`}
                         </button>
@@ -564,16 +564,16 @@ const RelationshipEndConfirmModal: React.FC<{
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-[192] flex items-center justify-center bg-black/82 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="ui-modal-backdrop z-[192]" onClick={onClose}>
                 <GlassCard
                     variant="neutral"
-                    className="relationship-hub-sheet w-full max-w-md rounded-[28px] border border-red-300/14 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                    className="relationship-hub-sheet ui-modal-panel w-full max-w-md border-red-300/14 p-4"
                     onClick={(event) => event.stopPropagation()}
                 >
                     <div className="flex items-center justify-between gap-3">
                         <div>
-                            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-red-200/64">Confirmacao</div>
-                            <h3 className="mt-1 text-base font-black uppercase tracking-[0.14em] text-white">
+                            <div className="ui-modal-eyebrow text-red-200/72">Confirmação</div>
+                            <h3 className="ui-modal-title mt-1 text-left text-white">
                                 Encerrar {label.singular.toLowerCase()}
                             </h3>
                         </div>
@@ -602,16 +602,16 @@ const RelationshipEndConfirmModal: React.FC<{
                         <button
                             onClick={onClose}
                             disabled={busy}
-                            className="luxe-button-secondary w-full rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
+                            className="ui-modal-button luxe-button-secondary disabled:opacity-50"
                         >
                             Cancelar
                         </button>
                         <button
                             onClick={onConfirm}
                             disabled={busy}
-                            className="w-full rounded-xl border border-red-300/18 bg-red-500/14 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-red-100 transition-all hover:bg-red-500/18 disabled:opacity-50"
+                            className="ui-modal-button w-full border border-red-300/18 bg-red-500/14 text-red-100 transition-all hover:bg-red-500/18 disabled:opacity-50"
                         >
-                            {busy ? 'Encerrando...' : 'Encerrar vinculo'}
+                            {busy ? 'Encerrando...' : 'Encerrar vínculo'}
                         </button>
                     </div>
                 </GlassCard>
@@ -1839,10 +1839,10 @@ export const RelationshipHubModal: React.FC<{
     return (
         <>
             <Portal>
-                <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/82 backdrop-blur-sm p-3 animate-fade-in" onClick={onClose}>
+                <div className="ui-modal-backdrop z-[140]" onClick={onClose}>
                     <GlassCard
                         variant="neutral"
-                        className="relationship-hub-modal relationship-hub-sheet w-full max-w-[44rem] max-h-[92vh] overflow-hidden rounded-[28px] border border-[rgba(229,234,242,0.24)] bg-[linear-gradient(160deg,rgba(218,223,232,0.96)_0%,rgba(116,125,139,0.84)_18%,rgba(30,36,47,0.94)_52%,rgba(9,11,16,0.985)_100%)] shadow-[0_28px_90px_rgba(0,0,0,0.42)]"
+                        className="relationship-hub-modal relationship-hub-sheet ui-modal-panel w-full max-w-[44rem] max-h-[92vh] overflow-hidden"
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="relative h-full">
@@ -1853,7 +1853,7 @@ export const RelationshipHubModal: React.FC<{
                                         <div>
                                             <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/24 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/46">
                                                 <SparklesIcon className="w-3.5 h-3.5" />
-                                                <span>Central de vinculos</span>
+                                                <span>Central de vínculos</span>
                                             </div>
                                         </div>
 
@@ -1983,16 +1983,16 @@ export const RelationshipHubModal: React.FC<{
 
             {selectedPupilLink && (
                 <Portal>
-                    <div className="fixed inset-0 z-[181] flex items-center justify-center bg-black/78 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedPupilLink(null)}>
+                    <div className="ui-modal-backdrop z-[181]" onClick={() => setSelectedPupilLink(null)}>
                         <GlassCard
                             variant="neutral"
-                            className="relationship-hub-sheet w-full max-w-md rounded-[28px] border border-white/12 bg-[linear-gradient(160deg,rgba(208,214,224,0.94)_0%,rgba(114,123,138,0.82)_20%,rgba(28,34,45,0.92)_56%,rgba(8,10,14,0.98)_100%)] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.38)]"
+                            className="relationship-hub-sheet ui-modal-panel w-full max-w-md p-4"
                             onClick={(event) => event.stopPropagation()}
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/42">Mentoria</div>
-                                    <h3 className="mt-1 text-base font-black uppercase tracking-[0.14em] text-white">
+                                    <div className="ui-modal-eyebrow text-white/52">Mentoria</div>
+                                    <h3 className="ui-modal-title mt-1 text-left text-white">
                                         Campanhas
                                     </h3>
                                 </div>

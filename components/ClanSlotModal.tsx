@@ -299,16 +299,16 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
     return (
         <Portal>
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[20000] flex items-center justify-center animate-fade-in" onClick={onClose}>
-            <GlassCard variant="neutral" className="w-full max-w-sm m-4 p-5 space-y-4 relative" onClick={e => e.stopPropagation()}>
+        <div className="ui-modal-backdrop z-[20000]" onClick={onClose}>
+            <GlassCard variant="neutral" className="ui-modal-panel w-full max-w-sm m-0 p-5 space-y-4 relative" onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
                 <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
                         <div className="text-2xl">{customEmoji}</div>
                         <div>
-                            <h2 className="text-xl font-bold text-white">{customName}</h2>
-                            <p className="text-xs text-gray-400 uppercase tracking-widest">{occupant ? 'Ocupado' : 'Disponível'}</p>
+                            <h2 className="ui-modal-title text-left text-white">{customName}</h2>
+                            <p className="ui-modal-eyebrow mt-1 text-left text-white/52">{occupant ? 'Ocupado' : 'Disponível'}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10"><XIcon className="w-5 h-5"/></button>

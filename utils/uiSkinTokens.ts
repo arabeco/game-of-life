@@ -91,6 +91,11 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
   const cyberPink = hexToRgb('#ff56d8');
   const cyberBlue = hexToRgb('#35d8ff');
   const plannerAccent = isEmber ? emberCrimson : accent;
+  const sephirotTextColor = isBasic
+    ? '#0f1720'
+    : normalizedSkinId === 'GENESIS'
+      ? '#14081d'
+      : '#dbc16b';
 
   if (isBasic && theme === 'dark') {
     return {
@@ -118,6 +123,7 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
       plannerPillActiveBackground: 'rgba(181, 195, 214, 0.24)',
       plannerSoftControlColor: '#d7e2ed',
       plannerHourLabelColor: 'rgba(233, 241, 250, 0.92)',
+      sephirotTextColor,
     };
   }
 
@@ -147,6 +153,7 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
       plannerPillActiveBackground: 'rgba(100, 116, 139, 0.18)',
       plannerSoftControlColor: '#415366',
       plannerHourLabelColor: '#eef4fb',
+      sephirotTextColor,
     };
   }
 
@@ -238,6 +245,7 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
       plannerPillActiveBackground: isEmber ? 'rgba(170, 72, 26, 0.76)' : isCyber ? 'rgba(198, 72, 165, 0.72)' : isNebulosa ? 'rgba(104, 88, 255, 0.76)' : rgbToString(plannerPillActive, 0.74),
       plannerSoftControlColor: isEmber ? '#f2ddcf' : isCyber ? '#f1eaff' : isNebulosa ? '#dcecff' : rgbToString(accentTextSoft),
       plannerHourLabelColor: isEmber ? 'rgba(244, 223, 210, 0.92)' : isCyber ? 'rgba(241, 234, 255, 0.92)' : isNebulosa ? 'rgba(223, 239, 255, 0.92)' : rgbToString(mixRgb(accent, white, 0.82)),
+      sephirotTextColor,
     };
   }
 
@@ -328,5 +336,6 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
     plannerPillActiveBackground: isEmber ? 'rgba(179, 98, 32, 0.74)' : isCyber ? 'rgba(103, 146, 214, 0.72)' : isNebulosa ? 'rgba(94, 106, 192, 0.72)' : rgbToString(plannerPillActive, 0.72),
     plannerSoftControlColor: isEmber ? '#f4e0d9' : isCyber ? '#162235' : isNebulosa ? '#1b2944' : rgbToString(mixRgb(accent, safeDark, 0.58)),
     plannerHourLabelColor: isEmber ? 'rgba(242, 222, 214, 0.9)' : isCyber ? '#162235' : isNebulosa ? '#1b2944' : rgbToString(mixRgb(accent, safeDark, 0.54)),
+    sephirotTextColor,
   };
 };

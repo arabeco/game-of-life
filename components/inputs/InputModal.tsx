@@ -19,8 +19,8 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
 
     const handleSave = () => {
         onSave(currentValue);
-    }
-    
+    };
+
     const handleWheelSelect = (newValue: string) => {
         setCurrentValue(newValue);
     };
@@ -28,15 +28,29 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
     const renderInput = () => {
         switch (slot.inputType) {
             case 'text':
-                return <input type="text" value={currentValue as string} onChange={e => setCurrentValue(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />;
+                return (
+                    <input
+                        type="text"
+                        value={currentValue as string}
+                        onChange={e => setCurrentValue(e.target.value)}
+                        className="ui-modal-input"
+                    />
+                );
             case 'textarea':
-                return <textarea value={currentValue as string} onChange={e => setCurrentValue(e.target.value)} rows={5} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]" />;
+                return (
+                    <textarea
+                        value={currentValue as string}
+                        onChange={e => setCurrentValue(e.target.value)}
+                        rows={5}
+                        className="ui-modal-input min-h-[7.5rem] resize-y"
+                    />
+                );
             case 'wheelpick':
                 return (
-                     <div>
+                    <div>
                         <button
                             onClick={() => setIsPickerOpen(!isPickerOpen)}
-                            className="w-full p-3 bg-black/30 rounded-xl flex justify-between items-center text-left"
+                            className="ui-modal-input flex items-center justify-between gap-3 text-left"
                         >
                             <span>{currentValue as string}</span>
                             <ChevronRightIcon className={`w-5 h-5 text-gray-400 transition-transform ${isPickerOpen ? 'rotate-90' : ''}`} />
@@ -57,11 +71,11 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
             case 'slider':
                 return <SliderInput range={slot.range!} value={currentValue as number} onChange={setCurrentValue} />;
             case 'image':
-                return <ImageUploadSlot value={currentValue as {imageUrl: string, caption: string}} onChange={setCurrentValue} />;
+                return <ImageUploadSlot value={currentValue as { imageUrl: string, caption: string; }} onChange={setCurrentValue} />;
             default:
-                return <div>Tipo de input não suportado.</div>
+                return <div>Tipo de input não suportado.</div>;
         }
-    }
+    };
 
     const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
         if (event.target === event.currentTarget) onClose();
@@ -69,29 +83,33 @@ export const InputModal: React.FC<InputModalProps> = ({ slot, onClose, onSave })
 
     return (
         <Portal>
-        <div 
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in overscroll-none" 
-            style={{ touchAction: 'none' }}
-            onClick={handleBackdropClick}
-        >
-            <GlassCard 
-                variant="neutral" 
-                className="w-full max-w-sm m-4 space-y-4 rounded-3xl" 
-                style={{ touchAction: 'auto' }}
-                onClick={e => e.stopPropagation()}
+            <div
+                className="ui-modal-backdrop overscroll-none"
+                style={{ touchAction: 'none' }}
+                onClick={handleBackdropClick}
             >
-                <h2 className="text-lg font-bold uppercase tracking-wider text-center">{slot.label}</h2>
-                <div>{renderInput()}</div>
-                <div className="flex space-x-2">
-                    <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
-                        CANCELAR
-                    </button>
-                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">
-                        SALVAR
-                    </button>
-                </div>
-            </GlassCard>
-        </div>
+                <GlassCard
+                    variant="neutral"
+                    className="ui-modal-panel max-w-sm p-0"
+                    style={{ touchAction: 'auto' }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <div className="ui-modal-panel-content ui-modal-stack">
+                        <div className="ui-modal-header">
+                            <h2 className="ui-modal-title">{slot.label}</h2>
+                        </div>
+                        <div>{renderInput()}</div>
+                        <div className="ui-modal-actions">
+                            <button onClick={onClose} className="ui-modal-button luxe-button-secondary">
+                                Cancelar
+                            </button>
+                            <button onClick={handleSave} className="ui-modal-button luxe-skin-button">
+                                Salvar
+                            </button>
+                        </div>
+                    </div>
+                </GlassCard>
+            </div>
         </Portal>
     );
 };

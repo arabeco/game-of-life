@@ -25,6 +25,19 @@ export const Sephirot: React.FC<SephirotProps> = ({
   size,
   interactive = true,
 }) => {
+  const activeSkinId =
+    typeof document !== 'undefined'
+      ? (document.documentElement.getAttribute('data-skin') || '').trim().toUpperCase()
+      : '';
+  const useContrastHalo = activeSkinId === 'BASIC' || activeSkinId === 'GENESIS';
+  const skinSpecificLevelColor =
+    activeSkinId === 'BASIC'
+      ? '#d9bd82'
+      : activeSkinId === 'GENESIS'
+        ? '#d7b684'
+        : undefined;
+  const resolvedLevelColor = levelColor ?? skinSpecificLevelColor ?? 'var(--sephirot-text-color)';
+  const useDarkerNumeralTreatment = Boolean(levelColor ?? skinSpecificLevelColor);
   const sphereSize = size || 'var(--sephirot-size-standard, 54px)';
   const titleMargin = '-mb-4';
   const sphereShadow = useSkinArtworkOnly ? 'none' : `0 0 7px 0.75px var(--sephirot-glow-color)`;
@@ -64,12 +77,29 @@ export const Sephirot: React.FC<SephirotProps> = ({
                 boxShadow: sphereInsetRing,
             }}
         >
+            {useContrastHalo && (
+                <div
+                    className="pointer-events-none absolute left-1/2 top-1/2 z-0 rounded-full"
+                    style={{
+                        width: '62%',
+                        height: '62%',
+                        transform: 'translate(-50%, -55%)',
+                        background: activeSkinId === 'GENESIS'
+                          ? 'radial-gradient(circle, rgba(18,10,24,0.92) 0%, rgba(24,12,32,0.78) 42%, rgba(10,8,14,0.08) 76%, transparent 100%)'
+                          : 'radial-gradient(circle, rgba(14,18,22,0.92) 0%, rgba(22,28,34,0.76) 42%, rgba(10,12,16,0.08) 76%, transparent 100%)',
+                        filter: 'blur(0.45px)',
+                    }}
+                />
+            )}
             <span 
-                className="pointer-events-none relative z-[1] text-[1.28rem] font-black leading-none tracking-[-0.02em]" 
+                className="pointer-events-none relative z-[1] text-[1.82rem] font-black leading-none tracking-[-0.02em]" 
                 style={{ 
-                    color: levelColor ?? 'var(--sephirot-text-color)',
-                    textShadow: '0 1px 0 rgba(255,255,255,0.14), 0 0 4px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.85)',
-                    WebkitTextStroke: '1.35px rgba(8, 8, 10, 0.98)'
+                    color: resolvedLevelColor,
+                    textShadow: useDarkerNumeralTreatment
+                      ? '0 1px 0 rgba(255,255,255,0.12), 0 0 2px rgba(0,0,0,0.18), 0 2px 4px rgba(0,0,0,0.78)'
+                      : '0 1px 0 rgba(255,255,255,0.14), 0 0 4px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.85)',
+                    WebkitTextStroke: useDarkerNumeralTreatment ? '1.15px rgba(8, 8, 10, 0.96)' : '1.32px rgba(8, 8, 10, 0.98)',
+                    transform: 'translateY(-0.07em)',
                 }}
             >
                 {asset.level}

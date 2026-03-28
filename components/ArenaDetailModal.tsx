@@ -490,9 +490,9 @@ export const ArenaDetailModal: React.FC<{
 
     return (
         <Portal>
-            <div className="arena-detail-modal arena-detail-modal-overlay fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={handleBackdropClick}>
+            <div className="arena-detail-modal arena-detail-modal-overlay ui-modal-backdrop z-50" onClick={handleBackdropClick}>
                 <div
-                    className="arena-detail-modal-root dossier-bg arena-plate border w-full max-w-[21rem] m-4 rounded-2xl px-4 py-5 flex flex-col h-auto max-h-[92vh] relative overflow-hidden"
+                    className="arena-detail-modal-root ui-modal-panel dossier-bg arena-plate border w-full max-w-[21rem] m-0 px-4 py-5 flex flex-col h-auto max-h-[92vh] relative overflow-hidden"
                     style={{
                         borderColor: 'var(--skin-accent-color)',
                         backgroundImage: [
@@ -560,7 +560,7 @@ export const ArenaDetailModal: React.FC<{
                                 )}
                             </div>
                             <div className="flex-1 flex flex-col items-center text-center">
-                                <h2 className="luxe-title-ornate text-lg font-black uppercase tracking-wider text-[color:var(--skin-accent-color)]">
+                                <h2 className="ui-modal-title luxe-title-ornate text-[color:var(--skin-accent-color)]">
                                     {isEditing ?"EDITAR ARENA" : arena.name}
                                 </h2>
                                 {parentAsset?.name && (
@@ -620,7 +620,7 @@ export const ArenaDetailModal: React.FC<{
                                 </button>
                             )}
                             {!isEditing && (
-                                <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
+                                <button onClick={onClose} className="ui-modal-button luxe-skin-button min-w-[4.5rem]">
                                     OK
                                 </button>
                             )}

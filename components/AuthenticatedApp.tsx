@@ -575,6 +575,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         root.style.setProperty('--planner-pill-active-bg', tokens.plannerPillActiveBackground);
         root.style.setProperty('--planner-soft-control-color', tokens.plannerSoftControlColor);
         root.style.setProperty('--planner-hour-label-color', tokens.plannerHourLabelColor);
+        root.style.setProperty('--sephirot-text-color', tokens.sephirotTextColor || '#dbc16b');
     }, [activeTheme, effectiveUiSkin]);
 
     return (

@@ -368,24 +368,24 @@ export const CodexStore: React.FC = () => {
                                 <GlassCard
                                     key={codex.id}
                                     variant="neutral"
-                                    className={`relative overflow-hidden border-white/10 p-2 ${!isFree ? 'bg-[radial-gradient(circle_at_top,rgba(168,36,36,0.14),transparent_58%),linear-gradient(180deg,rgba(26,16,18,0.98),rgba(11,10,12,0.98))]' : ''}`}
+                                    className={`relative h-[17.35rem] overflow-hidden border-white/10 p-2 ${!isFree ? 'bg-[radial-gradient(circle_at_top,rgba(168,36,36,0.14),transparent_58%),linear-gradient(180deg,rgba(26,16,18,0.98),rgba(11,10,12,0.98))]' : ''}`}
                                 >
                                     <div className="relative z-10 flex h-full flex-col gap-2">
                                         <button
                                             type="button"
                                             onClick={() => setCampaignPreview(preview)}
-                                            className="rounded-[1.05rem] border border-white/10 bg-black/20 px-2 py-1.5 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.05]"
+                                            className="flex flex-1 flex-col rounded-[1.05rem] border border-white/10 bg-black/20 px-2 py-1.5 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.05]"
                                         >
                                             <div className="relative h-12 overflow-hidden rounded-[0.95rem] border border-white/8 bg-black/30">
                                                 <CodexCoverArt cover={coverVisual} title={codex.title} />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                                             </div>
 
-                                            <div className="mt-1 line-clamp-2 min-h-[1.75rem] text-[11px] font-black uppercase tracking-[0.05em] leading-tight text-white">
+                                            <div className="mt-1 line-clamp-2 min-h-[1.85rem] text-[11px] font-black uppercase tracking-[0.05em] leading-tight text-white">
                                                 {codex.title}
                                             </div>
 
-                                            <div className="mt-1 flex flex-wrap gap-1">
+                                            <div className="mt-1 flex min-h-[2.95rem] max-h-[2.95rem] flex-wrap content-start gap-1 overflow-y-auto pr-1 hide-scrollbar">
                                                 <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/72">
                                                     {actionCount} acoes
                                                 </span>
@@ -402,14 +402,14 @@ export const CodexStore: React.FC = () => {
                                                 </span>
                                             </div>
 
-                                            <div className="mt-1 flex items-center justify-center rounded-[0.95rem] border border-white/8 bg-black/20 px-1 py-0.5">
+                                            <div className="mt-auto flex items-center justify-center rounded-[0.95rem] border border-white/8 bg-black/20 px-1 py-0.5">
                                                 <CampaignArenaStack arenas={preview.arenas} size="xs" actions={preview.actions} />
                                             </div>
                                         </button>
 
-                                        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/6 pt-1.5">
+                                        <div className="flex items-center justify-between gap-2 border-t border-white/6 pt-1.5">
                                             {isOwned ? (
-                                                <div className="inline-flex items-center gap-1 rounded-full border border-green-500/30 bg-green-500/12 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-green-400">
+                                                <div className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-xl border border-green-500/30 bg-green-500/12 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-green-400">
                                                     <CheckIcon className="h-3 w-3" />
                                                     Biblioteca
                                                 </div>
@@ -418,7 +418,7 @@ export const CodexStore: React.FC = () => {
                                                     type="button"
                                                     onClick={() => handlePurchase(codex.id)}
                                                     disabled={!!purchasing}
-                                                    className="luxe-skin-button inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className="luxe-skin-button inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     {purchasing === codex.id ? '...' : isFree ? 'Gratis' : <><span>{goldPrice}</span><span aria-hidden>{'\u{1FA99}'}</span></>}
                                                 </button>
@@ -427,7 +427,7 @@ export const CodexStore: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => setCampaignPreview(preview)}
-                                                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10"
+                                                className="h-9 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[9px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10"
                                             >
                                                 Ver
                                             </button>

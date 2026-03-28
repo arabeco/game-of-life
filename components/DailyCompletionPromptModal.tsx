@@ -59,37 +59,30 @@ export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProp
 
     return (
         <Portal>
-            <div
-                className="fixed inset-0 z-[10003] flex items-center justify-center bg-black/72 p-4 backdrop-blur-md animate-fade-in"
-                onClick={onClose}
-            >
+            <div className="ui-modal-backdrop" onClick={onClose}>
                 <div
                     onClick={(event) => event.stopPropagation()}
-                    className={`w-full max-w-sm overflow-hidden ${
-                        isGame
-                            ? 'rounded-[2rem] border border-[var(--skin-accent-color)]/30 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,rgba(18,18,22,0.96),rgba(6,6,8,0.98))] shadow-[0_24px_64px_rgba(0,0,0,0.48)]'
-                            : 'rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(18,20,24,0.96),rgba(10,12,16,0.98))] shadow-[0_20px_48px_rgba(0,0,0,0.42)]'
-                    }`}
+                    className={`ui-modal-panel max-w-sm ${isGame ? '' : 'border-white/12'}`}
                 >
-                    <div className="px-5 pb-5 pt-4">
-                        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] shadow-[0_0_18px_rgba(0,0,0,0.25)]">
+                    <div className="ui-modal-panel-content ui-modal-stack">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] shadow-[0_0_18px_rgba(0,0,0,0.25)]">
                             <span className="text-xl">{payload.kind === 'sitrep' ? '◎' : '✓'}</span>
                         </div>
 
-                        <div className="space-y-2 text-center">
-                            <p className={`text-[10px] font-black uppercase tracking-[0.28em] ${isGame ? 'text-[var(--skin-accent-color)]' : 'text-white/58'}`}>
+                        <div className="ui-modal-header">
+                            <p className={`ui-modal-eyebrow ${isGame ? '' : 'text-white/58'}`}>
                                 {copy.eyebrow}
                             </p>
-                            <h2 className={`font-black uppercase tracking-[0.12em] ${isGame ? 'text-xl text-white luxe-title-shadow' : 'text-lg text-white'}`}>
+                            <h2 className={`ui-modal-title ${isGame ? 'luxe-title-shadow' : ''}`}>
                                 {copy.title}
                             </h2>
-                            <p className={`mx-auto max-w-[18rem] text-sm leading-relaxed ${isGame ? 'text-white/80' : 'text-white/72'}`}>
+                            <p className="ui-modal-copy max-w-[18rem]">
                                 {copy.message}
                             </p>
                         </div>
 
                         {payload.kind === 'sitrep' && (typeof payload.score === 'number' || typeof payload.expDeposited === 'number') && (
-                            <div className="mt-4 grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 gap-2">
                                 <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2 text-center">
                                     <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/44">Score</div>
                                     <div className="mt-1 text-lg font-black text-white">
@@ -105,10 +98,10 @@ export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProp
                             </div>
                         )}
 
-                        <div className="mt-5 flex gap-2">
+                        <div className="ui-modal-actions">
                             <button
                                 onClick={onClose}
-                                className={`flex-1 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${
+                                className={`ui-modal-button ${
                                     isGame
                                         ? 'luxe-button-secondary'
                                         : 'border border-white/10 bg-white/6 text-white/84 hover:bg-white/10'
@@ -118,7 +111,7 @@ export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProp
                             </button>
                             <button
                                 onClick={onOpenSitrep}
-                                className={`flex-1 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${
+                                className={`ui-modal-button ${
                                     isGame
                                         ? 'luxe-skin-button'
                                         : 'border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/14 text-white hover:bg-[var(--skin-accent-color)]/20'

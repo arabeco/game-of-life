@@ -1087,10 +1087,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick} style={modalStyle}>
+            <div className="ui-modal-backdrop z-[100]" onClick={handleBackdropClick} style={modalStyle}>
                 <GlassCard
                     variant="neutral"
-                    className="w-full max-w-[22.75rem] m-3 rounded-[28px] flex flex-col max-h-[84vh] h-auto p-0 relative overflow-hidden border-white/12 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
+                    className="ui-modal-panel w-full max-w-[22.75rem] m-0 flex flex-col max-h-[84vh] h-auto p-0 relative overflow-hidden border-white/12 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
                     style={{
                         backgroundImage: [
                             `radial-gradient(circle at 48% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.07) 16%, transparent 40%)`,
@@ -1122,15 +1122,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             )}
                         </div>
                         <div className="flex-1 px-2 text-center">
-                            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/46">{headerEyebrow}</div>
-                            <h2 className="mt-1 text-[1.03rem] font-black tracking-[0.03em] text-[#fff5e8] drop-shadow-[0_1px_8px_rgba(255,240,220,0.16)]">
+                            <div className="ui-modal-eyebrow text-white/54">{headerEyebrow}</div>
+                            <h2 className="ui-modal-title mt-1 text-[#fff5e8] drop-shadow-[0_1px_8px_rgba(255,240,220,0.16)]">
                                 {headerTitle}
                             </h2>
                             <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.22em] text-white/58">
                                 {hasTaskInstanceContext && plannerOccurrenceLabel ?`${plannerOccurrenceLabel} • ${currentArena?.name || 'Arena'}` : (currentArena?.name || 'Arena')}
                             </p>
                         </div>
-                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="px-4 py-2 text-sm font-bold rounded-xl luxe-skin-button shrink-0">
+                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="ui-modal-button luxe-skin-button shrink-0 min-w-[4.5rem]">
                             OK
                         </button>
                     </div>

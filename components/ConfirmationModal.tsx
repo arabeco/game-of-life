@@ -21,17 +21,21 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 }) => {
     return (
         <Portal>
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10002] flex items-center justify-center animate-fade-in" onClick={onCancel}>
-                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                    <h2 className="text-lg font-bold uppercase tracking-wider text-center">{title}</h2>
-                    <p className="text-center text-gray-300">{message}</p>
-                    <div className="flex space-x-2">
-                        <button onClick={onCancel} className="w-full py-2 rounded-xl luxe-button-secondary">
+            <div className="ui-modal-backdrop" onClick={onCancel}>
+                <GlassCard variant="neutral" className="ui-modal-panel max-w-sm p-0" onClick={e => e.stopPropagation()}>
+                    <div className="ui-modal-panel-content ui-modal-stack">
+                        <div className="ui-modal-header">
+                            <h2 className="ui-modal-title">{title}</h2>
+                        </div>
+                        <p className="ui-modal-copy">{message}</p>
+                        <div className="ui-modal-actions">
+                            <button onClick={onCancel} className="ui-modal-button luxe-button-secondary">
                             {cancelLabel}
-                        </button>
-                        <button onClick={onConfirm} className="w-full py-2 rounded-xl luxe-skin-button">
+                            </button>
+                            <button onClick={onConfirm} className="ui-modal-button luxe-skin-button">
                             {confirmLabel}
-                        </button>
+                            </button>
+                        </div>
                     </div>
                 </GlassCard>
             </div>

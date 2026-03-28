@@ -36,6 +36,8 @@ export const ItemsStore: React.FC = () => {
     const [loading, setLoading] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<ItemDef | null>(null);
     const [pendingPurchaseItem, setPendingPurchaseItem] = useState<ItemDef | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<'all' | ItemDef['category']>('all');
 
     const items = useMemo(() => {
         const lowTicketIds = new Set<string>(ACTIVE_GOLD_STORE_ITEM_IDS);
@@ -50,6 +52,40 @@ export const ItemsStore: React.FC = () => {
     }, []);
 
     const ownedItemIds = useMemo(() => new Set(inventory.map((item) => item.id)), [inventory]);
+    const availableCategories = useMemo(() => {
+        const ids = Array.from(new Set(items.map((item) => item.category)));
+        return ids.map((category) => ({
+            id: category,
+            label: STORE_CATEGORY_LABELS[category] || category,
+        }));
+    }, [items]);
+    const filteredItems = useMemo(() => {
+        const normalizedQuery = searchQuery
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .trim();
+
+        return items.filter((item) => {
+            if (selectedCategory !== 'all' && item.category !== selectedCategory) return false;
+            if (!normalizedQuery) return true;
+
+            const haystack = [
+                item.name,
+                item.category,
+                STORE_CATEGORY_LABELS[item.category],
+                item.rarity,
+                `t${item.tier}`,
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase();
+
+            return haystack.includes(normalizedQuery);
+        });
+    }, [items, searchQuery, selectedCategory]);
 
     const handleBuy = async (event: React.MouseEvent<HTMLButtonElement>, item: ItemDef) => {
         event.stopPropagation();
@@ -72,19 +108,55 @@ export const ItemsStore: React.FC = () => {
 
     return (
         <>
-            <div className="space-y-5 animate-fade-in">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h3 className="text-lg font-bold text-white">Itens por Ouro</h3>
-                        <p className="text-sm text-gray-500">Vitrine ampliada com foco em bordas, skins e banners, sem misturar recompensas de patente.</p>
-                    </div>
-                    <div className="px-3 py-1 rounded-full border border-yellow-500/20 bg-yellow-500/10 text-xs font-bold uppercase tracking-[0.2em] text-yellow-300">
-                        10 a 500
-                    </div>
-                </div>
+            <div className="space-y-3 animate-fade-in pb-8">
+                <GlassCard variant="neutral" className="overflow-hidden border-white/10 p-3">
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(event) => setSearchQuery(event.target.value)}
+                                placeholder="Buscar item, raridade ou tipo..."
+                                className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/35 focus:border-[var(--skin-accent-color)]/35"
+                            />
+                            <div className="rounded-full border border-white/10 bg-black/25 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/75">
+                                {filteredItems.length}
+                            </div>
+                        </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                    {items.map((item) => {
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Tipos de item</div>
+                                <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-300">
+                                    10 a 500
+                                </div>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedCategory('all')}
+                                    className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                >
+                                    Todos
+                                </button>
+                                {availableCategories.map((category) => (
+                                    <button
+                                        key={category.id}
+                                        type="button"
+                                        onClick={() => setSelectedCategory(category.id)}
+                                        className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === category.id ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                    >
+                                        {category.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </GlassCard>
+
+                {filteredItems.length > 0 ? (
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    {filteredItems.map((item) => {
                         const alreadyOwns = ownedItemIds.has(item.id);
                         const isBusy = loading === item.id;
 
@@ -144,6 +216,12 @@ export const ItemsStore: React.FC = () => {
                         );
                     })}
                 </div>
+                ) : (
+                    <GlassCard variant="neutral" className="border-dashed border-white/10 px-4 py-12 text-center">
+                        <div className="text-sm font-semibold text-white/80">Nenhum item encontrado.</div>
+                        <div className="mt-1 text-xs text-white/45">Tente mudar a busca ou o filtro.</div>
+                    </GlassCard>
+                )}
             </div>
 
             {selectedItem && (

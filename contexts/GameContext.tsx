@@ -3698,10 +3698,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
             }
 
-            await Promise.all([
-                loadFriendsAndRequests(userId),
-                loadClanJoinRequestsOutgoing(userId)
-            ]);
+            void loadFriendsAndRequests(userId);
+            void loadClanJoinRequestsOutgoing(userId);
 
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);

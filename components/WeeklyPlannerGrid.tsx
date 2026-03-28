@@ -6,6 +6,7 @@ import { EmojiGlyph } from './EmojiGlyph';
 import { useGame } from '../contexts/GameContext';
 import { DropIndicator } from './DropIndicator';
 import { useLongPress } from '../hooks/useLongPress';
+import { CheckCircleIcon } from './Icons';
 import { OPERATIONAL_DAY_END_HOUR, OPERATIONAL_DAY_START_MINUTE, formatLocalDateString, getOperationalDateString, getOperationalDisplayMinutes, getTaskDisplayStartTime, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 
 interface WeeklyPlannerGridProps {
@@ -144,11 +145,17 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
                 className={`relative h-full p-1 flex items-center justify-center text-center overflow-hidden ${isFreeAction ? `free-action-shell free-action-outline rounded-xl ${task.completed ? 'text-slate-200/75' : 'text-slate-100'}` : `border-l-2 border-[var(--bronze)] rounded-r-lg ${task.completed ? 'text-white/80' : 'text-white'}`}`}
                 style={isFreeAction ? undefined : backgroundStyle}
             >
-                <div className={`absolute inset-0 transition-opacity duration-300 ${isFreeAction ? 'bg-black/40' : 'bg-black/50'} ${task.completed ? 'opacity-100' : 'opacity-0'}`}></div>
+                <div className={`absolute inset-0 transition-opacity duration-300 ${task.completed ? 'opacity-100' : 'opacity-0'}`} style={{ background: isFreeAction ? 'linear-gradient(135deg, rgba(110,231,183,0.16), rgba(15,23,42,0.5) 72%)' : 'linear-gradient(135deg, rgba(110,231,183,0.24), rgba(3,7,18,0.62) 74%)' }}></div>
+                <div className={`absolute inset-0 transition-all duration-300 ${task.completed ? 'shadow-[inset_0_0_0_1px_rgba(110,231,183,0.68),0_0_16px_rgba(110,231,183,0.18)]' : ''} ${isFreeAction ? 'rounded-xl' : 'rounded-r-lg'}`}></div>
 
                 <div className="text-xl z-10">
                     <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
                 </div>
+                {task.completed && (
+                    <div className="absolute right-1 top-1 z-20 flex h-4.5 w-4.5 items-center justify-center rounded-full border border-emerald-300/70 bg-emerald-500/18 text-emerald-100 shadow-[0_0_10px_rgba(110,231,183,0.22)]">
+                        <CheckCircleIcon className="h-3 w-3" />
+                    </div>
+                )}
 
                 {isHolding && (
                     <div className={`absolute inset-0 animate-pulse ${isFreeAction ? 'bg-black/35 rounded-xl' : 'bg-black/50 rounded-r-lg'}`}>

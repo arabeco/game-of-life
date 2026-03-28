@@ -710,6 +710,7 @@ export interface GameContextType {
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
+const PROFILE_HYDRATION_WATCHDOG_MS = 18000;
 
 export const GameProvider: React.FC<{ children: ReactNode, session: Session | null }> = ({ children, session }) => {
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
@@ -727,6 +728,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     });
 
     const [isProfileLoaded, setIsProfileLoaded] = useState(false);
+    const profileHydrationWatchdogRef = useRef<number | null>(null);
 
     const isNewUser = useMemo(() => {
         return !userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
@@ -745,6 +747,29 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }));
         }
     }, [session]);
+
+    useEffect(() => {
+        if (isProfileLoaded || !session?.user?.id) {
+            if (profileHydrationWatchdogRef.current) {
+                window.clearTimeout(profileHydrationWatchdogRef.current);
+                profileHydrationWatchdogRef.current = null;
+            }
+            return;
+        }
+
+        profileHydrationWatchdogRef.current = window.setTimeout(() => {
+            console.error('[profile] Hydration watchdog fired. Releasing the app shell with cached/default state.');
+            suspendPersistenceRef.current = false;
+            setIsProfileLoaded(true);
+        }, PROFILE_HYDRATION_WATCHDOG_MS);
+
+        return () => {
+            if (profileHydrationWatchdogRef.current) {
+                window.clearTimeout(profileHydrationWatchdogRef.current);
+                profileHydrationWatchdogRef.current = null;
+            }
+        };
+    }, [isProfileLoaded, session?.user?.id]);
 
     const setArenasViewMode = async (mode: ArenasViewMode) => {
         const nextMode = normalizeArenasViewMode(mode);

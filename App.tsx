@@ -24,6 +24,7 @@ const AuthenticatedApp = React.lazy(() => import('./components/AuthenticatedApp'
 const ResetPasswordOverlay = React.lazy(() => import('./components/AppRuntimeOverlays').then((m) => ({ default: m.ResetPasswordOverlay })));
 const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
 const GOOGLE_OAUTH_RECOVERY_DELAYS_MS = [250, 350, 500, 700, 900, 1200, 1500, 1800, 2200, 2600] as const;
+const APP_BOOT_WATCHDOG_MS = 18000;
 
 const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; theme?: 'LIGHT' | 'DARK' | null }> = ({
     accentColor = '#d4af37',
@@ -492,6 +493,20 @@ const App: React.FC = () => {
             window.removeEventListener('pageshow', handlePageShow);
         };
     }, [isGoldenInviteGateEnabled]);
+
+    useEffect(() => {
+        if (!showFullScreenBoot) return;
+
+        const timer = window.setTimeout(() => {
+            console.error('[boot] Startup watchdog fired after waiting too long. Releasing the loading gate.');
+            clearClosedBetaGoogleAuthPending();
+            setGoogleAuthPending(false);
+            setAuthGuardLoading(false);
+            setLoading(false);
+        }, APP_BOOT_WATCHDOG_MS);
+
+        return () => window.clearTimeout(timer);
+    }, [showFullScreenBoot]);
 
     useLayoutEffect(() => {
         const skin = resolveUiSkinId(bootVisuals.mode === 'BASIC' ? 'default' : bootVisuals.skin);

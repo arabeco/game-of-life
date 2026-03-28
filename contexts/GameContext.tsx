@@ -710,7 +710,6 @@ export interface GameContextType {
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
-const PROFILE_HYDRATION_WATCHDOG_MS = 18000;
 
 export const GameProvider: React.FC<{ children: ReactNode, session: Session | null }> = ({ children, session }) => {
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
@@ -728,7 +727,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     });
 
     const [isProfileLoaded, setIsProfileLoaded] = useState(false);
-    const profileHydrationWatchdogRef = useRef<number | null>(null);
 
     const isNewUser = useMemo(() => {
         return !userProfile.completedSeasonMissions?.includes(PROFILE_FLAG_TUTORIAL_COMPLETED);
@@ -747,29 +745,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }));
         }
     }, [session]);
-
-    useEffect(() => {
-        if (isProfileLoaded || !session?.user?.id) {
-            if (profileHydrationWatchdogRef.current) {
-                window.clearTimeout(profileHydrationWatchdogRef.current);
-                profileHydrationWatchdogRef.current = null;
-            }
-            return;
-        }
-
-        profileHydrationWatchdogRef.current = window.setTimeout(() => {
-            console.error('[profile] Hydration watchdog fired. Releasing the app shell with cached/default state.');
-            suspendPersistenceRef.current = false;
-            setIsProfileLoaded(true);
-        }, PROFILE_HYDRATION_WATCHDOG_MS);
-
-        return () => {
-            if (profileHydrationWatchdogRef.current) {
-                window.clearTimeout(profileHydrationWatchdogRef.current);
-                profileHydrationWatchdogRef.current = null;
-            }
-        };
-    }, [isProfileLoaded, session?.user?.id]);
 
     const setArenasViewMode = async (mode: ArenasViewMode) => {
         const nextMode = normalizeArenasViewMode(mode);
@@ -3614,11 +3589,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
             }
 
-            // Fetch chests independently to ensure they are up to date
-            fetchChestsFromDB(userId).then(chests => {
-                if (chests) setUserProfile(prev => ({ ...prev, chests }));
-            });
-
             if (!profileError && profileData) {
                 const camelProfile = mapToCamelCase(profileData) as UserProfile;
                 const normalizedRole = typeof camelProfile.role === 'string' ?camelProfile.role.toLowerCase() : undefined;
@@ -3698,48 +3668,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
             }
 
-            void loadFriendsAndRequests(userId);
-            void loadClanJoinRequestsOutgoing(userId);
-
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
             const minDate = getLocalDateString(threeMonthsAgo);
 
             const [
-                foldersResult,
                 arenasResult,
                 actionsResult,
                 tasksResult,
                 levelsResult,
-                clanMemberResult,
-                reportsResult,
-                cyclesResult,
-                campaignsResult
+                cyclesResult
             ] = await rateLimiter.batchRequests([
-                () => supabase.from('arena_folders').select('*').eq('user_id', userId),
                 () => supabase.from('arenas').select('*').eq('user_id', userId),
                 () => supabase.from('actions').select('*').eq('user_id', userId),
                 () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate),
                 () => supabase.from('asset_levels').select('*').eq('user_id', userId),
-                () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle(),
-                () => supabase.from('cycles').select('*').eq('user_id', userId).not('report_data', 'is', null).order('end_date', { ascending: false }).limit(100),
                 () => supabase.from('cycles').select('*').eq('user_id', userId).is('report_data', null).limit(1),
-                () => supabase.from('campaigns').select('*').eq('user_id', userId)
             ]) as any[];
 
             let loadedArenas: Arena[] = [];
             let loadedActions: Action[] = [];
             let loadedTasks: ScheduledTask[] = [];
-
-            const { data: foldersData, error: foldersError } = foldersResult;
-            if (!foldersError && foldersData) {
-                setArenaFolders(mapToCamelCase(foldersData) as ArenaFolder[]);
-            }
-
-            const { data: campaignsData, error: campaignsError } = campaignsResult;
-            if (!campaignsError && campaignsData) {
-                setCampaigns(mapToCamelCase(campaignsData) as Campaign[]);
-            }
 
             let camelArenas: Arena[] | null = null;
             const { data: arenasData, error: arenasError } = arenasResult;
@@ -3770,216 +3719,290 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 loadedTasks = tasks;
             }
 
-            try {
-                const mentorshipLinksResult = await supabase
-                    .from('relationship_links')
-                    .select('*')
-                    .eq('link_type', 'mentoria')
-                    .or(`mentor_id.eq.${userId},pupil_id.eq.${userId}`)
-                    .is('ended_at', null);
-
-                if (!mentorshipLinksResult.error && mentorshipLinksResult.data && mentorshipLinksResult.data.length > 0) {
-                    const pupilMentorshipLinkIds = mentorshipLinksResult.data
-                        .filter((row: any) => String(row.pupil_id || '') === userId)
-                        .map((row: any) => String(row.id))
-                        .filter(Boolean);
-                    const mentorMentorshipLinkIds = mentorshipLinksResult.data
-                        .filter((row: any) => String(row.mentor_id || '') === userId)
-                        .map((row: any) => String(row.id))
-                        .filter(Boolean);
-                    const mentorshipLinkIds = [...new Set([...pupilMentorshipLinkIds, ...mentorMentorshipLinkIds])];
-                    const linkedMentorshipArenasResult = await supabase
-                        .from('relationship_link_arenas')
-                        .select('*')
-                        .in('relationship_link_id', mentorshipLinkIds);
-
-                    if (!linkedMentorshipArenasResult.error && linkedMentorshipArenasResult.data && linkedMentorshipArenasResult.data.length > 0) {
-                        const mentorMentorshipArenaIds = new Set(
-                            linkedMentorshipArenasResult.data
-                                .filter((row: any) => mentorMentorshipLinkIds.includes(String(row.relationship_link_id || '')))
-                                .map((row: any) => String(row.arena_id || ''))
-                                .filter(Boolean)
-                        );
-                        if (mentorMentorshipArenaIds.size > 0) {
-                            if (camelArenas) {
-                                camelArenas = camelArenas.filter((arena) => !mentorMentorshipArenaIds.has(arena.id));
-                                loadedArenas = camelArenas;
-                            }
-                            loadedActions = loadedActions.filter((action) => !mentorMentorshipArenaIds.has(action.arenaId));
-                            const keptActionIds = new Set(loadedActions.map((action) => action.id));
-                            loadedTasks = loadedTasks.filter((task) => keptActionIds.has(task.actionId));
-                        }
-
-                        const pupilLinkedRows = linkedMentorshipArenasResult.data.filter((row: any) =>
-                            pupilMentorshipLinkIds.includes(String(row.relationship_link_id || ''))
-                        );
-                        const linkedArenaIds = [...new Set(pupilLinkedRows.map((row: any) => String(row.arena_id || '')).filter(Boolean))];
-
-                        if (linkedArenaIds.length > 0) {
-                            const [mentorshipArenasResult, mentorshipActionsResult] = await Promise.all([
-                                supabase.from('arenas').select('*').in('id', linkedArenaIds),
-                                supabase.from('actions').select('*').in('arena_id', linkedArenaIds),
-                            ]);
-
-                            const mentorshipActions = !mentorshipActionsResult.error && mentorshipActionsResult.data
-                                ? mentorshipActionsResult.data.map(normalizeActionFromDbRow)
-                                : [];
-                            const mentorshipActionIds = mentorshipActions.map((action) => action.id);
-
-                            let mentorshipTasks: ScheduledTask[] = [];
-                            if (mentorshipActionIds.length > 0) {
-                                const mentorshipTasksResult = await supabase
-                                    .from('scheduled_tasks')
-                                    .select('*')
-                                    .in('action_id', mentorshipActionIds);
-
-                                if (!mentorshipTasksResult.error && mentorshipTasksResult.data) {
-                                    mentorshipTasks = (mapToCamelCase(mentorshipTasksResult.data) as ScheduledTask[]).filter((task) => {
-                                        const taskOwnerId = String((task as any).userId || '');
-                                        return !taskOwnerId || taskOwnerId === userId;
-                                    });
-                                }
-                            }
-
-                            if (!mentorshipArenasResult.error && mentorshipArenasResult.data) {
-                                const mentorshipArenaActionsById = new Map<string, Action[]>();
-                                mentorshipActions.forEach((action) => {
-                                    const nextActions = mentorshipArenaActionsById.get(action.arenaId) || [];
-                                    nextActions.push(action);
-                                    mentorshipArenaActionsById.set(action.arenaId, nextActions);
-                                });
-
-                                const mergedArenaMap = new Map((camelArenas || []).map((arena) => [arena.id, arena] as const));
-                                mentorshipArenasResult.data.forEach((row: any) => {
-                                    const mappedArena = mapToCamelCase(row) as Arena;
-                                    const arenaActions = mentorshipArenaActionsById.get(String(mappedArena.id)) || [];
-                                    mergedArenaMap.set(String(mappedArena.id), {
-                                        ...mappedArena,
-                                        actionIds: arenaActions.map((action) => action.id),
-                                        isArchived: mappedArena.isArchived ?? false,
-                                    });
-                                });
-
-                                camelArenas = Array.from(mergedArenaMap.values());
-                                loadedArenas = camelArenas;
-
-                                const mergedActionMap = new Map(loadedActions.map((action) => [action.id, action] as const));
-                                mentorshipActions.forEach((action) => {
-                                    mergedActionMap.set(action.id, action);
-                                });
-                                loadedActions = Array.from(mergedActionMap.values());
-
-                                const mergedTaskMap = new Map(loadedTasks.map((task) => [task.id, task] as const));
-                                mentorshipTasks.forEach((task) => {
-                                    mergedTaskMap.set(task.id, task);
-                                });
-                                loadedTasks = Array.from(mergedTaskMap.values());
-
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to hydrate mentorship arenas into the operational state:', error);
-            }
-
-            setActions(loadedActions);
-            setTasks(loadedTasks);
-
             const { data: levelsData, error: levelsError } = levelsResult;
 
-            if ((!arenasError && arenasData) || (!levelsError && levelsData)) {
-                setAssets(() => {
-                    let nextAssets = createDefaultAssets(true);
-                    if (camelArenas) {
-                        nextAssets = nextAssets.map(asset => ({
-                            ...asset,
-                            arenas: camelArenas.filter(a => a.assetId === asset.id)
-                        }));
-                    }
-                    if (!levelsError && levelsData) {
-                        nextAssets = nextAssets.map(asset => {
-                            const dbLevel = levelsData.find(l => l.asset_id === asset.id);
-                            if (dbLevel) {
-                                return { ...asset, level: dbLevel.level };
-                            }
-                            return asset;
-                        });
-                    }
-                    return nextAssets;
-                });
-            }
+            const applyOperationalState = (
+                nextArenas: Arena[] | null,
+                nextActions: Action[],
+                nextTasks: ScheduledTask[],
+            ) => {
+                setActions(nextActions);
+                setTasks(nextTasks);
 
-            const { data: clanMemberData, error: clanMemberError } = clanMemberResult;
-
-            if (clanMemberError) {
-                console.error('Error fetching clan membership:', clanMemberError.message);
-                if (clanMemberError.code === 'PGRST116') {
-                    setClan(null);
-                    setEnrichedClanMembers([]);
-                    setClanJoinRequestsIncoming([]);
-                }
-            } else if (!clanMemberData) {
-                setClan(null);
-                setEnrichedClanMembers([]);
-                setClanJoinRequestsIncoming([]);
-            } else {
-                if (!clan || clan.id !== clanMemberData.clan_id) {
-                    loadClanAndMembers(clanMemberData.clan_id, true);
-                }
-            }
-
-            const { data: reportsData, error: reportsError } = reportsResult;
-            if (!reportsError && reportsData) {
-                // Map cycles with report_data to Report objects
-                const nextReports = reportsData.map((row: any) => {
-                    if (row.report_data) {
-                        const report = mapToCamelCase(row.report_data) as Report;
-                        if (!report.cycleId) {
-                            report.cycleId = row.id;
+                if ((!arenasError && arenasData) || (!levelsError && levelsData)) {
+                    setAssets(() => {
+                        let nextAssets = createDefaultAssets(true);
+                        if (nextArenas) {
+                            nextAssets = nextAssets.map(asset => ({
+                                ...asset,
+                                arenas: nextArenas.filter(a => a.assetId === asset.id)
+                            }));
                         }
-                        return report;
-                    }
-                    return null;
-                }).filter(Boolean) as Report[];
-
-                if (nextReports.length > 0) {
-                    const { reports: recalculatedReports, changedReportIds } = hydrateReportsWithFairScore(nextReports);
-                    setReports(recalculatedReports);
-                    if (changedReportIds.length > 0) {
-                        void persistFairScoreReports(recalculatedReports.filter((report) => changedReportIds.includes(report.id)));
-                    }
-                } else {
-                    setReports(prev => (prev.length > 0 ?prev : []));
+                        if (!levelsError && levelsData) {
+                            nextAssets = nextAssets.map(asset => {
+                                const dbLevel = levelsData.find(l => l.asset_id === asset.id);
+                                if (dbLevel) {
+                                    return { ...asset, level: dbLevel.level };
+                                }
+                                return asset;
+                            });
+                        }
+                        return nextAssets;
+                    });
                 }
-            }
+
+                if (nextActions.length > 0 && nextArenas && nextArenas.length > 0) {
+                    const validArenaIds = new Set(nextArenas.map(a => a.id));
+                    const actionsById = new Map(nextActions.map(action => [action.id, action] as const));
+                    const cleanedTasks = nextTasks.filter(task => {
+                        const action = actionsById.get(task.actionId);
+                        if (!action) return false;
+                        if (!validArenaIds.has(action.arenaId)) return false;
+                        return true;
+                    });
+
+                    if (cleanedTasks.length !== nextTasks.length) {
+                        console.log(`Cleaned up ${nextTasks.length - cleanedTasks.length} orphan tasks.`);
+                        setTasks(cleanedTasks);
+                    }
+                }
+            };
+
+            applyOperationalState(camelArenas, loadedActions, loadedTasks);
 
             const { data: cyclesData, error: cyclesError } = cyclesResult;
             if (!cyclesError && cyclesData && cyclesData.length > 0) {
                 const currentCycle = mapToCamelCase(cyclesData[0]) as Cycle;
                 setActiveCycle(currentCycle);
+                void (async () => {
+                    try {
+                        const { data: sitreps } = await supabase
+                            .from('sitrep_reports')
+                            .select('score, completed_tasks_count, total_tasks_count')
+                            .eq('cycle_id', currentCycle.id);
+
+                        if (!sitreps) return;
+
+                        const totalCompleted = sitreps.reduce((acc, r) => acc + (r.completed_tasks_count || 0), 0);
+                        const totalTasks = sitreps.reduce((acc, r) => acc + (r.total_tasks_count || 0), 0);
+                        const progress = totalTasks > 0 ?Math.round((totalCompleted / totalTasks) * 100) : 0;
+                        setCycleProgress(progress);
+
+                        const endDate = new Date(currentCycle.endDate);
+                        const now = new Date();
+                        if (now >= endDate && !currentCycle.isFinished) {
+                            console.log('Cycle end date reached. Auto-finishing cycle...');
+                            setTimeout(() => {
+                                void 0;
+                            }, 2000);
+                        }
+
+                        const totalExpBonus = sitreps.reduce((sum, r) => {
+                            const bonus = r.score >= 95 ?120 : r.score >= 85 ?60 : 0;
+                            return sum + bonus;
+                        }, 0);
+                        setCycleExpBonus(totalExpBonus);
+                    } catch (error) {
+                        console.error('Failed to hydrate cycle sitrep summary:', error);
+                    }
+                })();
+            } else if (!cyclesError) {
+                setActiveCycle(null);
+                setCycleProgress(0);
+                setCycleExpBonus(0);
             }
 
-            // --- CLEANUP ORPHAN TASKS ---
-            // Remove scheduled tasks that reference deleted arenas
-            // This runs once on load to sanitize local state from legacy data
-            if (loadedActions.length > 0 && loadedArenas.length > 0) {
-                const validArenaIds = new Set(loadedArenas.map(a => a.id));
-                const validActionIds = new Set(loadedActions.map(a => a.id));
+            void (async () => {
+                fetchChestsFromDB(userId)
+                    .then(chests => {
+                        if (chests) setUserProfile(prev => ({ ...prev, chests }));
+                    })
+                    .catch(error => {
+                        console.error('Failed to hydrate chests during deferred boot:', error);
+                    });
 
-                // Filter out tasks for actions that no longer exist OR belong to deleted arenas
-                const cleanedTasks = loadedTasks.filter(task => {
-                    const action = loadedActions.find(a => a.id === task.actionId);
-                    if (!action) return false; // Action deleted
-                    if (!validArenaIds.has(action.arenaId)) return false; // Arena deleted
-                    return true;
-                });
+                void loadFriendsAndRequests(userId);
+                void loadClanJoinRequestsOutgoing(userId);
 
-                if (cleanedTasks.length !== loadedTasks.length) {
-                    console.log(`Cleaned up ${loadedTasks.length - cleanedTasks.length} orphan tasks.`);
-                    setTasks(cleanedTasks);
+                const [
+                    clanMemberResult,
+                    foldersResult,
+                    reportsResult,
+                    campaignsResult,
+                ] = await rateLimiter.batchRequests([
+                    () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle(),
+                    () => supabase.from('arena_folders').select('*').eq('user_id', userId),
+                    () => supabase.from('cycles').select('*').eq('user_id', userId).not('report_data', 'is', null).order('end_date', { ascending: false }).limit(100),
+                    () => supabase.from('campaigns').select('*').eq('user_id', userId),
+                ]) as any[];
+
+                const { data: clanMemberData, error: clanMemberError } = clanMemberResult;
+                if (clanMemberError) {
+                    console.error('Error fetching clan membership:', clanMemberError.message);
+                    if (clanMemberError.code === 'PGRST116') {
+                        setClan(null);
+                        setEnrichedClanMembers([]);
+                        setClanJoinRequestsIncoming([]);
+                    }
+                } else if (!clanMemberData) {
+                    setClan(null);
+                    setEnrichedClanMembers([]);
+                    setClanJoinRequestsIncoming([]);
                 }
-            }
+
+                const { data: foldersData, error: foldersError } = foldersResult;
+                if (!foldersError && foldersData) {
+                    setArenaFolders(mapToCamelCase(foldersData) as ArenaFolder[]);
+                }
+
+                const { data: campaignsData, error: campaignsError } = campaignsResult;
+                if (!campaignsError && campaignsData) {
+                    setCampaigns(mapToCamelCase(campaignsData) as Campaign[]);
+                }
+
+                const { data: reportsData, error: reportsError } = reportsResult;
+                if (!reportsError && reportsData) {
+                    const nextReports = reportsData.map((row: any) => {
+                        if (row.report_data) {
+                            const report = mapToCamelCase(row.report_data) as Report;
+                            if (!report.cycleId) {
+                                report.cycleId = row.id;
+                            }
+                            return report;
+                        }
+                        return null;
+                    }).filter(Boolean) as Report[];
+
+                    if (nextReports.length > 0) {
+                        const { reports: recalculatedReports, changedReportIds } = hydrateReportsWithFairScore(nextReports);
+                        setReports(recalculatedReports);
+                        if (changedReportIds.length > 0) {
+                            void persistFairScoreReports(recalculatedReports.filter((report) => changedReportIds.includes(report.id)));
+                        }
+                    } else {
+                        setReports(prev => (prev.length > 0 ?prev : []));
+                    }
+                }
+
+                if (clanMemberData && (!clan || clan.id !== clanMemberData.clan_id)) {
+                    void loadClanAndMembers(clanMemberData.clan_id, true);
+                }
+
+                try {
+                    let deferredArenas = camelArenas ? [...camelArenas] : null;
+                    let deferredActions = [...loadedActions];
+                    let deferredTasks = [...loadedTasks];
+                    const mentorshipLinksResult = await supabase
+                        .from('relationship_links')
+                        .select('*')
+                        .eq('link_type', 'mentoria')
+                        .or(`mentor_id.eq.${userId},pupil_id.eq.${userId}`)
+                        .is('ended_at', null);
+
+                    if (!mentorshipLinksResult.error && mentorshipLinksResult.data && mentorshipLinksResult.data.length > 0) {
+                        const pupilMentorshipLinkIds = mentorshipLinksResult.data
+                            .filter((row: any) => String(row.pupil_id || '') === userId)
+                            .map((row: any) => String(row.id))
+                            .filter(Boolean);
+                        const mentorMentorshipLinkIds = mentorshipLinksResult.data
+                            .filter((row: any) => String(row.mentor_id || '') === userId)
+                            .map((row: any) => String(row.id))
+                            .filter(Boolean);
+                        const mentorshipLinkIds = [...new Set([...pupilMentorshipLinkIds, ...mentorMentorshipLinkIds])];
+                        const linkedMentorshipArenasResult = await supabase
+                            .from('relationship_link_arenas')
+                            .select('*')
+                            .in('relationship_link_id', mentorshipLinkIds);
+
+                        if (!linkedMentorshipArenasResult.error && linkedMentorshipArenasResult.data && linkedMentorshipArenasResult.data.length > 0) {
+                            const mentorMentorshipArenaIds = new Set(
+                                linkedMentorshipArenasResult.data
+                                    .filter((row: any) => mentorMentorshipLinkIds.includes(String(row.relationship_link_id || '')))
+                                    .map((row: any) => String(row.arena_id || ''))
+                                    .filter(Boolean)
+                            );
+                            if (mentorMentorshipArenaIds.size > 0) {
+                                if (deferredArenas) {
+                                    deferredArenas = deferredArenas.filter((arena) => !mentorMentorshipArenaIds.has(arena.id));
+                                }
+                                deferredActions = deferredActions.filter((action) => !mentorMentorshipArenaIds.has(action.arenaId));
+                                const keptActionIds = new Set(deferredActions.map((action) => action.id));
+                                deferredTasks = deferredTasks.filter((task) => keptActionIds.has(task.actionId));
+                            }
+
+                            const pupilLinkedRows = linkedMentorshipArenasResult.data.filter((row: any) =>
+                                pupilMentorshipLinkIds.includes(String(row.relationship_link_id || ''))
+                            );
+                            const linkedArenaIds = [...new Set(pupilLinkedRows.map((row: any) => String(row.arena_id || '')).filter(Boolean))];
+
+                            if (linkedArenaIds.length > 0) {
+                                const [mentorshipArenasResult, mentorshipActionsResult] = await Promise.all([
+                                    supabase.from('arenas').select('*').in('id', linkedArenaIds),
+                                    supabase.from('actions').select('*').in('arena_id', linkedArenaIds),
+                                ]);
+
+                                const mentorshipActions = !mentorshipActionsResult.error && mentorshipActionsResult.data
+                                    ? mentorshipActionsResult.data.map(normalizeActionFromDbRow)
+                                    : [];
+                                const mentorshipActionIds = mentorshipActions.map((action) => action.id);
+
+                                let mentorshipTasks: ScheduledTask[] = [];
+                                if (mentorshipActionIds.length > 0) {
+                                    const mentorshipTasksResult = await supabase
+                                        .from('scheduled_tasks')
+                                        .select('*')
+                                        .in('action_id', mentorshipActionIds);
+
+                                    if (!mentorshipTasksResult.error && mentorshipTasksResult.data) {
+                                        mentorshipTasks = (mapToCamelCase(mentorshipTasksResult.data) as ScheduledTask[]).filter((task) => {
+                                            const taskOwnerId = String((task as any).userId || '');
+                                            return !taskOwnerId || taskOwnerId === userId;
+                                        });
+                                    }
+                                }
+
+                                if (!mentorshipArenasResult.error && mentorshipArenasResult.data) {
+                                    const mentorshipArenaActionsById = new Map<string, Action[]>();
+                                    mentorshipActions.forEach((action) => {
+                                        const nextActions = mentorshipArenaActionsById.get(action.arenaId) || [];
+                                        nextActions.push(action);
+                                        mentorshipArenaActionsById.set(action.arenaId, nextActions);
+                                    });
+
+                                    const mergedArenaMap = new Map((deferredArenas || []).map((arena) => [arena.id, arena] as const));
+                                    mentorshipArenasResult.data.forEach((row: any) => {
+                                        const mappedArena = mapToCamelCase(row) as Arena;
+                                        const arenaActions = mentorshipArenaActionsById.get(String(mappedArena.id)) || [];
+                                        mergedArenaMap.set(String(mappedArena.id), {
+                                            ...mappedArena,
+                                            actionIds: arenaActions.map((action) => action.id),
+                                            isArchived: mappedArena.isArchived ?? false,
+                                        });
+                                    });
+
+                                    deferredArenas = Array.from(mergedArenaMap.values());
+
+                                    const mergedActionMap = new Map(deferredActions.map((action) => [action.id, action] as const));
+                                    mentorshipActions.forEach((action) => {
+                                        mergedActionMap.set(action.id, action);
+                                    });
+                                    deferredActions = Array.from(mergedActionMap.values());
+
+                                    const mergedTaskMap = new Map(deferredTasks.map((task) => [task.id, task] as const));
+                                    mentorshipTasks.forEach((task) => {
+                                        mergedTaskMap.set(task.id, task);
+                                    });
+                                    deferredTasks = Array.from(mergedTaskMap.values());
+                                }
+                            }
+                        }
+                    }
+
+                    applyOperationalState(deferredArenas, deferredActions, deferredTasks);
+                } catch (error) {
+                    console.error('Failed to hydrate mentorship arenas into the operational state:', error);
+                }
+            })();
         };
 
 
@@ -3998,6 +4021,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     return;
                 }
                 await loadDataFromSupabase();
+                hydrated = true;
+                return;
 
                 // Use the actual cycle from state (it will be updated after loadDataFromSupabase finishes)
                 // Since loadDataFromSupabase calls setActiveCycle, we can't just read state here.

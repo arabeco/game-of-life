@@ -73,16 +73,6 @@ const getDefaultView = (canUseAssetsView: boolean, isBuilderMode: boolean): View
     return 'assets';
 };
 
-const getBootInitialView = (
-    defaultRestScreenOpen: boolean,
-    canUseAssetsView: boolean,
-    isBuilderMode: boolean,
-): View => {
-    if (isBuilderMode) return 'arenas';
-    if (defaultRestScreenOpen) return 'assets';
-    return getDefaultView(canUseAssetsView, isBuilderMode);
-};
-
 const sanitizeView = (view: View | null | undefined, canUseAssetsView: boolean, isBuilderMode: boolean): View => {
     const availableViews = getAvailableViews(canUseAssetsView, isBuilderMode);
     if (view && availableViews.includes(view)) return view;
@@ -162,9 +152,11 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const effectiveUiSkin = resolveUiSkinId(activeUIMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC'));
     const canUseAssetsView = !isBuilderMode;
     const availableViews = useMemo(() => getAvailableViews(canUseAssetsView, isBuilderMode), [canUseAssetsView, isBuilderMode]);
-    const bootInitialViewRef = useRef<View>(getBootInitialView(defaultRestScreenOpen, canUseAssetsView, isBuilderMode));
-    const [currentView, setCurrentView] = useState<View>(() => bootInitialViewRef.current);
-    const [hasInitialRestScreenReleased, setHasInitialRestScreenReleased] = useState(() => !defaultRestScreenOpen);
+    const [currentView, setCurrentView] = useState<View>(() => {
+        if (isBuilderMode) return 'arenas';
+        return defaultRestScreenOpen ? 'planner' : getDefaultView(canUseAssetsView, isBuilderMode);
+    });
+    const [isRestScreenVisible, setRestScreenVisible] = useState(defaultRestScreenOpen);
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
     const [dailyCompletionPrompt, setDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
@@ -174,17 +166,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     useEffect(() => {
         void updateInstalledAppBadge(unreadNotificationsCount);
     }, [unreadNotificationsCount]);
-
-    useEffect(() => {
-        if (!defaultRestScreenOpen || hasInitialRestScreenReleased || !canUseAssetsView || isBuilderMode) return;
-
-        const preloadAssetsView = () => {
-            void import('../views/AssetsView');
-        };
-
-        const timeoutId = window.setTimeout(preloadAssetsView, 260);
-        return () => window.clearTimeout(timeoutId);
-    }, [defaultRestScreenOpen, hasInitialRestScreenReleased, canUseAssetsView, isBuilderMode]);
 
     useEffect(() => {
         const handleNavigateToStore = (event: Event) => {
@@ -424,9 +405,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
     useEffect(() => {
         const state = window.history.state as { view?: View } | null;
-        const initialView = defaultRestScreenOpen
-            ? sanitizeView(bootInitialViewRef.current, canUseAssetsView, isBuilderMode)
-            : sanitizeView(state?.view ?? bootInitialViewRef.current, canUseAssetsView, isBuilderMode);
+        const initialView = sanitizeView(state?.view ?? currentView, canUseAssetsView, isBuilderMode);
         if (initialView !== currentView) {
             setCurrentView(initialView);
         }
@@ -504,8 +483,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [handleSetView]);
 
     const renderView = () => {
-        if (defaultRestScreenOpen && !hasInitialRestScreenReleased) {
-            return <div className="h-full w-full" aria-hidden="true" />;
+        if (defaultRestScreenOpen && isRestScreenVisible) {
+            return <div className="h-full w-full" />;
         }
 
         const viewContent = (() => {
@@ -647,7 +626,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 onProfileClick={() => setProfileVisible(true)}
                 topOffsetPx={isBuilderMode ?44 : 0}
                 defaultRestScreenOpen={defaultRestScreenOpen}
-                onInitialRestScreenDismissed={() => setHasInitialRestScreenReleased(true)}
+                onRestScreenVisibilityChange={setRestScreenVisible}
             />
             <TutorialBridge />
             <GlobalSeasonTransitionGate enabled={allowSeasonTransition} />
@@ -705,7 +684,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     );
 };
 
-const MainApp: React.FC = () => {
+const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const {
         achievementUnlocked,
         setAchievementUnlocked,
@@ -1001,6 +980,11 @@ const MainApp: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        if (!isProfileLoaded) return;
+        onReady?.();
+    }, [isProfileLoaded, onReady]);
+
+    useEffect(() => {
         if (!toast.visible) return;
         const signature = `${toast.type || 'info'}:${toast.message}`;
         if (lastToastSignatureRef.current === signature) return;
@@ -1118,11 +1102,11 @@ const MainApp: React.FC = () => {
     );
 };
 
-const AuthenticatedApp: React.FC<{ session: Session }> = ({ session }) => (
+const AuthenticatedApp: React.FC<{ session: Session; onReady?: () => void }> = ({ session, onReady }) => (
     <GameProvider session={session}>
         <CodexBuilderProvider>
             <TutorialProvider>
-                <MainApp />
+                <MainApp onReady={onReady} />
             </TutorialProvider>
         </CodexBuilderProvider>
     </GameProvider>

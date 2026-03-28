@@ -9,8 +9,7 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoading }) => {
     const videoSrc = '/videos/intro.mp4';
-    const splashFadeStart = 3200;
-    const splashMaxDuration = 3600;
+    const splashMaxDuration = 5200;
     const [progress, setProgress] = useState(0);
     const [videoEnded, setVideoEnded] = useState(false);
     const [maxTimeReached, setMaxTimeReached] = useState(false);
@@ -37,25 +36,20 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoadin
     }, [isLoading, videoEnded, maxTimeReached]);
 
     useEffect(() => {
-        const fadeTimer = window.setTimeout(() => {
-            setProgress(100);
-            setIsFadingOut(true);
-        }, splashFadeStart);
         const timer = window.setTimeout(() => {
             setMaxTimeReached(true);
         }, splashMaxDuration);
 
         return () => {
-            window.clearTimeout(fadeTimer);
             window.clearTimeout(timer);
         };
-    }, []);
+    }, [splashMaxDuration]);
 
     useEffect(() => {
-        if (!videoEnded && !maxTimeReached) return;
+        if (!maxTimeReached && (!videoEnded || isLoading)) return;
         setProgress(100);
         setIsFadingOut(true);
-    }, [videoEnded, maxTimeReached]);
+    }, [isLoading, videoEnded, maxTimeReached]);
 
     useEffect(() => {
         if (!isFadingOut) return;
@@ -82,7 +76,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete, isLoadin
                         duration={1500}
                         maxDuration={splashMaxDuration}
                         playbackRate={1.0}
-                        preload="metadata"
+                        preload="auto"
                     />
                 </div>
 

@@ -19,17 +19,11 @@ const MoodModal = React.lazy(() => import('./MoodModal').then(m => ({ default: m
 const OracleFeed = React.lazy(() => import('./OracleFeed').then(m => ({ default: m.OracleFeed })));
 const ClanDetailModal = React.lazy(() => import('./ClanDetailModal').then(m => ({ default: m.ClanDetailModal })));
 const RestScreen = React.lazy(() => import('./RestScreen').then(m => ({ default: m.RestScreen })));
-
-export const GlobalHeader: React.FC<{
-    onProfileClick: () => void;
-    topOffsetPx?: number;
-    defaultRestScreenOpen?: boolean;
-    onInitialRestScreenDismissed?: () => void;
-}> = ({
+export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number; defaultRestScreenOpen?: boolean; onRestScreenVisibilityChange?: (isOpen: boolean) => void }> = ({
     onProfileClick,
     topOffsetPx = 0,
     defaultRestScreenOpen = true,
-    onInitialRestScreenDismissed,
+    onRestScreenVisibilityChange,
 }) => {
     const { userProfile, oracleMessages, notifications, appMode, clan, oraclePreferences } = useGame();
     const userId = userProfile?.id || '';
@@ -41,7 +35,6 @@ export const GlobalHeader: React.FC<{
     const [isRestScreenOpen, setRestScreenOpen] = useState(defaultRestScreenOpen);
     const [restScreenActionSession, setRestScreenActionSession] = useState<RestScreenActionSessionDetail | null>(null);
     const hiddenAtRef = useRef<number | null>(null);
-    const initialRestScreenDismissedRef = useRef(!defaultRestScreenOpen);
     const isBasicMode = appMode === 'BASIC';
     
     const visibleNotifications = getVisibleNotificationsForProfile(
@@ -83,9 +76,16 @@ export const GlobalHeader: React.FC<{
     }, []);
 
     useEffect(() => {
-        if (!defaultRestScreenOpen) {
-            setRestScreenOpen(false);
-        }
+        setRestScreenOpen(defaultRestScreenOpen);
+    }, [defaultRestScreenOpen]);
+
+    useEffect(() => {
+        onRestScreenVisibilityChange?.(isRestScreenOpen);
+    }, [isRestScreenOpen, onRestScreenVisibilityChange]);
+
+    useEffect(() => {
+        if (!defaultRestScreenOpen) return;
+        void import('./RestScreen');
     }, [defaultRestScreenOpen]);
 
     useEffect(() => {
@@ -356,10 +356,6 @@ export const GlobalHeader: React.FC<{
                     <RestScreen 
                         onClose={() => {
                             setRestScreenOpen(false);
-                            if (!initialRestScreenDismissedRef.current) {
-                                initialRestScreenDismissedRef.current = true;
-                                onInitialRestScreenDismissed?.();
-                            }
                         }} 
                         onOpenMood={() => setMoodModalOpen(true)}
                         onOpenOracle={() => setOracleOpen(true)}

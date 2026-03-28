@@ -24,7 +24,6 @@ const AuthenticatedApp = React.lazy(() => import('./components/AuthenticatedApp'
 const ResetPasswordOverlay = React.lazy(() => import('./components/AppRuntimeOverlays').then((m) => ({ default: m.ResetPasswordOverlay })));
 const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
 const GOOGLE_OAUTH_RECOVERY_DELAYS_MS = [250, 350, 500, 700, 900, 1200, 1500, 1800, 2200, 2600] as const;
-const APP_BOOT_WATCHDOG_MS = 18000;
 
 const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; theme?: 'LIGHT' | 'DARK' | null }> = ({
     accentColor = '#d4af37',
@@ -67,7 +66,8 @@ const App: React.FC = () => {
     const [authGuardLoading, setAuthGuardLoading] = useState(false);
     const [googleAuthPending, setGoogleAuthPending] = useState(() => hasClosedBetaGoogleAuthPending());
     const [showResetPassword, setShowResetPassword] = useState(false);
-    const [isSplashComplete, setIsSplashComplete] = useState(() => sessionStorage.getItem('hasSeenSplash') === 'true');
+    const [isSplashComplete, setIsSplashComplete] = useState(false);
+    const [isAppContentReady, setIsAppContentReady] = useState(false);
     const authResolutionRef = useRef(0);
     const sessionRef = useRef<Session | null>(null);
     const sessionRecoveryInFlightRef = useRef<Promise<Session | null> | null>(null);
@@ -83,13 +83,16 @@ const App: React.FC = () => {
     const showFullScreenBoot = loading || googleAuthPending || (!session && authGuardLoading);
 
     const handleSplashComplete = () => {
-        sessionStorage.setItem('hasSeenSplash', 'true');
         setIsSplashComplete(true);
     };
 
     useEffect(() => {
         sessionRef.current = session;
     }, [session]);
+
+    useEffect(() => {
+        setIsAppContentReady(false);
+    }, [session?.user?.id]);
 
     useEffect(() => {
         startInstallPromptCapture();
@@ -494,20 +497,6 @@ const App: React.FC = () => {
         };
     }, [isGoldenInviteGateEnabled]);
 
-    useEffect(() => {
-        if (!showFullScreenBoot) return;
-
-        const timer = window.setTimeout(() => {
-            console.error('[boot] Startup watchdog fired after waiting too long. Releasing the loading gate.');
-            clearClosedBetaGoogleAuthPending();
-            setGoogleAuthPending(false);
-            setAuthGuardLoading(false);
-            setLoading(false);
-        }, APP_BOOT_WATCHDOG_MS);
-
-        return () => window.clearTimeout(timer);
-    }, [showFullScreenBoot]);
-
     useLayoutEffect(() => {
         const skin = resolveUiSkinId(bootVisuals.mode === 'BASIC' ? 'default' : bootVisuals.skin);
         document.body.setAttribute('data-skin', skin);
@@ -567,7 +556,7 @@ const App: React.FC = () => {
                         <AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />
                     ) : (
                         <Suspense fallback={<AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />}>
-                            {session ? <AuthenticatedApp session={session} /> : <LoginView />}
+                            {session ? <AuthenticatedApp session={session} onReady={() => setIsAppContentReady(true)} /> : <LoginView />}
                         </Suspense>
                     )}
                     {showResetPassword && (
@@ -588,7 +577,7 @@ const App: React.FC = () => {
                 </div>
             )}
             {!isSplashComplete && renderMode !== 'legacy' && (
-                <SplashScreen onComplete={handleSplashComplete} isLoading={showFullScreenBoot} />
+                <SplashScreen onComplete={handleSplashComplete} isLoading={showFullScreenBoot || (Boolean(session) && !isAppContentReady)} />
             )}
         </>
     );

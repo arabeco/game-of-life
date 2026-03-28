@@ -412,10 +412,10 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             : '';
     const baseClasses = `arena-plate rounded-lg border-[0.75px] flex flex-col relative overflow-hidden transition-all duration-300 select-none ${isCompactThumbnail ? 'justify-start px-[0.28rem] pt-[0.08rem] pb-[0.1rem]' : 'justify-between px-1 py-[0.34rem]'} ${highlightClass}`;
     const styleClasses = isOverview 
-        ? 'h-[5.1rem] w-full' 
-        : variant === 'dossier' ? 'h-full w-full' : 'h-[5.5rem]';
+        ? 'h-[4.75rem] w-full' 
+        : variant === 'dossier' ? 'h-full w-full' : 'h-[4.95rem]';
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
-    const compactHeight = isOverview ? '5.1rem' : variant === 'compact' ? '5rem' : undefined;
+    const compactHeight = isOverview ? '4.75rem' : variant === 'compact' ? '4.95rem' : undefined;
     const cardStyle: React.CSSProperties = {
         borderColor: skinColor,
         backgroundImage: [
@@ -464,9 +464,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         <div className="arena-thumb-link-space left-auto right-[0.04rem] top-[0.02rem] z-[3]">
                             {renderRelationshipBadge()}
                         </div>
-                        <div className="relative h-[1.72rem] w-full">
+                        <div className="relative h-[1.58rem] w-full">
                             <span
-                                className="absolute -left-[0.34rem] top-[0.1rem] z-[3] inline-flex h-[1.26rem] w-[1.26rem] items-center justify-center rounded-full border shadow-[0_6px_14px_rgba(0,0,0,0.24)]"
+                                className="absolute -left-[0.3rem] top-[0.08rem] z-[3] inline-flex h-[1.14rem] w-[1.14rem] items-center justify-center rounded-full border shadow-[0_6px_14px_rgba(0,0,0,0.24)]"
                                 style={{
                                     borderColor: skinColor,
                                     background: `linear-gradient(160deg, ${rgbaString(accentColor, 0.52)} 0%, ${rgbaString(accentColor, 0.24)} 100%)`,
@@ -476,7 +476,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                     {getIcon()}
                                 </span>
                             </span>
-                            <div className="ml-[0.44rem] flex h-[1.7rem] w-[calc(100%-0.44rem)] items-center justify-center overflow-hidden rounded-[0.58rem] bg-black/30 px-[0.16rem] py-[0.05rem]">
+                            <div className="ml-[0.38rem] flex h-[1.56rem] w-[calc(100%-0.38rem)] items-center justify-center overflow-hidden rounded-[0.58rem] bg-black/30 px-[0.16rem] py-[0.04rem]">
                                 <div className="flex h-full w-full items-center justify-center overflow-hidden py-[0.08rem]">
                                     <h3 className={`arena-title arena-title-text w-full break-normal [overflow-wrap:normal] text-white luxe-title-shadow text-center leading-[0.88] tracking-[0.03em] line-clamp-2 ${arena.name.length > 18 ? 'text-[5.1px]' : arena.name.length > 14 ? 'text-[5.35px]' : arena.name.length > 10 ? 'text-[5.7px]' : arena.name.length > 8 ? 'text-[6px]' : 'text-[6.2px]'}`}>{arena.name}</h3>
                                 </div>
@@ -484,7 +484,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         </div>
                     </div>
                     {isOverview && (
-                        <div className="mt-[0.06rem] mb-[0.08rem] flex h-[0.42rem] w-full items-center justify-center overflow-hidden px-[0.08rem]">
+                        <div className="mt-[0.04rem] mb-[0.06rem] flex h-[0.32rem] w-full items-center justify-center overflow-hidden px-[0.08rem]">
                             {assetName ? <span className="arena-subtitle arena-thumb-asset mt-0 w-full truncate">{assetName}</span> : null}
                         </div>
                     )}

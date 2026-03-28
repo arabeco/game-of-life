@@ -192,7 +192,7 @@ const LinkedArenaMiniCard: React.FC<{
 }> = ({ arena, assetName, onClick }) => (
     <button
         onClick={onClick}
-        className="w-[10.2rem] shrink-0 rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(42,48,64,0.92),rgba(9,11,16,0.96))] p-2.5 text-left shadow-[0_12px_24px_rgba(0,0,0,0.22)] transition-all hover:bg-[linear-gradient(180deg,rgba(52,59,78,0.94),rgba(9,11,16,0.98))]"
+        className="w-[9.4rem] shrink-0 rounded-[18px] border border-white/12 bg-[linear-gradient(180deg,rgba(42,48,64,0.92),rgba(9,11,16,0.96))] p-2.5 text-left shadow-[0_12px_24px_rgba(0,0,0,0.22)] transition-all hover:bg-[linear-gradient(180deg,rgba(52,59,78,0.94),rgba(9,11,16,0.98))]"
     >
         <div className="flex items-start gap-2">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.85rem] border border-white/10 bg-black/28 text-white">
@@ -218,7 +218,7 @@ const RelationshipArenaBoardCard: React.FC<{
     assetName?: string;
     onClick: () => void;
     className?: string;
-}> = ({ arena, assetName, onClick, className = 'w-[12.6rem] shrink-0' }) => {
+}> = ({ arena, assetName, onClick, className = 'w-[11.4rem] shrink-0' }) => {
     const previewArena = arena.arena || {
         id: arena.arenaId,
         assetId: String(arena.metadata?.asset_id || 'geral'),
@@ -252,7 +252,7 @@ const MentorshipCampaignBoardCard: React.FC<{
     action?: React.ReactNode;
     onClick: () => void;
     className?: string;
-}> = ({ title, subtitle, preview, badge, action, onClick, className = 'w-[12.6rem] shrink-0' }) => (
+}> = ({ title, subtitle, preview, badge, action, onClick, className = 'w-[11.4rem] shrink-0' }) => (
     <button
         onClick={onClick}
         className={`block text-left transition-transform hover:-translate-y-0.5 ${className}`}

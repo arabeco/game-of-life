@@ -2,7 +2,7 @@
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, DayOfWeek, ActionType } from '../types';
 import { GlassCard } from './GlassCard';
-import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon, CheckCircleIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
 import { WheelPicker } from './inputs/WheelPicker';
 import { ImageUploadSlot } from './inputs/ImageUploadSlot';
@@ -12,7 +12,7 @@ import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
-import { REST_SCREEN_ACTION_SESSION_EVENT, createRestScreenActionSession } from '../utils/restScreenActionSession';
+import { REST_SCREEN_ACTION_SESSION_CLEAR_EVENT, REST_SCREEN_ACTION_SESSION_EVENT, createRestScreenActionSession } from '../utils/restScreenActionSession';
 import { OPERATIONAL_DAY_START_MINUTE, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes } from '../utils/operationalDay.js';
 import { getArenaDomainFlags } from '../utils/taskDomain';
 import { supabase } from '../supabaseClient';
@@ -125,20 +125,49 @@ interface ActionModalProps {
 
 type EditScope = 'action' | 'instance';
 
-const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>, containerId?: string }> =
-    ({ label, value, min, max, step, unit, onChange, inputRef, containerId }) => (
+const ACTION_DURATION_OPTIONS = [
+    15, 30, 45, 60, 75, 90, 105, 120,
+    150, 180, 210, 240,
+    300, 360, 420, 480,
+];
+
+const formatDurationLabel = (value: number) => {
+    const safeValue = Math.max(0, Math.round(value));
+    const hours = Math.floor(safeValue / 60);
+    const minutes = safeValue % 60;
+
+    if (hours === 0) return `${minutes} min`;
+    if (minutes === 0) return `${hours}h`;
+    return `${hours}h ${minutes}m`;
+};
+
+const getClosestSnapIndex = (value: number, snapValues: number[]) => {
+    if (snapValues.length === 0) return 0;
+    const exactIndex = snapValues.findIndex(option => option === value);
+    if (exactIndex >= 0) return exactIndex;
+
+    return snapValues.reduce((bestIndex, option, index) => (
+        Math.abs(option - value) < Math.abs(snapValues[bestIndex] - value) ? index : bestIndex
+    ), 0);
+};
+
+const StyledRangeInput: React.FC<{ label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (val: number) => void, inputRef?: React.Ref<HTMLDivElement>, containerId?: string, snapValues?: number[], formatValue?: (val: number) => string }> =
+    ({ label, value, min, max, step, unit, onChange, inputRef, containerId, snapValues, formatValue }) => (
         <div id={containerId} ref={inputRef} className="p-2.5 core-surface rounded-xl space-y-1.5">
             <div className="flex justify-between items-center">
                 <label className="core-label">{label}</label>
-                <span className="text-sm font-semibold text-white">{value} {unit}</span>
+                <span className="text-sm font-semibold text-white">{formatValue ? formatValue(value) : `${value} ${unit}`}</span>
             </div>
             <input
                 type="range"
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                onChange={e => onChange(Number(e.target.value))}
+                min={snapValues ? 0 : min}
+                max={snapValues ? Math.max(0, snapValues.length - 1) : max}
+                step={snapValues ? 1 : step}
+                value={snapValues ? getClosestSnapIndex(value, snapValues) : value}
+                onChange={e => {
+                    const nextValue = Number(e.target.value);
+                    onChange(snapValues ? snapValues[nextValue] ?? value : nextValue);
+                }}
                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg accent-[var(--skin-accent-color)]"
             />
         </div>
@@ -148,6 +177,16 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
     <button type="button" onClick={onClick} className={`w-10 h-10 rounded-xl text-sm font-semibold transition-colors border ${selected ?'bg-[var(--skin-accent-color)] text-white border-[var(--skin-accent-color)]' : 'core-surface text-gray-300 hover:bg-white/[0.06]'}`}>
         {day.slice(0, 3)}
     </button>
+);
+
+const ActionSectionCard: React.FC<{ title: string; subtitle?: string; children: React.ReactNode }> = ({ title, subtitle, children }) => (
+    <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.18))] px-4 py-4 shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
+        <div className="mb-3">
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]/90">{title}</div>
+            {subtitle && <p className="mt-1 text-[11px] leading-relaxed text-white/55">{subtitle}</p>}
+        </div>
+        <div className="space-y-3">{children}</div>
+    </div>
 );
 
 export const ActionModal: React.FC<ActionModalProps> = ({
@@ -164,7 +203,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     collaborativeArenaTasks = [],
     onCollaborativeRefresh,
 }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, clearPendingTasksForAction, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes } = useGame();
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, clearPendingTasksForAction, scheduleAndCompleteNow, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes } = useGame();
 
     const isNew = !action;
     const isInstalledCodexAction = Boolean(action?.originCodexId && !action.originCodexId.startsWith('assign:'));
@@ -174,8 +213,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     );
 
     const [mode, setMode] = useState(isNew && !isPreview ?'edit' : initialMode);
-    const [hasConfirmedInstalledCodexEdit, setHasConfirmedInstalledCodexEdit] = useState(false);
-    const [showInstalledCodexEditConfirmation, setShowInstalledCodexEditConfirmation] = useState(false);
     const [editableAction, setEditableAction] = useState<Partial<Action>>(
         action || { arenaId: arenaId, name: '', description: '', icon: '📝', duration: 60, repetitions: 1, actionType: 'Ação Recorrente', difficulty: 3 }
     );
@@ -211,10 +248,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const saveButtonRef = useRef<HTMLButtonElement>(null);
     const briefingReaderPointerStartRef = useRef<number | null>(null);
     const briefingReaderTurnTimeoutRef = useRef<number | null>(null);
-    const startNowHoldIntervalRef = useRef<number | null>(null);
-    const [startNowHoldProgress, setStartNowHoldProgress] = useState(0);
-    const [startNowTriggered, setStartNowTriggered] = useState(false);
-    const [isStartNowHolding, setIsStartNowHolding] = useState(false);
+    const completeNowHoldIntervalRef = useRef<number | null>(null);
+    const [completeNowHoldProgress, setCompleteNowHoldProgress] = useState(0);
+    const [completeNowTriggered, setCompleteNowTriggered] = useState(false);
+    const [isCompletingNowHold, setIsCompletingNowHold] = useState(false);
     const isEditingTaskInstance = mode === 'edit' && hasTaskInstanceContext && editScope === 'instance';
     const isEditingActionBase = mode === 'edit' && (!hasTaskInstanceContext || editScope === 'action');
 
@@ -235,8 +272,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     useEffect(() => {
         return () => {
-            if (startNowHoldIntervalRef.current) {
-                window.clearInterval(startNowHoldIntervalRef.current);
+            if (completeNowHoldIntervalRef.current) {
+                window.clearInterval(completeNowHoldIntervalRef.current);
             }
             if (briefingReaderTurnTimeoutRef.current) {
                 window.clearTimeout(briefingReaderTurnTimeoutRef.current);
@@ -272,7 +309,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const currentArena = arenas.find(a => a.id === editableAction.arenaId);
     const arenaFlags = React.useMemo(() => getArenaDomainFlags(currentArena), [currentArena]);
     const isReceivedInstalledCodexAction = installedCodex?.source_type === 'gift_link' || installedCodex?.source_type === 'gift_in_app';
-    const isLockedFromSource = arenaFlags.isSeasonQuest || isReceivedInstalledCodexAction;
+    const isSeasonLockedAction = arenaFlags.isSeasonQuest;
+    const isInstalledCampaignAction = isInstalledCodexAction || isReceivedInstalledCodexAction;
+    const isLockedFromSource = isSeasonLockedAction;
+    const canEditAuthorialContent = !isInstalledCampaignAction && !isSeasonLockedAction;
+    const canEditExecutionSettings = !isSeasonLockedAction;
     const isDetachedCollaborativeArena = collaborativeLinkedArena && !currentArena;
     const collaborativePersistUserId = collaborativeOwnerUserId || null;
     const effectiveTaskPool = isDetachedCollaborativeArena ? collaborativeArenaTasks : tasks;
@@ -282,8 +323,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     }, [action, effectiveTaskPool]);
     const lockedEditMessage = arenaFlags.isSeasonQuest
         ? 'Missoes de temporada sao fixas e nao podem ser editadas.'
-        : isReceivedInstalledCodexAction
-            ? 'Campanha recebida fica protegida. So campanha comprada ou autoral pode ser adaptada.'
+        : isInstalledCampaignAction
+            ? 'Campanhas mantem o conteudo protegido. Aqui voce ajusta so a execucao local.'
             : null;
 
     // Office Mode specific
@@ -613,51 +654,75 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         executeSave().catch(err => console.error("Error saving action:", err));
     };
 
-    const clearStartNowHold = () => {
-        if (startNowHoldIntervalRef.current) {
-            window.clearInterval(startNowHoldIntervalRef.current);
-            startNowHoldIntervalRef.current = null;
+    const clearCompleteNowHold = () => {
+        if (completeNowHoldIntervalRef.current) {
+            window.clearInterval(completeNowHoldIntervalRef.current);
+            completeNowHoldIntervalRef.current = null;
         }
 
-        setIsStartNowHolding(false);
-        if (!startNowTriggered) {
-            setStartNowHoldProgress(0);
+        setIsCompletingNowHold(false);
+        if (!completeNowTriggered) {
+            setCompleteNowHoldProgress(0);
         }
     };
 
-    const handleStartMission = (event?: React.MouseEvent | React.TouchEvent) => {
+    const openBriefingReader = () => {
+        if (briefingPages.length === 0) return;
+        setBriefingPageIndex(0);
+        setIsBriefingReaderOpen(true);
+    };
+
+    const handleStartMission = () => {
+        if (!action || !startNowTask) return;
+
+        window.dispatchEvent(new CustomEvent(REST_SCREEN_ACTION_SESSION_EVENT, {
+            detail: createRestScreenActionSession({
+                actionId: action.id,
+                taskId: startNowTask?.id,
+                actionName: action.name,
+                actionIcon: action.icon,
+                durationMinutes: startNowDurationMinutes,
+                actionType: action.actionType,
+            }),
+        }));
+
+        onClose();
+    };
+
+    const handleCompleteNowStart = (event?: React.MouseEvent | React.TouchEvent) => {
         if (event && 'touches' in event && event.cancelable) {
             event.preventDefault();
         }
-        if (!action || !startNowTask || startNowHoldIntervalRef.current) return;
+        if (!action || !startNowTask || completeNowHoldIntervalRef.current || completeNowTriggered) return;
 
-        setStartNowTriggered(false);
-        setIsStartNowHolding(true);
+        setCompleteNowTriggered(false);
+        setIsCompletingNowHold(true);
         const startedAt = Date.now();
         const holdDuration = 1000;
 
-        startNowHoldIntervalRef.current = window.setInterval(() => {
+        completeNowHoldIntervalRef.current = window.setInterval(() => {
             const elapsed = Date.now() - startedAt;
             const progress = Math.min((elapsed / holdDuration) * 100, 100);
-            setStartNowHoldProgress(progress);
+            setCompleteNowHoldProgress(progress);
 
             if (progress < 100) return;
 
-            clearStartNowHold();
-            setStartNowTriggered(true);
+            clearCompleteNowHold();
+            setCompleteNowTriggered(true);
 
-            window.dispatchEvent(new CustomEvent(REST_SCREEN_ACTION_SESSION_EVENT, {
-                detail: createRestScreenActionSession({
-                    actionId: action.id,
-                    taskId: startNowTask?.id,
-                    actionName: action.name,
-                    actionIcon: action.icon,
-                    durationMinutes: startNowDurationMinutes,
-                    actionType: action.actionType,
-                }),
-            }));
-
-            onClose();
+            void (async () => {
+                try {
+                    await scheduleAndCompleteNow(action.id, startNowTask.id);
+                    window.dispatchEvent(new CustomEvent(REST_SCREEN_ACTION_SESSION_CLEAR_EVENT));
+                    showToast('Ação concluída.', 'success');
+                    onClose();
+                } catch (error) {
+                    console.error('Error completing action from ActionModal:', error);
+                    setCompleteNowTriggered(false);
+                    setCompleteNowHoldProgress(0);
+                    showToast('Não foi possível concluir a ação.', 'error');
+                }
+            })();
         }, 16);
     };
 
@@ -801,12 +866,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     useEffect(() => {
         const defaultScope: EditScope = hasTaskInstanceContext ? 'instance' : 'action';
-        const shouldBlockInitialEdit = !isNew && initialMode === 'edit' && defaultScope === 'action' && (isInstalledCodexAction || isLockedFromSource);
+        const shouldBlockInitialEdit = !isNew && initialMode === 'edit' && defaultScope === 'action' && isLockedFromSource;
         setMode(isNew ?'edit' : (shouldBlockInitialEdit ?'view' : initialMode));
-        setHasConfirmedInstalledCodexEdit(false);
-        setShowInstalledCodexEditConfirmation(shouldBlockInitialEdit && !isLockedFromSource && isInstalledCodexAction);
         resetFromAction(action, defaultScope);
-    }, [action?.id, arenaId, currentTask?.id, currentTask?.date, currentTask?.duration, currentTask?.startTime, hasTaskInstanceContext, initialMode, isInstalledCodexAction, isLockedFromSource]);
+    }, [action?.id, arenaId, currentTask?.id, currentTask?.date, currentTask?.duration, currentTask?.startTime, hasTaskInstanceContext, initialMode, isLockedFromSource]);
 
     useEffect(() => {
         if (isEditingTaskInstance && activeTab === 'advanced') {
@@ -1005,10 +1068,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             showToast(lockedEditMessage || 'Essa acao nao pode ser editada.', 'warning');
             return;
         }
-        if (isInstalledCodexAction && !hasConfirmedInstalledCodexEdit) {
-            setShowInstalledCodexEditConfirmation(true);
-            return;
-        }
         switchEditScope('action');
         setMode('edit');
     };
@@ -1031,7 +1090,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center animate-fade-in" onClick={handleBackdropClick} style={modalStyle}>
                 <GlassCard
                     variant="neutral"
-                    className="w-full max-w-[20.5rem] m-3 rounded-[26px] flex flex-col max-h-[84vh] h-auto p-0 relative overflow-hidden border-white/12 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
+                    className="w-full max-w-[22.75rem] m-3 rounded-[28px] flex flex-col max-h-[84vh] h-auto p-0 relative overflow-hidden border-white/12 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
                     style={{
                         backgroundImage: [
                             `radial-gradient(circle at 48% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.07) 16%, transparent 40%)`,
@@ -1064,7 +1123,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         </div>
                         <div className="flex-1 px-2 text-center">
                             <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/46">{headerEyebrow}</div>
-                            <h2 className="luxe-title-ornate mt-1 text-lg font-black uppercase tracking-[0.08em] text-[#fff5e8] drop-shadow-[0_1px_8px_rgba(255,240,220,0.16)]">
+                            <h2 className="mt-1 text-[1.03rem] font-black tracking-[0.03em] text-[#fff5e8] drop-shadow-[0_1px_8px_rgba(255,240,220,0.16)]">
                                 {headerTitle}
                             </h2>
                             <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.22em] text-white/58">
@@ -1110,7 +1169,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                Básico
+                                Essencial
                             </button>
                             <button
                                 onClick={() => setActiveTab('advanced')}
@@ -1120,7 +1179,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     : isEditingTaskInstance ?'text-gray-600 opacity-40 cursor-not-allowed' : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                {isEditingTaskInstance ?'Avançado (Base)' : 'Avançado'}
+                                {isEditingTaskInstance ?'Conteúdo (Base)' : 'Conteúdo'}
                             </button>
                         </div>
                     </div>
@@ -1162,21 +1221,21 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                                         {/* Metadata Grid - Compact & Spaced */}
                                         <div className="grid grid-cols-2 gap-3 w-full">
-                                            <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
+                                            <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Tipo</div>
                                                 <div className="text-xs font-bold accent-text truncate text-center w-full">{displayAction.actionType}</div>
                                             </div>
-                                            <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
+                                            <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Duração</div>
-                                                <div className="text-xs font-bold text-white text-center w-full">{effectiveDuration} min</div>
+                                                <div className="text-xs font-bold text-white text-center w-full">{formatDurationLabel(effectiveDuration)}</div>
                                             </div>
                                             {displayAction.actionType === 'Ação Recorrente' && (
-                                                <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
+                                                <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
                                                     <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Repetições</div>
                                                     <div className="text-xs font-bold text-white text-center w-full">{displayAction.repetitions}x</div>
                                                 </div>
                                             )}
-                                            <div className="bg-white/5 rounded-lg p-3 border border-white/5 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
+                                            <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Dificuldade</div>
                                                 <div className={`text-xs font-bold text-center w-full ${(displayAction.difficulty || 3) >= 4 ?'text-red-400' :
                                                     (displayAction.difficulty || 3) <= 2 ?'text-green-400' : 'text-[var(--skin-accent-color)]'
@@ -1225,6 +1284,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             ?'Você está mexendo só nesta ocorrência do Planner. Nome, ícone, arena, tipo, repetições e conteúdo avançado continuam na ação base.'
                                                             : isLockedFromSource
                                                                 ?(lockedEditMessage || 'A ação base está protegida.')
+                                                                : isInstalledCampaignAction
+                                                                    ?'Você está ajustando uma ação de campanha. Conteúdo, mídia e texto ficam protegidos; horário, ritmo e agenda continuam personalizáveis no seu app.'
                                                                 :'Você está editando a ação base. Mudanças visuais, estruturais e de conteúdo valem para a ação e para as próximas ocorrências.'}
                                                     </p>
                                                 </div>
@@ -1233,36 +1294,40 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                                         {isEditingTaskInstance ? (
                                             <>
-                                                <div className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-black/20 px-4 py-4">
-                                                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10">
-                                                        <EmojiGlyph symbol={action?.icon || '📝'} size="action" className="text-white" />
-                                                    </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Planner</div>
-                                                        <div className="mt-1 truncate text-sm font-bold text-white">{action?.name || 'Ocorrência'}</div>
-                                                        <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/50">
-                                                            {plannerOccurrenceLabel || 'Sem data'}{startTime ?` • ${startTime}` : ''}
+                                                <ActionSectionCard title="Ocorrência" subtitle="Você está ajustando só este item do Planner.">
+                                                    <div className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/20 px-4 py-4">
+                                                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10">
+                                                            <EmojiGlyph symbol={action?.icon || '📝'} size="action" className="text-white" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Planner</div>
+                                                            <div className="mt-1 truncate text-sm font-bold text-white">{action?.name || 'Ocorrência'}</div>
+                                                            <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/50">
+                                                                {plannerOccurrenceLabel || 'Sem data'}{startTime ?` • ${startTime}` : ''}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <StyledRangeInput
-                                                    label="Duração desta Ocorrência"
-                                                    value={editableTaskDuration}
-                                                    min={15}
-                                                    max={480}
-                                                    step={15}
-                                                    unit="min"
-                                                    onChange={val => setEditableTaskDuration(val)}
-                                                />
+                                                    <StyledRangeInput
+                                                        label="Duração desta ocorrência"
+                                                        value={editableTaskDuration}
+                                                        min={15}
+                                                        max={480}
+                                                        step={1}
+                                                        unit="min"
+                                                        snapValues={ACTION_DURATION_OPTIONS}
+                                                        formatValue={formatDurationLabel}
+                                                        onChange={val => setEditableTaskDuration(val)}
+                                                    />
+                                                </ActionSectionCard>
 
-                                                <div className="p-3 bg-black/20 rounded-xl space-y-3 border border-white/5">
+                                                <ActionSectionCard title="Agenda" subtitle="Ajuste data e horário desta ocorrência sem mexer na ação base.">
                                                     <div>
                                                         <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data desta ocorrência</label>
                                                         <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
                                                             <div className="flex items-center gap-2">
                                                                 <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
-                                                                <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar Data'}</span>
+                                                                <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
                                                             </div>
                                                             <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                         </button>
@@ -1271,7 +1336,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     <div>
                                                         <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário desta ocorrência</label>
                                                         <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
-                                                            <span className="text-sm">{startTime || 'Sem Horário'}</span>
+                                                            <span className="text-sm">{startTime || 'Sem horário'}</span>
                                                             <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
                                                         </button>
                                                         {isTimePickerOpen && (
@@ -1280,59 +1345,66 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             </div>
                                                         )}
                                                     </div>
-                                                </div>
+                                                </ActionSectionCard>
                                             </>
                                         ) : (
                                             <>
-                                        {/* Icon Picker */}
-                                        <div className="flex justify-center">
-                                            <button
-                                                onClick={() => setIsIconPickerOpen(true)}
-                                                className="w-24 h-24 bg-[#2a211c]/50 border border-[var(--skin-accent-color)] rounded-xl hover:bg-[#2a211c] transition-colors flex items-center justify-center relative group"
-                                            >
-                                                <EmojiGlyph symbol={editableAction.icon || '📝'} size="picker" className="scale-[1.65] text-white" />
-                                                <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <EditIcon className="w-6 h-6 text-white" />
-                                                </div>
-                                            </button>
-                                        </div>
+                                        <ActionSectionCard title="Identidade" subtitle="Dê forma para a ação. Isso é o que a pessoa vai bater o olho primeiro.">
+                                            <div className="flex justify-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => canEditAuthorialContent && setIsIconPickerOpen(true)}
+                                                    disabled={!canEditAuthorialContent}
+                                                    className={`w-24 h-24 border rounded-[20px] transition-colors flex items-center justify-center relative group ${canEditAuthorialContent ?'bg-[#2a211c]/50 border-[var(--skin-accent-color)] hover:bg-[#2a211c]' : 'bg-[#2a211c]/25 border-white/10 opacity-60 cursor-not-allowed'}`}
+                                                >
+                                                    <EmojiGlyph symbol={editableAction.icon || '📝'} size="picker" className="scale-[1.65] text-white" />
+                                                    <div className={`absolute inset-0 bg-black/50 rounded-[20px] flex items-center justify-center transition-opacity ${canEditAuthorialContent ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+                                                        <EditIcon className="w-6 h-6 text-white" />
+                                                    </div>
+                                                </button>
+                                            </div>
 
-                                        {/* Name */}
-                                        <input
-                                            id="onboarding-action-name-input"
-                                            ref={nameInputRef}
-                                            type="text"
-                                            placeholder="Nome da Ação"
-                                            value={editableAction.name || ''}
-                                            onBlur={(event) => {
-                                                if (!event.target.value.trim()) return;
-                                                const relatedTarget = event.relatedTarget as HTMLElement | null;
-                                                if (relatedTarget?.id === 'first-use-onboarding-next') return;
-                                                handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionNameCompleted);
-                                            }}
-                                            onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
-                                            className="w-full text-center bg-transparent text-xl font-bold text-white focus:outline-none border-b border-dashed border-white/20 py-2 placeholder:text-gray-600"
-                                        />
+                                            <input
+                                                id="onboarding-action-name-input"
+                                                ref={nameInputRef}
+                                                type="text"
+                                                placeholder="Nome da ação"
+                                                value={editableAction.name || ''}
+                                                onBlur={(event) => {
+                                                    if (!event.target.value.trim()) return;
+                                                    const relatedTarget = event.relatedTarget as HTMLElement | null;
+                                                    if (relatedTarget?.id === 'first-use-onboarding-next') return;
+                                                    handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionNameCompleted);
+                                                }}
+                                                onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
+                                                disabled={!canEditAuthorialContent}
+                                                className={`w-full rounded-[18px] border px-4 py-3 text-center text-lg font-bold text-white placeholder:text-gray-600 ${canEditAuthorialContent ?'border-white/10 bg-black/18 focus:outline-none focus:border-[var(--accent-bronze)]/50' : 'border-white/8 bg-black/12 opacity-65 cursor-not-allowed'}`}
+                                            />
 
-                                        {/* Description */}
-                                        <textarea
-                                            placeholder="Descrição (opcional)"
-                                            value={editableAction.description || ''}
-                                            onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
-                                            rows={3}
-                                            className="w-full bg-black/20 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none border border-white/10 focus:border-[var(--accent-bronze)]/50 placeholder:text-gray-600 resize-none"
-                                        />
+                                            <textarea
+                                                placeholder="Descrição (opcional)"
+                                                value={editableAction.description || ''}
+                                                onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
+                                                disabled={!canEditAuthorialContent}
+                                                rows={3}
+                                                className={`w-full rounded-[18px] px-4 py-3 text-sm text-white/90 border placeholder:text-gray-600 resize-none ${canEditAuthorialContent ?'bg-black/20 border-white/10 focus:outline-none focus:border-[var(--accent-bronze)]/50' : 'bg-black/12 border-white/8 opacity-65 cursor-not-allowed'}`}
+                                            />
+                                            {!canEditAuthorialContent && (
+                                                <p className="text-[11px] leading-relaxed text-white/52">
+                                                    Nome, ícone e descrição ficam protegidos na campanha. Aqui você só ajusta a execução local.
+                                                </p>
+                                            )}
+                                        </ActionSectionCard>
 
-                                        <div className="space-y-3 pt-2">
-                                            {/* Arena */}
+                                        <ActionSectionCard title="Estrutura" subtitle="Defina onde essa ação vive e qual comportamento ela terá.">
                                             <div>
                                                 <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Arena</label>
                                                 <button
-                                                    onClick={() => !lockArenaAssignment && setIsArenaPickerOpen(true)}
-                                                    disabled={lockArenaAssignment}
+                                                    onClick={() => canEditExecutionSettings && !lockArenaAssignment && setIsArenaPickerOpen(true)}
+                                                    disabled={lockArenaAssignment || !canEditExecutionSettings}
                                                     className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5 disabled:cursor-not-allowed disabled:opacity-60"
                                                 >
-                                                    <span className="text-sm">{currentArena?.icon} {currentArena?.name || 'Selecionar Arena'}</span>
+                                                    <span className="text-sm">{currentArena?.icon} {currentArena?.name || 'Selecionar arena'}</span>
                                                     <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                 </button>
                                                 {lockArenaAssignment && (
@@ -1342,22 +1414,24 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 )}
                                             </div>
 
-                                            {/* Type */}
                                             <div>
-                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de Ação</label>
-                                                <button id="onboarding-action-type-button" onClick={() => setIsActionTypePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de ação</label>
+                                                <button id="onboarding-action-type-button" onClick={() => canEditAuthorialContent && setIsActionTypePickerOpen(true)} disabled={!canEditAuthorialContent} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5 disabled:cursor-not-allowed disabled:opacity-60">
                                                     <span className="text-sm">{editableAction.actionType || 'Ação Recorrente'}</span>
                                                     <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                 </button>
                                             </div>
+                                        </ActionSectionCard>
 
-                                            {/* Sliders */}
+                                        <ActionSectionCard title="Ritmo" subtitle="Ajuste a carga da ação para ela ficar sustentável no fluxo real.">
                                             <StyledRangeInput
                                                 containerId="onboarding-action-duration"
                                                 inputRef={durationInputRef}
-                                                label="Duração (Base)"
+                                                label="Duração base"
                                                 value={editableAction.duration || 60}
-                                                min={15} max={240} step={15} unit="min"
+                                                min={15} max={480} step={1} unit="min"
+                                                snapValues={ACTION_DURATION_OPTIONS}
+                                                formatValue={formatDurationLabel}
                                                 onChange={val => {
                                                     setEditableAction(p => ({ ...p, duration: val }));
                                                     handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, { duration: val });
@@ -1382,14 +1456,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             )}
 
                                             <StyledRangeInput label="Dificuldade" value={editableAction.difficulty || 3} min={1} max={5} step={1} unit={difficultyLabels[(editableAction.difficulty || 3) - 1]} onChange={val => setEditableAction(p => ({ ...p, difficulty: val }))} />
-                                        </div>
+                                        </ActionSectionCard>
 
                                         {/* Scheduling */}
                                         {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
-                                            <div className="p-3 bg-black/20 rounded-xl space-y-3 border border-white/5">
+                                            <ActionSectionCard title="Agenda" subtitle="Se essa ação já tem cadência ou horário, deixe pronto aqui.">
                                                 {editableAction.actionType === 'Ação Recorrente' && (
                                                     <div>
-                                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da Semana</label>
+                                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da semana</label>
                                                         <div className="grid grid-cols-7 gap-1 mt-1">
                                                             {week.map(day => <DayToggle key={day} day={day} selected={selectedDays.includes(day)} onClick={() => handleDayToggle(day)} />)}
                                                         </div>
@@ -1402,7 +1476,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
                                                             <div className="flex items-center gap-2">
                                                                 <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
-                                                                <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar Data'}</span>
+                                                                <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
                                                             </div>
                                                             <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                         </button>
@@ -1412,7 +1486,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 <div>
                                                     <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
                                                     <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
-                                                        <span className="text-sm">{startTime || 'Sem Horário'}</span>
+                                                        <span className="text-sm">{startTime || 'Sem horário'}</span>
                                                         <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
                                                     </button>
                                                     {isTimePickerOpen && (
@@ -1421,7 +1495,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
+                                            </ActionSectionCard>
                                         )}
 
                                         {/* Delete Button */}
@@ -1488,7 +1562,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 </div>
                                             )}
 
-                                            {mode === 'edit' && (
+                                            {mode === 'edit' && canEditAuthorialContent && (
                                                 <div className="space-y-4">
                                                     <div className="text-xs font-bold text-gray-400 uppercase">Upload de Foto (Anexo)</div>
                                                     <ImageUploadSlot
@@ -1532,7 +1606,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                                     {advancedSubTab === 'note' && (
                                         <div className="p-4 h-full flex flex-col">
-                                            {mode === 'edit' ?(
+                                            {mode === 'edit' && canEditAuthorialContent ?(
                                                 <div className="flex flex-1 flex-col gap-3">
                                                     <div className="flex items-center justify-between gap-3">
                                                         <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500">
@@ -1565,13 +1639,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         {briefingPages.length > 0 && (
                                                             <button
                                                                 type="button"
-                                                                onClick={() => {
-                                                                    setBriefingPageIndex(0);
-                                                                    setIsBriefingReaderOpen(true);
-                                                                }}
+                                                                onClick={openBriefingReader}
                                                                 className="px-3 py-2 rounded-xl border border-[var(--skin-line-color)]/70 bg-[var(--skin-accent-color)]/10 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ui-text-accent)] hover:bg-[var(--skin-accent-color)]/18 transition-colors"
                                                             >
-                                                                Ler em tela cheia
+                                                                Iniciar leitura
                                                             </button>
                                                         )}
                                                     </div>
@@ -1580,6 +1651,18 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono">
                                                             {briefingPreviewText || "Nenhuma anotação disponível."}
                                                         </p>
+                                                        {briefingPages.length > 0 && (
+                                                            <div className="absolute left-4 bottom-4">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={openBriefingReader}
+                                                                    className="inline-flex items-center gap-2 rounded-full border border-[var(--skin-line-color)]/60 bg-black/45 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)] transition-colors hover:bg-black/60"
+                                                                >
+                                                                    <PlayIcon className="h-3.5 w-3.5" />
+                                                                    Iniciar leitura
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                         {briefingPages.length > 1 && (
                                                             <div className="absolute bottom-4 right-4 rounded-full border border-[var(--skin-line-color)]/50 bg-black/35 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--ui-text-accent)]">
                                                                 {briefingPages.length} páginas
@@ -1600,7 +1683,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     <div key={i} className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors group">
                                                         <div className="mt-1 w-2 h-2 rounded-full bg-[var(--skin-accent-color)]/50 group-hover:bg-[var(--skin-accent-color)] group-hover:shadow-[0_0_8px_var(--sephirot-glow-color)] transition-all" />
                                                         <span className="text-sm text-gray-300 font-medium leading-snug flex-1">{item}</span>
-                                                        {mode === 'edit' && (
+                                                        {mode === 'edit' && canEditAuthorialContent && (
                                                             <button
                                                                 onClick={() => setEditableAction(prev => ({ ...prev, preFlight: prev.preFlight?.filter((_, idx) => idx !== i) }))}
                                                                 className="text-gray-500 hover:text-red-400 opacity-50 hover:opacity-100 transition-opacity"
@@ -1618,7 +1701,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             )}
 
                                             {/* Add Item Input (Edit Mode) */}
-                                            {mode === 'edit' && (
+                                            {mode === 'edit' && canEditAuthorialContent && (
                                                 <div className="flex gap-2 mt-4">
                                                     <input
                                                         type="text"
@@ -1657,7 +1740,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {(['low', 'medium', 'high'] as const).map(level => {
                                                         const isSelected = displayAction?.context?.energyLevel === level;
-                                                        const isEditable = mode === 'edit';
+                                                        const isEditable = mode === 'edit' && canEditAuthorialContent;
                                                         return (
                                                             <button
                                                                 key={level}
@@ -1681,7 +1764,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 <div className="grid grid-cols-2 gap-2">
                                                     {(['morning', 'afternoon', 'evening', 'night'] as const).map(time => {
                                                         const isSelected = displayAction?.context?.timeOfDay === time;
-                                                        const isEditable = mode === 'edit';
+                                                        const isEditable = mode === 'edit' && canEditAuthorialContent;
                                                         return (
                                                             <button
                                                                 key={time}
@@ -1720,61 +1803,85 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     <div className="absolute inset-0 transition-colors bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10" />
                                 </button>
                             ) : canStartNow ?(
-                                <button
-                                    ref={saveButtonRef}
-                                    onMouseDown={handleStartMission}
-                                    onMouseUp={clearStartNowHold}
-                                    onMouseLeave={clearStartNowHold}
-                                    onTouchStart={handleStartMission}
-                                    onTouchEnd={clearStartNowHold}
-                                    onTouchCancel={clearStartNowHold}
-                                    onContextMenu={(e) => e.preventDefault()}
-                                    className={`flex-1 rounded-2xl border px-4 py-3 text-white transition-all active:scale-[0.99] relative overflow-hidden ${startNowTriggered
-                                        ? 'border-[var(--skin-accent-color)]/55 bg-[var(--skin-accent-color)]/14 shadow-[0_0_28px_rgba(212,175,55,0.16)]'
-                                        : isStartNowHolding
-                                            ? 'border-[var(--skin-accent-color)]/40 bg-[var(--skin-accent-color)]/10 shadow-[0_0_18px_rgba(212,175,55,0.12)]'
-                                            : 'border-white/10 bg-white/[0.04] hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.06]'
-                                        }`}
-                                    style={{
-                                        touchAction: 'none',
-                                        userSelect: 'none',
-                                        WebkitUserSelect: 'none',
-                                        WebkitTouchCallout: 'none',
-                                    } as React.CSSProperties}
-                                >
-                                    <div
-                                        className="absolute inset-y-0 left-0 bg-[linear-gradient(90deg,rgba(212,175,55,0.22),rgba(212,175,55,0.08),transparent)] transition-[width] duration-75"
-                                        style={{ width: `${startNowHoldProgress}%` }}
-                                    />
-                                    <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/5">
+                                <>
+                                    <button
+                                        ref={saveButtonRef}
+                                        onClick={handleStartMission}
+                                        className="flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.06] active:scale-[0.99]"
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 shrink-0">
+                                                    <div className="inline-flex items-center gap-0.5 text-[var(--skin-accent-color)]">
+                                                        <ClockIcon className="w-3.5 h-3.5" />
+                                                        <PlayIcon className="w-3 h-3" />
+                                                    </div>
+                                                </div>
+                                                <div className="min-w-0 text-left">
+                                                    <div className="text-xs font-semibold leading-none">Começar agora</div>
+                                                    <div className="mt-1 text-[9px] uppercase tracking-[0.18em] font-black text-gray-500">
+                                                        {briefingPages.length > 0 ? 'Abrir foco e leitura' : 'Abrir modo foco'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="shrink-0 text-right">
+                                                <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/70">{formatDurationLabel(startNowDurationMinutes)}</div>
+                                                <div className="mt-1 text-[9px] uppercase tracking-[0.16em] font-black text-gray-500">Tela cheia</div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                    <button
+                                        onMouseDown={handleCompleteNowStart}
+                                        onMouseUp={clearCompleteNowHold}
+                                        onMouseLeave={clearCompleteNowHold}
+                                        onTouchStart={handleCompleteNowStart}
+                                        onTouchEnd={clearCompleteNowHold}
+                                        onTouchCancel={clearCompleteNowHold}
+                                        onContextMenu={(e) => e.preventDefault()}
+                                        className={`flex-1 rounded-2xl border px-4 py-3 text-white transition-all active:scale-[0.99] relative overflow-hidden ${completeNowTriggered
+                                            ? 'border-emerald-400/50 bg-emerald-500/12 shadow-[0_0_28px_rgba(52,211,153,0.18)]'
+                                            : isCompletingNowHold
+                                                ? 'border-emerald-300/40 bg-emerald-500/10 shadow-[0_0_18px_rgba(52,211,153,0.12)]'
+                                                : 'border-white/10 bg-white/[0.04] hover:border-emerald-300/25 hover:bg-white/[0.06]'
+                                            }`}
+                                        style={{
+                                            touchAction: 'none',
+                                            userSelect: 'none',
+                                            WebkitUserSelect: 'none',
+                                            WebkitTouchCallout: 'none',
+                                        } as React.CSSProperties}
+                                    >
                                         <div
-                                            className="h-full bg-[var(--skin-accent-color)] transition-all duration-75"
-                                            style={{ width: `${startNowHoldProgress}%` }}
+                                            className="absolute inset-y-0 left-0 bg-[linear-gradient(90deg,rgba(52,211,153,0.24),rgba(52,211,153,0.08),transparent)] transition-[width] duration-75"
+                                            style={{ width: `${completeNowHoldProgress}%` }}
                                         />
-                                    </div>
-                                    <div className="relative z-10 flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className={`inline-flex h-9 w-9 items-center justify-center rounded-full border shrink-0 ${isStartNowHolding || startNowTriggered ? 'border-[var(--skin-accent-color)]/45 bg-[var(--skin-accent-color)]/14' : 'border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10'}`}>
-                                                <div className="inline-flex items-center gap-0.5 text-[var(--skin-accent-color)]">
-                                                    <ClockIcon className="w-3.5 h-3.5" />
-                                                    <PlayIcon className="w-3 h-3" />
+                                        <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/5">
+                                            <div
+                                                className="h-full bg-emerald-300 transition-all duration-75"
+                                                style={{ width: `${completeNowHoldProgress}%` }}
+                                            />
+                                        </div>
+                                        <div className="relative z-10 flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className={`inline-flex h-9 w-9 items-center justify-center rounded-full border shrink-0 ${isCompletingNowHold || completeNowTriggered ? 'border-emerald-300/45 bg-emerald-500/14 text-emerald-100' : 'border-emerald-300/20 bg-emerald-500/10 text-emerald-300'}`}>
+                                                    <CheckCircleIcon className="w-4 h-4" />
+                                                </div>
+                                                <div className="min-w-0 text-left">
+                                                    <div className="text-xs font-semibold leading-none">Segure para concluir</div>
+                                                    <div className={`mt-1 text-[9px] uppercase tracking-[0.18em] font-black ${isCompletingNowHold || completeNowTriggered ? 'text-emerald-200' : 'text-gray-500'}`}>
+                                                        {completeNowTriggered ? 'Concluindo' : isCompletingNowHold ? `Segurando... ${Math.round(completeNowHoldProgress)}%` : 'Segure 1s'}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="min-w-0 text-left">
-                                                <div className="text-xs font-semibold leading-none">Começar agora</div>
-                                                <div className={`mt-1 text-[9px] uppercase tracking-[0.18em] font-black ${isStartNowHolding || startNowTriggered ? 'text-[var(--skin-accent-color)]' : 'text-gray-500'}`}>
-                                                    {startNowTriggered ? 'Abrindo foco' : isStartNowHolding ? `Segurando... ${Math.round(startNowHoldProgress)}%` : 'Segure 1s'}
+                                            <div className="shrink-0 text-right">
+                                                <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/70">Agora</div>
+                                                <div className={`mt-1 text-[9px] uppercase tracking-[0.16em] font-black ${isCompletingNowHold ? 'text-white/65' : 'text-gray-500'}`}>
+                                                    {isCompletingNowHold ? 'Solte para cancelar' : 'Fechar tarefa'}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="shrink-0 text-right">
-                                            <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/70">{startNowDurationMinutes} min</div>
-                                            <div className={`mt-1 text-[9px] uppercase tracking-[0.16em] font-black ${isStartNowHolding ? 'text-white/65' : 'text-gray-500'}`}>
-                                                {isStartNowHolding ? 'Solte para cancelar' : 'Modo foco'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
+                                    </button>
+                                </>
                             ) : mode === 'view' ?(
                                 <button
                                     ref={saveButtonRef}
@@ -1826,19 +1933,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     onSelect={handleDateSelect}
                     onClose={() => setIsDatePickerOpen(false)}
                     minDate={new Date()}
-                />
-            )}
-            {showInstalledCodexEditConfirmation && (
-                <ConfirmationModal
-                    title="Editar acao instalada"
-                    message="Essa campanha instalada continua intacta. Voce quer mesmo editar esta acao na sua execucao?"
-                    onConfirm={() => {
-                        setHasConfirmedInstalledCodexEdit(true);
-                        setShowInstalledCodexEditConfirmation(false);
-                        switchEditScope('action');
-                        setMode('edit');
-                    }}
-                    onCancel={() => setShowInstalledCodexEditConfirmation(false)}
                 />
             )}
             {isConfirmDeleteOpen && (

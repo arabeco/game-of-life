@@ -6,6 +6,7 @@ import { isSharedArena } from '../../utils/taskDomain.js';
 import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTaskSnapshot } from '../../utils/taskMutationUtils.js';
 import { calculateArenaProgress } from '../../utils/progressUtils';
 import { emitArenaAttention } from '../../utils/arenaAttention';
+import { emitDailyCompletionPrompt } from '../../utils/dailyCompletionPrompt';
 
 type ToastTone = 'success' | 'error' | 'info';
 type AchievementState = { type: FeedEventType; data: any } | null;
@@ -31,6 +32,7 @@ interface CreateTaskDomainParams {
     tasks: ScheduledTask[];
     activeCycle: Cycle | null;
     dailyCommitment: DailyCommitment;
+    judgedOperationalDates: string[];
     clan: Clan | null;
     supabase: SupabaseLike;
     setTasks: Dispatch<SetStateAction<ScheduledTask[]>>;
@@ -58,6 +60,7 @@ export const createTaskDomain = ({
     tasks,
     activeCycle,
     dailyCommitment,
+    judgedOperationalDates,
     clan,
     supabase,
     setTasks,
@@ -80,23 +83,28 @@ export const createTaskDomain = ({
     tutorialActionId,
     tutorialCompletedFlag,
 }: CreateTaskDomainParams): TaskDomainApi => {
+    const isOperationalDateJudged = (operationalDate: string) =>
+        !!operationalDate && judgedOperationalDates.includes(operationalDate);
+
     const isTaskLockedByClosedDay = (task: ScheduledTask) => {
         const taskOperationalDate = getTaskOperationalDateString(task);
         if (!taskOperationalDate) return false;
 
-        // O julgamento diario fecha apenas o dia operacional atual.
-        // Dias passados continuam ajustaveis durante o ciclo e so devem
-        // ser tratados como "congelados" no encerramento real do ciclo.
-        return taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment';
+        return (taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment')
+            || isOperationalDateJudged(taskOperationalDate);
     };
 
     const showClosedDayMutationBlockedToast = () => {
-        showToast('O dia atual ja foi julgado. O passado so deve travar no encerramento do ciclo.', 'error');
+        showToast('Esse dia ja foi julgado e agora esta travado.', 'error');
     };
 
-    const isCommitmentDayClosedForTask = (task: Pick<ScheduledTask, 'actionId' | 'date'>) =>
-        dailyCommitment.stage === 'judgment' &&
-        taskMatchesOperationalDate(task, dailyCommitment.date);
+    const isCommitmentDayClosedForTask = (task: Pick<ScheduledTask, 'date' | 'startTime'>) => {
+        const operationalDate = getTaskOperationalDateString(task as Pick<ScheduledTask, 'date' | 'startTime'> & Partial<ScheduledTask>);
+        if (!operationalDate) return false;
+
+        return (dailyCommitment.stage === 'judgment' && operationalDate === dailyCommitment.date)
+            || isOperationalDateJudged(operationalDate);
+    };
 
     const isTaskInsideActiveCycle = (task: Pick<ScheduledTask, 'date'>) => {
         if (!activeCycle) return true;
@@ -178,6 +186,18 @@ export const createTaskDomain = ({
         if (handleCompetitionArenaCompletion) {
             void handleCompetitionArenaCompletion(arena.id);
         }
+    };
+
+    const maybePromptSitrepFollowUp = (task: ScheduledTask, action?: Action) => {
+        if (!task.completed) return;
+        if (!taskMatchesOperationalDate(task, dailyCommitment.date)) return;
+        if (dailyCommitment.stage === 'judgment') return;
+
+        emitDailyCompletionPrompt({
+            kind: 'task',
+            actionName: action?.name || null,
+            date: dailyCommitment.date,
+        });
     };
 
     const scheduleMultipleTasks = async (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {
@@ -450,6 +470,7 @@ export const createTaskDomain = ({
 
         maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks);
         runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
+        maybePromptSitrepFollowUp(updatedTask, action);
     };
 
     const scheduleAndCompleteNow = async (actionId: string, taskId?: string) => {
@@ -464,13 +485,15 @@ export const createTaskDomain = ({
         const now = new Date();
         const operationalDate = getOperationalDateString(now);
         const date = getLocalDateString(now);
+        const nowInMinutes = now.getHours() * 60 + now.getMinutes();
+        const startTime = Math.max(0, nowInMinutes - action.duration);
         const existingTaskForToday = tasks.find(task =>
             task.actionId === actionId &&
             taskMatchesOperationalDate(task, operationalDate) &&
             !task.completed
         );
 
-        if (!existingTaskForToday && isCommitmentDayClosedForTask({ actionId, date })) {
+        if (!existingTaskForToday && isCommitmentDayClosedForTask({ date, startTime })) {
             showClosedDayMutationBlockedToast();
             return;
         }
@@ -479,9 +502,6 @@ export const createTaskDomain = ({
             await toggleTaskCompletion(existingTaskForToday.id);
             return;
         }
-
-        const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-        const startTime = Math.max(0, nowInMinutes - action.duration);
 
         const newTask: ScheduledTask = {
             id: crypto.randomUUID(),
@@ -532,6 +552,7 @@ export const createTaskDomain = ({
         }
 
         maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
+        maybePromptSitrepFollowUp(newTask, action);
     };
 
     const scheduleAndCompleteMilestoneNow = async (actionId: string) => {
@@ -598,6 +619,7 @@ export const createTaskDomain = ({
         }
 
         maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
+        maybePromptSitrepFollowUp(newTask, action);
         setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
         addFeedEvent({
             type: 'MILESTONE_COMPLETED',
@@ -636,6 +658,10 @@ export const createTaskDomain = ({
         }
 
         const nextTask = { ...currentTask, ...updates };
+        if (isCommitmentDayClosedForTask({ date: nextTask.date, startTime: nextTask.startTime })) {
+            showClosedDayMutationBlockedToast();
+            return;
+        }
         const shouldReconcileDailyCommitment = updates.date !== undefined || updates.actionId !== undefined;
 
         setTasks(prevTasks => prevTasks.map(task => task.id === taskId ? nextTask : task));

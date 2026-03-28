@@ -19,8 +19,19 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
     const [tempLevels, setTempLevels] = useState<Record<string, number>>({});
     const [tempPhrases, setTempPhrases] = useState<Record<string, string[]>>({});
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
     const [currentAssetIndex, setCurrentAssetIndex] = useState(0);
     const [isAssessmentActive, setIsAssessmentActive] = useState(false);
+
+    const buildDraftFromAssets = () => {
+        const initialLevels = assets.reduce((acc, asset) => ({ ...acc, [asset.id]: asset.level || 1 }), {});
+        const initialPhrases = assets.reduce((acc, asset) => {
+            const fullPhrases = MASTERY_LEVEL_DESCRIPTIONS[asset.id] || [];
+            return { ...acc, [asset.id]: fullPhrases };
+        }, {});
+
+        return { initialLevels, initialPhrases };
+    };
 
     const filteredAssets = useMemo(() => assets.filter((asset) => asset.id !== 'geral'), [assets]);
     const currentAsset = filteredAssets[currentAssetIndex];
@@ -29,11 +40,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
         if (Object.keys(tempLevels).length > 0) return;
         if (assets.length === 0) return;
 
-        const initialLevels = assets.reduce((acc, asset) => ({ ...acc, [asset.id]: asset.level || 1 }), {});
-        const initialPhrases = assets.reduce((acc, asset) => {
-            const fullPhrases = MASTERY_LEVEL_DESCRIPTIONS[asset.id] || [];
-            return { ...acc, [asset.id]: fullPhrases };
-        }, {});
+        const { initialLevels, initialPhrases } = buildDraftFromAssets();
 
         setTempLevels(initialLevels);
         setTempPhrases(initialPhrases);
@@ -48,37 +55,51 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
         }
     }, [currentAsset, tempLevels]);
 
-    const totalLevel = useMemo(() => (
-        Object.entries(tempLevels)
-            .filter(([assetId]) => assetId !== 'geral')
-            .reduce((sum, [, level]) => sum + (level === 0 ? 1 : Number(level || 1)), 0)
-    ), [tempLevels]);
+    const totalLevel = useMemo(
+        () =>
+            Object.entries(tempLevels)
+                .filter(([assetId]) => assetId !== 'geral')
+                .reduce((sum, [, level]) => sum + (level === 0 ? 1 : Number(level || 1)), 0),
+        [tempLevels],
+    );
 
-    const currentDescriptions = useMemo(() => (
-        currentAsset ? (MASTERY_LEVEL_DESCRIPTIONS[currentAsset.id] || []) : []
-    ), [currentAsset]);
+    const currentDescriptions = useMemo(
+        () => (currentAsset ? (MASTERY_LEVEL_DESCRIPTIONS[currentAsset.id] || []) : []),
+        [currentAsset],
+    );
 
     const lastUpdate = userProfile.lastLevelUpdate || 0;
     const threeDays = 72 * 60 * 60 * 1000;
     const oneHour = 60 * 60 * 1000;
     const tutorialCompletedAt = userProfile.tutorialCompletedAt || 0;
-    const isTutorialActive = typeof window !== 'undefined' && (window.location.search.includes('tutorial=true') || (window as any).__GOL_TUTORIAL_ACTIVE__);
-    const isGracePeriod = (Date.now() - tutorialCompletedAt < oneHour) && tutorialCompletedAt > 0;
-    const bypassMasteryLock = userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm' || isTutorialActive || isGracePeriod;
-    const isMasteryLocked = !bypassMasteryLock && lastUpdate > 0 && (Date.now() - lastUpdate < threeDays);
+    const isTutorialActive =
+        typeof window !== 'undefined' &&
+        (window.location.search.includes('tutorial=true') || (window as any).__GOL_TUTORIAL_ACTIVE__);
+    const isGracePeriod = Date.now() - tutorialCompletedAt < oneHour && tutorialCompletedAt > 0;
+    const bypassMasteryLock =
+        userProfile.role === 'admin' ||
+        userProfile.role === 'gm' ||
+        userProfile.role === 'admin_gm' ||
+        isTutorialActive ||
+        isGracePeriod;
+    const isMasteryLocked = !bypassMasteryLock && lastUpdate > 0 && Date.now() - lastUpdate < threeDays;
     const remainingHours = isMasteryLocked
         ? Math.ceil((threeDays - (Date.now() - lastUpdate)) / (60 * 60 * 1000))
         : 0;
 
     const lastAssessmentLabel = userProfile.lastLevelUpdate
-        ? new Date(userProfile.lastLevelUpdate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        ? new Date(userProfile.lastLevelUpdate).toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+          })
         : null;
 
     const overviewNote = !lastUpdate
         ? 'Faça sua primeira avaliação. Depois disso, você poderá recalibrar sua maestria a cada 72 horas.'
         : isMasteryLocked
-            ? `A cada 72 horas, você pode mudar sua maestria. Próxima liberação em ${remainingHours}h.`
-            : 'A cada 72 horas, você pode mudar sua maestria.';
+          ? `A cada 72 horas, você pode mudar sua maestria. Próxima liberação em ${remainingHours}h.`
+          : 'A cada 72 horas, você pode mudar sua maestria.';
 
     if (!currentAsset) return null;
 
@@ -129,6 +150,15 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
         setIsAssessmentActive(true);
     };
 
+    const discardAssessmentDraft = () => {
+        const { initialLevels, initialPhrases } = buildDraftFromAssets();
+        setTempLevels(initialLevels);
+        setTempPhrases(initialPhrases);
+        setCurrentAssetIndex(0);
+        setIsAssessmentActive(false);
+        setShowExitConfirmModal(false);
+    };
+
     return (
         <div
             id="mastery-capture-area"
@@ -141,9 +171,15 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
             <div className="mastery-quiz-shell">
                 <div className="mastery-quiz-topbar">
                     <button
-                        onClick={onClose}
+                        onClick={() => {
+                            if (isAssessmentActive) {
+                                setShowExitConfirmModal(true);
+                                return;
+                            }
+                            onClose?.();
+                        }}
                         className="mastery-quiz-icon-button"
-                        aria-label="Fechar quiz de maestria"
+                        aria-label={isAssessmentActive ? 'Voltar da avaliação' : 'Fechar quiz de maestria'}
                     >
                         <ChevronLeftIcon className="w-5 h-5" />
                     </button>
@@ -170,7 +206,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                                 preparingMessage: 'Preparando compartilhamento da maestria...',
                                 sharedMessage: 'Maestria compartilhada.',
                                 cancelledMessage: 'Compartilhamento cancelado.',
-                                errorMessage: 'Nao foi possivel preparar a maestria para compartilhar.',
+                                errorMessage: 'Não foi possível preparar a maestria para compartilhar.',
                             });
                         }}
                         className="mastery-quiz-icon-button"
@@ -196,9 +232,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                                 <div className="mastery-quiz-overview-copy">
                                     <div className="mastery-quiz-kicker">Maestria atual</div>
                                     <h1 className="mastery-quiz-overview-title">Seu decágono atual</h1>
-                                    <p className="mastery-quiz-overview-note">
-                                        {overviewNote}
-                                    </p>
+                                    <p className="mastery-quiz-overview-note">{overviewNote}</p>
                                 </div>
 
                                 <div className="mastery-quiz-overview-metrics mastery-quiz-overview-metrics--compact">
@@ -246,7 +280,9 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
 
                                 <div className="mastery-quiz-progress">
                                     <div className="mastery-quiz-progress-labels">
-                                        <span>{String(currentAssetIndex + 1).padStart(2, '0')} / {String(filteredAssets.length).padStart(2, '0')}</span>
+                                        <span>
+                                            {String(currentAssetIndex + 1).padStart(2, '0')} / {String(filteredAssets.length).padStart(2, '0')}
+                                        </span>
                                         <span>{currentProgress}%</span>
                                     </div>
                                     <div className="mastery-quiz-progress-track">
@@ -254,11 +290,9 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                                     </div>
                                 </div>
 
-                                    <div className="mastery-quiz-phrase-shell">
+                                <div className="mastery-quiz-phrase-shell">
                                     <div className="mastery-quiz-level-chip">Nível {currentLevel}</div>
-                                    <div className="mastery-quiz-phrase">
-                                        {currentPhrase}
-                                    </div>
+                                    <div className="mastery-quiz-phrase">{currentPhrase}</div>
                                 </div>
 
                                 <div className="mastery-quiz-slider-shell">
@@ -293,10 +327,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                                         <ChevronLeftIcon className="w-4 h-4" />
                                         Anterior
                                     </button>
-                                    <button
-                                        onClick={nextStep}
-                                        className="luxe-skin-button mastery-quiz-nav-button"
-                                    >
+                                    <button onClick={nextStep} className="luxe-skin-button mastery-quiz-nav-button">
                                         {currentAssetIndex === filteredAssets.length - 1 ? 'Finalizar' : 'Próximo'}
                                         <ChevronRightIcon className="w-4 h-4" />
                                     </button>
@@ -325,6 +356,24 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                             </button>
                             <button onClick={handleSave} className="luxe-skin-button w-full py-3 rounded-2xl">
                                 Confirmar
+                            </button>
+                        </div>
+                    </GlassCard>
+                </div>
+            )}
+
+            {showExitConfirmModal && (
+                <div className="mastery-quiz-confirm-overlay" onClick={() => setShowExitConfirmModal(false)}>
+                    <GlassCard variant="accent" className="mastery-quiz-confirm-card" onClick={(event) => event.stopPropagation()}>
+                        <h2 className="mastery-quiz-confirm-title">Tem certeza?</h2>
+                        <p className="mastery-quiz-confirm-copy">Sua edição em andamento será perdida.</p>
+                        <p className="mastery-quiz-confirm-note">Se quiser voltar depois, você pode recomeçar a avaliação do início.</p>
+                        <div className="mastery-quiz-confirm-actions mastery-quiz-confirm-actions--split">
+                            <button onClick={() => setShowExitConfirmModal(false)} className="luxe-button-secondary w-full py-3 rounded-2xl">
+                                Cancelar
+                            </button>
+                            <button onClick={discardAssessmentDraft} className="luxe-skin-button w-full py-3 rounded-2xl">
+                                OK
                             </button>
                         </div>
                     </GlassCard>

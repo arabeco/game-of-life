@@ -436,6 +436,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         <div className="pt-3">
                             <p className="text-[10px] uppercase tracking-wider text-gray-400">Exp depositada no ciclo</p>
                             <p className="text-xl arena-title-text accent-text luxe-title-shadow leading-tight">{expDeposited}</p>
+                            <p className="mt-2 text-[10px] text-gray-500">Se ontem ficou em aberto, voce ainda pode acertar esse dia hoje. Depois disso, ele trava.</p>
                             {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">Bônus Painel Diário: +{sitrepBonus}</p>}
                         </div>
 

@@ -1,6 +1,9 @@
 import type { ActionType } from '../types';
 
 export const REST_SCREEN_ACTION_SESSION_EVENT = 'restScreenActionSession:start';
+export const REST_SCREEN_ACTION_SESSION_CLEAR_EVENT = 'restScreenActionSession:clear';
+export const REST_SCREEN_ACTION_VIEW_REQUEST_EVENT = 'restScreenActionSession:viewAction';
+export const PLANNER_OPEN_ACTION_MODAL_EVENT = 'planner:open-action-modal';
 const REST_SCREEN_ACTION_SESSION_STORAGE_PREFIX = 'rest-screen-action-session-v1';
 const ACTION_TYPES = new Set<ActionType>(['Marco', 'Compromisso', 'Ação Recorrente', 'Livre']);
 
@@ -12,6 +15,12 @@ export interface RestScreenActionSessionDetail {
   actionType: ActionType;
   taskId?: string;
   startedAt: string;
+}
+
+export interface RestScreenActionViewRequestDetail {
+  actionId: string;
+  taskId?: string;
+  source?: 'session_timeout' | 'session_return' | 'session_complete';
 }
 
 export const createRestScreenActionSession = (

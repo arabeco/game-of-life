@@ -7,6 +7,7 @@ import { SparklesIcon, LockIcon } from './Icons';
 import './global-header.css';
 import {
     REST_SCREEN_ACTION_SESSION_EVENT,
+    REST_SCREEN_ACTION_SESSION_CLEAR_EVENT,
     RestScreenActionSessionDetail,
     clearPersistedRestScreenActionSession,
     getRestScreenActionSessionStorageKey,
@@ -156,6 +157,15 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
         window.addEventListener(REST_SCREEN_ACTION_SESSION_EVENT, handleRestScreenActionSession as EventListener);
         return () => window.removeEventListener(REST_SCREEN_ACTION_SESSION_EVENT, handleRestScreenActionSession as EventListener);
     }, [userId]);
+
+    useEffect(() => {
+        const handleClearRestScreenActionSession = () => {
+            clearActionSession(false);
+        };
+
+        window.addEventListener(REST_SCREEN_ACTION_SESSION_CLEAR_EVENT, handleClearRestScreenActionSession);
+        return () => window.removeEventListener(REST_SCREEN_ACTION_SESSION_CLEAR_EVENT, handleClearRestScreenActionSession);
+    }, [clearActionSession]);
 
     useEffect(() => {
         if (!userId) return;

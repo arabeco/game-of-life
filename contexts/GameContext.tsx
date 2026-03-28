@@ -24,10 +24,11 @@ import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscrib
 import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getExpBoostMultiplier, getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
-import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, taskMatchesOperationalDate } from '../utils/operationalDay.js';
+import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive } from '../utils/premiumAccess';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
+import { emitDailyCompletionPrompt } from '../utils/dailyCompletionPrompt';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, shouldPushNotificationForProfile } from '../constants/oracleNotificationPolicy';
@@ -755,6 +756,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const clanRanks = CLAN_RANKS;
 
     const [dailyCommitment, setDailyCommitmentState] = useState<DailyCommitment>(() => createDefaultDailyCommitment());
+    const [judgedOperationalDates, setJudgedOperationalDates] = useState<string[]>([]);
 
     const [cycleExpBonus, setCycleExpBonus] = useState<number>(0);
     const [cycleProgress, setCycleProgress] = useState<number>(0);
@@ -5397,6 +5399,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const updateOperationalScratch = (text: string) => setDailyCommitmentState(prev => ({ ...prev, operationalScratch: text }));
     const lockDailyCommitment = () => setDailyCommitmentState(prev => ({ ...prev, stage: 'battle' }));
     const unlockDailyCommitment = () => setDailyCommitmentState(prev => ({ ...prev, stage: 'planning' }));
+    const refreshJudgedOperationalDates = useCallback(async () => {
+        const userId = getSupabaseUserId();
+        if (!userId) {
+            setJudgedOperationalDates([]);
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('daily_commitments')
+            .select('date')
+            .eq('user_id', userId)
+            .eq('stage', 'judgment');
+
+        if (error) {
+            console.error("Error loading judged operational dates:", error.message);
+            return;
+        }
+
+        setJudgedOperationalDates(
+            Array.isArray(data)
+                ? data
+                    .map((row: { date?: unknown }) => (typeof row.date === 'string' ? row.date : ''))
+                    .filter((date): date is string => Boolean(date))
+                : []
+        );
+    }, [getSupabaseUserId]);
 
     // Persistence: Save dailyCommitment to Supabase whenever it changes
     useEffect(() => {
@@ -5480,6 +5508,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [getSupabaseUserId, isProfileLoaded]);
 
     useEffect(() => {
+        if (!isProfileLoaded) return;
+
+        const userId = getSupabaseUserId();
+        if (!userId) {
+            setJudgedOperationalDates([]);
+            return;
+        }
+
+        void refreshJudgedOperationalDates();
+    }, [getSupabaseUserId, isProfileLoaded, refreshJudgedOperationalDates]);
+
+    useEffect(() => {
         const checkDailyReset = () => {
             const today = getTodayString();
             if (dailyCommitment.date !== today) {
@@ -5497,14 +5537,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (!userId) return;
 
             const today = getTodayString();
+            const oldestOpenDate = shiftLocalDateString(today, -1);
             const { data: pendingDays, error } = await supabase
                 .from('daily_commitments')
                 .select('*')
-                .lt('date', today)
+                .lt('date', oldestOpenDate)
                 .neq('stage', 'judgment'); // Not yet closed
 
             if (pendingDays && pendingDays.length > 0) {
                 console.log(`[RETROACTIVE] Found ${pendingDays.length} unclosed days. Processing...`);
+                const newlyJudgedDates: string[] = [];
                 // For each unclosed day, we'll try to find its tasks and close it
                 for (const day of pendingDays) {
                     const trackedTaskIds = Array.isArray(day.task_ids) ? day.task_ids.filter((id): id is string => typeof id === 'string') : [];
@@ -5552,6 +5594,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         .update({ stage: 'judgment', score: 0, exp_deposited: 0 })
                         .eq('user_id', userId)
                         .eq('date', day.date);
+
+                    if (typeof day.date === 'string' && day.date) {
+                        newlyJudgedDates.push(day.date);
+                    }
+                }
+
+                if (newlyJudgedDates.length > 0) {
+                    setJudgedOperationalDates(prev => Array.from(new Set([...prev, ...newlyJudgedDates])));
                 }
             }
         };
@@ -5632,6 +5682,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const newStage = 'judgment';
         setDailyCommitmentState(prev => ({ ...prev, stage: newStage, score, expDeposited, sitrepBonus }));
+        setJudgedOperationalDates(prev => (
+            prev.includes(dailyCommitment.date)
+                ? prev
+                : [...prev, dailyCommitment.date]
+        ));
+
+        emitDailyCompletionPrompt({
+            kind: 'sitrep',
+            date: dailyCommitment.date,
+            score,
+            expDeposited,
+        });
 
         if (activeCycle && expDeposited > 0) {
             setCycleExpBonus(prev => prev + expDeposited);
@@ -9114,6 +9176,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         tasks,
         activeCycle,
         dailyCommitment,
+        judgedOperationalDates,
         clan,
         supabase,
         setTasks,

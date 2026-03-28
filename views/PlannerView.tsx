@@ -16,6 +16,7 @@ import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_END_HOUR, OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getTaskDisplayStartTime } from '../utils/operationalDay.js';
 import { hasScheduledTime, isTaskInPool } from '../utils/taskDomain.js';
 import { useLongPress } from '../hooks/useLongPress';
+import { PLANNER_OPEN_ACTION_MODAL_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
 import '../components/core-ui.css';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 
@@ -359,6 +360,22 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         window.addEventListener('openSitrep', handleOpenSitrep);
         return () => window.removeEventListener('openSitrep', handleOpenSitrep);
     }, []);
+
+    useEffect(() => {
+        const handleOpenActionModal = (event: Event) => {
+            const customEvent = event as CustomEvent<RestScreenActionViewRequestDetail>;
+            const actionId = customEvent.detail?.actionId;
+            if (!actionId) return;
+
+            const nextAction = actions.find(action => action.id === actionId);
+            if (!nextAction) return;
+
+            setModalData({ action: nextAction, taskId: customEvent.detail?.taskId });
+        };
+
+        window.addEventListener(PLANNER_OPEN_ACTION_MODAL_EVENT, handleOpenActionModal as EventListener);
+        return () => window.removeEventListener(PLANNER_OPEN_ACTION_MODAL_EVENT, handleOpenActionModal as EventListener);
+    }, [actions]);
 
     useEffect(() => {
         const handlePlannerFocusDate = (event: Event) => {

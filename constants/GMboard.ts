@@ -325,6 +325,8 @@ export const MASTERY_LEVEL_DESCRIPTIONS: Record<string, string[]> = {
   geral: [],
 };
 
+MASTERY_LEVEL_DESCRIPTIONS.consciencia[2] = 'Às vezes sinto uma breve gratidão, mas o ceticismo domina.';
+
 const createPrimaryAssetSlot = (slot: Slot): Slot[] => [slot];
 
 const PRIMARY_ASSET_SLOTS: Record<string, Slot[]> = {

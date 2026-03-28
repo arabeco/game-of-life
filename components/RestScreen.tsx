@@ -13,7 +13,7 @@ import { OracleFeed } from './OracleFeed';
 import { WheelPicker } from './inputs/WheelPicker';
 import { Action, ActionType, Arena, ScheduledTask, DayOfWeek } from '../types';
 import { FocusAudioPlayer } from './FocusAudioPlayer';
-import { RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
+import { REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
 import { showLocalNotification } from '../utils/localNotification';
 import { EmojiGlyph } from './EmojiGlyph';
 import { SKINS_DATA, BORDERS_DATA } from '../constants';
@@ -156,6 +156,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const actionSessionTimeoutPlayedRef = useRef(false);
     const actionSessionNotificationSentRef = useRef(false);
     const actionSessionToastSentRef = useRef(false);
+    const actionSessionReturnedRef = useRef(false);
 
     // Quick Action Input State
     const [showQuickActionInput, setShowQuickActionInput] = useState(false);
@@ -487,12 +488,14 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
             actionSessionTimeoutPlayedRef.current = false;
             actionSessionNotificationSentRef.current = false;
             actionSessionToastSentRef.current = false;
+            actionSessionReturnedRef.current = false;
             return;
         }
 
         actionSessionTimeoutPlayedRef.current = false;
         actionSessionNotificationSentRef.current = false;
         actionSessionToastSentRef.current = false;
+        actionSessionReturnedRef.current = false;
         const startedAtMs = new Date(actionSession.startedAt).getTime();
         const totalSeconds = Math.max(1, Math.round(actionSession.durationMinutes * 60));
 
@@ -534,6 +537,21 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
             url: '/',
         });
     }, [actionSession, actionSessionTimeLeft, oraclePreferences?.pushEnabled, showToast]);
+
+    useEffect(() => {
+        if (!actionSession || actionSessionTimeLeft > 0 || isActionSessionCompleted || actionSessionReturnedRef.current) return;
+        if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+
+        actionSessionReturnedRef.current = true;
+        window.dispatchEvent(new CustomEvent(REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, {
+            detail: {
+                actionId: actionSession.actionId,
+                taskId: actionSession.taskId,
+                source: 'session_timeout',
+            },
+        }));
+        onClose();
+    }, [actionSession, actionSessionTimeLeft, isActionSessionCompleted, onClose]);
 
     useEffect(() => {
         return () => {

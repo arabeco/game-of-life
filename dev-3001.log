@@ -641,3 +641,57 @@
 [2m16:19:49[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mtests/_smoke.browser.mjs[22m
 [2m16:22:25[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
 [2m16:22:36[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m17:11:29[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/components/AuthenticatedApp.tsx, /index.css[22m
+[2m17:12:08[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx[22m
+[2m17:12:28[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m17:20:03[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx[22m
+[2m17:20:43[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m17:36:22[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx[22m
+[2m17:36:41[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx[22m
+[2m17:36:49[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m17:37:01[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m17:37:10[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m17:37:26[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m17:37:34[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m17:37:43[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m17:38:57[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\SitrepContent.tsx, /index.css[22m
+[2m18:41:14[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\ArenasView.tsx, /index.css[22m
+[2m18:41:26[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\ArenasView.tsx, /index.css[22m
+[2m18:43:55[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ArenaCard.tsx, /index.css[22m
+[2m18:44:05[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\CampaignArenaStack.tsx, /index.css[22m
+[2m18:44:13[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\CampaignsCodex.tsx, /index.css[22m
+[2m18:44:24[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\RelationshipHubModal.tsx, /index.css[22m
+[2m18:44:40[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\ArenasView.tsx, /index.css[22m
+[2m18:46:41[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\ArenasView.tsx, /index.css[22m
+[2m18:46:56[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\ArenasView.tsx, /index.css[22m
+[2m19:47:58[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /@fs/C:\Users\Afonso\Downloads\GOL1.006\views\SettingsView.tsx[22m
+[2m19:51:03[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css[22m
+[2m19:54:13[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /@fs/C:\Users\Afonso\Downloads\GOL1.006\views\SettingsView.tsx[22m
+[2m19:55:37[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\GlobalHeader.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\CodexBuilderContext.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\RestScreen.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\MoodModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\UserAvatar.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ChestOpeningModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\views\ProfileView.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\CreateClanModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\BannerSelectionModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\BorderSelectionModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\MissionCompletionModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\CanvasAvatar.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\SovereignCustomizer.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ReportResultCarousel.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\AchievementModal.tsx[22m
+[2m19:58:44[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m19:59:24[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m19:59:32[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:01:54[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:02:11[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:02:31[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:04:48[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:05:23[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:05:43[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:06:17[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:20:24[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:20:46[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:20:58[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:21:17[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:21:24[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:21:57[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:22:05[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:22:27[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:23:18[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:23:37[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m
+[2m20:27:15[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\GlobalHeader.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx[22m
+[2m20:27:25[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\GlobalHeader.tsx, /index.css[22m
+[2m20:27:31[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/components/AuthenticatedApp.tsx, /index.css[22m
+[2m20:27:41[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/components/AuthenticatedApp.tsx, /index.css[22m
+[2m20:27:52[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m20:28:06[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\RestScreen.tsx, /index.css[22m
+[2m20:28:14[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /index.css[22m

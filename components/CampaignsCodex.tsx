@@ -36,7 +36,7 @@ const isProbablyImageUrl = (value?: string | null) => {
 };
 
 const PreviewArenaMiniCard: React.FC<{ arena: Arena; actions: Action[] }> = ({ arena, actions }) => (
-    <div className="h-[6.3rem] w-[14.2rem] flex-shrink-0">
+    <div className="h-[5.5rem] w-[12.2rem] flex-shrink-0">
         <ArenaCard
             arena={arena}
             actions={actions}
@@ -1019,7 +1019,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                     {isPreviewCampaign ? (
                                                         <PreviewArenaMiniCard arena={arena} actions={arenaActions} />
                                                     ) : (
-                                                        <div className="h-[6.3rem] w-full rounded-[0.95rem]">
+                                                        <div className="h-[5.5rem] w-full rounded-[0.95rem]">
                                                             <ArenaCard 
                                                                 arena={arena}
                                                                 actions={arenaActions}

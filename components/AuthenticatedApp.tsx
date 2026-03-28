@@ -34,6 +34,9 @@ import { getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess, i
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import { GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 import { ConfirmationModal } from './ConfirmationModal';
+import { DailyCompletionPromptModal } from './DailyCompletionPromptModal';
+import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../utils/dailyCompletionPrompt';
+import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -152,6 +155,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [currentView, setCurrentView] = useState<View>(() => getDefaultView(canUseAssetsView, isBuilderMode));
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
+    const [dailyCompletionPrompt, setDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
+    const [pendingSitrepOpen, setPendingSitrepOpen] = useState(false);
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
 
     useEffect(() => {
@@ -339,6 +344,45 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [handleSetView]);
 
     useEffect(() => {
+        const handleDailyCompletionPrompt = (event: Event) => {
+            const customEvent = event as CustomEvent<DailyCompletionPromptPayload>;
+            if (!customEvent.detail) return;
+            setDailyCompletionPrompt(customEvent.detail);
+        };
+
+        window.addEventListener(DAILY_COMPLETION_PROMPT_EVENT, handleDailyCompletionPrompt as EventListener);
+        return () => window.removeEventListener(DAILY_COMPLETION_PROMPT_EVENT, handleDailyCompletionPrompt as EventListener);
+    }, []);
+
+    useEffect(() => {
+        const dispatchPlannerOpenAction = (detail: RestScreenActionViewRequestDetail) => {
+            window.dispatchEvent(new CustomEvent(PLANNER_OPEN_ACTION_MODAL_EVENT, { detail }));
+        };
+
+        const handleOpenActionFromSession = (event: Event) => {
+            const customEvent = event as CustomEvent<RestScreenActionViewRequestDetail>;
+            if (!customEvent.detail?.actionId) return;
+
+            handleSetView('planner');
+            window.setTimeout(() => dispatchPlannerOpenAction(customEvent.detail), currentView === 'planner' ? 40 : 220);
+        };
+
+        window.addEventListener(REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, handleOpenActionFromSession as EventListener);
+        return () => window.removeEventListener(REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, handleOpenActionFromSession as EventListener);
+    }, [currentView, handleSetView]);
+
+    useEffect(() => {
+        if (!pendingSitrepOpen || currentView !== 'planner') return;
+
+        const timer = window.setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('openSitrep'));
+            setPendingSitrepOpen(false);
+        }, 180);
+
+        return () => window.clearTimeout(timer);
+    }, [currentView, pendingSitrepOpen]);
+
+    useEffect(() => {
         const handleAutoFinishedCycle = () => {
             setProfileVisible(false);
             setReportsVisible(true);
@@ -427,6 +471,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         URL.revokeObjectURL(url);
         exitBuilderMode();
     };
+
+    const handleOpenSitrepFromPrompt = useCallback(() => {
+        setDailyCompletionPrompt(null);
+        setPendingSitrepOpen(true);
+        handleSetView('planner');
+    }, [handleSetView]);
 
     const renderView = () => {
         const viewContent = (() => {
@@ -577,6 +627,15 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 {isProfileVisible && <ProfileView onClose={() => setProfileVisible(false)} />}
                 {isReportsVisible && <ReportsView onClose={() => setReportsVisible(false)} />}
             </Suspense>
+
+            {dailyCompletionPrompt && (
+                <DailyCompletionPromptModal
+                    mode={activeUIMode}
+                    payload={dailyCompletionPrompt}
+                    onClose={() => setDailyCompletionPrompt(null)}
+                    onOpenSitrep={handleOpenSitrepFromPrompt}
+                />
+            )}
 
             <footer
                 className={`auth-footer safe-area-bottom ${activeUIMode === 'BASIC' ?'auth-footer--basic' : 'auth-footer--game'}`}

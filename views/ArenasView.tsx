@@ -1389,6 +1389,14 @@ export const ArenasView: React.FC = () => {
         setSelectedArenaId(newArena.id);
     };
 
+    const chunkPriorityItems = <T,>(items: T[], size: number) => {
+        const chunks: T[][] = [];
+        for (let index = 0; index < items.length; index += size) {
+            chunks.push(items.slice(index, index + size));
+        }
+        return chunks;
+    };
+
     // Helper to render Campaign Card
     const renderCampaignCard = (campaign: Campaign, isParallel: boolean, progress: number) => {
         const campaignArenas = getArenas().filter(a => campaign.arenaIds.includes(a.id));
@@ -1413,8 +1421,8 @@ export const ArenasView: React.FC = () => {
                 onMouseDown={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
                 onTouchStart={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
                 onClick={() => setSelectedCampaignId(campaign.id)}
-                className={`relative col-span-2 aspect-[4/3] bg-[#1a1a1a] rounded-2xl border flex flex-col cursor-pointer transition-all group overflow-hidden ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''} ${campaignAttentionClass}`}
-                style={{ borderColor: userProfile.skinColor || 'var(--skin-accent-color)', touchAction: 'pan-y' }}
+                className={`relative col-span-2 min-w-0 aspect-[4/3] bg-[#1a1a1a] rounded-2xl border flex flex-col cursor-pointer transition-all group overflow-hidden ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''} ${campaignAttentionClass}`}
+                style={{ borderColor: userProfile.skinColor || 'var(--skin-accent-color)', touchAction: 'pan-x pan-y' }}
             >
                 {/* Folder Stack Effect */}
                 <div className="absolute top-0 right-0 w-full h-full bg-white/5 rounded-2xl -z-10 transform translate-x-1 -translate-y-1 border border-white/5" />
@@ -1673,8 +1681,8 @@ export const ArenasView: React.FC = () => {
                 data-drop-id={arena.id}
                 onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
                 onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
-                className={`relative transition-all duration-200 select-none cursor-grab active:cursor-grabbing ${isDragOver ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : 'z-10'} ${isDragged ? 'opacity-30 brightness-50' : ''} ${isBlocked ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
-                style={{ touchAction: 'pan-y' }}
+                className={`relative min-w-0 transition-all duration-200 select-none cursor-grab active:cursor-grabbing ${isDragOver ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : 'z-10'} ${isDragged ? 'opacity-30 brightness-50' : ''} ${isBlocked ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                style={{ touchAction: 'pan-x pan-y' }}
                 onClick={() => {
                     if (!isSelectionMode && !isBlocked) {
                         setSelectedArenaId(arena.id);
@@ -1812,7 +1820,7 @@ export const ArenasView: React.FC = () => {
                             </div>
                         ) : (
                         <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
-                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
+                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[6.85rem] gap-2.5 px-2 pt-1">
                             {receivedMentorCampaigns.map(({ codex, preview }) => (
                                 <div
                                     key={codex.id}
@@ -1893,7 +1901,7 @@ export const ArenasView: React.FC = () => {
                             </div>
                         ) : (
                         <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
-                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
+                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[6.85rem] gap-2.5 px-2 pt-1">
                             {receivedSharedArenas.map((linkedArena) => (
                                 <div key={linkedArena.id}>
                                     <ArenaCard
@@ -2008,7 +2016,7 @@ export const ArenasView: React.FC = () => {
                                     })}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-4 gap-3">
+                            <div className="grid grid-cols-3 items-start gap-2.5 md:grid-cols-4 xl:grid-cols-5">
                                 {arenaFolders.map(folder => {
                                     const arenasInFolder = getArenas().filter(a => a.folderId === folder.id && !allCampaignArenaIds.includes(a.id));
                                     const isFolderDragOver = dragOverId === folder.id;
@@ -2018,7 +2026,7 @@ export const ArenasView: React.FC = () => {
                                             key={folder.id}
                                             data-drop-id={folder.id}
                                             onClick={() => setSelectedFolderId(folder.id)}
-                                            className={`relative aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isFolderDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
+                                            className={`relative min-w-0 aspect-[3/4] bg-gray-800/80 rounded-2xl border-2 border-dashed ${isFolderDragOver ? 'border-[var(--skin-accent-color)] bg-gray-700' : 'border-gray-600'} flex items-center justify-center cursor-pointer hover:border-[var(--skin-accent-color)] transition-colors group`}
                                         >
                                             <div className="absolute top-1 right-1 w-full h-full bg-gray-700/50 rounded-2xl -z-10 transform translate-x-1 -translate-y-1" />
                                             <div className="absolute top-2 right-2 w-full h-full bg-gray-600/30 rounded-2xl -z-20 transform translate-x-2 -translate-y-2" />
@@ -2108,8 +2116,8 @@ export const ArenasView: React.FC = () => {
                                                             });
                                                         })}
                                                     </>
-                                                ) : (
-                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[8.45rem] gap-3 px-2 pt-1">
+                                                ) : items.length <= 6 ? (
+                                                    <div className="grid grid-cols-3 gap-2.5 px-2 pt-1">
                                                         {items.map(item => {
                                                             if (item.itemType === 'campaign') {
                                                                 const campaign = item.value as Campaign;
@@ -2121,6 +2129,26 @@ export const ArenasView: React.FC = () => {
                                                                 assetName: getAssetById(arena.assetId)?.name,
                                                             });
                                                         })}
+                                                    </div>
+                                                ) : (
+                                                    <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
+                                                        <div className="flex min-w-max gap-3 px-2 pt-1">
+                                                            {chunkPriorityItems(items, 6).map((pageItems, pageIndex) => (
+                                                                <div key={`${priority}-page-${pageIndex}`} className="grid w-[21.8rem] shrink-0 grid-cols-3 gap-2.5">
+                                                                    {pageItems.map(item => {
+                                                                        if (item.itemType === 'campaign') {
+                                                                            const campaign = item.value as Campaign;
+                                                                            return renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign));
+                                                                        }
+
+                                                                        const arena = item.value as Arena;
+                                                                        return renderArenaBoardCard(arena, {
+                                                                            assetName: getAssetById(arena.assetId)?.name,
+                                                                        });
+                                                                    })}
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -2154,7 +2182,7 @@ export const ArenasView: React.FC = () => {
                                             </div>
                                         ) : (
                                         <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
-                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.45rem] gap-3 px-2 pt-1">
+                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[6.85rem] gap-2.5 px-2 pt-1">
                                                 {campaigns.map(campaign => renderCampaignCard(campaign, campaign.type === 'parallel', getCampaignProgress(campaign)))}
                                             </div>
                                         </div>
@@ -2188,7 +2216,7 @@ export const ArenasView: React.FC = () => {
                                                 </div>
                                             ) : (
                                             <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2 animate-in fade-in slide-in-from-top-1 duration-200" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}>
-                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[8.45rem] gap-3 px-2 pt-1">
+                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.35rem] gap-2.5 px-2 pt-1">
                                                     {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                                 </div>
                                             </div>

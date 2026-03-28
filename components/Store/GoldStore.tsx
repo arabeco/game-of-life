@@ -44,10 +44,15 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
 
     const premiumBadgeLabel = useMemo(() => {
         if (isPremium && premiumExpiresLabel) {
-            return `${premiumDaysRemaining ?? 0}d · até ${premiumExpiresLabel}`;
+            return `${premiumDaysRemaining ?? 0}d - ate ${premiumExpiresLabel}`;
         }
         return '30 dias';
     }, [isPremium, premiumDaysRemaining, premiumExpiresLabel]);
+
+    const activeBoostBadge = useMemo(() => {
+        if (!hasExpBoost) return 'sem boost';
+        return `${expBoostLabel || '2x ativo'}${expBoostHoursRemaining != null ? ` - ${expBoostHoursRemaining}h` : ''}`;
+    }, [expBoostHoursRemaining, expBoostLabel, hasExpBoost]);
 
     const handleBuyPack = async (packId: string) => {
         const pack = GOLD_PACK_CATALOG.find((entry) => entry.id === packId);
@@ -84,7 +89,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
 
     return (
         <>
-            <div className="space-y-8 animate-fade-in">
+            <div className="space-y-6 animate-fade-in pb-8">
                 <GlassCard id="gold-store-premium" className="relative overflow-hidden border-[var(--ui-border-accent-soft)]">
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-yellow-900/20 via-yellow-500/5 to-transparent" />
                     <div className="relative z-10 flex flex-col items-center justify-between gap-6 p-6 md:flex-row">
@@ -123,48 +128,55 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                     </div>
                 </GlassCard>
 
-                <div id="gold-store-packs">
-                    <h3 className="mb-4 text-lg font-bold text-[color:var(--ui-card-text)]">Pacotes de Ouro</h3>
+                <GlassCard id="gold-store-packs" variant="neutral" className="space-y-4 border-white/10 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-lg font-bold text-[color:var(--ui-card-text)]">Pacotes de Ouro</h3>
+                        <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-300">
+                            Compra avulsa
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-3 gap-3 md:grid-cols-4 lg:grid-cols-6">
                         {GOLD_PACK_CATALOG.map((pack) => (
-                            <GlassCard key={pack.id} className="group relative flex flex-col items-center space-y-2 overflow-hidden p-3 text-center transition-colors hover:bg-white/5">
+                            <GlassCard key={pack.id} className="group relative h-[12.4rem] overflow-hidden p-3 text-center transition-colors hover:bg-white/5">
                                 {pack.bonusGold > 0 && (
                                     <div className="absolute right-2 top-2 rounded border border-green-500/30 bg-green-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-green-400">
-                                        +{pack.bonusGold} bônus
+                                        +{pack.bonusGold} bonus
                                     </div>
                                 )}
 
-                                <div className="text-4xl drop-shadow-[0_0_10px_rgba(255,215,0,0.25)] transition-transform duration-300 group-hover:scale-110">
-                                    {pack.icon}
-                                </div>
+                                <div className="flex h-full flex-col items-center gap-2">
+                                    <div className="mt-1 text-4xl drop-shadow-[0_0_10px_rgba(255,215,0,0.25)] transition-transform duration-300 group-hover:scale-110">
+                                        {pack.icon}
+                                    </div>
 
-                                <div>
-                                    <h4 className="font-bold text-[color:var(--ui-card-text)]">{pack.name}</h4>
+                                    <div className="min-h-[2.6rem]">
+                                        <h4 className="line-clamp-2 text-[11px] font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">{pack.name}</h4>
+                                    </div>
+
                                     <div className="text-2xl font-black text-[var(--gold)]">{pack.totalGold}</div>
-                                </div>
 
-                                <button
-                                    onClick={() => handleBuyPack(pack.id)}
-                                    disabled={!!loading}
-                                    className="luxe-skin-button w-full rounded-xl py-2 text-sm font-bold disabled:opacity-50"
-                                >
-                                    {loading === pack.id ? '...' : `R$ ${pack.priceBrl.toFixed(2)}`}
-                                </button>
+                                    <button
+                                        onClick={() => handleBuyPack(pack.id)}
+                                        disabled={!!loading}
+                                        className="luxe-skin-button mt-auto w-full rounded-xl py-2 text-sm font-bold disabled:opacity-50"
+                                    >
+                                        {loading === pack.id ? '...' : `R$ ${pack.priceBrl.toFixed(2)}`}
+                                    </button>
+                                </div>
                             </GlassCard>
                         ))}
                     </div>
-                </div>
+                </GlassCard>
 
                 <GlassCard id="gold-store-boosts" className="space-y-4 p-6">
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <h3 className="text-lg font-bold text-[color:var(--ui-card-text)]">Boosts de XP</h3>
-                            <p className="text-sm text-[color:var(--ui-card-text-soft)]">Aceleradores simples para fases de execução pesada.</p>
+                            <p className="text-sm text-[color:var(--ui-card-text-soft)]">Aceleradores simples para fases de execucao pesada.</p>
                         </div>
                         <div className="rounded-full border border-[var(--ui-border-accent-soft)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">
-                            {hasExpBoost
-                                ? `${expBoostLabel || '2x ativo'}${expBoostHoursRemaining != null ? ` · ${expBoostHoursRemaining}h` : ''}`
-                                : 'sem boost'}
+                            {activeBoostBadge}
                         </div>
                     </div>
 
@@ -198,8 +210,8 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                         ? `Ativar ou renovar o premium vai debitar ${confirmState.costGold} ouro da sua conta. Deseja continuar?`
                         : `${confirmState.boostName} vai debitar ${confirmState.costGold} ouro da sua conta. Deseja continuar?`}
                     confirmLabel={confirmState.kind === 'premium'
-                        ? `PREMIUM · ${confirmState.costGold} ${GOLD_SYMBOL}`
-                        : `BOOST · ${confirmState.costGold} ${GOLD_SYMBOL}`}
+                        ? `PREMIUM - ${confirmState.costGold} ${GOLD_SYMBOL}`
+                        : `BOOST - ${confirmState.costGold} ${GOLD_SYMBOL}`}
                     onConfirm={() => { void handleConfirmPurchase(); }}
                     onCancel={() => setConfirmState(null)}
                 />

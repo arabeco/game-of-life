@@ -20,7 +20,17 @@ const OracleFeed = React.lazy(() => import('./OracleFeed').then(m => ({ default:
 const ClanDetailModal = React.lazy(() => import('./ClanDetailModal').then(m => ({ default: m.ClanDetailModal })));
 const RestScreen = React.lazy(() => import('./RestScreen').then(m => ({ default: m.RestScreen })));
 
-export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number; defaultRestScreenOpen?: boolean }> = ({ onProfileClick, topOffsetPx = 0, defaultRestScreenOpen = true }) => {
+export const GlobalHeader: React.FC<{
+    onProfileClick: () => void;
+    topOffsetPx?: number;
+    defaultRestScreenOpen?: boolean;
+    onInitialRestScreenDismissed?: () => void;
+}> = ({
+    onProfileClick,
+    topOffsetPx = 0,
+    defaultRestScreenOpen = true,
+    onInitialRestScreenDismissed,
+}) => {
     const { userProfile, oracleMessages, notifications, appMode, clan, oraclePreferences } = useGame();
     const userId = userProfile?.id || '';
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
@@ -28,9 +38,10 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'action' | 'social' | 'notifications'>('chat');
     const [isClanOpen, setClanOpen] = useState(false);
     const [isDeepWorkOpen, setDeepWorkOpen] = useState(false);
-    const [isRestScreenOpen, setRestScreenOpen] = useState(false);
+    const [isRestScreenOpen, setRestScreenOpen] = useState(defaultRestScreenOpen);
     const [restScreenActionSession, setRestScreenActionSession] = useState<RestScreenActionSessionDetail | null>(null);
     const hiddenAtRef = useRef<number | null>(null);
+    const initialRestScreenDismissedRef = useRef(!defaultRestScreenOpen);
     const isBasicMode = appMode === 'BASIC';
     
     const visibleNotifications = getVisibleNotificationsForProfile(
@@ -345,6 +356,10 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                     <RestScreen 
                         onClose={() => {
                             setRestScreenOpen(false);
+                            if (!initialRestScreenDismissedRef.current) {
+                                initialRestScreenDismissedRef.current = true;
+                                onInitialRestScreenDismissed?.();
+                            }
                         }} 
                         onOpenMood={() => setMoodModalOpen(true)}
                         onOpenOracle={() => setOracleOpen(true)}

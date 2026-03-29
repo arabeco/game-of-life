@@ -908,12 +908,9 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const handleConfirmPremiumRenewalOffer = useCallback(async () => {
         const currentGold = Number(userProfile.wallet?.gold || 0);
         if (currentGold < discountedPremiumPrice) {
-            window.dispatchEvent(new CustomEvent('gold-shortage', {
+            window.dispatchEvent(new CustomEvent('navigate-to-store', {
                 detail: {
-                    requiredGold: discountedPremiumPrice,
-                    currentGold,
-                    label: 'renovar o premium com desconto',
-                    storeTab: 'store',
+                    tab: 'store',
                     section: 'packs',
                 },
             }));

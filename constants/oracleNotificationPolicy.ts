@@ -274,6 +274,7 @@ export const getNotificationTitle = (notification: Notification): string => {
     case 'competition_result':
       return 'Seu duelo recebeu um desfecho.';
     case 'system':
+      return 'Aviso do sistema.';
     default:
       return 'Aviso do sistema.';
   }

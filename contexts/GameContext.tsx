@@ -1691,6 +1691,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         })();
     }, [appMode, notifications, oraclePreferences?.activeMode, oraclePreferences?.pushEnabled, session?.user.id, showToast]);
 
+
     useEffect(() => {
         const userId = session?.user.id;
         if (!userId || !isUuid(userId)) {
@@ -2000,11 +2001,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if ((userProfile.wallet?.gold || 0) < cost) {
             const missingGold = Math.max(0, cost - Number(userProfile.wallet?.gold || 0));
             showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para ${name || 'essa compra'}.`, "warning");
+            if (type === 'premium') {
+                window.dispatchEvent(new CustomEvent('navigate-to-store', {
+                    detail: {
+                        tab: 'store',
+                        section: 'packs',
+                    },
+                }));
+                return;
+            }
+
             promptGoldShortage({
                 requiredGold: cost,
                 label: name || 'essa compra',
                 storeTab: type === 'exclusive' ? 'items' : 'store',
-                section: type === 'premium' ? 'premium' : type === 'boost' ? 'boosts' : 'packs',
+                section: type === 'boost' ? 'boosts' : 'packs',
             });
             return;
         }

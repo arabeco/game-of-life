@@ -497,7 +497,8 @@ const NotificationDetailModal: React.FC<{
                     </p>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-3">
+                <div className="mt-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
                     <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
                         Toque fora para fechar
                     </div>
@@ -519,6 +520,7 @@ const NotificationDetailModal: React.FC<{
                         >
                             Excluir
                         </button>
+                    </div>
                     </div>
                 </div>
             </div>

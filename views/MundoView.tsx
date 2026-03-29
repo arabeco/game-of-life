@@ -218,6 +218,7 @@ const SocialTab: React.FC = () => {
     const [relationshipLinks, setRelationshipLinks] = useState<RelationshipLink[]>([]);
     const [relationshipProfiles, setRelationshipProfiles] = useState<Record<string, UserProfile>>({});
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
+    const [joiningClanId, setJoiningClanId] = useState<string | null>(null);
 
     const requestCount = friendRequestsIncoming.length
         + friendRequestsOutgoing.length
@@ -263,6 +264,16 @@ const SocialTab: React.FC = () => {
     const relationshipOutgoing = relationshipInvites.filter(invite => invite.senderId === userProfile.id);
     const incomingRequestCount = friendRequestsIncoming.length + relationshipIncoming.length + clanJoinRequestsIncoming.length;
     const outgoingRequestCount = friendRequestsOutgoing.length + relationshipOutgoing.length + clanJoinRequestsOutgoing.length;
+
+    const handleJoinClan = async (targetClan: Clan) => {
+        if (joiningClanId) return;
+        setJoiningClanId(targetClan.id);
+        try {
+            await joinClan(targetClan);
+        } finally {
+            setJoiningClanId(current => current === targetClan.id ? null : current);
+        }
+    };
 
     const renderRequestsPanel = () => {
         if (requestCount === 0) {
@@ -576,6 +587,7 @@ const SocialTab: React.FC = () => {
                                     const rank = clanRanks.find(r => r.id === c.rankId);
                                     const isMemberOfThisClan = clan?.id === c.id;
                                     const isMemberOfAnyClan = !!clan;
+                                    const isJoiningThisClan = joiningClanId === c.id;
                                     const hasPendingRequest = clanJoinRequestsOutgoing.some(request => request.clanId === c.id && request.status === 'pending');
                                     const pendingRequest = clanJoinRequestsOutgoing.find(request => request.clanId === c.id && request.status === 'pending');
                                     const isPrivate = c.recruitmentStatus === 'Privado';
@@ -591,8 +603,15 @@ const SocialTab: React.FC = () => {
                                     } else if (hasPendingRequest) {
                                         buttonText = 'Solicitado';
                                         isDisabled = true;
+                                    } else if (isJoiningThisClan) {
+                                        buttonText = 'Entrando...';
+                                        isDisabled = true;
                                     } else if (isPrivate) {
                                         buttonText = 'Solicitar';
+                                    }
+
+                                    if (joiningClanId && !isJoiningThisClan) {
+                                        isDisabled = true;
                                     }
 
                                     return (
@@ -613,7 +632,7 @@ const SocialTab: React.FC = () => {
                                                         </button>
                                                     )}
                                                     <button
-                                                        onClick={() => joinClan(c)}
+                                                        onClick={() => { void handleJoinClan(c); }}
                                                         disabled={isDisabled}
                                                         className="px-4 py-2 bg-white/10 text-sm font-bold rounded-lg hover:bg-white/20 disabled:bg-black/20 disabled:text-gray-500 disabled:cursor-not-allowed"
                                                     >

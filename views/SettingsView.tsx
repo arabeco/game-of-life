@@ -31,6 +31,8 @@ const MasteryView = lazy(() =>
 const SovereignCustomizer = lazy(() =>
     import('../components/SovereignCustomizer').then((module) => ({ default: module.SovereignCustomizer }))
 );
+
+const GOLD_SYMBOL = '\u{1FA99}';
 const SovereignPanelView = lazy(() =>
     import('./SovereignPanelView').then((module) => ({ default: module.SovereignPanelView }))
 );
@@ -2161,7 +2163,9 @@ const LegacyPremiumTab: React.FC = () => {
 };
 
 const PremiumTab: React.FC = () => {
-    const { userProfile, isProfileLoaded } = useGame();
+    const { userProfile, isProfileLoaded, buyStoreItem } = useGame();
+    const [confirmPremium, setConfirmPremium] = useState(false);
+    const [isBuyingPremium, setIsBuyingPremium] = useState(false);
     const isPremium = hasPremiumAccess(userProfile);
     const isStaff = isProfileLoaded && (userProfile.role === 'admin' || userProfile.role === 'gm');
     const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÍVEL';
@@ -2176,12 +2180,28 @@ const PremiumTab: React.FC = () => {
             : isPremium
                 ? 'legado ativo'
                 : '30 dias';
+    const premiumBadgeLabel = isStaff
+        ? 'controle gm'
+        : isPremium && premiumExpiresLabel
+            ? `${premiumDaysRemaining ?? 0}d - ate ${premiumExpiresLabel}`
+            : '30 dias';
+    const premiumActionLabel = isPremium ? 'Estender premium' : 'Ativar premium';
 
-    const handleOpenPremiumStore = () => {
-        window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'store' } }));
+    const handleConfirmPremiumPurchase = async () => {
+        if (isBuyingPremium) return;
+        setIsBuyingPremium(true);
+        try {
+            await buyStoreItem('premium_30d', 'premium');
+            setConfirmPremium(false);
+        } catch (error) {
+            console.error('Premium purchase failed from settings tab', error);
+        } finally {
+            setIsBuyingPremium(false);
+        }
     };
 
     return (
+        <>
         <div className="space-y-8 animate-fade-in pb-10">
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">
@@ -2241,11 +2261,19 @@ const PremiumTab: React.FC = () => {
                         </div>
 
                         <button
-                            onClick={handleOpenPremiumStore}
-                            className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em]"
+                            onClick={() => setConfirmPremium(true)}
+                            disabled={isBuyingPremium}
+                            className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            <span>{isPremium ? 'Renovar premium' : 'Ativar premium'}</span>
+                            <span>{premiumActionLabel}</span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/15 px-2.5 py-1 text-[11px]">
+                                <span className="text-[12px] leading-none">{GOLD_SYMBOL}</span>
+                                <span>{isBuyingPremium ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
+                            </span>
                         </button>
+                        <div className="text-center text-[11px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
+                            {premiumBadgeLabel}
+                        </div>
                     </div>
                 </GlassCard>
             </section>
@@ -2258,6 +2286,20 @@ const PremiumTab: React.FC = () => {
                 </div>
             )}
         </div>
+        {confirmPremium && (
+            <ConfirmationModal
+                title={isPremium ? 'Estender premium' : 'Ativar premium'}
+                message={isPremium
+                    ? `Estender o premium vai debitar ${GOLD_PREMIUM_PRODUCT.priceGold} ouro da sua conta e somar mais 30 dias ao periodo atual. Deseja continuar?`
+                    : `Ativar o premium vai debitar ${GOLD_PREMIUM_PRODUCT.priceGold} ouro da sua conta e liberar 30 dias de acesso. Deseja continuar?`}
+                confirmLabel={`${isPremium ? 'ESTENDER' : 'ATIVAR'} - ${GOLD_PREMIUM_PRODUCT.priceGold} ${GOLD_SYMBOL}`}
+                onConfirm={() => { void handleConfirmPremiumPurchase(); }}
+                onCancel={() => {
+                    if (!isBuyingPremium) setConfirmPremium(false);
+                }}
+            />
+        )}
+        </>
     );
 };
 

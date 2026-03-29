@@ -2775,6 +2775,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const persistTimeoutRef = useRef<number | null>(null);
     const dataLoadTimeoutRef = useRef<number | null>(null);
     const clanCacheRef = useRef<{ clanId: string; timestamp: number; members: EnrichedClanMember[] } | null>(null);
+    const joinClanInFlightRef = useRef<Set<string>>(new Set());
     const staleSeasonQuestCleanupKeyRef = useRef<string | null>(null);
     const enableClanQuestProgress = true; // Always enable for now
     const clanQuestProgressTableReadyRef = useRef(enableClanQuestProgress);
@@ -3377,14 +3378,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const { data: membersData, error: membersError } = await supabase.from('clan_members').select('*').eq('clan_id', clanId);
         if (membersError || !membersData) { console.error('Error fetching clan members:', membersError?.message); return; }
 
-        const memberIds = membersData.map((m: any) => m.user_id).filter((id: string) => isUuid(id));
+        const uniqueMembersData = membersData.filter((member: any, index: number, array: any[]) =>
+            array.findIndex((candidate: any) => candidate.user_id === member.user_id) === index
+        );
+
+        const memberIds = uniqueMembersData.map((m: any) => m.user_id).filter((id: string) => isUuid(id));
         if (memberIds.length === 0) { setEnrichedClanMembers([]); return; }
 
         const { data: memberProfiles, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', memberIds);
         if (profilesError || !memberProfiles) { console.error('Error fetching member profiles:', profilesError?.message); return; }
 
         const enrichedMembers: EnrichedClanMember[] = memberIds.map((memberId: string) => {
-            const memberInfo = membersData.find((m: any) => m.user_id === memberId);
+            const memberInfo = uniqueMembersData.find((m: any) => m.user_id === memberId);
             if (!memberInfo) return null;
 
             let profile = memberProfiles.find((p: any) => p.id === memberId);
@@ -3434,7 +3439,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setEnrichedClanMembers(enrichedMembers);
 
         const currentUserId = session?.user.id;
-        const currentMember = currentUserId ?membersData.find((m: any) => m.user_id === currentUserId) : null;
+        const currentMember = currentUserId ? uniqueMembersData.find((m: any) => m.user_id === currentUserId) : null;
         if (currentMember?.role === 'leader') {
             await loadClanJoinRequestsIncoming(clanId);
         } else {
@@ -3448,16 +3453,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        const { data: membershipRow, error: membershipError } = await supabase
+        const { data: membershipRows, error: membershipError } = await supabase
             .from('clan_members')
-            .select('clan_id')
+            .select('clan_id, joined_at')
             .eq('user_id', userId)
-            .maybeSingle();
+            .order('joined_at', { ascending: true });
 
         if (membershipError) {
             console.error('Error refreshing clan membership state:', membershipError.message);
             return;
         }
+
+        const membershipRow = Array.isArray(membershipRows) ? membershipRows[0] : null;
 
         if (membershipRow?.clan_id) {
             await loadClanAndMembers(String(membershipRow.clan_id), true);
@@ -3972,7 +3979,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     reportsResult,
                     campaignsResult,
                 ] = await rateLimiter.batchRequests([
-                    () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).maybeSingle(),
+                    () => supabase.from('clan_members').select('clan_id').eq('user_id', userId).order('joined_at', { ascending: true }).limit(1).maybeSingle(),
                     () => supabase.from('arena_folders').select('*').eq('user_id', userId),
                     () => supabase.from('cycles').select('*').eq('user_id', userId).not('report_data', 'is', null).order('end_date', { ascending: false }).limit(100),
                     () => supabase.from('campaigns').select('*').eq('user_id', userId),
@@ -10325,75 +10332,163 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const joinClan = async (clanToJoin: Clan) => {
-        if (clan) return;
+        if (clan) {
+            showToast('Voce ja esta em um grupo.', 'info');
+            return;
+        }
+
         const userId = getSupabaseUserId();
-        if (!userId) { console.error("User ID not found"); return; }
-
-        const { data: freshClanRow, error: freshClanError } = await supabase
-            .from('clans')
-            .select('id, recruitment_status')
-            .eq('id', clanToJoin.id)
-            .single();
-
-        if (freshClanError) {
-            console.error("Error checking clan recruitment status:", freshClanError.message);
-            showToast('Nao foi possivel verificar a entrada desse grupo.', 'error');
+        if (!userId) {
+            console.error("User ID not found");
             return;
         }
+        if (joinClanInFlightRef.current.size > 0) return;
 
-        const recruitmentStatus = String(
-            (freshClanRow as any)?.recruitment_status
-            ?? (clanToJoin as any).recruitment_status
-            ?? (clanToJoin as any).recruitmentStatus
-            ?? ''
-        )
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .trim()
-            .toLowerCase();
-        if (recruitmentStatus === 'privado') {
-            await requestClanJoin(clanToJoin);
-            showToast('Solicitacao enviada. Agora o lider precisa aprovar sua entrada.', 'success');
-            return;
+        joinClanInFlightRef.current.add(clanToJoin.id);
+
+        try {
+            const { data: freshClanRow, error: freshClanError } = await supabase
+                .from('clans')
+                .select('id, recruitment_status')
+                .eq('id', clanToJoin.id)
+                .single();
+
+            if (freshClanError) {
+                console.error("Error checking clan recruitment status:", freshClanError.message);
+                showToast('Nao foi possivel verificar a entrada desse grupo.', 'error');
+                return;
+            }
+
+            const recruitmentStatus = String(
+                (freshClanRow as any)?.recruitment_status
+                ?? (clanToJoin as any).recruitment_status
+                ?? (clanToJoin as any).recruitmentStatus
+                ?? ''
+            )
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim()
+                .toLowerCase();
+            if (recruitmentStatus === 'privado') {
+                await requestClanJoin(clanToJoin);
+                showToast('Solicitacao enviada. Agora o lider precisa aprovar sua entrada.', 'success');
+                return;
+            }
+
+            const { data: existingMembershipRows, error: existingMembershipError } = await supabase
+                .from('clan_members')
+                .select('id, clan_id, joined_at')
+                .eq('user_id', userId)
+                .order('joined_at', { ascending: true });
+
+            if (existingMembershipError) {
+                console.error("Error checking existing clan membership:", existingMembershipError.message);
+                showToast('Nao foi possivel verificar seu grupo atual.', 'error');
+                return;
+            }
+
+            const existingMembership = Array.isArray(existingMembershipRows) ? existingMembershipRows[0] : null;
+            if (existingMembership?.clan_id) {
+                await refreshClanMembershipState(userId);
+                if (String(existingMembership.clan_id) === clanToJoin.id) {
+                    showToast(`Voce ja entrou em ${clanToJoin.name}.`, 'info');
+                } else {
+                    showToast('Voce ja participa de um grupo.', 'info');
+                }
+                return;
+            }
+
+            const { data: clanMembersData, error: clanMembersError } = await supabase
+                .from('clan_members')
+                .select('user_id')
+                .eq('clan_id', clanToJoin.id);
+
+            if (clanMembersError) {
+                console.error("Error checking clan size:", clanMembersError.message);
+                showToast('Nao foi possivel verificar o tamanho do grupo.', 'error');
+                return;
+            }
+
+            const memberCount = new Set((clanMembersData ?? []).map((member: any) => String(member.user_id))).size;
+            if (memberCount >= MAX_CLAN_MEMBERS) {
+                alert(`Este grupo atingiu o limite maximo de ${MAX_CLAN_MEMBERS} pessoas.`);
+                return;
+            }
+
+            const { error: joinError } = await supabase
+                .from('clan_members')
+                .insert({ user_id: userId, clan_id: clanToJoin.id, role: 'member' });
+
+            if (joinError) {
+                console.error("Error joining clan:", joinError.message);
+                await refreshClanMembershipState(userId);
+                showToast('Nao foi possivel entrar no grupo agora.', 'error');
+                return;
+            }
+
+            clanCacheRef.current = null;
+            setClan(clanToJoin);
+            setEnrichedClanMembers([
+                {
+                    ...userProfile,
+                    clanName: clanToJoin.name,
+                    clanIcon: clanToJoin.icon,
+                    role: 'member',
+                    joined_at: new Date().toISOString(),
+                } as EnrichedClanMember,
+            ]);
+
+            updateUserProfile({
+                clanName: clanToJoin.name,
+                clanIcon: clanToJoin.icon,
+            });
+
+            await supabase
+                .from('clan_join_requests')
+                .delete()
+                .eq('clan_id', clanToJoin.id)
+                .eq('user_id', userId)
+                .eq('status', 'pending');
+
+            setClanJoinRequestsOutgoing(prev => prev.filter(request => request.clanId !== clanToJoin.id));
+            showToast(`Voce entrou em ${clanToJoin.name}.`, 'success');
+            window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            await loadClanAndMembers(clanToJoin.id, true);
+        } finally {
+            joinClanInFlightRef.current.delete(clanToJoin.id);
         }
-
-        const { count, error: countError } = await supabase
-            .from('clan_members')
-            .select('*', { count: 'exact', head: true })
-            .eq('clan_id', clanToJoin.id);
-
-        if (countError) { console.error("Error checking clan size:", countError.message); return; }
-
-        if (count !== null && count >= MAX_CLAN_MEMBERS) {
-            alert(`Este grupo atingiu o limite maximo de ${MAX_CLAN_MEMBERS} pessoas.`);
-            return;
-        }
-
-        const { error } = await supabase.from('clan_members').insert({ user_id: userId, clan_id: clanToJoin.id, role: 'member' });
-        if (error) { console.error("Error joining clan:", error.message); return; }
-        await supabase
-            .from('clan_join_requests')
-            .delete()
-            .eq('clan_id', clanToJoin.id)
-            .eq('user_id', userId)
-            .eq('status', 'pending');
-        setClanJoinRequestsOutgoing(prev => prev.filter(request => request.clanId !== clanToJoin.id));
-        await loadClanAndMembers(clanToJoin.id);
-        showToast(`Você entrou em ${clanToJoin.name}.`, 'success');
-        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
     const approveClanJoinRequest = async (request: ClanJoinRequest) => {
         if (!clan || request.clanId !== clan.id) return;
 
-        const { count, error: countError } = await supabase
+        const { data: clanMembersData, error: clanMembersError } = await supabase
             .from('clan_members')
-            .select('*', { count: 'exact', head: true })
+            .select('user_id')
             .eq('clan_id', clan.id);
 
-        if (countError) { console.error("Error checking clan size:", countError.message); return; }
-        if (count !== null && count >= MAX_CLAN_MEMBERS) {
+        if (clanMembersError) { console.error("Error checking clan size:", clanMembersError.message); return; }
+        const memberCount = new Set((clanMembersData ?? []).map((member: any) => String(member.user_id))).size;
+        if (memberCount >= MAX_CLAN_MEMBERS) {
             alert(`O grupo atingiu o limite maximo de ${MAX_CLAN_MEMBERS} pessoas.`);
+            return;
+        }
+
+        const { data: existingMembershipRows, error: existingMembershipError } = await supabase
+            .from('clan_members')
+            .select('id, clan_id, joined_at')
+            .eq('user_id', request.userId)
+            .order('joined_at', { ascending: true });
+        if (existingMembershipError) { console.error("Error checking member before approval:", existingMembershipError.message); return; }
+
+        const existingMembership = Array.isArray(existingMembershipRows) ? existingMembershipRows[0] : null;
+        if (existingMembership?.clan_id) {
+            await loadClanJoinRequestsIncoming(clan.id);
+            if (String(existingMembership.clan_id) === clan.id) {
+                showToast('Essa pessoa ja entrou no grupo.', 'info');
+            } else {
+                showToast('Essa pessoa ja participa de outro grupo.', 'warning');
+            }
             return;
         }
 

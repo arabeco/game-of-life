@@ -1,8 +1,9 @@
-import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import { SplashScreen } from './components/SplashScreen';
 import { ClosedBetaGoogleInviteModal } from './components/ClosedBetaGoogleInviteModal';
+import { AppRuntimeMetricsService, type AppRuntimeEntryMode } from './services/AppRuntimeMetricsService';
 import { SupabaseService } from './services/SupabaseService';
 import {
     clearClosedBetaGoogleAuthPending,
@@ -72,12 +73,18 @@ const App: React.FC = () => {
     const sessionRef = useRef<Session | null>(null);
     const sessionRecoveryInFlightRef = useRef<Promise<Session | null> | null>(null);
     const lastSessionRecoveryAttemptRef = useRef(0);
+    const bootStartedAtRef = useRef(typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const bootMetricSentRef = useRef(false);
+    const bootErrorSignatureRef = useRef('');
+    const bootEntryModeRef = useRef<AppRuntimeEntryMode>('unknown');
     const [bootVisuals, setBootVisuals] = useState<{ skin: string; mode: 'GAME' | 'BASIC'; theme: 'LIGHT' | 'DARK' | null }>({
         skin: 'BASIC',
         mode: 'BASIC',
         theme: 'DARK',
     });
+    const bootVisualsRef = useRef(bootVisuals);
     const renderMode = useMemo(() => new URLSearchParams(window.location.search).get('render'), []);
+    const renderModeRef = useRef(renderMode);
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
     const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
     const showFullScreenBoot = loading || googleAuthPending || (!session && authGuardLoading);
@@ -91,8 +98,51 @@ const App: React.FC = () => {
     }, [session]);
 
     useEffect(() => {
+        bootVisualsRef.current = bootVisuals;
+    }, [bootVisuals]);
+
+    useEffect(() => {
         setIsAppContentReady(false);
     }, [session?.user?.id]);
+
+    const captureBootError = useCallback((errorName: string, errorMessage: string) => {
+        if (bootMetricSentRef.current) return;
+
+        const userId = sessionRef.current?.user?.id;
+        if (!userId) return;
+
+        const signature = `${errorName}:${errorMessage}`;
+        if (bootErrorSignatureRef.current === signature) return;
+        bootErrorSignatureRef.current = signature;
+
+        AppRuntimeMetricsService.trackBootError({
+            userId,
+            durationMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()) - bootStartedAtRef.current,
+            entryMode: bootEntryModeRef.current,
+            appMode: bootVisualsRef.current.mode,
+            renderMode: renderModeRef.current,
+            errorName,
+            errorMessage,
+        });
+    }, []);
+
+    const handleAuthenticatedAppReady = useCallback(() => {
+        setIsAppContentReady(true);
+
+        if (bootMetricSentRef.current) return;
+        const userId = sessionRef.current?.user?.id;
+        if (!userId) return;
+
+        bootMetricSentRef.current = true;
+        AppRuntimeMetricsService.trackShellReady({
+            userId,
+            durationMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()) - bootStartedAtRef.current,
+            entryMode: bootEntryModeRef.current,
+            appMode: bootVisualsRef.current.mode,
+            renderMode: renderModeRef.current,
+            theme: bootVisualsRef.current.theme,
+        });
+    }, []);
 
     useEffect(() => {
         startInstallPromptCapture();
@@ -367,6 +417,10 @@ const App: React.FC = () => {
                 currentSession.refresh_token !== recoveredSession.refresh_token;
 
             if (sessionChanged) {
+                bootStartedAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
+                bootMetricSentRef.current = false;
+                bootErrorSignatureRef.current = '';
+                bootEntryModeRef.current = 'resume_recovery';
                 await applyResolvedSession(recoveredSession);
             }
         };
@@ -382,12 +436,18 @@ const App: React.FC = () => {
                     const recoveredSession =
                         await recoverSessionGracefully('initial-check-error') ||
                         await retryPendingGoogleAuthSession('initial-check-error');
+                    bootEntryModeRef.current = recoveredSession ? 'oauth_recovery' : 'unknown';
                     if (!recoveredSession) {
                         clearPendingGoogleAuthState();
                     }
                     await applyResolvedSession(recoveredSession);
                 } else {
                     const recoveredSession = restoredSession || await retryPendingGoogleAuthSession();
+                    if (restoredSession) {
+                        bootEntryModeRef.current = 'session_restore';
+                    } else if (recoveredSession) {
+                        bootEntryModeRef.current = 'oauth_recovery';
+                    }
                     if (!recoveredSession) {
                         clearPendingGoogleAuthState();
                     }
@@ -395,6 +455,7 @@ const App: React.FC = () => {
                 }
             } catch (e) {
                 console.error('Critical auth check error:', e);
+                captureBootError('critical_auth_check_error', e instanceof Error ? e.message : String(e));
                 clearPendingGoogleAuthState();
                 setSession(null);
             } finally {
@@ -406,6 +467,20 @@ const App: React.FC = () => {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((event, nextSession) => {
             void (async () => {
+                if (event === 'SIGNED_IN' && nextSession && sessionRef.current?.user?.id !== nextSession.user?.id) {
+                    bootStartedAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
+                    bootMetricSentRef.current = false;
+                    bootErrorSignatureRef.current = '';
+                    bootEntryModeRef.current = 'signed_in';
+                } else if (event === 'INITIAL_SESSION' && nextSession) {
+                    bootEntryModeRef.current = 'session_restore';
+                } else if (event === 'PASSWORD_RECOVERY') {
+                    bootStartedAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
+                    bootMetricSentRef.current = false;
+                    bootErrorSignatureRef.current = '';
+                    bootEntryModeRef.current = 'password_recovery';
+                }
+
                 if ((event as string) === 'TOKEN_REFRESH_ERROR') {
                     const recoveredSession = await recoverSessionGracefully('token-refresh-error', nextSession || sessionRef.current);
                     if (recoveredSession) {
@@ -495,7 +570,37 @@ const App: React.FC = () => {
             window.removeEventListener('focus', handleFocus);
             window.removeEventListener('pageshow', handlePageShow);
         };
-    }, [isGoldenInviteGateEnabled]);
+    }, [captureBootError, isGoldenInviteGateEnabled]);
+
+    useEffect(() => {
+        const handleWindowError = (event: ErrorEvent) => {
+            const errorName = event.error instanceof Error && event.error.name
+                ? event.error.name
+                : 'window_error';
+            captureBootError(errorName, event.message || 'Unknown window error');
+        };
+
+        const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+            const reason = event.reason;
+            const errorName = reason instanceof Error && reason.name
+                ? reason.name
+                : 'unhandled_rejection';
+            const errorMessage = reason instanceof Error
+                ? reason.message
+                : typeof reason === 'string'
+                    ? reason
+                    : 'Unknown promise rejection';
+            captureBootError(errorName, errorMessage);
+        };
+
+        window.addEventListener('error', handleWindowError);
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+        return () => {
+            window.removeEventListener('error', handleWindowError);
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+        };
+    }, [captureBootError]);
 
     useLayoutEffect(() => {
         const skin = resolveUiSkinId(bootVisuals.mode === 'BASIC' ? 'default' : bootVisuals.skin);
@@ -556,7 +661,7 @@ const App: React.FC = () => {
                         <AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />
                     ) : (
                         <Suspense fallback={<AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />}>
-                            {session ? <AuthenticatedApp session={session} onReady={() => setIsAppContentReady(true)} /> : <LoginView />}
+                            {session ? <AuthenticatedApp session={session} onReady={handleAuthenticatedAppReady} /> : <LoginView />}
                         </Suspense>
                     )}
                     {showResetPassword && (

@@ -11,7 +11,7 @@ import { ItemArt } from '../ItemArt';
 import { RewardPackModal } from '../RewardPackModal';
 import { buildChestRewardPayload } from '../../utils/chestRewardPresentation';
 
-type InventoryTab = 'all' | 'sovereign' | 'glyph' | 'interface' | 'insignias' | 'chests';
+type InventoryTab = 'all' | 'sovereign' | 'glyph' | 'interface' | 'honors' | 'chests';
 type InventoryEntry = {
     id: string;
     instanceId: string;
@@ -20,12 +20,17 @@ type InventoryEntry = {
     def?: ItemDef;
 };
 
+const HONOR_CATEGORIES = new Set(['insignia', 'insignias']);
+const NON_INVENTORY_CATEGORIES = new Set(['hair']);
+const isHonorCategory = (category?: string) => HONOR_CATEGORIES.has(String(category || ''));
+const isNonInventoryCategory = (category?: string) => NON_INVENTORY_CATEGORIES.has(String(category || ''));
+
 const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
     { id: 'all', label: 'Tudo', categories: [] },
-    { id: 'sovereign', label: 'Soberano', categories: ['skin', 'hair', 'artifact'] },
+    { id: 'sovereign', label: 'Soberano', categories: ['skin', 'artifact'] },
     { id: 'glyph', label: 'Glifo', categories: ['glyph', 'aura', 'orb', 'plate'] },
     { id: 'interface', label: 'Interface', categories: ['border', 'ui_skin', 'banner'] },
-    { id: 'insignias', label: 'Insignias', categories: ['insignia'] },
+    { id: 'honors', label: 'Honras', categories: ['insignia', 'insignias'] },
     { id: 'chests', label: 'Baus', categories: ['chest'] },
 ];
 
@@ -42,14 +47,14 @@ export const Inventory: React.FC = () => {
     const visibleTabs = useMemo(() => {
         if (appMode === 'BASIC') {
             // Hide cosmetic tabs and chests in BASIC mode (Focus on productivity)
-            return TABS.filter(t => !['sovereign', 'glyph', 'interface', 'insignias', 'chests'].includes(t.id));
+            return TABS.filter(t => !['sovereign', 'glyph', 'interface', 'honors', 'chests'].includes(t.id));
         }
         return TABS;
     }, [appMode]);
 
     // Reset active tab if it becomes invisible
     useEffect(() => {
-        if (appMode === 'BASIC' && ['sovereign', 'glyph', 'interface', 'insignias', 'chests'].includes(activeTab)) {
+        if (appMode === 'BASIC' && ['sovereign', 'glyph', 'interface', 'honors', 'chests'].includes(activeTab)) {
             setActiveTab('all');
         }
     }, [appMode, activeTab]);
@@ -102,7 +107,8 @@ export const Inventory: React.FC = () => {
 
     const filteredItems = useMemo(() => {
         return sourceItems.filter(item => {
-            if (activeTab === 'all') return true;
+            if (isNonInventoryCategory(item.def?.category)) return false;
+            if (activeTab === 'all') return !isHonorCategory(item.def?.category);
             if (activeTab === 'chests') return false; // Handled separately
             const tabConfig = TABS.find(t => t.id === activeTab);
             return tabConfig?.categories.includes(item.def?.category || '');

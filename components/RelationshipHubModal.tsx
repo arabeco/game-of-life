@@ -165,9 +165,11 @@ const AvatarPill: React.FC<{ profile?: RelationshipProfileLite | null; fallback?
 );
 
 const EmptyState: React.FC<{ title: string; text: string }> = ({ title, text }) => (
-    <div className="rounded-[22px] border border-dashed border-white/12 bg-black/18 px-4 py-6 text-center">
-        <div className="text-[11px] font-black uppercase tracking-[0.24em] text-white/40">{title}</div>
-        <p className="mt-2 text-sm text-white/58 leading-relaxed">{text}</p>
+    <div className="rounded-[18px] border border-dashed border-white/12 bg-black/18 px-4 py-3 text-center">
+        <div className="text-[12px] font-semibold text-white/62">
+            <span className="font-black uppercase tracking-[0.18em] text-white/42">{title}</span>
+            <span className="text-white/54"> · {text}</span>
+        </div>
     </div>
 );
 
@@ -264,7 +266,7 @@ const MentorshipCampaignBoardCard: React.FC<{
                         Campanha
                     </div>
                     <div className="mt-1 truncate text-sm font-black text-white">{title}</div>
-                    <div className="mt-1 text-[11px] leading-relaxed text-white/52">{subtitle}</div>
+                    <div className="mt-1 text-[11px] text-white/52">{subtitle}</div>
                 </div>
                 {badge}
             </div>
@@ -297,7 +299,7 @@ const RelationshipSectionCard: React.FC<{
                 <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">{eyebrow}</div>
                 <div className="mt-1 text-sm font-black text-white">{title}</div>
                 {description && (
-                    <div className="mt-1 text-[12px] leading-relaxed text-white/52">
+                    <div className="mt-1 text-[11px] text-white/48">
                         {description}
                     </div>
                 )}
@@ -334,10 +336,10 @@ const InviteCard: React.FC<{
                             {label.singular}
                         </span>
                     </div>
-                    <p className="mt-1 text-sm leading-relaxed text-white/58">
+                    <p className="mt-1 text-[12px] text-white/58">
                         {mode === 'incoming'
-                            ? `${profile?.nickname || 'Esse aliado'} quer iniciar ${label.singular.toLowerCase()} com voce.`
-                            : 'Convite pendente aguardando resposta.'}
+                            ? `${profile?.nickname || 'Esse aliado'} quer ${label.singular.toLowerCase()} com voce.`
+                            : 'Convite enviado e aguardando resposta.'}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white/42">
                         <span>{COIN_GLYPH} {invite.costGold || label.cost}</span>
@@ -434,7 +436,7 @@ const RelationshipInvitePicker: React.FC<{
 
                     <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto pr-1 custom-scrollbar">
                         {filteredFriends.length === 0 ? (
-                            <EmptyState title="Sem aliados" text="Nenhum aliado encontrado para esse filtro." />
+                            <EmptyState title="Sem aliados" text="Nada encontrado nesse filtro." />
                         ) : (
                             filteredFriends.map((friend) => {
                                 const disabled = busyFriendId === friend.id;
@@ -511,10 +513,10 @@ const RelationshipInviteConfirmModal: React.FC<{
                             <AvatarPill profile={state.friend} fallback="?" />
                             <div className="min-w-0">
                                 <div className="truncate text-sm font-black text-white">{state.friend.nickname}</div>
-                                <p className="mt-1 text-[12px] leading-relaxed text-white/56">
+                                <p className="mt-1 text-[12px] text-white/56">
                                     {isMentoria
-                                        ? 'Esse convite abre a mentoria basica com essa pessoa.'
-                                        : `Voce vai enviar um convite de ${label.singular.toLowerCase()} para essa pessoa.`}
+                                        ? 'Isso abre a mentoria basica com essa pessoa.'
+                                        : `Voce vai enviar ${label.singular.toLowerCase()} para essa pessoa.`}
                                 </p>
                             </div>
                         </div>
@@ -526,8 +528,8 @@ const RelationshipInviteConfirmModal: React.FC<{
                         <MiniStatCard label="Reembolso" value="se recusar" tone="text-emerald-300" />
                     </div>
 
-                    <div className="mt-4 rounded-[18px] border border-emerald-300/16 bg-emerald-400/10 px-4 py-3 text-[12px] leading-relaxed text-emerald-100/84">
-                        O ouro e cobrado no envio. Se a pessoa recusar, se voce revogar ou o convite expirar, o valor volta automaticamente.
+                    <div className="mt-4 rounded-[18px] border border-emerald-300/16 bg-emerald-400/10 px-4 py-3 text-[12px] text-emerald-100/84">
+                        O custo volta se a pessoa recusar, voce revogar ou o convite expirar.
                     </div>
 
                     <div className="mt-4 flex gap-2">
@@ -587,15 +589,15 @@ const RelationshipEndConfirmModal: React.FC<{
                             <AvatarPill profile={profile} fallback="?" />
                             <div className="min-w-0">
                                 <div className="truncate text-sm font-black text-white">{otherName}</div>
-                                <p className="mt-1 text-[12px] leading-relaxed text-white/62">
-                                    Isso encerra a {label.singular.toLowerCase()} agora e corta o acesso compartilhado ligado a esse vinculo.
+                                <p className="mt-1 text-[12px] text-white/62">
+                                    Isso encerra a {label.singular.toLowerCase()} e corta o acesso compartilhado.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-4 rounded-[18px] border border-amber-300/16 bg-amber-400/10 px-4 py-3 text-[12px] leading-relaxed text-amber-100/84">
-                        Nao tem como voltar atras. Se voces quiserem retomar depois, sera preciso criar um novo vinculo.
+                    <div className="mt-4 rounded-[18px] border border-amber-300/16 bg-amber-400/10 px-4 py-3 text-[12px] text-amber-100/84">
+                        Depois, so criando outro vinculo.
                     </div>
 
                     <div className="mt-4 flex gap-2">
@@ -1056,24 +1058,24 @@ export const RelationshipHubModal: React.FC<{
             return link.mentorId === sessionUid
                 ? {
                     badge: 'Seu pupilo',
-                    subtitle: 'Relacao de mentoria ativa. Voce pode abrir arenas e campanhas para essa pessoa.',
+                    subtitle: 'Voce conduz esta mentoria.',
                 }
                 : {
                     badge: 'Seu mentor',
-                    subtitle: 'Relacao de mentoria ativa. Voce recebe acompanhamento, arenas e campanhas dessa pessoa.',
+                    subtitle: 'Esse vinculo e guiado pelo mentor.',
                 };
         }
 
         if (link.linkType === 'parceria') {
             return {
                 badge: 'Parceiro',
-                subtitle: 'Alianca ativa. A relacao segura o canal social e as arenas ligadas a ela.',
+                subtitle: 'Parceria ativa.',
             };
         }
 
         return {
             badge: 'Rival',
-            subtitle: 'Competicao ativa. A relacao organiza o duelo e os espacos ligados a ele.',
+            subtitle: 'Competicao ativa.',
         };
     };
 
@@ -1156,27 +1158,32 @@ export const RelationshipHubModal: React.FC<{
         const previewArena = getArenaPreviewForLink(linkedArena);
         const liveOwnedArena = ownedArenaIds.has(previewArena.id) ? getLiveOwnedArena(previewArena.id) : null;
         const relationshipLink = links.find((link) => link.id === linkedArena.relationshipLinkId) || null;
-        const collaborationRole = relationshipLink?.linkType === 'mentoria'
-            ? (relationshipLink.mentorId === sessionUid ? 'mentor' : relationshipLink.pupilId === sessionUid ? 'pupil' : null)
+        const effectiveLinkType = relationshipLink?.linkType || linkedArena.linkType || null;
+        const mentorId = relationshipLink?.mentorId || linkedArena.mentorId || null;
+        const pupilId = relationshipLink?.pupilId || linkedArena.pupilId || String(linkedArena.metadata?.owner_user_id || '') || null;
+        const collaborationRole = effectiveLinkType === 'mentoria'
+            ? (mentorId === sessionUid ? 'mentor' : pupilId === sessionUid ? 'pupil' : null)
             : null;
         const canMentorshipCollaborate = Boolean(
-            relationshipLink?.linkType === 'mentoria'
+            effectiveLinkType === 'mentoria'
             && (collaborationRole === 'pupil' || collaborationRole === 'mentor')
         );
         const shouldForceHubMentorshipMode = Boolean(
-            relationshipLink?.linkType === 'mentoria'
+            effectiveLinkType === 'mentoria'
             && collaborationRole === 'mentor'
         );
-        const collaborativeOwnerUserId = relationshipLink?.linkType === 'mentoria'
-            ? relationshipLink.pupilId
+        const collaborativeOwnerUserId = effectiveLinkType === 'mentoria'
+            ? pupilId
             : null;
 
         if (liveOwnedArena && !shouldForceHubMentorshipMode) {
             return {
                 arena: liveOwnedArena,
+                actions: linkedArena.actions || [],
+                tasks: linkedArena.tasks || [],
                 readOnly: false,
                 relationshipLinkId: linkedArena.relationshipLinkId,
-                relationshipLinkType: relationshipLink?.linkType || linkedArena.linkType || null,
+                relationshipLinkType: effectiveLinkType,
                 collaborationRole,
                 allowLinkedMentorshipEdit: false,
                 collaborativeOwnerUserId,
@@ -1189,7 +1196,7 @@ export const RelationshipHubModal: React.FC<{
             tasks: linkedArena.tasks || [],
             readOnly: !canMentorshipCollaborate,
             relationshipLinkId: linkedArena.relationshipLinkId,
-            relationshipLinkType: relationshipLink?.linkType || linkedArena.linkType || null,
+            relationshipLinkType: effectiveLinkType,
             collaborationRole,
             allowLinkedMentorshipEdit: canMentorshipCollaborate,
             collaborativeOwnerUserId,
@@ -1241,11 +1248,11 @@ export const RelationshipHubModal: React.FC<{
             eyebrow="Vinculos ativos"
             title={activeTab === 'mentoria' ? 'Mentorias abertas' : activeTab === 'parceria' ? 'Parcerias abertas' : 'Competicoes abertas'}
             description={activeTab === 'mentoria'
-                ? 'Cada item abre a leitura completa da relacao, com arenas, campanhas e papel de mentor ou pupilo.'
-                : 'Cada item abre os detalhes do vinculo, as arenas ligadas e o estado atual dessa relacao.'}
+                ? 'Abra um vinculo para ver arenas e campanhas.'
+                : 'Abra um vinculo para ver os detalhes.'}
         >
             {currentTabLinks.length === 0 ? (
-                <EmptyState title="Sem relacoes" text="Nenhum vinculo ativo nesta aba ainda." />
+                <EmptyState title="Sem vinculos" text="Nada ativo nesta aba." />
             ) : (
                 <div className="space-y-3">
                     {currentTabLinks.map((link) => {
@@ -1287,7 +1294,7 @@ export const RelationshipHubModal: React.FC<{
         <RelationshipSectionCard
             eyebrow="Convites"
             title="Pendentes dessa aba"
-            description="O valor volta se recusar, revogar ou expirar."
+            description="O custo volta se cancelar ou expirar."
             action={
                 <div className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                     {filteredInvites.length}
@@ -1317,7 +1324,7 @@ export const RelationshipHubModal: React.FC<{
                     />
                 ))}
                 {filteredInvites.length === 0 && (
-                    <EmptyState title="Sem convites" text="Nenhum convite pendente nessa aba no momento." />
+                    <EmptyState title="Sem convites" text="Nada pendente agora." />
                 )}
             </div>
         </RelationshipSectionCard>
@@ -1339,7 +1346,7 @@ export const RelationshipHubModal: React.FC<{
                     {
                         id: `mentor-action-ready-${link.id}`,
                         title: 'Campanha pronta',
-                        subtitle: 'Entregar algo autoral que ja esteja finalizado para esse pupilo.',
+                        subtitle: 'Enviar algo que ja esta pronto.',
                         onClick: () => setSelectedPupilLink(link),
                         action: (
                             <span className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84">
@@ -1350,7 +1357,7 @@ export const RelationshipHubModal: React.FC<{
                     {
                         id: `mentor-action-exclusive-${link.id}`,
                         title: 'Campanha exclusiva',
-                        subtitle: `Forjar algo novo para ${pupilProfile?.nickname || 'o pupilo'}.`,
+                        subtitle: `Criar algo novo para ${pupilProfile?.nickname || 'o pupilo'}.`,
                         onClick: () => setSelectedPupilLink(link),
                         action: (
                             <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-200">
@@ -1362,8 +1369,8 @@ export const RelationshipHubModal: React.FC<{
                 : [];
             const campaignSectionTitle = isMentorSide ? 'Campanhas enviadas' : 'Campanhas do mentor';
             const campaignSectionDescription = isMentorSide
-                ? 'Tudo que voce ja mandou para esse pupilo e pode reabrir ou acompanhar daqui.'
-                : 'Campanhas entregues pelo mentor para instalar, revisar ou abrir.';
+                ? 'Tudo que voce ja entregou aqui.'
+                : 'Tudo que o mentor ja entregou aqui.';
             return (
                 <div className="space-y-4">
                     <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
@@ -1387,7 +1394,7 @@ export const RelationshipHubModal: React.FC<{
                                         <AvatarPill profile={mentorProfile} fallback="M" />
                                         <div className="min-w-0">
                                             <div className="truncate text-sm font-black text-white">{mentorProfile?.nickname || 'Mentor'}</div>
-                                            <div className="text-[11px] text-white/50">{isMentorSide ? 'Voce conduz esta mentoria.' : 'Guia principal desse vinculo.'}</div>
+                                            <div className="text-[11px] text-white/50">{isMentorSide ? 'Conduz esta mentoria.' : 'Mentor desta mentoria.'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1397,7 +1404,7 @@ export const RelationshipHubModal: React.FC<{
                                         <AvatarPill profile={pupilProfile} fallback="P" />
                                         <div className="min-w-0">
                                             <div className="truncate text-sm font-black text-white">{pupilProfile?.nickname || 'Pupilo'}</div>
-                                            <div className="text-[11px] text-white/50">{isMentorSide ? 'Recebe suas arenas e campanhas.' : 'Recebe o progresso dessa mentoria.'}</div>
+                                            <div className="text-[11px] text-white/50">{isMentorSide ? 'Recebe suas entregas.' : 'Pupilo desta mentoria.'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1417,8 +1424,8 @@ export const RelationshipHubModal: React.FC<{
                                 className="w-full rounded-[18px] border border-red-300/14 bg-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/14 disabled:opacity-50"
                             >
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/82">Encerrar vinculo</div>
-                                <div className="mt-1 text-[12px] leading-relaxed text-white/56">
-                                    Encerra essa mentoria e corta o acesso compartilhado. Nao tem como voltar atras.
+                                <div className="mt-1 text-[12px] text-white/56">
+                                    Encerra esta mentoria.
                                 </div>
                             </button>
                         </div>
@@ -1447,8 +1454,8 @@ export const RelationshipHubModal: React.FC<{
                             <EmptyState
                                 title="Sem arenas"
                                 text={isMentorSide
-                                    ? 'Abra uma arena para essa mentoria e ela passa a aparecer aqui.'
-                                    : 'Seu mentor ainda nao compartilhou arenas nessa relacao.'}
+                                    ? 'Abra uma arena para este pupilo.'
+                                    : 'Nenhuma arena do mentor ainda.'}
                             />
                         ) : (
                             <div
@@ -1481,8 +1488,8 @@ export const RelationshipHubModal: React.FC<{
                             <EmptyState
                                 title="Sem campanhas"
                                 text={isMentorSide
-                                    ? 'Nenhuma campanha foi enviada para esse pupilo ainda.'
-                                    : 'Seu mentor ainda nao entregou campanhas nessa mentoria.'}
+                                    ? 'Nada enviado para esse pupilo.'
+                                    : 'Nenhuma campanha do mentor ainda.'}
                             />
                         ) : (
                             <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
@@ -1539,7 +1546,7 @@ export const RelationshipHubModal: React.FC<{
                         <RelationshipSectionCard
                             eyebrow="Acoes do mentor"
                             title="Criar ou entregar algo novo"
-                            description="Essas acoes ficam separadas das arenas e campanhas ja existentes para a tela nao misturar tudo."
+                            description="Envio rapido ou criacao exclusiva."
                         >
                             <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
                                 {mentorBoardItems.map((item) => (
@@ -1597,8 +1604,8 @@ export const RelationshipHubModal: React.FC<{
                             >
                                 <div className="min-w-0">
                                     <div className="text-[10px] font-black uppercase tracking-[0.18em] text-black/62">Mostrar arena</div>
-                                    <div className="mt-1 text-[12px] leading-relaxed text-black/78">
-                                        Escolha uma arena sua para esse parceiro acompanhar em leitura.
+                                    <div className="mt-1 text-[12px] text-black/78">
+                                        Escolha uma arena sua para leitura.
                                     </div>
                                 </div>
                                 <span className="shrink-0 rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
@@ -1612,8 +1619,8 @@ export const RelationshipHubModal: React.FC<{
                                 className="w-full rounded-[18px] border border-red-300/14 bg-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/14 disabled:opacity-50"
                             >
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/82">Encerrar vinculo</div>
-                                <div className="mt-1 text-[12px] leading-relaxed text-white/56">
-                                    Encerra essa parceria agora. Se quiser retomar depois, vai ter que criar outra.
+                                <div className="mt-1 text-[12px] text-white/56">
+                                    Encerra esta parceria.
                                 </div>
                             </button>
                         </div>
@@ -1629,7 +1636,7 @@ export const RelationshipHubModal: React.FC<{
                         }
                     >
                         {ownArenasForLink.length === 0 ? (
-                            <EmptyState title="Nada exposto ainda" text="Mostre uma arena sua para esse parceiro acompanhar daqui." />
+                            <EmptyState title="Sem arena sua" text="Mostre uma arena sua." />
                         ) : (
                             <div
                                 className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
@@ -1657,7 +1664,7 @@ export const RelationshipHubModal: React.FC<{
                         }
                     >
                         {partnerArenasForLink.length === 0 ? (
-                            <EmptyState title="Sem arenas do aliado" text="Esse parceiro ainda nao mostrou nenhuma arena nessa parceria." />
+                            <EmptyState title="Sem arena do aliado" text="O parceiro ainda nao mostrou arena." />
                         ) : (
                             <div
                                 className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
@@ -1731,22 +1738,22 @@ export const RelationshipHubModal: React.FC<{
                         <div className="grid gap-3 md:grid-cols-2">
                             <div className="rounded-[18px] border border-white/12 bg-black/20 p-3">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Estado da corrida</div>
-                                <p className="mt-2 text-[12px] leading-relaxed text-white/60">
+                                <p className="mt-2 text-[12px] text-white/60">
                                     {competitionChallenge
                                         ? isCompetitionFinished
                                             ? winnerProfile?.id === sessionUid
                                                 ? `Voce terminou primeiro. O duelo fechou com Bau ${competitionChallenge.rewardChestType || 'Comum'} e o rival recebeu o aviso de derrota.`
                                                 : `@${winnerProfile?.nickname || 'Seu rival'} terminou primeiro. Agora, se voce fechar depois, nao ganha bau dessa corrida.`
-                                            : 'Os dois lados jogam em arenas espelhadas. Quem fechar primeiro leva o bau e trava o premio do outro.'
-                                        : 'Escolha uma arena sua e o sistema cria um espelho para os dois lados. O primeiro que fechar vence.'}
+                                            : 'Quem fechar primeiro vence.'
+                                        : 'Escolha uma arena sua para abrir o duelo.'}
                                 </p>
                             </div>
                             <div className="rounded-[18px] border border-white/12 bg-black/20 p-3">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Recompensa</div>
-                                <p className="mt-2 text-[12px] leading-relaxed text-white/60">
+                                <p className="mt-2 text-[12px] text-white/60">
                                     {competitionChallenge?.rewardChestType
-                                        ? `Bau ${competitionChallenge.rewardChestType}. Ele ja foi entregue para quem venceu essa corrida.`
-                                        : 'O vencedor leva um Bau Comum ou Incomum, dependendo do peso do desafio espelhado.'}
+                                        ? `Bau ${competitionChallenge.rewardChestType} ja entregue ao vencedor.`
+                                        : 'O vencedor leva o bau do duelo.'}
                                 </p>
                             </div>
                         </div>
@@ -1779,8 +1786,8 @@ export const RelationshipHubModal: React.FC<{
                                 className="w-full rounded-[18px] border border-red-300/14 bg-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/14 disabled:opacity-50"
                             >
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/82">Encerrar vinculo</div>
-                                <div className="mt-1 text-[12px] leading-relaxed text-white/56">
-                                    Encerra essa competicao agora. Se quiser reabrir depois, vai ter que criar outra rivalidade.
+                                <div className="mt-1 text-[12px] text-white/56">
+                                    Encerra esta competicao.
                                 </div>
                             </button>
                         </div>
@@ -1790,7 +1797,7 @@ export const RelationshipHubModal: React.FC<{
                 <RelationshipSectionCard
                     eyebrow="Seu lado"
                     title="Sua arena do duelo"
-                    description="Esse e o seu espelho oficial. Quando voce fecha antes do rival, leva o bau."
+                    description="Seu espelho oficial."
                     action={
                         <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                             {ownCompetitionArena ? 'pronta' : 'vazia'}
@@ -1806,14 +1813,14 @@ export const RelationshipHubModal: React.FC<{
                             />
                         </div>
                     ) : (
-                        <EmptyState title="Sem espelho seu" text="Lance um desafio para o sistema criar sua arena de corrida." />
+                        <EmptyState title="Sem espelho seu" text="Lance um duelo." />
                     )}
                 </RelationshipSectionCard>
 
                 <RelationshipSectionCard
                     eyebrow="Lado do rival"
                     title={`Arena de ${profile?.nickname || 'seu rival'}`}
-                    description="Aqui voce abre o espelho do outro lado em leitura e acompanha quem esta na frente."
+                    description="Espelho rival em leitura."
                     action={
                         <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                             {rivalCompetitionArena ? 'pronta' : 'aguardando'}
@@ -1829,7 +1836,7 @@ export const RelationshipHubModal: React.FC<{
                             />
                         </div>
                     ) : (
-                        <EmptyState title="Sem espelho rival" text="Assim que o duelo for criado, o espelho do outro lado aparece aqui." />
+                        <EmptyState title="Sem espelho rival" text="Aparece depois do duelo." />
                     )}
                 </RelationshipSectionCard>
             </div>
@@ -2016,7 +2023,7 @@ export const RelationshipHubModal: React.FC<{
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="min-w-0">
                                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Campanha exclusiva</div>
-                                        <p className="mt-1 text-sm text-white/58">Cria algo novo so para {profileFor(selectedPupilLink.pupilId)?.nickname || 'o pupilo'}.</p>
+                                        <p className="mt-1 text-sm text-white/58">Cria algo novo para {profileFor(selectedPupilLink.pupilId)?.nickname || 'o pupilo'}.</p>
                                     </div>
                                     <button
                                         onClick={() => setIsMentorCreatorOpen(true)}
@@ -2031,7 +2038,7 @@ export const RelationshipHubModal: React.FC<{
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Entregar campanha pronta</div>
                                 <div className="mt-3 space-y-2 max-h-[40vh] overflow-y-auto pr-1 custom-scrollbar">
                                     {authoredCodexes.length === 0 ? (
-                                        <EmptyState title="Sem campanha" text="Finalize uma campanha autoral para entregar aqui." />
+                                        <EmptyState title="Sem campanha" text="Finalize uma campanha autoral." />
                                     ) : (
                                         authoredCodexes.map((codex: any) => (
                                             <div key={codex.id} className="rounded-[18px] border border-white/10 bg-black/22 px-3 py-2.5">
@@ -2114,13 +2121,13 @@ export const RelationshipHubModal: React.FC<{
                             <div className="mt-4 rounded-[20px] border border-rose-300/14 bg-rose-500/8 px-4 py-3">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-rose-200">Duelo espelhado</div>
                                 <p className="mt-1 text-sm text-white/62">
-                                    Escolha uma arena sua e o sistema cria um espelho para os dois lados. Quem fechar primeiro ganha o baú e avisa o outro.
+                                    Escolha uma arena sua para gerar o espelho.
                                 </p>
                             </div>
 
                             <div className="mt-4 space-y-2 max-h-[44vh] overflow-y-auto pr-1 custom-scrollbar">
                                 {availableCompetitionSourceArenas.length === 0 ? (
-                                    <EmptyState title="Sem arena elegível" text="Crie uma arena com ações antes de lançar um duelo espelhado." />
+                                    <EmptyState title="Sem arena elegivel" text="Crie uma arena com acoes." />
                                 ) : (
                                     availableCompetitionSourceArenas.map(({ arena, assetName, actionCount }) => {
                                         const active = selectedCompetitionSourceArenaId === arena.id;

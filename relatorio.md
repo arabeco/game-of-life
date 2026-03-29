@@ -54,7 +54,13 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 
 ### DOMINIO (FORA DO HOT PATH)
 [ ] Fechar os `3 reels` restantes e alinhar landing/site antes de empurrar trafego. Dominio e material-base ja foram enviados; com isso a fila prevista sobe para `~75 posts`.
-[ ] Gerar o pacote das `10 skins` novas e completar os itens faltantes da `Season Aurora` (`skin`, `glifo`, `orbe`, `placa` e `cabelo`; `banner` e `borda` ja existem). - Responsavel: DOMINIO + TESOURO
+[ ] Gerar o pacote das `10 skins` novas e completar os itens faltantes da `Season Aurora` (`glifo` e `orbe`; `skin`, `borda`, `banner` e `insignia` ja existem). - Responsavel: DOMINIO + TESOURO
+[ ] Lista curta de arte/catalogo pendente:
+- `Aurora I`: criar `glifo` e `orbe` para fechar o set principal da season.
+- `Empreendedor`: skin cadastrada, mas ainda sem PNG final no catalogo.
+- `Fenix Dourada`: aura exclusiva ainda sem arte dedicada no catalogo.
+- `Insignias`: seguem sem PNG proprio; hoje funcionam como honras com icone/rotulo.
+- `O Criador`: skin ja tem asset, mas ainda pede fonte/regra final de obtencao no jogo.
 
 ## 5. MARCO 1: PROVA (DEZ/2026)
 - Objetivo: sair do estado de projeto e provar produto com retencao real.

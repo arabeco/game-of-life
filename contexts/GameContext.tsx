@@ -842,6 +842,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const seenCodexGiftNotificationIdsRef = useRef<Set<string>>(new Set());
     const seenOracleMessageIdsRef = useRef<Set<string>>(new Set());
     const oracleMessagesHydratedRef = useRef(false);
+    const dailyCommitmentPersistTimeoutRef = useRef<number | null>(null);
+    const dmRefreshTimeoutRef = useRef<number | null>(null);
+    const relationshipInviteExpiryCheckedAtRef = useRef<number>(0);
+    const notificationsRefreshTimeoutRef = useRef<number | null>(null);
+    const oracleMessagesRefreshTimeoutRef = useRef<number | null>(null);
+    const socialFriendsRefreshTimeoutRef = useRef<number | null>(null);
+    const socialClanOutgoingRefreshTimeoutRef = useRef<number | null>(null);
+    const socialClanIncomingRefreshTimeoutRef = useRef<number | null>(null);
 
     // Fetch campaigns from Supabase on load
     useEffect(() => {
@@ -1523,20 +1531,38 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [session?.user.id, oraclePreferences, oracleMessagesReady]);
 
     // --- Notifications Implementation ---
-    const fetchNotifications = useCallback(async () => {
-        const userId = session?.user.id;
-        if (userId) {
+    const fetchNotifications = useCallback(async (targetUserId?: string) => {
+        const userId = targetUserId || session?.user.id;
+        if (userId && isUuid(userId)) {
             const data = await SupabaseService.getNotifications(userId);
             setNotifications(data);
         }
     }, [session?.user.id]);
 
-    const refreshOracleMessages = useCallback(async () => {
-        const userId = session?.user.id;
+    const refreshOracleMessages = useCallback(async (targetUserId?: string) => {
+        const userId = targetUserId || session?.user.id;
         if (userId && isUuid(userId)) {
             await fetchOracleMessages(userId);
         }
     }, [session?.user.id, fetchOracleMessages]);
+
+    const scheduleNotificationsRefresh = useCallback((targetUserId?: string) => {
+        const userId = targetUserId || session?.user.id;
+        if (!userId || !isUuid(userId) || notificationsRefreshTimeoutRef.current !== null) return;
+        notificationsRefreshTimeoutRef.current = window.setTimeout(() => {
+            notificationsRefreshTimeoutRef.current = null;
+            void fetchNotifications(userId);
+        }, 250);
+    }, [session?.user.id, fetchNotifications]);
+
+    const scheduleOracleMessagesRefresh = useCallback((targetUserId?: string) => {
+        const userId = targetUserId || session?.user.id;
+        if (!userId || !isUuid(userId) || oracleMessagesRefreshTimeoutRef.current !== null) return;
+        oracleMessagesRefreshTimeoutRef.current = window.setTimeout(() => {
+            oracleMessagesRefreshTimeoutRef.current = null;
+            void refreshOracleMessages(userId);
+        }, 250);
+    }, [session?.user.id, refreshOracleMessages]);
 
     const markNotificationRead = async (id: string) => {
         setNotifications(prev => prev.map(n => n.id === id ?{ ...n, read: true } : n));
@@ -1576,7 +1602,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 table: 'notifications',
                 filter: `user_id=eq.${userId}`,
             }, () => {
-                void fetchNotifications();
+                scheduleNotificationsRefresh(userId);
             })
             .subscribe();
 
@@ -1588,15 +1614,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 table: 'oracle_messages',
                 filter: `user_id=eq.${userId}`,
             }, () => {
-                void refreshOracleMessages();
+                scheduleOracleMessagesRefresh(userId);
             })
             .subscribe();
 
         return () => {
+            if (notificationsRefreshTimeoutRef.current !== null) {
+                window.clearTimeout(notificationsRefreshTimeoutRef.current);
+                notificationsRefreshTimeoutRef.current = null;
+            }
+            if (oracleMessagesRefreshTimeoutRef.current !== null) {
+                window.clearTimeout(oracleMessagesRefreshTimeoutRef.current);
+                oracleMessagesRefreshTimeoutRef.current = null;
+            }
             notificationsChannel.unsubscribe();
             oracleMessagesChannel.unsubscribe();
         };
-    }, [session?.user.id, fetchNotifications, refreshOracleMessages]);
+    }, [session?.user.id, scheduleNotificationsRefresh, scheduleOracleMessagesRefresh]);
 
     useEffect(() => {
         const userId = session?.user.id;
@@ -1782,17 +1816,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             console.log("Inventory empty. Granting Starter Pack (v1.006)...");
 
             // IDs definidos no LOJA.MD e items.ts
-                        const starterItemIds = [
-                'item_skin_1_001', // N?ufrago
+            const starterItemIds = [
+                'item_skin_1_001', // Náufrago
                 'item_skin_1_002', // Casual
-                'cachos',          // Cabelo 1
-                'medio_reto',      // Cabelo 2
-                'grunge_longo',    // Cabelo 3
-                'textured_crop',   // Cabelo 4
                 'item_artifact_1_001', // Adaga Aprendiz
                 'item_orb_1_002',  // Orbe de Cobre
                 'item_plate_1_001', // Placa Madeira
-                'BASIC'            // Tema B?sico
+                'BASIC'            // Tema Básico
             ];
 
             const starterItems = starterItemIds
@@ -2335,6 +2365,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [friendRequestsOutgoing, setFriendRequestsOutgoing] = useState<FriendRequest[]>([]);
     const [clanJoinRequestsIncoming, setClanJoinRequestsIncoming] = useState<ClanJoinRequest[]>([]);
     const [clanJoinRequestsOutgoing, setClanJoinRequestsOutgoing] = useState<ClanJoinRequest[]>([]);
+    const friendsRef = useRef<UserProfile[]>([]);
 
     const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(() => [...defaultChecklistItems]);
     const [sequenceItems, setSequenceItems] = useState<SequenceItem[]>(() => [...defaultSequenceItems]);
@@ -2342,6 +2373,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const [achievementUnlocked, setAchievementUnlocked] = useState<{ type: FeedEventType; data: any; } | null>(null);
     const [feed, setFeed] = useState<FeedEvent[]>(() => []);
+
+    useEffect(() => {
+        friendsRef.current = friends;
+    }, [friends]);
 
     const fetchSocialFeed = useCallback(async () => {
         const userId = getSupabaseUserId();
@@ -2936,6 +2971,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setClanJoinRequestsIncoming(pending.map(req => ({ ...req, requesterProfile: profilesById[req.userId] })));
     }, [hydrateProfilesByIds]);
 
+    const scheduleFriendsAndRequestsRefresh = useCallback((userId: string) => {
+        if (!isUuid(userId) || socialFriendsRefreshTimeoutRef.current !== null) return;
+        socialFriendsRefreshTimeoutRef.current = window.setTimeout(() => {
+            socialFriendsRefreshTimeoutRef.current = null;
+            void loadFriendsAndRequests(userId);
+        }, 250);
+    }, [loadFriendsAndRequests]);
+
+    const scheduleClanJoinRequestsOutgoingRefresh = useCallback((userId: string) => {
+        if (!isUuid(userId) || socialClanOutgoingRefreshTimeoutRef.current !== null) return;
+        socialClanOutgoingRefreshTimeoutRef.current = window.setTimeout(() => {
+            socialClanOutgoingRefreshTimeoutRef.current = null;
+            void loadClanJoinRequestsOutgoing(userId);
+        }, 250);
+    }, [loadClanJoinRequestsOutgoing]);
+
+    const scheduleClanJoinRequestsIncomingRefresh = useCallback((clanId: string) => {
+        if (!isUuid(clanId) || socialClanIncomingRefreshTimeoutRef.current !== null) return;
+        socialClanIncomingRefreshTimeoutRef.current = window.setTimeout(() => {
+            socialClanIncomingRefreshTimeoutRef.current = null;
+            void loadClanJoinRequestsIncoming(clanId);
+        }, 250);
+    }, [loadClanJoinRequestsIncoming]);
+
     useEffect(() => {
         const userId = session?.user.id;
         if (!userId || !isUuid(userId)) return;
@@ -2949,7 +3008,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 table: 'friend_requests',
                 filter: `recipient_id=eq.${userId}`,
             }, () => {
-                void loadFriendsAndRequests(userId);
+                scheduleFriendsAndRequestsRefresh(userId);
             })
             .on('postgres_changes', {
                 event: '*',
@@ -2957,7 +3016,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 table: 'friend_requests',
                 filter: `sender_id=eq.${userId}`,
             }, () => {
-                void loadFriendsAndRequests(userId);
+                scheduleFriendsAndRequestsRefresh(userId);
             })
             .on('postgres_changes', {
                 event: '*',
@@ -2965,7 +3024,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 table: 'clan_join_requests',
                 filter: `user_id=eq.${userId}`,
             }, () => {
-                void loadClanJoinRequestsOutgoing(userId);
+                scheduleClanJoinRequestsOutgoingRefresh(userId);
             });
 
         if (clan?.id && isClanLeader) {
@@ -2975,13 +3034,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 table: 'clan_join_requests',
                 filter: `clan_id=eq.${clan.id}`,
             }, () => {
-                void loadClanJoinRequestsIncoming(clan.id);
+                scheduleClanJoinRequestsIncomingRefresh(clan.id);
             });
         }
 
         socialRequestsChannel.subscribe();
 
         return () => {
+            if (socialFriendsRefreshTimeoutRef.current !== null) {
+                window.clearTimeout(socialFriendsRefreshTimeoutRef.current);
+                socialFriendsRefreshTimeoutRef.current = null;
+            }
+            if (socialClanOutgoingRefreshTimeoutRef.current !== null) {
+                window.clearTimeout(socialClanOutgoingRefreshTimeoutRef.current);
+                socialClanOutgoingRefreshTimeoutRef.current = null;
+            }
+            if (socialClanIncomingRefreshTimeoutRef.current !== null) {
+                window.clearTimeout(socialClanIncomingRefreshTimeoutRef.current);
+                socialClanIncomingRefreshTimeoutRef.current = null;
+            }
             supabase.removeChannel(socialRequestsChannel);
         };
     }, [
@@ -2989,9 +3060,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         clan?.id,
         clan?.leaderId,
         userProfile.id,
-        loadFriendsAndRequests,
-        loadClanJoinRequestsOutgoing,
-        loadClanJoinRequestsIncoming,
+        scheduleFriendsAndRequestsRefresh,
+        scheduleClanJoinRequestsOutgoingRefresh,
+        scheduleClanJoinRequestsIncomingRefresh,
     ]);
 
     const clearClanRuntimeState = useCallback(() => {
@@ -4181,7 +4252,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
 
         run();
-    }, [session?.user.id, userProfile.id]);
+    }, [session?.user.id]);
 
     // Codex System
     const [userCodexes, setUserCodexes] = useState<UserCodex[]>([]);
@@ -4508,6 +4579,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             id: row.id,
             relationshipLinkId: row.relationship_link_id,
             linkType: link?.linkType,
+            mentorId: link?.mentorId,
+            pupilId: link?.pupilId,
             arenaId: row.arena_id,
             createdByUserId: row.created_by_user_id ?? null,
             createdAt: row.created_at,
@@ -4581,10 +4654,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return { invites: [], links: [], linkedArenas: [], competitionChallenges: [], summary: null };
         }
 
-        try {
-            await supabase.rpc('expire_stale_relationship_link_invites', { p_max_age_hours: 168 });
-        } catch (error: any) {
-            console.warn('Failed to expire stale relationship invites', error?.message || error);
+        const now = Date.now();
+        if (now - relationshipInviteExpiryCheckedAtRef.current > 15 * 60 * 1000) {
+            relationshipInviteExpiryCheckedAtRef.current = now;
+            try {
+                await supabase.rpc('expire_stale_relationship_link_invites', { p_max_age_hours: 168 });
+            } catch (error: any) {
+                relationshipInviteExpiryCheckedAtRef.current = 0;
+                console.warn('Failed to expire stale relationship invites', error?.message || error);
+            }
         }
 
         const [summary, invitesResult, linksResult] = await Promise.all([
@@ -5773,10 +5851,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         };
 
-        // Debounce or at least wait for profile load
-        if (isProfileLoaded) {
-            saveCommitment();
+        if (!isProfileLoaded) return;
+
+        if (dailyCommitmentPersistTimeoutRef.current !== null) {
+            window.clearTimeout(dailyCommitmentPersistTimeoutRef.current);
         }
+
+        // Coalesce rapid planner edits and scratch typing into a single upsert.
+        dailyCommitmentPersistTimeoutRef.current = window.setTimeout(() => {
+            dailyCommitmentPersistTimeoutRef.current = null;
+            void saveCommitment();
+        }, typeof dailyCommitment.operationalScratch === 'string' ? 700 : 250);
+
+        return () => {
+            if (dailyCommitmentPersistTimeoutRef.current !== null) {
+                window.clearTimeout(dailyCommitmentPersistTimeoutRef.current);
+                dailyCommitmentPersistTimeoutRef.current = null;
+            }
+        };
     }, [dailyCommitment, getSupabaseUserId, isProfileLoaded]);
 
     // Hydration: Load dailyCommitment from Supabase on start or session change
@@ -9586,6 +9678,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const taskDomain = createTaskDomain({
         tasks,
         activeCycle,
+        campaigns,
         dailyCommitment,
         judgedOperationalDates,
         clan,
@@ -10330,15 +10423,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         await loadClanJoinRequestsOutgoing(userId);
     };
 
-    const fetchDMs = useCallback(async () => {
-        const userId = session?.user.id;
+    const fetchDMs = useCallback(async (targetUserId?: string) => {
+        const userId = targetUserId || session?.user.id;
         if (!userId) return;
 
         const { data, error } = await supabase
             .from('direct_messages')
             .select(`
-        *,
-        sender_profile:user_profiles!direct_messages_sender_id_fkey(*)
+        id,
+        sender_id,
+        recipient_id,
+        content,
+        read,
+        created_at,
+        sender_profile:user_profiles!direct_messages_sender_id_fkey(id,nickname,avatar_url,level,is_premium,is_online,role)
       `)
             .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
             .order('created_at', { ascending: false });
@@ -10360,7 +10458,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 let profile = msg.senderId === otherId ?msg.senderProfile : undefined;
                 // If profile not in message (sent by us), we might need to fetch it or find it in friends
                 if (!profile) {
-                    const friend = friends.find(f => f.id === otherId);
+                    const friend = friendsRef.current.find(f => f.id === otherId);
                     if (friend) profile = friend;
                 }
 
@@ -10378,7 +10476,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         });
         setDMConversations(Array.from(convsMap.values()));
-    }, [session?.user.id, friends]);
+    }, [session?.user.id]);
 
     const sendDirectMessage = async (recipientId: string, content: string) => {
         const userId = session?.user.id;
@@ -10462,23 +10560,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     useEffect(() => {
-        if (session?.user.id) {
-            fetchDMs();
+        const userId = session?.user.id;
+        if (userId) {
+            void fetchDMs(userId);
 
             // Subscribe to new DMs
             const dmSubscription = supabase
-                .channel('direct_messages_realtime')
+                .channel(`direct_messages_realtime_${userId}`)
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'direct_messages',
-                    filter: `recipient_id=eq.${session.user.id}`
-                }, (payload) => {
-                    fetchDMs(); // Refetch all for simplicity and consistency
+                    filter: `recipient_id=eq.${userId}`
+                }, () => {
+                    if (dmRefreshTimeoutRef.current !== null) return;
+                    dmRefreshTimeoutRef.current = window.setTimeout(() => {
+                        dmRefreshTimeoutRef.current = null;
+                        void fetchDMs(userId);
+                    }, 250);
                 })
                 .subscribe();
 
             return () => {
+                if (dmRefreshTimeoutRef.current !== null) {
+                    window.clearTimeout(dmRefreshTimeoutRef.current);
+                    dmRefreshTimeoutRef.current = null;
+                }
                 dmSubscription.unsubscribe();
             };
         }

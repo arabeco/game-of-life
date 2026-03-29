@@ -116,7 +116,7 @@ export const GM_CONFIG = {
   chestDrops: {
     itemDropChanceByChest: { Comum: 0.005, Raro: 0.01, Épico: 0.02, Lendário: 0.03 } as Partial<Record<ChestType, number>>,
     skinDropChanceByChest: { Comum: 0.005, Raro: 0.02, Épico: 0.05, Lendário: 0.1 } as Partial<Record<ChestType, number>>,
-    itemPool: { categories: ['bodyStyles', 'hairStyles', 'outfits', 'artifacts', 'glyphs', 'auras', 'orbs'] as UnlockCategory[], excludeIds: ['none'] },
+    itemPool: { categories: ['bodyStyles', 'outfits', 'artifacts', 'glyphs', 'auras', 'orbs'] as UnlockCategory[], excludeIds: ['none'] },
   },
   cosmetics: {
     skins: [

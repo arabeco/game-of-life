@@ -1,10 +1,10 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { Action, Arena, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, ScheduledTask, SeasonQuest } from '../../types';
+import type { Action, Arena, Campaign, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, ScheduledTask, SeasonQuest } from '../../types';
 import { mergeTasksIntoCommitment, reconcileTaskInCommitment } from '../../utils/coreLoopUtils.js';
 import { getOperationalDateString, getTaskOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
 import { isSharedArena } from '../../utils/taskDomain.js';
 import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTaskSnapshot } from '../../utils/taskMutationUtils.js';
-import { calculateArenaProgress } from '../../utils/progressUtils';
+import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../utils/progressUtils';
 import { emitArenaAttention } from '../../utils/arenaAttention';
 import { emitDailyCompletionPrompt } from '../../utils/dailyCompletionPrompt';
 
@@ -31,6 +31,7 @@ export interface TaskDomainApi {
 interface CreateTaskDomainParams {
     tasks: ScheduledTask[];
     activeCycle: Cycle | null;
+    campaigns: Campaign[];
     dailyCommitment: DailyCommitment;
     judgedOperationalDates: string[];
     clan: Clan | null;
@@ -59,6 +60,7 @@ interface CreateTaskDomainParams {
 export const createTaskDomain = ({
     tasks,
     activeCycle,
+    campaigns,
     dailyCommitment,
     judgedOperationalDates,
     clan,
@@ -132,10 +134,10 @@ export const createTaskDomain = ({
         previousTasks: ScheduledTask[],
         nextTasks: ScheduledTask[],
     ) => {
-        if (!action) return;
+        if (!action) return false;
 
         const arena = getArenas().find(item => item.id === action.arenaId);
-        if (!arena) return;
+        if (!arena) return false;
 
         const normalizedArenaName = (arena.name || '')
             .normalize('NFD')
@@ -143,13 +145,13 @@ export const createTaskDomain = ({
             .toLowerCase();
 
         if (normalizedArenaName.includes('quests - cla') || normalizedArenaName.includes('quests - season')) {
-            return;
+            return false;
         }
 
-        if (getClanQuestForAction(action)) return;
+        if (getClanQuestForAction(action)) return false;
 
         const arenaActions = getActionsForArena(arena.id);
-        if (arenaActions.length === 0) return;
+        if (arenaActions.length === 0) return false;
 
         const previousProgress = calculateArenaProgress({
             arena,
@@ -164,14 +166,63 @@ export const createTaskDomain = ({
         });
 
         if (previousProgress.progressPercent >= 100 || nextProgress.progressPercent < 100 || !nextProgress.isCleared) {
-            return;
+            return false;
         }
 
-        emitArenaAttention({
-            arenaIds: [arena.id],
-            focusArenaId: arena.id,
-            phase: 'celebrate',
-            navigateToArenas: true,
+        const parentCampaign = campaigns.find((campaign) => campaign.arenaIds.includes(arena.id)) || null;
+        const arenasById = Object.fromEntries(getArenas().map((currentArena) => [currentArena.id, currentArena]));
+        const actionsByArena = parentCampaign
+            ? Object.fromEntries(parentCampaign.arenaIds.map((arenaId) => [arenaId, getActionsForArena(arenaId)]))
+            : {};
+
+        let campaignJustCleared = false;
+
+        if (parentCampaign) {
+            const previousCampaignProgress = calculateCampaignProgressSummary({
+                campaign: parentCampaign,
+                arenasById,
+                actionsByArena,
+                tasks: previousTasks,
+            });
+            const nextCampaignProgress = calculateCampaignProgressSummary({
+                campaign: parentCampaign,
+                arenasById,
+                actionsByArena,
+                tasks: nextTasks,
+            });
+
+            campaignJustCleared =
+                nextCampaignProgress.totalArenaCount > 0 &&
+                nextCampaignProgress.clearedArenaCount === nextCampaignProgress.totalArenaCount &&
+                previousCampaignProgress.clearedArenaCount < nextCampaignProgress.clearedArenaCount;
+        }
+
+        emitArenaAttention(
+            campaignJustCleared
+                ? {
+                    arenaIds: [],
+                    campaignId: parentCampaign?.id || null,
+                    focusArenaId: arena.id,
+                    phase: 'celebrate',
+                    navigateToArenas: true,
+                }
+                : {
+                    arenaIds: [arena.id],
+                    focusArenaId: arena.id,
+                    phase: 'celebrate',
+                    navigateToArenas: true,
+                }
+        );
+
+        showToast(
+            campaignJustCleared && parentCampaign
+                ? `Campanha "${parentCampaign.title}" concluida.`
+                : `Arena "${arena.name}" concluida.`,
+            'success',
+        );
+        addFeedEvent({
+            type: 'ARENA_COMPLETED',
+            content: { title: arena.name, icon: arena.icon || '🏟️' }
         });
 
         setAchievementUnlocked({

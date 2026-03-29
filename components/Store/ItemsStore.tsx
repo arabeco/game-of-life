@@ -41,7 +41,7 @@ export const ItemsStore: React.FC = () => {
 
     const items = useMemo(() => {
         const lowTicketIds = new Set<string>(ACTIVE_GOLD_STORE_ITEM_IDS);
-        const catalog = getCatalogItems(item => lowTicketIds.has(item.id));
+        const catalog = getCatalogItems(item => lowTicketIds.has(item.id) && item.category !== 'hair');
         const order = new Map<string, number>(ACTIVE_GOLD_STORE_ITEM_IDS.map((id, index) => [id, index]));
 
         return [...catalog].sort((a, b) => {

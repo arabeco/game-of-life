@@ -15,7 +15,7 @@ import { CODEXES, getCatalogItemsByCategory } from '../constants/items';
 import { Portal } from '../components/Portal';
 import { SupabaseService } from '../services/SupabaseService';
 import { RelationshipHubModal } from '../components/RelationshipHubModal';
-import { LEGAL_PRIVACY_URL_PLACEHOLDER } from '../constants/legal';
+import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
@@ -171,6 +171,120 @@ const VisibilityScopeControl: React.FC<{
         </div>
     </div>
 );
+
+const PrivacyPreferencesModal: React.FC<{
+    open: boolean;
+    termsStatus: string;
+    assetsVisibility: ProfileVisibilityOption;
+    masteryVisibility: ProfileVisibilityOption;
+    featsVisibility: ProfileVisibilityOption;
+    onAssetsVisibilityChange: (value: ProfileVisibilityOption) => void;
+    onMasteryVisibilityChange: (value: ProfileVisibilityOption) => void;
+    onFeatsVisibilityChange: (value: ProfileVisibilityOption) => void;
+    onClose: () => void;
+}> = ({
+    open,
+    termsStatus,
+    assetsVisibility,
+    masteryVisibility,
+    featsVisibility,
+    onAssetsVisibilityChange,
+    onMasteryVisibilityChange,
+    onFeatsVisibilityChange,
+    onClose,
+}) => {
+    if (!open) return null;
+
+    const legalRows = [
+        'Conta e perfil: usamos o minimo para autenticacao, sincronizacao e seguranca.',
+        'Social e uploads: o que voce compartilhar pode aparecer para vinculos, grupos e links.',
+        'Compras e exclusao: pagamentos passam por parceiro e a conta pode ser apagada sob solicitacao.',
+    ];
+
+    return (
+        <Portal>
+            <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
+                <GlassCard
+                    variant="neutral"
+                    className="w-full max-w-md m-4 space-y-4 rounded-3xl"
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Privacidade</div>
+                            <h2 className="text-lg font-black uppercase tracking-[0.08em] text-white">Pacto e visibilidade</h2>
+                            <p className="text-xs leading-relaxed text-gray-400">Revise o pacto do jogo e controle o que os outros conseguem ver.</p>
+                        </div>
+                        <button onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-gray-400 transition-colors hover:text-white">
+                            <XIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="settings-panel-card space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Pacto do jogo</div>
+                                <div className="mt-1 text-sm font-semibold text-white">Resumo legal do GLYPH</div>
+                            </div>
+                            <div className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${termsStatus === 'Aceito' ? 'border-emerald-400/30 bg-emerald-500/12 text-emerald-200' : 'border-amber-400/30 bg-amber-500/12 text-amber-100'}`}>
+                                {termsStatus}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            {legalRows.map((row) => (
+                                <div key={row} className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] leading-relaxed text-gray-300">
+                                    {row}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            <a
+                                href={LEGAL_TERMS_URL_PLACEHOLDER}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-gray-200 transition-colors hover:bg-black/30"
+                            >
+                                Termos completos
+                            </a>
+                            <a
+                                href={LEGAL_PRIVACY_URL_PLACEHOLDER}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-gray-200 transition-colors hover:bg-black/30"
+                            >
+                                Privacidade completa
+                            </a>
+                        </div>
+                    </div>
+
+                    <div className="settings-panel-card space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Visibilidade do perfil</div>
+                            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">So afeta o que outros veem</div>
+                        </div>
+                        <VisibilityScopeControl
+                            label="Ativos"
+                            value={assetsVisibility}
+                            onChange={onAssetsVisibilityChange}
+                        />
+                        <VisibilityScopeControl
+                            label="Arvore de maestria"
+                            value={masteryVisibility}
+                            onChange={onMasteryVisibilityChange}
+                        />
+                        <VisibilityScopeControl
+                            label="Miniaturas de arenas"
+                            value={featsVisibility}
+                            onChange={onFeatsVisibilityChange}
+                        />
+                    </div>
+                </GlassCard>
+            </div>
+        </Portal>
+    );
+};
 
 const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () => void }> = ({ onStart, onRequestModeGame }) => {
     const { startTutorialLevel, isFlagCompleted } = useTutorial();
@@ -1657,7 +1771,7 @@ const GeralTab: React.FC = () => {
 
 const PreferenciasTab: React.FC = () => {
     const { userProfile, oraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin } = useGame();
-    const [modal, setModal] = useState<'oracle' | 'tutorial' | null>(null);
+    const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
     const [highlightModeGame, setHighlightModeGame] = useState(false);
     const modeGameRef = useRef<HTMLDivElement | null>(null);
@@ -1769,7 +1883,6 @@ const PreferenciasTab: React.FC = () => {
             <section className="space-y-4">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>
                 <div className="space-y-2">
-                    <SettingSelector label="Termos e Condições" value={termsStatus} onClick={() => window.dispatchEvent(new CustomEvent('openTermsOverlay'))} />
                     <div
                         id="mode-game-toggle"
                         ref={modeGameRef}
@@ -1805,10 +1918,10 @@ const PreferenciasTab: React.FC = () => {
                                     <div className="mb-2 flex items-center justify-between">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Skin UI</h4>
                                         <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
-                                            {appMode === 'BASIC' ? 'Modo basico usa Basico' : 'Modo jogo usa sua skin'}
+                                            {appMode === 'BASIC' ? 'Básico fixo' : 'Tags da interface'}
                                         </span>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-1.5">
                                         {uiSkinCatalog.map((skin) => {
                                             const skinMeta: { label: string; title: string; previewSkinId?: string; prefersLightText?: boolean; } = UI_SKIN_SELECTOR_META[skin.id] || {
                                                 label: skin.name.replace(/^Tema:\s*/i, '').replace(/^Interface\s*/i, '').toUpperCase(),
@@ -1819,14 +1932,6 @@ const PreferenciasTab: React.FC = () => {
                                             const disabledByMode = appMode === 'BASIC' && skin.id !== 'BASIC';
                                             const previewSkinId = skinMeta.previewSkinId || resolveUiSkinId(skin.id);
                                             const previewTokens = buildUiSkinTokens(previewSkinId, activeTheme === 'LIGHT' ? 'light' : 'dark');
-                                            const statusLabel = selected
-                                                ? 'ATIVA'
-                                                : disabledByMode
-                                                    ? 'MODO JOGO'
-                                                    : unlocked
-                                                        ? 'PRONTA'
-                                                        : 'LOJA';
-
                                             return (
                                                 <button
                                                     key={skin.id}
@@ -1835,7 +1940,7 @@ const PreferenciasTab: React.FC = () => {
                                                     onClick={() => handleUiSkinOptionClick(skin.id, unlocked, disabledByMode)}
                                                     title={skinMeta.title}
                                                     aria-pressed={selected}
-                                                    className={`group inline-flex min-w-[88px] flex-col items-center gap-2 rounded-[20px] border px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-[0.14em] transition-all ${
+                                                    className={`group inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-left text-[9px] font-black uppercase tracking-[0.14em] transition-all ${
                                                         selected
                                                             ? 'shadow-[0_0_16px_var(--ui-button-primary-glow)]'
                                                             : unlocked && !disabledByMode
@@ -1843,38 +1948,29 @@ const PreferenciasTab: React.FC = () => {
                                                                 : ''
                                                     } ${disabledByMode ? 'cursor-default' : ''}`}
                                                     style={{
-                                                        background: previewTokens.cardStrongBackground,
+                                                        background: selected ? previewTokens.cardStrongBackground : 'rgba(255,255,255,0.03)',
                                                         borderColor: selected ? 'var(--ui-border-accent)' : previewTokens.borderSoftColor,
                                                         opacity: disabledByMode ? 0.42 : unlocked ? 1 : 0.72,
                                                         boxShadow: selected ? `0 0 20px ${previewTokens.buttonGlow}` : undefined,
                                                     }}
                                                 >
-                                                    <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/78">
+                                                    <span
+                                                        className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full border border-white/15"
+                                                        style={{
+                                                            background: previewTokens.accentHex,
+                                                            boxShadow: `0 0 8px ${previewTokens.accentHex}`,
+                                                        }}
+                                                    />
+                                                    <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/82">
                                                         {skinMeta.label}
                                                     </span>
                                                     <span
-                                                        className="relative flex h-10 w-10 items-center justify-center rounded-full border"
-                                                        style={{
-                                                            background: previewTokens.buttonBackground,
-                                                            borderColor: previewTokens.borderColor,
-                                                            boxShadow: `0 0 14px ${previewTokens.buttonGlow}`,
-                                                        }}
-                                                    >
-                                                        <span
-                                                            className="h-[18px] w-[18px] rounded-full border border-white/25"
-                                                            style={{
-                                                                background: previewTokens.accentHex,
-                                                                boxShadow: `0 0 14px ${previewTokens.accentHex}`,
-                                                            }}
-                                                        />
-                                                    </span>
-                                                    <span
-                                                        className="text-[8px] font-black uppercase tracking-[0.18em]"
+                                                        className="text-[8px] font-black uppercase tracking-[0.16em]"
                                                         style={{
                                                             color: selected ? previewTokens.accentTextColor : 'rgba(255,255,255,0.42)',
                                                         }}
                                                     >
-                                                        {statusLabel}
+                                                        {selected ? 'ATIVA' : disabledByMode ? 'BASIC' : unlocked ? '' : 'LOJA'}
                                                     </span>
                                                 </button>
                                             );
@@ -1905,28 +2001,9 @@ const PreferenciasTab: React.FC = () => {
                         </GlassCard>
                     </div>
                     <SettingSelector label="Tutoriais" value={tutorialStatus} onClick={() => setModal('tutorial')} />
-                    <SettingSelector label="Privacidade" value="Abrir" onClick={() => window.open(LEGAL_PRIVACY_URL_PLACEHOLDER, '_blank', 'noopener,noreferrer')} />
+                    <SettingSelector label="Privacidade" value={termsStatus} onClick={() => setModal('privacy')} />
                     <div id="oracle-preferences-setting">
                         <SettingSelector label="Oráculo & Notificações" value={activeModeName} onClick={() => setModal('oracle')} />
-                    </div>
-
-                    <div className="settings-panel-card space-y-3">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Visibilidade do Perfil</div>
-                        <VisibilityScopeControl
-                            label="Ativos"
-                            value={assetsVisibility}
-                            onChange={handleAssetsVisibilityChange}
-                        />
-                        <VisibilityScopeControl
-                            label="Arvore de Maestria"
-                            value={masteryVisibility}
-                            onChange={handleMasteryVisibilityChange}
-                        />
-                        <VisibilityScopeControl
-                            label="Miniaturas de arenas"
-                            value={featsVisibility}
-                            onChange={handleFeatsVisibilityChange}
-                        />
                     </div>
                 </div>
             </section>
@@ -1945,6 +2022,19 @@ const PreferenciasTab: React.FC = () => {
             {modal === 'oracle' && <OracleSettingsModal onClose={() => setModal(null)} variant="preferences" />}
 
             {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} />}
+            {modal === 'privacy' && (
+                <PrivacyPreferencesModal
+                    open
+                    termsStatus={termsStatus}
+                    assetsVisibility={assetsVisibility}
+                    masteryVisibility={masteryVisibility}
+                    featsVisibility={featsVisibility}
+                    onAssetsVisibilityChange={handleAssetsVisibilityChange}
+                    onMasteryVisibilityChange={handleMasteryVisibilityChange}
+                    onFeatsVisibilityChange={handleFeatsVisibilityChange}
+                    onClose={() => setModal(null)}
+                />
+            )}
             {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}
         </div>
     );

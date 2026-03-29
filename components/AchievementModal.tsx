@@ -16,7 +16,6 @@ interface AchievementModalProps {
 
 const BASIC_VISIBLE_ACHIEVEMENTS: FeedEventType[] = [
     'MILESTONE_COMPLETED',
-    'ARENA_COMPLETED',
     'QUEST_COMPLETED',
     'REPORT_COMPLETED',
 ];
@@ -47,7 +46,9 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     const cardRef = useRef<HTMLDivElement>(null);
     const isArenaComplete = achievement.type === 'ARENA_COMPLETED';
     const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
-    const canRenderAchievement = appMode === 'GAME' || isGM || BASIC_VISIBLE_ACHIEVEMENTS.includes(achievement.type);
+    const canRenderAchievement =
+        achievement.type !== 'ARENA_COMPLETED' &&
+        (appMode === 'GAME' || isGM || BASIC_VISIBLE_ACHIEVEMENTS.includes(achievement.type));
     const canShareAchievement = appMode === 'GAME' || isGM;
 
     useEffect(() => {

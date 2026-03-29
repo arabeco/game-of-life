@@ -44,6 +44,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
 
     // Check ownership
     const checkOwnership = (itemId: string, category: ItemCategory) => {
+        if (category === 'hair') return true;
+
         // First check explicit inventory if available
         if (userProfile.inventory?.some(i => i.id === itemId)) return true;
 

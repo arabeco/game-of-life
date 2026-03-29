@@ -115,6 +115,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         if (!allItems) return [];
         return allItems.filter(item => {
             if (item.id === 'none') return true;
+            if (unlockCategory === 'hairStyles') return true;
             if (isStaff) return true;
             // Allow if in inventory
             if (inventory?.some(inv => inv.id === item.id)) return true;

@@ -73,9 +73,9 @@ export const GENESIS_FOUNDER_REWARD_WINDOW: SeasonRewardWindow = {
 
 export const AURORA_I_LAUNCH_HIGHLIGHTS: SeasonLaunchHighlights = {
   title: 'Assinatura visual de Aurora I',
-  summary: 'Aurora I estreia com sua propria identidade visual. A nova borda e o novo banner registram a abertura da Primeira Era.',
-  itemLabels: ['Borda Aurora I', 'Banner Aurora I'],
-  itemIds: ['item_border_aurora_1_2026', 'item_banner_aurora_1_2026'],
+  summary: 'Aurora I estreia com sua propria identidade visual. A nova borda, o novo banner e Guardiao Aurora registram a abertura da Primeira Era.',
+  itemLabels: ['Guardiao Aurora', 'Borda Aurora I', 'Banner Aurora I'],
+  itemIds: ['item_skin_aurora_1_2026', 'item_border_aurora_1_2026', 'item_banner_aurora_1_2026'],
 };
 
 export const ERA_CALENDAR: EraCalendarYear[] = [
@@ -453,12 +453,12 @@ export const GM_SEASON_MISSIONS: SeasonMission[] = [
     id: 'sm_aurora_meta_1',
     season_id: 'season-aurora-1-2026',
     title: 'Selo de Aurora I',
-    description: 'Conclua as 3 jornadas da Aurora I para selar a abertura oficial da Primeira Era. Recompensa: Borda Aurora I, Banner Aurora I e Insignia Aurora I.',
+    description: 'Conclua as 3 jornadas da Aurora I para selar a abertura oficial da Primeira Era. Recompensa: Guardiao Aurora, Borda Aurora I, Banner Aurora I e Insignia Aurora I.',
     goal_type: 'quests_claimed',
     goal_value: 3,
     reward_type: 'item_id',
     reward_value: 'item_border_aurora_1_2026',
-    reward_item_ids: ['item_border_aurora_1_2026', 'item_banner_aurora_1_2026', 'insignia_season_aurora_1'],
+    reward_item_ids: ['item_skin_aurora_1_2026', 'item_border_aurora_1_2026', 'item_banner_aurora_1_2026', 'insignia_season_aurora_1'],
     sourceQuestIds: ['aurora-quest-caminhante', 'aurora-quest-leitor', 'aurora-quest-monge'],
     type: 'individual',
     icon: 'ðŸŒ…',

@@ -179,6 +179,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         ? userCodexes.find(codex => codex.id === campaignCodexOriginId) ?? null
         : null;
     const isReadOnlyCodexCampaign = campaignCodex?.source_type === 'gift_link' || campaignCodex?.source_type === 'gift_in_app';
+    const canEditCampaignMetadata = !isPreviewCampaign;
+    const canEditCampaignStructure = canEditCampaignMetadata && !isReadOnlyCodexCampaign;
 
     const handleCreateCampaign = async () => {
         const title = `Nova Campanha ${validCampaigns.length + 1}`;
@@ -208,7 +210,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     };
 
     const handleDeleteCampaign = () => {
-        if (!selectedCampaign || isPreviewCampaign) return;
+        if (!selectedCampaign || isPreviewCampaign || isReadOnlyCodexCampaign) return;
         if (confirm('Tem certeza que deseja excluir esta campanha?TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
             deleteCampaign(selectedCampaign.id);
             setSelectedCampaignId(null);
@@ -453,6 +455,15 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     };
 
     const selectedArena = selectedArenaId ?campaignArenasSource.find(a => a.id === selectedArenaId) : null;
+    const selectedArenaActions = useMemo(
+        () => selectedArenaId ? campaignActionsSource.filter((entry) => entry.arenaId === selectedArenaId) : [],
+        [campaignActionsSource, selectedArenaId]
+    );
+    const selectedArenaTasks = useMemo(() => {
+        if (!selectedArenaId || isPreviewCampaign) return [];
+        const actionIds = new Set(selectedArenaActions.map((entry) => entry.id));
+        return cycleScopedTasks.filter((task) => actionIds.has(task.actionId));
+    }, [cycleScopedTasks, isPreviewCampaign, selectedArenaActions, selectedArenaId]);
     const showPhaseHeaders = arenaPhaseRows.length > 1;
     const displayCampaignTitle = editTitle?.trim() || selectedCampaign?.title || '';
     const displayCampaignDescription = editDescription?.trim() || selectedCampaign?.description || '';
@@ -789,7 +800,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                     <div className="p-4 border-b border-white/10 shrink-0 bg-black/20">
                         <div className="arena-plate-header flex justify-between items-start gap-1 rounded-xl px-1 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1 pl-0.5">
-                                {!isReadOnlyCodexCampaign && !isPreviewCampaign && (
+                                {canEditCampaignMetadata && (
                                     <button
                                         onClick={() => setIsEditing((current) => !current)}
                                         className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}
@@ -798,7 +809,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                         <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
                                     </button>
                                 )}
-                                {!isPreviewCampaign && isEditing && (
+                                {canEditCampaignStructure && isEditing && (
                                     <button
                                         onClick={handleDeleteCampaign}
                                         className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
@@ -826,6 +837,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                             rows={2}
                                             placeholder="Descrição..."
                                         />
+                                        {!canEditCampaignStructure && (
+                                            <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-center text-[11px] leading-relaxed text-white/70">
+                                                Campanha recebida aceita so ajustes locais de nome e descricao. Fases, arenas e ordem continuam protegidas.
+                                            </div>
+                                        )}
                                         <div className="flex justify-center gap-2">
                                             <button onClick={handleSaveCampaign} className="luxe-skin-button rounded-xl px-3 py-1 text-xs font-bold">Salvar</button>
                                             <button onClick={() => setIsEditing(false)} className="px-3 py-1 bg-white/10 text-white text-xs font-bold rounded hover:bg-white/20">Cancelar</button>
@@ -870,7 +886,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                 <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
                                     OK
                                 </button>
-                                {!isReadOnlyCodexCampaign && !isPreviewCampaign && isEditing && (
+                                {canEditCampaignStructure && isEditing && (
                                     <button
                                         onClick={handleAddPhase}
                                         className="p-2 rounded-full transition-colors border border-white/15 bg-black/30 hover:bg-black/40"
@@ -889,7 +905,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                         {sortedArenas.length === 0 ?(
                             <div className="h-full flex flex-col items-center justify-center text-gray-500">
                                 <p className="mb-4">Nenhuma arena definida nesta campanha.</p>
-                                {!isReadOnlyCodexCampaign && !isPreviewCampaign && (
+                                {canEditCampaignStructure && (
                                     <button 
                                         onClick={handleCreateFutureArena}
                                         className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-sm transition-all"
@@ -953,7 +969,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                             key={arena.id} 
                                             className={`relative w-[14.2rem] flex-shrink-0 transition-all duration-300 group ${scaleClass} ${isPreviewCampaign && previewMeta?.hideArenaDetails ? 'cursor-default' : 'cursor-pointer'}`}
                                             onClick={() => handleArenaClick(arena.id)}
-                                            draggable={isEditing && !isReadOnlyCodexCampaign && !isPreviewCampaign}
+                                            draggable={isEditing && canEditCampaignStructure}
                                             onDragStart={() => handleArenaDragStart(arena.id)}
                                             onDragEnd={() => setDraggedArenaId(null)}
                                         >
@@ -969,7 +985,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                             <div className={`rounded-[1rem] border transition-all duration-300 bg-[linear-gradient(180deg,rgba(100,70,180,0.18),rgba(18,18,18,0.96))] overflow-hidden ${borderClass} relative group`}>
                                                 
                                                 {/* Floating Controls (Top Right) - Only for custom campaigns */}
-                                                {!isReadOnlyCodexCampaign && !isPreviewCampaign && !isLinkingMode && (
+                                                {canEditCampaignStructure && !isLinkingMode && (
                                                     <div className="absolute top-1 right-1 z-30 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-sm rounded-lg p-1 border border-white/10">
                                                         <button 
                                                             onClick={(e) => handleMoveArena(arena.id, 'left', e)}
@@ -1062,7 +1078,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 Solte uma arena aqui
                                             </div>
                                         )}
-                                        {!isReadOnlyCodexCampaign && !isPreviewCampaign && phaseIndex === renderedPhaseRows.length - 1 && (
+                                        {canEditCampaignStructure && phaseIndex === renderedPhaseRows.length - 1 && (
                                             <div className="flex min-h-[5.8rem] items-end justify-end self-stretch pb-1 pr-1">
                                                 <button
                                                     onClick={handleCreateFutureArena}
@@ -1108,6 +1124,10 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                     {selectedArena && !(isPreviewCampaign && previewMeta?.hideArenaDetails) && (
                         <ArenaDetailModal 
                             arena={selectedArena}
+                            actionsOverride={selectedArenaActions}
+                            tasksOverride={selectedArenaTasks}
+                            readOnly={isPreviewCampaign}
+                            previewMode={isPreviewCampaign}
                             onClose={() => setSelectedArenaId(null)}
                         />
                     )}

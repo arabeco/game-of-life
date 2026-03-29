@@ -128,6 +128,7 @@ export const ArenaDetailModal: React.FC<{
     actionsOverride?: Action[];
     tasksOverride?: ScheduledTask[];
     readOnly?: boolean;
+    previewMode?: boolean;
     linkedRelationshipLinkId?: string;
     linkedRelationshipType?: RelationshipLinkType | null;
     collaborativeRole?: 'mentor' | 'pupil' | null;
@@ -140,6 +141,7 @@ export const ArenaDetailModal: React.FC<{
     actionsOverride,
     tasksOverride,
     readOnly = false,
+    previewMode = false,
     linkedRelationshipLinkId,
     linkedRelationshipType = null,
     collaborativeRole = null,
@@ -209,7 +211,7 @@ export const ArenaDetailModal: React.FC<{
     );
     const isMentorshipLinkedArena = (linkedRelationshipType === 'mentoria' || currentLinkType === 'mentoria');
     const isPupilMentorshipArena = isMentorshipLinkedArena && currentCollaborativeRole === 'pupil';
-    const isReadOnlyArena = readOnly || (!localArenaExists && !isDetachedMentorshipCollab);
+    const isReadOnlyArena = readOnly || previewMode || (!localArenaExists && !isDetachedMentorshipCollab);
     const activeAssetId = isEditing ? editableArena.assetId : arena.assetId;
     const parentAsset = assets.find(a => a.id === activeAssetId);
     const formatAssetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
@@ -331,12 +333,14 @@ export const ArenaDetailModal: React.FC<{
         : arena.isArchived
             ? 'Esta arena ja esta arquivada. Excluir agora apaga esse registro de forma definitiva. Tem certeza?'
         : currentLinkType === 'competicao'
-            ? 'Voce esta saindo do desafio desta arena. A competicao continua ativa, mas esta arena sera apagada de vez. Tem certeza?'
+            ? 'Voce esta saindo do desafio desta arena. Todo o progresso dela sera perdido e a competicao continua ativa. Tem certeza?'
             : currentLinkType === 'parceria'
-                ? 'Voce esta removendo a arena ligada a esta parceria. A relacao continua ativa, mas esta arena sera apagada de vez. Tem certeza?'
+                ? 'Voce esta removendo a arena ligada a esta parceria. Todo o progresso dela sera perdido e a relacao continua ativa. Tem certeza?'
                 : currentLinkType === 'mentoria'
-                    ? 'Voce esta removendo a arena ligada a esta mentoria. A relacao continua ativa, mas esta arena sera apagada de vez. Tem certeza?'
-                    : 'Tem certeza que deseja excluir esta arena? Esta acao nao pode ser desfeita.';
+                    ? currentCollaborativeRole === 'mentor'
+                        ? 'Voce vai apagar esta arena do pupilo. Todo o progresso registrado nela sera perdido e a mentoria continua ativa. Tem certeza?'
+                        : 'Voce vai remover esta arena da mentoria. Todo o progresso registrado nela sera perdido e a mentoria continua ativa. Tem certeza?'
+                    : 'Tem certeza que deseja excluir esta arena? Todo o progresso registrado nela sera perdido.';
     const handleEditToggle = async () => {
         if (isReadOnlyArena) {
             showToast('Essa arena compartilhada abre aqui apenas para leitura.', 'warning');
@@ -382,8 +386,40 @@ export const ArenaDetailModal: React.FC<{
         setIsEditing(!isEditing);
     };
 
-    const handleDeleteArena = () => {
-        deleteArena(arena.id);
+    const handleDeleteArena = async () => {
+        setShowDeleteConfirmation(false);
+
+        if (isDetachedMentorshipCollab) {
+            try {
+                const { error } = await supabase.rpc('delete_linked_relationship_arena', {
+                    p_arena_id: arena.id,
+                });
+
+                if (error) throw error;
+
+                await Promise.resolve(onLinkedArenaRefresh?.());
+                window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+                showToast('Arena removida da mentoria. O progresso dela foi perdido.', 'success');
+                onClose();
+                return;
+            } catch (error: any) {
+                console.error('Error deleting collaborative linked arena:', error);
+                const message = String(error?.message || '');
+                showToast(
+                    message.includes('delete_linked_relationship_arena')
+                        ? 'Essa base ainda nao recebeu o SQL novo para remover arenas de mentoria pelo mentor.'
+                        : 'Nao foi possivel remover essa arena vinculada.',
+                    'error'
+                );
+                return;
+            }
+        }
+
+        await Promise.resolve(deleteArena(arena.id));
+        if (isRelationshipArena) {
+            window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            void Promise.resolve(onLinkedArenaRefresh?.());
+        }
         onClose();
     };
 
@@ -553,7 +589,7 @@ export const ArenaDetailModal: React.FC<{
                                             ?'border-green-500/50 bg-green-500/20 hover:bg-green-500/30'
                                             : 'border-white/15 bg-black/30 hover:bg-black/40'
                                             }`}
-                                        title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada' : 'Compartilhar arena para o clÃ£'}
+                                        title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada' : 'Compartilhar arena para o cla'}
                                     >
                                         <UsersIcon className={`w-4 h-4 ${arena.description?.includes('[SHARED]') ?'text-green-400' : 'text-gray-400'}`} />
                                     </button>
@@ -568,12 +604,12 @@ export const ArenaDetailModal: React.FC<{
                                 )}
                                 {currentLinkType === 'competicao' && (
                                     <div className="bg-red-500/20 border border-red-500/50 text-red-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
-                                        <span>âš”ï¸</span> PVP
+                                        <span>PVP</span>
                                     </div>
                                 )}
                                 {currentLinkType === 'mentoria' && (
                                     <div className="bg-blue-500/20 border border-blue-500/50 text-blue-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
-                                        <span>ðŸ‘ï¸</span> MENTORIA
+                                        <span>MENTORIA</span>
                                     </div>
                                 )}
                                 {currentLinkType === 'mentoria' && currentCollaborativeRole === 'pupil' && (
@@ -689,7 +725,7 @@ export const ArenaDetailModal: React.FC<{
                                     </div>
                                 </>
                             ) : (
-                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descriÃ§Ã£o.'}</p>
+                                <p className="text-sm text-gray-500 pt-1">{arena.description || 'Sem descricao.'}</p>
                             )}
                         </div>
 
@@ -717,7 +753,7 @@ export const ArenaDetailModal: React.FC<{
                                                             <PlasmaCanvas color={'var(--skin-accent-color)'} opacity={0.189} className="arena-plasma-canvas" />
                                                         </div>
                                                         <div className="relative z-10 transform -rotate-45 flex flex-col items-center justify-center px-1 space-y-1.5">
-                                                            <EmojiGlyph symbol={action.icon || "ðŸ†"} size="milestone" className="text-white" />
+                                                            <EmojiGlyph symbol={action.icon || '\u{1F3C6}'} size="milestone" className="text-white" />
                                                             <p className="text-[13px] font-bold leading-[1.05] line-clamp-2 text-white">{action.name}</p>
                                                         </div>
                                                     </button>
@@ -745,9 +781,11 @@ export const ArenaDetailModal: React.FC<{
                                             countingTasks={tasksForCounts}
                                         />
                                     ))}
-                                    <button id="add-action-button" ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
-                                        <PlusIcon className="w-8 h-8" />
-                                    </button>
+                                    {!previewMode && (
+                                        <button id="add-action-button" ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
+                                            <PlusIcon className="w-8 h-8" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -756,11 +794,11 @@ export const ArenaDetailModal: React.FC<{
                             <div className="arena-plate-progress">
                                 <div className="arena-plate-progress-fill" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)' }}></div>
                             </div>
-                            <p className="text-sm font-bold text-gray-300 text-center">
+                                <p className="text-sm font-bold text-gray-300 text-center">
                                 {isClanQuestArena
                                     ?`${clanQuestTotals.totalProgress}/${clanQuestTotals.totalGoal}`
                                     : isSharedPool
-                                        ? `${allActionInstances - allCompletedInstances} aÃ§Ãµes restantes`
+                                        ? `${allActionInstances - allCompletedInstances} acoes restantes`
                                         : `${progress.toFixed(0)}%`}
                             </p>
                         </div>
@@ -774,6 +812,7 @@ export const ArenaDetailModal: React.FC<{
                     arenaId={arena.id}
                     action={actionModalState.action}
                     initialMode={actionModalState.mode}
+                    isPreview={previewMode}
                     lockArenaAssignment={isMentorshipLinkedArena}
                     collaborativeLinkedArena={isDetachedMentorshipCollab}
                     collaborativeOwnerUserId={isDetachedMentorshipCollab ? collaborativeOwnerUserId : null}

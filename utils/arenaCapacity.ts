@@ -20,7 +20,7 @@ export const getArenaCapacitySummary = (assets: Asset[], profile?: UserProfile |
     const total = assets.reduce((sum, asset) => sum + asset.arenas.length, 0);
     const active = assets.reduce((sum, asset) => sum + asset.arenas.filter((arena) => !arena.isArchived).length, 0);
     const limit = getArenaLimitForProfile(profile);
-    const remaining = Math.max(0, limit - active);
+    const remaining = Math.max(0, limit - total);
     const isPremium = hasPremiumAccess(profile);
 
     return {
@@ -29,27 +29,27 @@ export const getArenaCapacitySummary = (assets: Asset[], profile?: UserProfile |
         limit,
         remaining,
         isPremium,
-        isAtLimit: active >= limit,
+        isAtLimit: total >= limit,
     };
 };
 
 export const buildArenaLimitMessage = (
     summary: ArenaCapacitySummary,
-    options?: { requestedActiveArenas?: number },
+    options?: { requestedArenaCount?: number },
 ): string => {
-    const requestedActiveArenas = Math.max(1, options?.requestedActiveArenas || 1);
-    const missingSlots = Math.max(0, summary.active + requestedActiveArenas - summary.limit);
+    const requestedArenaCount = Math.max(1, options?.requestedArenaCount || 1);
+    const missingSlots = Math.max(0, summary.total + requestedArenaCount - summary.limit);
 
-    if (requestedActiveArenas > 1 && missingSlots > 0) {
+    if (requestedArenaCount > 1 && missingSlots > 0) {
         if (summary.isPremium) {
-            return `Essa operacao precisa de ${requestedActiveArenas} arenas ativas, mas seu limite premium de ${summary.limit} ja ficou curto. Arquive ${missingSlots} arena(s) antes de continuar.`;
+            return `Essa operacao precisa de ${requestedArenaCount} arenas, mas seu limite premium de ${summary.limit} ja ficou curto. Exclua ${missingSlots} arena(s) antes de continuar.`;
         }
-        return `Essa operacao precisa de ${requestedActiveArenas} arenas ativas, mas o plano atual permite ate ${summary.limit}. Arquive ${missingSlots} arena(s) ou ative Premium para chegar a ${PREMIUM_ARENA_LIMIT}.`;
+        return `Essa operacao precisa de ${requestedArenaCount} arenas, mas o plano atual permite ate ${summary.limit}. Exclua ${missingSlots} arena(s) ou ative Premium para chegar a ${PREMIUM_ARENA_LIMIT}.`;
     }
 
     if (summary.isPremium) {
-        return `Voce atingiu o limite de ${summary.limit} arenas ativas. Arquive uma arena para abrir espaco no Planner.`;
+        return `Voce atingiu o limite de ${summary.limit} arenas. Exclua uma arena para continuar.`;
     }
 
-    return `Voce atingiu o limite de ${summary.limit} arenas ativas. Arquive uma arena para abrir espaco no Planner ou ative Premium para liberar ate ${PREMIUM_ARENA_LIMIT}.`;
+    return `Voce atingiu o limite de ${summary.limit} arenas. Exclua uma arena ou ative Premium para liberar ate ${PREMIUM_ARENA_LIMIT}.`;
 };

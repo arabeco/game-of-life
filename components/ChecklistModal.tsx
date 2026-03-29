@@ -26,6 +26,7 @@ interface SequenceRowProps {
 const ChecklistRow: React.FC<ChecklistRowProps> = ({ item, onToggle, onUpdate, onDelete }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [text, setText] = useState(item.text);
+    const rowRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setText(item.text);
@@ -41,8 +42,14 @@ const ChecklistRow: React.FC<ChecklistRowProps> = ({ item, onToggle, onUpdate, o
         setIsEditing(false);
     };
 
+    const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+        const nextTarget = event.relatedTarget as Node | null;
+        if (nextTarget && rowRef.current?.contains(nextTarget)) return;
+        handleSave();
+    };
+
     return (
-        <div className="flex items-center gap-2 rounded-2xl border border-white/8 bg-black/20 p-3">
+        <div ref={rowRef} className="flex items-center gap-2 rounded-2xl border border-white/8 bg-black/20 p-3">
             <button
                 type="button"
                 onClick={() => onToggle(item.id)}
@@ -58,11 +65,11 @@ const ChecklistRow: React.FC<ChecklistRowProps> = ({ item, onToggle, onUpdate, o
                 <input
                     type="text"
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onBlur={handleSave}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSave();
-                        if (e.key === 'Escape') {
+                    onChange={(event) => setText(event.target.value)}
+                    onBlur={handleBlur}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter') handleSave();
+                        if (event.key === 'Escape') {
                             setText(item.text);
                             setIsEditing(false);
                         }
@@ -90,6 +97,7 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
     const [titleDraft, setTitleDraft] = useState(item.title);
     const [holdProgress, setHoldProgress] = useState(0);
     const [justReset, setJustReset] = useState(false);
+    const rowRef = useRef<HTMLDivElement>(null);
     const holdIntervalRef = useRef<number | null>(null);
     const holdTriggeredRef = useRef(false);
     const holdStartRef = useRef<number | null>(null);
@@ -124,6 +132,12 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
         setIsEditing(false);
     };
 
+    const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+        const nextTarget = event.relatedTarget as Node | null;
+        if (nextTarget && rowRef.current?.contains(nextTarget)) return;
+        handleSave();
+    };
+
     const clearHold = () => {
         if (holdIntervalRef.current) {
             window.clearInterval(holdIntervalRef.current);
@@ -136,7 +150,7 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
     };
 
     const startHoldReset = () => {
-        if (holdIntervalRef.current) return;
+        if (holdIntervalRef.current || isEditing) return;
         holdTriggeredRef.current = false;
         holdStartRef.current = Date.now();
         holdIntervalRef.current = window.setInterval(() => {
@@ -155,11 +169,14 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
     };
 
     return (
-        <div className={`relative overflow-hidden rounded-[1.4rem] border p-3 transition-all ${
-            justReset
-                ? 'border-rose-400/50 bg-rose-500/10 shadow-[0_0_24px_rgba(244,63,94,0.18)]'
-                : 'border-white/8 bg-black/20'
-        }`}>
+        <div
+            ref={rowRef}
+            className={`relative overflow-hidden rounded-[1.4rem] border p-3 transition-all ${
+                justReset
+                    ? 'border-rose-400/50 bg-rose-500/10 shadow-[0_0_24px_rgba(244,63,94,0.18)]'
+                    : 'border-white/8 bg-black/20'
+            }`}
+        >
             <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/6">
                 <div
                     className={`h-full transition-[width,background] duration-75 ${justReset ? 'bg-rose-400' : 'bg-[var(--skin-accent-color)]'}`}
@@ -192,11 +209,11 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
                             <input
                                 type="text"
                                 value={titleDraft}
-                                onChange={(e) => setTitleDraft(e.target.value)}
-                                onBlur={handleSave}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleSave();
-                                    if (e.key === 'Escape') {
+                                onChange={(event) => setTitleDraft(event.target.value)}
+                                onBlur={handleBlur}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') handleSave();
+                                    if (event.key === 'Escape') {
                                         setTitleDraft(item.title);
                                         setIsEditing(false);
                                     }
@@ -207,10 +224,8 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
                         ) : (
                             <div className="truncate text-sm font-black uppercase tracking-[0.08em] text-white">{item.title}</div>
                         )}
-                        <div className={`mt-1 text-[11px] leading-relaxed ${
-                            justReset ? 'text-rose-300/80' : 'text-white/52'
-                        }`}>
-                            {justReset ? 'Sequência reiniciada.' : 'Segure o título para quebrar a sequência.'}
+                        <div className={`mt-1 text-[11px] leading-relaxed ${justReset ? 'text-rose-300/80' : 'text-white/52'}`}>
+                            {justReset ? 'Sequencia reiniciada.' : 'Segure o titulo para quebrar a sequencia.'}
                         </div>
                     </div>
                 </button>
@@ -309,12 +324,12 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                 <GlassCard
                     variant="neutral"
                     className="w-full max-w-md space-y-4 rounded-[2rem] border border-white/10 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.42)]"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
                 >
                     <div className="flex items-center justify-between gap-3">
                         <div>
                             <h2 className="text-lg font-black uppercase tracking-[0.16em] text-white">Checklist</h2>
-                            <p className="mt-1 text-xs text-white/45">Checklist diário e sequências manuais.</p>
+                            <p className="mt-1 text-xs text-white/45">Checklist diario e sequencias manuais.</p>
                         </div>
                         <button type="button" onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-white/65 transition-colors hover:bg-black/35 hover:text-white">
                             <XIcon className="h-4 w-4" />
@@ -342,7 +357,7 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                     : 'text-white/45 hover:text-white/75'
                             }`}
                         >
-                            Sequência
+                            Sequencia
                         </button>
                     </div>
 
@@ -369,10 +384,10 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                             <div className="flex gap-2">
                                 <input
                                     type="text"
-                                    placeholder="Nova tarefa... (ex: 2L de água)"
+                                    placeholder="Nova tarefa... (ex: 2L de agua)"
                                     value={newItemText}
-                                    onChange={(e) => setNewItemText(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleAddChecklistItem()}
+                                    onChange={(event) => setNewItemText(event.target.value)}
+                                    onKeyDown={(event) => event.key === 'Enter' && handleAddChecklistItem()}
                                     className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-white/28 focus:border-[var(--skin-accent-color)]/45 focus:outline-none"
                                 />
                                 <button type="button" onClick={handleAddChecklistItem} className="flex h-[3rem] w-[3rem] items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-white transition-colors hover:bg-black/35">
@@ -397,7 +412,7 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                     ))
                                 ) : (
                                     <div className="rounded-2xl border border-dashed border-white/10 bg-black/18 px-4 py-6 text-center text-sm text-white/45">
-                                        Crie uma sequência como <span className="font-semibold text-white/75">Sem fumar</span> ou <span className="font-semibold text-white/75">Ler todo dia</span>.
+                                        Crie uma sequencia como <span className="font-semibold text-white/75">Sem fumar</span> ou <span className="font-semibold text-white/75">Ler todo dia</span>.
                                     </div>
                                 )}
                             </div>
@@ -407,10 +422,10 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                     <FlameIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--skin-accent-color)]/75" />
                                     <input
                                         type="text"
-                                        placeholder="Nova sequência... (ex: Sem fumar)"
+                                        placeholder="Nova sequencia... (ex: Sem fumar)"
                                         value={newSequenceTitle}
-                                        onChange={(e) => setNewSequenceTitle(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleAddSequenceItem()}
+                                        onChange={(event) => setNewSequenceTitle(event.target.value)}
+                                        onKeyDown={(event) => event.key === 'Enter' && handleAddSequenceItem()}
                                         className="w-full rounded-2xl border border-white/10 bg-black/25 py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/28 focus:border-[var(--skin-accent-color)]/45 focus:outline-none"
                                     />
                                 </div>

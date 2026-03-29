@@ -1651,6 +1651,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const unseenNotifications = notifications.filter((notification) => !seenNotificationIdsRef.current.has(notification.id));
         seenNotificationIdsRef.current = new Set(currentIds);
 
+        if (document.visibilityState === 'visible') {
+            unseenNotifications
+                .filter((notification) => notification.type === 'clan_response' && /aprovou/i.test(notification.content))
+                .forEach((notification) => {
+                    const clanName = String(notification.metadata?.clanName || '').trim();
+                    showToast(
+                        clanName ? `Você entrou em ${clanName}.` : 'Sua entrada no grupo foi aprovada.',
+                        'success',
+                    );
+                });
+        }
+
         if (
             unseenNotifications.length === 0 ||
             !oraclePreferences?.pushEnabled ||
@@ -1677,7 +1689,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 });
             }
         })();
-    }, [appMode, notifications, oraclePreferences?.activeMode, oraclePreferences?.pushEnabled, session?.user.id]);
+    }, [appMode, notifications, oraclePreferences?.activeMode, oraclePreferences?.pushEnabled, session?.user.id, showToast]);
 
     useEffect(() => {
         const userId = session?.user.id;
@@ -3025,6 +3037,41 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 filter: `user_id=eq.${userId}`,
             }, () => {
                 scheduleClanJoinRequestsOutgoingRefresh(userId);
+                window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            });
+
+        socialRequestsChannel
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'relationship_link_invites',
+                filter: `recipient_id=eq.${userId}`,
+            }, () => {
+                window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'relationship_link_invites',
+                filter: `sender_id=eq.${userId}`,
+            }, () => {
+                window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'relationship_links',
+                filter: `mentor_id=eq.${userId}`,
+            }, () => {
+                window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'relationship_links',
+                filter: `pupil_id=eq.${userId}`,
+            }, () => {
+                window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
             });
 
         if (clan?.id && isClanLeader) {
@@ -3035,6 +3082,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 filter: `clan_id=eq.${clan.id}`,
             }, () => {
                 scheduleClanJoinRequestsIncomingRefresh(clan.id);
+                window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
             });
         }
 
@@ -3419,6 +3467,29 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         await loadClanJoinRequestsOutgoing(userId);
     }, [clearClanRuntimeState, loadClanAndMembers, loadClanJoinRequestsOutgoing]);
+
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId || !isUuid(userId)) return;
+
+        const channel = supabase
+            .channel(`clan-membership-realtime-${userId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'clan_members',
+                filter: `user_id=eq.${userId}`,
+            }, () => {
+                void refreshClanMembershipState(userId);
+                window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            });
+
+        channel.subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [session?.user.id, refreshClanMembershipState]);
 
     const migrateGuestDataToSupabase = useCallback(async (userId: string, sessionMetadata?: { email: string, nickname: string, avatarUrl: string }) => {
         if (!isUuid(userId)) {
@@ -5466,8 +5537,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             navigateToArenas: true,
         });
 
-        if (arenaCapacity.active + requestedArenaCount > arenaCapacity.limit) {
-            showToast(buildArenaLimitMessage(arenaCapacity, { requestedActiveArenas: requestedArenaCount }), 'warning');
+        if (arenaCapacity.total + requestedArenaCount > arenaCapacity.limit) {
+            showToast(buildArenaLimitMessage(arenaCapacity, { requestedArenaCount }), 'warning');
             return;
         }
 
@@ -7901,6 +7972,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
         await loadFriendsAndRequests(senderId);
+        showToast('Convite de amizade enviado.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
@@ -7939,6 +8011,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         );
 
         await loadFriendsAndRequests(userId);
+        showToast('Amizade aceita.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
@@ -7961,6 +8034,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             );
         }
         await loadFriendsAndRequests(userId);
+        showToast('Convite de amizade recusado.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
@@ -8164,13 +8238,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const getArenas = () => allArenas;
     const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
         const willStartArchived = arenaData.isArchived ?? false;
-        if (!willStartArchived) {
-            const capacity = getArenaCapacitySummary(assetsRef.current, userProfile);
-            if (capacity.isAtLimit) {
-                const message = buildArenaLimitMessage(capacity);
-                showToast(message, 'warning');
-                throw new Error(message);
-            }
+        const capacity = getArenaCapacitySummary(assetsRef.current, userProfile);
+        if (capacity.isAtLimit) {
+            const message = buildArenaLimitMessage(capacity);
+            showToast(message, 'warning');
+            throw new Error(message);
         }
 
         const newArena: Arena = { ...arenaData, id: crypto.randomUUID(), assetId, actionIds: [], isArchived: willStartArchived };
@@ -10248,6 +10320,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (data) {
             const mapped = mapToCamelCase(data) as ClanJoinRequest;
             setClanJoinRequestsOutgoing(prev => [...prev, { ...mapped, clanProfile: clanToJoin }]);
+            window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         }
     };
 
@@ -10306,6 +10379,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             .eq('status', 'pending');
         setClanJoinRequestsOutgoing(prev => prev.filter(request => request.clanId !== clanToJoin.id));
         await loadClanAndMembers(clanToJoin.id);
+        showToast(`Você entrou em ${clanToJoin.name}.`, 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
     const approveClanJoinRequest = async (request: ClanJoinRequest) => {
@@ -10336,6 +10411,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             request.userId,
             'clan_response',
             `${clan.name} aprovou sua entrada no grupo.`,
+            { clanId: clan.id, clanName: clan.name, requestId: request.id },
         );
 
         // Invalidate cache before reloading to ensure new member is fetched
@@ -10343,6 +10419,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         await loadClanAndMembers(clan.id);
         await loadClanJoinRequestsIncoming(clan.id);
+        showToast('Pedido aprovado.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
     const rejectClanJoinRequest = async (request: ClanJoinRequest) => {
@@ -10358,9 +10436,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             request.userId,
             'clan_response',
             `${clan.name} recusou sua entrada no grupo.`,
+            { clanId: clan.id, clanName: clan.name, requestId: request.id },
         );
 
         await loadClanJoinRequestsIncoming(clan.id);
+        showToast('Pedido recusado.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
     const legacyCancelClanJoinRequest = async (requestId: string): Promise<void> => {
@@ -10390,6 +10471,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         showToast('Solicitação ao grupo cancelada.', 'success');
         await loadClanJoinRequestsOutgoing(userId);
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
     const cancelClanJoinRequest = async (requestId: string): Promise<void> => {
@@ -10421,6 +10503,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         showToast('Solicitação ao grupo cancelada.', 'success');
         await loadClanJoinRequestsOutgoing(userId);
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
     const fetchDMs = useCallback(async (targetUserId?: string) => {

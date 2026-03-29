@@ -112,7 +112,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                             <CrownIcon className="w-8 h-8 mx-auto text-[var(--skin-accent-color)]" />
                             <h2 className="text-lg font-bold uppercase tracking-wider mt-2">Nova Arena</h2>
                             <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
-                                Arenas ativas: {arenaCapacity.active}/{arenaCapacity.limit}
+                                Arenas: {arenaCapacity.total}/{arenaCapacity.limit}
                             </p>
                         </div>
 

@@ -351,6 +351,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         const handleDailyCompletionPrompt = (event: Event) => {
             const customEvent = event as CustomEvent<DailyCompletionPromptPayload>;
             if (!customEvent.detail) return;
+            if (customEvent.detail.kind === 'task') return;
             setDailyCompletionPrompt(customEvent.detail);
         };
 

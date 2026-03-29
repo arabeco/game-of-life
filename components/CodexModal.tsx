@@ -494,8 +494,8 @@ export const CodexModal: React.FC<{
     if (!confirm('Deseja instalar todas as arenas e ações desta campanha no seu jogo?')) return;
 
     const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
-    if (arenaCapacity.active + activeCodex.arenas.length > arenaCapacity.limit) {
-      setStatus(buildArenaLimitMessage(arenaCapacity, { requestedActiveArenas: activeCodex.arenas.length }));
+    if (arenaCapacity.total + activeCodex.arenas.length > arenaCapacity.limit) {
+      setStatus(buildArenaLimitMessage(arenaCapacity, { requestedArenaCount: activeCodex.arenas.length }));
       return;
     }
 

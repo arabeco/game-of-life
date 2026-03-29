@@ -6,7 +6,6 @@ import { isSharedArena } from '../../utils/taskDomain.js';
 import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTaskSnapshot } from '../../utils/taskMutationUtils.js';
 import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../utils/progressUtils';
 import { emitArenaAttention } from '../../utils/arenaAttention';
-import { emitDailyCompletionPrompt } from '../../utils/dailyCompletionPrompt';
 
 type ToastTone = 'success' | 'error' | 'info';
 type AchievementState = { type: FeedEventType; data: any } | null;
@@ -240,15 +239,8 @@ export const createTaskDomain = ({
     };
 
     const maybePromptSitrepFollowUp = (task: ScheduledTask, action?: Action) => {
-        if (!task.completed) return;
-        if (!taskMatchesOperationalDate(task, dailyCommitment.date)) return;
-        if (dailyCommitment.stage === 'judgment') return;
-
-        emitDailyCompletionPrompt({
-            kind: 'task',
-            actionName: action?.name || null,
-            date: dailyCommitment.date,
-        });
+        void task;
+        void action;
     };
 
     const scheduleMultipleTasks = async (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => {

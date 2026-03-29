@@ -16,35 +16,25 @@ const buildPromptCopy = (
     if (payload.kind === 'sitrep') {
         if (mode === 'BASIC') {
             return {
-                eyebrow: 'Painel diário',
+                eyebrow: 'Painel Diario',
                 title: 'Dia encerrado',
-                message: 'Seu painel diário foi fechado. Quer abrir o SITREP para revisar o resultado agora?',
+                message: 'Seu Painel Diario foi fechado. Quer abrir o Painel Diario para revisar o resultado agora?',
             };
         }
 
         return {
-            eyebrow: 'Ritual diário',
-            title: 'SITREP selado',
-            message: 'O julgamento do dia foi concluído. Quer abrir o SITREP para ver o resultado completo agora?',
-        };
-    }
-
-    if (mode === 'BASIC') {
-        return {
-            eyebrow: 'Progresso',
-            title: 'Tarefa concluída',
-            message: payload.actionName
-                ? `"${payload.actionName}" foi concluída. Quer abrir o SITREP agora?`
-                : 'Uma tarefa foi concluída. Quer abrir o SITREP agora?',
+            eyebrow: 'Ritual Diario',
+            title: 'Painel Diario selado',
+            message: 'O julgamento do dia foi concluido. Quer abrir o Painel Diario para ver o resultado completo agora?',
         };
     }
 
     return {
-        eyebrow: 'Execução',
-        title: 'Ação concluída',
+        eyebrow: 'Progresso',
+        title: 'Tarefa concluida',
         message: payload.actionName
-            ? `"${payload.actionName}" entrou no seu dia. Quer abrir o SITREP agora?`
-            : 'Uma ação foi concluída. Quer abrir o SITREP agora?',
+            ? `"${payload.actionName}" foi concluida.`
+            : 'Uma tarefa foi concluida.',
     };
 };
 
@@ -66,7 +56,7 @@ export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProp
                 >
                     <div className="ui-modal-panel-content ui-modal-stack">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] shadow-[0_0_18px_rgba(0,0,0,0.25)]">
-                            <span className="text-xl">{payload.kind === 'sitrep' ? '◎' : '✓'}</span>
+                            <span className="text-xl">{payload.kind === 'sitrep' ? 'O' : 'V'}</span>
                         </div>
 
                         <div className="ui-modal-header">
@@ -109,16 +99,18 @@ export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProp
                             >
                                 OK
                             </button>
-                            <button
-                                onClick={onOpenSitrep}
-                                className={`ui-modal-button ${
-                                    isGame
-                                        ? 'luxe-skin-button'
-                                        : 'border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/14 text-white hover:bg-[var(--skin-accent-color)]/20'
-                                }`}
-                            >
-                                Abrir SITREP
-                            </button>
+                            {payload.kind === 'sitrep' && (
+                                <button
+                                    onClick={onOpenSitrep}
+                                    className={`ui-modal-button ${
+                                        isGame
+                                            ? 'luxe-skin-button'
+                                            : 'border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/14 text-white hover:bg-[var(--skin-accent-color)]/20'
+                                    }`}
+                                >
+                                    Abrir Painel Diario
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1427,7 +1427,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
                                                         </button>
                                                         {isTimePickerOpen && (
-                                                            <div className="mt-2 h-32 relative">
+                                                            <div className="relative mt-2 h-48">
                                                                 <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
                                                             </div>
                                                         )}
@@ -1585,7 +1585,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
                                                     </button>
                                                     {isTimePickerOpen && (
-                                                        <div className="mt-2 h-32 relative">
+                                                        <div className="relative mt-2 h-48">
                                                             <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
                                                         </div>
                                                     )}

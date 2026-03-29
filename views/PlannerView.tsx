@@ -88,7 +88,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         return (
             <div
                 ref={taskRef}
-                className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer z-10"
+                className="absolute inset-x-0 cursor-pointer z-10"
                 style={{ top: `${top}px`, height: `${height}px` }}
                 onClick={(e) => {
                     e.stopPropagation();
@@ -152,8 +152,8 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 style={isFreeAction ?{ height: '40px', width: '100px' } : { ...backgroundStyle, height: '40px', width: '100px' }}
                 className={`p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80 ${isFreeAction ?'free-action-shell free-action-outline' : ''}`}
             >
-                <div className="text-lg z-10"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
-                <div className="text-sm font-semibold truncate w-full z-10 text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]">{action?.name}</div>
+                <div className="text-lg z-10 shrink-0"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
+                <div className="text-sm font-semibold truncate min-w-0 flex-1 z-10 text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]">{action?.name}</div>
             </div>
         );
         const duration = action?.actionType === 'Marco' ?Math.max(15, task.duration) : task.duration;
@@ -178,7 +178,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             <div
                 ref={taskRef}
                 {...longPressEvents}
-                className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer select-none flex items-center justify-center"
+                className="absolute inset-x-0 cursor-pointer select-none flex items-center justify-center"
                 style={{ top: `${top}px`, height: `${height}px`, touchAction: 'none' }}
             >
                 <div className="relative w-full h-full">
@@ -204,7 +204,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         <div
             ref={taskRef}
             {...longPressEvents}
-            className="absolute w-[calc(100%-0.5rem)] left-0 right-2 cursor-pointer select-none"
+            className="absolute inset-x-0 cursor-pointer select-none"
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
             <div
@@ -219,8 +219,8 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 )}
                 <div className={`absolute inset-0 transition-opacity duration-300 ${task.completed ?'opacity-100' : 'opacity-0'}`} style={{ background: isFreeAction ? 'linear-gradient(135deg, rgba(110,231,183,0.14), rgba(15,23,42,0.46) 70%)' : 'linear-gradient(135deg, rgba(110,231,183,0.18), rgba(0,0,0,0.58) 72%)' }}></div>
                 <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${isFreeAction ?`free-action-outline ${task.completed ?'opacity-95 border-emerald-300/80 shadow-[0_0_16px_rgba(110,231,183,0.18)]' : 'opacity-80'}` : task.completed ?'border-emerald-300/80 shadow-[0_0_18px_rgba(110,231,183,0.14)]' : 'border-dashed border-gray-600'}`}></div>
-                <div className="text-lg z-10"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
-                <div className={`text-sm font-semibold truncate w-full z-10 ${task.completed ?'text-white' : isFreeAction ?'text-slate-100' : 'text-white'}`}>{action?.name}</div>
+                <div className="text-lg z-10 shrink-0"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
+                <div className={`text-sm font-semibold truncate min-w-0 flex-1 z-10 ${task.completed ?'text-white' : isFreeAction ?'text-slate-100' : 'text-white'}`}>{action?.name}</div>
                 {task.completed && <div className="z-10 shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-emerald-300/65 bg-emerald-500/16 text-emerald-100 shadow-[0_0_12px_rgba(110,231,183,0.22)]"><SquareCheckIcon className="h-3.5 w-3.5" /></div>}
                 {isFreeAction && (
                     <div className={`z-10 shrink-0 ${task.completed ?'hidden' : 'opacity-45 saturate-50'}`}>
@@ -274,7 +274,7 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
                 <div className="daily-grid-column flex-grow relative border-l border-white/10 h-full">
                     {hours.slice(0).map((hour, i) => (<div key={hour} className={`daily-hour-slice relative ${i > 0 ?'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}><div className="daily-quarter-line absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="daily-quarter-line absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="daily-quarter-line absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
                     {tasks.map((task) => <TaskSlot key={task.id} task={task} action={getActionById(task.actionId)} scaleFactor={scaleFactor} operationalDate={operationalDate} onCustomDragStart={onCustomDragStart} onTaskClick={handleTaskClick} />)}
-                    {dropIndicator && <DropIndicator top={dropIndicator.top} height={dropIndicator.height} className="w-[calc(100%-0.5rem)] right-2" />}
+                    {dropIndicator && <DropIndicator top={dropIndicator.top} height={dropIndicator.height} className="w-full right-0" />}
                     {isToday && timeIndicatorTop >= 0 && <CurrentTimeIndicator ref={timeIndicatorRef} top={timeIndicatorTop} />}
                 </div>
             </div>

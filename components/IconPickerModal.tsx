@@ -4,6 +4,7 @@ import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { EmojiGlyph } from './EmojiGlyph';
 import { ICON_PICKER_CATEGORIES } from '../constants/assetVisuals';
+import { useGame } from '../contexts/GameContext';
 import './core-ui.css';
 
 interface IconPickerModalProps {
@@ -12,8 +13,10 @@ interface IconPickerModalProps {
 }
 
 export const IconPickerModal: React.FC<IconPickerModalProps> = ({ onSelect, onClose }) => {
+    const { activeTheme } = useGame();
     const [activeCategory, setActiveCategory] = useState<(typeof ICON_PICKER_CATEGORIES)[number]['id']>('sugeridos');
     const currentCategory = ICON_PICKER_CATEGORIES.find(category => category.id === activeCategory) || ICON_PICKER_CATEGORIES[0];
+    const isLightTheme = activeTheme === 'LIGHT';
 
     return (
         <Portal>
@@ -31,14 +34,44 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ onSelect, onCl
                                 <button
                                     key={category.id}
                                     onClick={() => setActiveCategory(category.id)}
-                                    className={`min-w-fit px-3 py-2 rounded-xl border transition-all ${isActive ? 'text-white shadow-[0_10px_24px_rgba(0,0,0,0.22)]' : 'text-gray-400 hover:text-gray-200'}`}
+                                    className={`min-w-fit px-3 py-2 rounded-xl border transition-all ${
+                                        isActive
+                                            ? isLightTheme
+                                                ? 'text-slate-900 shadow-[0_10px_24px_rgba(15,23,42,0.12)]'
+                                                : 'text-white shadow-[0_10px_24px_rgba(0,0,0,0.22)]'
+                                            : isLightTheme
+                                                ? 'text-slate-500 hover:text-slate-700'
+                                                : 'text-gray-400 hover:text-gray-200'
+                                    }`}
                                     style={{
-                                        background: isActive ? `linear-gradient(135deg, ${category.color}55, rgba(10,10,10,0.92))` : 'rgba(255,255,255,0.03)',
-                                        borderColor: isActive ? `${category.color}aa` : 'rgba(255,255,255,0.08)',
+                                        background: isActive
+                                            ? isLightTheme
+                                                ? `linear-gradient(135deg, ${category.color}2f, rgba(255,255,255,0.96))`
+                                                : `linear-gradient(135deg, ${category.color}55, rgba(10,10,10,0.92))`
+                                            : isLightTheme
+                                                ? 'rgba(15,23,42,0.04)'
+                                                : 'rgba(255,255,255,0.03)',
+                                        borderColor: isActive
+                                            ? `${category.color}aa`
+                                            : isLightTheme
+                                                ? 'rgba(15,23,42,0.12)'
+                                                : 'rgba(255,255,255,0.08)',
                                     }}
                                 >
                                     <div className="flex items-center gap-2">
-                                        <EmojiGlyph symbol={category.tabIcon} size="badge" className={isActive ? 'text-white' : 'text-gray-300'} />
+                                        <EmojiGlyph
+                                            symbol={category.tabIcon}
+                                            size="badge"
+                                            className={
+                                                isActive
+                                                    ? isLightTheme
+                                                        ? 'text-slate-900'
+                                                        : 'text-white'
+                                                    : isLightTheme
+                                                        ? 'text-slate-500'
+                                                        : 'text-gray-300'
+                                            }
+                                        />
                                         <span className="text-[11px] font-semibold tracking-[0.08em] whitespace-nowrap">{category.label}</span>
                                     </div>
                                 </button>

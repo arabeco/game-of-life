@@ -9,26 +9,58 @@ interface WheelPickerProps {
 export const WheelPicker: React.FC<WheelPickerProps> = ({ options, value, onSelect }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRafRef = useRef<number | null>(null);
+    const scrollTimeoutRef = useRef<number | null>(null);
+    const itemHeight = 40;
 
     useEffect(() => {
         const selectedIndex = options.indexOf(value);
         if (containerRef.current && selectedIndex > -1) {
-            const itemHeight = 40; // Corresponds to h-10
-            containerRef.current.scrollTop = selectedIndex * itemHeight;
+            const nextScrollTop = selectedIndex * itemHeight;
+            if (Math.abs(containerRef.current.scrollTop - nextScrollTop) > 1) {
+                containerRef.current.scrollTop = nextScrollTop;
+            }
         }
     }, [value, options]);
 
     useEffect(() => () => {
         if (scrollRafRef.current !== null) cancelAnimationFrame(scrollRafRef.current);
+        if (scrollTimeoutRef.current !== null) window.clearTimeout(scrollTimeoutRef.current);
     }, []);
 
+    const commitSelection = () => {
+        const container = containerRef.current;
+        if (!container) return;
+        const rawIndex = Math.round(container.scrollTop / itemHeight);
+        const clampedIndex = Math.min(options.length - 1, Math.max(0, rawIndex));
+        const snappedScrollTop = clampedIndex * itemHeight;
+        const nextValue = options[clampedIndex];
+
+        if (Math.abs(container.scrollTop - snappedScrollTop) > 1) {
+            container.scrollTo({ top: snappedScrollTop, behavior: 'smooth' });
+        }
+
+        if (nextValue && nextValue !== value) {
+            onSelect(nextValue);
+        }
+    };
+
+    const scheduleCommitSelection = () => {
+        if (scrollTimeoutRef.current !== null) {
+            window.clearTimeout(scrollTimeoutRef.current);
+        }
+        scrollTimeoutRef.current = window.setTimeout(() => {
+            scrollTimeoutRef.current = null;
+            commitSelection();
+        }, 90);
+    };
+
     const handleScroll = () => {
+        scheduleCommitSelection();
         if (scrollRafRef.current !== null) return;
         scrollRafRef.current = requestAnimationFrame(() => {
             scrollRafRef.current = null;
             const container = containerRef.current;
             if (!container) return;
-            const itemHeight = 40;
             const rawIndex = Math.round(container.scrollTop / itemHeight);
             const clampedIndex = Math.min(options.length - 1, Math.max(0, rawIndex));
             const nextValue = options[clampedIndex];
@@ -37,14 +69,22 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({ options, value, onSele
     };
 
     return (
-        <div className="relative h-48 w-full bg-black/20 rounded-xl overflow-hidden" style={{ touchAction: 'none' }}>
-            <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-scroll snap-y snap-mandatory" style={{ scrollbarWidth: 'none', touchAction: 'pan-y' }}>
+        <div className="relative h-48 w-full bg-black/20 rounded-xl overflow-hidden" style={{ touchAction: 'pan-y' }}>
+            <div
+                ref={containerRef}
+                onScroll={handleScroll}
+                onMouseUp={scheduleCommitSelection}
+                onTouchEnd={scheduleCommitSelection}
+                onTouchCancel={scheduleCommitSelection}
+                className="h-full overflow-y-scroll snap-y snap-mandatory"
+                style={{ scrollbarWidth: 'none', touchAction: 'pan-y', overscrollBehaviorY: 'contain', WebkitOverflowScrolling: 'touch' }}
+            >
                 <div className="h-[68px]"></div> {/* Padding top */}
                 {options.map((option, index) => (
                     <div
                         key={index}
                         onClick={() => onSelect(option)}
-                        className="h-10 flex items-center justify-center text-lg snap-center cursor-pointer transition-colors"
+                        className={`h-10 flex items-center justify-center text-lg snap-center cursor-pointer transition-colors ${option === value ? 'font-bold text-white' : 'text-white/62'}`}
                     >
                         {option}
                     </div>

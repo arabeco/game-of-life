@@ -94,8 +94,53 @@ self.addEventListener('fetch', event => {
   }
 });
 
+self.addEventListener('push', event => {
+  const parsePayload = () => {
+    if (!event.data) {
+      return {
+        title: 'Glyph',
+        body: 'Voce recebeu um novo aviso.',
+        url: '/?oracle=notifications',
+      };
+    }
+
+    try {
+      return event.data.json();
+    } catch (_error) {
+      return {
+        title: 'Glyph',
+        body: event.data.text(),
+        url: '/?oracle=notifications',
+      };
+    }
+  };
+
+  event.waitUntil((async () => {
+    const payload = parsePayload();
+    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const hasVisibleClient = clientList.some(client =>
+      client.visibilityState === 'visible' || client.focused === true
+    );
+
+    if (hasVisibleClient) {
+      return;
+    }
+
+    await self.registration.showNotification(payload.title || 'Glyph', {
+      body: payload.body || 'Voce recebeu um novo aviso.',
+      icon: payload.icon || '/logo-diamond.png',
+      badge: payload.badge || '/logo-diamond.png',
+      tag: payload.tag || 'glyph-push',
+      requireInteraction: Boolean(payload.requireInteraction),
+      data: {
+        url: payload.url || '/?oracle=notifications',
+      },
+    });
+  })());
+});
+
 self.addEventListener('notificationclick', event => {
-  const targetUrl = event.notification?.data?.url || '/';
+  const targetUrl = new URL(event.notification?.data?.url || '/', self.location.origin).toString();
   event.notification.close();
 
   event.waitUntil((async () => {

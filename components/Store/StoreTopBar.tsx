@@ -17,8 +17,11 @@ const STORE_TABS: Array<{ id: StoreTab; label: string; mobileLabel?: string; ico
 ];
 
 export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange }) => {
-    const { userProfile } = useGame();
+    const { userProfile, appMode } = useGame();
     const { gold, fragments } = userProfile.wallet || { gold: 0, fragments: 0 };
+    const visibleTabs = appMode === 'BASIC'
+        ? STORE_TABS.filter((tab) => tab.id === 'store' || tab.id === 'codexes')
+        : STORE_TABS;
 
     return (
         <GlassCard className="sticky top-0 z-50 mb-4 border-white/10 bg-black/40 p-2.5 backdrop-blur-md">
@@ -34,8 +37,11 @@ export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange
                     </div>
                 </div>
 
-                <div className="store-subtab-strip grid flex-1 grid-cols-4 gap-1.5 rounded-2xl bg-black/30 p-1.5">
-                    {STORE_TABS.map((tab) => (
+                <div
+                    className="store-subtab-strip grid flex-1 gap-1.5 rounded-2xl bg-black/30 p-1.5"
+                    style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))` }}
+                >
+                    {visibleTabs.map((tab) => (
                         <button
                             key={tab.id}
                             type="button"

@@ -122,7 +122,7 @@ const resolveTypeFromTags = (tags: string[]): CampaignTypeId => {
 };
 
 export const CodexStore: React.FC = () => {
-    const { userCodexes, codexCatalog, buyCodex, showToast, assets } = useGame();
+    const { userCodexes, codexCatalog, buyCodex, installCodex, getArenas, showToast, assets } = useGame();
     const [purchasing, setPurchasing] = useState<string | null>(null);
     const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
     const [pendingPurchase, setPendingPurchase] = useState<{ id: string; title: string; goldPrice: number } | null>(null);
@@ -142,7 +142,7 @@ export const CodexStore: React.FC = () => {
 
         const isOwned = userCodexes.some((userCodex) => userCodex.catalog_id === catalogItem.id || userCodex.name === catalogItem.title);
         if (isOwned) {
-            showToast('Voce ja possui esta campanha.');
+            showToast('Voce ja possui esta campanha na sua biblioteca.');
             return;
         }
 
@@ -155,7 +155,10 @@ export const CodexStore: React.FC = () => {
         setPurchasing(pendingPurchase.id);
 
         try {
-            await buyCodex(pendingPurchase.id);
+            const acquiredCodex = await buyCodex(pendingPurchase.id, { silentSuccess: true });
+            if (acquiredCodex) {
+                await installCodex(acquiredCodex.id);
+            }
         } catch (error) {
             console.error('Failed to purchase campaign', error);
             showToast('Erro ao adquirir campanha.');
@@ -249,6 +252,12 @@ export const CodexStore: React.FC = () => {
         if (!campaignPreview) return null;
         return catalogEntries.find((entry) => entry.preview.campaign.id === campaignPreview.campaign.id) || null;
     }, [campaignPreview, catalogEntries]);
+
+    const allArenas = getArenas();
+    const installedCodexIds = useMemo(
+        () => new Set(allArenas.map((arena) => arena.originCodexId).filter(Boolean)),
+        [allArenas],
+    );
 
     return (
         <>
@@ -362,7 +371,9 @@ export const CodexStore: React.FC = () => {
                 {filteredEntries.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3">
                         {filteredEntries.map(({ codex, preview, coverVisual, actionCount, goldPrice, isFree, primaryAssetLabel, campaignTheme }) => {
-                            const isOwned = userCodexes.some((userCodex) => userCodex.catalog_id === codex.id || userCodex.name === codex.title);
+                            const ownedCodex = userCodexes.find((userCodex) => userCodex.catalog_id === codex.id || userCodex.name === codex.title) || null;
+                            const isOwned = Boolean(ownedCodex);
+                            const isInstalled = Boolean(ownedCodex && installedCodexIds.has(ownedCodex.id));
 
                             return (
                                 <GlassCard
@@ -408,11 +419,20 @@ export const CodexStore: React.FC = () => {
                                         </button>
 
                                         <div className="flex items-center justify-between gap-2 border-t border-white/6 pt-1.5">
-                                            {isOwned ? (
+                                            {isInstalled ? (
                                                 <div className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-xl border border-green-500/30 bg-green-500/12 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-green-400">
                                                     <CheckIcon className="h-3 w-3" />
-                                                    Biblioteca
+                                                    No app
                                                 </div>
+                                            ) : isOwned && ownedCodex ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { void installCodex(ownedCodex.id); }}
+                                                    disabled={purchasing === codex.id}
+                                                    className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    Instalar
+                                                </button>
                                             ) : (
                                                 <button
                                                     type="button"
@@ -456,8 +476,8 @@ export const CodexStore: React.FC = () => {
                         coverImage: activePreviewEntry?.coverVisual,
                         badgeLabel: activePreviewEntry?.isFree ? 'Campanha gratis' : 'Campanha premium',
                         note: activePreviewEntry?.isFree
-                            ? 'Disponivel para instalar sem custo.'
-                            : 'Pronta para instalar pela loja.',
+                            ? 'Disponivel para instalar agora sem custo.'
+                            : 'Ao adquirir, entra nas suas campanhas e tenta instalar na hora.',
                         hideArenaDetails: true,
                     }}
                 />
@@ -466,9 +486,9 @@ export const CodexStore: React.FC = () => {
                 <ConfirmationModal
                     title="Confirmar campanha"
                     message={pendingPurchase.goldPrice <= 0
-                        ? `${pendingPurchase.title} sera adicionada a sua biblioteca sem custo. Deseja continuar?`
-                        : `${pendingPurchase.title} vai debitar ${pendingPurchase.goldPrice} ouro da sua conta. Deseja continuar?`}
-                    confirmLabel={pendingPurchase.goldPrice <= 0 ? 'INSTALAR' : `COMPRAR · ${pendingPurchase.goldPrice} 🪙`}
+                        ? `${pendingPurchase.title} vai entrar nas suas campanhas sem custo e tentar instalar no app agora. Deseja continuar?`
+                        : `${pendingPurchase.title} vai debitar ${pendingPurchase.goldPrice} ouro, entrar nas suas campanhas e tentar instalar no app agora. Deseja continuar?`}
+                    confirmLabel={pendingPurchase.goldPrice <= 0 ? 'ADICIONAR' : `COMPRAR - ${pendingPurchase.goldPrice} OURO`}
                     onConfirm={() => { void handleConfirmPurchase(); }}
                     onCancel={() => setPendingPurchase(null)}
                 />

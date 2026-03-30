@@ -40,6 +40,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     useEffect(() => {
         if (!videoRef.current) return;
 
+        videoRef.current.muted = true;
+        videoRef.current.defaultMuted = true;
+        videoRef.current.volume = 0;
         videoRef.current.playbackRate = playbackRate;
         if (startTime > 0 && videoRef.current.currentTime === 0) {
             videoRef.current.currentTime = startTime;
@@ -90,6 +93,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 autoPlay
                 playsInline
                 muted
+                defaultMuted
                 preload={preload}
                 loop={loop}
                 onEnded={handleEnd}

@@ -4,7 +4,8 @@ export const REST_SCREEN_ACTION_SESSION_EVENT = 'restScreenActionSession:start';
 export const REST_SCREEN_ACTION_SESSION_CLEAR_EVENT = 'restScreenActionSession:clear';
 export const REST_SCREEN_ACTION_VIEW_REQUEST_EVENT = 'restScreenActionSession:viewAction';
 export const PLANNER_OPEN_ACTION_MODAL_EVENT = 'planner:open-action-modal';
-const REST_SCREEN_ACTION_SESSION_STORAGE_PREFIX = 'rest-screen-action-session-v1';
+export const REST_SCREEN_ACTION_SESSION_STORAGE_PREFIX = 'rest-screen-action-session-v1';
+const ACTIVE_ACTION_SESSION_GRACE_MS = 15 * 60 * 1000;
 const ACTION_TYPES = new Set<ActionType>(['Marco', 'Compromisso', 'Ação Recorrente', 'Livre']);
 
 export interface RestScreenActionSessionDetail {
@@ -92,4 +93,31 @@ export const clearPersistedRestScreenActionSession = (userId: string) => {
   } catch (error) {
     console.error('Failed to clear persisted action session:', error);
   }
+};
+
+export const hasActivePersistedRestScreenActionSession = (now = Date.now()): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+      if (!key || !key.startsWith(`${REST_SCREEN_ACTION_SESSION_STORAGE_PREFIX}:`)) continue;
+
+      const raw = window.localStorage.getItem(key);
+      if (!raw) continue;
+
+      const parsed = JSON.parse(raw);
+      if (!isRestScreenActionSessionDetail(parsed)) continue;
+
+      const startedAtMs = Date.parse(parsed.startedAt);
+      const endsAtMs = startedAtMs + (parsed.durationMinutes * 60 * 1000) + ACTIVE_ACTION_SESSION_GRACE_MS;
+      if (Number.isFinite(startedAtMs) && endsAtMs > now) {
+        return true;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to inspect persisted action sessions:', error);
+  }
+
+  return false;
 };

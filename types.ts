@@ -810,6 +810,7 @@ export interface DailyCommitment {
   score: number | null;
   expDeposited?: number | null;
   sitrepBonus?: number | null;
+  relationshipBonusXp?: number | null;
   operationalScratch?: string | null;
 }
 
@@ -1016,8 +1017,12 @@ export interface RelationshipCompetitionChallenge {
   winnerUserId?: string | null;
   winnerArenaId?: string | null;
   rewardChestType?: ChestType | null;
+  winnerBonusXp?: number | null;
   rewardGrantedAt?: string | null;
   loserNotifiedAt?: string | null;
+  challengerCompletedAt?: string | null;
+  opponentCompletedAt?: string | null;
+  sealedAt?: string | null;
   createdAt: string;
   completedAt?: string | null;
   metadata?: Record<string, any> | null;
@@ -1140,6 +1145,7 @@ export type NotificationType =
   | 'partnership_invite'
   | 'arena_access'
   | 'competition_result'
+  | 'action_reminder'
   | 'system';
 export interface NotificationMetadata {
   shareId?: string;
@@ -1158,6 +1164,11 @@ export interface NotificationMetadata {
   sendEmail?: boolean;
   emailSubject?: string;
   dispatchKey?: string;
+  url?: string;
+  actionId?: string;
+  taskId?: string;
+  arenaId?: string;
+  scheduledFor?: string;
   welcome?: boolean;
   [key: string]: any;
 }

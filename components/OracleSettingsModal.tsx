@@ -9,6 +9,11 @@ import {
     getLocalNotificationPermission,
     requestLocalNotificationPermission,
 } from '../utils/localNotification';
+import {
+    disableRemotePushSubscription,
+    getRemoteWebPushSupport,
+    syncRemotePushSubscription,
+} from '../utils/webPush';
 
 interface OracleSettingsModalProps {
     onClose: () => void;
@@ -56,6 +61,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         const nextEnabled = !Boolean(oraclePreferences.pushEnabled);
 
         if (!nextEnabled) {
+            await disableRemotePushSubscription();
             await updateOraclePreferences({ pushEnabled: false });
             showToast('Push no aparelho desativado.', 'info');
             return;
@@ -70,7 +76,25 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
             return;
         }
 
+        const remoteSupport = getRemoteWebPushSupport();
+        const remoteSync = await syncRemotePushSubscription();
         await updateOraclePreferences({ pushEnabled: true });
+
+        if (!remoteSupport.supported) {
+            showToast('Push local ativado. Este aparelho nao suporta push remoto completo.', 'warning');
+            return;
+        }
+
+        if (!remoteSupport.configured) {
+            showToast('Push local ativado. Falta configurar a chave publica do push remoto.', 'warning');
+            return;
+        }
+
+        if (!remoteSync.ok) {
+            showToast('Push ativado, mas o registro remoto do aparelho falhou. Fora do app ainda pode falhar.', 'warning');
+            return;
+        }
+
         showToast('Push no aparelho ativado.', 'success');
     };
 

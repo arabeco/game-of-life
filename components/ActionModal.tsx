@@ -116,6 +116,7 @@ interface ActionModalProps {
     initialMode: 'view' | 'edit';
     onClose: () => void;
     isPreview?: boolean;
+    disableAuthoring?: boolean;
     customThemeColor?: string;
     lockArenaAssignment?: boolean;
     collaborativeLinkedArena?: boolean;
@@ -202,6 +203,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     initialMode,
     onClose,
     isPreview,
+    disableAuthoring = false,
     customThemeColor,
     lockArenaAssignment = false,
     collaborativeLinkedArena = false,
@@ -320,7 +322,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const isSeasonLockedAction = arenaFlags.isSeasonQuest;
     const isInstalledCampaignAction = isInstalledCodexAction || isReceivedInstalledCodexAction;
     const isLockedFromSource = isSeasonLockedAction;
-    const canEditAuthorialContent = !isInstalledCampaignAction && !isSeasonLockedAction;
+    const canEditAuthorialContent = !disableAuthoring && !isInstalledCampaignAction && !isSeasonLockedAction;
     const canEditExecutionSettings = !isSeasonLockedAction;
     const isDetachedCollaborativeArena = collaborativeLinkedArena && !currentArena;
     const collaborativePersistUserId = collaborativeOwnerUserId || null;
@@ -352,6 +354,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             scheduledStartTime = h * 60 + m;
         }
 
+        if (
+            !isEditingTaskInstance &&
+            editableAction.actionType === 'Ação Recorrente' &&
+            scheduledStartTime !== undefined &&
+            selectedDays.length === 0
+        ) {
+            showToast('Escolha pelo menos um dia para programar essa ação recorrente.', 'warning');
+            return;
+        }
+
         const nextRepetitions = editableAction.actionType === 'Ação Recorrente'
             ?Math.min(50, Math.max(1, Math.floor(editableAction.repetitions || 1)))
             : 1;
@@ -378,7 +390,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         const nextSchedule = { ...(baseContext.schedule || {}) };
         const { schedule: _ignoredSchedule, ...restContext } = baseContext;
         if (editableAction.actionType === 'Ação Recorrente') {
-            nextSchedule.days = selectedDays;
+            if (selectedDays.length > 0) {
+                nextSchedule.days = selectedDays;
+            } else {
+                delete nextSchedule.days;
+                delete nextSchedule.startTime;
+                delete nextSchedule.notifyBeforeMinutes;
+            }
         } else {
             delete nextSchedule.days;
         }
@@ -810,6 +828,22 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     };
 
     const handleIconSelect = (icon: string) => { setEditableAction(p => ({ ...p, icon })); setIsIconPickerOpen(false); };
+    const handleArenaButtonClick = () => {
+        if (mode === 'view' && currentArena) {
+            window.dispatchEvent(new CustomEvent('tutorialNavigate', {
+                detail: {
+                    view: 'arenas',
+                    showArenaId: currentArena.id,
+                },
+            }));
+            onClose();
+            return;
+        }
+
+        if (canEditExecutionSettings && !lockArenaAssignment) {
+            setIsArenaPickerOpen(true);
+        }
+    };
     const handleDayToggle = (day: DayOfWeek) => setSelectedDays(p => p.includes(day) ?p.filter(d => d !== day) : [...p, day]);
     const handleActionTypeChange = (type: ActionType) => {
         setEditableAction(p => ({
@@ -866,6 +900,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget) onClose(); };
 
     const handleReminderToggle = async () => {
+        if (!startTime || startTime === 'Sem Horário') {
+            showToast('Defina um horário antes de ligar o lembrete.', 'warning');
+            return;
+        }
+
+        if (editableAction.actionType === 'Ação Recorrente' && selectedDays.length === 0) {
+            showToast('Escolha pelo menos um dia para a ação recorrente antes de ligar o lembrete.', 'warning');
+            return;
+        }
+
         const currentlyEnabled = editableAction.context?.schedule?.notifyBeforeMinutes === 15;
         if (currentlyEnabled) {
             clearReminderPreference();
@@ -885,6 +929,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         updateScheduleContext((schedule) => ({ ...schedule, notifyBeforeMinutes: 15 }));
         showToast('Lembrete de 15 min ativado.', 'success');
     };
+
+    const canUseReminderToggle = !isEditingTaskInstance
+        && !!startTime
+        && startTime !== 'Sem Horário'
+        && (editableAction.actionType !== 'Ação Recorrente' || selectedDays.length > 0);
 
     const getStartTimeLabel = (value?: number | null) => {
         if (value === undefined || value === null || value < 0) return null;
@@ -1194,7 +1243,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     {/* Header Fixed */}
                     <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md flex justify-between items-start z-30 relative border-b border-white/10">
                         <div className="flex items-center gap-3 pt-1">
-                            {!isPreview && (hasTaskInstanceContext || !isLockedFromSource || mode === 'edit') && (
+                            {!isPreview && !disableAuthoring && (hasTaskInstanceContext || !isLockedFromSource || mode === 'edit') && (
                                 <button
                                     onClick={mode === 'view' ?requestEditMode : handleCancel}
                                     className={`p-2 rounded-full border transition-all ${mode === 'edit' ?'bg-red-500/18 text-red-300 border-red-500/30 hover:bg-red-500/26' : 'bg-black/16 border-white/14 text-white/65 hover:text-white hover:bg-white/12'}`}
@@ -1487,8 +1536,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             <div>
                                                 <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Arena</label>
                                                 <button
-                                                    onClick={() => canEditExecutionSettings && !lockArenaAssignment && setIsArenaPickerOpen(true)}
-                                                    disabled={lockArenaAssignment || !canEditExecutionSettings}
+                                                    onClick={handleArenaButtonClick}
+                                                    disabled={!currentArena && (lockArenaAssignment || !canEditExecutionSettings)}
                                                     className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5 disabled:cursor-not-allowed disabled:opacity-60"
                                                 >
                                                     <span className="text-sm">{currentArena?.icon} {currentArena?.name || 'Selecionar arena'}</span>
@@ -1591,7 +1640,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     )}
                                                 </div>
 
-                                                {!isEditingTaskInstance && startTime && startTime !== 'Sem Horário' && (
+                                                {canUseReminderToggle && (
                                                     <button
                                                         type="button"
                                                         onClick={() => { void handleReminderToggle(); }}
@@ -1608,6 +1657,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             <div className={`absolute top-0.5 h-[1.125rem] w-[1.125rem] rounded-full bg-white transition-all ${editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'left-[1.35rem]' : 'left-0.5'}`} />
                                                         </div>
                                                     </button>
+                                                )}
+
+                                                {!isEditingTaskInstance && editableAction.actionType === 'Ação Recorrente' && startTime && startTime !== 'Sem Horário' && selectedDays.length === 0 && (
+                                                    <p className="px-1 text-[10px] leading-relaxed text-white/46">
+                                                        Escolha pelo menos um dia da semana para essa ação gerar tarefas e poder usar lembrete.
+                                                    </p>
                                                 )}
 
                                                 {isEditingTaskInstance && (

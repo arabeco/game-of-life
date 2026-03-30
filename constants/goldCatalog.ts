@@ -152,6 +152,7 @@ export const GOLD_MECHANIC_CATALOG = [
     { id: 'relationship_invite_competicao', name: 'Convite de competição', priceGold: 50, source: 'sql' },
     { id: 'mentor_linked_arena', name: 'Nova arena vinculada de mentoria', priceGold: 50, source: 'sql' },
     { id: 'partnership_linked_arena', name: 'Mostrar arena para parceiro', priceGold: 50, source: 'sql' },
+    { id: 'competition_challenge', name: 'Forjar duelo competitivo', priceGold: 50, source: 'sql' },
     { id: 'mentor_codex_forge', name: 'Forjar campanha nova para pupilo', priceGold: 100, source: 'sql' },
     { id: 'codex_share_external', name: 'Gerar link externo de campanha', priceGold: 50, source: 'sql' },
     { id: 'codex_share_in_app', name: 'Enviar campanha por @nickname', priceGold: 50, source: 'sql' },

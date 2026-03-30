@@ -129,7 +129,7 @@ const BattleTaskItem: React.FC<{
 };
 
 export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
-    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, scheduleAndCompleteNow, updateTask, toggleTaskCompletion, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, returnTaskToPool, getArenas, checklistItems, showToast, appMode } = useGame();
+    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, scheduleAndCompleteNow, toggleTaskCompletion, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, getArenas, checklistItems, showToast, appMode } = useGame();
 
     const [isAdjusting, setIsAdjusting] = useState(false);
     const isBasicMode = appMode === 'BASIC';
@@ -185,7 +185,9 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     };
 
     const handleUncommitTask = (taskId: string) => {
-        returnTaskToPool(taskId);
+        // No Sitrep, the X should only remove the task from today's commitment.
+        // It must not unschedule, uncomplete, or throw the task back into the pool.
+        setDailyCommitment(dailyCommitment.taskIds.filter(id => id !== taskId));
     };
 
     const handleQuickComplete = async (actionId: string) => {
@@ -388,6 +390,8 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         const score = dailyCommitment.score || 0;
         const expDeposited = dailyCommitment.expDeposited ?? 0;
         const sitrepBonus = dailyCommitment.sitrepBonus ?? 0;
+        const relationshipBonusXp = dailyCommitment.relationshipBonusXp ?? 0;
+        const performanceBonusXp = Math.max(0, sitrepBonus - relationshipBonusXp);
         const nextOperationalDate = shiftLocalDateString(dailyCommitment.date, 1);
 
         const getRankLetter = (s: number) => {
@@ -437,7 +441,8 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                             <p className="text-[10px] uppercase tracking-wider text-gray-400">Exp depositada no ciclo</p>
                             <p className="text-xl arena-title-text accent-text luxe-title-shadow leading-tight">{expDeposited}</p>
                             <p className="mt-2 text-[10px] text-gray-500">Se ontem ficou em aberto, voce ainda pode acertar esse dia hoje. Depois disso, ele trava.</p>
-                            {sitrepBonus > 0 && <p className="text-[10px] text-gray-500">Bônus Painel Diário: +{sitrepBonus}</p>}
+                            {performanceBonusXp > 0 && <p className="text-[10px] text-gray-500">Bonus de performance: +{performanceBonusXp}</p>}
+                            {relationshipBonusXp > 0 && <p className="text-[10px] text-amber-300/80">Bonus de duelo: +{relationshipBonusXp}</p>}
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 pt-4 text-center">

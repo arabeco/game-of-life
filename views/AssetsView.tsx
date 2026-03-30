@@ -93,6 +93,7 @@ export const AssetsView: React.FC = () => {
     const [draftAssetWidgetValue, setDraftAssetWidgetValue] = useState<SlotValue | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const cycleSummaryRef = useRef<HTMLButtonElement | null>(null);
+    const lastSelectedAssetIdRef = useRef<string | null>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
     const [cycleSummaryHeight, setCycleSummaryHeight] = useState(56);
     const [hasSephirotRasterArt, setHasSephirotRasterArt] = useState(false);
@@ -279,6 +280,7 @@ export const AssetsView: React.FC = () => {
 
     useEffect(() => {
         if (!selectedAsset) {
+            lastSelectedAssetIdRef.current = null;
             setIsEditingAssetDetail(false);
             setEditingSlot(null);
             setDraftAssetArtUrl(undefined);
@@ -286,15 +288,25 @@ export const AssetsView: React.FC = () => {
             return;
         }
 
-        setIsEditingAssetDetail(false);
-        setEditingSlot(null);
-        setDraftAssetArtUrl(currentSelectedAssetArtUrl);
-        setDraftAssetWidgetValue(
-            currentSelectedAssetWidgetValue !== undefined
-                ? currentSelectedAssetWidgetValue
-                : selectedAsset.slots?.[0]?.value
-        );
-    }, [selectedAssetId, selectedAsset, currentSelectedAssetArtUrl, currentSelectedAssetWidgetValue]);
+        const fallbackWidgetValue = currentSelectedAssetWidgetValue !== undefined
+            ? currentSelectedAssetWidgetValue
+            : selectedAsset.slots?.[0]?.value;
+        const didChangeSelectedAsset = lastSelectedAssetIdRef.current !== selectedAsset.id;
+        lastSelectedAssetIdRef.current = selectedAsset.id;
+
+        if (didChangeSelectedAsset) {
+            setIsEditingAssetDetail(false);
+            setEditingSlot(null);
+            setDraftAssetArtUrl(currentSelectedAssetArtUrl);
+            setDraftAssetWidgetValue(fallbackWidgetValue);
+            return;
+        }
+
+        if (!isEditingAssetDetail && !editingSlot) {
+            setDraftAssetArtUrl(currentSelectedAssetArtUrl);
+            setDraftAssetWidgetValue(fallbackWidgetValue);
+        }
+    }, [selectedAsset, currentSelectedAssetArtUrl, currentSelectedAssetWidgetValue, isEditingAssetDetail, editingSlot]);
 
     const handleOpenAsset = (asset: Asset) => {
         setSelectedAssetId(asset.id);
@@ -378,8 +390,31 @@ export const AssetsView: React.FC = () => {
         setEditingSlot(null);
     };
 
+    const persistAssetArt = (nextUrl?: string) => {
+        if (!selectedAsset) return;
+
+        const normalizedCurrent = (currentSelectedAssetArtUrl || '').trim();
+        const normalizedNext = (nextUrl || '').trim();
+        if (normalizedCurrent === normalizedNext) return;
+
+        const nextAssetArtById = { ...(userProfile.assetArtById || {}) };
+        if (normalizedNext) {
+            nextAssetArtById[selectedAsset.id] = normalizedNext;
+        } else {
+            delete nextAssetArtById[selectedAsset.id];
+        }
+
+        updateUserProfile({ assetArtById: nextAssetArtById });
+    };
+
     const handleSaveAssetArtDraft = (nextUrl: string) => {
         setDraftAssetArtUrl(nextUrl);
+        persistAssetArt(nextUrl);
+    };
+
+    const handleRemoveAssetArt = () => {
+        setDraftAssetArtUrl(undefined);
+        persistAssetArt(undefined);
     };
 
     const handleSaveAssetWidgetDraft = (nextValue: SlotValue) => {
@@ -447,6 +482,7 @@ export const AssetsView: React.FC = () => {
                                     compact
                                     iconOnly
                                     onSave={handleSaveAssetArtDraft}
+                                    onRemove={handleRemoveAssetArt}
                                 />
                             ) : (
                                 <div className="h-8 w-8" />

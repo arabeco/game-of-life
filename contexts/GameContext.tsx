@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect, useCa
 import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
-import { getGoldBoostProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
+import { getGoldBoostProduct, getGoldMechanicPrice, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 
 import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
 import { NOBILITY_RANKS, RANK_REWARDS } from '../constants/nobility';
@@ -32,6 +32,7 @@ import { emitArenaAttention } from '../utils/arenaAttention';
 import { emitDailyCompletionPrompt } from '../utils/dailyCompletionPrompt';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
+import { hasRemotePushSubscription, syncRemotePushSubscription } from '../utils/webPush';
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, shouldPushNotificationForProfile } from '../constants/oracleNotificationPolicy';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import { resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
@@ -115,6 +116,8 @@ export const STORAGE_KEY_CAMPAIGNS = 'gol_campaigns_v2';
 export const PROFILE_FLAG_TERMS_ACCEPTED = '__flag_terms_accepted_v1';
 export const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
 export const PROFILE_FLAG_TUTORIAL_COMPLETED = '__flag_tutorial_completed_v1';
+const ACTION_REMINDER_RECHECK_MS = 60 * 1000;
+const ACTION_REMINDER_LATE_GRACE_MS = 15 * 60 * 1000;
 
 const TUTORIAL_ACTION: Action = {
     id: TUTORIAL_ACTION_ID,
@@ -257,6 +260,8 @@ export type ArenaSetupChange = {
 const getTodayString = () => getOperationalDateString();
 const SITREP_BONUS_A = 60;
 const SITREP_BONUS_S = 120;
+const PARTNERSHIP_LINKED_ARENA_GOLD_COST = getGoldMechanicPrice('partnership_linked_arena', 50);
+const COMPETITION_DUEL_GOLD_COST = getGoldMechanicPrice('competition_challenge', 50);
 const MAX_VILLAGE_BONUS_PERCENT = 0.10; // 10% max bonus from Sanctuary Order
 
 const createDefaultDailyCommitment = (): DailyCommitment => ({
@@ -266,6 +271,7 @@ const createDefaultDailyCommitment = (): DailyCommitment => ({
     score: null,
     expDeposited: null,
     sitrepBonus: null,
+    relationshipBonusXp: null,
     operationalScratch: null,
 });
 
@@ -666,7 +672,7 @@ export interface GameContextType {
     userCodexes: UserCodex[];
     codexCatalog: CodexCatalogItem[];
     refreshCodexes: () => Promise<void>;
-    buyCodex: (catalogId: string) => Promise<UserCodex | null>;
+    buyCodex: (catalogId: string, options?: { silentSuccess?: boolean }) => Promise<UserCodex | null>;
     buyCodexCreationSlot: () => Promise<boolean>;
     getRelationshipCapacitySummary: () => Promise<RelationshipCapacitySummary | null>;
     fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; competitionChallenges: RelationshipCompetitionChallenge[]; summary: RelationshipCapacitySummary | null }>;
@@ -675,6 +681,8 @@ export interface GameContextType {
     endRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
     buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType) => Promise<boolean>;
     createLinkedRelationshipArena: (relationshipLinkId: string, arenaInput: { assetId: string; name: string; description?: string; icon?: string }) => Promise<Arena | null>;
+    shareRelationshipArena: (relationshipLinkId: string, arenaId: string) => Promise<Arena | null>;
+    removeRelationshipArenaShare: (relationshipLinkId: string, arenaId: string) => Promise<boolean>;
     createCompetitionChallenge: (relationshipLinkId: string, sourceArenaId: string) => Promise<Arena | null>;
     createCodexShareLink: (codexId: string) => Promise<{ url: string; token: string; shareId: string } | null>;
     sendCodexToNickname: (codexId: string, nickname: string) => Promise<void>;
@@ -819,6 +827,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
     const [dmConversations, setDMConversations] = useState<DMConversation[]>([]);
+    const [remotePushRegistered, setRemotePushRegistered] = useState(false);
     const [toast, setToast] = useState<{ message: string; visible: boolean; type?: 'success' | 'error' | 'warning' | 'info' }>({ message: '', visible: false, type: 'info' });
 
     // PWA Installation State
@@ -840,6 +849,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const seenNotificationIdsRef = useRef<Set<string>>(new Set());
     const notificationsHydratedRef = useRef(false);
     const seenCodexGiftNotificationIdsRef = useRef<Set<string>>(new Set());
+    const autoInstallingMentorCodexIdsRef = useRef<Set<string>>(new Set());
     const seenOracleMessageIdsRef = useRef<Set<string>>(new Set());
     const oracleMessagesHydratedRef = useRef(false);
     const dailyCommitmentPersistTimeoutRef = useRef<number | null>(null);
@@ -850,6 +860,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const socialFriendsRefreshTimeoutRef = useRef<number | null>(null);
     const socialClanOutgoingRefreshTimeoutRef = useRef<number | null>(null);
     const socialClanIncomingRefreshTimeoutRef = useRef<number | null>(null);
+    const actionReminderTimeoutRef = useRef<number | null>(null);
 
     // Fetch campaigns from Supabase on load
     useEffect(() => {
@@ -874,6 +885,40 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             localStorage.setItem(`${STORAGE_KEY_CAMPAIGNS}_${userId}`, JSON.stringify(campaigns));
         }
     }, [campaigns, session?.user.id]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const syncRemotePushState = async () => {
+            if (!session?.user.id || !oraclePreferences?.pushEnabled) {
+                if (!cancelled) setRemotePushRegistered(false);
+                return;
+            }
+
+            try {
+                const syncResult = await syncRemotePushSubscription();
+                if (cancelled) return;
+
+                if (syncResult.ok) {
+                    setRemotePushRegistered(true);
+                    return;
+                }
+
+                setRemotePushRegistered(await hasRemotePushSubscription());
+            } catch (error) {
+                console.warn('Remote push sync failed:', error);
+                if (!cancelled) {
+                    setRemotePushRegistered(await hasRemotePushSubscription());
+                }
+            }
+        };
+
+        void syncRemotePushState();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [oraclePreferences?.pushEnabled, session?.user.id]);
 
     const addCampaign = async (campaignData: Omit<Campaign, 'id' | 'createdAt' | 'status'>): Promise<Campaign> => {
         const userId = session?.user.id;
@@ -1666,6 +1711,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (
             unseenNotifications.length === 0 ||
             !oraclePreferences?.pushEnabled ||
+            remotePushRegistered ||
             document.visibilityState === 'visible'
         ) {
             return;
@@ -1673,7 +1719,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const activeOracleMode = oraclePreferences.activeMode || 'neutro';
         const visibleNotifications = getVisibleNotificationsForProfile(unseenNotifications, appMode, activeOracleMode)
-            .filter((notification) => shouldPushNotificationForProfile(notification, appMode, activeOracleMode));
+            .filter((notification) => shouldPushNotificationForProfile(notification, appMode, activeOracleMode))
+            .filter((notification) => notification.type !== 'action_reminder');
 
         if (visibleNotifications.length === 0) {
             return;
@@ -1689,7 +1736,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 });
             }
         })();
-    }, [appMode, notifications, oraclePreferences?.activeMode, oraclePreferences?.pushEnabled, session?.user.id, showToast]);
+    }, [appMode, notifications, oraclePreferences?.activeMode, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id, showToast]);
 
 
     useEffect(() => {
@@ -1716,6 +1763,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             unseenMessages.length === 0 ||
             !oraclePreferences?.pushEnabled ||
             !oraclePreferences?.notificationsEnabled ||
+            remotePushRegistered ||
             document.visibilityState === 'visible'
         ) {
             return;
@@ -1736,11 +1784,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             tag: `glyph-oracle-${latestMessage.id}`,
             url: '/?oracle=chat',
         });
-    }, [oracleMessages, oraclePreferences?.notificationsEnabled, oraclePreferences?.pushEnabled, session?.user.id]);
+    }, [oracleMessages, oraclePreferences?.notificationsEnabled, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id]);
 
     useEffect(() => {
         const userId = session?.user.id;
-        if (!userId || !isUuid(userId) || !oraclePreferences?.pushEnabled) {
+        if (actionReminderTimeoutRef.current !== null) {
+            window.clearTimeout(actionReminderTimeoutRef.current);
+            actionReminderTimeoutRef.current = null;
+        }
+
+        if (
+            !userId
+            || !isUuid(userId)
+            || !oraclePreferences?.pushEnabled
+            || (remotePushRegistered && typeof document !== 'undefined' && document.visibilityState !== 'visible')
+        ) {
             return;
         }
 
@@ -1752,14 +1810,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return date;
         };
 
+        const formatReminderClock = (date: Date) =>
+            date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        let isCancelled = false;
+
         const emitActionReminder = async () => {
+            if (isCancelled) return;
+
             const now = Date.now();
             const arenaById = new Map(allArenas.map((arena) => [arena.id, arena] as const));
+            const actionById = new Map(actions.map((action) => [action.id, action] as const));
+            let nextCheckDelay = ACTION_REMINDER_RECHECK_MS;
 
             for (const task of tasks) {
                 if (task.completed || !Number.isFinite(task.startTime) || task.startTime < 0) continue;
 
-                const action = actions.find(candidate => candidate.id === task.actionId);
+                const action = actionById.get(task.actionId);
                 const reminderMinutes = action?.context?.schedule?.notifyBeforeMinutes;
                 if (!action || reminderMinutes !== 15) continue;
 
@@ -1767,29 +1834,72 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (!taskStartAt) continue;
 
                 const reminderAt = taskStartAt.getTime() - (reminderMinutes * 60 * 1000);
-                if (now < reminderAt || now > taskStartAt.getTime() + (60 * 1000)) continue;
-
                 const reminderKey = getActionReminderStorageKey(userId, task.id, task.date, task.startTime);
                 if (localStorage.getItem(reminderKey) === '1') continue;
 
-                localStorage.setItem(reminderKey, '1');
+                if (now < reminderAt) {
+                    nextCheckDelay = Math.min(nextCheckDelay, Math.max(10 * 1000, reminderAt - now));
+                    continue;
+                }
+
+                if (now > taskStartAt.getTime() + ACTION_REMINDER_LATE_GRACE_MS) continue;
+
                 const arena = arenaById.get(action.arenaId);
-                await showLocalNotification({
-                    title: `Em 15 min: ${action.name}`,
-                    body: arena ? `${arena.icon} ${arena.name} comeca em breve.` : 'Sua acao comeca em 15 minutos.',
+                const hasAlreadyStarted = now >= taskStartAt.getTime();
+                const delivered = await showLocalNotification({
+                    title: hasAlreadyStarted ? `Agora: ${action.name}` : `Em 15 min: ${action.name}`,
+                    body: hasAlreadyStarted
+                        ? (arena ? `${arena.icon} ${arena.name} ja comecou.` : 'Sua acao ja comecou.')
+                        : (arena ? `${arena.icon} ${arena.name} comeca as ${formatReminderClock(taskStartAt)}.` : `Sua acao comeca as ${formatReminderClock(taskStartAt)}.`),
                     tag: `glyph-action-reminder-${task.id}`,
                     url: '/?view=planner',
                 });
+
+                if (delivered) {
+                    localStorage.setItem(reminderKey, '1');
+                } else {
+                    nextCheckDelay = Math.min(nextCheckDelay, 15 * 1000);
+                }
+            }
+
+            if (isCancelled) return;
+            actionReminderTimeoutRef.current = window.setTimeout(() => {
+                actionReminderTimeoutRef.current = null;
+                void emitActionReminder();
+            }, Math.max(10 * 1000, nextCheckDelay));
+        };
+
+        const handleWake = () => {
+            if (isCancelled) return;
+            if (actionReminderTimeoutRef.current !== null) {
+                window.clearTimeout(actionReminderTimeoutRef.current);
+                actionReminderTimeoutRef.current = null;
+            }
+            void emitActionReminder();
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                handleWake();
             }
         };
 
         void emitActionReminder();
-        const intervalId = window.setInterval(() => {
-            void emitActionReminder();
-        }, 30000);
+        window.addEventListener('focus', handleWake);
+        window.addEventListener('pageshow', handleWake);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
-        return () => window.clearInterval(intervalId);
-    }, [actions, allArenas, oraclePreferences?.pushEnabled, session?.user.id, tasks]);
+        return () => {
+            isCancelled = true;
+            if (actionReminderTimeoutRef.current !== null) {
+                window.clearTimeout(actionReminderTimeoutRef.current);
+                actionReminderTimeoutRef.current = null;
+            }
+            window.removeEventListener('focus', handleWake);
+            window.removeEventListener('pageshow', handleWake);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [actions, allArenas, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id, tasks]);
 
     // --- FORGE SYSTEM ---
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -4503,7 +4613,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         void refreshCodexes();
     }, [notifications, refreshCodexes, session?.user.id]);
 
-    const buyCodex = async (catalogId: string): Promise<UserCodex | null> => {
+    const buyCodex = async (catalogId: string, options?: { silentSuccess?: boolean }): Promise<UserCodex | null> => {
         const userId = getSupabaseUserId();
         if (!userId) return null;
 
@@ -4550,7 +4660,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateUserProfile({
             wallet: { ...userProfile.wallet, gold: nextGold },
         });
-        showToast(`Campanha "${catalogItem.title}" adquirida!`);
+        if (!options?.silentSuccess) {
+            showToast(`Campanha "${catalogItem.title}" foi para sua biblioteca. Abra Campanhas para instalar quando quiser.`, 'success');
+        }
         return normalizedPurchasedCodex;
     };
 
@@ -4691,8 +4803,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         winnerUserId: row.winner_user_id ?? null,
         winnerArenaId: row.winner_arena_id ?? null,
         rewardChestType: row.reward_chest_type ?? null,
+        winnerBonusXp: row.winner_bonus_xp ?? null,
         rewardGrantedAt: row.reward_granted_at ?? null,
         loserNotifiedAt: row.loser_notified_at ?? null,
+        challengerCompletedAt: row.challenger_completed_at ?? null,
+        opponentCompletedAt: row.opponent_completed_at ?? null,
+        sealedAt: row.sealed_at ?? null,
         createdAt: row.created_at,
         completedAt: row.completed_at ?? null,
         metadata: row.metadata ?? null,
@@ -4714,13 +4830,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (raw.includes('ACTIVE_MENTORIA_LINK_REQUIRED')) return 'So o mentor pode abrir arena nessa mentoria.';
         if (raw.includes('ACTIVE_PARTNERSHIP_LINK_REQUIRED')) return 'Essa parceria precisa estar ativa para compartilhar arenas.';
         if (raw.includes('ACTIVE_COMPETITION_LINK_REQUIRED')) return 'Essa competicao precisa estar ativa para lancar um desafio.';
+        if (raw.includes('PARTNERSHIP_SOURCE_ARENA_REQUIRED')) return 'Escolha uma arena sua para expor nessa parceria.';
+        if (raw.includes('RELATIONSHIP_ARENA_SHARE_ALREADY_EXISTS')) return 'Essa arena ja esta exposta nessa parceria.';
+        if (raw.includes('RELATIONSHIP_ARENA_ALREADY_LINKED')) return 'Essa arena ja esta vinculada em outra relacao.';
+        if (raw.includes('RELATIONSHIP_ARENA_SHARE_PERMISSION_DENIED')) return 'Voce nao pode retirar essa arena da parceria.';
         if (raw.includes('LINKED_ARENA_SLOT_LIMIT_REACHED')) return 'Cada arena compartilhada custa 50 de ouro por unidade. Se isso apareceu, o SQL novo ainda nao foi aplicado.';
         if (raw.includes('LINKED_ARENA_SLOT_DISABLED')) return 'Cada arena compartilhada custa 50 de ouro por unidade.';
         if (raw.includes('ARENA_NAME_REQUIRED')) return 'Diga o nome da arena vinculada.';
         if (raw.includes('ARENA_ASSET_REQUIRED')) return 'Escolha o ativo da arena vinculada.';
         if (raw.includes('COMPETITION_SOURCE_ARENA_REQUIRED')) return 'Escolha uma arena sua para espelhar nesse duelo.';
+        if (raw.includes('COMPETITION_SOURCE_ARENA_LOCKED')) return 'Use uma arena autoral livre. Arena compartilhada ou duelo antigo nao pode virar base.';
         if (raw.includes('COMPETITION_SOURCE_ARENA_EMPTY')) return 'Essa arena ainda nao tem acoes suficientes para virar duelo.';
+        if (raw.includes('COMPETITION_SNAPSHOT_LOCKED')) return 'Esse duelo foi selado como snapshot. Para mudar algo, forje outro duelo.';
         if (raw.includes('COMPETITION_CHALLENGE_ALREADY_ACTIVE')) return 'Ja existe um duelo ativo nesse vinculo.';
+        if (raw.includes('COMPETITION_CHALLENGE_LIMIT_REACHED')) return 'Esse vinculo ja atingiu o limite de duelos abertos agora.';
         if (raw.includes('COMPETITION_CHALLENGE_NOT_FOUND')) return 'Esse duelo nao foi encontrado.';
         if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'A forja de campanhas da mentoria agora e paga por uso. Se isso apareceu, o banco ainda esta com regra antiga.';
         if (raw.includes('RELATIONSHIP_CAPACITY_DISABLED')) return 'A camada social agora funciona so por ouro.';
@@ -5155,6 +5278,68 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return nextArena;
     };
 
+    const shareRelationshipArena = async (relationshipLinkId: string, arenaId: string): Promise<Arena | null> => {
+        if (!arenaId) {
+            showToast('Escolha uma arena sua para expor nessa parceria.', 'warning');
+            return null;
+        }
+
+        if ((userProfile.wallet?.gold || 0) < PARTNERSHIP_LINKED_ARENA_GOLD_COST) {
+            const missingGold = Math.max(0, PARTNERSHIP_LINKED_ARENA_GOLD_COST - Number(userProfile.wallet?.gold || 0));
+            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para expor essa arena.`, 'warning');
+            promptGoldShortage({
+                requiredGold: PARTNERSHIP_LINKED_ARENA_GOLD_COST,
+                label: 'expor uma arena na parceria',
+                storeTab: 'store',
+                section: 'packs',
+            });
+            return null;
+        }
+
+        const { data, error } = await supabase.rpc('share_relationship_arena', {
+            p_relationship_link_id: relationshipLinkId,
+            p_arena_id: arenaId,
+        });
+
+        if (error) {
+            console.error('Error sharing relationship arena:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel expor essa arena na parceria.'), 'error');
+            return null;
+        }
+
+        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+        updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+        showToast('Arena exposta na parceria.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+
+        const arenaRow = (data as any)?.arena;
+        if (!arenaRow) return null;
+
+        const mapped = mapToCamelCase(arenaRow) as Arena;
+        return {
+            ...mapped,
+            actionIds: mapped.actionIds || [],
+            isArchived: mapped.isArchived ?? false,
+        };
+    };
+
+    const removeRelationshipArenaShare = async (relationshipLinkId: string, arenaId: string): Promise<boolean> => {
+        const { error } = await supabase.rpc('remove_relationship_arena_share', {
+            p_relationship_link_id: relationshipLinkId,
+            p_arena_id: arenaId,
+        });
+
+        if (error) {
+            console.error('Error removing relationship arena share:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel retirar essa arena da parceria.'), 'error');
+            return false;
+        }
+
+        showToast('Arena retirada da parceria.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+        return true;
+    };
+
     const syncCompetitionChestLocally = async (chestType: ChestType) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
@@ -5181,6 +5366,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return null;
         }
 
+        if ((userProfile.wallet?.gold || 0) < COMPETITION_DUEL_GOLD_COST) {
+            const missingGold = Math.max(0, COMPETITION_DUEL_GOLD_COST - Number(userProfile.wallet?.gold || 0));
+            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para forjar esse duelo.`, 'warning');
+            promptGoldShortage({
+                requiredGold: COMPETITION_DUEL_GOLD_COST,
+                label: 'forjar um duelo competitivo',
+                storeTab: 'store',
+                section: 'packs',
+            });
+            return null;
+        }
+
         const { data, error } = await supabase.rpc('create_competition_challenge', {
             p_relationship_link_id: relationshipLinkId,
             p_source_arena_id: sourceArenaId,
@@ -5191,6 +5388,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel lancar esse duelo.'), 'error');
             return null;
         }
+
+        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+        updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
 
         const selfArenaRow = (data as any)?.challenger_arena;
         if (!selfArenaRow) {
@@ -5230,7 +5430,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
 
-        showToast('Duelo espelhado lancado. O primeiro que fechar ganha o bau.', 'success');
+        showToast('Duelo forjado. O snapshot foi selado e o primeiro que fechar leva o bonus.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return nextArena;
     };
 
@@ -5251,19 +5452,52 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const opponentNickname = String((data as any)?.opponent_nickname || 'seu rival');
         const challengeName = String((data as any)?.challenge_name || 'esse duelo');
         const rewardChestType = ((data as any)?.reward_chest_type || null) as ChestType | null;
+        const winnerBonusXp = Number((data as any)?.winner_bonus_xp || 0);
         const rewardGrantedNow = Boolean((data as any)?.reward_granted_now);
+        const sealedNow = Boolean((data as any)?.sealed_now);
         const currentUserId = getSupabaseUserId();
 
         if (status === 'winner' && currentUserId && winnerUserId === currentUserId) {
             if (rewardGrantedNow && rewardChestType) {
                 await syncCompetitionChestLocally(rewardChestType);
             }
-            showToast(`Parabens! Voce terminou "${challengeName}" antes de @${opponentNickname} e ganhou um Bau ${rewardChestType || 'Comum'}.`, 'success');
+            const bonusDestination = winnerBonusXp > 0 ? applyRelationshipBonusXp(winnerBonusXp) : 'none';
+            if (winnerBonusXp > 0) {
+                if (bonusDestination === 'cycle') {
+                    showToast(`Bonus de Duelo: +${winnerBonusXp} EXP adicionada direto no ciclo.`, 'success');
+                } else if (bonusDestination === 'profile') {
+                    showToast(`Bonus de Duelo: +${winnerBonusXp} EXP aplicada agora no perfil.`, 'success');
+                }
+            }
+            window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            showToast(
+                `Parabens! Voce terminou "${challengeName}" antes de @${opponentNickname} e ganhou um Bau ${rewardChestType || 'Comum'}${
+                    winnerBonusXp > 0
+                        ? bonusDestination === 'sitrep'
+                            ? ` + ${winnerBonusXp} EXP de duelo para o fechamento do ciclo`
+                            : ` + ${winnerBonusXp} EXP de duelo`
+                        : ''
+                }.`,
+                'success'
+            );
             return;
         }
 
         if (status === 'already_lost') {
-            showToast(`@${opponentNickname} concluiu "${challengeName}" antes. Agora esse duelo nao entrega bau na sua chegada.`, 'info');
+            showToast(`@${opponentNickname} concluiu "${challengeName}" antes. Voce ainda pode fechar sua arena, mas sem o bonus de vencedor.`, 'info');
+            return;
+        }
+
+        if (status === 'already_won') {
+            showToast(`"${challengeName}" ja contou sua vitoria antes. O duelo segue registrado no historico.`, 'info');
+            return;
+        }
+
+        if (status === 'sealed_after_loss') {
+            window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            showToast(sealedNow
+                ? `Voce concluiu "${challengeName}". O bonus ja tinha ido para @${opponentNickname}, entao o duelo foi selado no historico.`
+                : `Voce concluiu "${challengeName}" sem o bonus extra.`, 'info');
         }
     };
 
@@ -5704,6 +5938,48 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
+    useEffect(() => {
+        const sessionUserId = session?.user.id;
+        if (!sessionUserId || !isUuid(sessionUserId) || !isProfileLoaded || !hasHydratedFromSupabase) {
+            autoInstallingMentorCodexIdsRef.current.clear();
+            return;
+        }
+
+        const installedOriginCodexIds = new Set(
+            assets.flatMap((asset) => asset.arenas.map((arena) => arena.originCodexId).filter(Boolean))
+        );
+        const pendingMentorCodexes = userCodexes.filter((codex) =>
+            Boolean(codex.mentor_relationship_link_id)
+            && Array.isArray(codex.template?.levels)
+            && codex.template.levels.length > 0
+            && !installedOriginCodexIds.has(codex.id)
+            && !autoInstallingMentorCodexIdsRef.current.has(codex.id)
+        );
+
+        if (pendingMentorCodexes.length === 0) return;
+
+        let cancelled = false;
+
+        const autoInstallMentorCodexes = async () => {
+            for (const codex of pendingMentorCodexes) {
+                if (cancelled) return;
+
+                autoInstallingMentorCodexIdsRef.current.add(codex.id);
+                try {
+                    await installCodex(codex.id);
+                } finally {
+                    autoInstallingMentorCodexIdsRef.current.delete(codex.id);
+                }
+            }
+        };
+
+        void autoInstallMentorCodexes();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [assets, hasHydratedFromSupabase, isProfileLoaded, session?.user.id, userCodexes]);
+
     const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
         const localEvent: FeedEvent = {
             id: `feed_${Date.now()}`,
@@ -5878,6 +6154,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             score: null,
             expDeposited: null,
             sitrepBonus: null,
+            relationshipBonusXp: null,
             operationalScratch: null,
         });
         setChecklistItems([...defaultChecklistItems]);
@@ -5886,6 +6163,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const updateOperationalScratch = (text: string) => setDailyCommitmentState(prev => ({ ...prev, operationalScratch: text }));
     const lockDailyCommitment = () => setDailyCommitmentState(prev => ({ ...prev, stage: 'battle' }));
     const unlockDailyCommitment = () => setDailyCommitmentState(prev => ({ ...prev, stage: 'planning' }));
+    const applyRelationshipBonusXp = (bonusXp: number): 'sitrep' | 'cycle' | 'profile' | 'none' => {
+        const normalizedBonus = Math.max(0, Math.round(bonusXp));
+        if (normalizedBonus <= 0) return 'none';
+
+        const today = getTodayString();
+        if (dailyCommitment.date === today && dailyCommitment.stage !== 'judgment') {
+            setDailyCommitmentState((prev) => ({
+                ...prev,
+                relationshipBonusXp: (prev.relationshipBonusXp || 0) + normalizedBonus,
+            }));
+            return 'sitrep';
+        }
+
+        if (activeCycle) {
+            setCycleExpBonus((prev) => prev + normalizedBonus);
+            return 'cycle';
+        }
+
+        const boostedExp = Math.round(normalizedBonus * getExpBoostMultiplier(userProfile));
+        updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + boostedExp } });
+        return 'profile';
+    };
     const refreshJudgedOperationalDates = useCallback(async () => {
         const userId = getSupabaseUserId();
         if (!userId) {
@@ -5927,6 +6226,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 score: dailyCommitment.score,
                 exp_deposited: dailyCommitment.expDeposited,
                 sitrep_bonus: dailyCommitment.sitrepBonus,
+                relationship_bonus_xp: dailyCommitment.relationshipBonusXp ?? 0,
                 operational_scratch: dailyCommitment.operationalScratch ?? null,
                 updated_at: new Date().toISOString()
             };
@@ -5988,6 +6288,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     score: typeof mapped.score === 'number' ?mapped.score : null,
                     expDeposited: typeof mapped.expDeposited === 'number' ?mapped.expDeposited : null,
                     sitrepBonus: typeof mapped.sitrepBonus === 'number' ?mapped.sitrepBonus : null,
+                    relationshipBonusXp: typeof mapped.relationshipBonusXp === 'number' ? mapped.relationshipBonusXp : 0,
                     operationalScratch: typeof mapped.operationalScratch === 'string' ?mapped.operationalScratch : null,
                 });
             } else {
@@ -5998,6 +6299,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     score: null,
                     expDeposited: null,
                     sitrepBonus: null,
+                    relationshipBonusXp: null,
                     operationalScratch: null,
                 });
             }
@@ -6156,7 +6458,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const weightedDuration = Math.round(duration * getActionExpMultiplier(action));
             return sum + weightedDuration;
         }, 0);
-        const sitrepBonus = score >= 95 ?SITREP_BONUS_S : score >= 85 ?SITREP_BONUS_A : 0;
+        const performanceSitrepBonus = score >= 95 ?SITREP_BONUS_S : score >= 85 ?SITREP_BONUS_A : 0;
+        const relationshipBonusXp = Math.max(0, Math.round(dailyCommitment.relationshipBonusXp || 0));
+        const sitrepBonus = performanceSitrepBonus + relationshipBonusXp;
 
         // [NEW] Village Order Bonus (Nerfed to 10% max)
         const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
@@ -6165,6 +6469,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const villageBonusExp = Math.round((expDepositBase + sitrepBonus) * villageBonusFactor);
 
         const expDeposited = expDepositBase + sitrepBonus + villageBonusExp;
+        if (relationshipBonusXp > 0) {
+            showToast(`Bonus de Duelo: +${relationshipBonusXp} EXP no fechamento do ciclo.`, 'success');
+        }
 
         if (villageBonusExp > 0) {
             showToast(`Bônus de Ordem da Aldeia: +${villageBonusExp} EXP!`, 'success');
@@ -6181,7 +6488,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         const newStage = 'judgment';
-        setDailyCommitmentState(prev => ({ ...prev, stage: newStage, score, expDeposited, sitrepBonus }));
+        setDailyCommitmentState(prev => ({ ...prev, stage: newStage, score, expDeposited, sitrepBonus, relationshipBonusXp }));
         setJudgedOperationalDates(prev => (
             prev.includes(dailyCommitment.date)
                 ? prev
@@ -10920,7 +11227,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

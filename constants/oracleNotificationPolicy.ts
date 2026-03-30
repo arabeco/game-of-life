@@ -195,6 +195,15 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'T',
     label: 'Duelo',
   },
+  action_reminder: {
+    lane: 'essential',
+    priority: 'actionable',
+    badge: false,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'R',
+    label: 'Lembrete',
+  },
   system: {
     lane: 'essential',
     priority: 'critical',
@@ -273,6 +282,8 @@ export const getNotificationTitle = (notification: Notification): string => {
       return 'Uma nova arena foi compartilhada.';
     case 'competition_result':
       return 'Seu duelo recebeu um desfecho.';
+    case 'action_reminder':
+      return 'Sua acao vai comecar em breve.';
     case 'system':
       return 'Aviso do sistema.';
     default:
@@ -315,7 +326,8 @@ export const getNotificationBody = (
       notification.type === 'codex_gift' ||
       notification.type === 'partnership_invite' ||
       notification.type === 'arena_access' ||
-      notification.type === 'competition_result'
+      notification.type === 'competition_result' ||
+      notification.type === 'action_reminder'
     ) {
       return notification.content;
     }
@@ -383,6 +395,8 @@ export const getNotificationBody = (
       return notification.content || 'Uma campanha valiosa foi enviada para a sua biblioteca.';
     case 'competition_result':
       return notification.content || 'Seu rival fechou o duelo primeiro e o baú dessa corrida já foi decidido.';
+    case 'action_reminder':
+      return notification.content || 'Uma acao programada sua vai comecar em breve.';
     default:
       return notification.content || 'Ha uma atualizacao importante esperando sua leitura.';
   }

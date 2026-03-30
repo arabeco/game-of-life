@@ -274,18 +274,18 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
             return existing;
         }
         if (!options.autoAcquire) {
-            setStatusMessage(recommendation.entry.isFree ? 'Campanha gratuita pronta para entrar na sua biblioteca quando voce quiser instalar.' : 'Campanha recomendada encontrada. Ao instalar, ela sera adquirida e depois entra na sua biblioteca.');
+            setStatusMessage(recommendation.entry.isFree ? 'Campanha gratuita pronta para entrar na sua biblioteca. Depois voce instala no app quando quiser.' : 'Campanha recomendada encontrada. Ao comprar, ela entra na sua biblioteca e depois pode ser instalada no app.');
             return null;
         }
         if (ensuredCatalogIdsRef.current.has(recommendation.entry.catalog.id)) return null;
         ensuredCatalogIdsRef.current.add(recommendation.entry.catalog.id);
         setIsSyncingLibrary(true);
-        setStatusMessage(recommendation.entry.isFree ? 'Adicionando a campanha recomendada a sua biblioteca...' : 'Adquirindo a campanha recomendada e preparando a instalacao...');
+        setStatusMessage(recommendation.entry.isFree ? 'Adicionando a campanha recomendada a sua biblioteca...' : 'Adquirindo a campanha recomendada e colocando na sua biblioteca...');
         try {
-            const acquired = await buyCodex(recommendation.entry.catalog.id);
+            const acquired = await buyCodex(recommendation.entry.catalog.id, { silentSuccess: true });
             const resolved = acquired || findOwnedCodex(recommendation.entry.catalog.id);
             if (resolved) {
-                setStatusMessage(recommendation.entry.isFree ? 'Campanha adicionada a sua biblioteca. Ela ja aparece no menu de Campanhas.' : 'Campanha adquirida e adicionada a sua biblioteca. Ela ja aparece no menu de Campanhas.');
+                setStatusMessage(recommendation.entry.isFree ? 'Campanha adicionada a sua biblioteca. Se quiser, instale agora.' : 'Campanha adquirida e adicionada a sua biblioteca. Se quiser, instale agora.');
                 return resolved;
             }
             setStatusMessage('Nao foi possivel preparar essa campanha agora.');

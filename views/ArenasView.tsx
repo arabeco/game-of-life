@@ -18,8 +18,8 @@ import { EmojiGlyph } from '../components/EmojiGlyph';
 import { calculateArenaProgress, calculateCampaignProgress, calculateCampaignProgressSummary } from '../utils/progressUtils';
 import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
-import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
+import { getContentVisualPalette, resolveArenaVisualFamily, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 import { supabase } from '../supabaseClient';
 
 const hexToRgb = (hex: string) => {
@@ -225,6 +225,7 @@ export const ArenasView: React.FC = () => {
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedForCampaign, setSelectedForCampaign] = useState<string[]>([]);
     const [showCreateCampaignModal, setShowCreateCampaignModal] = useState(false);
+    const selectedForCampaignSet = useMemo(() => new Set(selectedForCampaign), [selectedForCampaign]);
 
     // Builder State
     const [builderAssetId, setBuilderAssetId] = useState<string>('');
@@ -302,6 +303,30 @@ export const ArenasView: React.FC = () => {
         });
         return ids;
     }, [assets]);
+    const ownedArenas = useMemo(() => assets.flatMap((asset) => asset.arenas), [assets]);
+    const ownedArenaById = useMemo(
+        () => new Map(ownedArenas.map((arena) => [arena.id, arena] as const)),
+        [ownedArenas]
+    );
+    const codexById = useMemo(
+        () => new Map(userCodexes.map((codex) => [codex.id, codex] as const)),
+        [userCodexes]
+    );
+    const getSourceCodexForCampaign = (campaign: Campaign, arenasSource?: Arena[]) => {
+        const arenaLookup = arenasSource
+            ? new Map(arenasSource.map((arena) => [arena.id, arena] as const))
+            : ownedArenaById;
+
+        for (const arenaId of campaign.arenaIds) {
+            const campaignArena = arenaLookup.get(arenaId);
+            if (!campaignArena?.originCodexId) continue;
+
+            const sourceCodex = codexById.get(campaignArena.originCodexId);
+            if (sourceCodex) return sourceCodex;
+        }
+
+        return null;
+    };
     const receivedMentorCampaigns = useMemo(
         () => userCodexes.flatMap((codex: any) => {
             if (!codex?.mentor_relationship_link_id) return [];
@@ -539,11 +564,12 @@ export const ArenasView: React.FC = () => {
             linkedArena.linkType === 'mentoria'
             && collaborationRole === 'mentor'
         );
+        const shouldForceCompetitionPreview = linkedArena.linkType === 'competicao';
         const collaborativeOwnerUserId = linkedArena.linkType === 'mentoria'
             ? (linkedArena.pupilId || String(linkedArena.metadata?.owner_user_id || '') || null)
             : null;
 
-        if (liveOwnedArena && !shouldForceMentorshipPreview) {
+        if (liveOwnedArena && !shouldForceMentorshipPreview && !shouldForceCompetitionPreview) {
             return {
                 arena: liveOwnedArena,
                 actions: linkedArena.actions || [],
@@ -561,7 +587,7 @@ export const ArenasView: React.FC = () => {
             arena: previewArena,
             actions: linkedArena.actions || [],
             tasks: linkedArena.tasks || [],
-            readOnly: !canMentorshipCollaborate,
+            readOnly: linkedArena.linkType === 'competicao' ? true : !canMentorshipCollaborate,
             relationshipLinkId: linkedArena.relationshipLinkId,
             relationshipLinkType: linkedArena.linkType || null,
             collaborationRole,
@@ -645,9 +671,31 @@ export const ArenasView: React.FC = () => {
         setArenasViewMode(modes[nextIndex]);
     };
 
+    useEffect(() => {
+        setSelectedForCampaign((current) => current.filter((arenaId) => !allCampaignArenaIds.includes(arenaId)));
+    }, [allCampaignArenaIds]);
+
+    const toggleArenaCampaignSelection = (arenaId: string) => {
+        if (allCampaignArenaIds.includes(arenaId)) return;
+        setSelectedForCampaign((current) => (
+            current.includes(arenaId)
+                ? current.filter((id) => id !== arenaId)
+                : [...current, arenaId]
+        ));
+    };
+
+    const handleOpenCreateCampaignModal = () => {
+        setShowCreateCampaignModal(true);
+    };
+
     const handleCreateCampaignClick = () => {
-        setIsSelectionMode(!isSelectionMode);
-        setSelectedForCampaign([]);
+        setIsSelectionMode((current) => {
+            if (current) {
+                setSelectedForCampaign([]);
+                setShowCreateCampaignModal(false);
+            }
+            return !current;
+        });
     };
 
 
@@ -676,6 +724,9 @@ export const ArenasView: React.FC = () => {
         if (isSelectionMode && type === 'arena' && allCampaignArenaIds.includes(id)) return;
         
         const isTouch = 'touches' in e;
+        if (isTouch && !shouldEnableTouchReorder) {
+            return;
+        }
         const clientX = isTouch ? e.touches[0].clientX : e.clientX;
         const clientY = isTouch ? e.touches[0].clientY : e.clientY;
         
@@ -839,21 +890,25 @@ export const ArenasView: React.FC = () => {
 
         window.addEventListener('mousemove', onMove);
         window.addEventListener('mouseup', onEnd);
-        window.addEventListener('touchmove', onMove, { passive: false });
-        window.addEventListener('touchend', onEnd);
-        window.addEventListener('touchcancel', onEnd);
+        if (shouldEnableTouchReorder) {
+            window.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('touchend', onEnd);
+            window.addEventListener('touchcancel', onEnd);
+        }
 
         return () => {
             window.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onEnd);
-            window.removeEventListener('touchmove', onMove);
-            window.removeEventListener('touchend', onEnd);
-            window.removeEventListener('touchcancel', onEnd);
+            if (shouldEnableTouchReorder) {
+                window.removeEventListener('touchmove', onMove);
+                window.removeEventListener('touchend', onEnd);
+                window.removeEventListener('touchcancel', onEnd);
+            }
             if (touchHoldTimeoutRef.current) {
                 window.clearTimeout(touchHoldTimeoutRef.current);
             }
         };
-    }, [draggedId, arenasViewMode, isSelectionMode, dragOverId]); // Add necessary dependencies
+    }, [draggedId, dragOverId, arenasViewMode, isSelectionMode, shouldEnableTouchReorder]); // Add necessary dependencies
 
     const handleDragStart = (e: React.DragEvent, id: string, type: 'arena' | 'campaign') => {
         console.log('DRAG START:', id, type, 'SelectionMode:', isSelectionMode);
@@ -1003,7 +1058,19 @@ export const ArenasView: React.FC = () => {
     }, [assets, builderAssetId, isBuilderMode]);
 
     const getAssetById = (id: string) => assets.find(a => a.id === id);
-    const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
+    const actionsByArenaId = useMemo(() => {
+        const map = new Map<string, Action[]>();
+        actions.forEach((action) => {
+            const existing = map.get(action.arenaId);
+            if (existing) {
+                existing.push(action);
+                return;
+            }
+            map.set(action.arenaId, [action]);
+        });
+        return map;
+    }, [actions]);
+    const getActionsForArena = (arenaId: string) => actionsByArenaId.get(arenaId) ?? [];
     const cycleScopedTasks = useMemo(() => {
         if (!activeCycle) return tasks;
         return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
@@ -1025,6 +1092,15 @@ export const ArenasView: React.FC = () => {
     };
     const formatDurationShort = (duration: number) => `${Math.max(0, Math.round(duration || 0))}m`;
     const shouldEnableListReorder = arenaPresentationMode === 'list' && (arenasViewMode === 'free' || arenasViewMode === 'priorities');
+    const shouldEnableTouchReorder = shouldEnableListReorder;
+    const arenasById = useMemo(
+        () => Object.fromEntries(getArenas().map((arena) => [arena.id, arena])),
+        [getArenas]
+    );
+    const actionsByArenaRecord = useMemo(
+        () => Object.fromEntries(Array.from(actionsByArenaId.entries())),
+        [actionsByArenaId]
+    );
     const getOrderedActionsForArena = (arena: Arena, sourceActions?: Action[]) => {
         const arenaActions = sourceActions ?? getActionsForArena(arena.id);
         const orderedIds = Array.isArray(arena.actionIds) ? arena.actionIds : [];
@@ -1068,14 +1144,26 @@ export const ArenasView: React.FC = () => {
             percent: Math.round(progress.progressPercent),
         };
     };
+    const campaignProgressById = useMemo(() => {
+        const map = new Map<string, ReturnType<typeof calculateCampaignProgressSummary>>();
+        campaigns.forEach((campaign) => {
+            map.set(campaign.id, calculateCampaignProgressSummary({
+                campaign,
+                arenasById,
+                actionsByArena: actionsByArenaRecord,
+                tasks: cycleScopedTasks,
+                getClanQuestsForArena,
+                getClanQuestProgress,
+                getSharedActionPoolProgress,
+            }));
+        });
+        return map;
+    }, [actionsByArenaRecord, arenasById, campaigns, cycleScopedTasks, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress]);
     const getCampaignProgressMetrics = (campaign: Campaign) => {
-        const arenasById = Object.fromEntries(getArenas().map(arena => [arena.id, arena]));
-        const actionsByArena = Object.fromEntries(getArenas().map(arena => [arena.id, getActionsForArena(arena.id)]));
-
-        return calculateCampaignProgressSummary({
+        return campaignProgressById.get(campaign.id) || calculateCampaignProgressSummary({
             campaign,
             arenasById,
-            actionsByArena,
+            actionsByArena: actionsByArenaRecord,
             tasks: cycleScopedTasks,
             getClanQuestsForArena,
             getClanQuestProgress,
@@ -1119,12 +1207,20 @@ export const ArenasView: React.FC = () => {
         const rowActions = getOrderedActionsForArena(arena, options.actionsOverride);
         const metrics = getArenaListMetrics(arena, rowActions, options.tasksOverride);
         const assetLabel = options.assetName ? ` (${options.assetName})` : '';
+        const alreadyInCampaign = allCampaignArenaIds.includes(arena.id);
+        const isBlocked = isSelectionMode && alreadyInCampaign;
+        const isSelectedForCampaign = isSelectionMode && selectedForCampaignSet.has(arena.id);
         const isExpanded = !!expandedArenaRows[rowId];
         const isDragOver = dragOverId === rowId;
         const isDragged = draggedId === rowId;
         const isSortable = shouldEnableListReorder && !!options.sortableType;
-        const arenaAccentColor = ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843';
         const relationshipBadgeType = options.relationshipBadgeType ?? relationshipLinkTypeByArenaId.get(arena.id) ?? null;
+        const sourceCodex = arena.originCodexId ? codexById.get(arena.originCodexId) ?? null : null;
+        const visualPalette = getContentVisualPalette(resolveArenaVisualFamily({
+            arena,
+            relationshipLinkType: relationshipBadgeType,
+            sourceCodex,
+        }));
 
         return (
             <div
@@ -1134,8 +1230,13 @@ export const ArenasView: React.FC = () => {
                 data-list-row={isSortable ? 'true' : undefined}
                 onMouseDown={isSortable ? (e) => handleInteractionStart(e, rowId, options.sortableType!) : undefined}
                 onTouchStart={isSortable ? (e) => handleInteractionStart(e, rowId, options.sortableType!) : undefined}
-                className={`relative rounded-2xl border border-white/8 bg-black/22 overflow-hidden transition-all duration-200 ${isSortable ? 'select-none cursor-grab active:cursor-grabbing' : ''} ${isDragOver ? 'ring-2 ring-[var(--skin-accent-color)] z-10' : ''} ${isDragged ? 'opacity-30 brightness-75' : ''}`}
-                style={isSortable ? { touchAction: 'pan-y' } : undefined}
+                className={`relative rounded-2xl border overflow-hidden transition-all duration-200 ${isSortable ? 'select-none cursor-grab active:cursor-grabbing' : ''} ${isDragOver ? 'ring-2 ring-[var(--skin-accent-color)] z-10' : ''} ${isSelectedForCampaign ? 'ring-2 ring-[var(--skin-accent-color)] z-10' : ''} ${isDragged ? 'opacity-30 brightness-75' : ''} ${isBlocked ? 'opacity-45 grayscale' : ''}`}
+                style={{
+                    ...(isSortable ? { touchAction: 'pan-y' } : {}),
+                    borderColor: visualPalette.border,
+                    background: visualPalette.listBackground,
+                    boxShadow: `0 10px 24px ${visualPalette.glow}`,
+                }}
             >
                 {isSortable && isDragOver && (
                     <div
@@ -1145,12 +1246,23 @@ export const ArenasView: React.FC = () => {
                 <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-2.5 py-2">
                     <button
                         type="button"
-                        onClick={() => (options.onOpen ? options.onOpen() : setSelectedArenaId(arena.id))}
+                        onClick={() => {
+                            if (isSelectionMode && !isBlocked) {
+                                toggleArenaCampaignSelection(arena.id);
+                                return;
+                            }
+                            if (!isBlocked) {
+                                options.onOpen ? options.onOpen() : setSelectedArenaId(arena.id);
+                            }
+                        }}
                         className="min-w-0 flex items-center gap-2 text-left"
                     >
                         <span
-                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/35 text-[14px]"
-                            style={{ background: `linear-gradient(160deg, ${rgbaString(arenaAccentColor, 0.52)} 0%, ${rgbaString(arenaAccentColor, 0.24)} 100%)` }}
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[14px]"
+                            style={{
+                                borderColor: visualPalette.border,
+                                background: `linear-gradient(160deg, ${rgbaString(visualPalette.accent, 0.56)} 0%, ${rgbaString(visualPalette.accent, 0.24)} 100%)`,
+                            }}
                         >
                             <EmojiGlyph symbol={arena.icon || '🏛️'} size="action" className="text-white" />
                         </span>
@@ -1159,6 +1271,11 @@ export const ArenasView: React.FC = () => {
                             {arena.name}
                             <span className="text-white/45 font-medium">{assetLabel}</span>
                         </span>
+                        {isSelectedForCampaign && !isBlocked && (
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/50 bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)]">
+                                <CheckIcon className="h-3 w-3" />
+                            </span>
+                        )}
                     </button>
                     <div className="flex items-center gap-2">
                         {renderListValue(`${metrics.completed}/${metrics.total}`)}
@@ -1174,7 +1291,13 @@ export const ArenasView: React.FC = () => {
                     </button>
                 </div>
                 {isExpanded && (
-                    <div className="space-y-1 border-t border-white/6 bg-black/14 px-2 py-2">
+                    <div
+                        className="space-y-1 border-t px-2 py-2"
+                        style={{
+                            borderTopColor: visualPalette.chipBorder,
+                            background: visualPalette.footerBackground,
+                        }}
+                    >
                         {rowActions.length > 0 ? rowActions.map((action) => {
                             const actionTasks = options.tasksOverride
                                 ? options.tasksOverride.filter((task) => task.actionId === action.id)
@@ -1207,6 +1330,16 @@ export const ArenasView: React.FC = () => {
         const isDragOver = dragOverId === campaign.id;
         const isDragged = draggedId === campaign.id;
         const isSortable = shouldEnableListReorder && !!options.sortable;
+        const campaignArenas = campaign.arenaIds
+            .map((arenaId) => ownedArenaById.get(arenaId))
+            .filter((arena): arena is Arena => Boolean(arena));
+        const sourceCodex = getSourceCodexForCampaign(campaign);
+        const visualPalette = getContentVisualPalette(resolveCampaignVisualFamily({
+            campaign,
+            arenas: campaignArenas,
+            relationshipLinkType: options.mentorBadge ? 'mentoria' : null,
+            sourceCodex,
+        }));
 
         return (
             <div
@@ -1216,8 +1349,13 @@ export const ArenasView: React.FC = () => {
                 data-list-row={isSortable ? 'true' : undefined}
                 onMouseDown={isSortable ? (e) => handleInteractionStart(e, campaign.id, 'campaign') : undefined}
                 onTouchStart={isSortable ? (e) => handleInteractionStart(e, campaign.id, 'campaign') : undefined}
-                className={`relative rounded-2xl border border-white/8 bg-black/22 overflow-hidden transition-all duration-200 ${isSortable ? 'select-none cursor-grab active:cursor-grabbing' : ''} ${isDragOver ? 'ring-2 ring-[var(--skin-accent-color)] z-10' : ''} ${isDragged ? 'opacity-30 brightness-75' : ''}`}
-                style={isSortable ? { touchAction: 'pan-y' } : undefined}
+                className={`relative rounded-2xl border overflow-hidden transition-all duration-200 ${isSortable ? 'select-none cursor-grab active:cursor-grabbing' : ''} ${isDragOver ? 'ring-2 ring-[var(--skin-accent-color)] z-10' : ''} ${isDragged ? 'opacity-30 brightness-75' : ''}`}
+                style={{
+                    ...(isSortable ? { touchAction: 'pan-y' } : {}),
+                    borderColor: visualPalette.border,
+                    background: visualPalette.listBackground,
+                    boxShadow: `0 10px 24px ${visualPalette.glow}`,
+                }}
             >
                 {isSortable && isDragOver && (
                     <div
@@ -1230,7 +1368,13 @@ export const ArenasView: React.FC = () => {
                         onClick={() => (options.onOpen ? options.onOpen() : setSelectedCampaignId(campaign.id))}
                         className="min-w-0 flex items-center gap-2 text-left"
                     >
-                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/35 bg-black/28 text-[13px]">
+                        <span
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[13px]"
+                            style={{
+                                borderColor: visualPalette.border,
+                                background: `linear-gradient(160deg, ${rgbaString(visualPalette.accent, 0.56)} 0%, ${rgbaString(visualPalette.accent, 0.24)} 100%)`,
+                            }}
+                        >
                             📁
                         </span>
                         {options.mentorBadge && renderRelationshipMiniBadge('mentoria')}
@@ -1251,7 +1395,12 @@ export const ArenasView: React.FC = () => {
                                 event.stopPropagation();
                                 void options.installAction?.();
                             }}
-                            className="rounded-full border border-white/12 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12"
+                            className="rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] transition-all"
+                            style={{
+                                borderColor: visualPalette.chipBorder,
+                                background: visualPalette.chipBackground,
+                                color: visualPalette.chipText,
+                            }}
                         >
                             Instalar
                         </button>
@@ -1419,7 +1568,7 @@ export const ArenasView: React.FC = () => {
                 ref={(node) => registerCampaignCardRef(campaign.id, node)}
                 data-drop-id={campaign.id}
                 onMouseDown={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
-                onTouchStart={(e) => handleInteractionStart(e, campaign.id, 'campaign')}
+                onTouchStart={shouldEnableTouchReorder ? (e) => handleInteractionStart(e, campaign.id, 'campaign') : undefined}
                 onClick={() => setSelectedCampaignId(campaign.id)}
                 className={`relative col-span-2 min-w-0 aspect-[4/3] bg-[#1a1a1a] rounded-2xl border flex flex-col cursor-pointer transition-all group overflow-hidden ${isDragOver ? 'z-10 ring-2 ring-[var(--skin-accent-color)]' : ''} ${isDragged ? 'opacity-30' : ''} ${campaignAttentionClass}`}
                 style={{ borderColor: userProfile.skinColor || 'var(--skin-accent-color)', touchAction: 'pan-x pan-y' }}
@@ -1670,6 +1819,7 @@ export const ArenasView: React.FC = () => {
     function renderArenaBoardCard(arena: Arena, options: { assetName?: string; showInsertionIndicator?: boolean } = {}) {
         const alreadyInCampaign = allCampaignArenaIds.includes(arena.id);
         const isBlocked = isSelectionMode && alreadyInCampaign;
+        const isSelectedForCampaign = isSelectionMode && selectedForCampaignSet.has(arena.id);
         const isDragOver = dragOverId === arena.id;
         const isDragged = draggedId === arena.id;
         const arenaHighlightPhase = arenaAttention?.arenaIds.includes(arena.id) ? arenaAttention.phase : null;
@@ -1680,11 +1830,15 @@ export const ArenasView: React.FC = () => {
                 ref={(node) => registerArenaCardRef(arena.id, node)}
                 data-drop-id={arena.id}
                 onMouseDown={(e) => handleInteractionStart(e, arena.id, 'arena')}
-                onTouchStart={(e) => handleInteractionStart(e, arena.id, 'arena')}
-                className={`relative min-w-0 transition-all duration-200 select-none cursor-grab active:cursor-grabbing ${isDragOver ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : 'z-10'} ${isDragged ? 'opacity-30 brightness-50' : ''} ${isBlocked ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                onTouchStart={shouldEnableTouchReorder ? (e) => handleInteractionStart(e, arena.id, 'arena') : undefined}
+                className={`relative min-w-0 transition-all duration-200 select-none cursor-grab active:cursor-grabbing ${isDragOver ? 'z-50 ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : 'z-10'} ${isSelectedForCampaign ? 'ring-2 ring-[var(--skin-accent-color)] rounded-2xl' : ''} ${isDragged ? 'opacity-30 brightness-50' : ''} ${isBlocked ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
                 style={{ touchAction: 'pan-x pan-y' }}
                 onClick={() => {
-                    if (!isSelectionMode && !isBlocked) {
+                    if (isSelectionMode && !isBlocked) {
+                        toggleArenaCampaignSelection(arena.id);
+                        return;
+                    }
+                    if (!isBlocked) {
                         setSelectedArenaId(arena.id);
                     }
                 }}
@@ -1704,6 +1858,11 @@ export const ArenasView: React.FC = () => {
                         variant="overview"
                         highlightPhase={arenaHighlightPhase}
                     />
+                    {isSelectedForCampaign && !isBlocked && (
+                        <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/50 bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] shadow-[0_0_12px_rgba(212,175,55,0.2)]">
+                            <CheckIcon className="h-3.5 w-3.5" />
+                        </div>
+                    )}
                     {isBlocked && (
                         <div className="absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center border-gray-400 bg-black/50">
                             <span className="text-gray-500 font-bold text-[10px]">⛔</span>
@@ -1771,8 +1930,32 @@ export const ArenasView: React.FC = () => {
                 </div>
 
                 {isSelectionMode && (
-                    <div className="mb-4 p-3 bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/20 rounded-xl">
-                        {/* Prompt removed per user request */}
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 p-3">
+                        <div className="flex items-center gap-2">
+                            <span className="rounded-full border border-[var(--skin-accent-color)]/20 bg-black/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">
+                                {selectedForCampaign.length} arena{selectedForCampaign.length === 1 ? '' : 's'}
+                            </span>
+                            <span className="text-[11px] text-white/62">
+                                Toque nas arenas que entram na campanha.
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedForCampaign([])}
+                                disabled={selectedForCampaign.length === 0}
+                                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/78 transition-all hover:bg-white/10 disabled:opacity-40"
+                            >
+                                Limpar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleOpenCreateCampaignModal}
+                                className="luxe-skin-button rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
+                            >
+                                Nova campanha
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -1780,7 +1963,7 @@ export const ArenasView: React.FC = () => {
                     <div className="mb-6 space-y-2">
                         <div className="flex items-center gap-2 px-2">
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                                Campanhas do mentor
+                                Campanhas compartilhadas
                             </span>
                             <div className="flex-1 h-[1px] bg-white/5" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-[var(--skin-accent-color)]">
@@ -1833,22 +2016,106 @@ export const ArenasView: React.FC = () => {
                                             setSelectedReceivedCampaignPreview(preview);
                                         }
                                     }}
-                                    className="relative col-span-2 aspect-[4/3] overflow-hidden rounded-2xl border border-white/10 bg-[#1a1a1a] text-left transition-all hover:border-[var(--skin-accent-color)]/35 cursor-pointer"
+                                    className="relative col-span-2 aspect-[4/3] overflow-hidden rounded-2xl border text-left transition-all cursor-pointer"
+                                    style={{
+                                        borderColor: getContentVisualPalette(resolveCampaignVisualFamily({
+                                            campaign: preview.campaign,
+                                            arenas: preview.arenas,
+                                            relationshipLinkType: 'mentoria',
+                                            sourceCodex: codex,
+                                        })).border,
+                                        background: getContentVisualPalette(resolveCampaignVisualFamily({
+                                            campaign: preview.campaign,
+                                            arenas: preview.arenas,
+                                            relationshipLinkType: 'mentoria',
+                                            sourceCodex: codex,
+                                        })).listBackground,
+                                        boxShadow: `0 14px 28px ${getContentVisualPalette(resolveCampaignVisualFamily({
+                                            campaign: preview.campaign,
+                                            arenas: preview.arenas,
+                                            relationshipLinkType: 'mentoria',
+                                            sourceCodex: codex,
+                                        })).glow}`,
+                                    }}
                                 >
-                                        <div className="p-2 border-b border-white/5 bg-black/20 flex items-center justify-between gap-2">
+                                        <div
+                                            className="flex items-center justify-between gap-2 border-b p-2"
+                                            style={{
+                                                borderBottomColor: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                    campaign: preview.campaign,
+                                                    arenas: preview.arenas,
+                                                    relationshipLinkType: 'mentoria',
+                                                    sourceCodex: codex,
+                                                })).chipBorder,
+                                                background: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                    campaign: preview.campaign,
+                                                    arenas: preview.arenas,
+                                                    relationshipLinkType: 'mentoria',
+                                                    sourceCodex: codex,
+                                                })).footerBackground,
+                                            }}
+                                        >
                                             <div className="min-w-0">
-                                            <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
+                                            <div
+                                                className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.18em]"
+                                                style={{
+                                                    color: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                        campaign: preview.campaign,
+                                                        arenas: preview.arenas,
+                                                        relationshipLinkType: 'mentoria',
+                                                        sourceCodex: codex,
+                                                    })).chipText,
+                                                }}
+                                            >
                                                 {renderRelationshipMiniBadge('mentoria')}
                                                 <span>Campanha</span>
                                             </div>
                                             <div className="truncate text-[11px] font-black text-white">{preview.campaign.title}</div>
                                             </div>
-                                        <div className="rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/60">
+                                        <div
+                                            className="rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em]"
+                                            style={{
+                                                borderColor: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                    campaign: preview.campaign,
+                                                    arenas: preview.arenas,
+                                                    relationshipLinkType: 'mentoria',
+                                                    sourceCodex: codex,
+                                                })).chipBorder,
+                                                background: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                    campaign: preview.campaign,
+                                                    arenas: preview.arenas,
+                                                    relationshipLinkType: 'mentoria',
+                                                    sourceCodex: codex,
+                                                })).chipBackground,
+                                                color: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                    campaign: preview.campaign,
+                                                    arenas: preview.arenas,
+                                                    relationshipLinkType: 'mentoria',
+                                                    sourceCodex: codex,
+                                                })).chipText,
+                                            }}
+                                        >
                                             {preview.arenas.length} arenas
                                         </div>
                                     </div>
                                     <div className="p-2.5 space-y-3">
-                                        <div className="flex min-h-[7.25rem] items-start justify-center overflow-hidden rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.26),rgba(36,25,74,0.2)_55%,rgba(15,15,15,0.18))] pt-0.5">
+                                        <div
+                                            className="flex min-h-[7.25rem] items-start justify-center overflow-hidden rounded-xl border pt-0.5"
+                                            style={{
+                                                borderColor: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                    campaign: preview.campaign,
+                                                    arenas: preview.arenas,
+                                                    relationshipLinkType: 'mentoria',
+                                                    sourceCodex: codex,
+                                                })).chipBorder,
+                                                background: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                    campaign: preview.campaign,
+                                                    arenas: preview.arenas,
+                                                    relationshipLinkType: 'mentoria',
+                                                    sourceCodex: codex,
+                                                })).stackBackground,
+                                            }}
+                                        >
                                             <CampaignArenaStack arenas={preview.arenas} size="md" />
                                         </div>
                                         <div className="flex items-center justify-between gap-2">
@@ -1861,7 +2128,27 @@ export const ArenasView: React.FC = () => {
                                                     event.stopPropagation();
                                                     await installCodex(codex.id);
                                                 }}
-                                                className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12"
+                                                className="rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all"
+                                                style={{
+                                                    borderColor: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                        campaign: preview.campaign,
+                                                        arenas: preview.arenas,
+                                                        relationshipLinkType: 'mentoria',
+                                                        sourceCodex: codex,
+                                                    })).chipBorder,
+                                                    background: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                        campaign: preview.campaign,
+                                                        arenas: preview.arenas,
+                                                        relationshipLinkType: 'mentoria',
+                                                        sourceCodex: codex,
+                                                    })).chipBackground,
+                                                    color: getContentVisualPalette(resolveCampaignVisualFamily({
+                                                        campaign: preview.campaign,
+                                                        arenas: preview.arenas,
+                                                        relationshipLinkType: 'mentoria',
+                                                        sourceCodex: codex,
+                                                    })).chipText,
+                                                }}
                                             >
                                                 Instalar
                                             </button>
@@ -2282,9 +2569,12 @@ export const ArenasView: React.FC = () => {
                 <CreateCampaignModal
                     selectedArenaIds={selectedForCampaign}
                     onClose={() => setShowCreateCampaignModal(false)}
-                    onCreated={() => {
+                    availableArenaIds={allArenas.filter((arena) => !allCampaignArenaIds.includes(arena.id)).map((arena) => arena.id)}
+                    onCreated={(campaign) => {
+                        setSelectedCampaignId(campaign.id);
                         setIsSelectionMode(false);
                         setSelectedForCampaign([]);
+                        setShowCreateCampaignModal(false);
                     }}
                 />
             )}

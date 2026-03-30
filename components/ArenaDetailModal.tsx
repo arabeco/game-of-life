@@ -149,7 +149,7 @@ export const ArenaDetailModal: React.FC<{
     collaborativeOwnerUserId = null,
     onLinkedArenaRefresh,
 }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, tasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, removeRelationshipArenaShare, tasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
@@ -210,8 +210,9 @@ export const ArenaDetailModal: React.FC<{
         !localArenaExists
     );
     const isMentorshipLinkedArena = (linkedRelationshipType === 'mentoria' || currentLinkType === 'mentoria');
+    const isCompetitionLinkedArena = (linkedRelationshipType === 'competicao' || currentLinkType === 'competicao');
     const isPupilMentorshipArena = isMentorshipLinkedArena && currentCollaborativeRole === 'pupil';
-    const isReadOnlyArena = readOnly || previewMode || (!localArenaExists && !isDetachedMentorshipCollab);
+    const isReadOnlyArena = readOnly || previewMode || isCompetitionLinkedArena || (!localArenaExists && !isDetachedMentorshipCollab);
     const activeAssetId = isEditing ? editableArena.assetId : arena.assetId;
     const parentAsset = assets.find(a => a.id === activeAssetId);
     const formatAssetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
@@ -316,13 +317,18 @@ export const ArenaDetailModal: React.FC<{
     const allCompletedInstances = arenaProgressState.totalCompleted || 0;
     const progress = arenaProgressState.progressPercent || 0;
     const isRelationshipArena = currentLinkType === 'mentoria' || currentLinkType === 'competicao' || currentLinkType === 'parceria';
-    const allowRelationshipArenaDelete = !isPupilMentorshipArena;
+    const canUnsharePartnershipArena = currentLinkType === 'parceria' && localArenaExists;
+    const allowRelationshipArenaDelete = currentLinkType === 'mentoria'
+        ? (currentCollaborativeRole === 'mentor' || currentCollaborativeRole === 'pupil')
+        : currentLinkType === 'parceria'
+            ? canUnsharePartnershipArena
+            : false;
     const deleteDialogTitle = isSpecialArena
         ? 'Sair da Missao'
         : arena.isArchived
             ? 'Excluir arena'
         : currentLinkType === 'competicao'
-            ? 'Sair do desafio'
+            ? 'Desafio selado'
             : currentLinkType === 'parceria'
                 ? 'Remover arena da parceria'
                 : currentLinkType === 'mentoria'
@@ -333,13 +339,11 @@ export const ArenaDetailModal: React.FC<{
         : arena.isArchived
             ? 'Esta arena ja esta arquivada. Excluir agora apaga esse registro de forma definitiva. Tem certeza?'
         : currentLinkType === 'competicao'
-            ? 'Voce esta saindo do desafio desta arena. Todo o progresso dela sera perdido e a competicao continua ativa. Tem certeza?'
+            ? 'Essa arena pertence a um duelo selado. Ela fica disponivel apenas para consulta e historico.'
             : currentLinkType === 'parceria'
-                ? 'Voce esta removendo a arena ligada a esta parceria. Todo o progresso dela sera perdido e a relacao continua ativa. Tem certeza?'
+                ? 'Voce esta retirando esta arena da vitrine da parceria. A arena continua sua e o parceiro perde o acesso imediato.'
                 : currentLinkType === 'mentoria'
-                    ? currentCollaborativeRole === 'mentor'
-                        ? 'Voce vai apagar esta arena do pupilo. Todo o progresso registrado nela sera perdido e a mentoria continua ativa. Tem certeza?'
-                        : 'Voce vai remover esta arena da mentoria. Todo o progresso registrado nela sera perdido e a mentoria continua ativa. Tem certeza?'
+                    ? 'Voce vai remover esta arena da mentoria. Todo o progresso registrado nela sera perdido e a mentoria continua ativa. Tem certeza?'
                     : 'Tem certeza que deseja excluir esta arena? Todo o progresso registrado nela sera perdido.';
     const handleEditToggle = async () => {
         if (isReadOnlyArena) {
@@ -407,12 +411,21 @@ export const ArenaDetailModal: React.FC<{
                 const message = String(error?.message || '');
                 showToast(
                     message.includes('delete_linked_relationship_arena')
-                        ? 'Essa base ainda nao recebeu o SQL novo para remover arenas de mentoria pelo mentor.'
+                        ? 'Essa base ainda nao recebeu o SQL novo para permitir remover arenas de mentoria.'
                         : 'Nao foi possivel remover essa arena vinculada.',
                     'error'
                 );
                 return;
             }
+        }
+
+        if (canUnsharePartnershipArena && linkedRelationshipLinkId) {
+            const success = await removeRelationshipArenaShare(linkedRelationshipLinkId, arena.id);
+            if (success) {
+                await Promise.resolve(onLinkedArenaRefresh?.());
+                onClose();
+            }
+            return;
         }
 
         await Promise.resolve(deleteArena(arena.id));
@@ -781,7 +794,7 @@ export const ArenaDetailModal: React.FC<{
                                             countingTasks={tasksForCounts}
                                         />
                                     ))}
-                                    {!previewMode && (
+                                    {!previewMode && !isReadOnlyArena && (
                                         <button id="add-action-button" ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
                                             <PlusIcon className="w-8 h-8" />
                                         </button>
@@ -813,6 +826,7 @@ export const ArenaDetailModal: React.FC<{
                     action={actionModalState.action}
                     initialMode={actionModalState.mode}
                     isPreview={previewMode}
+                    disableAuthoring={isCompetitionLinkedArena}
                     lockArenaAssignment={isMentorshipLinkedArena}
                     collaborativeLinkedArena={isDetachedMentorshipCollab}
                     collaborativeOwnerUserId={isDetachedMentorshipCollab ? collaborativeOwnerUserId : null}

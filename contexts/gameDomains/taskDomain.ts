@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Action, Arena, Campaign, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, ScheduledTask, SeasonQuest } from '../../types';
 import { mergeTasksIntoCommitment, reconcileTaskInCommitment } from '../../utils/coreLoopUtils.js';
-import { getOperationalDateString, getTaskOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
+import { OPERATIONAL_DAY_START_MINUTE, getOperationalDateString, getTaskOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
 import { isSharedArena } from '../../utils/taskDomain.js';
 import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTaskSnapshot } from '../../utils/taskMutationUtils.js';
 import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../utils/progressUtils';
@@ -488,6 +488,14 @@ export const createTaskDomain = ({
         const localToday = getLocalDateString(now);
         let updatedTask = buildToggledTaskSnapshot(taskToCheck, action?.duration || 15, nowInMinutes);
 
+        if (!taskToCheck.completed && taskToCheck.startTime < 0 && nowInMinutes >= OPERATIONAL_DAY_START_MINUTE && updatedTask.startTime < OPERATIONAL_DAY_START_MINUTE) {
+            // Keep newly completed pool tasks inside the current operational day.
+            updatedTask = {
+                ...updatedTask,
+                startTime: OPERATIONAL_DAY_START_MINUTE,
+            };
+        }
+
         if (!taskToCheck.completed && taskToCheck.startTime < 0 && now.getHours() < 4 && taskMatchesOperationalDate(taskToCheck, operationalToday)) {
             updatedTask = {
                 ...updatedTask,
@@ -529,7 +537,9 @@ export const createTaskDomain = ({
         const operationalDate = getOperationalDateString(now);
         const date = getLocalDateString(now);
         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-        const startTime = Math.max(0, nowInMinutes - action.duration);
+        const startTime = nowInMinutes >= OPERATIONAL_DAY_START_MINUTE
+            ? Math.max(OPERATIONAL_DAY_START_MINUTE, nowInMinutes - action.duration)
+            : Math.max(0, nowInMinutes - action.duration);
         const existingTaskForToday = tasks.find(task =>
             task.actionId === actionId &&
             taskMatchesOperationalDate(task, operationalDate) &&
@@ -613,7 +623,9 @@ export const createTaskDomain = ({
         const now = new Date();
         const date = getLocalDateString(now);
         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-        const startTime = Math.max(0, nowInMinutes - action.duration);
+        const startTime = nowInMinutes >= OPERATIONAL_DAY_START_MINUTE
+            ? Math.max(OPERATIONAL_DAY_START_MINUTE, nowInMinutes - action.duration)
+            : Math.max(0, nowInMinutes - action.duration);
 
         const newTask: ScheduledTask = {
             id: crypto.randomUUID(),

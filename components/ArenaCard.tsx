@@ -6,6 +6,7 @@ import { supabase } from '../supabaseClient';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { EmojiGlyph } from './EmojiGlyph';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { getContentVisualPalette, resolveArenaVisualFamily } from '../utils/contentCardVisuals';
 import './arena-ui.css';
 
 const hexToRgb = (hex: string) => {
@@ -224,7 +225,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     relationshipBadgeType = null,
     tasks: propTasks
 }) => {
-    const { appMode, tasks: contextTasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction } = useGame();
+    const { appMode, tasks: contextTasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction, userCodexes } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const tasksForCounts = useMemo(() => {
         if (propTasks || !activeCycle) return tasks;
@@ -369,6 +370,11 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         return <EmojiGlyph symbol={arena.icon || '\u{1F3DB}\uFE0F'} size="arena" className="text-white" />;
     };
     const effectiveLinkType = relationshipBadgeType || linkType;
+    const codexById = useMemo(
+        () => new Map(userCodexes.map((codex) => [codex.id, codex] as const)),
+        [userCodexes]
+    );
+    const sourceCodex = arena.originCodexId ? codexById.get(arena.originCodexId) ?? null : null;
     const renderRelationshipBadge = () => {
         if (effectiveLinkType === 'mentoria') {
             return (
@@ -402,9 +408,20 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const plasmaEnabled = (oraclePreferences?.animationsEnabled ?? true) && !prefersReducedMotion;
     const visibleMilestones = isCompactThumbnail ? milestoneActions.slice(0, 1) : milestoneActions;
     const visibleBronzeActions = isCompactThumbnail ? bronzeActions.slice(0, 3) : bronzeActions;
-    const accentColor = isClanQuestArena ? '#C0C0C0' : (ASSET_ACCENT_COLORS[arena.assetId] || '#F0C843');
-    const skinColor = 'var(--arena-card-border-color, var(--skin-accent-color))';
-    const progressFillColor = 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)';
+    const visualFamily = resolveArenaVisualFamily({
+        arena,
+        relationshipLinkType: effectiveLinkType,
+        sourceCodex,
+    });
+    const visualPalette = getContentVisualPalette(visualFamily);
+    const assetAccentColor = Object.prototype.hasOwnProperty.call(ASSET_ACCENT_COLORS, arena.assetId)
+        ? ASSET_ACCENT_COLORS[arena.assetId as keyof typeof ASSET_ACCENT_COLORS]
+        : '#F0C843';
+    const accentColor = visualFamily === 'normal'
+        ? (isClanQuestArena ? '#C0C0C0' : assetAccentColor)
+        : visualPalette.accent;
+    const skinColor = visualPalette.border;
+    const progressFillColor = `linear-gradient(90deg, ${rgbaString(accentColor, 0.32)} 0%, ${accentColor} 52%, rgba(255,255,255,0.92) 100%)`;
     const highlightClass = highlightPhase === 'populate'
         ? 'arena-card-highlight arena-card-highlight--populate'
         : highlightPhase === 'celebrate'
@@ -416,13 +433,18 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         : variant === 'dossier' ? 'h-full w-full' : 'h-[4.95rem]';
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
     const compactHeight = isOverview ? '4.75rem' : variant === 'compact' ? '4.95rem' : undefined;
+    const cardBackground = visualFamily === 'normal' && isCompactThumbnail
+        ? [
+            'radial-gradient(circle at 14% 0%, rgba(255,255,255,0.2), transparent 30%)',
+            `radial-gradient(86% 66% at 96% 88%, ${rgbaString(accentColor, 0.2)} 0%, ${rgbaString(accentColor, 0.1)} 14%, transparent 30%)`,
+            `linear-gradient(45deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 64%, ${rgbaString(accentColor, 0.06)} 76%, ${rgbaString(accentColor, 0.15)} 84%, rgba(8,10,14,0) 94%)`,
+            `linear-gradient(118deg, rgba(228,233,241,0.95) 0%, rgba(183,191,202,0.93) 18%, rgba(88,94,106,0.96) 44%, rgba(31,35,44,0.98) 70%, rgba(11,13,19,0.99) 100%)`,
+        ].join(', ')
+        : visualPalette.cardBackground;
     const cardStyle: React.CSSProperties = {
         borderColor: skinColor,
-        backgroundImage: [
-            `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.26), rgba(255,255,255,0.08) 26%, transparent 52%)`,
-            `radial-gradient(circle at 100% 100%, ${rgbaString(accentColor, 0.24)}, transparent 38%)`,
-            `linear-gradient(160deg, rgba(156,164,177,0.98) 0%, rgba(112,120,133,0.94) 26%, rgba(46,49,58,0.95) 58%, ${rgbaString(accentColor, 0.18)} 84%, rgba(12,14,18,0.99) 100%)`,
-        ].join(', '),
+        backgroundImage: cardBackground,
+        boxShadow: `0 14px 26px ${visualPalette.glow}`,
         ...(compactHeight ? { height: compactHeight } : {}),
     };
     const tiltStyle: React.CSSProperties = {

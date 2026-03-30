@@ -8,10 +8,12 @@ import { ArenaDetailModal } from './ArenaDetailModal';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { CampaignArenaStack } from './CampaignArenaStack';
+import { CreateCampaignModal } from './CreateCampaignModal';
 import { calculateCampaignProgressSummary, getCampaignArenaStates } from '../utils/progressUtils';
 import { EmojiGlyph } from './EmojiGlyph';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 import { CATEGORY_LABELS, resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
+import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 import { UserCodex } from '../types';
 
 interface CampaignsCodexProps {
@@ -47,10 +49,20 @@ const PreviewArenaMiniCard: React.FC<{ arena: Arena; actions: Action[] }> = ({ a
     </div>
 );
 
+const getCampaignSourceLabel = (codex: UserCodex | null | undefined) => {
+    if (!codex) return 'Minha';
+    if (codex.mentor_relationship_link_id) return 'Recebida';
+    if (codex.source_type === 'gift_link' || codex.source_type === 'gift_in_app') return 'Recebida';
+    if (codex.source_type === 'catalog') return 'Loja';
+    return 'Meu codex';
+};
+
 export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId, previewCampaign, previewArenas = [], previewActions = [], previewMeta }) => {
-    const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, addCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, installCodex, showToast } = useGame();
+    const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, installCodex, showToast } = useGame();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
+    const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
+    const [isAttachArenaModalOpen, setIsAttachArenaModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
@@ -72,6 +84,14 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     };
 
     const allArenas = getArenas();
+    const arenaById = useMemo(
+        () => new Map(allArenas.map((arena) => [arena.id, arena] as const)),
+        [allArenas],
+    );
+    const codexById = useMemo(
+        () => new Map(userCodexes.map((codex) => [codex.id, codex] as const)),
+        [userCodexes],
+    );
     const installedCodexIds = useMemo(
         () => new Set(allArenas.map((arena) => arena.originCodexId).filter(Boolean)),
         [allArenas],
@@ -86,11 +106,13 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                 const preview = buildCodexCampaignPreview(codex.id, codex.template);
                 const templateMeta = resolveTemplateCampaignMeta(catalogRefId, codex.template);
                 const campaignType = templateMeta.campaignType || 'pratica';
-                const sourceLabel = codex.source_type === 'catalog'
-                    ? 'Loja'
-                    : (codex.source_type === 'gift_link' || codex.source_type === 'gift_in_app')
-                        ? 'Recebida'
-                        : 'Forja';
+                const sourceLabel = getCampaignSourceLabel(codex);
+                const visualPalette = getContentVisualPalette(resolveCampaignVisualFamily({
+                    campaign: preview.campaign,
+                    arenas: preview.arenas,
+                    relationshipLinkType: codex.mentor_relationship_link_id ? 'mentoria' : null,
+                    sourceCodex: codex,
+                }));
 
                 return {
                     codex,
@@ -100,6 +122,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                     durationDays: Number(codex.template?.durationDays ?? 7),
                     typeLabel: CATEGORY_LABELS[campaignType],
                     sourceLabel,
+                    visualPalette,
                 };
             })
     ), [installedCodexIds, userCodexes]);
@@ -123,6 +146,14 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         }
         : null;
     const validCampaigns = campaigns.filter(Boolean);
+    const allCampaignArenaIds = useMemo(
+        () => validCampaigns.flatMap((campaign) => campaign.arenaIds),
+        [validCampaigns],
+    );
+    const allCampaignArenaIdSet = useMemo(
+        () => new Set(allCampaignArenaIds),
+        [allCampaignArenaIds],
+    );
     const visibleCampaigns = effectivePreviewCampaign
         ? [effectivePreviewCampaign, ...validCampaigns.filter((campaign) => campaign.id !== effectivePreviewCampaign.id)]
         : validCampaigns;
@@ -181,21 +212,22 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
     const isReadOnlyCodexCampaign = campaignCodex?.source_type === 'gift_link' || campaignCodex?.source_type === 'gift_in_app';
     const canEditCampaignMetadata = !isPreviewCampaign;
     const canEditCampaignStructure = canEditCampaignMetadata && !isReadOnlyCodexCampaign;
+    const availableArenaIdsForNewCampaign = useMemo(
+        () => allArenas
+            .filter((arena) => !allCampaignArenaIdSet.has(arena.id))
+            .map((arena) => arena.id),
+        [allArenas, allCampaignArenaIdSet],
+    );
+    const attachableArenaIds = useMemo(() => {
+        if (!selectedCampaign) return [];
+        return allArenas
+            .filter((arena) => !allCampaignArenaIdSet.has(arena.id) || selectedCampaign.arenaIds.includes(arena.id))
+            .filter((arena) => !selectedCampaign.arenaIds.includes(arena.id))
+            .map((arena) => arena.id);
+    }, [allArenas, allCampaignArenaIdSet, selectedCampaign]);
 
-    const handleCreateCampaign = async () => {
-        const title = `Nova Campanha ${validCampaigns.length + 1}`;
-        const createdCampaign = await addCampaign({
-            title,
-            description: 'Descrição da campanha...',
-            type: 'parallel',
-            arenaIds: [],
-            arenaConfig: {},
-            priority: 'media',
-            order: validCampaigns.length,
-            priorityOrder: 0
-        });
-        setSelectedCampaignId(createdCampaign.id);
-        setIsEditing(true);
+    const handleCreateCampaign = () => {
+        setIsCreateCampaignModalOpen(true);
     };
 
     const handleSaveCampaign = async () => {
@@ -437,6 +469,10 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         if (isPreviewCampaign) return;
         setIsCreatingArena(true);
     };
+    const handleAttachExistingArenas = () => {
+        if (!canEditCampaignStructure || !selectedCampaign) return;
+        setIsAttachArenaModalOpen(true);
+    };
 
     const onArenaCreated = (newArena: Arena) => {
         if (!selectedCampaign) return;
@@ -483,9 +519,6 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                 <div>
                                     <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Campanhas</div>
                                     <h2 className="mt-1 text-lg font-black uppercase tracking-[0.08em] text-white">Painel de campanhas</h2>
-                                    <p className="mt-1 text-xs leading-relaxed text-white/58">
-                                        Veja suas campanhas e abra a loja para navegar por trilhas novas.
-                                    </p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
@@ -506,40 +539,48 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                             {installableLibraryEntries.length > 0 && (
                                 <div className="mb-4 space-y-3">
                                     <div className="flex items-end justify-between gap-3">
-                                        <div>
-                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Biblioteca pronta para instalar</div>
-                                            <p className="mt-1 text-xs leading-relaxed text-white/58">
-                                                Campanhas que ja sao suas, mas ainda nao entraram em execucao. Elas aparecem aqui mesmo se voce sair do quiz sem instalar agora.
-                                            </p>
-                                        </div>
+                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Biblioteca pronta para instalar</div>
                                         <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/65">
                                             {installableLibraryEntries.length} na fila
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {installableLibraryEntries.map(({ codex, preview, actionCount, arenaCount, durationDays, typeLabel, sourceLabel }) => (
+                                        {installableLibraryEntries.map(({ codex, preview, actionCount, arenaCount, durationDays, typeLabel, sourceLabel, visualPalette }) => (
                                             <GlassCard
                                                 key={`library-${codex.id}`}
                                                 variant="neutral"
-                                                className="overflow-hidden border-white/10 p-3"
+                                                className="overflow-hidden p-3"
+                                                style={{
+                                                    borderColor: visualPalette.border,
+                                                    background: visualPalette.listBackground,
+                                                    boxShadow: `0 14px 28px ${visualPalette.glow}`,
+                                                }}
                                             >
                                                 <div className="flex h-full flex-col gap-3">
                                                     <button
                                                         type="button"
                                                         onClick={() => handlePreviewLibraryCampaign(codex)}
-                                                        className="rounded-[1.15rem] border border-white/10 bg-black/20 px-3 py-3 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.05]"
+                                                        className="rounded-[1.15rem] border px-3 py-3 text-left transition-all"
+                                                        style={{
+                                                            borderColor: visualPalette.chipBorder,
+                                                            background: visualPalette.footerBackground,
+                                                        }}
                                                     >
                                                         <div className="flex items-start justify-between gap-3">
                                                             <div className="min-w-0">
-                                                                <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/64">
+                                                                <div
+                                                                    className="inline-flex items-center rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em]"
+                                                                    style={{
+                                                                        borderColor: visualPalette.chipBorder,
+                                                                        background: visualPalette.chipBackground,
+                                                                        color: visualPalette.chipText,
+                                                                    }}
+                                                                >
                                                                     {sourceLabel}
                                                                 </div>
                                                                 <div className="mt-2 text-base font-black uppercase tracking-[0.05em] leading-tight text-white">
                                                                     {codex.name}
-                                                                </div>
-                                                                <div className="mt-1 text-xs leading-relaxed text-white/50 line-clamp-2">
-                                                                    {codex.description || 'Campanha pronta para entrar na sua execucao.'}
                                                                 </div>
                                                             </div>
                                                             <div className="text-[2rem] leading-none">
@@ -547,21 +588,27 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                             </div>
                                                         </div>
 
-                                                        <div className="mt-3 flex items-center justify-center rounded-[1rem] border border-white/8 bg-black/20 px-2 py-2">
+                                                        <div
+                                                            className="mt-3 flex items-center justify-center rounded-[1rem] border px-2 py-2"
+                                                            style={{
+                                                                borderColor: visualPalette.chipBorder,
+                                                                background: visualPalette.stackBackground,
+                                                            }}
+                                                        >
                                                             <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="sm" />
                                                         </div>
 
                                                         <div className="mt-3 flex flex-wrap gap-1.5">
-                                                            <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
+                                                            <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
                                                                 {typeLabel}
                                                             </span>
-                                                            <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
+                                                            <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
                                                                 {durationDays} dias
                                                             </span>
-                                                            <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
+                                                            <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
                                                                 {arenaCount} arenas
                                                             </span>
-                                                            <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
+                                                            <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
                                                                 {actionCount} acoes
                                                             </span>
                                                         </div>
@@ -606,6 +653,18 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                 {visibleCampaigns.map(campaign => {
                                     // Determine if it's a source campaign for visual cue
                                     const isCodex = campaign.arenaIds.some(id => campaignArenasSource.find(a => a.id === id)?.originCodexId);
+                                    const campaignArenas = campaign.arenaIds
+                                        .map((arenaId) => (campaignArenasSource === allArenas ? arenaById.get(arenaId) : campaignArenasSource.find((arena) => arena.id === arenaId)))
+                                        .filter((arena): arena is Arena => Boolean(arena));
+                                    const sourceCodex = campaignArenas
+                                        .map((arena) => arena.originCodexId ? codexById.get(arena.originCodexId) ?? null : null)
+                                        .find(Boolean) || null;
+                                    const sourceLabel = getCampaignSourceLabel(sourceCodex);
+                                    const visualPalette = getContentVisualPalette(resolveCampaignVisualFamily({
+                                        campaign,
+                                        arenas: campaignArenas,
+                                        sourceCodex,
+                                    }));
                                     
                                     // Check if it's the "Máquina Biológica" campaign
                                     const isBioMachine = campaign.title.toLowerCase().includes('máquina biológica') || campaign.title.toLowerCase().includes('maquina biologica');
@@ -633,12 +692,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                 </div>
 
                                                 <div className="flex-1 p-5 flex flex-col justify-end relative z-10">
-                                                    <h3 className="text-xl font-black text-white leading-tight mb-1 group-hover:text-emerald-400 transition-colors drop-shadow-md tracking-wide font-mono">
+                                                    <h3 className="text-xl font-black text-white leading-tight group-hover:text-emerald-400 transition-colors drop-shadow-md tracking-wide font-mono">
                                                         MÁQUINA<br/>BIOLÓGICA
                                                     </h3>
-                                                    <p className="text-[10px] text-emerald-200/70 line-clamp-2 font-mono border-l-2 border-emerald-500/30 pl-2">
-                                                        {campaign.description || "Reconfiguração do sistema biológico."}
-                                                    </p>
                                                 </div>
                                                 
                                                 {/* Tech footer */}
@@ -657,14 +713,38 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                         <div 
                                             key={campaign.id}
                                             onClick={() => setSelectedCampaignId(campaign.id)}
-                                            className="aspect-[4/3] bg-[#1a1a1a] rounded-2xl border border-white/10 hover:border-[var(--skin-accent-color)] cursor-pointer flex flex-col overflow-hidden group relative transition-all hover:shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                                            className="aspect-[4/3] rounded-2xl border cursor-pointer flex flex-col overflow-hidden group relative transition-all"
+                                            style={{
+                                                borderColor: visualPalette.border,
+                                                background: visualPalette.listBackground,
+                                                boxShadow: `0 14px 28px ${visualPalette.glow}`,
+                                            }}
                                         >
                                             {/* Folder Tab Effect */}
-                                            <div className="absolute top-0 left-0 w-1/3 h-1 bg-white/20 group-hover:bg-[var(--skin-accent-color)] transition-colors" />
+                                            <div className="absolute top-0 left-0 h-1 w-1/3 transition-colors" style={{ background: visualPalette.accent }} />
                                             
                                             {isCodex && (
-                                                <div className="absolute top-2 right-2 px-2 py-0.5 bg-[var(--skin-accent-color)]/20 border border-[var(--skin-accent-color)]/50 rounded text-[9px] font-bold text-[var(--skin-accent-color)] uppercase tracking-wider">
-                                                    Campanha
+                                                <div
+                                                    className="absolute top-2 right-2 rounded border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                                                    style={{
+                                                        borderColor: visualPalette.chipBorder,
+                                                        background: visualPalette.chipBackground,
+                                                        color: visualPalette.chipText,
+                                                    }}
+                                                >
+                                                    {sourceLabel}
+                                                </div>
+                                            )}
+                                            {!isCodex && (
+                                                <div
+                                                    className="absolute top-2 right-2 rounded border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                                                    style={{
+                                                        borderColor: 'rgba(255,255,255,0.12)',
+                                                        background: 'rgba(255,255,255,0.06)',
+                                                        color: 'rgba(255,255,255,0.7)',
+                                                    }}
+                                                >
+                                                    {sourceLabel}
                                                 </div>
                                             )}
                                             {campaign.id === effectivePreviewCampaign?.id && (
@@ -674,22 +754,31 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                             )}
 
                                             <div className="flex-1 p-4 flex flex-col justify-between gap-3">
-                                                <div className="flex items-center justify-center rounded-xl border border-white/6 bg-[linear-gradient(180deg,rgba(139,92,246,0.16),rgba(12,12,12,0.18))] px-2 py-2">
+                                                <div
+                                                    className="flex items-center justify-center rounded-xl border px-2 py-2"
+                                                    style={{
+                                                        borderColor: visualPalette.chipBorder,
+                                                        background: visualPalette.stackBackground,
+                                                    }}
+                                                >
                                     <CampaignArenaStack
                                         arenas={campaignArenasSource.filter(arena => campaign.arenaIds.includes(arena.id))}
                                         actions={campaignActionsSource}
                                         size="sm"
                                     />
                                                 </div>
-                                                <h3 className="text-lg font-bold text-white leading-tight line-clamp-2 mb-1 group-hover:text-[var(--skin-accent-color)] transition-colors">
+                                                <h3 className="mb-1 text-lg font-bold leading-tight text-white line-clamp-2 transition-colors" style={{ textShadow: `0 0 18px ${visualPalette.glow}` }}>
                                                     {campaign.title}
                                                 </h3>
-                                                <p className="text-xs text-gray-500 line-clamp-2">
-                                                    {campaign.description || "Sem descrição."}
-                                                </p>
                                             </div>
                                             
-                                            <div className="px-4 py-2 bg-black/40 border-t border-white/5 flex items-center justify-between">
+                                            <div
+                                                className="flex items-center justify-between border-t px-4 py-2"
+                                                style={{
+                                                    borderTopColor: visualPalette.chipBorder,
+                                                    background: visualPalette.footerBackground,
+                                                }}
+                                            >
                                                 <div className="text-[10px] text-gray-400 font-mono">
                                                     {campaign.arenaIds.length} Arenas
                                                 </div>
@@ -703,6 +792,17 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                             </div>
                         </div>
                     </GlassCard>
+                    {isCreateCampaignModalOpen && (
+                        <CreateCampaignModal
+                            availableArenaIds={availableArenaIdsForNewCampaign}
+                            onClose={() => setIsCreateCampaignModalOpen(false)}
+                            onCreated={(campaign) => {
+                                setSelectedCampaignId(campaign.id);
+                                setIsEditing(campaign.arenaIds.length === 0);
+                                setIsCreateCampaignModalOpen(false);
+                            }}
+                        />
+                    )}
                 </div>
             </Portal>
         );
@@ -888,6 +988,18 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                 </button>
                                 {canEditCampaignStructure && isEditing && (
                                     <button
+                                        type="button"
+                                        onClick={handleAttachExistingArenas}
+                                        disabled={attachableArenaIds.length === 0}
+                                        className="inline-flex items-center gap-1 rounded-xl border border-white/12 bg-white/6 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/78 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                        title={attachableArenaIds.length === 0 ? 'Nenhuma arena livre para anexar' : 'Escolher arenas existentes'}
+                                    >
+                                        <LinkIcon className="h-3.5 w-3.5" />
+                                        <span>Arenas</span>
+                                    </button>
+                                )}
+                                {canEditCampaignStructure && isEditing && (
+                                    <button
                                         onClick={handleAddPhase}
                                         className="p-2 rounded-full transition-colors border border-white/15 bg-black/30 hover:bg-black/40"
                                         title="Adicionar fase"
@@ -906,12 +1018,23 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                             <div className="h-full flex flex-col items-center justify-center text-gray-500">
                                 <p className="mb-4">Nenhuma arena definida nesta campanha.</p>
                                 {canEditCampaignStructure && (
-                                    <button 
-                                        onClick={handleCreateFutureArena}
-                                        className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-sm transition-all"
-                                    >
-                                        + Adicionar Primeira Arena
-                                    </button>
+                                    <div className="flex flex-wrap items-center justify-center gap-2">
+                                        <button 
+                                            onClick={handleAttachExistingArenas}
+                                            disabled={attachableArenaIds.length === 0}
+                                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm transition-all hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                            <LinkIcon className="h-4 w-4" />
+                                            <span>Escolher arenas</span>
+                                        </button>
+                                        <button 
+                                            onClick={handleCreateFutureArena}
+                                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm transition-all hover:bg-white/5"
+                                        >
+                                            <PlusIcon className="h-4 w-4" />
+                                            <span>Nova arena</span>
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         ) : (
@@ -1079,7 +1202,17 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                             </div>
                                         )}
                                         {canEditCampaignStructure && phaseIndex === renderedPhaseRows.length - 1 && (
-                                            <div className="flex min-h-[5.8rem] items-end justify-end self-stretch pb-1 pr-1">
+                                            <div className="flex min-h-[5.8rem] items-end gap-2 self-stretch pb-1 pr-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAttachExistingArenas}
+                                                    disabled={attachableArenaIds.length === 0}
+                                                    className="inline-flex h-9 items-center justify-center gap-1 rounded-full border border-white/12 bg-white/8 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-white/78 transition-all hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    title={attachableArenaIds.length === 0 ? 'Nenhuma arena livre para anexar' : 'Escolher arenas existentes'}
+                                                >
+                                                    <LinkIcon className="h-3.5 w-3.5" />
+                                                    <span>Arenas</span>
+                                                </button>
                                                 <button
                                                     onClick={handleCreateFutureArena}
                                                     className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full luxe-skin-button shadow-lg shadow-black/30"
@@ -1118,6 +1251,18 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                             isOpen={true}
                             onClose={() => setIsCreatingArena(false)} 
                             onArenaCreated={onArenaCreated}
+                        />
+                    )}
+
+                    {isAttachArenaModalOpen && selectedCampaign && (
+                        <CreateCampaignModal
+                            targetCampaign={selectedCampaign}
+                            availableArenaIds={attachableArenaIds}
+                            onClose={() => setIsAttachArenaModalOpen(false)}
+                            onAttached={() => {
+                                setIsAttachArenaModalOpen(false);
+                                setIsEditing(true);
+                            }}
                         />
                     )}
                     

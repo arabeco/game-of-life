@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayIcon, PauseIcon, LockIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
+import { clearActiveMediaHint, persistActiveMediaHint } from '../utils/mediaResumeHint';
 
 const BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/audio/';
 
@@ -30,24 +31,66 @@ export const FocusAudioPlayer: React.FC = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const pageHideWhilePlayingRef = useRef(false);
 
     const isPremiumUser = userProfile?.isPremium || userProfile?.plan === 'Soberano' || userProfile?.plan === 'Premium';
 
     // Initialize audio element only once
     useEffect(() => {
+        const handlePlay = () => {
+            setIsPlaying(true);
+            persistActiveMediaHint('focus-audio');
+        };
+        const handlePause = () => {
+            setIsPlaying(false);
+            if (!pageHideWhilePlayingRef.current) {
+                clearActiveMediaHint('focus-audio');
+            }
+        };
+        const handleEnded = () => {
+            setIsPlaying(false);
+            if (!pageHideWhilePlayingRef.current) {
+                clearActiveMediaHint('focus-audio');
+            }
+        };
+        const handlePageHide = () => {
+            pageHideWhilePlayingRef.current = Boolean(audioRef.current && !audioRef.current.paused);
+            if (pageHideWhilePlayingRef.current) {
+                persistActiveMediaHint('focus-audio');
+            }
+        };
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                pageHideWhilePlayingRef.current = false;
+                if (audioRef.current && !audioRef.current.paused) {
+                    persistActiveMediaHint('focus-audio');
+                }
+            }
+        };
+
         if (!audioRef.current) {
             audioRef.current = new Audio();
             audioRef.current.loop = true;
-
-            audioRef.current.addEventListener('play', () => setIsPlaying(true));
-            audioRef.current.addEventListener('pause', () => setIsPlaying(false));
-            audioRef.current.addEventListener('ended', () => setIsPlaying(false)); // Should not happen with loop=true, but just in case
         }
 
+        audioRef.current.addEventListener('play', handlePlay);
+        audioRef.current.addEventListener('pause', handlePause);
+        audioRef.current.addEventListener('ended', handleEnded);
+        window.addEventListener('pagehide', handlePageHide);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
         return () => {
+            window.removeEventListener('pagehide', handlePageHide);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.src = '';
+                audioRef.current.removeEventListener('play', handlePlay);
+                audioRef.current.removeEventListener('pause', handlePause);
+                audioRef.current.removeEventListener('ended', handleEnded);
+                if (!pageHideWhilePlayingRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.src = '';
+                    clearActiveMediaHint('focus-audio');
+                }
             }
         };
     }, []);
@@ -100,6 +143,7 @@ export const FocusAudioPlayer: React.FC = () => {
     };
 
     const togglePlayPause = () => {
+        pageHideWhilePlayingRef.current = false;
         if (isPlaying) {
             audioRef.current?.pause();
         } else {
@@ -113,6 +157,7 @@ export const FocusAudioPlayer: React.FC = () => {
     };
 
     const handleMainFabClick = () => {
+        pageHideWhilePlayingRef.current = false;
         if (isPlaying) {
             togglePlayPause();
             setIsExpanded(false);

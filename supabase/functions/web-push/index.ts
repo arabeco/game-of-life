@@ -122,6 +122,30 @@ const asBoolean = (value: unknown): boolean => {
   return false;
 };
 
+const isInvalidPushEndpoint = (endpoint: string): boolean => {
+  const normalized = endpoint.trim();
+  if (!normalized) return true;
+
+  try {
+    const parsed = new URL(normalized);
+    const hostname = parsed.hostname.toLowerCase();
+    return hostname.endsWith(".invalid") || hostname === "permanently-removed.invalid";
+  } catch (_error) {
+    return true;
+  }
+};
+
+const shouldDisableFailedSubscription = (statusCode: number | null, errorMessage: string): boolean => {
+  if (statusCode === 404 || statusCode === 410) return true;
+
+  const normalized = errorMessage.toLowerCase();
+  return normalized.includes(".invalid")
+    || normalized.includes("failed to lookup address information")
+    || normalized.includes("dns error")
+    || normalized.includes("enotfound")
+    || normalized.includes("invalid subscription payload");
+};
+
 const isAllowedOrigin = (origin: string | null): boolean => {
   if (!origin) return true;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
@@ -456,7 +480,7 @@ const normalizeStoredSubscription = (row: StoredPushSubscription): JsonRecord | 
   if (!isRecord(row.subscription)) return null;
   const endpoint = asTrimmedString(row.subscription.endpoint) || asTrimmedString(row.endpoint);
   const keys = isRecord(row.subscription.keys) ? row.subscription.keys : {};
-  if (!endpoint || !asTrimmedString(keys.p256dh) || !asTrimmedString(keys.auth)) return null;
+  if (!endpoint || isInvalidPushEndpoint(endpoint) || !asTrimmedString(keys.p256dh) || !asTrimmedString(keys.auth)) return null;
 
   return {
     endpoint,
@@ -478,6 +502,20 @@ const registerSubscription = async (req: Request, body: JsonRecord, origin: stri
   const endpoint = asTrimmedString(subscription?.endpoint);
   if (!subscription || !endpoint) {
     return jsonResponse(origin, 400, { error: "Missing push subscription payload." });
+  }
+  if (isInvalidPushEndpoint(endpoint)) {
+    const supabaseAdmin = getSupabaseAdmin();
+    await supabaseAdmin
+      .from("push_subscriptions")
+      .update({
+        disabled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        last_error: "invalid_endpoint_registration_rejected",
+      })
+      .eq("user_id", user.id)
+      .eq("endpoint", endpoint);
+
+    return jsonResponse(origin, 400, { error: "Invalid push subscription endpoint." });
   }
 
   const supabaseAdmin = getSupabaseAdmin();
@@ -597,6 +635,7 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
       await updateSubscriptionHealth(subscriptionRow.id, {
         failure_count: Number(subscriptionRow.failure_count || 0) + 1,
         last_error: "invalid_subscription_payload",
+        disabled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
       continue;
@@ -651,7 +690,7 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
         sent_at: null,
       });
 
-      const disableSubscription = statusCode === 404 || statusCode === 410;
+      const disableSubscription = shouldDisableFailedSubscription(statusCode, errorMessage);
       await updateSubscriptionHealth(subscriptionRow.id, {
         failure_count: Number(subscriptionRow.failure_count || 0) + 1,
         last_error: errorMessage,
@@ -724,6 +763,7 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
       await updateSubscriptionHealth(subscriptionRow.id, {
         failure_count: Number(subscriptionRow.failure_count || 0) + 1,
         last_error: "invalid_subscription_payload",
+        disabled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
       continue;
@@ -778,7 +818,7 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
         sent_at: null,
       });
 
-      const disableSubscription = statusCode === 404 || statusCode === 410;
+      const disableSubscription = shouldDisableFailedSubscription(statusCode, errorMessage);
       await updateSubscriptionHealth(subscriptionRow.id, {
         failure_count: Number(subscriptionRow.failure_count || 0) + 1,
         last_error: errorMessage,

@@ -23,6 +23,19 @@ const supportsWebPush = () =>
     && 'serviceWorker' in navigator
     && 'PushManager' in window;
 
+const isInvalidSubscriptionEndpoint = (endpoint: string): boolean => {
+    const normalized = endpoint.trim();
+    if (!normalized) return true;
+
+    try {
+        const parsed = new URL(normalized);
+        const hostname = parsed.hostname.toLowerCase();
+        return hostname.endsWith('.invalid') || hostname === 'permanently-removed.invalid';
+    } catch (_error) {
+        return true;
+    }
+};
+
 const decodeBase64Url = (value: string): Uint8Array => {
     const normalized = value
         .replace(/-/g, '+')
@@ -50,8 +63,44 @@ const getCurrentAccessToken = async (): Promise<string | null> => {
     return authData.session?.access_token || null;
 };
 
+const unregisterEndpointRemotely = async (endpoint: string, accessToken: string | null) => {
+    if (!endpoint.trim()) return;
+
+    try {
+        await supabase.functions.invoke('web-push', {
+            headers: accessToken
+                ? {
+                    Authorization: `Bearer ${accessToken}`,
+                }
+                : undefined,
+            body: {
+                action: 'unregister',
+                endpoint,
+            },
+        });
+    } catch (error) {
+        console.warn('Remote push endpoint unregister failed:', error);
+    }
+};
+
+const retireBrowserSubscription = async (
+    subscription: PushSubscription | null,
+    accessToken: string | null,
+) => {
+    if (!subscription) return;
+
+    await unregisterEndpointRemotely(subscription.endpoint || '', accessToken);
+
+    try {
+        await subscription.unsubscribe();
+    } catch (error) {
+        console.warn('Browser push unsubscribe failed:', error);
+    }
+};
+
 const isSubscriptionRegisteredRemotely = async (subscription: PushSubscription | null): Promise<boolean> => {
     if (!subscription?.endpoint) return false;
+    if (isInvalidSubscriptionEndpoint(subscription.endpoint)) return false;
 
     try {
         const { data, error } = await supabase
@@ -71,12 +120,18 @@ const isSubscriptionRegisteredRemotely = async (subscription: PushSubscription |
     }
 };
 
-const ensurePushSubscription = async (): Promise<PushSubscription | null> => {
+const ensurePushSubscription = async (accessToken: string | null): Promise<PushSubscription | null> => {
     const registration = await getServiceWorkerRegistration();
     if (!registration) return null;
 
     const existing = await registration.pushManager.getSubscription();
-    if (existing) return existing;
+    if (existing && !isInvalidSubscriptionEndpoint(existing.endpoint || '')) {
+        return existing;
+    }
+
+    if (existing) {
+        await retireBrowserSubscription(existing, accessToken);
+    }
 
     if (!WEB_PUSH_PUBLIC_KEY) {
         throw new Error('missing_public_key');
@@ -119,7 +174,7 @@ export const syncRemotePushSubscription = async (): Promise<WebPushSyncResult> =
     }
 
     try {
-        const subscription = await ensurePushSubscription();
+        const subscription = await ensurePushSubscription(accessToken);
         if (!subscription) {
             return { ok: false, status: 'subscribe_failed', hasSubscription: false };
         }
@@ -168,25 +223,9 @@ export const disableRemotePushSubscription = async (): Promise<WebPushSyncResult
 
     try {
         const accessToken = await getCurrentAccessToken();
-        await supabase.functions.invoke('web-push', {
-            headers: accessToken
-                ? {
-                    Authorization: `Bearer ${accessToken}`,
-                }
-                : undefined,
-            body: {
-                action: 'unregister',
-                endpoint: subscription.endpoint,
-            },
-        });
+        await retireBrowserSubscription(subscription, accessToken);
     } catch (error) {
-        console.warn('Remote push unregister failed:', error);
-    }
-
-    try {
-        await subscription.unsubscribe();
-    } catch (error) {
-        console.warn('Browser push unsubscribe failed:', error);
+        console.warn('Remote push disable failed:', error);
     }
 
     return { ok: true, status: 'ok', hasSubscription: false };

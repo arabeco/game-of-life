@@ -14,6 +14,7 @@ import {
     getRemoteWebPushSupport,
     syncRemotePushSubscription,
 } from '../utils/webPush';
+import type { WebPushSyncResult } from '../utils/webPush';
 
 interface OracleSettingsModalProps {
     onClose: () => void;
@@ -38,6 +39,25 @@ const MANUAL_LIBRARY_CATEGORIES: { id: OracleCategory; label: string; icon: stri
     { id: 'rituais_lifestyle', label: 'Dicas de Vida', icon: '🌿' },
     { id: 'sussurros_maestria', label: 'Sussurros da Maestria', icon: '👁️' },
 ];
+
+const getRemotePushFailureMessage = (result: WebPushSyncResult): string => {
+    switch (result.status) {
+        case 'not_signed_in':
+            return 'Push local ativado, mas a sessao expirou antes do registro remoto.';
+        case 'permission_denied':
+            return 'Push local ativado, mas o navegador nao liberou notificacoes.';
+        case 'missing_public_key':
+            return 'Push local ativado, mas a chave publica do push remoto nao entrou neste build.';
+        case 'unsupported':
+            return 'Push local ativado. Este aparelho nao suporta push remoto completo.';
+        case 'invoke_failed':
+            return `Push local ativado, mas o backend recusou o registro remoto${result.detail ? `: ${result.detail}` : '.'}`;
+        case 'subscribe_failed':
+            return `Push local ativado, mas o navegador nao conseguiu criar uma subscription valida${result.detail ? `: ${result.detail}` : '.'}`;
+        default:
+            return 'Push ativado, mas o registro remoto do aparelho falhou. Fora do app ainda pode falhar.';
+    }
+};
 
 export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     onClose,
@@ -91,7 +111,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         }
 
         if (!remoteSync.ok) {
-            showToast('Push ativado, mas o registro remoto do aparelho falhou. Fora do app ainda pode falhar.', 'warning');
+            showToast(getRemotePushFailureMessage(remoteSync), 'warning');
             return;
         }
 

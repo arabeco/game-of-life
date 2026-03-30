@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, RelationshipLinkType, ScheduledTask } from '../types';
-import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon, FolderStarIcon, EditIcon } from '../components/Icons';
+import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon, FolderStarIcon, EditIcon, CheckIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
 import { ArenaCard } from '../components/ArenaCard';

@@ -8,6 +8,7 @@ import { CampaignsCodex } from './CampaignsCodex';
 import { buildCodexCampaignPreview, CodexCampaignPreview } from '../utils/codexPreview';
 import { CodexModal } from './CodexModal';
 import { CampaignArenaStack } from './CampaignArenaStack';
+import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
 
 interface CodexLibraryProps {
   mode?: 'page' | 'modal';
@@ -187,8 +188,14 @@ const CodexCard: React.FC<{
     <GlassCard variant="neutral" className="p-4 rounded-3xl h-full flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="w-14 h-14 rounded-2xl bg-black/30 border border-white/10 flex items-center justify-center text-3xl shrink-0">
+          <div className="relative w-14 h-14 rounded-2xl bg-black/30 border border-white/10 flex items-center justify-center text-3xl shrink-0 overflow-hidden">
             {codex.template?.coverImage || '📜'}
+            <SharedCodexCoverArt
+              cover={codex.template?.coverImage}
+              title={codex.name}
+              emojiSize="cover-sm"
+              backgroundClassName="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_58%),linear-gradient(180deg,rgba(33,24,16,0.95),rgba(10,8,10,0.98))]"
+            />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

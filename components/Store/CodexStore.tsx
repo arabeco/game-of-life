@@ -6,6 +6,7 @@ import { CampaignsCodex } from '../CampaignsCodex';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
 import { CampaignArenaStack } from '../CampaignArenaStack';
+import { CodexCoverArt as SharedCodexCoverArt } from '../CodexCoverArt';
 import { CampaignRecommendationQuizModal } from './CampaignRecommendationQuizModal';
 import {
     CATEGORY_LABELS,
@@ -388,7 +389,7 @@ export const CodexStore: React.FC = () => {
                                             className="flex flex-1 flex-col rounded-[1.05rem] border border-white/10 bg-black/20 px-2 py-1.5 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.05]"
                                         >
                                             <div className="relative h-12 overflow-hidden rounded-[0.95rem] border border-white/8 bg-black/30">
-                                                <CodexCoverArt cover={coverVisual} title={codex.title} />
+                                                <SharedCodexCoverArt cover={coverVisual} title={codex.title} />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                                             </div>
 

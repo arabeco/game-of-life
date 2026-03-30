@@ -7,6 +7,8 @@ import { CheckIcon, EyeIcon, FolderIcon, LinkIcon, XIcon } from './Icons';
 import { CampaignsCodex } from './CampaignsCodex';
 import { buildCodexCampaignPreview } from '../utils/codexPreview';
 import { CampaignArenaStack } from './CampaignArenaStack';
+import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
+import { CodexCoverArt } from './CodexCoverArt';
 
 interface CodexClaimModalProps {
   onClose: () => void;
@@ -132,7 +134,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                         onClick={() => campaignPreview && setShowCampaignPreview(true)}
                         className="group/cover relative min-h-[13rem] overflow-hidden rounded-[1.45rem] border border-white/10 bg-black/35 text-left"
                       >
-                        <CodexCoverArt cover={preview.codexTemplate?.coverImage} title={preview.codexName} />
+                        <SharedCodexCoverArt cover={preview.codexTemplate?.coverImage} title={preview.codexName} />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent" />
                         <div className="absolute inset-x-0 bottom-0 p-4">
                           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)]">

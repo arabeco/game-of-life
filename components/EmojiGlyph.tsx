@@ -1,6 +1,6 @@
 import React from 'react';
 
-type EmojiGlyphSize = 'arena' | 'action' | 'milestone' | 'detail' | 'picker' | 'badge';
+export type EmojiGlyphSize = 'arena' | 'action' | 'milestone' | 'detail' | 'picker' | 'badge' | 'cover-sm' | 'cover';
 
 const sizeClasses: Record<EmojiGlyphSize, string> = {
   arena: 'emoji-glyph--arena',
@@ -9,12 +9,15 @@ const sizeClasses: Record<EmojiGlyphSize, string> = {
   detail: 'emoji-glyph--detail',
   picker: 'emoji-glyph--picker',
   badge: 'emoji-glyph--badge',
+  'cover-sm': 'emoji-glyph--cover-sm',
+  cover: 'emoji-glyph--cover',
 };
 
 interface EmojiGlyphProps {
   symbol: string;
   size?: EmojiGlyphSize;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const EMOJI_FALLBACKS: Record<string, string> = {
@@ -32,8 +35,8 @@ const normalizeEmojiSymbol = (symbol: string) => {
   return EMOJI_FALLBACKS[symbol] || symbol;
 };
 
-export const EmojiGlyph: React.FC<EmojiGlyphProps> = ({ symbol, size = 'action', className = '' }) => (
-  <span className={`emoji-glyph ${sizeClasses[size]} ${className}`.trim()} aria-hidden="true">
+export const EmojiGlyph: React.FC<EmojiGlyphProps> = ({ symbol, size = 'action', className = '', style }) => (
+  <span className={`emoji-glyph ${sizeClasses[size]} ${className}`.trim()} style={style} aria-hidden="true">
     {normalizeEmojiSymbol(symbol)}
   </span>
 );

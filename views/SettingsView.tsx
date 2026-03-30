@@ -20,6 +20,7 @@ import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
+import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
 import './settings-ui.css';
 
 const OracleChat = lazy(() =>
@@ -2347,8 +2348,14 @@ const MentorCodexModal: React.FC<{
                                         className={`w-full p-3 rounded-2xl border text-left transition-all ${selectedCodexId === codex.id ? 'bg-white/10 border-[var(--skin-accent-color)]' : 'bg-black/20 border-white/10 hover:bg-white/5'}`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center text-2xl">
+                                            <div className="relative w-12 h-12 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center text-2xl overflow-hidden">
                                                 {codex.template?.coverImage || codex.template?.icon || '📜'}
+                                                <SharedCodexCoverArt
+                                                    cover={codex.template?.coverImage || codex.template?.icon}
+                                                    title={codex.name}
+                                                    emojiSize="cover-sm"
+                                                    backgroundClassName="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_58%),linear-gradient(180deg,rgba(33,24,16,0.95),rgba(10,8,10,0.98))]"
+                                                />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-sm font-bold text-white truncate">{codex.name}</div>

@@ -15,6 +15,7 @@ import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/c
 import { CATEGORY_LABELS, resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
 import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 import { UserCodex } from '../types';
+import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
 
 interface CampaignsCodexProps {
     onClose: () => void;
@@ -583,8 +584,13 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                                                     {codex.name}
                                                                 </div>
                                                             </div>
-                                                            <div className="text-[2rem] leading-none">
-                                                                {codex.template?.coverImage || '📜'}
+                                                            <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/25">
+                                                                <SharedCodexCoverArt
+                                                                    cover={codex.template?.coverImage}
+                                                                    title={codex.name}
+                                                                    emojiSize="cover-sm"
+                                                                    backgroundClassName="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_58%),linear-gradient(180deg,rgba(33,24,16,0.95),rgba(10,8,10,0.98))]"
+                                                                />
                                                             </div>
                                                         </div>
 
@@ -826,17 +832,12 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                         <div className="shrink-0 border-b border-white/10 bg-black/25 p-3">
                             <div className="flex items-start gap-2.5">
                                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[0.95rem] border border-white/10 bg-black/35">
-                                    {isProbablyImageUrl(previewMeta?.coverImage) ? (
-                                        <img
-                                            src={previewMeta?.coverImage}
-                                            alt={displayCampaignTitle}
-                                            className="absolute inset-0 h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.16),transparent_60%),linear-gradient(180deg,rgba(26,20,12,0.94),rgba(9,8,12,0.98))] text-[1.5rem]">
-                                            {previewMeta?.coverImage || '📜'}
-                                        </div>
-                                    )}
+                                    <SharedCodexCoverArt
+                                        cover={previewMeta?.coverImage}
+                                        title={displayCampaignTitle}
+                                        emojiSize="cover-sm"
+                                        backgroundClassName="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.16),transparent_60%),linear-gradient(180deg,rgba(26,20,12,0.94),rgba(9,8,12,0.98))]"
+                                    />
                                 </div>
 
                                 <div className="min-w-0 flex-1">

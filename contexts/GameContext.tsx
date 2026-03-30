@@ -1756,7 +1756,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     ? (sameSender ? senderNickname : 'Mensagens diretas')
                     : senderNickname;
                 const body = unreadCount > 1
-                    ? (sameSender ? `${unreadCount} novas mensagens` : `${unreadCount} novas mensagens diretas`)
+                    ? (sameSender ? `${unreadCount} mensagens nao lidas` : `${unreadCount} mensagens diretas nao lidas`)
                     : (preview || 'Uma nova mensagem direta chegou para voce.');
                 const tag = sameSender
                     ? `glyph-direct-message-${String(latestDirectMessage?.metadata?.senderId || session?.user.id || 'dm')}`

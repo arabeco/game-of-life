@@ -366,7 +366,7 @@ const resolveDirectMessagePushPresentation = async (
 
   return {
     title: sameSender ? senderNickname : "Mensagens diretas",
-    body: sameSender ? `${unreadCount} novas mensagens` : `${unreadCount} novas mensagens diretas`,
+    body: sameSender ? `${unreadCount} mensagens nao lidas` : `${unreadCount} mensagens diretas nao lidas`,
     tag: sameSender && senderId
       ? `glyph-direct-message-${senderId}`
       : `glyph-direct-message-${notification.userId}`,

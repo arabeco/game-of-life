@@ -1179,15 +1179,31 @@ export const RelationshipHubModal: React.FC<{
                 ? partnershipLinks
                 : competitionLinks;
 
+    useEffect(() => {
+        if (!selectedDetailLink) return;
+        const refreshed = currentTabLinks.find((link) => link.id === selectedDetailLink.id) || null;
+        if (!refreshed) {
+            setSelectedDetailLink(null);
+            return;
+        }
+        if (refreshed !== selectedDetailLink) {
+            setSelectedDetailLink(refreshed);
+        }
+    }, [currentTabLinks, selectedDetailLink]);
+
+    const resolvedSelectedDetailLink = selectedDetailLink
+        ? currentTabLinks.find((link) => link.id === selectedDetailLink.id) || null
+        : null;
+
     const getRelationshipRoleCopy = (link: RelationshipLink) => {
         if (link.linkType === 'mentoria') {
             return link.mentorId === sessionUid
                 ? {
-                    badge: 'Seu pupilo',
+                    badge: 'Pupilo',
                     subtitle: 'Voce conduz esta mentoria.',
                 }
                 : {
-                    badge: 'Seu mentor',
+                    badge: 'Mentor',
                     subtitle: 'Esse vinculo e guiado pelo mentor.',
                 };
         }
@@ -1364,7 +1380,6 @@ export const RelationshipHubModal: React.FC<{
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                     <CompactPill label="ativas" value={activeCount} tone="text-white" />
-                    {activeTab === 'mentoria' && <CompactPill label="arena extra" value={`${COIN_GLYPH} ${MENTOR_LINKED_ARENA_GOLD_COST}`} tone="text-[var(--skin-accent-color)]" />}
                 </div>
             </GlassCard>
         );
@@ -1372,32 +1387,46 @@ export const RelationshipHubModal: React.FC<{
 
     const renderRelationshipCards = () => (
         <RelationshipSectionCard
-            eyebrow="Vinculos ativos"
-            title={activeTab === 'mentoria' ? 'Mentorias abertas' : activeTab === 'parceria' ? 'Parcerias abertas' : 'Competicoes abertas'}
+            eyebrow="Seletor"
+            title={activeTab === 'mentoria' ? 'Escolha uma mentoria' : activeTab === 'parceria' ? 'Escolha uma parceria' : 'Escolha uma competicao'}
             description={activeTab === 'mentoria'
-                ? 'Abra um vinculo para ver arenas e campanhas.'
-                : 'Abra um vinculo para ver os detalhes.'}
+                ? 'Toque em um vinculo para ver so as arenas e campanhas daquela mentoria logo abaixo.'
+                : 'Toque em um vinculo para ver so o conteudo daquele vinculo logo abaixo.'}
         >
             {currentTabLinks.length === 0 ? (
                 <EmptyState title="Sem vinculos" text="Nada ativo nesta aba." />
             ) : (
                 <div className="space-y-3">
-                    {currentTabLinks.map((link) => {
+                    {[
+                        ...currentTabLinks.filter((link) => resolvedSelectedDetailLink?.id === link.id),
+                        ...currentTabLinks.filter((link) => resolvedSelectedDetailLink?.id !== link.id),
+                    ].map((link) => {
                         const profile = otherParticipant(link);
                         const role = getRelationshipRoleCopy(link);
                         const arenasForLink = getArenaChipsForLink(link);
+                        const isSelected = resolvedSelectedDetailLink?.id === link.id;
                         return (
                             <button
                                 key={link.id}
-                                onClick={() => setSelectedDetailLink(link)}
-                                className="w-full rounded-[20px] border border-white/12 bg-black/20 p-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition-all hover:bg-black/26"
+                                onClick={() => setSelectedDetailLink(isSelected ? null : link)}
+                                className={`w-full rounded-[20px] border p-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition-all ${
+                                    isSelected
+                                        ? 'border-[var(--skin-accent-color)]/34 bg-[var(--skin-accent-color)]/12'
+                                        : 'border-white/12 bg-black/20 hover:bg-black/26'
+                                }`}
                             >
                                 <div className="flex items-start gap-3">
                                     <AvatarPill profile={profile} fallback="?" />
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="truncate text-sm font-black text-white">{profile?.nickname || 'Aliado'}</div>
-                                            <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/38" />
+                                            {isSelected ? (
+                                                <span className="rounded-full border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/12 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)]">
+                                                    Selecionado
+                                                </span>
+                                            ) : (
+                                                <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/38" />
+                                            )}
                                         </div>
                                         <div className="mt-1 flex flex-wrap items-center gap-2">
                                             <span className="rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/56">
@@ -1468,79 +1497,46 @@ export const RelationshipHubModal: React.FC<{
             const relationshipCodexes = isMentorSide
                 ? mentorSentCodexesByLinkId[link.id] || []
                 : receivedCodexesByLinkId.get(link.id) || [];
-            const mentorBoardItems = isMentorSide
-                ? [
-                    {
-                        id: `mentor-action-ready-${link.id}`,
-                        title: 'Enviar da biblioteca',
-                        subtitle: 'Escolher algo que ja esta pronto para o pupilo.',
-                        onClick: () => setSelectedPupilLink(link),
-                        action: (
-                            <span className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84">
-                                Abrir envio
-                            </span>
-                        ),
-                    },
-                    {
-                        id: `mentor-action-exclusive-${link.id}`,
-                        title: 'Forjar nova campanha',
-                        subtitle: `Criar algo novo para ${pupilProfile?.nickname || 'o pupilo'}.`,
-                        onClick: () => setSelectedPupilLink(link),
-                        action: (
-                            <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-200">
-                                {COIN_GLYPH} {MENTOR_CAMPAIGN_FORGE_GOLD_COST}
-                            </span>
-                        ),
-                    },
-                ]
-                : [];
-            const campaignSectionTitle = isMentorSide ? 'Entregas para o pupilo' : 'Entregas do mentor';
-            const campaignSectionDescription = isMentorSide
-                ? 'Historico do que voce ja entregou neste vinculo.'
-                : 'Essas campanhas entram direto no app. Aqui voce ve so o que veio desta mentoria.';
+            const hasMentorshipContent = arenasForLink.length > 0 || relationshipCodexes.length > 0;
             return (
-                <div className="space-y-4">
+                <div className={`space-y-4 ${isMentorSide ? 'pb-24' : ''}`}>
                     <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
                         <div className="flex flex-col gap-3">
                             <div className="flex flex-wrap items-center justify-between gap-3">
-                                <button
-                                    onClick={() => setSelectedDetailLink(null)}
-                                    className="rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/76 transition-all hover:bg-white/12"
-                                >
-                                    Voltar
-                                </button>
+                                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
+                                    Vinculo selecionado
+                                </span>
                                 <span className="rounded-full border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)]">
                                     Mentoria ativa
                                 </span>
                             </div>
 
                             <div className="grid gap-2 md:grid-cols-2">
-                                <div className="rounded-[18px] border border-white/10 bg-black/22 p-3">
-                                    <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/40">Mentor</div>
-                                    <div className="mt-2 flex items-center gap-3">
-                                        <AvatarPill profile={mentorProfile} fallback="M" />
-                                        <div className="min-w-0">
-                                            <div className="truncate text-sm font-black text-white">{mentorProfile?.nickname || 'Mentor'}</div>
-                                            <div className="text-[11px] text-white/50">{isMentorSide ? 'Conduz esta mentoria.' : 'Mentor desta mentoria.'}</div>
+                                    <div className="rounded-[18px] border border-white/10 bg-black/22 p-3">
+                                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/40">Mentor</div>
+                                        <div className="mt-2 flex items-center gap-3">
+                                            <AvatarPill profile={mentorProfile} fallback="M" />
+                                            <div className="min-w-0">
+                                                <div className="truncate text-sm font-black text-white">{mentorProfile?.nickname || 'Mentor'}</div>
+                                                <div className="text-[11px] text-white/50">{isMentorSide ? 'Conduz esta mentoria.' : 'Mentor desta mentoria.'}</div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="rounded-[18px] border border-white/10 bg-black/22 p-3">
-                                    <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/40">Pupilo</div>
-                                    <div className="mt-2 flex items-center gap-3">
-                                        <AvatarPill profile={pupilProfile} fallback="P" />
-                                        <div className="min-w-0">
-                                            <div className="truncate text-sm font-black text-white">{pupilProfile?.nickname || 'Pupilo'}</div>
-                                            <div className="text-[11px] text-white/50">{isMentorSide ? 'Recebe suas entregas.' : 'Pupilo desta mentoria.'}</div>
+                                    <div className="rounded-[18px] border border-white/10 bg-black/22 p-3">
+                                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/40">Pupilo</div>
+                                        <div className="mt-2 flex items-center gap-3">
+                                            <AvatarPill profile={pupilProfile} fallback="P" />
+                                            <div className="min-w-0">
+                                                <div className="truncate text-sm font-black text-white">{pupilProfile?.nickname || 'Pupilo'}</div>
+                                                <div className="text-[11px] text-white/50">{isMentorSide ? 'Recebe suas entregas.' : 'Pupilo desta mentoria.'}</div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                                <CompactPill label="entrada" value={`${COIN_GLYPH} ${MENTORIA_INVITE_GOLD_COST}`} tone="text-emerald-200" />
-                                <CompactPill label="nova arena" value={`${COIN_GLYPH} ${MENTOR_LINKED_ARENA_GOLD_COST}`} tone="text-[var(--skin-accent-color)]" />
                                 <CompactPill label="arenas" value={String(arenasForLink.length)} tone="text-white" />
+                                <CompactPill label="campanhas" value={String(relationshipCodexes.length)} tone="text-white" />
                                 <CompactPill label="papel" value={isMentorSide ? 'mentor' : 'pupilo'} tone="text-white" />
                                 <CompactPill label="desde" value={formatDate(link.createdAt) || 'agora'} tone="text-white" />
                             </div>
@@ -1559,117 +1555,107 @@ export const RelationshipHubModal: React.FC<{
                     </GlassCard>
 
                     <RelationshipSectionCard
-                        eyebrow="Arenas compartilhadas"
-                        title={isMentorSide ? 'Arenas em andamento do pupilo' : 'Arenas vivas da mentoria'}
+                        eyebrow="Conteudo deste vinculo"
+                        title={isMentorSide ? `Arenas e campanhas de ${pupilProfile?.nickname || 'seu pupilo'}` : 'Arenas e campanhas desta mentoria'}
                         description={isMentorSide
-                            ? 'Essas arenas ja estao rodando dentro da mentoria.'
-                            : 'Essas arenas sao a parte viva da mentoria e abrem direto no app.'}
-                        action={isMentorSide ? (
-                            <button
-                                onClick={() => setSelectedMentorLinkForArena(link)}
-                                className="luxe-skin-button inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
-                            >
-                                <span>Nova arena</span>
-                                <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[9px] leading-none">
-                                    {COIN_GLYPH} {MENTOR_LINKED_ARENA_GOLD_COST}
-                                </span>
-                            </button>
-                        ) : (
-                            <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
-                                {arenasForLink.length} arena{arenasForLink.length === 1 ? '' : 's'}
-                            </span>
-                        )}
-                    >
-                        {arenasForLink.length === 0 ? (
-                            <EmptyState
-                                title="Sem arenas"
-                                text={isMentorSide
-                                    ? 'Abra uma arena viva para este pupilo.'
-                                    : 'Nenhuma arena viva da mentoria ainda.'}
-                            />
-                        ) : (
-                            <div
-                                className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
-                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
-                            >
-                                {arenasForLink.map((linkedArena) => (
-                                    <RelationshipArenaBoardCard
-                                        key={linkedArena.id}
-                                        arena={linkedArena}
-                                        assetName={assetNameForArena(linkedArena)}
-                                        onClick={() => openLinkedArena(linkedArena)}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </RelationshipSectionCard>
-
-                    <RelationshipSectionCard
-                        eyebrow="Entregas da mentoria"
-                        title={campaignSectionTitle}
-                        description={campaignSectionDescription}
+                            ? 'Tudo que esta rodando ou ja foi entregue neste vinculo aparece junto aqui.'
+                            : 'Aqui aparece so o que existe dentro desta mentoria com o mentor.'}
                         action={
-                            <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
-                                {relationshipCodexes.length} campanha{relationshipCodexes.length === 1 ? '' : 's'}
-                            </span>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
+                                    {arenasForLink.length} arena{arenasForLink.length === 1 ? '' : 's'}
+                                </span>
+                                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
+                                    {relationshipCodexes.length} campanha{relationshipCodexes.length === 1 ? '' : 's'}
+                                </span>
+                            </div>
                         }
                     >
-                        {relationshipCodexes.length === 0 ? (
+                        {!hasMentorshipContent ? (
                             <EmptyState
-                                title="Sem campanhas"
+                                title="Sem conteudo"
                                 text={isMentorSide
-                                    ? 'Nenhuma campanha foi entregue para esse pupilo ainda.'
-                                    : 'Nenhuma campanha foi entregue para voce nesta mentoria ainda.'}
+                                    ? 'Abra uma arena ou entregue uma campanha para este pupilo.'
+                                    : 'Nenhuma arena ou campanha desta mentoria apareceu ainda.'}
                             />
                         ) : (
-                            <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
+                            <div className="grid gap-3 xl:grid-cols-2">
+                                {arenasForLink.map((linkedArena) => (
+                                    <div key={linkedArena.id} className="rounded-[20px] border border-white/10 bg-black/16 p-2.5">
+                                        <div className="mb-2 flex items-center justify-between gap-2">
+                                            <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/56">
+                                                Arena
+                                            </span>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
+                                                {assetNameForArena(linkedArena) || 'Ativo'}
+                                            </span>
+                                        </div>
+                                        <RelationshipArenaBoardCard
+                                            arena={linkedArena}
+                                            assetName={assetNameForArena(linkedArena)}
+                                            onClick={() => openLinkedArena(linkedArena)}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                ))}
+
                                 {relationshipCodexes.map((codex: UserCodex) => {
                                     const installed = !isMentorSide && installedOriginCodexIds.has(codex.id);
                                     const preview = receivedCodexPreviewById.get(codex.id) || null;
                                     return (
-                                        <MentorshipCampaignBoardCard
-                                            key={codex.id}
-                                            title={codex.name}
-                                            subtitle={`${Array.isArray(codex.template?.levels) ? codex.template.levels.length : 0} fase(s)`}
-                                            preview={preview}
-                                            onClick={() => {
-                                                if (preview) setSelectedCampaignPreview(preview);
-                                            }}
-                                            badge={
-                                                installed ? (
-                                                    <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-200">
-                                                        No app
-                                                    </span>
-                                                ) : isMentorSide ? (
-                                                    <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
-                                                        Entregue
-                                                    </span>
-                                                ) : (
-                                                    <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/76">
-                                                        Na biblioteca
-                                                    </span>
-                                                )
-                                            }
-                                            action={
-                                                installed || isMentorSide ? null : (
-                                                    <button
-                                                        onClick={async (event) => {
-                                                            event.stopPropagation();
-                                                            setBusyKey(`install:${codex.id}`);
-                                                            try {
-                                                                await installCodex(codex.id);
-                                                            } finally {
-                                                                setBusyKey(null);
-                                                            }
-                                                        }}
-                                                        disabled={busyKey === `install:${codex.id}`}
-                                                        className="shrink-0 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
-                                                    >
-                                                        {busyKey === `install:${codex.id}` ? 'Instalando' : 'Instalar no app'}
-                                                    </button>
-                                                )
-                                            }
-                                        />
+                                        <div key={codex.id} className="rounded-[20px] border border-white/10 bg-black/16 p-2.5">
+                                            <div className="mb-2 flex items-center justify-between gap-2">
+                                                <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/56">
+                                                    Campanha
+                                                </span>
+                                                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
+                                                    {Array.isArray(codex.template?.levels) ? codex.template.levels.length : 0} fase(s)
+                                                </span>
+                                            </div>
+                                            <MentorshipCampaignBoardCard
+                                                title={codex.name}
+                                                subtitle={isMentorSide ? 'Entregue por voce neste vinculo.' : 'Toque para abrir e instalar no app.'}
+                                                preview={preview}
+                                                onClick={() => {
+                                                    if (preview) setSelectedCampaignPreview(preview);
+                                                }}
+                                                badge={
+                                                    installed ? (
+                                                        <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-200">
+                                                            No app
+                                                        </span>
+                                                    ) : isMentorSide ? (
+                                                        <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
+                                                            Entregue
+                                                        </span>
+                                                    ) : (
+                                                        <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/76">
+                                                            Na biblioteca
+                                                        </span>
+                                                    )
+                                                }
+                                                action={
+                                                    installed || isMentorSide ? null : (
+                                                        <button
+                                                            onClick={async (event) => {
+                                                                event.stopPropagation();
+                                                                setBusyKey(`install:${codex.id}`);
+                                                                try {
+                                                                    await installCodex(codex.id);
+                                                                } finally {
+                                                                    setBusyKey(null);
+                                                                }
+                                                            }}
+                                                            disabled={busyKey === `install:${codex.id}`}
+                                                            className="shrink-0 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
+                                                        >
+                                                            {busyKey === `install:${codex.id}` ? 'Instalando' : 'Instalar no app'}
+                                                        </button>
+                                                    )
+                                                }
+                                                className="w-full"
+                                            />
+                                        </div>
                                     );
                                 })}
                             </div>
@@ -1677,23 +1663,28 @@ export const RelationshipHubModal: React.FC<{
                     </RelationshipSectionCard>
 
                     {isMentorSide && (
-                        <RelationshipSectionCard
-                            eyebrow="Entrega do mentor"
-                            title="Escolher o que vai para o pupilo"
-                            description="Voce pode enviar algo pronto ou forjar uma campanha nova."
-                        >
-                            <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
-                                {mentorBoardItems.map((item) => (
-                                    <MentorshipCampaignBoardCard
-                                        key={item.id}
-                                        title={item.title}
-                                        subtitle={item.subtitle}
-                                        onClick={item.onClick}
-                                        action={item.action}
-                                    />
-                                ))}
+                        <div className="sticky bottom-0 z-10 flex justify-end pointer-events-none">
+                            <div className="pointer-events-auto flex flex-col gap-2">
+                                <button
+                                    onClick={() => setSelectedMentorLinkForArena(link)}
+                                    className="luxe-skin-button inline-flex items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+                                >
+                                    <span className="text-[10px] font-black uppercase tracking-[0.16em]">Nova arena</span>
+                                    <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
+                                        {COIN_GLYPH} {MENTOR_LINKED_ARENA_GOLD_COST}
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => setSelectedPupilLink(link)}
+                                    className="inline-flex items-center justify-between gap-3 rounded-[18px] border border-cyan-300/18 bg-cyan-400/12 px-4 py-3 text-left text-cyan-100 shadow-[0_18px_40px_rgba(0,0,0,0.28)] transition-all hover:bg-cyan-400/16"
+                                >
+                                    <span className="text-[10px] font-black uppercase tracking-[0.16em]">Nova campanha</span>
+                                    <span className="rounded-full border border-cyan-200/18 bg-cyan-950/22 px-2 py-1 text-[10px] font-black leading-none text-cyan-100">
+                                        {COIN_GLYPH} {MENTOR_CAMPAIGN_FORGE_GOLD_COST}
+                                    </span>
+                                </button>
                             </div>
-                        </RelationshipSectionCard>
+                        </div>
                     )}
                 </div>
             );
@@ -1705,16 +1696,13 @@ export const RelationshipHubModal: React.FC<{
 
         if (isPartnership) {
             return (
-                <div className="space-y-4">
+                <div className="space-y-4 pb-20">
                     <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-wrap items-center justify-between gap-3">
-                                <button
-                                    onClick={() => setSelectedDetailLink(null)}
-                                    className="rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/76 transition-all hover:bg-white/12"
-                                >
-                                    Voltar
-                                </button>
+                                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
+                                    Vinculo selecionado
+                                </span>
                                 <span className={`rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] ${LINK_LABELS[link.linkType].accent} border-current/20 bg-current/10`}>
                                     Parceria ativa
                                 </span>
@@ -1731,24 +1719,6 @@ export const RelationshipHubModal: React.FC<{
                                     </div>
                                 </div>
                             </div>
-
-                            <button
-                                onClick={() => {
-                                    setSelectedMentorLinkForArena(link);
-                                    setSelectedPartnershipArenaId(null);
-                                }}
-                                className="luxe-skin-button inline-flex items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left"
-                            >
-                                <div className="min-w-0">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-black/62">Expor arena</div>
-                                    <div className="mt-1 text-[12px] text-black/78">
-                                        Escolha uma arena sua para leitura ao vivo.
-                                    </div>
-                                </div>
-                                <span className="shrink-0 rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
-                                    {COIN_GLYPH} {PARTNERSHIP_LINKED_ARENA_GOLD_COST}
-                                </span>
-                            </button>
 
                             <button
                                 onClick={() => setEndLinkConfirmState(link)}
@@ -1819,6 +1789,22 @@ export const RelationshipHubModal: React.FC<{
                         )}
                     </RelationshipSectionCard>
 
+                    <div className="sticky bottom-0 z-10 flex justify-end pointer-events-none">
+                        <div className="pointer-events-auto flex flex-col gap-2">
+                            <button
+                                onClick={() => {
+                                    setSelectedMentorLinkForArena(link);
+                                    setSelectedPartnershipArenaId(null);
+                                }}
+                                className="luxe-skin-button inline-flex items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+                            >
+                                <span className="text-[10px] font-black uppercase tracking-[0.16em]">Expor arena</span>
+                                <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
+                                    {COIN_GLYPH} {PARTNERSHIP_LINKED_ARENA_GOLD_COST}
+                                </span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             );
         }
@@ -1829,16 +1815,13 @@ export const RelationshipHubModal: React.FC<{
         const competitionCanLaunch = openCompetitionChallenges.length < 3;
 
         return (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-20">
                 <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
                     <div className="flex flex-col gap-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                            <button
-                                onClick={() => setSelectedDetailLink(null)}
-                                className="rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/76 transition-all hover:bg-white/12"
-                            >
-                                Voltar
-                            </button>
+                            <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
+                                Vinculo selecionado
+                            </span>
                             <span className={`rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] ${LINK_LABELS[link.linkType].accent} border-current/20 bg-current/10`}>
                                 Competicao ativa
                             </span>
@@ -1874,25 +1857,10 @@ export const RelationshipHubModal: React.FC<{
 
                         <div className="flex flex-wrap gap-2">
                             <CompactPill label="abertos" value={`${openCompetitionChallenges.length}/3`} tone="text-rose-200" />
-                            <CompactPill label="custo" value={`${COIN_GLYPH} ${COMPETITION_DUEL_GOLD_COST}`} tone="text-amber-200" />
                             <CompactPill label="modo" value="snapshot selado" tone="text-white" />
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            {competitionCanLaunch && (
-                                <button
-                                    onClick={() => {
-                                        setSelectedCompetitionLinkForChallenge(link);
-                                        setSelectedCompetitionSourceArenaId(null);
-                                    }}
-                                    className="luxe-skin-button inline-flex items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-[10px] font-black uppercase tracking-[0.14em]"
-                                >
-                                    <span>{competitionChallengesForLink.length > 0 ? 'Forjar novo duelo' : 'Forjar primeiro duelo'}</span>
-                                    <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[9px] leading-none">
-                                        {COIN_GLYPH} {COMPETITION_DUEL_GOLD_COST}
-                                    </span>
-                                </button>
-                            )}
                             {!competitionCanLaunch && (
                                 <div className="rounded-[18px] border border-rose-300/14 bg-rose-500/10 px-4 py-3 text-[12px] text-white/60">
                                     Este vinculo ja tem 3 duelos abertos. Feche ou sele um deles antes de forjar outro.
@@ -2056,7 +2024,28 @@ export const RelationshipHubModal: React.FC<{
                             })}
                         </div>
                     )}
-                </RelationshipSectionCard>
+                    </RelationshipSectionCard>
+
+                {competitionCanLaunch && (
+                    <div className="sticky bottom-0 z-10 flex justify-end pointer-events-none">
+                        <div className="pointer-events-auto flex flex-col gap-2">
+                            <button
+                                onClick={() => {
+                                    setSelectedCompetitionLinkForChallenge(link);
+                                    setSelectedCompetitionSourceArenaId(null);
+                                }}
+                                className="luxe-skin-button inline-flex items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+                            >
+                                <span className="text-[10px] font-black uppercase tracking-[0.16em]">
+                                    {competitionChallengesForLink.length > 0 ? 'Forjar novo duelo' : 'Forjar primeiro duelo'}
+                                </span>
+                                <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
+                                    {COIN_GLYPH} {COMPETITION_DUEL_GOLD_COST}
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };
@@ -2067,12 +2056,12 @@ export const RelationshipHubModal: React.FC<{
                 <div className="ui-modal-backdrop z-[140]" onClick={onClose}>
                     <GlassCard
                         variant="neutral"
-                        className="relationship-hub-modal relationship-hub-sheet ui-modal-panel w-full max-w-[44rem] max-h-[92vh] overflow-hidden"
+                        className="relationship-hub-modal relationship-hub-sheet ui-modal-panel w-full max-w-[52rem] max-h-[95vh] overflow-hidden"
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="relative h-full">
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(255,255,255,0.75),rgba(255,255,255,0.14)_25%,transparent_60%)] pointer-events-none" />
-                            <div className="relative z-10 flex h-full max-h-[92vh] flex-col">
+                            <div className="relative z-10 flex h-full max-h-[95vh] flex-col">
                                 <div className="border-b border-white/10 px-4 py-3 md:px-5">
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
@@ -2140,18 +2129,27 @@ export const RelationshipHubModal: React.FC<{
                                                 <div className="h-64 rounded-[26px] border border-white/10 bg-black/16 animate-pulse" />
                                             </div>
                                         </div>
-                                    ) : selectedDetailLink ? (
-                                        renderLinkDetail(selectedDetailLink)
                                     ) : (
                                         <div className="space-y-4">
                                             {renderTabBoard()}
                                             {renderInviteSection()}
                                             {renderRelationshipCards()}
+                                            {resolvedSelectedDetailLink ? (
+                                                renderLinkDetail(resolvedSelectedDetailLink)
+                                            ) : (
+                                                <RelationshipSectionCard
+                                                    eyebrow="Detalhe"
+                                                    title="Escolha um vinculo"
+                                                    description="Selecione um card acima para ver so as arenas, campanhas e acoes daquele vinculo."
+                                                >
+                                                    <EmptyState title="Nada selecionado" text="Toque em um vinculo desta aba para abrir o conteudo dele aqui embaixo." />
+                                                </RelationshipSectionCard>
+                                            )}
                                         </div>
                                     )}
                                 </div>
 
-                                {!selectedDetailLink && (
+                                {!loading && !resolvedSelectedDetailLink && (
                                     <div className="pointer-events-none absolute bottom-4 right-4 z-20">
                                         <button
                                             id="relationship-hub-primary-create-button"

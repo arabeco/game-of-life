@@ -31,6 +31,7 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [x] `Parceria` foi reescrita para `arena existente em live-read`, com retirada da vitrine sem apagar a arena.
 [x] `Competicao` foi reescrita para multiplos duelos `snapshot`, read-only, bonus de duelo no `Sitrep/Ciclo` e historico selado.
 [x] SQL novo de `Parceria` + `Competicao` foi validado: competicao passou em cenario real; parceria passou em laboratorio com `rollback`.
+[x] Push remoto fora do app foi selado e confirmado em producao: registro do aparelho, webhook Supabase, VAPID, Vercel, notificaçao normal, card do `Oraculo` e push de `ação` validados em teste real.
 
 ### AINDA EM X ATE A PASSADA MANUAL DE AMANHA
 [x] Rodar a leitura final no app real para `Campanhas`, `Mentoria`, `Parceria` e `Competicao`, e so depois mover esses itens para `progresso.md`.
@@ -45,7 +46,7 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Leitor paginado: swipe, setas, preview e `[[page]]` no mobile. - Responsavel: SENTINELA
 [ ] GM Panel: teste real de e-mail. - Responsavel: PROTOCOLO
 [-] Mentoria 2 contas: aceite, arena em leitura e base do fluxo ja passaram em smoke; entrega automatica de campanha foi ajustada hoje. Faltam recusa, revogacao, refund e pacote final. - Responsavel: SENTINELA
-[-] Social integrado: solicitacoes, amizade, `Vinculos`, `Grupo`, `Equipe`, badges/push e leitura final dos chips. A camada ficou mais redonda hoje; falta a rodada final integrada. - Responsavel: PROTOCOLO
+[-] Social integrado: solicitacoes, amizade, `Vinculos`, `Grupo`, `Equipe`, badges e leitura final dos chips. O push remoto fora do app foi selado hoje; falta a rodada final integrada da camada social. - Responsavel: PROTOCOLO
 [-] Camada compartilhada: `Grupo` e `Mentoria` ja estavam validados; `Parceria` e `Competicao` foram refinadas hoje com SQL testado. Falta a passada manual final no board/app real. - Responsavel: PROTOCOLO
 [-] Campanhas: descobrir, comprar, instalar, receber do mentor e operar sem duplicar nada. O fluxo melhorou muito hoje; falta a rodada manual ponta a ponta. - Responsavel: PROTOCOLO
 [ ] Economia de campanhas: custo, `Gratis/Premium`, premio de onboarding e retorno de compra. - Responsavel: TESOURO
@@ -118,7 +119,7 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 ## 9. RESUMO ATUALIZADO
 - Data: 30/03/2026
 - Atualizado por: GPT-5 Codex
-- Resumo: o GLYPH segue em ALPHA na Fundacao (T1), mas o tabuleiro esta bem mais limpo do que antes. Hoje fechamos o grosso de `Campanhas`, `Parceria` e `Competicao` no codigo e no SQL, com validacao real/laboratorio. O que ainda segura o Beta `25` nao e mais invencao de produto; agora e rodada manual final em aparelho real, persistencia critica, `PIX/Ouro` integrado, `Premium` remoto, polimento final mobile/skins e teste real de e-mail do `GM Panel`. Depois disso, o corte para `50 pessoas` vira leitura de dados reais, tracking completo, reducao de friccao, conteudo/landing e robustez final de linguagem/Oraculo.
+- Resumo: o GLYPH segue em ALPHA na Fundacao (T1), mas o tabuleiro esta bem mais limpo do que antes. Hoje fechamos o grosso de `Campanhas`, `Parceria`, `Competicao` e do push remoto fora do app no codigo, no SQL e em producao real. O que ainda segura o Beta `25` nao e mais invencao de produto; agora e rodada manual final em aparelho real, persistencia critica, `PIX/Ouro` integrado, `Premium` remoto, polimento final mobile/skins e teste real de e-mail do `GM Panel`. Depois disso, o corte para `50 pessoas` vira leitura de dados reais, tracking completo, reducao de friccao, conteudo/landing e robustez final de linguagem/Oraculo.
 
 ## 10. MODO DE USO DO RELATORIO
 1. Ler `relatorio.md`, `status.md`, `roadmap-soberania.md` e `progresso.md` antes de mexer no estado do projeto.

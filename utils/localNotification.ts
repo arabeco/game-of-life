@@ -8,6 +8,7 @@ interface LocalNotificationPayload {
   tag?: string;
   url?: string;
   requireInteraction?: boolean;
+  renotify?: boolean;
 }
 
 const supportsLocalNotifications = () =>
@@ -38,6 +39,7 @@ export const showLocalNotification = async ({
   tag,
   url = '/',
   requireInteraction = false,
+  renotify = false,
 }: LocalNotificationPayload): Promise<boolean> => {
   if (!supportsLocalNotifications() || Notification.permission !== 'granted') {
     return false;
@@ -49,6 +51,7 @@ export const showLocalNotification = async ({
     badge: APP_NOTIFICATION_ICON,
     tag,
     requireInteraction,
+    renotify,
     data: { url },
   };
 

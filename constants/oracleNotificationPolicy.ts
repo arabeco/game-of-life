@@ -259,7 +259,9 @@ export const getNotificationTitle = (notification: Notification): string => {
     case 'mentor_invite':
       return 'Voce recebeu um convite de mentor.';
     case 'direct_message':
-      return 'Nova mensagem direta.';
+      return typeof notification.metadata?.senderNickname === 'string' && notification.metadata.senderNickname.trim().length > 0
+        ? notification.metadata.senderNickname
+        : 'Nova mensagem direta.';
     case 'clan_invite':
       if (notification.metadata?.joinRequest) {
         return 'Novo pedido para o seu grupo.';
@@ -389,7 +391,9 @@ export const getNotificationBody = (
     case 'mentor_invite':
       return notification.content || 'Alguem quer entrar em um vinculo de mentoria com voce.';
     case 'direct_message':
-      return notification.content || 'Uma nova mensagem direta chegou para voce.';
+      return typeof notification.metadata?.messagePreview === 'string' && notification.metadata.messagePreview.trim().length > 0
+        ? notification.metadata.messagePreview
+        : (notification.content || 'Uma nova mensagem direta chegou para voce.');
     case 'friend_request':
       return notification.content || 'Existe um novo convite de amizade esperando sua resposta.';
     case 'clan_invite':

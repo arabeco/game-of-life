@@ -132,6 +132,7 @@ self.addEventListener('push', event => {
       badge: payload.badge || '/logo-diamond.png',
       tag: payload.tag || 'glyph-push',
       requireInteraction: Boolean(payload.requireInteraction),
+      renotify: Boolean(payload.renotify),
       data: {
         url: payload.url || '/?oracle=notifications',
       },

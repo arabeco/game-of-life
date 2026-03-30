@@ -268,7 +268,7 @@ const getNotificationTitle = (notification: NormalizedNotification): string => {
     case "mentor_invite":
       return "Voce recebeu um convite de mentor.";
     case "direct_message":
-      return "Nova mensagem direta.";
+      return asTrimmedString(notification.metadata.senderNickname) || "Nova mensagem direta.";
     case "clan_invite":
       return "Voce recebeu um convite de grupo.";
     case "friend_request":
@@ -307,6 +307,12 @@ const getNotificationTitle = (notification: NormalizedNotification): string => {
 };
 
 const getNotificationBody = (notification: NormalizedNotification): string => {
+  if (notification.type === "direct_message") {
+    return asTrimmedString(notification.metadata.messagePreview)
+      || notification.content
+      || "Uma nova mensagem direta chegou para voce.";
+  }
+
   if (notification.content) return notification.content;
 
   switch (notification.type) {
@@ -321,6 +327,51 @@ const getNotificationBody = (notification: NormalizedNotification): string => {
     default:
       return "Ha uma atualizacao importante esperando sua leitura.";
   }
+};
+
+const resolveDirectMessagePushPresentation = async (
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  notification: NormalizedNotification,
+) => {
+  const fallbackTitle = getNotificationTitle(notification);
+  const fallbackBody = getNotificationBody(notification);
+  const senderId = asTrimmedString(notification.metadata.senderId);
+  const senderNickname = asTrimmedString(notification.metadata.senderNickname) || fallbackTitle;
+
+  const { data } = await supabaseAdmin
+    .from("notifications")
+    .select("metadata, read")
+    .eq("user_id", notification.userId)
+    .eq("type", "direct_message")
+    .eq("read", false)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  const unreadRows = Array.isArray(data) ? data.filter((row) => !asBoolean(row?.read)) : [];
+  const unreadSenderIds = unreadRows
+    .map((row) => asTrimmedString(isRecord(row?.metadata) ? row.metadata.senderId : ""))
+    .filter(Boolean);
+  const uniqueSenderIds = Array.from(new Set(unreadSenderIds));
+  const unreadCount = unreadRows.length || 1;
+  const sameSender = uniqueSenderIds.length <= 1;
+
+  if (unreadCount <= 1) {
+    return {
+      title: senderNickname,
+      body: fallbackBody,
+      tag: senderId ? `glyph-direct-message-${senderId}` : `glyph-direct-message-${notification.userId}`,
+      renotify: false,
+    };
+  }
+
+  return {
+    title: sameSender ? senderNickname : "Mensagens diretas",
+    body: sameSender ? `${unreadCount} novas mensagens` : `${unreadCount} novas mensagens diretas`,
+    tag: sameSender && senderId
+      ? `glyph-direct-message-${senderId}`
+      : `glyph-direct-message-${notification.userId}`,
+    renotify: true,
+  };
 };
 
 const getOracleMessageTitle = (message: NormalizedOracleMessage): string => {
@@ -656,14 +707,18 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
       continue;
     }
 
+    const directMessagePresentation = notification.type === "direct_message"
+      ? await resolveDirectMessagePushPresentation(supabaseAdmin, notification)
+      : null;
     const payload = {
-      title: getNotificationTitle(notification),
-      body: getNotificationBody(notification),
-      tag: `glyph-notification-${notification.id}`,
+      title: directMessagePresentation?.title || getNotificationTitle(notification),
+      body: directMessagePresentation?.body || getNotificationBody(notification),
+      tag: directMessagePresentation?.tag || `glyph-notification-${notification.id}`,
       url: asTrimmedString(notification.metadata.url) || (notification.type === "action_reminder" ? "/?view=planner" : "/?oracle=notifications"),
       icon: "/logo-diamond.png",
       badge: "/logo-diamond.png",
       requireInteraction: (POLICY[notification.type] || POLICY.system).priority === "critical",
+      renotify: Boolean(directMessagePresentation?.renotify),
       notificationId: notification.id,
       type: notification.type,
     };

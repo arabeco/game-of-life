@@ -15,6 +15,7 @@ set search_path = public
 as $$
 declare
   v_sender_nickname text := 'Alguem';
+  v_message_preview text := '';
   v_notifications_enabled boolean := true;
   v_dm_notifications_enabled boolean := true;
 begin
@@ -26,6 +27,8 @@ begin
   into v_sender_nickname
   from public.user_profiles
   where id = new.sender_id;
+
+  v_message_preview := left(regexp_replace(coalesce(trim(new.content), ''), '\s+', ' ', 'g'), 140);
 
   select
     coalesce(op.notifications_enabled, true),
@@ -59,6 +62,7 @@ begin
       'senderId', new.sender_id,
       'senderNickname', v_sender_nickname,
       'messageId', new.id,
+      'messagePreview', nullif(v_message_preview, ''),
       'url', '/?oracle=dms'
     )
   );

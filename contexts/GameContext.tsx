@@ -1731,7 +1731,47 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         void (async () => {
-            for (const notification of visibleNotifications) {
+            const unreadDirectMessages = notifications.filter((notification) =>
+                !notification.read
+                && notification.type === 'direct_message'
+                && (dmNotificationsEnabled || notification.type !== 'direct_message')
+            );
+            const directMessageNotifications = visibleNotifications.filter((notification) => notification.type === 'direct_message');
+            const remainingNotifications = visibleNotifications.filter((notification) => notification.type !== 'direct_message');
+
+            if (directMessageNotifications.length > 0) {
+                const senderIds = unreadDirectMessages
+                    .map((notification) => String(notification.metadata?.senderId || '').trim())
+                    .filter(Boolean);
+                const uniqueSenderIds = Array.from(new Set(senderIds));
+                const latestDirectMessage = unreadDirectMessages[0] || directMessageNotifications[0];
+                const senderNickname = String(latestDirectMessage?.metadata?.senderNickname || '').trim() || 'Nova mensagem direta';
+                const preview = String(latestDirectMessage?.metadata?.messagePreview || '').trim();
+                const unreadCount = unreadDirectMessages.length || directMessageNotifications.length;
+                const directMessageUrl = (typeof latestDirectMessage?.metadata?.url === 'string' && latestDirectMessage.metadata.url.trim().length > 0)
+                    ? latestDirectMessage.metadata.url
+                    : '/?oracle=dms';
+                const sameSender = uniqueSenderIds.length <= 1;
+                const title = unreadCount > 1
+                    ? (sameSender ? senderNickname : 'Mensagens diretas')
+                    : senderNickname;
+                const body = unreadCount > 1
+                    ? (sameSender ? `${unreadCount} novas mensagens` : `${unreadCount} novas mensagens diretas`)
+                    : (preview || 'Uma nova mensagem direta chegou para voce.');
+                const tag = sameSender
+                    ? `glyph-direct-message-${String(latestDirectMessage?.metadata?.senderId || session?.user.id || 'dm')}`
+                    : `glyph-direct-message-${session?.user.id || 'dm'}`;
+
+                await showLocalNotification({
+                    title,
+                    body,
+                    tag,
+                    url: directMessageUrl,
+                    renotify: unreadCount > 1,
+                });
+            }
+
+            for (const notification of remainingNotifications) {
                 await showLocalNotification({
                     title: getNotificationTitle(notification),
                     body: getNotificationBody(notification, activeOracleMode),

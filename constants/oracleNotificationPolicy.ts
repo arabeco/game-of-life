@@ -24,6 +24,15 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'M',
     label: 'Mentor',
   },
+  direct_message: {
+    lane: 'essential',
+    priority: 'actionable',
+    badge: true,
+    basicVisible: true,
+    gameVisible: true,
+    icon: 'D',
+    label: 'DM',
+  },
   friend_request: {
     lane: 'essential',
     priority: 'critical',
@@ -249,6 +258,8 @@ export const getNotificationTitle = (notification: Notification): string => {
       return 'Voce tem novas recompensas.';
     case 'mentor_invite':
       return 'Voce recebeu um convite de mentor.';
+    case 'direct_message':
+      return 'Nova mensagem direta.';
     case 'clan_invite':
       if (notification.metadata?.joinRequest) {
         return 'Novo pedido para o seu grupo.';
@@ -323,6 +334,7 @@ export const getNotificationBody = (
       notification.type === 'cycle_finalized' ||
       notification.type === 'system' ||
       notification.type === 'oracle_prompt' ||
+      notification.type === 'direct_message' ||
       notification.type === 'codex_gift' ||
       notification.type === 'partnership_invite' ||
       notification.type === 'arena_access' ||
@@ -376,6 +388,8 @@ export const getNotificationBody = (
       return notification.content || 'Seu pedido de entrada no grupo foi aceito.';
     case 'mentor_invite':
       return notification.content || 'Alguem quer entrar em um vinculo de mentoria com voce.';
+    case 'direct_message':
+      return notification.content || 'Uma nova mensagem direta chegou para voce.';
     case 'friend_request':
       return notification.content || 'Existe um novo convite de amizade esperando sua resposta.';
     case 'clan_invite':

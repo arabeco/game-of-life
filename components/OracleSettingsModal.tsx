@@ -23,7 +23,7 @@ interface OracleSettingsModalProps {
 }
 
 type SettingsTab = 'modos' | 'categorias';
-type ToggleKey = 'iaEnabled' | 'notificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
+type ToggleKey = 'iaEnabled' | 'notificationsEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
 
 const PUSH_PERMISSION_LABEL: Record<ReturnType<typeof getLocalNotificationPermission>, string> = {
     default: 'Aguardando permissao',
@@ -325,6 +325,14 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                         description: `Controla cards automaticos e avisos internos. A entrega segue o modo ${activeModeConfig.name}.`,
                                         enabled: Boolean(oraclePreferences.notificationsEnabled),
                                         onToggle: () => handleToggle('notificationsEnabled'),
+                                    })}
+                                    {renderSwitchRow({
+                                        icon: '💬',
+                                        label: 'Mensagens diretas',
+                                        description: 'Quando alguem te chamar no DM, gera aviso e push no aparelho quando essa trilha estiver armada.',
+                                        enabled: Boolean(oraclePreferences.dmNotificationsEnabled),
+                                        onToggle: () => handleToggle('dmNotificationsEnabled'),
+                                        accentClass: 'bg-sky-500/70',
                                     })}
                                     {renderSwitchRow({
                                         icon: '📲',

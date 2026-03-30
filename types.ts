@@ -1057,6 +1057,7 @@ export interface OraclePreferences {
   userId: string;
   iaEnabled: boolean;
   notificationsEnabled: boolean;
+  dmNotificationsEnabled: boolean;
   // Local-only preference for browser/device notifications.
   pushEnabled?: boolean;
   animationsEnabled: boolean;
@@ -1126,6 +1127,7 @@ export interface OracleContext {
 
 export type NotificationType =
   | 'mentor_invite'
+  | 'direct_message'
   | 'friend_request'
   | 'friend_response'
   | 'friend_accepted'
@@ -1165,6 +1167,7 @@ export interface NotificationMetadata {
   emailSubject?: string;
   dispatchKey?: string;
   url?: string;
+  messageId?: string;
   actionId?: string;
   taskId?: string;
   arenaId?: string;

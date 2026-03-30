@@ -1195,6 +1195,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const nextIaEnabled = mapped.iaEnabled ?? true;
             setOraclePreferences({
                 ...mapped,
+                dmNotificationsEnabled: mapped.dmNotificationsEnabled ?? true,
                 enabledCategories: normalizeOracleManualCategories(mapped.enabledCategories || []),
                 sentinelMode: deriveLegacySentinelMode(nextMode, nextIaEnabled),
                 pushEnabled: getPushEnabled(userId),
@@ -1205,6 +1206,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 userId,
                 iaEnabled: true,
                 notificationsEnabled: true,
+                dmNotificationsEnabled: true,
                 pushEnabled: getPushEnabled(userId),
                 animationsEnabled: true,
                 soundsEnabled: true,
@@ -1718,8 +1720,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const activeOracleMode = oraclePreferences.activeMode || 'neutro';
+        const dmNotificationsEnabled = oraclePreferences.dmNotificationsEnabled ?? true;
         const visibleNotifications = getVisibleNotificationsForProfile(unseenNotifications, appMode, activeOracleMode)
             .filter((notification) => shouldPushNotificationForProfile(notification, appMode, activeOracleMode))
+            .filter((notification) => dmNotificationsEnabled || notification.type !== 'direct_message')
             .filter((notification) => notification.type !== 'action_reminder');
 
         if (visibleNotifications.length === 0) {
@@ -1732,11 +1736,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     title: getNotificationTitle(notification),
                     body: getNotificationBody(notification, activeOracleMode),
                     tag: `glyph-notification-${notification.id}`,
-                    url: '/?oracle=notifications',
+                    url: typeof notification.metadata?.url === 'string' && notification.metadata.url.trim().length > 0
+                        ? notification.metadata.url
+                        : '/?oracle=notifications',
                 });
             }
         })();
-    }, [appMode, notifications, oraclePreferences?.activeMode, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id, showToast]);
+    }, [appMode, notifications, oraclePreferences?.activeMode, oraclePreferences?.dmNotificationsEnabled, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id, showToast]);
 
 
     useEffect(() => {
@@ -11053,6 +11059,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setDMConversations(prev => prev.map(c =>
             c.participantId === senderId ?{ ...c, unreadCount: 0 } : c
         ));
+
+        const { error: notificationError } = await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('user_id', userId)
+            .eq('type', 'direct_message')
+            .eq('read', false)
+            .contains('metadata', { senderId });
+
+        if (notificationError) {
+            console.error('Error marking DM notifications as read:', notificationError);
+        } else {
+            setNotifications(prev => prev.map(notification => (
+                notification.userId === userId
+                && notification.type === 'direct_message'
+                && !notification.read
+                && String(notification.metadata?.senderId || '') === senderId
+                    ? { ...notification, read: true }
+                    : notification
+            )));
+        }
     };
 
     useEffect(() => {

@@ -61,6 +61,7 @@ const ALLOWED_ORIGINS = (
 
 const POLICY: Record<string, { priority: NotificationPriority; basicVisible: boolean; gameVisible: boolean }> = {
   mentor_invite: { priority: "critical", basicVisible: true, gameVisible: true },
+  direct_message: { priority: "actionable", basicVisible: true, gameVisible: true },
   friend_request: { priority: "critical", basicVisible: true, gameVisible: true },
   friend_response: { priority: "actionable", basicVisible: true, gameVisible: true },
   friend_accepted: { priority: "ambient", basicVisible: false, gameVisible: true },
@@ -266,6 +267,8 @@ const getNotificationTitle = (notification: NormalizedNotification): string => {
       return "Voce tem novas recompensas.";
     case "mentor_invite":
       return "Voce recebeu um convite de mentor.";
+    case "direct_message":
+      return "Nova mensagem direta.";
     case "clan_invite":
       return "Voce recebeu um convite de grupo.";
     case "friend_request":
@@ -309,6 +312,8 @@ const getNotificationBody = (notification: NormalizedNotification): string => {
   switch (notification.type) {
     case "codex_gift":
       return "Uma campanha valiosa foi enviada para a sua biblioteca.";
+    case "direct_message":
+      return notification.content || "Uma nova mensagem direta chegou para voce.";
     case "competition_result":
       return "Seu rival fechou o duelo primeiro.";
     case "action_reminder":
@@ -595,7 +600,7 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
       .is("disabled_at", null),
     supabaseAdmin
       .from("oracle_preferences")
-      .select("active_mode, notifications_enabled")
+      .select("active_mode, notifications_enabled, dm_notifications_enabled")
       .eq("user_id", notification.userId)
       .maybeSingle(),
     supabaseAdmin
@@ -611,6 +616,10 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
 
   if (!preferenceRow?.notifications_enabled) {
     return jsonResponse(origin, 200, { skipped: true, reason: "notifications_disabled" });
+  }
+
+  if (notification.type === "direct_message" && preferenceRow?.dm_notifications_enabled === false) {
+    return jsonResponse(origin, 200, { skipped: true, reason: "dm_notifications_disabled" });
   }
 
   const appMode = (asTrimmedString(profileRow?.app_mode) === "BASIC" ? "BASIC" : "GAME") as AppMode;

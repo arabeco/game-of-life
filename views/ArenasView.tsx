@@ -138,6 +138,8 @@ export const ArenasView: React.FC = () => {
     const [showArchived, setShowArchived] = useState(false);
     const [arenaPresentationMode, setArenaPresentationMode] = useState<'cards' | 'list'>('cards');
     const [expandedArenaRows, setExpandedArenaRows] = useState<Record<string, boolean>>({});
+    const shouldEnableListReorder = arenaPresentationMode === 'list' && (arenasViewMode === 'free' || arenasViewMode === 'priorities');
+    const shouldEnableTouchReorder = shouldEnableListReorder;
     // Remove local viewMode state
     const fabRef = useRef<HTMLButtonElement>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -1091,8 +1093,6 @@ export const ArenasView: React.FC = () => {
         setExpandedArenaRows((prev) => ({ ...prev, [rowId]: !prev[rowId] }));
     };
     const formatDurationShort = (duration: number) => `${Math.max(0, Math.round(duration || 0))}m`;
-    const shouldEnableListReorder = arenaPresentationMode === 'list' && (arenasViewMode === 'free' || arenasViewMode === 'priorities');
-    const shouldEnableTouchReorder = shouldEnableListReorder;
     const arenasById = useMemo(
         () => Object.fromEntries(getArenas().map((arena) => [arena.id, arena])),
         [getArenas]

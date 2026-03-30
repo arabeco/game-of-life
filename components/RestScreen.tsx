@@ -670,10 +670,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         return date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     };
 
-    const handleStartHold = (event?: React.MouseEvent | React.TouchEvent) => {
-        if (event && 'touches' in event && event.cancelable) {
-            event.preventDefault();
-        }
+    const handleStartHold = (_event?: React.MouseEvent | React.TouchEvent) => {
         if (holdAnimationFrameRef.current) return;
         clearUnlockHintTimeout();
         setShowUnlockHint(false);

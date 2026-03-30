@@ -1,6 +1,7 @@
 import { supabase } from '../supabaseClient';
 
 const WEB_PUSH_PUBLIC_KEY = (import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY as string | undefined)?.trim() || '';
+const SUPABASE_FUNCTIONS_URL = `${((import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() || '').replace(/\/+$/, '')}/functions/v1/web-push`;
 
 type WebPushSyncStatus =
     | 'ok'
@@ -17,6 +18,13 @@ export interface WebPushSyncResult {
     hasSubscription: boolean;
     detail?: string;
 }
+
+type WebPushFunctionResponse = {
+    ok: boolean;
+    status: number;
+    data?: any;
+    error?: string;
+};
 
 const supportsWebPush = () =>
     typeof window !== 'undefined'
@@ -63,20 +71,79 @@ const getCurrentAccessToken = async (): Promise<string | null> => {
     return authData.session?.access_token || null;
 };
 
+const invokeWebPushFunction = async (
+    accessToken: string | null,
+    body: Record<string, unknown>,
+): Promise<WebPushFunctionResponse> => {
+    if (!SUPABASE_FUNCTIONS_URL || SUPABASE_FUNCTIONS_URL.startsWith('/functions/v1/web-push')) {
+        return {
+            ok: false,
+            status: 0,
+            error: 'missing_supabase_url',
+        };
+    }
+
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
+    if (anonKey) {
+        headers.apikey = anonKey;
+    }
+
+    if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    try {
+        const response = await fetch(SUPABASE_FUNCTIONS_URL, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+        });
+
+        const rawText = await response.text();
+        let parsed: any = null;
+
+        if (rawText) {
+            try {
+                parsed = JSON.parse(rawText);
+            } catch (_error) {
+                parsed = { error: rawText };
+            }
+        }
+
+        if (!response.ok) {
+            return {
+                ok: false,
+                status: response.status,
+                data: parsed,
+                error: String(parsed?.error || parsed?.message || rawText || `http_${response.status}`),
+            };
+        }
+
+        return {
+            ok: true,
+            status: response.status,
+            data: parsed,
+        };
+    } catch (error) {
+        return {
+            ok: false,
+            status: 0,
+            error: error instanceof Error ? error.message : String(error),
+        };
+    }
+};
+
 const unregisterEndpointRemotely = async (endpoint: string, accessToken: string | null) => {
     if (!endpoint.trim()) return;
 
     try {
-        await supabase.functions.invoke('web-push', {
-            headers: accessToken
-                ? {
-                    Authorization: `Bearer ${accessToken}`,
-                }
-                : undefined,
-            body: {
-                action: 'unregister',
-                endpoint,
-            },
+        await invokeWebPushFunction(accessToken, {
+            action: 'unregister',
+            endpoint,
         });
     } catch (error) {
         console.warn('Remote push endpoint unregister failed:', error);
@@ -179,24 +246,21 @@ export const syncRemotePushSubscription = async (): Promise<WebPushSyncResult> =
             return { ok: false, status: 'subscribe_failed', hasSubscription: false };
         }
 
-        const { data, error } = await supabase.functions.invoke('web-push', {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-            body: {
-                action: 'register',
-                subscription: subscription.toJSON(),
-                userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-                deviceLabel: 'glyph-web',
-            },
+        const response = await invokeWebPushFunction(accessToken, {
+            action: 'register',
+            subscription: subscription.toJSON(),
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+            deviceLabel: 'glyph-web',
         });
 
-        if (error || data?.error) {
+        if (!response.ok || response.data?.error) {
             return {
                 ok: false,
                 status: 'invoke_failed',
                 hasSubscription: true,
-                detail: error?.message || String(data?.error || 'register_failed'),
+                detail: response.status > 0
+                    ? `${response.status}: ${response.error || String(response.data?.error || 'register_failed')}`
+                    : (response.error || String(response.data?.error || 'register_failed')),
             };
         }
 

@@ -2043,14 +2043,13 @@ const PreferenciasTab: React.FC = () => {
 };
 
 const LegacyPremiumTab: React.FC = () => {
-    const { userProfile, oraclePreferences, isProfileLoaded } = useGame();
+    const { userProfile, oraclePreferences } = useGame();
     const [isLinksOpen, setLinksOpen] = useState(false);
     const [isOracleSettingsOpen, setOracleSettingsOpen] = useState(false);
     const [showCampaignsCodex, setShowCampaignsCodex] = useState(false);
     const [isOracleChatOpen, setOracleChatOpen] = useState(false);
     const [isCodexOpen, setCodexOpen] = useState(false);
     const isPremium = hasPremiumAccess(userProfile);
-    const isStaff = isProfileLoaded && (userProfile.role === 'admin' || userProfile.role === 'gm');
     const isIAEnabled = oraclePreferences?.iaEnabled ?? true;
 
     // Debug logs
@@ -2117,15 +2116,6 @@ const LegacyPremiumTab: React.FC = () => {
                     )}
                 </GlassCard>
             </section>
-
-            {isStaff && (
-                <div className="pt-6 mt-6 border-t border-[var(--skin-accent-color)]/30">
-                    <Suspense fallback={<div className="h-24 rounded-2xl bg-black/20 animate-pulse" />}>
-                        <SovereignPanelView />
-                    </Suspense>
-                </div>
-            )}
-
             {isLinksOpen && <RelationshipHubModal onClose={() => setLinksOpen(false)} />}
 
             {isOracleSettingsOpen && (
@@ -2163,28 +2153,23 @@ const LegacyPremiumTab: React.FC = () => {
 };
 
 const PremiumTab: React.FC = () => {
-    const { userProfile, isProfileLoaded, buyStoreItem } = useGame();
+    const { userProfile, buyStoreItem } = useGame();
     const [confirmPremium, setConfirmPremium] = useState(false);
     const [isBuyingPremium, setIsBuyingPremium] = useState(false);
     const isPremium = hasPremiumAccess(userProfile);
-    const isStaff = isProfileLoaded && (userProfile.role === 'admin' || userProfile.role === 'gm');
     const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÍVEL';
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
     const premiumExpiresLabel = userProfile.premiumExpiresAt
         ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(userProfile.premiumExpiresAt))
         : null;
-    const premiumCycleLabel = isStaff
-        ? 'controle GM'
-        : premiumDaysRemaining != null
-            ? `${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'} restantes`
-            : isPremium
-                ? 'legado ativo'
-                : '30 dias';
-    const premiumBadgeLabel = isStaff
-        ? 'controle gm'
-        : isPremium && premiumExpiresLabel
-            ? `${premiumDaysRemaining ?? 0}d - ate ${premiumExpiresLabel}`
+    const premiumCycleLabel = premiumDaysRemaining != null
+        ? `${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'} restantes`
+        : isPremium
+            ? 'legado ativo'
             : '30 dias';
+    const premiumBadgeLabel = isPremium && premiumExpiresLabel
+        ? `${premiumDaysRemaining ?? 0}d - ate ${premiumExpiresLabel}`
+        : '30 dias';
     const premiumActionLabel = isPremium ? 'Estender premium' : 'Ativar premium';
 
     const handleConfirmPremiumPurchase = async () => {
@@ -2278,13 +2263,6 @@ const PremiumTab: React.FC = () => {
                 </GlassCard>
             </section>
 
-            {isStaff && (
-                <div className="pt-6 mt-6 border-t border-[var(--skin-accent-color)]/30">
-                    <Suspense fallback={<div className="h-24 rounded-2xl bg-black/20 animate-pulse" />}>
-                        <SovereignPanelView />
-                    </Suspense>
-                </div>
-            )}
         </div>
         {confirmPremium && (
             <ConfirmationModal
@@ -2509,6 +2487,7 @@ export const SettingsView: React.FC = () => {
     const { updateUserProfile, userProfile } = useGame();
     const [activeTab, setActiveTab] = useState<SettingsTab>('Geral');
     const [isSovereignEditorOpen, setSovereignEditorOpen] = useState(false);
+    const isStaff = ['admin', 'gm', 'admin_gm'].includes((userProfile?.role || '').toLowerCase());
 
     useEffect(() => {
         const handleTabChange = (e: any) => {
@@ -2566,6 +2545,21 @@ export const SettingsView: React.FC = () => {
 
                 <div className="settings-content-shell flex-grow min-h-0 overflow-y-auto pb-32 pt-2">
                     {renderContent()}
+                    {isStaff && activeTab === 'Geral' && (
+                        <div className="pt-6 mt-6 border-t border-[var(--skin-accent-color)]/30">
+                            <div className="mb-3 px-1">
+                                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">
+                                    Operacao GM
+                                </div>
+                                <div className="mt-1 text-xs text-[color:var(--ui-card-text-soft)]">
+                                    Painel interno de staff. Nao faz parte dos beneficios do premium comum.
+                                </div>
+                            </div>
+                            <Suspense fallback={<div className="h-24 rounded-2xl bg-black/20 animate-pulse" />}>
+                                <SovereignPanelView />
+                            </Suspense>
+                        </div>
+                    )}
                 </div>
             </div>
             {isSovereignEditorOpen && (

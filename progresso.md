@@ -2,6 +2,9 @@
 Data de consolidacao: 25/03/2026
 Fonte: itens [v] removidos do relatorio operacional
 
+## Fechamento 30/03/2026
+[v] Selar o push remoto fora do app em producao: registro real do aparelho, webhook Supabase, VAPID, Vercel, notificacao normal, card do `Oraculo`, lembrete de `acao` e DM com preferencia propria validos em teste real.
+
 ## Fechamento 25/03/2026
 [v] Disparar os 5 primeiros Bilhetes Dourados e tirar a ativacao inicial do campo de promessa.
 [v] Validar conta nova com `e-mail/Convite` e primeiro `D2`, tirando esse setup da frente critica.

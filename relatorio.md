@@ -11,9 +11,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 - Trilha oficial: `T1 Fundacao -> T2 O Cerco -> T3 A Ascensao`.
 
 ## 2. SCORECARD DE AUDITORIA
-- **EXECUCAO REAL: 9.9** (`build` ok, camada social/campanhas refinada e SQL novo validado em teste real/laboratorio).
-- **ID VISUAL: 9.8** (`Campanhas`, miniaturas e `Vinculos` ficaram mais coerentes e mais vendaveis).
-- **FLUXO USUARIO: 9.9** (criacao de campanha, entrega de mentor, parceria live-read e competicao snapshot ficaram muito melhores; o que falta agora e a passada manual final em aparelho real).
+- **EXECUCAO REAL: 9.9** (`build` ok, SQL novo validado em teste real e push remoto funcionando em producao).
+- **ID VISUAL: 9.8** (`Campanhas`, miniaturas, `Vinculos` e a leitura das notificacoes ficaram mais coerentes).
+- **FLUXO USUARIO: 9.9** (`Campanhas`, `Mentoria`, `Parceria`, `Competicao` e DM push ficaram muito mais claros; falta a passada manual final no aparelho real).
 - **RETENCAO: --** (Aguardando Beta)
 - **AQUISICAO: --** (Dominio quase pronto; faltam `3 reels` para destravar a fila de `~75 posts`.)
 
@@ -22,61 +22,41 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [v] Curadoria base de campanhas: preco, acoes, duracao, texto e campanha gratis inicial.
 [v] Ouro social final de `Mentoria`, `Parceria`, `Competicao` e arena extra.
 [v] Reconstrucao da `Central de Vinculos` e reorganizacao das superficies premium.
-[v] Camada social compartilhada de base no remoto: `Grupo`, `Mentoria`, `Parceria` e `Competicao` funcionando no pacote antigo.
-[v] PIX real do Mercado Pago ja validado ate credito de ouro.
+[v] PIX real do Mercado Pago validado ate credito de ouro.
+[v] Push remoto fora do app selado em producao: notificacao normal, card do `Oraculo`, lembrete de `acao` e DM com preferencia propria.
 
 ### FEITOS HOJE [x]
-[x] Refino do fluxo de `Campanhas`: criar campanha sem gambiarra de arrastar arena, comprar, instalar e anexar arenas de forma mais clara.
-[x] Entrega do mentor para o pupilo agora entra no app de forma mais direta, com painel de campanhas mais limpo e origem melhor distinguida.
+[x] Refino do fluxo de `Campanhas`: criar, comprar, instalar e anexar arenas sem gambiarra.
+[x] Entrega do mentor para o pupilo ficou mais direta, com painel de campanhas e vinculos mais claro.
 [x] `Parceria` foi reescrita para `arena existente em live-read`, com retirada da vitrine sem apagar a arena.
-[x] `Competicao` foi reescrita para multiplos duelos `snapshot`, read-only, bonus de duelo no `Sitrep/Ciclo` e historico selado.
-[x] SQL novo de `Parceria` + `Competicao` foi validado: competicao passou em cenario real; parceria passou em laboratorio com `rollback`.
-[x] Push remoto fora do app foi selado e confirmado em producao: registro do aparelho, webhook Supabase, VAPID, Vercel, notificaçao normal, card do `Oraculo` e push de `ação` validados em teste real.
+[x] `Competicao` foi reescrita para multiplos duelos `snapshot`, read-only, com bonus de duelo e historico selado.
+[x] Loja no `Modo Basico` agora respeita o corte: sem `Itens` e sem `Forja`.
+[x] `ArenasView` recebeu alivio de scroll/mobile, correcao de crash em runtime e leitura melhor com muitas arenas.
+[x] Push de DM agora abre direto no `Oraculo`/conversa certa e ficou com copy mais honesta para mensagens nao lidas.
+[x] `GM Panel` foi separado da propaganda de `Premium` e ficou tratado como superficie interna de staff, sem misturar beneficio de soberano com poder de GM.
 
-### AINDA EM X ATE A PASSADA MANUAL DE AMANHA
-[x] Rodar a leitura final no app real para `Campanhas`, `Mentoria`, `Parceria` e `Competicao`, e so depois mover esses itens para `progresso.md`.
+### EM REVISAO [-]
+[-] Rodada manual final no app real de `Campanhas`, `Mentoria`, `Parceria` e `Competicao`.
+[-] Leitura final no aparelho real da camada social e das notificacoes fora do app.
 
 ## 4. MATRIZ DE EXECUCAO
-### CHECK FINAL ABSOLUTO (BLOQUEIA O BETA)
-[-] Hot path real: loop principal e maior parte do QA manual ja passaram; falta fechar a rodada final em aparelho real com acabamento mobile. - Responsavel: SENTINELA
-[-] Onboarding final: tutoriais `1/2`, toggle `Modo Jogo`, cards `3/4` e passada visual real. - Responsavel: SENTINELA
-[ ] Persistencia: troca de dia, reabertura, cronometro, temporada, modais e rituais. - Responsavel: SENTINELA
+### BLOQUEIA O BETA 25
+[-] Hot path real: loop principal e onboarding principal ja passaram em smoke; falta a rodada final em aparelho real. - Responsavel: SENTINELA
+[ ] Persistencia critica: troca de dia, reabertura, cronometro, temporada, modais e rituais. - Responsavel: SENTINELA
 [ ] Mobile final: `Ativos`, `Arenas`, `Planner`, `Mundo`, `Config`, modais e scroll. - Responsavel: SENTINELA
 [ ] Skins UI: contraste final, planner, patentes e modais em claro/escuro. - Responsavel: SENTINELA
 [ ] Leitor paginado: swipe, setas, preview e `[[page]]` no mobile. - Responsavel: SENTINELA
-[ ] GM Panel: teste real de e-mail. - Responsavel: PROTOCOLO
-[-] Mentoria 2 contas: aceite, arena em leitura e base do fluxo ja passaram em smoke; entrega automatica de campanha foi ajustada hoje. Faltam recusa, revogacao, refund e pacote final. - Responsavel: SENTINELA
-[-] Social integrado: solicitacoes, amizade, `Vinculos`, `Grupo`, `Equipe`, badges e leitura final dos chips. O push remoto fora do app foi selado hoje; falta a rodada final integrada da camada social. - Responsavel: PROTOCOLO
-[-] Camada compartilhada: `Grupo` e `Mentoria` ja estavam validados; `Parceria` e `Competicao` foram refinadas hoje com SQL testado. Falta a passada manual final no board/app real. - Responsavel: PROTOCOLO
-[-] Campanhas: descobrir, comprar, instalar, receber do mentor e operar sem duplicar nada. O fluxo melhorou muito hoje; falta a rodada manual ponta a ponta. - Responsavel: PROTOCOLO
-[ ] Economia de campanhas: custo, `Gratis/Premium`, premio de onboarding e retorno de compra. - Responsavel: TESOURO
-[ ] Recarga de Ouro: vitrine, pagamento, credito e retorno ao fluxo. - Responsavel: TESOURO
-[-] PIX final: o PIX real ja foi validado; falta a passada final integrada com recarga, carteira e retorno ao fluxo. - Responsavel: TESOURO
-[ ] Premium remoto: expiracao/renovacao em `2 aparelhos`. - Responsavel: PROTOCOLO
+[ ] `GM Panel`: teste real de e-mail. - Responsavel: PROTOCOLO
+[-] `Campanhas` + `Vinculos` + camada compartilhada: o pacote novo esta muito melhor, mas falta a passada manual final no app real. - Responsavel: SENTINELA + PROTOCOLO
+[-] `PIX/Ouro`: base real validada; falta a passada final integrada com carteira e retorno ao fluxo. - Responsavel: TESOURO
+[ ] `Premium remoto`: expiracao/renovacao em `2 aparelhos`. - Responsavel: PROTOCOLO
 [ ] Economia premium: comprar, renovar, recompensar e cair no modal certo. - Responsavel: TESOURO
 [ ] `Modo Jogo` final: liga/desliga, some/aparece, inventario, baus e feitos. - Responsavel: PROTOCOLO
 
-### COMANDO
-[-] Rodar o `CHECK FINAL` em aparelho real e congelar o hot path do Beta `25`. - Responsavel: SENTINELA
-[-] Fazer a passada manual final de `Campanhas`, `Mentoria`, `Parceria` e `Competicao` amanha e mover os `[x]` para `[v]`. - Responsavel: SENTINELA + PROTOCOLO
-[ ] Fechar a passada final mobile em `Season`, `Genesis/Aurora` e vitrines. - Responsavel: SENTINELA
-
-### TRONO
-[ ] Ler Ativacao, D2 e % de Ciclos reais.
-
-### PROTOCOLO
-[ ] Concluir a passada final de pt-BR residual. - Responsavel: PROTOCOLO
-[ ] Melhorar o Oraculo e o parsing de acao para funcionar com robustez e acionar tools corretamente. - Responsavel: PROTOCOLO
-
-### DOMINIO (FORA DO HOT PATH)
-[ ] Fechar os `3 reels` restantes e alinhar landing/site antes de empurrar trafego. Dominio e material-base ja foram enviados; com isso a fila prevista sobe para `~75 posts`.
-[ ] Gerar o pacote das `10 skins` novas e completar os itens faltantes da `Season Aurora` (`glifo` e `orbe`; `skin`, `borda`, `banner` e `insignia` ja existem). - Responsavel: DOMINIO + TESOURO
-[ ] Lista curta de arte/catalogo pendente:
-- `Aurora I`: criar `glifo` e `orbe` para fechar o set principal da season.
-- `Empreendedor`: skin cadastrada, mas ainda sem PNG final no catalogo.
-- `Fenix Dourada`: aura exclusiva ainda sem arte dedicada no catalogo.
-- `Insignias`: seguem sem PNG proprio; hoje funcionam como honras com icone/rotulo.
-- `O Criador`: skin ja tem asset, mas ainda pede fonte/regra final de obtencao no jogo.
+### FORA DO HOT PATH
+[ ] pt-BR residual e robustez final do `Oraculo`. - Responsavel: PROTOCOLO
+[ ] Fechar os `3 reels` restantes e alinhar landing/site antes de empurrar trafego. - Responsavel: DOMINIO
+[ ] Completar `Season Aurora` e o catalogo curto que ainda pede arte. - Responsavel: DOMINIO + TESOURO
 
 ## 5. CORTE BETA 25 (O QUE FALTA PARA ABRIR LOGO)
 [ ] Rodada manual final em aparelho real do hot path completo.
@@ -91,7 +71,7 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Tirar os numeros reais de `Ativacao`, `D2` e `% de Ciclos`.
 [ ] Fechar `marco1_beta_tracking` em `100%` e ler friccao real `P0/P1`.
 [ ] Reduzir as ultimas friccoes mobile vistas no uso real de `25 pessoas`.
-[ ] Fechar `pt-BR` residual e robustez do `Oraculo`.
+[ ] Fechar `pt-BR` residual e robustez final do `Oraculo`.
 [ ] Alinhar `landing/site` e publicar os `3 reels` restantes para liberar a fila de `~75 posts`.
 [ ] Completar o pacote de conteudo/skins da `Season Aurora` e o resto do catalogo curto.
 
@@ -119,24 +99,15 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 ## 9. RESUMO ATUALIZADO
 - Data: 30/03/2026
 - Atualizado por: GPT-5 Codex
-- Resumo: o GLYPH segue em ALPHA na Fundacao (T1), mas o tabuleiro esta bem mais limpo do que antes. Hoje fechamos o grosso de `Campanhas`, `Parceria`, `Competicao` e do push remoto fora do app no codigo, no SQL e em producao real. O que ainda segura o Beta `25` nao e mais invencao de produto; agora e rodada manual final em aparelho real, persistencia critica, `PIX/Ouro` integrado, `Premium` remoto, polimento final mobile/skins e teste real de e-mail do `GM Panel`. Depois disso, o corte para `50 pessoas` vira leitura de dados reais, tracking completo, reducao de friccao, conteudo/landing e robustez final de linguagem/Oraculo.
+- Resumo: o GLYPH segue em ALPHA na Fundacao (T1), mas o tabuleiro agora esta mais limpo. O que ja esta consolidado foi puxado para `[v]`, o que fechamos hoje ficou em `[x]`, e o que ainda depende da passada final ficou em `[-]`. Hoje tambem separamos melhor `Premium` de `staff`: o `GM Panel` saiu da narrativa comercial e voltou a ser superficie interna. O que segura o Beta `25` agora e bem objetivo: rodada manual final no aparelho real, persistencia critica, `PIX/Ouro` integrado, `Premium` remoto, polimento mobile/skins e teste real de e-mail do `GM Panel`.
 
 ## 10. MODO DE USO DO RELATORIO
 1. Ler `relatorio.md`, `status.md`, `roadmap-soberania.md` e `progresso.md` antes de mexer no estado do projeto.
-2. No item 3 e no item 4:
+2. No item `3` e no item `4`:
    - `[v]` = pronto consolidado / ja pode morar no historico
    - `[x]` = feito hoje / aguarda passada manual ou consolidacao
    - `[-]` = visto hoje / em revisao / falta ultima rodada
    - `[ ]` = pendente real
-3. Quando um bloco em `[x]` fechar de verdade, mover para `progresso.md`.
-4. Nao inventar avancos: so marcar o que foi validado no app, na infra ou no SQL.
-
-## 11. BLOQUEIOS ATUAIS
-[-] Onboarding/tutorial ja passou no smoke principal, mas ainda pede a passada final em aparelho real.
-[ ] Persistencia ainda pede fechamento ponta a ponta.
-[-] `Campanhas`, `Parceria` e `Competicao` ficaram redondas hoje, mas ainda pedem a rodada manual final no app real.
-[ ] Premium ainda pede QA remoto final em `2 aparelhos`.
-[-] PIX/Ouro ja passou na base real, mas ainda pede a passada final integrada.
-[ ] Mobile/skins ainda pedem a ultima rodada de contraste e responsividade.
-[ ] GM Panel ainda pede o teste real de e-mail.
-[ ] Dominio/conteudo ja enviou quase tudo; faltam `3 reels` para destravar a fila de `~75 posts`.
+3. Itens em `[v]` tambem devem entrar em `progresso.md`.
+4. O que foi `x` em dia anterior nao deve ficar zumbi no relatorio: ou vira `[v]`, ou desce para `[-]`, ou volta para `[ ]`.
+5. Nao repetir o mesmo item em `Feitos Hoje`, `Matriz`, `Corte Beta 25` e backlog. O item `4` e a leitura operacional; o item `5` e o corte de liberacao.

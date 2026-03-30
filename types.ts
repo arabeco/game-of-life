@@ -1169,6 +1169,7 @@ export interface NotificationMetadata {
   url?: string;
   messageId?: string;
   messagePreview?: string;
+  participantId?: string;
   actionId?: string;
   taskId?: string;
   arenaId?: string;

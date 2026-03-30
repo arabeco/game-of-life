@@ -63,7 +63,8 @@ begin
       'senderNickname', v_sender_nickname,
       'messageId', new.id,
       'messagePreview', nullif(v_message_preview, ''),
-      'url', '/?oracle=dms'
+      'participantId', new.sender_id,
+      'url', '/?oracle=dms&participant=' || new.sender_id::text
     )
   );
 

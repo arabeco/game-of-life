@@ -340,10 +340,10 @@ const resolveDirectMessagePushPresentation = async (
 
   const { data } = await supabaseAdmin
     .from("notifications")
-    .select("metadata, read")
-    .eq("user_id", notification.userId)
-    .eq("type", "direct_message")
-    .eq("read", false)
+      .select("metadata, read")
+      .eq("user_id", notification.userId)
+      .eq("type", "direct_message")
+      .eq("read", false)
     .order("created_at", { ascending: false })
     .limit(20);
 
@@ -354,6 +354,9 @@ const resolveDirectMessagePushPresentation = async (
   const uniqueSenderIds = Array.from(new Set(unreadSenderIds));
   const unreadCount = unreadRows.length || 1;
   const sameSender = uniqueSenderIds.length <= 1;
+  const directMessageUrl = senderId
+    ? `/?oracle=dms&participant=${encodeURIComponent(senderId)}`
+    : "/?oracle=dms";
 
   if (unreadCount <= 1) {
     return {
@@ -361,6 +364,7 @@ const resolveDirectMessagePushPresentation = async (
       body: fallbackBody,
       tag: senderId ? `glyph-direct-message-${senderId}` : `glyph-direct-message-${notification.userId}`,
       renotify: false,
+      url: directMessageUrl,
     };
   }
 
@@ -371,6 +375,7 @@ const resolveDirectMessagePushPresentation = async (
       ? `glyph-direct-message-${senderId}`
       : `glyph-direct-message-${notification.userId}`,
     renotify: true,
+    url: sameSender ? directMessageUrl : "/?oracle=dms",
   };
 };
 
@@ -714,7 +719,7 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
       title: directMessagePresentation?.title || getNotificationTitle(notification),
       body: directMessagePresentation?.body || getNotificationBody(notification),
       tag: directMessagePresentation?.tag || `glyph-notification-${notification.id}`,
-      url: asTrimmedString(notification.metadata.url) || (notification.type === "action_reminder" ? "/?view=planner" : "/?oracle=notifications"),
+      url: directMessagePresentation?.url || asTrimmedString(notification.metadata.url) || (notification.type === "action_reminder" ? "/?view=planner" : "/?oracle=notifications"),
       icon: "/logo-diamond.png",
       badge: "/logo-diamond.png",
       requireInteraction: (POLICY[notification.type] || POLICY.system).priority === "critical",

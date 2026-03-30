@@ -10,7 +10,7 @@ type SocialSelection =
   | { type: 'clan' }
   | null;
 
-export const OracleSocialPanel: React.FC = () => {
+export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null }> = ({ initialParticipantId = null }) => {
   const {
     clan,
     directMessages,
@@ -57,6 +57,23 @@ export const OracleSocialPanel: React.FC = () => {
       || friends.find((friend) => friend.id === selectedParticipantId)
       || null;
   }, [dmConversations, friends, selectedParticipantId]);
+
+  useEffect(() => {
+    const normalizedParticipantId = typeof initialParticipantId === 'string' ? initialParticipantId.trim() : '';
+    if (!normalizedParticipantId) return;
+
+    const participantExists =
+      dmConversations.some((conversation) => conversation.participantId === normalizedParticipantId)
+      || friends.some((friend) => friend.id === normalizedParticipantId);
+
+    if (!participantExists) return;
+
+    setSelection((current) => (
+      current?.type === 'dm' && current.participantId === normalizedParticipantId
+        ? current
+        : { type: 'dm', participantId: normalizedParticipantId }
+    ));
+  }, [dmConversations, friends, initialParticipantId]);
 
   useEffect(() => {
     if (selectedParticipantId) {

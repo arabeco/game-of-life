@@ -28,11 +28,12 @@ const OracleSocialPanel = lazy(() =>
 interface OracleFeedProps {
     onClose: () => void;
     initialTab?: Tab;
+    initialParticipantId?: string | null;
 }
 
 type Tab = 'chat' | 'action' | 'social' | 'notifications' | 'clan' | 'dms';
 
-export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'chat' }) => {
+export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'chat', initialParticipantId = null }) => {
     const {
         notifications,
         markNotificationRead,
@@ -159,7 +160,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab = 'c
                     {activeTab === 'social' && (
                         <div className="absolute inset-0 animate-in slide-in-from-right-4 duration-200">
                             <Suspense fallback={<div className="absolute inset-0 bg-black/30 animate-pulse" />}>
-                                <OracleSocialPanel />
+                                <OracleSocialPanel initialParticipantId={initialTab === 'dms' ? initialParticipantId : null} />
                             </Suspense>
                         </div>
                     )}

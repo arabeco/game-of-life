@@ -29,7 +29,8 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const userId = userProfile?.id || '';
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
-    const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'action' | 'social' | 'notifications'>('chat');
+    const [oracleInitialTab, setOracleInitialTab] = useState<'chat' | 'action' | 'social' | 'notifications' | 'dms'>('chat');
+    const [oracleInitialParticipantId, setOracleInitialParticipantId] = useState<string | null>(null);
     const [isClanOpen, setClanOpen] = useState(false);
     const [isDeepWorkOpen, setDeepWorkOpen] = useState(false);
     const [isRestScreenOpen, setRestScreenOpen] = useState(defaultRestScreenOpen);
@@ -125,10 +126,19 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const oracleTarget = params.get('oracle');
-        if (oracleTarget === 'notifications' || oracleTarget === 'chat') {
-            setOracleInitialTab(oracleTarget === 'notifications' ? 'notifications' : 'chat');
+        const dmParticipantId = params.get('participant')?.trim() || null;
+        if (oracleTarget === 'notifications' || oracleTarget === 'chat' || oracleTarget === 'dms') {
+            setOracleInitialTab(
+                oracleTarget === 'notifications'
+                    ? 'notifications'
+                    : oracleTarget === 'dms'
+                        ? 'dms'
+                        : 'chat',
+            );
+            setOracleInitialParticipantId(oracleTarget === 'dms' ? dmParticipantId : null);
             setOracleOpen(true);
             params.delete('oracle');
+            params.delete('participant');
             const nextSearch = params.toString();
             const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
             window.history.replaceState(window.history.state, '', nextUrl);
@@ -350,7 +360,16 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
             </header>
             <Suspense fallback={null}>
                 {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}
-                {isOracleOpen && <OracleFeed initialTab={oracleInitialTab} onClose={() => setOracleOpen(false)} />}
+                {isOracleOpen && (
+                    <OracleFeed
+                        initialTab={oracleInitialTab}
+                        initialParticipantId={oracleInitialParticipantId}
+                        onClose={() => {
+                            setOracleOpen(false);
+                            setOracleInitialParticipantId(null);
+                        }}
+                    />
+                )}
                 {isClanOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanOpen(false)} />}
                 {isRestScreenOpen && (
                     <RestScreen 

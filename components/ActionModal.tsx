@@ -1828,10 +1828,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500">
                                                         Leitura
                                                     </div>
-                                                    <div className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-xl border border-white/5 bg-[#1a1512] p-4 shadow-inner">
-                                                        <div className="rounded-[18px] border border-white/6 bg-black/16 px-4 py-4">
+                                                    <div className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-xl border border-white/8 bg-[#1a1512] p-4 shadow-inner">
+                                                        <button
+                                                            type="button"
+                                                            onClick={briefingPages.length > 0 ? openBriefingReader : undefined}
+                                                            disabled={briefingPages.length === 0}
+                                                            className="rounded-[18px] border border-white/8 bg-black/22 px-4 py-4 text-left transition-colors disabled:cursor-default disabled:opacity-90 hover:border-[var(--skin-accent-color)]/28 hover:bg-black/28"
+                                                        >
                                                             <p
-                                                                className="text-sm leading-relaxed whitespace-pre-wrap font-mono text-gray-300"
+                                                                className="text-[15px] leading-relaxed whitespace-pre-wrap font-mono text-white/92"
                                                                 style={{
                                                                     display: '-webkit-box',
                                                                     WebkitLineClamp: 8,
@@ -1841,8 +1846,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             >
                                                                 {briefingPreviewText || "Nenhuma anotação disponível."}
                                                             </p>
-                                                        </div>
-                                                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/6 pt-3 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)]/75">
+                                                        </button>
+                                                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/8 pt-3 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)]/92">
                                                             <span>
                                                                 {briefingPages.length > 1
                                                                     ? `${briefingPages.length} páginas`
@@ -1850,7 +1855,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                         ? '1 página'
                                                                         : 'Sem páginas'}
                                                             </span>
-                                                            <span className="text-white/38">
+                                                            <span className="text-white/62">
                                                                 {briefingPages.length > 0 ? 'Leitor em tela cheia' : 'Adicione texto para liberar o leitor'}
                                                             </span>
                                                         </div>
@@ -1858,7 +1863,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             <button
                                                                 type="button"
                                                                 onClick={openBriefingReader}
-                                                                className="mt-3 inline-flex items-center justify-center rounded-2xl border border-[var(--skin-line-color)]/70 bg-[var(--skin-accent-color)]/12 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)] transition-colors hover:bg-[var(--skin-accent-color)]/2"
+                                                                className="luxe-skin-button mt-3 inline-flex items-center justify-center rounded-2xl border px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em]"
                                                             >
                                                                 Ler em tela cheia
                                                             </button>
@@ -2141,7 +2146,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         {isBriefingReaderOpen && briefingPages.length > 0 && (
             <Portal>
                 <div
-                    className="fixed inset-0 z-[230] bg-black/88 backdrop-blur-md"
+                    className="fixed inset-0 z-[10050] bg-black/88 backdrop-blur-md"
                     onClick={(event) => {
                         if (event.target === event.currentTarget) {
                             setIsBriefingReaderOpen(false);

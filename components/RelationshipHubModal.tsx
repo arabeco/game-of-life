@@ -221,9 +221,7 @@ const RelationshipArenaBoardCard: React.FC<{
     arena: LinkedRelationshipArena;
     assetName?: string;
     onClick: () => void;
-    action?: React.ReactNode;
-    className?: string;
-}> = ({ arena, assetName, onClick, action, className = 'w-[10.9rem] shrink-0' }) => {
+}> = ({ arena, assetName, onClick }) => {
     const previewArena = arena.arena || {
         id: arena.arenaId,
         assetId: String(arena.metadata?.asset_id || 'geral'),
@@ -235,10 +233,10 @@ const RelationshipArenaBoardCard: React.FC<{
     };
 
     return (
-        <div className={`relative ${className}`}>
-            {action ? (
-                <div className="absolute right-2 top-2 z-20">{action}</div>
-            ) : null}
+        <div
+            className="shrink-0"
+            style={{ width: '200px', height: '96px' }}
+        >
             <div
                 role="button"
                 tabIndex={0}
@@ -250,16 +248,27 @@ const RelationshipArenaBoardCard: React.FC<{
                     }
                 }}
                 className="block rounded-[1.25rem] text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
+                style={{ width: '200px', height: '96px' }}
             >
-                <ArenaCard
-                    arena={previewArena}
-                    actions={arena.actions || []}
-                    tasks={arena.tasks || []}
-                    relationshipBadgeType={arena.linkType ?? null}
-                    onClick={() => undefined}
-                    variant="overview"
-                    assetName={assetName}
-                />
+                <div
+                    className="drop-shadow-[0_12px_20px_rgba(0,0,0,0.38)]"
+                    style={{
+                        width: '204px',
+                        height: '94px',
+                        transform: 'scale(0.98)',
+                        transformOrigin: 'top left',
+                    }}
+                >
+                    <ArenaCard
+                        arena={previewArena}
+                        actions={arena.actions || []}
+                        tasks={arena.tasks || []}
+                        relationshipBadgeType={arena.linkType ?? null}
+                        onClick={() => undefined}
+                        variant="overview"
+                        assetName={assetName}
+                    />
+                </div>
             </div>
         </div>
     );
@@ -1731,22 +1740,6 @@ export const RelationshipHubModal: React.FC<{
                                                     arena={linkedArena}
                                                     assetName={assetNameForArena(linkedArena)}
                                                     onClick={() => openLinkedArena(linkedArena)}
-                                                    action={isMentorSide ? (
-                                                        <button
-                                                            onClick={async (event) => {
-                                                                event.stopPropagation();
-                                                                await handleDeleteMentorshipArena(linkedArena);
-                                                            }}
-                                                            disabled={busyKey === `delete-arena:${linkedArena.arena?.id || linkedArena.arenaId}`}
-                                                            className="shrink-0 rounded-full border border-red-300/16 bg-red-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-100 transition-all hover:bg-red-500/14 disabled:opacity-50"
-                                                        >
-                                                            <span className="inline-flex items-center gap-1.5">
-                                                                <Trash2Icon className="h-3.5 w-3.5" />
-                                                                <span>{busyKey === `delete-arena:${linkedArena.arena?.id || linkedArena.arenaId}` ? 'Removendo' : 'Remover'}</span>
-                                                            </span>
-                                                        </button>
-                                                    ) : null}
-                                                    className="w-[10.9rem] shrink-0"
                                                 />
                                             ))}
                                         </div>

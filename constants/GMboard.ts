@@ -332,11 +332,11 @@ const createPrimaryAssetSlot = (slot: Slot): Slot[] => [slot];
 const PRIMARY_ASSET_SLOTS: Record<string, Slot[]> = {
   consciencia: createPrimaryAssetSlot({
     id: 'widget_consciencia',
-    label: 'Lema',
+    label: 'Filosofia',
     type: 1,
-    inputType: 'textarea',
-    placeholder: 'Ex.: Disciplina vence impulso.',
-    value: '',
+    inputType: 'wheelpick',
+    options: ['Nao definido', 'Estoicismo', 'Pragmatismo', 'Minimalismo', 'Disciplina', 'Equilibrio', 'Autoconhecimento', 'Fe', 'Carpe diem', 'Servico', 'Outro'],
+    value: 'Nao definido',
   }),
   espiritualidade: createPrimaryAssetSlot({
     id: 'widget_espiritualidade',
@@ -348,11 +348,11 @@ const PRIMARY_ASSET_SLOTS: Record<string, Slot[]> = {
   }),
   'espaco-mental': createPrimaryAssetSlot({
     id: 'widget_espaco_mental',
-    label: 'Filosofia',
+    label: 'Maior virtude',
     type: 1,
-    inputType: 'textarea',
-    placeholder: 'Ex.: Estoicismo, pragmatismo, calma radical.',
-    value: '',
+    inputType: 'wheelpick',
+    options: ['Nao definido', 'Coragem', 'Justica', 'Prudencia', 'Temperanca', 'Disciplina', 'Honestidade', 'Lealdade', 'Sabedoria', 'Compaixao', 'Humildade', 'Resiliencia', 'Paciencia', 'Generosidade', 'Foco', 'Fe'],
+    value: 'Nao definido',
   }),
   projetos: createPrimaryAssetSlot({
     id: 'widget_projetos',
@@ -423,7 +423,7 @@ const PRIMARY_ASSET_SLOTS: Record<string, Slot[]> = {
     label: 'Atividade favorita',
     type: 1,
     inputType: 'wheelpick',
-    options: ['Nao definido', 'Leitura', 'Escrita', 'Desenho', 'Musica', 'Games', 'Xadrez', 'Corrida', 'Musculacao', 'Artes marciais', 'Culinaria', 'Fotografia', 'Cinema', 'Programacao', 'Ciclismo', 'Natacao', 'Meditacao', 'Trilha', 'Jardinagem', 'Outro'],
+    options: ['Nao definido', 'Esportes', 'Futebol', 'Tenis', 'Poker', 'Games', 'Musica', 'Leitura', 'Cinema', 'Academia', 'Corrida', 'Culinaria', 'Viagem', 'Outro'],
     value: 'Nao definido',
   }),
   fisico: createPrimaryAssetSlot({

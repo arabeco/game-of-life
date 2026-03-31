@@ -185,7 +185,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                     <div className="absolute inset-0 w-full h-full" style={{ ...backgroundStyle, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
                     {task.completed && <div className="absolute inset-0" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.04) 58%, rgba(8,12,20,0.18) 100%)' }} />}
                     <div className={`absolute inset-0 border-2 ${task.completed ?'border-white/30 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`} style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
-                    {task.completed && <div className="absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3 w-3" /></div>}
+                    {task.completed && <div className="absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3 w-3 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div>}
                     <div className={`relative z-10 w-full h-full flex flex-col items-center justify-center text-center p-1 ${task.completed ?'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.08)]' : ''}`}>
                         <EmojiGlyph symbol={action?.icon || "🏆"} size="milestone" className="text-white" />
                         <div className="text-xs font-semibold truncate max-w-full px-1">{action?.name}</div>
@@ -221,7 +221,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${isFreeAction ?`free-action-outline ${task.completed ?'opacity-95 border-white/25 shadow-[0_0_12px_rgba(255,255,255,0.08)]' : 'opacity-80'}` : task.completed ?'border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`}></div>
                 <div className="text-lg z-10 shrink-0"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
                 <div className={`text-sm font-semibold truncate min-w-0 flex-1 z-10 ${task.completed ?'text-white' : isFreeAction ?'text-slate-100' : 'text-white'}`}>{action?.name}</div>
-                {task.completed && <div className="z-10 shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3.5 w-3.5" /></div>}
+                {task.completed && <div className="z-10 shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div>}
                 {isFreeAction && (
                     <div className={`z-10 shrink-0 ${task.completed ?'hidden' : 'opacity-45 saturate-50'}`}>
                         <div className="free-action-complete-dot scale-[0.82]" />

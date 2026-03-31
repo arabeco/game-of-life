@@ -591,12 +591,12 @@ export interface GameContextType {
     declineFriendRequest: (requestId: string) => Promise<void>;
     cancelFriendRequest: (requestId: string) => Promise<void>;
     updateAllAssetLevels: (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>) => boolean;
-    startCycle: (name: string, endDate: string) => void;
+    startCycle: (name: string, endDate: string, startDate?: string) => void;
     updateCycle: (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => Promise<void>;
     endCycle: (currentAssets: Asset[], currentActions: Action[]) => EndCycleResult;
     applyExp: (expGained: number) => void;
     addChest: (chestType: ChestType) => Promise<void>;
-    startNewCycle: (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; endDate: string; }) => void;
+    startNewCycle: (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => void;
     deleteCycle: (cycleId: string) => Promise<void>; // Added deleteCycle to interface
     setDailyCommitment: (taskIds: string[]) => void;
     lockDailyCommitment: () => void;
@@ -7516,24 +7516,29 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
-    const startCycle = (name: string, endDate: string, arenaIds?: string[]) => {
+    const startCycle = (name: string, endDate: string, startDate?: string, arenaIds?: string[]) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
         const today = getLocalDateString();
         const trimmedName = name.trim();
+        const normalizedStartDate = (startDate || today).trim();
         const normalizedEndDate = endDate.trim();
         if (!trimmedName) {
             showToast('Dê um nome para o ciclo.', 'error');
             return;
         }
-        if (!normalizedEndDate || normalizedEndDate < today) {
-            showToast('A data final do ciclo precisa ser hoje ou uma data futura.', 'error');
+        if (!normalizedStartDate || normalizedStartDate < today) {
+            showToast('A data inicial do ciclo precisa ser hoje ou uma data futura.', 'error');
+            return;
+        }
+        if (!normalizedEndDate || normalizedEndDate < normalizedStartDate) {
+            showToast('A data final do ciclo precisa ser igual ou depois do inicio.', 'error');
             return;
         }
         const newCycle: Cycle = {
             id: crypto.randomUUID(),
             name: trimmedName,
-            startDate: today,
+            startDate: normalizedStartDate,
             endDate: normalizedEndDate,
             userId: userId,
             arenaIds: arenaIds || assets.flatMap(a => a.arenas.filter(ar => !ar.isArchived).map(ar => ar.id)),
@@ -8183,7 +8188,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const startNewCycle = async (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; endDate: string; }) => {
+    const startNewCycle = async (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => {
         setCycleExpBonus(0);
 
         // Process arena changes
@@ -8206,7 +8211,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             .filter(c => c.status === 'renew' || (c.status !== 'archive' && c.status !== 'delete'))
             .map(c => c.id);
 
-        startCycle(cycleDetails.name, cycleDetails.endDate, newArenaIds.length > 0 ?newArenaIds : undefined);
+        startCycle(cycleDetails.name, cycleDetails.endDate, cycleDetails.startDate, newArenaIds.length > 0 ?newArenaIds : undefined);
     };
 
     const setCurrentSkin = (skinId: string) => updateUserProfile({ skin: skinId });

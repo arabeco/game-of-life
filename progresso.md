@@ -1,6 +1,16 @@
 # PROGRESSO HISTORICO: GLYPH
-Data de consolidacao: 25/03/2026
+Data de consolidacao: 31/03/2026
 Fonte: itens [v] removidos do relatorio operacional
+
+## Fechamento 31/03/2026
+[v] Refino do fluxo de `Campanhas`: criar, comprar, instalar e anexar arenas sem gambiarra.
+[v] Entrega do mentor para o pupilo ficou mais direta, com painel de campanhas e vinculos mais claro.
+[v] `Parceria` foi reescrita para `arena existente em live-read`, com retirada da vitrine sem apagar a arena.
+[v] `Competicao` foi reescrita para multiplos duelos `snapshot`, read-only, com bonus de duelo e historico selado.
+[v] Loja no `Modo Basico` agora respeita o corte: sem `Itens` e sem `Forja`.
+[v] `ArenasView` recebeu alivio de scroll/mobile, correcao de crash em runtime e leitura melhor com muitas arenas.
+[v] Push de DM agora abre direto no `Oraculo`/conversa certa e ficou com copy mais honesta para mensagens nao lidas.
+[v] `GM Panel` foi separado da propaganda de `Premium` e ficou tratado como superficie interna de staff, sem misturar beneficio de soberano com poder de GM.
 
 ## Fechamento 30/03/2026
 [v] Selar o push remoto fora do app em producao: registro real do aparelho, webhook Supabase, VAPID, Vercel, notificacao normal, card do `Oraculo`, lembrete de `acao` e DM com preferencia propria validos em teste real.

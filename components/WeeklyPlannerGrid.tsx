@@ -153,7 +153,7 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
                 </div>
                 {task.completed && (
                     <div className="absolute right-1 top-1 z-20 flex h-4.5 w-4.5 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]">
-                        <CheckCircleIcon className="h-3 w-3" />
+                        <CheckCircleIcon className="h-3 w-3 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" />
                     </div>
                 )}
 

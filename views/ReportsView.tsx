@@ -31,7 +31,7 @@ const LegacyPlaqueForgeModal = React.lazy(() => import('../components/LegacyPlaq
 const LegacyProjectionModal = React.lazy(() => import('../components/LegacyProjectionModal').then(m => ({ default: m.LegacyProjectionModal })));
 
 // --- Helper Functions ---
-import { parseDate, daysBetween, formatDate, getScoreGrade } from '../utils/dateUtils';
+import { parseDate, daysBetween, formatDate, getCycleTimingSummary, getScoreGrade } from '../utils/dateUtils';
 const toRoman = (num: number) => {
     const map = [
         { value: 1000, symbol: 'M' },
@@ -111,6 +111,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
     const { tasks, assets, actions, reports, deleteCycle } = useGame();
     const startDate = cycle.startDate;
     const endDate = cycle.endDate;
+    const cycleTiming = getCycleTimingSummary(startDate, endDate);
 
     const handleDelete = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -174,7 +175,15 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
                     rank={scoreInfo.grade}
                     score={currentScore}
                     title={cycle.name || 'Ciclo ativo'}
-                    subtitle={`${formatDate(cycle.startDate)} - ${formatDate(cycle.endDate)}`}
+                    subtitle={`${formatDate(cycle.startDate)} - ${formatDate(cycle.endDate)} · ${cycleTiming.totalDays} dias`}
+                    dualProgress={{
+                        progress: cycleProgress,
+                        time: cycleTiming.timeProgress,
+                        progressLabel: 'Progresso',
+                        progressValue: `${completedTasks.length}/${cycleTasks.length} · ${Math.round(cycleProgress)}%`,
+                        timeLabel: 'Tempo',
+                        timeValue: cycleTiming.isUpcoming ? cycleTiming.statusLabel : `Dia ${cycleTiming.elapsedDays}/${cycleTiming.totalDays}`,
+                    }}
                     metrics={[
                         { label: 'Acoes', value: `${completedTasks.length}/${cycleTasks.length}` },
                         { label: 'Carga', value: `${totalHours}h` },

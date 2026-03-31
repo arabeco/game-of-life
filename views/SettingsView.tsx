@@ -18,6 +18,7 @@ import { RelationshipHubModal } from '../components/RelationshipHubModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
+import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
@@ -53,6 +54,7 @@ const AssetDecagon = lazy(() =>
 type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
 type ProfileVisibilityOption = ProfileVisibilityScope;
+type UiSettingsSkinOption = { id: string; name: string };
 
 const UI_SKIN_SELECTOR_ORDER = ['BASIC', 'GOLD', 'FROST', 'EMBER', 'CYBER', 'AURORA', 'VOID', 'GENESIS', 'item_theme_nebulosa'] as const;
 const UI_SKIN_SELECTOR_META: Record<string, { label: string; title: string; previewSkinId?: string; prefersLightText?: boolean; }> = {
@@ -157,13 +159,13 @@ const PreferenceToggleChip: React.FC<{
         type="button"
         onClick={onClick}
         aria-pressed={enabled}
-        className={`inline-flex items-center justify-between gap-3 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
+        className={`inline-flex w-full min-w-0 items-center justify-between gap-2 rounded-full border px-2.5 py-2 text-[9px] font-black uppercase tracking-[0.14em] transition-all ${
             enabled
                 ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]'
                 : 'border-white/10 bg-black/20 text-gray-400 hover:bg-white/5 hover:text-white'
         }`}
     >
-        <span>{label}</span>
+        <span className="truncate">{label}</span>
         <span className={`h-2.5 w-2.5 rounded-full ${enabled ? 'bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--sephirot-glow-color)]' : 'bg-white/15'}`} />
     </button>
 );
@@ -268,7 +270,7 @@ const PrivacyPreferencesModal: React.FC<{
                             ))}
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                             <a
                                 href={LEGAL_TERMS_URL_PLACEHOLDER}
                                 target="_blank"
@@ -290,11 +292,14 @@ const PrivacyPreferencesModal: React.FC<{
 
                     <div className="settings-panel-card space-y-3">
                         <div className="flex items-center justify-between gap-3">
-                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Visibilidade do perfil</div>
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Visibilidade do perfil</div>
+                                <div className="text-[11px] text-gray-500">Widgets seguem a visibilidade dos ativos; arenas ficam no controle proprio abaixo.</div>
+                            </div>
                             <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">So afeta o que outros veem</div>
                         </div>
                         <VisibilityScopeControl
-                            label="Ativos"
+                            label="Ativos e widgets"
                             value={assetsVisibility}
                             onChange={onAssetsVisibilityChange}
                         />
@@ -304,10 +309,177 @@ const PrivacyPreferencesModal: React.FC<{
                             onChange={onMasteryVisibilityChange}
                         />
                         <VisibilityScopeControl
-                            label="Miniaturas de arenas"
+                            label="Arenas do ativo"
                             value={featsVisibility}
                             onChange={onFeatsVisibilityChange}
                         />
+                    </div>
+                </GlassCard>
+            </div>
+        </Portal>
+    );
+};
+
+const UiPreferencesModal: React.FC<{
+    open: boolean;
+    appMode: 'BASIC' | 'GAME';
+    activeTheme: 'LIGHT' | 'DARK';
+    toggleTheme: () => void;
+    uiSkinCatalog: UiSettingsSkinOption[];
+    unlockedUiSkinIds: Set<string>;
+    effectiveUiSkinId: string;
+    oraclePreferences: { animationsEnabled?: boolean; soundsEnabled?: boolean; hapticsEnabled?: boolean } | null | undefined;
+    updateOraclePreferences: (updates: Partial<{ animationsEnabled: boolean; soundsEnabled: boolean; hapticsEnabled: boolean }>) => void;
+    onUiSkinOptionClick: (skinId: string, unlocked: boolean, disabledByMode: boolean) => void;
+    onClose: () => void;
+}> = ({
+    open,
+    appMode,
+    activeTheme,
+    toggleTheme,
+    uiSkinCatalog,
+    unlockedUiSkinIds,
+    effectiveUiSkinId,
+    oraclePreferences,
+    updateOraclePreferences,
+    onUiSkinOptionClick,
+    onClose,
+}) => {
+    if (!open) return null;
+
+    return (
+        <Portal>
+            <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
+                <GlassCard
+                    variant="neutral"
+                    className="w-full max-w-md m-4 space-y-4 rounded-3xl"
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="space-y-1">
+                            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Interface</div>
+                            <h2 className="text-base font-black uppercase tracking-[0.14em]">Skins, tema e feedback</h2>
+                        </div>
+                        <button onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-white/70 transition-colors hover:bg-black/35 hover:text-white">
+                            <XIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+
+                    <div className="settings-panel-card space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Skins UI</div>
+                                <div className="text-[11px] text-gray-500">No modo básico, a interface fica fixa no corte essencial.</div>
+                            </div>
+                            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">
+                                {appMode === 'BASIC' ? 'Básico fixo' : 'Tema livre'}
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                            {uiSkinCatalog.map((skin) => {
+                                const skinMeta: { label: string; title: string; previewSkinId?: string; prefersLightText?: boolean; } = UI_SKIN_SELECTOR_META[skin.id] || {
+                                    label: skin.name.replace(/^Tema:\s*/i, '').replace(/^Interface\s*/i, '').toUpperCase(),
+                                    title: skin.name,
+                                };
+                                const unlocked = unlockedUiSkinIds.has(skin.id);
+                                const selected = effectiveUiSkinId === skin.id;
+                                const disabledByMode = appMode === 'BASIC' && skin.id !== 'BASIC';
+                                const previewSkinId = skinMeta.previewSkinId || resolveUiSkinId(skin.id);
+                                const previewTokens = buildUiSkinTokens(previewSkinId, activeTheme === 'LIGHT' ? 'light' : 'dark');
+                                return (
+                                    <button
+                                        key={skin.id}
+                                        type="button"
+                                        disabled={disabledByMode}
+                                        onClick={() => onUiSkinOptionClick(skin.id, unlocked, disabledByMode)}
+                                        title={skinMeta.title}
+                                        aria-pressed={selected}
+                                        className={`group inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-left text-[9px] font-black uppercase tracking-[0.14em] transition-all ${
+                                            selected
+                                                ? 'shadow-[0_0_16px_var(--ui-button-primary-glow)]'
+                                                : unlocked && !disabledByMode
+                                                    ? 'hover:-translate-y-0.5 hover:brightness-[1.04]'
+                                                    : ''
+                                        } ${disabledByMode ? 'cursor-default' : ''}`}
+                                        style={{
+                                            background: selected ? previewTokens.cardStrongBackground : 'rgba(255,255,255,0.03)',
+                                            borderColor: selected ? 'var(--ui-border-accent)' : previewTokens.borderSoftColor,
+                                            opacity: disabledByMode ? 0.42 : unlocked ? 1 : 0.72,
+                                            boxShadow: selected ? `0 0 20px ${previewTokens.buttonGlow}` : undefined,
+                                        }}
+                                    >
+                                        <span
+                                            className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full border border-white/15"
+                                            style={{
+                                                background: previewTokens.accentHex,
+                                                boxShadow: `0 0 8px ${previewTokens.accentHex}`,
+                                            }}
+                                        />
+                                        <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/82">
+                                            {skinMeta.label}
+                                        </span>
+                                        <span
+                                            className="text-[8px] font-black uppercase tracking-[0.16em]"
+                                            style={{
+                                                color: selected ? previewTokens.accentTextColor : 'rgba(255,255,255,0.42)',
+                                            }}
+                                        >
+                                            {selected ? 'ATIVA' : disabledByMode ? 'BASIC' : unlocked ? '' : 'LOJA'}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="settings-panel-card space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-1">
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Tema visual</div>
+                                <div className="text-[11px] text-gray-500">Escolha o contraste geral do app.</div>
+                            </div>
+                            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">
+                                {activeTheme === 'LIGHT' ? 'Modo claro' : 'Modo escuro'}
+                            </div>
+                        </div>
+                        <div className="flex gap-2 p-1 bg-black/20 rounded-lg">
+                            <button
+                                onClick={() => activeTheme !== 'LIGHT' && toggleTheme()}
+                                className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'LIGHT' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                MODO CLARO
+                            </button>
+                            <button
+                                onClick={() => activeTheme !== 'DARK' && toggleTheme()}
+                                className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'DARK' ? 'bg-slate-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                MODO ESCURO
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="settings-panel-card space-y-3">
+                        <div className="space-y-1">
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Feedback sensorial</div>
+                            <div className="text-[11px] text-gray-500">Controle o que anima, toca e vibra.</div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <PreferenceToggleChip
+                                label="Animações"
+                                enabled={Boolean(oraclePreferences?.animationsEnabled)}
+                                onClick={() => updateOraclePreferences({ animationsEnabled: !Boolean(oraclePreferences?.animationsEnabled) })}
+                            />
+                            <PreferenceToggleChip
+                                label="Sons"
+                                enabled={Boolean(oraclePreferences?.soundsEnabled)}
+                                onClick={() => updateOraclePreferences({ soundsEnabled: !Boolean(oraclePreferences?.soundsEnabled) })}
+                            />
+                            <PreferenceToggleChip
+                                label="Vibração"
+                                enabled={Boolean(oraclePreferences?.hapticsEnabled)}
+                                onClick={() => updateOraclePreferences({ hapticsEnabled: !Boolean(oraclePreferences?.hapticsEnabled) })}
+                            />
+                        </div>
                     </div>
                 </GlassCard>
             </div>
@@ -1444,7 +1616,12 @@ const GeralTab: React.FC = () => {
     const [showStartCycle, setShowStartCycle] = useState(false);
     const [showMastery, setShowMastery] = useState(false);
     const [cycleName, setCycleName] = useState('');
+    const [cycleStartDate, setCycleStartDate] = useState(() => getLocalDateString());
     const [cycleEndDate, setCycleEndDate] = useState('');
+    const pendingCycleTiming = useMemo(() => {
+        if (!cycleStartDate || !cycleEndDate) return null;
+        return getCycleTimingSummary(cycleStartDate, cycleEndDate, getLocalDateString());
+    }, [cycleStartDate, cycleEndDate]);
 
     const handleSave = () => { updateUserProfile({ nickname }); alert("Perfil salvo!"); };
 
@@ -1664,6 +1841,7 @@ const GeralTab: React.FC = () => {
                             <>
                                 <div className="text-lg font-bold text-white truncate">{activeCycle.name}</div>
                                 <div className="text-xs text-gray-500 mt-1 font-mono">{activeCycle.startDate} → {activeCycle.endDate}</div>
+                                <div className="text-[11px] text-gray-500 mt-1">Dia 1 = início do ciclo. O último dia também conta.</div>
                             </>
                         ) : (
                             <>
@@ -1762,17 +1940,36 @@ const GeralTab: React.FC = () => {
                                 />
                                 <input
                                     type="date"
+                                    value={cycleStartDate}
+                                    min={getLocalDateString()}
+                                    onChange={(e) => {
+                                        const nextStartDate = e.target.value;
+                                        setCycleStartDate(nextStartDate);
+                                        if (cycleEndDate && cycleEndDate < nextStartDate) {
+                                            setCycleEndDate(nextStartDate);
+                                        }
+                                    }}
+                                    className="w-full p-2 bg-black/30 rounded-lg border border-white/20"
+                                />
+                                <input
+                                    type="date"
                                     value={cycleEndDate}
+                                    min={cycleStartDate || getLocalDateString()}
                                     onChange={(e) => setCycleEndDate(e.target.value)}
                                     className="w-full p-2 bg-black/30 rounded-lg border border-white/20"
                                 />
+                                {pendingCycleTiming ? (
+                                    <p className="text-[11px] leading-relaxed text-gray-400">
+                                        {pendingCycleTiming.statusLabel}. Dia 1 = início do ciclo e o último dia também conta.
+                                    </p>
+                                ) : null}
                             </div>
                             <div className="flex space-x-2">
                                 <button onClick={() => setShowStartCycle(false)} className="w-1/2 py-2 rounded-xl luxe-button-secondary">Cancelar</button>
                                 <button
                                     onClick={() => {
                                         if (!cycleName.trim() || !cycleEndDate) return;
-                                        startCycle(cycleName.trim(), cycleEndDate);
+                                        startCycle(cycleName.trim(), cycleEndDate, cycleStartDate);
                                         setShowStartCycle(false);
                                     }}
                                     className="w-1/2 py-2 rounded-xl luxe-skin-button"
@@ -1800,7 +1997,7 @@ const GeralTab: React.FC = () => {
 
 const PreferenciasTab: React.FC = () => {
     const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin } = useGame();
-    const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | null>(null);
+    const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
     const [highlightModeGame, setHighlightModeGame] = useState(false);
     const modeGameRef = useRef<HTMLDivElement | null>(null);
@@ -1864,6 +2061,12 @@ const PreferenciasTab: React.FC = () => {
         return unlocked;
     }, [inventory, userProfile.skin, userProfile.unlockedItems]);
     const effectiveUiSkinId = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
+    const currentUiSkinName = useMemo(() => {
+        const selectedSkin = uiSkinCatalog.find((skin) => skin.id === effectiveUiSkinId);
+        if (!selectedSkin) return appMode === 'BASIC' ? 'Basica' : 'Tema atual';
+        return selectedSkin.name.replace(/^Tema:\s*/i, '').replace(/^Interface\s*/i, '');
+    }, [appMode, effectiveUiSkinId, uiSkinCatalog]);
+    const uiPreferencesSummary = `${currentUiSkinName} · ${activeTheme === 'LIGHT' ? 'Claro' : 'Escuro'}`;
     const modeGameSummary = appMode === 'GAME'
         ? 'Itens, missões, grupo casual e temas de UI.'
         : 'Apenas o necessário para produtividade.';
@@ -1949,110 +2152,9 @@ const PreferenciasTab: React.FC = () => {
                                 {modeGameSummary}
                             </p>
 
-                            <div className="pt-3 border-t border-white/5 animate-fade-in">
-                                <div className="mb-3">
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Interface</h4>
-                                        <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
-                                            {appMode === 'BASIC' ? 'Básico fixo' : 'Tags da interface'}
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {uiSkinCatalog.map((skin) => {
-                                            const skinMeta: { label: string; title: string; previewSkinId?: string; prefersLightText?: boolean; } = UI_SKIN_SELECTOR_META[skin.id] || {
-                                                label: skin.name.replace(/^Tema:\s*/i, '').replace(/^Interface\s*/i, '').toUpperCase(),
-                                                title: skin.name,
-                                            };
-                                            const unlocked = unlockedUiSkinIds.has(skin.id);
-                                            const selected = effectiveUiSkinId === skin.id;
-                                            const disabledByMode = appMode === 'BASIC' && skin.id !== 'BASIC';
-                                            const previewSkinId = skinMeta.previewSkinId || resolveUiSkinId(skin.id);
-                                            const previewTokens = buildUiSkinTokens(previewSkinId, activeTheme === 'LIGHT' ? 'light' : 'dark');
-                                            return (
-                                                <button
-                                                    key={skin.id}
-                                                    type="button"
-                                                    disabled={disabledByMode}
-                                                    onClick={() => handleUiSkinOptionClick(skin.id, unlocked, disabledByMode)}
-                                                    title={skinMeta.title}
-                                                    aria-pressed={selected}
-                                                    className={`group inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-left text-[9px] font-black uppercase tracking-[0.14em] transition-all ${
-                                                        selected
-                                                            ? 'shadow-[0_0_16px_var(--ui-button-primary-glow)]'
-                                                            : unlocked && !disabledByMode
-                                                                ? 'hover:-translate-y-0.5 hover:brightness-[1.04]'
-                                                                : ''
-                                                    } ${disabledByMode ? 'cursor-default' : ''}`}
-                                                    style={{
-                                                        background: selected ? previewTokens.cardStrongBackground : 'rgba(255,255,255,0.03)',
-                                                        borderColor: selected ? 'var(--ui-border-accent)' : previewTokens.borderSoftColor,
-                                                        opacity: disabledByMode ? 0.42 : unlocked ? 1 : 0.72,
-                                                        boxShadow: selected ? `0 0 20px ${previewTokens.buttonGlow}` : undefined,
-                                                    }}
-                                                >
-                                                    <span
-                                                        className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full border border-white/15"
-                                                        style={{
-                                                            background: previewTokens.accentHex,
-                                                            boxShadow: `0 0 8px ${previewTokens.accentHex}`,
-                                                        }}
-                                                    />
-                                                    <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/82">
-                                                        {skinMeta.label}
-                                                    </span>
-                                                    <span
-                                                        className="text-[8px] font-black uppercase tracking-[0.16em]"
-                                                        style={{
-                                                            color: selected ? previewTokens.accentTextColor : 'rgba(255,255,255,0.42)',
-                                                        }}
-                                                    >
-                                                        {selected ? 'ATIVA' : disabledByMode ? 'BASIC' : unlocked ? '' : 'LOJA'}
-                                                    </span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Tema Visual</h4>
-                                    <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
-                                        {activeTheme === 'LIGHT' ? 'Modo claro' : 'Modo escuro'}
-                                    </span>
-                                </div>
-                                <div className="flex gap-2 p-1 bg-black/20 rounded-lg">
-                                    <button
-                                        onClick={() => activeTheme !== 'LIGHT' && toggleTheme()}
-                                        className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'LIGHT' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                                    >
-                                        MODO CLARO
-                                    </button>
-                                    <button
-                                        onClick={() => activeTheme !== 'DARK' && toggleTheme()}
-                                        className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'DARK' ? 'bg-slate-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                                    >
-                                        MODO ESCURO
-                                    </button>
-                                </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    <PreferenceToggleChip
-                                        label="Animações"
-                                        enabled={Boolean(oraclePreferences?.animationsEnabled)}
-                                        onClick={() => updateOraclePreferences({ animationsEnabled: !Boolean(oraclePreferences?.animationsEnabled) })}
-                                    />
-                                    <PreferenceToggleChip
-                                        label="Sons"
-                                        enabled={Boolean(oraclePreferences?.soundsEnabled)}
-                                        onClick={() => updateOraclePreferences({ soundsEnabled: !Boolean(oraclePreferences?.soundsEnabled) })}
-                                    />
-                                    <PreferenceToggleChip
-                                        label="Vibração"
-                                        enabled={Boolean(oraclePreferences?.hapticsEnabled)}
-                                        onClick={() => updateOraclePreferences({ hapticsEnabled: !Boolean(oraclePreferences?.hapticsEnabled) })}
-                                    />
-                                </div>
-                            </div>
                         </GlassCard>
                     </div>
+                    <SettingSelector label="Interface & Som" value={currentUiSkinName} onClick={() => setModal('ui')} />
                     <div id="oracle-preferences-setting">
                         <SettingSelector label="Oráculo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />
                     </div>
@@ -2072,6 +2174,21 @@ const PreferenciasTab: React.FC = () => {
                 </button>
             </section>
 
+            {modal === 'ui' && (
+                <UiPreferencesModal
+                    open
+                    appMode={appMode}
+                    activeTheme={activeTheme}
+                    toggleTheme={toggleTheme}
+                    uiSkinCatalog={uiSkinCatalog}
+                    unlockedUiSkinIds={unlockedUiSkinIds}
+                    effectiveUiSkinId={effectiveUiSkinId}
+                    oraclePreferences={oraclePreferences}
+                    updateOraclePreferences={updateOraclePreferences}
+                    onUiSkinOptionClick={handleUiSkinOptionClick}
+                    onClose={() => setModal(null)}
+                />
+            )}
             {modal === 'oracle' && <OracleSettingsModal onClose={() => setModal(null)} variant="preferences" />}
 
             {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} />}

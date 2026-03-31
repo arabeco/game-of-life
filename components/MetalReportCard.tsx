@@ -13,6 +13,15 @@ interface MetalBadge {
   value?: string;
 }
 
+interface MetalDualProgress {
+  progress: number;
+  time: number;
+  progressLabel?: string;
+  progressValue?: string;
+  timeLabel?: string;
+  timeValue?: string;
+}
+
 export interface MetalRankPalette {
   rank: MetalReportRank;
   label: string;
@@ -32,6 +41,7 @@ interface MetalReportCardProps {
   subtitle?: string;
   dateRange?: string;
   summary?: string;
+  dualProgress?: MetalDualProgress;
   metrics?: MetalMetric[];
   badges?: MetalBadge[];
   compact?: boolean;
@@ -160,6 +170,7 @@ export const MetalReportCard: React.FC<MetalReportCardProps> = ({
   subtitle,
   dateRange,
   summary,
+  dualProgress,
   metrics = [],
   badges = [],
   compact = false,
@@ -284,6 +295,35 @@ export const MetalReportCard: React.FC<MetalReportCardProps> = ({
           <h3 className="metal-report-card__title engraved-text">{title}</h3>
           {summary ? <p className="metal-report-card__summary engraved-text-soft">{summary}</p> : null}
         </div>
+
+        {dualProgress ? (
+          <div className="metal-report-card__dual-progress engraved-panel">
+            <div className="metal-report-card__dual-progress-row">
+              <div className="metal-report-card__dual-progress-meta">
+                <span className="metal-report-card__dual-progress-label">{dualProgress.progressLabel || 'Progresso'}</span>
+                <span className="metal-report-card__dual-progress-value engraved-text-soft">{dualProgress.progressValue || `${Math.round(dualProgress.progress)}%`}</span>
+              </div>
+              <div className="metal-report-card__dual-progress-track">
+                <div
+                  className="metal-report-card__dual-progress-fill metal-report-card__dual-progress-fill--progress"
+                  style={{ width: `${Math.max(0, Math.min(100, dualProgress.progress))}%` }}
+                />
+              </div>
+            </div>
+            <div className="metal-report-card__dual-progress-row">
+              <div className="metal-report-card__dual-progress-meta">
+                <span className="metal-report-card__dual-progress-label">{dualProgress.timeLabel || 'Tempo'}</span>
+                <span className="metal-report-card__dual-progress-value engraved-text-soft">{dualProgress.timeValue || `${Math.round(dualProgress.time)}%`}</span>
+              </div>
+              <div className="metal-report-card__dual-progress-track">
+                <div
+                  className="metal-report-card__dual-progress-fill metal-report-card__dual-progress-fill--time"
+                  style={{ width: `${Math.max(0, Math.min(100, dualProgress.time))}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {visibleMetrics.length > 0 && (
           <div className="metal-report-card__metrics">

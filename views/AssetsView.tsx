@@ -9,6 +9,7 @@ import { EditIcon, XIcon } from '../components/Icons';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
 import { calculateArenaProgress } from '../utils/progressUtils';
+import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import type { Asset, Slot, SlotValue } from '../types';
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
@@ -81,12 +82,9 @@ const isSlotValueEmpty = (value: SlotValue | undefined): boolean => {
     return !value.imageUrl?.trim();
 };
 
-type AssetSubview = 'widget' | 'arenas';
-
 export const AssetsView: React.FC = () => {
     const { assets, userProfile, updateUserProfile, appMode, activeCycle, dailyCommitment, cycleProgress, getArenas, actions, tasks } = useGame();
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
-    const [assetSubview, setAssetSubview] = useState<AssetSubview>('arenas');
     const [isEditingAssetDetail, setIsEditingAssetDetail] = useState(false);
     const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
     const [draftAssetArtUrl, setDraftAssetArtUrl] = useState<string | undefined>(undefined);
@@ -125,6 +123,7 @@ export const AssetsView: React.FC = () => {
         : '#4b5563';
     const selectedAssetLevel = selectedAsset ? Math.max(1, Number(selectedAsset.level || 1)) : 1;
     const selectedAssetMasteryPhrase = selectedAsset?.levelDescriptions?.[selectedAssetLevel] || '';
+    const canShowSelectedAssetWidget = Boolean(!isBasicMode && selectedAssetPrimarySlot);
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
     const cycleAccentRgb = hexToRgb(userProfile.skinColor || '#d4af37');
     const cycleLabelColor = lightenToward(cycleAccentRgb, [168, 182, 201], 0.52);
@@ -187,12 +186,7 @@ export const AssetsView: React.FC = () => {
     const cycleSummary = useMemo(() => {
         if (!activeCycle) return null;
 
-        const startDate = new Date(`${activeCycle.startDate}T00:00:00`);
-        const endDate = new Date(`${activeCycle.endDate}T00:00:00`);
-        const todayBase = dailyCommitment?.date ? new Date(`${dailyCommitment.date}T00:00:00`) : new Date();
-        const today = new Date(todayBase.getFullYear(), todayBase.getMonth(), todayBase.getDate());
-        const totalDays = Math.max(1, Math.floor((endDate.getTime() - startDate.getTime()) / 86400000) + 1);
-        const elapsedDays = Math.max(1, Math.min(totalDays, Math.floor((today.getTime() - startDate.getTime()) / 86400000) + 1));
+        const cycleTiming = getCycleTimingSummary(activeCycle.startDate, activeCycle.endDate, dailyCommitment?.date);
         const cycleArenaIds = new Set(activeCycle.arenaIds || []);
         const scopedArenas = cycleArenaIds.size > 0 ? allArenas.filter((arena) => cycleArenaIds.has(arena.id)) : allArenas;
         const activeArenaCount = scopedArenas.filter((arena) => !arena.isArchived).length;
@@ -218,8 +212,11 @@ export const AssetsView: React.FC = () => {
         return {
             name: activeCycle.name,
             progress: computedProgress,
-            elapsedDays,
-            totalDays,
+            timeProgress: cycleTiming.timeProgress,
+            elapsedDays: cycleTiming.elapsedDays,
+            totalDays: cycleTiming.totalDays,
+            statusLabel: cycleTiming.statusLabel,
+            inclusiveLabel: cycleTiming.inclusiveLabel,
             activeArenaCount,
             archivedArenaCount,
             totalCompleted,
@@ -310,7 +307,6 @@ export const AssetsView: React.FC = () => {
 
     const handleOpenAsset = (asset: Asset) => {
         setSelectedAssetId(asset.id);
-        setAssetSubview('arenas');
         setEditingSlot(null);
     };
 
@@ -431,16 +427,16 @@ export const AssetsView: React.FC = () => {
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 48px rgba(0,0,0,0.42)',
     };
     const selectedAssetCanvasStyle: React.CSSProperties = {
-        backgroundImage: `${selectedAssetArtUrl ? `linear-gradient(180deg, rgba(5,5,7,0.18) 0%, rgba(5,5,7,0.78) 46%, rgba(5,5,7,0.94) 100%), url("${selectedAssetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 16% 0%, rgba(255,246,204,0.28), transparent 29%),
+        backgroundImage: `${selectedAssetArtUrl ? `linear-gradient(180deg, rgba(5,5,7,0.08) 0%, rgba(5,5,7,0.54) 44%, rgba(5,5,7,0.78) 100%), url("${selectedAssetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 16% 0%, rgba(255,246,204,0.24), transparent 29%),
             radial-gradient(circle at 92% 88%, ${rgbaString(selectedAssetAccentRgb, 0.16)}, transparent 24%),
-            linear-gradient(180deg, rgba(9,11,16,0.9) 0%, rgba(5,6,9,0.96) 100%)`,
+            linear-gradient(180deg, rgba(9,11,16,0.72) 0%, rgba(5,6,9,0.86) 100%)`,
         backgroundSize: selectedAssetArtUrl ? 'cover, cover, auto, auto' : undefined,
         backgroundPosition: selectedAssetArtUrl ? 'center, center, center, center' : undefined,
         backgroundRepeat: selectedAssetArtUrl ? 'no-repeat, no-repeat, no-repeat, no-repeat' : undefined,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -40px 90px rgba(0,0,0,0.2)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -28px 72px rgba(0,0,0,0.14)',
     };
     const selectedAssetWidgetShellStyle: React.CSSProperties = {
-        backgroundImage: `linear-gradient(150deg, rgba(255,245,220,0.16) 0%, rgba(255,255,255,0.05) 24%, rgba(209,169,80,0.15) 44%, rgba(0,0,0,0.28) 74%, ${rgbaString(selectedAssetAccentRgb, 0.16)} 100%)`,
+        backgroundImage: `linear-gradient(150deg, rgba(255,245,220,0.12) 0%, rgba(255,255,255,0.04) 24%, rgba(209,169,80,0.12) 44%, rgba(0,0,0,0.16) 74%, ${rgbaString(selectedAssetAccentRgb, 0.12)} 100%)`,
     };
 
     if (selectedAsset) {
@@ -488,26 +484,11 @@ export const AssetsView: React.FC = () => {
                                 <div className="h-8 w-8" />
                             )}
 
-                            {selectedAssetPrimarySlot ? (
-                                <div className="mx-auto flex w-full max-w-[220px] rounded-2xl border border-white/10 bg-black/35 p-1 backdrop-blur-sm">
-                                    <button
-                                        type="button"
-                                        onClick={() => setAssetSubview('widget')}
-                                        className={`flex-1 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] transition-colors ${assetSubview === 'widget' ? 'bg-white/12 text-white' : 'text-white/55 hover:text-white/75'}`}
-                                    >
-                                        Widget
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAssetSubview('arenas')}
-                                        className={`flex-1 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] transition-colors ${assetSubview === 'arenas' ? 'bg-white/12 text-white' : 'text-white/55 hover:text-white/75'}`}
-                                    >
-                                        Arenas
-                                    </button>
+                            <div className="flex items-center justify-center">
+                                <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-white/58">
+                                    Painel do ativo
                                 </div>
-                            ) : (
-                                <div />
-                            )}
+                            </div>
 
                             <div className="flex items-center justify-self-end gap-2">
                                 {isEditingAssetDetail ? (
@@ -553,7 +534,7 @@ export const AssetsView: React.FC = () => {
                                 </p>
                             </div>
 
-                            <div className="mx-3 mb-3 rounded-[20px] border border-white/10 bg-black/34 px-3 py-3 backdrop-blur-sm">
+                            <div className="mx-3 mb-3 rounded-[20px] border border-white/10 bg-black/24 px-3 py-3 backdrop-blur-[2px]">
                                 <div className="flex items-center gap-3">
                                     <div
                                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-base font-black text-white shadow-[0_10px_24px_rgba(0,0,0,0.24)]"
@@ -577,8 +558,8 @@ export const AssetsView: React.FC = () => {
 
                             <div className="overflow-y-auto pr-1 -mr-1 custom-scrollbar px-1 pb-1">
                                 <div className="space-y-2">
-                                {assetSubview === 'widget' && selectedAssetPrimarySlot ? (
-                                    <div className="rounded-[24px] border border-white/10 bg-black/26 p-4 backdrop-blur-sm">
+                                {canShowSelectedAssetWidget && selectedAssetPrimarySlot ? (
+                                    <div className="rounded-[24px] border border-white/10 bg-black/20 p-4 backdrop-blur-[2px]">
                                         <div className="text-center">
                                             <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/88">
                                                 {selectedAssetPrimarySlot.label}
@@ -592,7 +573,7 @@ export const AssetsView: React.FC = () => {
                                                     if (!isEditingAssetDetail) return;
                                                     setEditingSlot(selectedAssetPrimarySlot);
                                                 }}
-                                                className={`relative w-full min-h-[2.75rem] rounded-lg border border-[color:var(--skin-accent-color)] bg-black/40 p-2 text-white transition-colors flex items-center justify-center ${isEditingAssetDetail ? 'hover:bg-black/55' : 'cursor-default'}`}
+                                                className={`relative w-full min-h-[2.75rem] rounded-lg border border-[color:var(--skin-accent-color)] bg-black/26 p-2 text-white transition-colors flex items-center justify-center ${isEditingAssetDetail ? 'hover:bg-black/38' : 'cursor-default'}`}
                                                 style={selectedAssetWidgetShellStyle}
                                             >
                                                 {isSlotValueEmpty(selectedAssetPrimarySlot.value) ? (
@@ -607,9 +588,8 @@ export const AssetsView: React.FC = () => {
                                             </button>
                                         </div>
                                     </div>
-                                ) : (
-                                    <AssetArenaBoard asset={selectedAsset} showArchived={false} />
-                                )}
+                                ) : null}
+                                <AssetArenaBoard asset={selectedAsset} showArchived={false} />
                                 </div>
                             </div>
                         </div>
@@ -653,39 +633,67 @@ export const AssetsView: React.FC = () => {
                             >
                                 <div className="min-w-0 space-y-0.5">
                                     <div className="min-w-0 flex-1 space-y-0.5">
-                                        <h3 className="truncate text-[11px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
-                                            {cycleSummary ? cycleSummary.name : 'Sem ciclo ativo'}
-                                        </h3>
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.88) }}>
-                                            {cycleSummary
-                                                ? `Dia ${cycleSummary.elapsedDays}/${cycleSummary.totalDays}`
-                                                : 'Toque para abrir o histórico'}
-                                        </p>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h3 className="truncate text-[11px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
+                                                {cycleSummary ? cycleSummary.name : 'Sem ciclo ativo'}
+                                            </h3>
+                                            {cycleSummary ? (
+                                                <span className="shrink-0 text-[8px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
+                                                    {formatDate(activeCycle.endDate)}
+                                                </span>
+                                            ) : null}
+                                        </div>
                                         {cycleSummary ? (
-                                            <div className="flex items-center justify-between gap-2 text-[8px] font-black uppercase tracking-[0.08em]">
+                                            <p className="text-[9px] font-semibold uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.88) }}>
+                                                {`${cycleSummary.statusLabel} · ${cycleSummary.totalDays} dias`}
+                                            </p>
+                                        ) : null}
+                                        {cycleSummary ? (
+                                            <p className="text-[8px] font-semibold tracking-[0.03em]" style={{ color: rgbaString(cycleMetaColor, 0.76) }}>
+                                                Dia 1 = {formatDate(activeCycle.startDate)} · ultimo dia tambem conta.
+                                            </p>
+                                        ) : null}
+                                        {cycleSummary ? (
+                                            <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.08em]">
                                                 <span className="truncate" style={{ color: rgbaString(cycleMetaColor, 0.92) }}>
                                                     {cycleSummary.activeArenaCount} arenas ativas
                                                 </span>
-                                                <div className="shrink-0 text-right">
-                                                    <span style={{ color: rgbaString(cycleMetaColor, 0.9) }}>
-                                                        Ações {cycleSummary.totalCompleted}/{cycleSummary.totalPlanned}
-                                                    </span>
-                                                    <span className="ml-2" style={{ color: rgbString(cycleTitleColor) }}>
-                                                        {cycleSummary.progress}%
-                                                    </span>
-                                                </div>
                                             </div>
                                         ) : null}
                                     </div>
                                 </div>
                                 <div className="mt-1.5">
-                                    <div className="h-[5px] w-full overflow-hidden rounded-full bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                                    <div className="flex items-center justify-between gap-2 text-[8px] font-black uppercase tracking-[0.08em]">
+                                        <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Progresso</span>
+                                        <span style={{ color: rgbString(cycleTitleColor) }}>
+                                            {cycleSummary ? `${cycleSummary.totalCompleted}/${cycleSummary.totalPlanned} · ${cycleSummary.progress}%` : '0/0 · 0%'}
+                                        </span>
+                                    </div>
+                                    <div className="mt-0.5 h-[5px] w-full overflow-hidden rounded-full bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                                         <div
                                             className="h-full rounded-full transition-all duration-500"
                                             style={{
                                                 width: `${cycleSummary ? cycleSummary.progress : 0}%`,
                                                 background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)',
                                                 boxShadow: '0 0 12px rgba(212,175,55,0.28)',
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="mt-1 flex items-center justify-between gap-2 text-[8px] font-black uppercase tracking-[0.08em]">
+                                        <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Tempo</span>
+                                        <span style={{ color: rgbaString(cycleMetaColor, 0.94) }}>
+                                            {cycleSummary
+                                                ? (cycleSummary.elapsedDays > 0 ? `Dia ${cycleSummary.elapsedDays}/${cycleSummary.totalDays}` : cycleSummary.statusLabel)
+                                                : 'Dia 0/0'}
+                                        </span>
+                                    </div>
+                                    <div className="mt-0.5 h-[5px] w-full overflow-hidden rounded-full bg-black/28 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                                        <div
+                                            className="h-full rounded-full transition-all duration-500"
+                                            style={{
+                                                width: `${cycleSummary ? cycleSummary.timeProgress : 0}%`,
+                                                background: 'linear-gradient(90deg, rgba(102,157,201,0.42) 0%, rgba(143,198,235,0.82) 52%, rgba(228,244,255,0.98) 100%)',
+                                                boxShadow: '0 0 10px rgba(120,184,229,0.2)',
                                             }}
                                         />
                                     </div>
@@ -721,7 +729,7 @@ export const AssetsView: React.FC = () => {
                                             className="group relative flex min-h-[70px] w-[124px] flex-col items-center overflow-visible rounded-[22px] border px-2 pb-0.5 pt-[18px] text-center transition-all duration-300 hover:-translate-y-[2px]"
                                             style={{
                                                 borderColor: rgbaString(accentRgb, 0.42),
-                                                backgroundImage: `${assetArtUrl ? `linear-gradient(180deg, rgba(6,7,10,0.12) 0%, rgba(6,7,10,0.68) 42%, rgba(6,7,10,0.9) 100%), url("${assetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.9) 18%, rgba(10,12,16,0.96) 100%)`,
+                                                backgroundImage: `${assetArtUrl ? `linear-gradient(180deg, rgba(6,7,10,0.04) 0%, rgba(6,7,10,0.4) 42%, rgba(6,7,10,0.62) 100%), url("${assetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.17)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.09)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.04)} 0%, rgba(32,36,45,0.72) 18%, rgba(10,12,16,0.82) 100%)`,
                                                 backgroundSize: assetArtUrl ? 'cover, auto, auto, auto' : undefined,
                                                 backgroundPosition: assetArtUrl ? 'center, center, center, center' : undefined,
                                                 boxShadow: `0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 999px ${rgbaString(accentRgb, 0.022)}, 0 0 0 1px ${rgbaString(accentRgb, 0.12)}`,
@@ -740,10 +748,12 @@ export const AssetsView: React.FC = () => {
                                             </div>
                                             <div className="-mt-0.5 relative z-10 flex w-full justify-center">
                                                 <div
-                                                    className="w-[108px] rounded-[10px] border border-white/10 px-2 py-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.22)]"
+                                                    className="w-fit max-w-[104px] rounded-[10px] border border-white/5 px-1.5 py-[0.1rem] shadow-[0_6px_14px_rgba(0,0,0,0.12)]"
                                                     style={{
-                                                        backgroundColor: 'rgba(8, 10, 14, 0.58)',
-                                                        boxShadow: `0 8px 18px rgba(0,0,0,0.18), inset 0 1px 0 ${rgbaString(accentRgb, 0.05)}`,
+                                                        backgroundColor: 'rgba(8, 10, 14, 0.34)',
+                                                        boxShadow: `0 6px 14px rgba(0,0,0,0.12), inset 0 1px 0 ${rgbaString(accentRgb, 0.02)}`,
+                                                        backdropFilter: 'none',
+                                                        WebkitBackdropFilter: 'none',
                                                         transform: 'translateZ(0)',
                                                         backfaceVisibility: 'hidden',
                                                         WebkitFontSmoothing: 'antialiased',
@@ -754,7 +764,7 @@ export const AssetsView: React.FC = () => {
                                                         className="w-full truncate px-0.5 text-center text-[8px] font-black uppercase leading-none tracking-[0.02em]"
                                                         style={{
                                                             color: 'rgba(248, 250, 253, 0.96)',
-                                                            textShadow: '0 1px 10px rgba(0,0,0,0.58)',
+                                                            textShadow: '0 1px 2px rgba(0,0,0,0.92), 0 0 12px rgba(0,0,0,0.34)',
                                                             transform: 'translateZ(0)',
                                                             backfaceVisibility: 'hidden',
                                                             WebkitFontSmoothing: 'antialiased',
@@ -766,13 +776,19 @@ export const AssetsView: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div
-                                                className="-mt-0.5 w-full rounded-[12px] border border-white/10 px-2 py-[0.42rem] text-[9px] font-semibold uppercase tracking-[0.06em]"
+                                                className="-mt-0.5 mx-auto rounded-[12px] border border-white/5 px-1.5 py-[0.28rem] text-[9px] font-semibold uppercase tracking-[0.06em]"
                                                 style={{
-                                                    backgroundImage: 'linear-gradient(180deg, rgba(8,10,14,0.58) 0%, rgba(8,10,14,0.74) 100%)',
-                                                    boxShadow: `inset 0 1px 0 ${rgbaString(accentRgb, 0.05)}`,
+                                                    width: 'fit-content',
+                                                    minWidth: '88px',
+                                                    maxWidth: '100px',
+                                                    backgroundColor: 'rgba(8,10,14,0.32)',
+                                                    backgroundImage: 'none',
+                                                    boxShadow: `inset 0 1px 0 ${rgbaString(accentRgb, 0.02)}`,
+                                                    backdropFilter: 'none',
+                                                    WebkitBackdropFilter: 'none',
                                                 }}
                                             >
-                                                <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center justify-between gap-3">
                                                         <span style={{ color: 'rgba(236, 240, 247, 0.82)', textShadow: '0 1px 8px rgba(0,0,0,0.52)' }}>
                                                             <span className="font-black" style={{ color: 'rgba(248, 250, 253, 0.96)' }}>{stats.activeCount}</span> arenas
                                                         </span>
@@ -780,8 +796,8 @@ export const AssetsView: React.FC = () => {
                                                             <span className="font-black" style={{ color: 'rgba(248, 250, 253, 0.96)' }}>{stats.totalActions}</span> ações
                                                         </span>
                                                     </div>
-                                                <div className="mt-1">
-                                                    <div className="h-[3px] w-full overflow-hidden rounded-full bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                                                <div className="mt-0.5">
+                                                    <div className="h-[3px] w-full overflow-hidden rounded-full bg-black/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                                         <div
                                                             className="h-full rounded-full transition-all duration-500"
                                                             style={{

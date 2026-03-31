@@ -8,15 +8,9 @@ import { PoolAction } from './PoolAction';
 import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoopUtils.js';
 import { getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasScheduledTime, isClanQuestAction } from '../utils/taskDomain.js';
+import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import './core-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
-
-const parseDate = (value: string) => {
-    const [year, month, day] = value.split('-').map(Number);
-    return new Date(Date.UTC(year, month - 1, day));
-};
-
-const daysBetween = (start: Date, end: Date) => Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
 const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, actions: Action[]) => {
     const actionTypeById = new Map(actions.map(action => [action.id, action.actionType]));
@@ -48,11 +42,9 @@ const CycleHeader: React.FC = () => {
     const { activeCycle, dailyCommitment } = useGame();
     if (!activeCycle) return null;
 
-    const startDate = parseDate(activeCycle.startDate);
-    const endDate = parseDate(activeCycle.endDate);
-    const today = parseDate(dailyCommitment.date);
-    const totalDays = Math.max(1, daysBetween(startDate, endDate) + 1);
-    const daysElapsed = Math.max(0, daysBetween(startDate, today) + 1);
+    const cycleTiming = getCycleTimingSummary(activeCycle.startDate, activeCycle.endDate, dailyCommitment.date);
+    const daysElapsed = cycleTiming.elapsedDays;
+    const totalDays = cycleTiming.totalDays;
 
     return (
         <div className="text-center space-y-2 text-xs p-2 rounded-xl sitrep-neutral-panel">
@@ -124,6 +116,9 @@ const BattleTaskItem: React.FC<{
                     {isFreeAction ? <div className="free-action-complete-dot" /> : <CheckIcon className="w-5 h-5 accent-text drop-shadow-[0_0_5px_rgba(0,0,0,1)]" />}
                 </div>
             )}
+            <p className="text-[9px] font-semibold text-gray-400">
+                {formatDate(activeCycle.startDate)} → {formatDate(activeCycle.endDate)} · {cycleTiming.inclusiveLabel}
+            </p>
         </div>
     );
 };

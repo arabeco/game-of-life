@@ -29,7 +29,6 @@ import {
     Trash2Icon,
     XIcon,
     SendIcon,
-    ChevronRightIcon,
 } from './Icons';
 import { supabase } from '../supabaseClient';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
@@ -1311,6 +1310,19 @@ export const RelationshipHubModal: React.FC<{
         ? currentTabLinks.find((link) => link.id === selectedDetailLink.id) || null
         : null;
 
+    useEffect(() => {
+        if (currentTabLinks.length === 0) {
+            if (selectedDetailLink) {
+                setSelectedDetailLink(null);
+            }
+            return;
+        }
+
+        if (!resolvedSelectedDetailLink) {
+            setSelectedDetailLink(currentTabLinks[0]);
+        }
+    }, [currentTabLinks, resolvedSelectedDetailLink, selectedDetailLink]);
+
     const getRelationshipRoleCopy = (link: RelationshipLink) => {
         if (link.linkType === 'mentoria') {
             return link.mentorId === sessionUid
@@ -1366,6 +1378,57 @@ export const RelationshipHubModal: React.FC<{
 
         return [];
     };
+
+    const getRelationshipSelectLabel = (link: RelationshipLink) => {
+        const profile = otherParticipant(link);
+        const arenasTotal = getArenaChipsForLink(link).length;
+        const campaignsTotal = link.linkType === 'mentoria'
+            ? (link.mentorId === sessionUid
+                ? (mentorSentCodexesByLinkId[link.id] || []).length
+                : (receivedCodexesByLinkId.get(link.id) || []).length)
+            : 0;
+
+        const baseName = profile?.nickname || LINK_LABELS[link.linkType].singular;
+        if (link.linkType === 'mentoria') {
+            return `${baseName} · ${arenasTotal} arena${arenasTotal === 1 ? '' : 's'} · ${campaignsTotal} campanha${campaignsTotal === 1 ? '' : 's'}`;
+        }
+        return `${baseName} · ${arenasTotal} arena${arenasTotal === 1 ? '' : 's'}`;
+    };
+
+    const renderRelationshipSelector = () => (
+        <div className="rounded-[20px] border border-white/10 bg-black/18 px-3 py-3">
+            <div className="flex items-center gap-2">
+                <select
+                    value={resolvedSelectedDetailLink?.id || ''}
+                    onChange={(event) => {
+                        const nextLink = currentTabLinks.find((link) => link.id === event.target.value) || null;
+                        setSelectedDetailLink(nextLink);
+                    }}
+                    className="w-full rounded-[16px] border border-white/10 bg-black/22 px-3 py-3 text-sm font-black text-white outline-none focus:border-[var(--skin-accent-color)]/46"
+                >
+                    {currentTabLinks.length === 0 ? (
+                        <option value="">Sem vínculos nesta aba</option>
+                    ) : (
+                        currentTabLinks.map((link) => (
+                            <option key={link.id} value={link.id}>
+                                {getRelationshipSelectLabel(link)}
+                            </option>
+                        ))
+                    )}
+                </select>
+                <button
+                    onClick={() => setInvitePickerType(activeTab as RelationshipLinkType)}
+                    className="luxe-skin-button inline-flex h-[3rem] shrink-0 items-center justify-center gap-2 rounded-[16px] px-3"
+                    title={LINK_LABELS[activeTab].action}
+                >
+                    <span className="text-lg leading-none">+</span>
+                    <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[9px] font-black leading-none">
+                        {COIN_GLYPH} {LINK_LABELS[activeTab].cost}
+                    </span>
+                </button>
+            </div>
+        </div>
+    );
 
     const ownedArenaIds = useMemo(() => {
         const ids = new Set<string>();
@@ -1569,7 +1632,6 @@ export const RelationshipHubModal: React.FC<{
             <RelationshipSectionCard
                 eyebrow="Convites"
                 title="Pendentes dessa aba"
-                description="O custo volta se cancelar ou expirar."
                 action={
                     <div className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                         {filteredInvites.length}
@@ -1616,67 +1678,10 @@ export const RelationshipHubModal: React.FC<{
                 : receivedCodexesByLinkId.get(link.id) || [];
             const hasMentorshipContent = arenasForLink.length > 0 || relationshipCodexes.length > 0;
             return (
-                <div className={`space-y-4 ${isMentorSide ? 'pb-24' : ''}`}>
-                    <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
-                        <div className="flex flex-col gap-3">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
-                                    Vinculo selecionado
-                                </span>
-                                <span className="rounded-full border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)]">
-                                    Mentoria ativa
-                                </span>
-                            </div>
-
-                            <div className="grid gap-2 md:grid-cols-2">
-                                    <div className="rounded-[18px] border border-white/10 bg-black/22 p-3">
-                                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/40">Mentor</div>
-                                        <div className="mt-2 flex items-center gap-3">
-                                            <AvatarPill profile={mentorProfile} fallback="M" />
-                                            <div className="min-w-0">
-                                                <div className="truncate text-sm font-black text-white">{mentorProfile?.nickname || 'Mentor'}</div>
-                                                <div className="text-[11px] text-white/50">{isMentorSide ? 'Conduz esta mentoria.' : 'Mentor desta mentoria.'}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="rounded-[18px] border border-white/10 bg-black/22 p-3">
-                                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/40">Pupilo</div>
-                                        <div className="mt-2 flex items-center gap-3">
-                                            <AvatarPill profile={pupilProfile} fallback="P" />
-                                            <div className="min-w-0">
-                                                <div className="truncate text-sm font-black text-white">{pupilProfile?.nickname || 'Pupilo'}</div>
-                                                <div className="text-[11px] text-white/50">{isMentorSide ? 'Recebe suas entregas.' : 'Pupilo desta mentoria.'}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                                <CompactPill label="arenas" value={String(arenasForLink.length)} tone="text-white" />
-                                <CompactPill label="campanhas" value={String(relationshipCodexes.length)} tone="text-white" />
-                                <CompactPill label="papel" value={isMentorSide ? 'mentor' : 'pupilo'} tone="text-white" />
-                                <CompactPill label="desde" value={formatDate(link.createdAt) || 'agora'} tone="text-white" />
-                            </div>
-
-                            <button
-                                onClick={() => setEndLinkConfirmState(link)}
-                                disabled={busyKey === `end-link:${link.id}`}
-                                className="w-full rounded-[18px] border border-red-300/14 bg-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/14 disabled:opacity-50"
-                            >
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/82">Encerrar vinculo</div>
-                                <div className="mt-1 text-[12px] text-white/56">
-                                    Encerra esta mentoria.
-                                </div>
-                            </button>
-                        </div>
-                    </GlassCard>
-
+                <div className={`space-y-3 ${isMentorSide ? 'pb-24' : ''}`}>
                     <RelationshipSectionCard
-                        eyebrow="Conteudo deste vinculo"
-                        title={isMentorSide ? `Arenas e campanhas de ${pupilProfile?.nickname || 'seu pupilo'}` : 'Arenas e campanhas desta mentoria'}
-                        description={isMentorSide
-                            ? 'Tudo que esta rodando ou ja foi entregue neste vinculo aparece junto aqui.'
-                            : 'Aqui aparece so o que existe dentro desta mentoria com o mentor.'}
+                        eyebrow="Mentoria"
+                        title={isMentorSide ? (pupilProfile?.nickname || 'Pupilo') : (mentorProfile?.nickname || 'Mentor')}
                         action={
                             <div className="flex flex-wrap gap-2">
                                 <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
@@ -1685,6 +1690,13 @@ export const RelationshipHubModal: React.FC<{
                                 <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
                                     {relationshipCodexes.length} campanha{relationshipCodexes.length === 1 ? '' : 's'}
                                 </span>
+                                <button
+                                    onClick={() => setEndLinkConfirmState(link)}
+                                    disabled={busyKey === `end-link:${link.id}`}
+                                    className="rounded-full border border-red-300/18 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-red-100/88 transition-all hover:bg-red-500/14 disabled:opacity-50"
+                                >
+                                    Encerrar
+                                </button>
                             </div>
                         }
                     >
@@ -1775,12 +1787,12 @@ export const RelationshipHubModal: React.FC<{
                                                         subtitle={isMentorSide ? 'Entregue por voce neste vinculo.' : 'Toque para abrir e instalar no app.'}
                                                         preview={preview}
                                                         onClick={() => {
-                                                            if (preview) {
-                                                                setSelectedCampaignPreview(preview);
-                                                                return;
-                                                            }
                                                             if (isMentorSide) {
                                                                 setSelectedMentorshipCampaignId(codex.id);
+                                                                return;
+                                                            }
+                                                            if (preview) {
+                                                                setSelectedCampaignPreview(preview);
                                                                 return;
                                                             }
                                                             showToast('Nao foi possivel abrir essa campanha agora.', 'warning');
@@ -1878,50 +1890,26 @@ export const RelationshipHubModal: React.FC<{
 
         if (isPartnership) {
             return (
-                <div className="space-y-4 pb-20">
-                    <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
-                                    Vinculo selecionado
-                                </span>
-                                <span className={`rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] ${LINK_LABELS[link.linkType].accent} border-current/20 bg-current/10`}>
-                                    Parceria ativa
-                                </span>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                                <AvatarPill profile={profile} fallback="?" />
-                                <div className="min-w-0 flex-1">
-                                    <div className="text-base font-black text-white">{profile?.nickname || 'Parceiro'}</div>
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                        <CompactPill label="seu lado" value={String(ownArenasForLink.length)} tone="text-cyan-300" />
-                                        <CompactPill label="lado dele" value={String(partnerArenasForLink.length)} tone="text-white" />
-                                        <CompactPill label="desde" value={formatDate(link.createdAt) || 'agora'} tone="text-white" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => setEndLinkConfirmState(link)}
-                                disabled={busyKey === `end-link:${link.id}`}
-                                className="w-full rounded-[18px] border border-red-300/14 bg-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/14 disabled:opacity-50"
-                            >
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/82">Encerrar vinculo</div>
-                                <div className="mt-1 text-[12px] text-white/56">
-                                    Encerra esta parceria.
-                                </div>
-                            </button>
-                        </div>
-                    </GlassCard>
-
+                <div className="space-y-3 pb-20">
                     <RelationshipSectionCard
-                        eyebrow="Seu lado"
-                        title="Arenas que voce expos"
+                        eyebrow="Parceria"
+                        title={profile?.nickname || 'Parceiro'}
                         action={
-                            <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200">
-                                {ownArenasForLink.length} arena{ownArenasForLink.length === 1 ? '' : 's'}
-                            </span>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200">
+                                    {ownArenasForLink.length} sua{ownArenasForLink.length === 1 ? '' : 's'}
+                                </span>
+                                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
+                                    {partnerArenasForLink.length} dele
+                                </span>
+                                <button
+                                    onClick={() => setEndLinkConfirmState(link)}
+                                    disabled={busyKey === `end-link:${link.id}`}
+                                    className="rounded-full border border-red-300/18 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-red-100/88 transition-all hover:bg-red-500/14 disabled:opacity-50"
+                                >
+                                    Encerrar
+                                </button>
+                            </div>
                         }
                     >
                         {ownArenasForLink.length === 0 ? (
@@ -1945,7 +1933,7 @@ export const RelationshipHubModal: React.FC<{
 
                     <RelationshipSectionCard
                         eyebrow="Lado do aliado"
-                        title={`Arenas que ${profile?.nickname || 'seu parceiro'} expos`}
+                        title={`${profile?.nickname || 'Parceiro'}`}
                         action={
                             <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                                 {partnerArenasForLink.length} arena{partnerArenasForLink.length === 1 ? '' : 's'}
@@ -1997,82 +1985,33 @@ export const RelationshipHubModal: React.FC<{
         const competitionCanLaunch = openCompetitionChallenges.length < 3;
 
         return (
-            <div className="space-y-4 pb-20">
-                <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
-                    <div className="flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
-                                Vinculo selecionado
-                            </span>
-                            <span className={`rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] ${LINK_LABELS[link.linkType].accent} border-current/20 bg-current/10`}>
-                                Competicao ativa
-                            </span>
-                        </div>
-
-                        <div className="flex items-start gap-4">
-                            <AvatarPill profile={profile} fallback="?" />
-                            <div className="min-w-0 flex-1">
-                                <div className="text-base font-black text-white">{profile?.nickname || 'Rival'}</div>
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                    <CompactPill label="abertos" value={String(openCompetitionChallenges.length)} tone="text-rose-200" />
-                                    <CompactPill label="historico" value={String(sealedCompetitionChallenges.length)} tone="text-white" />
-                                    <CompactPill label="limite" value="3 duelos" tone="text-white" />
-                                    <CompactPill label="desde" value={formatDate(link.createdAt) || 'agora'} tone="text-white" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <div className="rounded-[18px] border border-white/12 bg-black/20 p-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Regra do duelo</div>
-                                <p className="mt-2 text-[12px] text-white/60">
-                                    Cada duelo nasce como snapshot selado. Ninguem muda estrutura depois do start, e quem fecha primeiro leva o bonus do duelo.
-                                </p>
-                            </div>
-                            <div className="rounded-[18px] border border-white/12 bg-black/20 p-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Recompensa</div>
-                                <p className="mt-2 text-[12px] text-white/60">
-                                    O vencedor recebe o bau do duelo e ainda leva bonus de EXP para o fechamento do Sitrep/Ciclo.
-                                </p>
-                            </div>
-                        </div>
-
+            <div className="space-y-3 pb-20">
+                <RelationshipSectionCard
+                    eyebrow="Competicao"
+                    title={profile?.nickname || 'Rival'}
+                    action={
                         <div className="flex flex-wrap gap-2">
-                            <CompactPill label="abertos" value={`${openCompetitionChallenges.length}/3`} tone="text-rose-200" />
-                            <CompactPill label="modo" value="snapshot selado" tone="text-white" />
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            {!competitionCanLaunch && (
-                                <div className="rounded-[18px] border border-rose-300/14 bg-rose-500/10 px-4 py-3 text-[12px] text-white/60">
-                                    Este vinculo ja tem 3 duelos abertos. Feche ou sele um deles antes de forjar outro.
-                                </div>
-                            )}
-
+                            <span className="rounded-full border border-rose-300/18 bg-rose-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-rose-200">
+                                {openCompetitionChallenges.length}/3 abertos
+                            </span>
+                            <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
+                                {sealedCompetitionChallenges.length} selados
+                            </span>
                             <button
                                 onClick={() => setEndLinkConfirmState(link)}
                                 disabled={busyKey === `end-link:${link.id}`}
-                                className="w-full rounded-[18px] border border-red-300/14 bg-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/14 disabled:opacity-50"
+                                className="rounded-full border border-red-300/18 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-red-100/88 transition-all hover:bg-red-500/14 disabled:opacity-50"
                             >
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/82">Encerrar vinculo</div>
-                                <div className="mt-1 text-[12px] text-white/56">
-                                    Encerra esta competicao.
-                                </div>
+                                Encerrar
                             </button>
                         </div>
-                    </div>
-                </GlassCard>
-
-                <RelationshipSectionCard
-                    eyebrow="Abertos"
-                    title="Duelos em andamento"
-                    description="Cada card abaixo e uma rodada propria, com snapshot e historico separados."
-                    action={
-                        <span className="rounded-full border border-rose-300/18 bg-rose-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-rose-200">
-                            {openCompetitionChallenges.length} duelo{openCompetitionChallenges.length === 1 ? '' : 's'}
-                        </span>
                     }
                 >
+                    {!competitionCanLaunch && (
+                        <div className="mb-3 rounded-[16px] border border-rose-300/14 bg-rose-500/10 px-4 py-3 text-[12px] text-white/60">
+                            Este vinculo ja tem 3 duelos abertos. Feche ou sele um deles antes de forjar outro.
+                        </div>
+                    )}
                     {openCompetitionChallenges.length === 0 ? (
                         <EmptyState title="Sem duelo aberto" text="Forje uma arena sua para abrir a corrida." />
                     ) : (
@@ -2166,7 +2105,6 @@ export const RelationshipHubModal: React.FC<{
                 <RelationshipSectionCard
                     eyebrow="Historico"
                     title="Duelos selados"
-                    description="Rodadas concluidas pelos dois lados. Ficam aqui como arquivo e memoria de rivalidade."
                     action={
                         <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                             {sealedCompetitionChallenges.length} selo{sealedCompetitionChallenges.length === 1 ? '' : 's'}
@@ -2244,7 +2182,7 @@ export const RelationshipHubModal: React.FC<{
                         <div className="relative h-full">
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(255,255,255,0.75),rgba(255,255,255,0.14)_25%,transparent_60%)] pointer-events-none" />
                             <div className="relative z-10 flex h-full max-h-[92vh] flex-col">
-                                <div className="border-b border-white/10 px-4 py-3 md:px-5">
+                                <div className="border-b border-white/10 px-4 py-2 md:px-5">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
                                             <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/24 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/46">
@@ -2277,7 +2215,7 @@ export const RelationshipHubModal: React.FC<{
                                         </button>
                                     </div>
 
-                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                    <div className="mt-1.5 grid grid-cols-3 gap-2">
                                         {HUB_TABS.map((tab) => (
                                             <button
                                                 key={tab.id}
@@ -2315,38 +2253,17 @@ export const RelationshipHubModal: React.FC<{
                                             <div className="h-48 rounded-[24px] border border-white/10 bg-black/16 animate-pulse" />
                                         </div>
                                     ) : (
-                                        <div className="space-y-4">
-                                            {renderTabBoard()}
+                                        <div className="space-y-3">
+                                            {renderRelationshipSelector()}
                                             {renderInviteSection()}
-                                            {renderRelationshipCards()}
                                             {resolvedSelectedDetailLink ? renderLinkDetail(resolvedSelectedDetailLink) : (
-                                                <div className="rounded-[18px] border border-dashed border-white/10 bg-black/14 px-4 py-3 text-[11px] font-semibold text-white/42">
-                                                    Toque em um vinculo acima para abrir so o conteudo dele.
+                                                <div className="rounded-[18px] border border-dashed border-white/10 bg-black/14 px-4 py-4 text-[11px] font-semibold text-white/42">
+                                                    Nenhum vinculo ativo nesta aba.
                                                 </div>
                                             )}
                                         </div>
                                     )}
                                 </div>
-
-                                {!loading && !resolvedSelectedDetailLink && (
-                                    <div className="pointer-events-none absolute bottom-4 right-4 z-20">
-                                        <button
-                                            id="relationship-hub-primary-create-button"
-                                            onClick={() => {
-                                                if (loading) return;
-                                                setInvitePickerType(activeTab as RelationshipLinkType);
-                                            }}
-                                            disabled={loading}
-                                            className="pointer-events-auto inline-flex h-12 items-center justify-center gap-2 rounded-[18px] px-3 shadow-[0_18px_40px_rgba(0,0,0,0.28)] luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50"
-                                            title={activeTab === 'mentoria' ? 'Nova mentoria' : activeTab === 'parceria' ? 'Nova parceria' : 'Nova competicao'}
-                                        >
-                                            <span className="text-xl leading-none">+</span>
-                                            <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[9px] font-black leading-none">
-                                                {COIN_GLYPH} {LINK_LABELS[activeTab].cost}
-                                            </span>
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </GlassCard>

@@ -393,7 +393,7 @@ export const ArenaDetailModal: React.FC<{
     const handleDeleteArena = async () => {
         setShowDeleteConfirmation(false);
 
-        if (isDetachedMentorshipCollab) {
+        if (currentLinkType === 'mentoria') {
             try {
                 const { error } = await supabase.rpc('delete_linked_relationship_arena', {
                     p_arena_id: arena.id,
@@ -572,7 +572,11 @@ export const ArenaDetailModal: React.FC<{
 
                                 {!isReadOnlyArena && allowRelationshipArenaDelete && (isSpecialArena || isRelationshipArena || arena.isArchived) && !isEditing && (
                                     <button
-                                        onClick={() => setShowDeleteConfirmation(true)}
+                                        onClick={() => {
+                                            if (window.confirm(deleteDialogMessage)) {
+                                                void handleDeleteArena();
+                                            }
+                                        }}
                                         className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
                                         title={arena.isArchived ? 'Excluir arena' : 'Abandonar Missao'}
                                     >
@@ -666,7 +670,11 @@ export const ArenaDetailModal: React.FC<{
                             {/* Right side actions - redundant delete button removed if we moved it to left for special arenas, but kept for consistency in edit mode */}
                             {!isReadOnlyArena && allowRelationshipArenaDelete && isEditing && (
                                 <button
-                                    onClick={() => setShowDeleteConfirmation(true)}
+                                    onClick={() => {
+                                        if (window.confirm(deleteDialogMessage)) {
+                                            void handleDeleteArena();
+                                        }
+                                    }}
                                     className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
                                 >
                                     <Trash2Icon className="w-5 h-5 text-red-500" />
@@ -683,15 +691,6 @@ export const ArenaDetailModal: React.FC<{
                             <ConfirmationModal
                                 title={isSpecialArena ? "Sair da MissÃ£o" : "Excluir Arena"}
                                 message={isSpecialArena ? "Ao sair, sua participaÃ§Ã£o Ã© removida, mas a arena e aÃ§Ãµes ficam salvas." : "Tem certeza que deseja excluir esta arena? Esta aÃ§Ã£o nÃ£o pode ser desfeita."}
-                                onConfirm={handleDeleteArena}
-                                onCancel={() => setShowDeleteConfirmation(false)}
-                            />
-                        )}
-
-                        {showDeleteConfirmation && (
-                            <ConfirmationModal
-                                title={deleteDialogTitle}
-                                message={deleteDialogMessage}
                                 onConfirm={handleDeleteArena}
                                 onCancel={() => setShowDeleteConfirmation(false)}
                             />

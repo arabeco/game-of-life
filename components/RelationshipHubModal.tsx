@@ -19,7 +19,6 @@ import { Portal } from './Portal';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { ArenaCard } from './ArenaCard';
 import { EmojiGlyph } from './EmojiGlyph';
-import { CampaignArenaStack } from './CampaignArenaStack';
 import { CampaignsCodex } from './CampaignsCodex';
 import {
     CrownIcon,
@@ -261,13 +260,15 @@ const MentorshipCampaignBoardCard: React.FC<{
     installed: boolean;
     onClick: () => void;
     className?: string;
-}> = ({ codex, preview, installed, onClick, className = 'w-[13.85rem] shrink-0' }) => {
+}> = ({ codex, preview, installed, onClick, className = 'col-span-2 w-full' }) => {
     const visualPalette = getContentVisualPalette(resolveCampaignVisualFamily({
         campaign: preview.campaign,
         arenas: preview.arenas,
         relationshipLinkType: 'mentoria',
         sourceCodex: codex,
     }));
+    const visibleArenas = preview.arenas.slice(0, 2);
+    const hiddenArenaCount = Math.max(0, preview.arenas.length - visibleArenas.length);
 
     return (
         <div className={className}>
@@ -316,13 +317,37 @@ const MentorshipCampaignBoardCard: React.FC<{
                 </div>
                 <div className="space-y-3 p-2.5">
                     <div
-                        className="pointer-events-none flex min-h-[7.25rem] items-start justify-center overflow-hidden rounded-xl border pt-0.5"
+                        className="overflow-hidden rounded-xl border p-2"
                         style={{
                             borderColor: visualPalette.chipBorder,
                             background: visualPalette.stackBackground,
                         }}
                     >
-                        <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="sm" />
+                        <div className="flex items-start gap-2 overflow-hidden">
+                            {visibleArenas.map((arena) => (
+                                <div key={arena.id} className="pointer-events-none w-[7.35rem] shrink-0">
+                                    <ArenaCard
+                                        arena={arena}
+                                        actions={preview.actions.filter((action) => action.arenaId === arena.id)}
+                                        tasks={[]}
+                                        onClick={() => {}}
+                                        variant="overview"
+                                    />
+                                </div>
+                            ))}
+                            {hiddenArenaCount > 0 && (
+                                <div
+                                    className="flex h-[4.95rem] w-[2.2rem] shrink-0 items-center justify-center rounded-[0.9rem] border text-[10px] font-black uppercase tracking-[0.14em]"
+                                    style={{
+                                        borderColor: visualPalette.chipBorder,
+                                        background: visualPalette.chipBackground,
+                                        color: visualPalette.chipText,
+                                    }}
+                                >
+                                    +{hiddenArenaCount}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="flex items-center justify-between gap-2">
                         <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/42">
@@ -1738,10 +1763,10 @@ export const RelationshipHubModal: React.FC<{
                                     </span>
                                 </div>
                                 <div
-                                    className="mt-3 overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-1.5"
-                                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
+                                    className="mt-3 max-h-[51vh] overflow-y-auto pr-1 custom-scrollbar"
+                                    style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain' }}
                                 >
-                                    <div className="flex min-w-max items-start gap-2.5 px-0.5 pt-0.5">
+                                    <div className="grid grid-cols-3 gap-2.5 px-0.5 pt-0.5 content-start">
                                         {arenasForLink.map((linkedArena) => (
                                             <RelationshipArenaBoardCard
                                                 key={linkedArena.id}
@@ -1780,34 +1805,31 @@ export const RelationshipHubModal: React.FC<{
                                         })}
                                     </div>
                                 </div>
+                                {isMentorSide && (
+                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => setSelectedMentorLinkForArena(link)}
+                                            className="luxe-skin-button inline-flex items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left shadow-[0_18px_40px_rgba(0,0,0,0.22)]"
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-[0.16em]">Nova arena</span>
+                                            <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
+                                                {COIN_GLYPH} {MENTOR_LINKED_ARENA_GOLD_COST}
+                                            </span>
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedPupilLink(link)}
+                                            className="inline-flex items-center justify-between gap-3 rounded-[18px] border border-cyan-300/18 bg-cyan-400/12 px-4 py-3 text-left text-cyan-100 shadow-[0_18px_40px_rgba(0,0,0,0.22)] transition-all hover:bg-cyan-400/16"
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-[0.16em]">Nova campanha</span>
+                                            <span className="rounded-full border border-cyan-200/18 bg-cyan-950/22 px-2 py-1 text-[10px] font-black leading-none text-cyan-100">
+                                                {COIN_GLYPH} {MENTOR_CAMPAIGN_FORGE_GOLD_COST}
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </RelationshipSectionCard>
-
-                    {isMentorSide && (
-                        <div className="sticky bottom-3 z-10 flex justify-end pointer-events-none">
-                            <div className="pointer-events-auto flex flex-col gap-2">
-                                <button
-                                    onClick={() => setSelectedMentorLinkForArena(link)}
-                                    className="luxe-skin-button inline-flex items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
-                                >
-                                    <span className="text-[10px] font-black uppercase tracking-[0.16em]">Nova arena</span>
-                                    <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
-                                        {COIN_GLYPH} {MENTOR_LINKED_ARENA_GOLD_COST}
-                                    </span>
-                                </button>
-                                <button
-                                    onClick={() => setSelectedPupilLink(link)}
-                                    className="inline-flex items-center justify-between gap-3 rounded-[18px] border border-cyan-300/18 bg-cyan-400/12 px-4 py-3 text-left text-cyan-100 shadow-[0_18px_40px_rgba(0,0,0,0.28)] transition-all hover:bg-cyan-400/16"
-                                >
-                                    <span className="text-[10px] font-black uppercase tracking-[0.16em]">Nova campanha</span>
-                                    <span className="rounded-full border border-cyan-200/18 bg-cyan-950/22 px-2 py-1 text-[10px] font-black leading-none text-cyan-100">
-                                        {COIN_GLYPH} {MENTOR_CAMPAIGN_FORGE_GOLD_COST}
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         }

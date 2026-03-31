@@ -109,6 +109,19 @@ begin
     where table_schema = 'public'
       and table_name = 'cycles'
       and column_name = 'arena_ids'
+      and udt_name = '_uuid'
+  ) then
+    update public.cycles
+    set arena_ids = array_remove(coalesce(arena_ids, '{}'::uuid[]), p_arena_id)
+    where user_id = v_arena.user_id
+      and p_arena_id = any(coalesce(arena_ids, '{}'::uuid[]));
+  elsif exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'cycles'
+      and column_name = 'arena_ids'
+      and udt_name = 'jsonb'
   ) then
     execute $sql$
       update public.cycles

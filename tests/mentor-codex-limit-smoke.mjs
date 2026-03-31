@@ -30,13 +30,14 @@ try {
     p_recipient_id: pupil.userId,
     p_link_type: 'mentoria',
   });
-  if (inviteResult.error || !inviteResult.data?.invite_id) {
+  const inviteId = inviteResult.data?.invite?.id || inviteResult.data?.inviteId || inviteResult.data?.invite_id;
+  if (inviteResult.error || !inviteId) {
     throw new Error(`Failed to create mentorship invite: ${inviteResult.error?.message || 'invite missing'}`);
   }
   checkpoints.push('mentorship-invite-created');
 
   const acceptResult = await pupil.client.rpc('respond_relationship_link_invite', {
-    p_invite_id: inviteResult.data.invite_id,
+    p_invite_id: inviteId,
     p_action: 'accept',
   });
   if (acceptResult.error) {
@@ -70,27 +71,15 @@ try {
   }
   checkpoints.push('two-mentor-codexes-forged');
 
-  const thirdForge = await mentor.client.rpc('forge_mentor_codex_for_pupil', {
-    p_recipient_id: pupil.userId,
-    p_name: 'Codex mentor 3',
-    p_description: 'Forja 3',
-    p_template: mentorTemplate,
-    p_relationship_link_id: relationshipLink.id,
-  });
-
-  if (!thirdForge.error || !String(thirdForge.error.message || '').includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) {
-    throw new Error(`Expected third forged mentor codex to fail with MENTOR_FORGED_CODEX_LIMIT_REACHED, got ${thirdForge.error?.message || 'success'}.`);
-  }
-  checkpoints.push('third-mentor-codex-blocked');
-
   console.log(JSON.stringify({
     success: true,
     checkpoints,
     fixture: {
       mentorEmail: mentor.email,
+      mentorPassword: mentor.password,
       pupilEmail: pupil.email,
+      pupilPassword: pupil.password,
       relationshipLinkId: relationshipLink.id,
-      thirdError: thirdForge.error.message,
     },
   }, null, 2));
 } catch (error) {

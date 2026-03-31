@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import {
     RelationshipCapacitySummary,
@@ -239,7 +239,7 @@ const RelationshipArenaBoardCard: React.FC<{
         <button
             type="button"
             onClick={onClick}
-            className="relative w-[7.35rem] shrink-0 text-left transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
+            className="relative w-full max-w-[7.35rem] justify-self-center text-left transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
         >
             <ArenaCard
                 arena={previewArena}
@@ -759,6 +759,7 @@ export const RelationshipHubModal: React.FC<{
         description: '',
         icon: '\u{1F3DB}\uFE0F',
     });
+    const refreshSequenceRef = useRef(0);
 
     const sessionUid = userProfile.id;
 
@@ -809,7 +810,7 @@ export const RelationshipHubModal: React.FC<{
         }
     }, [selectedMentorLinkForArena]);
 
-    const hydrateProfiles = async (hubInvites: RelationshipLinkInvite[], hubLinks: RelationshipLink[]) => {
+    const loadProfiles = async (hubInvites: RelationshipLinkInvite[], hubLinks: RelationshipLink[]) => {
         const nextProfiles: Record<string, RelationshipProfileLite> = {
             [userProfile.id]: toProfileLite(userProfile),
         };
@@ -837,69 +838,79 @@ export const RelationshipHubModal: React.FC<{
                 }
             }
         }
-
-        setProfilesById(nextProfiles);
+        return nextProfiles;
     };
 
     const refreshHub = async (options?: { initial?: boolean }) => {
+        const refreshSequence = ++refreshSequenceRef.current;
         const useBlockingLoader = Boolean(options?.initial || !hasLoadedOnce);
         if (useBlockingLoader) {
             setLoading(true);
+            setInvites([]);
+            setLinks([]);
+            setLinkedArenas([]);
+            setCompetitionChallenges([]);
+            setSummary(null);
+            setMentorSentCodexesByLinkId({});
+            setProfilesById({ [userProfile.id]: toProfileLite(userProfile) });
+            setSelectedDetailLink(null);
+            setSelectedArenaDetail(null);
+            setSelectedRelationshipCampaign(null);
         } else {
             setIsRefreshing(true);
         }
         setError(null);
         try {
             const hub = await fetchRelationshipHubData();
-            setInvites(hub.invites || []);
-            setLinks(hub.links || []);
-            setLinkedArenas(hub.linkedArenas || []);
-            setCompetitionChallenges(hub.competitionChallenges || []);
-            setSummary(hub.summary || null);
-            setLoading(false);
-            setIsRefreshing(false);
-            setHasLoadedOnce(true);
-
             const mentorLinkIds = (hub.links || [])
                 .filter((link) => link.linkType === 'mentoria' && link.mentorId === sessionUid)
                 .map((link) => link.id);
 
             let nextMentorSentCodexesByLinkId: Record<string, UserCodex[]> = {};
-            if (mentorLinkIds.length > 0) {
-                const { data: mentorCodexRows, error: mentorCodexError } = await supabase
-                    .from('codex')
-                    .select('id,owner_id,name,description,template,schema_version,is_public,created_at,updated_at,catalog_id,source_type,origin_codex_id,created_by_user_id,mentor_relationship_link_id,author,price')
-                    .in('mentor_relationship_link_id', mentorLinkIds)
-                    .eq('created_by_user_id', sessionUid)
-                    .eq('source_type', 'gift_in_app')
-                    .order('created_at', { ascending: false });
+            const [mentorCodexResult, fallbackSummary, nextProfiles] = await Promise.all([
+                mentorLinkIds.length > 0
+                    ? supabase
+                        .from('codex')
+                        .select('id,owner_id,name,description,template,schema_version,is_public,created_at,updated_at,catalog_id,source_type,origin_codex_id,created_by_user_id,mentor_relationship_link_id,author,price')
+                        .in('mentor_relationship_link_id', mentorLinkIds)
+                        .eq('created_by_user_id', sessionUid)
+                        .eq('source_type', 'gift_in_app')
+                        .order('created_at', { ascending: false })
+                    : Promise.resolve({ data: [], error: null } as any),
+                hub.summary ? Promise.resolve(hub.summary) : getRelationshipCapacitySummary(),
+                loadProfiles(hub.invites || [], hub.links || []),
+            ]);
 
-                if (mentorCodexError) {
-                    console.error('Relationship mentor codex load failed:', mentorCodexError);
-                } else {
-                    nextMentorSentCodexesByLinkId = (mentorCodexRows || [])
-                        .map(normalizeRelationshipCodexRow)
-                        .reduce((acc, codex) => {
-                            const linkId = codex.mentor_relationship_link_id;
-                            if (!linkId) return acc;
-                            const current = acc[linkId] || [];
-                            current.push(codex);
-                            acc[linkId] = current;
-                            return acc;
-                        }, {} as Record<string, UserCodex[]>);
-                }
+            if (mentorCodexResult?.error) {
+                console.error('Relationship mentor codex load failed:', mentorCodexResult.error);
+            } else {
+                nextMentorSentCodexesByLinkId = ((mentorCodexResult?.data as any[]) || [])
+                    .map(normalizeRelationshipCodexRow)
+                    .reduce((acc, codex) => {
+                        const linkId = codex.mentor_relationship_link_id;
+                        if (!linkId) return acc;
+                        const current = acc[linkId] || [];
+                        current.push(codex);
+                        acc[linkId] = current;
+                        return acc;
+                    }, {} as Record<string, UserCodex[]>);
             }
 
-            if (!hub.summary) {
-                const freshSummary = await getRelationshipCapacitySummary();
-                setSummary(freshSummary || null);
-            }
+            if (refreshSequence !== refreshSequenceRef.current) return;
+
+            setInvites(hub.invites || []);
+            setLinks(hub.links || []);
+            setLinkedArenas(hub.linkedArenas || []);
+            setCompetitionChallenges(hub.competitionChallenges || []);
+            setSummary((hub.summary || fallbackSummary || null) as RelationshipCapacitySummary | null);
             setMentorSentCodexesByLinkId(nextMentorSentCodexesByLinkId);
-            void hydrateProfiles(hub.invites || [], hub.links || []);
+            setProfilesById(nextProfiles);
         } catch (hubError: any) {
+            if (refreshSequence !== refreshSequenceRef.current) return;
             console.error('Relationship hub load failed:', hubError);
             setError(hubError?.message || 'Nao foi possivel carregar a Central de Vinculos.');
         } finally {
+            if (refreshSequence !== refreshSequenceRef.current) return;
             setLoading(false);
             setIsRefreshing(false);
             setHasLoadedOnce(true);
@@ -1728,18 +1739,19 @@ export const RelationshipHubModal: React.FC<{
                         eyebrow="Mentoria"
                         title={isMentorSide ? (pupilProfile?.nickname || 'Pupilo') : (mentorProfile?.nickname || 'Mentor')}
                         action={
-                            <div className="flex flex-wrap gap-2">
-                                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-[0.34rem] text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
                                     {arenasForLink.length} arena{arenasForLink.length === 1 ? '' : 's'}
                                 </span>
-                                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/58">
+                                <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-[0.34rem] text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
                                     {relationshipCodexes.length} campanha{relationshipCodexes.length === 1 ? '' : 's'}
                                 </span>
                                 <button
                                     onClick={() => setEndLinkConfirmState(link)}
                                     disabled={busyKey === `end-link:${link.id}`}
-                                    className="rounded-full border border-red-300/18 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-red-100/88 transition-all hover:bg-red-500/14 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1 rounded-full border border-red-300/16 bg-red-500/8 px-2 py-[0.34rem] text-[8px] font-black uppercase tracking-[0.12em] text-red-100/82 transition-all hover:bg-red-500/12 disabled:opacity-50"
                                 >
+                                    <XIcon className="h-[0.68rem] w-[0.68rem]" />
                                     Encerrar
                                 </button>
                             </div>
@@ -1763,10 +1775,10 @@ export const RelationshipHubModal: React.FC<{
                                     </span>
                                 </div>
                                 <div
-                                    className="mt-3 max-h-[51vh] overflow-y-auto pr-1 custom-scrollbar"
+                                    className="mt-3 max-h-[53vh] overflow-y-auto pr-1 custom-scrollbar"
                                     style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain' }}
                                 >
-                                    <div className="grid grid-cols-3 gap-2.5 px-0.5 pt-0.5 content-start">
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-4 px-2 pt-2 pb-1.5 content-start justify-items-center sm:grid-cols-3">
                                         {arenasForLink.map((linkedArena) => (
                                             <RelationshipArenaBoardCard
                                                 key={linkedArena.id}
@@ -1855,8 +1867,9 @@ export const RelationshipHubModal: React.FC<{
                                 <button
                                     onClick={() => setEndLinkConfirmState(link)}
                                     disabled={busyKey === `end-link:${link.id}`}
-                                    className="rounded-full border border-red-300/18 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-red-100/88 transition-all hover:bg-red-500/14 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-red-300/18 bg-red-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-red-100/88 transition-all hover:bg-red-500/14 disabled:opacity-50"
                                 >
+                                    <XIcon className="h-3 w-3" />
                                     Encerrar
                                 </button>
                             </div>
@@ -1947,13 +1960,14 @@ export const RelationshipHubModal: React.FC<{
                             <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                                 {sealedCompetitionChallenges.length} selados
                             </span>
-                            <button
-                                onClick={() => setEndLinkConfirmState(link)}
-                                disabled={busyKey === `end-link:${link.id}`}
-                                className="rounded-full border border-red-300/18 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-red-100/88 transition-all hover:bg-red-500/14 disabled:opacity-50"
-                            >
-                                Encerrar
-                            </button>
+                                <button
+                                    onClick={() => setEndLinkConfirmState(link)}
+                                    disabled={busyKey === `end-link:${link.id}`}
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-red-300/18 bg-red-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-red-100/88 transition-all hover:bg-red-500/14 disabled:opacity-50"
+                                >
+                                    <XIcon className="h-3 w-3" />
+                                    Encerrar
+                                </button>
                         </div>
                     }
                 >
@@ -2184,7 +2198,7 @@ export const RelationshipHubModal: React.FC<{
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-2.5 md:p-3 custom-scrollbar">
+                                <div className="flex-1 overflow-y-auto p-2.5 md:p-3 custom-scrollbar min-h-[28rem]">
                                     {isRefreshing && !loading && (
                                         <div className="mb-3 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/46">
                                             Atualizando central...
@@ -2197,7 +2211,7 @@ export const RelationshipHubModal: React.FC<{
                                     )}
 
                                     {loading ? (
-                                        <div className="rounded-[22px] border border-white/10 bg-black/18 px-4 py-5 text-center">
+                                        <div className="min-h-[28rem] rounded-[22px] border border-white/10 bg-black/18 px-4 py-5 text-center flex flex-col items-center justify-center">
                                             <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/38">
                                                 Central de vínculos
                                             </div>

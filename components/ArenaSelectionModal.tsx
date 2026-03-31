@@ -6,18 +6,20 @@ import { Portal } from './Portal';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 
 interface ArenaSelectionModalProps {
-    currentArenaId: string;
+    currentArenaId?: string;
+    selectedArenaId?: string;
     onSelect: (arenaId: string) => void;
     onClose: () => void;
 }
 
-export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ currentArenaId, onSelect, onClose }) => {
+export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ currentArenaId, selectedArenaId, onSelect, onClose }) => {
     const { assets, addArena, userProfile, showToast } = useGame();
     const [isCreating, setIsCreating] = useState(false);
     const [newArenaName, setNewArenaName] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState(assets[0]?.id || 'geral');
     const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
     const canCreateArena = !arenaCapacity.isAtLimit;
+    const activeArenaId = currentArenaId || selectedArenaId || '';
     const [newArenaIcon, setNewArenaIcon] = useState('🏟️');
 
     const handleCreateArena = async () => {
@@ -107,10 +109,10 @@ export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ curren
                                             <button
                                                 key={arena.id}
                                                 onClick={() => { onSelect(arena.id); }}
-                                                className={`w-full p-3 rounded-xl text-left flex justify-between items-center transition-colors ${currentArenaId === arena.id ? 'bg-white/20' : 'bg-black/20 hover:bg-white/10'}`}
+                                                className={`w-full p-3 rounded-xl text-left flex justify-between items-center transition-colors ${activeArenaId === arena.id ? 'bg-white/20' : 'bg-black/20 hover:bg-white/10'}`}
                                             >
                                                 <span>{arena.icon} {arena.name}</span>
-                                                {currentArenaId === arena.id && <CheckIcon className="w-5 h-5 text-[var(--gold)]" />}
+                                                {activeArenaId === arena.id && <CheckIcon className="w-5 h-5 text-[var(--gold)]" />}
                                             </button>
                                         ))}
                                     </div>

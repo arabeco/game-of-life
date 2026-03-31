@@ -26,6 +26,7 @@ import {
     UsersIcon,
     TrophyIcon,
     SparklesIcon,
+    Trash2Icon,
     XIcon,
     SendIcon,
     ChevronRightIcon,
@@ -221,8 +222,9 @@ const RelationshipArenaBoardCard: React.FC<{
     arena: LinkedRelationshipArena;
     assetName?: string;
     onClick: () => void;
+    action?: React.ReactNode;
     className?: string;
-}> = ({ arena, assetName, onClick, className = 'w-[11.4rem] shrink-0' }) => {
+}> = ({ arena, assetName, onClick, action, className = 'w-[11.4rem] shrink-0' }) => {
     const previewArena = arena.arena || {
         id: arena.arenaId,
         assetId: String(arena.metadata?.asset_id || 'geral'),
@@ -234,17 +236,31 @@ const RelationshipArenaBoardCard: React.FC<{
     };
 
     return (
-        <button onClick={onClick} className={`block text-left transition-transform hover:-translate-y-0.5 ${className}`}>
-            <ArenaCard
-                arena={previewArena}
-                actions={arena.actions || []}
-                tasks={arena.tasks || []}
-                relationshipBadgeType={arena.linkType ?? null}
-                onClick={() => undefined}
-                variant="overview"
-                assetName={assetName}
-            />
-        </button>
+        <div className={className}>
+            <div
+                role="button"
+                tabIndex={0}
+                onClick={onClick}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onClick();
+                    }
+                }}
+                className="block rounded-[1.25rem] text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
+            >
+                <ArenaCard
+                    arena={previewArena}
+                    actions={arena.actions || []}
+                    tasks={arena.tasks || []}
+                    relationshipBadgeType={arena.linkType ?? null}
+                    onClick={() => undefined}
+                    variant="overview"
+                    assetName={assetName}
+                />
+            </div>
+            {action ? <div className="mt-2 flex justify-end">{action}</div> : null}
+        </div>
     );
 };
 
@@ -256,52 +272,61 @@ const MentorshipCampaignBoardCard: React.FC<{
     action?: React.ReactNode;
     onClick: () => void;
     className?: string;
-}> = ({ title, subtitle, preview, badge, action, onClick, className = 'w-[11.4rem] shrink-0' }) => {
+}> = ({ title, subtitle, preview, badge, action, onClick, className = 'w-[15rem] shrink-0' }) => {
     const visualPalette = getContentVisualPalette('shared');
 
     return (
-        <button
-            onClick={onClick}
-            className={`block text-left transition-transform hover:-translate-y-0.5 ${className}`}
-        >
+        <div className={className}>
             <div
-                className="rounded-[18px] border p-2.5"
-                style={{
-                    borderColor: visualPalette.border,
-                    background: visualPalette.listBackground,
-                    boxShadow: `0 12px 26px ${visualPalette.glow}`,
+                role="button"
+                tabIndex={0}
+                onClick={onClick}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onClick();
+                    }
                 }}
+                className="block cursor-pointer rounded-[18px] text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
             >
-            <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                    <div className="truncate text-[10px] font-black uppercase tracking-[0.16em]" style={{ color: visualPalette.chipText }}>
-                        Campanha
-                    </div>
-                    <div className="mt-1 truncate text-sm font-black text-white">{title}</div>
-                    <div className="mt-1 text-[11px] text-white/52">{subtitle}</div>
-                </div>
-                {badge}
-            </div>
-
-            {preview ? (
                 <div
-                    className="mt-3 overflow-hidden rounded-[16px] border px-2 py-2"
+                    className="rounded-[18px] border p-2.5"
                     style={{
-                        borderColor: visualPalette.chipBorder,
-                        background: visualPalette.stackBackground,
+                        borderColor: visualPalette.border,
+                        background: visualPalette.listBackground,
+                        boxShadow: `0 12px 26px ${visualPalette.glow}`,
                     }}
                 >
-                    <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="md" />
-                </div>
-            ) : (
-                <div className="mt-3 rounded-[16px] border border-dashed border-white/10 bg-black/16 px-3 py-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/36">
-                    Toque para abrir
-                </div>
-            )}
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                            <div className="truncate text-[10px] font-black uppercase tracking-[0.16em]" style={{ color: visualPalette.chipText }}>
+                                Campanha
+                            </div>
+                            <div className="mt-1 truncate text-sm font-black text-white">{title}</div>
+                            <div className="mt-1 text-[11px] text-white/52">{subtitle}</div>
+                        </div>
+                        {badge}
+                    </div>
 
-            {action && <div className="mt-3 flex items-center justify-between gap-2">{action}</div>}
+                    {preview ? (
+                        <div
+                            className="mt-3 overflow-hidden rounded-[16px] border px-2 py-2"
+                            style={{
+                                borderColor: visualPalette.chipBorder,
+                                background: visualPalette.stackBackground,
+                            }}
+                        >
+                            <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="md" />
+                        </div>
+                    ) : (
+                        <div className="mt-3 rounded-[16px] border border-dashed border-white/10 bg-black/16 px-3 py-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/36">
+                            Toque para abrir
+                        </div>
+                    )}
+                </div>
             </div>
-        </button>
+            {action ? <div className="mt-3 flex items-center justify-end gap-2">{action}</div> : null}
+        </div>
     );
 };
 
@@ -313,7 +338,7 @@ const RelationshipSectionCard: React.FC<{
     children: React.ReactNode;
 }> = ({ eyebrow, title, description, action, children }) => (
     <GlassCard className="relationship-hub-section rounded-[22px] border border-white/10 bg-black/22 p-3">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
                 <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/42">{eyebrow}</div>
                 <div className="mt-1 text-sm font-black text-white">{title}</div>
@@ -323,7 +348,7 @@ const RelationshipSectionCard: React.FC<{
                     </div>
                 )}
             </div>
-            {action && <div className="shrink-0">{action}</div>}
+            {action && <div className="shrink-0 self-start">{action}</div>}
         </div>
         <div className="mt-4">
             {children}
@@ -650,7 +675,9 @@ export const RelationshipHubModal: React.FC<{
         createCompetitionChallenge,
         createLinkedRelationshipArena,
         createRelationshipInvite,
+        deleteArena,
         duplicateUserCodexToRecipient,
+        deleteUserCodex,
         endRelationshipLink,
         fetchRelationshipHubData,
         friends,
@@ -685,6 +712,7 @@ export const RelationshipHubModal: React.FC<{
     const [selectedPartnershipArenaId, setSelectedPartnershipArenaId] = useState<string | null>(null);
     const [selectedArenaDetail, setSelectedArenaDetail] = useState<RelationshipArenaDetailState | null>(null);
     const [selectedCampaignPreview, setSelectedCampaignPreview] = useState<CodexCampaignPreview | null>(null);
+    const [selectedMentorshipCampaignId, setSelectedMentorshipCampaignId] = useState<string | null>(null);
     const [mentorSentCodexesByLinkId, setMentorSentCodexesByLinkId] = useState<Record<string, UserCodex[]>>({});
     const [linkedArenaDraft, setLinkedArenaDraft] = useState({
         assetId: assets[0]?.id || 'geral',
@@ -1107,6 +1135,70 @@ export const RelationshipHubModal: React.FC<{
         }
     };
 
+    const handleDeleteMentorshipCodex = async (codex: UserCodex) => {
+        const confirmed = window.confirm(`Remover a campanha "${codex.name}" deste vinculo?`);
+        if (!confirmed) return;
+
+        setBusyKey(`delete-codex:${codex.id}`);
+        try {
+            await deleteUserCodex(codex.id);
+            if (selectedCampaignPreview?.campaign.id === codex.id) {
+                setSelectedCampaignPreview(null);
+            }
+            if (selectedMentorshipCampaignId === codex.id) {
+                setSelectedMentorshipCampaignId(null);
+            }
+            await refreshHub();
+        } finally {
+            setBusyKey(null);
+        }
+    };
+
+    const handleDeleteMentorshipArena = async (linkedArena: LinkedRelationshipArena) => {
+        const arenaName = linkedArena.arena?.name || String(linkedArena.metadata?.name || 'Arena vinculada');
+        const confirmed = window.confirm(`Remover a arena "${arenaName}" deste vinculo?`);
+        if (!confirmed) return;
+
+        const arenaId = linkedArena.arena?.id || linkedArena.arenaId;
+        if (!arenaId) {
+            showToast('Nao foi possivel localizar essa arena agora.', 'error');
+            return;
+        }
+
+        setBusyKey(`delete-arena:${arenaId}`);
+        try {
+            const localArenaExists = assets.some((asset) => asset.arenas.some((candidate) => candidate.id === arenaId));
+            if (!localArenaExists) {
+                const { error } = await supabase.rpc('delete_linked_relationship_arena', {
+                    p_arena_id: arenaId,
+                });
+
+                if (error) throw error;
+            } else {
+                await Promise.resolve(deleteArena(arenaId));
+            }
+
+            if (selectedArenaDetail?.arena.id === arenaId) {
+                setSelectedArenaDetail(null);
+            }
+
+            await refreshHub();
+            window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            showToast('Arena removida da mentoria.', 'success');
+        } catch (error: any) {
+            console.error('Error deleting mentorship arena from relationship hub:', error);
+            const message = String(error?.message || '');
+            showToast(
+                message.includes('delete_linked_relationship_arena')
+                    ? 'Essa base ainda nao recebeu o SQL novo para remover arenas da mentoria.'
+                    : 'Nao foi possivel remover essa arena agora.',
+                'error'
+            );
+        } finally {
+            setBusyKey(null);
+        }
+    };
+
     const getCompetitionArenasForChallenge = (link: RelationshipLink, challenge: RelationshipCompetitionChallenge) => {
         const arenasForLink = getLinkedArenasForLink(link);
         return arenasForLink.filter((linkedArena) => {
@@ -1499,7 +1591,7 @@ export const RelationshipHubModal: React.FC<{
                 : receivedCodexesByLinkId.get(link.id) || [];
             const hasMentorshipContent = arenasForLink.length > 0 || relationshipCodexes.length > 0;
             return (
-                <div className={`space-y-4 ${isMentorSide ? 'pb-24' : ''}`}>
+                <div className={`space-y-4 ${isMentorSide ? 'pb-32' : ''}`}>
                     <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
                         <div className="flex flex-col gap-3">
                             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1579,91 +1671,156 @@ export const RelationshipHubModal: React.FC<{
                                     : 'Nenhuma arena ou campanha desta mentoria apareceu ainda.'}
                             />
                         ) : (
-                            <div className="grid gap-3 xl:grid-cols-2">
-                                {arenasForLink.map((linkedArena) => (
-                                    <div key={linkedArena.id} className="rounded-[20px] border border-white/10 bg-black/16 p-2.5">
-                                        <div className="mb-2 flex items-center justify-between gap-2">
+                            <div className="space-y-4">
+                                {arenasForLink.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between gap-2">
                                             <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/56">
-                                                Arena
+                                                Arenas
                                             </span>
                                             <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
-                                                {assetNameForArena(linkedArena) || 'Ativo'}
+                                                {arenasForLink.length} no vinculo
                                             </span>
                                         </div>
-                                        <RelationshipArenaBoardCard
-                                            arena={linkedArena}
-                                            assetName={assetNameForArena(linkedArena)}
-                                            onClick={() => openLinkedArena(linkedArena)}
-                                            className="w-full"
-                                        />
-                                    </div>
-                                ))}
-
-                                {relationshipCodexes.map((codex: UserCodex) => {
-                                    const installed = !isMentorSide && installedOriginCodexIds.has(codex.id);
-                                    const preview = receivedCodexPreviewById.get(codex.id) || null;
-                                    return (
-                                        <div key={codex.id} className="rounded-[20px] border border-white/10 bg-black/16 p-2.5">
-                                            <div className="mb-2 flex items-center justify-between gap-2">
-                                                <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/56">
-                                                    Campanha
-                                                </span>
-                                                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
-                                                    {Array.isArray(codex.template?.levels) ? codex.template.levels.length : 0} fase(s)
-                                                </span>
-                                            </div>
-                                            <MentorshipCampaignBoardCard
-                                                title={codex.name}
-                                                subtitle={isMentorSide ? 'Entregue por voce neste vinculo.' : 'Toque para abrir e instalar no app.'}
-                                                preview={preview}
-                                                onClick={() => {
-                                                    if (preview) setSelectedCampaignPreview(preview);
-                                                }}
-                                                badge={
-                                                    installed ? (
-                                                        <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-200">
-                                                            No app
-                                                        </span>
-                                                    ) : isMentorSide ? (
-                                                        <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
-                                                            Entregue
-                                                        </span>
-                                                    ) : (
-                                                        <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/76">
-                                                            Na biblioteca
-                                                        </span>
-                                                    )
-                                                }
-                                                action={
-                                                    installed || isMentorSide ? null : (
+                                        <div
+                                            className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
+                                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
+                                        >
+                                            {arenasForLink.map((linkedArena) => (
+                                                <RelationshipArenaBoardCard
+                                                    key={linkedArena.id}
+                                                    arena={linkedArena}
+                                                    assetName={assetNameForArena(linkedArena)}
+                                                    onClick={() => openLinkedArena(linkedArena)}
+                                                    action={isMentorSide ? (
                                                         <button
                                                             onClick={async (event) => {
                                                                 event.stopPropagation();
-                                                                setBusyKey(`install:${codex.id}`);
-                                                                try {
-                                                                    await installCodex(codex.id);
-                                                                } finally {
-                                                                    setBusyKey(null);
-                                                                }
+                                                                await handleDeleteMentorshipArena(linkedArena);
                                                             }}
-                                                            disabled={busyKey === `install:${codex.id}`}
-                                                            className="shrink-0 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
+                                                            disabled={busyKey === `delete-arena:${linkedArena.arena?.id || linkedArena.arenaId}`}
+                                                            className="shrink-0 rounded-full border border-red-300/16 bg-red-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-100 transition-all hover:bg-red-500/14 disabled:opacity-50"
                                                         >
-                                                            {busyKey === `install:${codex.id}` ? 'Instalando' : 'Instalar no app'}
+                                                            <span className="inline-flex items-center gap-1.5">
+                                                                <Trash2Icon className="h-3.5 w-3.5" />
+                                                                <span>{busyKey === `delete-arena:${linkedArena.arena?.id || linkedArena.arenaId}` ? 'Removendo' : 'Remover'}</span>
+                                                            </span>
                                                         </button>
-                                                    )
-                                                }
-                                                className="w-full"
-                                            />
+                                                    ) : null}
+                                                    className="w-[12.2rem] shrink-0"
+                                                />
+                                            ))}
                                         </div>
-                                    );
-                                })}
+                                    </div>
+                                )}
+
+                                {relationshipCodexes.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/56">
+                                                Campanhas
+                                            </span>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
+                                                {relationshipCodexes.length} entregue{relationshipCodexes.length === 1 ? '' : 's'}
+                                            </span>
+                                        </div>
+                                        <div
+                                            className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
+                                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
+                                        >
+                                            {relationshipCodexes.map((codex: UserCodex) => {
+                                                const installed = !isMentorSide && installedOriginCodexIds.has(codex.id);
+                                                const preview = receivedCodexPreviewById.get(codex.id) || (
+                                                    Array.isArray(codex.template?.levels) && codex.template.levels.length > 0
+                                                        ? buildCodexCampaignPreview(
+                                                            codex.id,
+                                                            {
+                                                                ...codex.template,
+                                                                title: codex.template?.title || codex.name || 'Campanha recebida',
+                                                                description: codex.template?.description || codex.description || '',
+                                                            },
+                                                            `__relationship_codex_preview_${codex.id}__`
+                                                        )
+                                                        : null
+                                                );
+                                                return (
+                                                    <MentorshipCampaignBoardCard
+                                                        key={codex.id}
+                                                        title={codex.name}
+                                                        subtitle={isMentorSide ? 'Entregue por voce neste vinculo.' : 'Toque para abrir e instalar no app.'}
+                                                        preview={preview}
+                                                        onClick={() => {
+                                                            if (isMentorSide) {
+                                                                setSelectedMentorshipCampaignId(codex.id);
+                                                                return;
+                                                            }
+                                                            if (preview) {
+                                                                setSelectedCampaignPreview(preview);
+                                                                return;
+                                                            }
+                                                            showToast('Nao foi possivel abrir essa campanha agora.', 'warning');
+                                                        }}
+                                                        badge={
+                                                            installed ? (
+                                                                <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-200">
+                                                                    No app
+                                                                </span>
+                                                            ) : isMentorSide ? (
+                                                                <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
+                                                                    Entregue
+                                                                </span>
+                                                            ) : (
+                                                                <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/76">
+                                                                    Na biblioteca
+                                                                </span>
+                                                            )
+                                                        }
+                                                        action={
+                                                            isMentorSide ? (
+                                                                <button
+                                                                    onClick={async (event) => {
+                                                                        event.stopPropagation();
+                                                                        await handleDeleteMentorshipCodex(codex);
+                                                                    }}
+                                                                    disabled={busyKey === `delete-codex:${codex.id}`}
+                                                                    className="shrink-0 rounded-full border border-red-300/16 bg-red-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-100 transition-all hover:bg-red-500/14 disabled:opacity-50"
+                                                                >
+                                                                    <span className="inline-flex items-center gap-1.5">
+                                                                        <Trash2Icon className="h-3.5 w-3.5" />
+                                                                        <span>{busyKey === `delete-codex:${codex.id}` ? 'Removendo' : 'Remover'}</span>
+                                                                    </span>
+                                                                </button>
+                                                            ) : installed ? null : (
+                                                                <button
+                                                                    onClick={async (event) => {
+                                                                        event.stopPropagation();
+                                                                        setBusyKey(`install:${codex.id}`);
+                                                                        try {
+                                                                            await installCodex(codex.id);
+                                                                        } finally {
+                                                                            setBusyKey(null);
+                                                                        }
+                                                                    }}
+                                                                    disabled={busyKey === `install:${codex.id}`}
+                                                                    className="shrink-0 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
+                                                                >
+                                                                    {busyKey === `install:${codex.id}` ? 'Instalando' : 'Instalar no app'}
+                                                                </button>
+                                                            )
+                                                        }
+                                                        className="w-[15rem] shrink-0"
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </RelationshipSectionCard>
 
                     {isMentorSide && (
-                        <div className="sticky bottom-0 z-10 flex justify-end pointer-events-none">
+                        <div className="sticky bottom-3 z-10 flex justify-end pointer-events-none">
                             <div className="pointer-events-auto flex flex-col gap-2">
                                 <button
                                     onClick={() => setSelectedMentorLinkForArena(link)}
@@ -2056,7 +2213,7 @@ export const RelationshipHubModal: React.FC<{
                 <div className="ui-modal-backdrop z-[140]" onClick={onClose}>
                     <GlassCard
                         variant="neutral"
-                        className="relationship-hub-modal relationship-hub-sheet ui-modal-panel w-full max-w-[52rem] max-h-[95vh] overflow-hidden"
+                        className="relationship-hub-modal relationship-hub-sheet ui-modal-panel w-full max-w-[40rem] lg:max-w-[44rem] max-h-[95vh] overflow-hidden"
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="relative h-full">
@@ -2123,11 +2280,9 @@ export const RelationshipHubModal: React.FC<{
 
                                     {loading ? (
                                         <div className="space-y-4">
-                                            <div className="h-44 rounded-[28px] border border-white/10 bg-black/16 animate-pulse" />
-                                            <div className="grid gap-4 xl:grid-cols-2">
-                                                <div className="h-64 rounded-[26px] border border-white/10 bg-black/16 animate-pulse" />
-                                                <div className="h-64 rounded-[26px] border border-white/10 bg-black/16 animate-pulse" />
-                                            </div>
+                                            <div className="h-28 rounded-[24px] border border-white/10 bg-black/16 animate-pulse" />
+                                            <div className="h-40 rounded-[24px] border border-white/10 bg-black/16 animate-pulse" />
+                                            <div className="h-48 rounded-[24px] border border-white/10 bg-black/16 animate-pulse" />
                                         </div>
                                     ) : (
                                         <div className="space-y-4">
@@ -2544,6 +2699,12 @@ export const RelationshipHubModal: React.FC<{
                     previewCampaign={selectedCampaignPreview.campaign}
                     previewArenas={selectedCampaignPreview.arenas}
                     previewActions={selectedCampaignPreview.actions}
+                />
+            )}
+            {selectedMentorshipCampaignId && (
+                <CampaignsCodex
+                    onClose={() => setSelectedMentorshipCampaignId(null)}
+                    initialCampaignId={selectedMentorshipCampaignId}
                 />
             )}
         </>

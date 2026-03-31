@@ -840,6 +840,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             return;
         }
 
+        if (!canEditExecutionSettings || lockArenaAssignment) {
+            return;
+        }
+
+        if (isEditingTaskInstance) {
+            showToast('A arena fica travada nesta ocorrencia. Para trocar, edite a acao base.', 'warning');
+            return;
+        }
+
         if (canEditExecutionSettings && !lockArenaAssignment) {
             setIsArenaPickerOpen(true);
         }
@@ -1548,6 +1557,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         Esta ação segue presa a esta arena guiada da mentoria.
                                                     </p>
                                                 )}
+                                                {isEditingTaskInstance && !lockArenaAssignment && (
+                                                    <p className="mt-1 px-1 text-[10px] leading-relaxed text-white/46">
+                                                        Esta ocorrencia nao troca de arena. Isso so muda na acao base.
+                                                    </p>
+                                                )}
                                             </div>
 
                                             <div>
@@ -2095,8 +2109,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             )}
             {isArenaPickerOpen && (
                 <ArenaSelectionModal
-                    arenas={arenas}
-                    selectedArenaId={editableAction.arenaId || ''}
+                    currentArenaId={editableAction.arenaId || ''}
                     onSelect={handleArenaSelect}
                     onClose={() => setIsArenaPickerOpen(false)}
                 />

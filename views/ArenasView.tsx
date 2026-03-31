@@ -245,7 +245,11 @@ export const ArenasView: React.FC = () => {
     const [iconTarget, setIconTarget] = useState<'arena' | 'action' | null>(null);
     
     // Filter out arenas that are in campaigns
-    const allCampaignArenaIds = campaigns.reduce((acc, campaign) => [...acc, ...campaign.arenaIds], [] as string[]);
+    const allCampaignArenaIds = useMemo(
+        () => campaigns.reduce((acc, campaign) => [...acc, ...campaign.arenaIds], [] as string[]),
+        [campaigns]
+    );
+    const allCampaignArenaIdSet = useMemo(() => new Set(allCampaignArenaIds), [allCampaignArenaIds]);
     const ownedArenaIds = useMemo(() => {
         const ids = new Set<string>();
         assets.forEach(asset => asset.arenas.forEach(arena => ids.add(arena.id)));
@@ -674,8 +678,11 @@ export const ArenasView: React.FC = () => {
     };
 
     useEffect(() => {
-        setSelectedForCampaign((current) => current.filter((arenaId) => !allCampaignArenaIds.includes(arenaId)));
-    }, [allCampaignArenaIds]);
+        setSelectedForCampaign((current) => {
+            const filtered = current.filter((arenaId) => !allCampaignArenaIdSet.has(arenaId));
+            return filtered.length === current.length ? current : filtered;
+        });
+    }, [allCampaignArenaIdSet]);
 
     const toggleArenaCampaignSelection = (arenaId: string) => {
         if (allCampaignArenaIds.includes(arenaId)) return;

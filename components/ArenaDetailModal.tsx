@@ -609,12 +609,16 @@ export const ArenaDetailModal: React.FC<{
                                 )}
                             </div>
                             <div className="flex-1 flex flex-col items-center text-center">
-                                <h2 className="ui-modal-title arena-detail-title luxe-title-ornate text-[1.15rem] tracking-[0.12em] text-[color:var(--skin-accent-color)]">
-                                    {isEditing ?"EDITAR ARENA" : arena.name}
-                                </h2>
-                                {parentAsset?.name && (
-                                    <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-300">{formatAssetLabel(parentAsset.id, parentAsset.name)}</p>
-                                )}
+                                <div className="arena-detail-title-shell inline-flex max-w-full flex-col items-center rounded-[1.05rem] border border-white/12 bg-black/24 px-4 py-2 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
+                                    <h2 className="ui-modal-title arena-detail-title luxe-title-ornate text-[1.34rem] tracking-[0.1em] text-[color:var(--skin-accent-color)] sm:text-[1.46rem]">
+                                        {isEditing ?"EDITAR ARENA" : arena.name}
+                                    </h2>
+                                    {parentAsset?.name && (
+                                        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/80">
+                                            {formatAssetLabel(parentAsset.id, parentAsset.name)}
+                                        </p>
+                                    )}
+                                </div>
                                 {currentLinkType === 'competicao' && (
                                     <div className="bg-red-500/20 border border-red-500/50 text-red-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
                                         <span>PVP</span>
@@ -712,7 +716,7 @@ export const ArenaDetailModal: React.FC<{
                                         type="text"
                                         value={editableArena.name}
                                         onChange={(e) => setEditableArena(prev => ({ ...prev, name: e.target.value }))}
-                                        className="arena-detail-title arena-detail-title-input luxe-title-ornate w-full text-center bg-transparent text-[1.6rem] font-bold uppercase tracking-[0.12em] text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/20"
+                                        className="arena-detail-title arena-detail-title-input luxe-title-ornate w-full text-center bg-transparent text-[1.82rem] font-bold uppercase tracking-[0.1em] text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/20"
                                     />
                                     <textarea
                                         value={editableArena.description}

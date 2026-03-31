@@ -719,7 +719,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const openBriefingReader = () => {
         if (briefingPages.length === 0) return;
         setBriefingPageIndex(0);
-        setIsBriefingReaderOpen(true);
+        setBriefingPageStage('idle');
+        window.requestAnimationFrame(() => {
+            setIsBriefingReaderOpen(true);
+        });
     };
 
     const handleStartMission = () => {
@@ -1226,6 +1229,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         : null;
 
     return (
+        <>
         <Portal>
             <div className="ui-modal-backdrop z-[100]" onClick={handleBackdropClick} style={modalStyle}>
                 <GlassCard
@@ -1821,19 +1825,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-1 flex-col gap-3">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500">
-                                                            Leitura
-                                                        </div>
-                                                        {briefingPages.length > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={openBriefingReader}
-                                                                className="px-3 py-2 rounded-xl border border-[var(--skin-line-color)]/70 bg-[var(--skin-accent-color)]/10 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ui-text-accent)] hover:bg-[var(--skin-accent-color)]/18 transition-colors"
-                                                            >
-                                                                Iniciar leitura
-                                                            </button>
-                                                        )}
+                                                    <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-gray-500">
+                                                        Leitura
                                                     </div>
                                                     <div className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-xl border border-white/5 bg-[#1a1512] p-4 shadow-inner">
                                                         <div className="rounded-[18px] border border-white/6 bg-black/16 px-4 py-4">
@@ -1861,6 +1854,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                 {briefingPages.length > 0 ? 'Leitor em tela cheia' : 'Adicione texto para liberar o leitor'}
                                                             </span>
                                                         </div>
+                                                        {briefingPages.length > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={openBriefingReader}
+                                                                className="mt-3 inline-flex items-center justify-center rounded-2xl border border-[var(--skin-line-color)]/70 bg-[var(--skin-accent-color)]/12 px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)] transition-colors hover:bg-[var(--skin-accent-color)]/2"
+                                                            >
+                                                                Ler em tela cheia
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             )}
@@ -2013,7 +2015,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 <div className="min-w-0 text-left">
                                                     <div className="text-xs font-semibold leading-none">Começar agora</div>
                                                     <div className="mt-1 text-[9px] uppercase tracking-[0.18em] font-black text-gray-500">
-                                                        {briefingPages.length > 0 ? 'Abrir foco e leitura' : 'Abrir modo foco'}
+                                                        Abrir modo foco
                                                     </div>
                                                 </div>
                                             </div>
@@ -2135,17 +2137,22 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     onCancel={() => setConfirmDeleteOpen(false)}
                 />
             )}
-            {isBriefingReaderOpen && briefingPages.length > 0 && (
+        </Portal>
+        {isBriefingReaderOpen && briefingPages.length > 0 && (
+            <Portal>
                 <div
-                    className="fixed inset-0 z-[230] bg-black/80 backdrop-blur-md px-4 py-6 sm:px-8"
+                    className="fixed inset-0 z-[230] bg-black/88 backdrop-blur-md"
                     onClick={(event) => {
                         if (event.target === event.currentTarget) {
                             setIsBriefingReaderOpen(false);
                         }
                     }}
                 >
-                    <div className="mx-auto flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-[#6f5a31]/40 bg-[radial-gradient(circle_at_top,_rgba(255,245,214,0.94)_0%,_rgba(245,228,186,0.98)_38%,_rgba(230,206,156,0.98)_100%)] shadow-[0_40px_120px_rgba(0,0,0,0.55)]">
-                        <div className="flex items-center justify-between border-b border-[#8a6b38]/25 bg-[linear-gradient(180deg,rgba(255,251,234,0.84),rgba(241,219,174,0.78))] px-5 py-4 sm:px-7">
+                    <div
+                        className="flex h-full w-full flex-col overflow-hidden border-y border-[#6f5a31]/30 bg-[radial-gradient(circle_at_top,_rgba(255,245,214,0.94)_0%,_rgba(245,228,186,0.98)_38%,_rgba(230,206,156,0.98)_100%)] shadow-[0_40px_120px_rgba(0,0,0,0.55)] sm:border sm:border-[#6f5a31]/40 sm:rounded-[2rem]"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-[#8a6b38]/25 bg-[linear-gradient(180deg,rgba(255,251,234,0.84),rgba(241,219,174,0.78))] px-4 py-4 sm:px-7">
                             <div className="min-w-0">
                                 <div className="text-[11px] font-bold uppercase tracking-[0.36em] text-[#7e6234]">
                                     Leitura guiada
@@ -2196,10 +2203,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     backgroundSize: '100% 34px',
                                 }}
                             />
-                            <div className="relative mx-auto flex h-full max-w-3xl flex-col px-6 py-6 sm:px-10 sm:py-10">
+                            <div className="relative mx-auto flex h-full w-full max-w-5xl flex-col px-4 py-5 sm:px-8 sm:py-8">
                                 <div className="relative flex-1 overflow-y-auto pr-1">
                                     <div
-                                        className="pointer-events-none absolute inset-x-10 top-10 bottom-[6.5rem] rounded-[1.7rem] border border-[#6c5029]/12 bg-[linear-gradient(180deg,rgba(195,159,97,0.16),rgba(123,89,42,0.06))] shadow-[0_20px_40px_rgba(69,46,17,0.12)]"
+                                        className="pointer-events-none absolute inset-x-4 top-4 bottom-[6.2rem] rounded-[1.7rem] border border-[#6c5029]/12 bg-[linear-gradient(180deg,rgba(195,159,97,0.16),rgba(123,89,42,0.06))] shadow-[0_20px_40px_rgba(69,46,17,0.12)] sm:inset-x-10 sm:top-10 sm:bottom-[6.5rem]"
                                         style={briefingPageStackStyle}
                                     />
                                     <div
@@ -2212,9 +2219,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                         />
                                         <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-[linear-gradient(180deg,rgba(255,255,255,0.32),rgba(255,255,255,0))]" />
                                         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-[linear-gradient(0deg,rgba(104,75,33,0.08),rgba(104,75,33,0))]" />
-                                        <div
-                                            className="rounded-[1.6rem] bg-[linear-gradient(180deg,rgba(255,253,244,0.04),rgba(248,236,206,0))]"
-                                        >
+                                        <div className="rounded-[1.6rem] bg-[linear-gradient(180deg,rgba(255,253,244,0.04),rgba(248,236,206,0))]">
                                             {briefingPages[briefingPageIndex]
                                                 .split(/\n\s*\n/)
                                                 .filter(Boolean)
@@ -2257,8 +2262,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         </div>
                     </div>
                 </div>
-            )}
-        </Portal>
+            </Portal>
+        )}
+        </>
     );
 };
 

@@ -157,10 +157,10 @@ const PreferenceToggleChip: React.FC<{
     lightTheme?: boolean;
 }> = ({ label, enabled, onClick, lightTheme = false }) => {
     const className = lightTheme
-        ? `inline-flex min-w-0 items-center justify-between gap-2 rounded-full border px-2.5 py-2.5 text-[10px] font-black uppercase tracking-[0.08em] transition-all ${
+        ? `inline-flex min-w-0 items-center justify-between gap-2 rounded-full border px-2.5 py-2.5 text-[10px] font-black uppercase tracking-[0.05em] transition-all ${
             enabled
-                ? 'border-slate-600/30 bg-white/90 text-slate-950 shadow-[0_8px_20px_rgba(83,98,120,0.14)]'
-                : 'border-slate-500/18 bg-white/72 text-slate-800 hover:bg-white/88'
+                ? 'border-slate-800/18 bg-white/90 text-slate-950 shadow-[0_10px_22px_rgba(43,53,69,0.16)]'
+                : 'border-slate-700/16 bg-white/78 text-slate-900 hover:bg-white/90'
         }`
         : `inline-flex min-w-0 items-center justify-between gap-2 rounded-full border px-2.5 py-2 text-[9px] font-black uppercase tracking-[0.14em] transition-all ${
             enabled
@@ -171,14 +171,14 @@ const PreferenceToggleChip: React.FC<{
     const style = lightTheme
         ? enabled
             ? {
-                background: 'color-mix(in srgb, var(--skin-accent-color) 18%, rgba(255,255,255,0.92))',
-                borderColor: 'color-mix(in srgb, var(--skin-accent-color) 34%, rgba(51,65,85,0.18))',
-                color: 'var(--ui-shell-strong)',
+                background: 'color-mix(in srgb, var(--skin-accent-color) 24%, rgba(255,255,255,0.94))',
+                borderColor: 'color-mix(in srgb, var(--skin-accent-color) 38%, rgba(30,41,59,0.16))',
+                color: '#20160f',
             }
             : {
-                background: 'rgba(255,255,255,0.74)',
-                borderColor: 'rgba(100,116,139,0.18)',
-                color: 'var(--ui-shell-strong)',
+                background: 'rgba(255,255,255,0.8)',
+                borderColor: 'rgba(71,85,105,0.14)',
+                color: '#231a13',
             }
         : undefined;
 
@@ -429,10 +429,26 @@ const UiPreferencesModal: React.FC<{
                                                     : ''
                                         } ${disabledByMode ? 'cursor-default' : ''}`}
                                         style={{
-                                            background: selected ? previewTokens.cardStrongBackground : 'rgba(255,255,255,0.03)',
-                                            borderColor: selected ? 'var(--ui-border-accent)' : previewTokens.borderSoftColor,
+                                            background: isLightTheme
+                                                ? selected
+                                                    ? `color-mix(in srgb, ${previewTokens.accentHex} 22%, rgba(255,255,255,0.94))`
+                                                    : 'rgba(255,255,255,0.82)'
+                                                : selected
+                                                    ? previewTokens.cardStrongBackground
+                                                    : 'rgba(255,255,255,0.03)',
+                                            borderColor: isLightTheme
+                                                ? selected
+                                                    ? `color-mix(in srgb, ${previewTokens.accentHex} 42%, rgba(15,23,42,0.18))`
+                                                    : 'rgba(71,85,105,0.16)'
+                                                : selected
+                                                    ? 'var(--ui-border-accent)'
+                                                    : previewTokens.borderSoftColor,
                                             opacity: disabledByMode ? 0.42 : unlocked ? 1 : 0.72,
-                                            boxShadow: selected ? `0 0 20px ${previewTokens.buttonGlow}` : undefined,
+                                            boxShadow: selected
+                                                ? isLightTheme
+                                                    ? `0 10px 26px color-mix(in srgb, ${previewTokens.accentHex} 24%, rgba(37,99,235,0.08))`
+                                                    : `0 0 20px ${previewTokens.buttonGlow}`
+                                                : undefined,
                                         }}
                                     >
                                         <span
@@ -443,25 +459,13 @@ const UiPreferencesModal: React.FC<{
                                             }}
                                         />
                                         <span
-                                            className="text-[9px] font-black uppercase tracking-[0.14em]"
+                                            className="text-[9px] font-black uppercase tracking-[0.08em]"
                                             style={{
-                                                color: isLightTheme ? previewTokens.cardTextColor : 'rgba(255,255,255,0.84)',
-                                                textShadow: isLightTheme ? '0 1px 0 rgba(255,255,255,0.42)' : undefined,
+                                                color: isLightTheme ? '#211913' : 'rgba(255,255,255,0.84)',
+                                                textShadow: undefined,
                                             }}
                                         >
                                             {skinMeta.label}
-                                        </span>
-                                        <span
-                                            className="text-[8px] font-black uppercase tracking-[0.16em]"
-                                            style={{
-                                                color: selected
-                                                    ? previewTokens.accentTextColor
-                                                    : isLightTheme
-                                                        ? previewTokens.cardTextSoftColor
-                                                        : 'rgba(255,255,255,0.42)',
-                                            }}
-                                        >
-                                            {selected ? 'ATIVA' : disabledByMode ? 'BASIC' : unlocked ? '' : 'LOJA'}
                                         </span>
                                     </button>
                                 );

@@ -223,7 +223,7 @@ const RelationshipArenaBoardCard: React.FC<{
     onClick: () => void;
     action?: React.ReactNode;
     className?: string;
-}> = ({ arena, assetName, onClick, action, className = 'w-[11.4rem] shrink-0' }) => {
+}> = ({ arena, assetName, onClick, action, className = 'w-[10.9rem] shrink-0' }) => {
     const previewArena = arena.arena || {
         id: arena.arenaId,
         assetId: String(arena.metadata?.asset_id || 'geral'),
@@ -235,7 +235,10 @@ const RelationshipArenaBoardCard: React.FC<{
     };
 
     return (
-        <div className={className}>
+        <div className={`relative ${className}`}>
+            {action ? (
+                <div className="absolute right-2 top-2 z-20">{action}</div>
+            ) : null}
             <div
                 role="button"
                 tabIndex={0}
@@ -258,7 +261,6 @@ const RelationshipArenaBoardCard: React.FC<{
                     assetName={assetName}
                 />
             </div>
-            {action ? <div className="mt-2 flex justify-end">{action}</div> : null}
         </div>
     );
 };
@@ -1744,7 +1746,7 @@ export const RelationshipHubModal: React.FC<{
                                                             </span>
                                                         </button>
                                                     ) : null}
-                                                    className="w-[12.2rem] shrink-0"
+                                                    className="w-[10.9rem] shrink-0"
                                                 />
                                             ))}
                                         </div>

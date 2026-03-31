@@ -33,7 +33,7 @@ import { supabase } from '../supabaseClient';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
 import { getGoldMechanicPrice } from '../constants/goldCatalog';
-import { getContentVisualPalette } from '../utils/contentCardVisuals';
+import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 
 const CodexModal = lazy(() =>
     import('./CodexModal').then((module) => ({ default: module.CodexModal }))
@@ -256,15 +256,18 @@ const RelationshipArenaBoardCard: React.FC<{
 };
 
 const MentorshipCampaignBoardCard: React.FC<{
-    title: string;
-    subtitle: string;
-    preview?: CodexCampaignPreview | null;
-    badge?: React.ReactNode;
-    action?: React.ReactNode;
+    codex: UserCodex;
+    preview: CodexCampaignPreview;
+    installed: boolean;
     onClick: () => void;
     className?: string;
-}> = ({ title, subtitle, preview, badge, action, onClick, className = 'w-[13.6rem] shrink-0' }) => {
-    const visualPalette = getContentVisualPalette('shared');
+}> = ({ codex, preview, installed, onClick, className = 'w-[13.85rem] shrink-0' }) => {
+    const visualPalette = getContentVisualPalette(resolveCampaignVisualFamily({
+        campaign: preview.campaign,
+        arenas: preview.arenas,
+        relationshipLinkType: 'mentoria',
+        sourceCodex: codex,
+    }));
 
     return (
         <div className={className}>
@@ -277,43 +280,65 @@ const MentorshipCampaignBoardCard: React.FC<{
                         onClick();
                     }
                 }}
-                className="block w-full cursor-pointer rounded-[18px] text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
+                className="relative block aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-2xl border text-left transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
+                style={{
+                    borderColor: visualPalette.border,
+                    background: visualPalette.listBackground,
+                    boxShadow: `0 14px 28px ${visualPalette.glow}`,
+                }}
             >
                 <div
-                    className="relative rounded-[18px] border p-2.5"
+                    className="flex items-center justify-between gap-2 border-b p-2"
                     style={{
-                        borderColor: visualPalette.border,
-                        background: visualPalette.listBackground,
-                        boxShadow: `0 12px 26px ${visualPalette.glow}`,
+                        borderBottomColor: visualPalette.chipBorder,
+                        background: visualPalette.footerBackground,
                     }}
                 >
-                    {action ? <div className="absolute right-2 top-2 z-20">{action}</div> : null}
-                    <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                            <div className="truncate text-[10px] font-black uppercase tracking-[0.16em]" style={{ color: visualPalette.chipText }}>
-                                Campanha
-                            </div>
-                            <div className="mt-1 truncate text-sm font-black text-white">{title}</div>
-                            <div className="mt-1 line-clamp-2 min-h-[2rem] text-[11px] leading-snug text-white/52">{subtitle}</div>
-                        </div>
-                        {badge}
-                    </div>
-
-                    {preview ? (
+                    <div className="min-w-0">
                         <div
-                            className="pointer-events-none mt-3 overflow-hidden rounded-[16px] border px-2 py-2"
+                            className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.18em]"
+                            style={{ color: visualPalette.chipText }}
+                        >
+                            <span>Campanha</span>
+                        </div>
+                        <div className="truncate text-[11px] font-black text-white">{preview.campaign.title}</div>
+                    </div>
+                    <div
+                        className="rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em]"
+                        style={{
+                            borderColor: visualPalette.chipBorder,
+                            background: visualPalette.chipBackground,
+                            color: visualPalette.chipText,
+                        }}
+                    >
+                        {installed ? 'No app' : 'Entregue'}
+                    </div>
+                </div>
+                <div className="space-y-3 p-2.5">
+                    <div
+                        className="pointer-events-none flex min-h-[7.25rem] items-start justify-center overflow-hidden rounded-xl border pt-0.5"
+                        style={{
+                            borderColor: visualPalette.chipBorder,
+                            background: visualPalette.stackBackground,
+                        }}
+                    >
+                        <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="sm" />
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/42">
+                            {preview.actions.length} ações
+                        </span>
+                        <span
+                            className="rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em]"
                             style={{
                                 borderColor: visualPalette.chipBorder,
-                                background: visualPalette.stackBackground,
+                                background: visualPalette.chipBackground,
+                                color: visualPalette.chipText,
                             }}
                         >
-                            <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="sm" />
-                        </div>
-                    ) : (
-                        <div className="mt-3 rounded-[16px] border border-dashed border-white/10 bg-black/16 px-3 py-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/36">
-                            Toque para abrir
-                        </div>
-                    )}
+                            {preview.arenas.length} arenas
+                        </span>
+                    </div>
                 </div>
             </button>
         </div>
@@ -1703,101 +1728,58 @@ export const RelationshipHubModal: React.FC<{
                                     : 'Nenhuma arena ou campanha desta mentoria apareceu ainda.'}
                             />
                         ) : (
-                            <div className="space-y-4">
-                                {arenasForLink.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/56">
-                                                Arenas
-                                            </span>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
-                                                {arenasForLink.length} no vinculo
-                                            </span>
-                                        </div>
-                                        <div
-                                            className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-1.5"
-                                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
-                                        >
-                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.35rem] gap-2.5 px-0.5 pt-0.5">
-                                                {arenasForLink.map((linkedArena) => (
-                                                    <RelationshipArenaBoardCard
-                                                        key={linkedArena.id}
-                                                        arena={linkedArena}
-                                                        assetName={assetNameForArena(linkedArena)}
-                                                        onClick={() => openLinkedArena(linkedArena)}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                            <div className="rounded-[20px] border border-white/10 bg-black/16 p-3">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/56">
+                                        Conteúdo do vínculo
+                                    </span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
+                                        {arenasForLink.length} arenas · {relationshipCodexes.length} campanhas
+                                    </span>
+                                </div>
+                                <div
+                                    className="mt-3 overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-1.5"
+                                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
+                                >
+                                    <div className="flex min-w-max items-start gap-2.5 px-0.5 pt-0.5">
+                                        {arenasForLink.map((linkedArena) => (
+                                            <RelationshipArenaBoardCard
+                                                key={linkedArena.id}
+                                                arena={linkedArena}
+                                                assetName={assetNameForArena(linkedArena)}
+                                                onClick={() => openLinkedArena(linkedArena)}
+                                            />
+                                        ))}
+                                        {relationshipCodexes.map((codex: UserCodex) => {
+                                            const installed = !isMentorSide && installedOriginCodexIds.has(codex.id);
+                                            const preview = receivedCodexPreviewById.get(codex.id) || (
+                                                Array.isArray(codex.template?.levels) && codex.template.levels.length > 0
+                                                    ? buildCodexCampaignPreview(
+                                                        codex.id,
+                                                        {
+                                                            ...codex.template,
+                                                            title: codex.template?.title || codex.name || 'Campanha recebida',
+                                                            description: codex.template?.description || codex.description || '',
+                                                        },
+                                                        `__relationship_codex_preview_${codex.id}__`
+                                                    )
+                                                    : null
+                                            );
 
-                                {relationshipCodexes.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/56">
-                                                Campanhas
-                                            </span>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
-                                                {relationshipCodexes.length} entregue{relationshipCodexes.length === 1 ? '' : 's'}
-                                            </span>
-                                        </div>
-                                        <div
-                                            className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-1.5"
-                                            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
-                                        >
-                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[13.6rem] gap-2.5 px-0.5 pt-0.5">
-                                            {relationshipCodexes.map((codex: UserCodex) => {
-                                                const installed = !isMentorSide && installedOriginCodexIds.has(codex.id);
-                                                const preview = receivedCodexPreviewById.get(codex.id) || (
-                                                    Array.isArray(codex.template?.levels) && codex.template.levels.length > 0
-                                                        ? buildCodexCampaignPreview(
-                                                            codex.id,
-                                                            {
-                                                                ...codex.template,
-                                                                title: codex.template?.title || codex.name || 'Campanha recebida',
-                                                                description: codex.template?.description || codex.description || '',
-                                                            },
-                                                            `__relationship_codex_preview_${codex.id}__`
-                                                        )
-                                                        : null
-                                                );
-                                                return (
-                                                    <MentorshipCampaignBoardCard
-                                                        key={codex.id}
-                                                        title={codex.name}
-                                                        subtitle={isMentorSide ? 'Entregue por voce neste vinculo.' : 'Toque para abrir e instalar no app.'}
-                                                        preview={preview}
-                                                        onClick={() => {
-                                                            if (preview) {
-                                                                setSelectedRelationshipCampaign({ codex, preview });
-                                                                return;
-                                                            }
-                                                            showToast('Nao foi possivel abrir essa campanha agora.', 'warning');
-                                                        }}
-                                                        badge={
-                                                            installed ? (
-                                                                <span className="rounded-full border border-emerald-300/18 bg-emerald-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-200">
-                                                                    No app
-                                                                </span>
-                                                            ) : isMentorSide ? (
-                                                                <span className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-cyan-200">
-                                                                    Entregue
-                                                                </span>
-                                                            ) : (
-                                                                <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/76">
-                                                                    Na biblioteca
-                                                                </span>
-                                                            )
-                                                        }
-                                                        className="w-[13.6rem] shrink-0"
-                                                    />
-                                                );
-                                            })}
-                                            </div>
-                                        </div>
+                                            if (!preview) return null;
+
+                                            return (
+                                                <MentorshipCampaignBoardCard
+                                                    key={codex.id}
+                                                    codex={codex}
+                                                    preview={preview}
+                                                    installed={installed}
+                                                    onClick={() => setSelectedRelationshipCampaign({ codex, preview })}
+                                                />
+                                            );
+                                        })}
                                     </div>
-                                )}
+                                </div>
                             </div>
                         )}
                     </RelationshipSectionCard>

@@ -26,7 +26,6 @@ import {
     UsersIcon,
     TrophyIcon,
     SparklesIcon,
-    Trash2Icon,
     XIcon,
     SendIcon,
 } from './Icons';
@@ -68,6 +67,11 @@ type RelationshipArenaDetailState = {
     collaborationRole?: 'mentor' | 'pupil' | null;
     allowLinkedMentorshipEdit?: boolean;
     collaborativeOwnerUserId?: string | null;
+};
+
+type RelationshipCampaignModalState = {
+    codex: UserCodex;
+    preview: CodexCampaignPreview;
 };
 
 const HUB_TABS: Array<{
@@ -233,17 +237,21 @@ const RelationshipArenaBoardCard: React.FC<{
     };
 
     return (
-        <div className="h-[6.15rem] w-[4.9rem] shrink-0">
+        <button
+            type="button"
+            onClick={onClick}
+            className="relative w-[7.35rem] shrink-0 text-left transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
+        >
             <ArenaCard
                 arena={previewArena}
                 actions={arena.actions || []}
                 tasks={arena.tasks || []}
                 relationshipBadgeType={arena.linkType ?? null}
-                onClick={onClick}
-                variant="compact"
+                onClick={() => {}}
+                variant="overview"
                 assetName={assetName}
             />
-        </div>
+        </button>
     );
 };
 
@@ -260,9 +268,8 @@ const MentorshipCampaignBoardCard: React.FC<{
 
     return (
         <div className={className}>
-            <div
-                role="button"
-                tabIndex={0}
+            <button
+                type="button"
                 onClick={onClick}
                 onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
@@ -270,7 +277,7 @@ const MentorshipCampaignBoardCard: React.FC<{
                         onClick();
                     }
                 }}
-                className="block cursor-pointer rounded-[18px] text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
+                className="block w-full cursor-pointer rounded-[18px] text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
             >
                 <div
                     className="relative rounded-[18px] border p-2.5"
@@ -294,7 +301,7 @@ const MentorshipCampaignBoardCard: React.FC<{
 
                     {preview ? (
                         <div
-                            className="mt-3 overflow-hidden rounded-[16px] border px-2 py-2"
+                            className="pointer-events-none mt-3 overflow-hidden rounded-[16px] border px-2 py-2"
                             style={{
                                 borderColor: visualPalette.chipBorder,
                                 background: visualPalette.stackBackground,
@@ -308,7 +315,7 @@ const MentorshipCampaignBoardCard: React.FC<{
                         </div>
                     )}
                 </div>
-            </div>
+            </button>
         </div>
     );
 };
@@ -694,8 +701,7 @@ export const RelationshipHubModal: React.FC<{
     const [selectedCompetitionSourceArenaId, setSelectedCompetitionSourceArenaId] = useState<string | null>(null);
     const [selectedPartnershipArenaId, setSelectedPartnershipArenaId] = useState<string | null>(null);
     const [selectedArenaDetail, setSelectedArenaDetail] = useState<RelationshipArenaDetailState | null>(null);
-    const [selectedCampaignPreview, setSelectedCampaignPreview] = useState<CodexCampaignPreview | null>(null);
-    const [selectedMentorshipCampaignId, setSelectedMentorshipCampaignId] = useState<string | null>(null);
+    const [selectedRelationshipCampaign, setSelectedRelationshipCampaign] = useState<RelationshipCampaignModalState | null>(null);
     const [mentorSentCodexesByLinkId, setMentorSentCodexesByLinkId] = useState<Record<string, UserCodex[]>>({});
     const [linkedArenaDraft, setLinkedArenaDraft] = useState({
         assetId: assets[0]?.id || 'geral',
@@ -1148,11 +1154,8 @@ export const RelationshipHubModal: React.FC<{
                 throw new Error(String((data as any)?.error || 'DELETE_RELATIONSHIP_MENTOR_CODEX_FAILED'));
             }
 
-            if (selectedCampaignPreview?.campaign.id === codex.id) {
-                setSelectedCampaignPreview(null);
-            }
-            if (selectedMentorshipCampaignId === codex.id) {
-                setSelectedMentorshipCampaignId(null);
+            if (selectedRelationshipCampaign?.codex.id === codex.id) {
+                setSelectedRelationshipCampaign(null);
             }
             await refreshHub();
             window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
@@ -1712,17 +1715,19 @@ export const RelationshipHubModal: React.FC<{
                                             </span>
                                         </div>
                                         <div
-                                            className="flex min-w-max gap-2 overflow-x-auto pb-1.5 pr-1 custom-scrollbar"
+                                            className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-1.5"
                                             style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
                                         >
-                                            {arenasForLink.map((linkedArena) => (
-                                                <RelationshipArenaBoardCard
-                                                    key={linkedArena.id}
-                                                    arena={linkedArena}
-                                                    assetName={assetNameForArena(linkedArena)}
-                                                    onClick={() => openLinkedArena(linkedArena)}
-                                                />
-                                            ))}
+                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.35rem] gap-2.5 px-0.5 pt-0.5">
+                                                {arenasForLink.map((linkedArena) => (
+                                                    <RelationshipArenaBoardCard
+                                                        key={linkedArena.id}
+                                                        arena={linkedArena}
+                                                        assetName={assetNameForArena(linkedArena)}
+                                                        onClick={() => openLinkedArena(linkedArena)}
+                                                    />
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -1738,9 +1743,10 @@ export const RelationshipHubModal: React.FC<{
                                             </span>
                                         </div>
                                         <div
-                                            className="flex min-w-max gap-2 overflow-x-auto pb-1.5 pr-1 custom-scrollbar"
+                                            className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-1.5"
                                             style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
                                         >
+                                            <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[13.6rem] gap-2.5 px-0.5 pt-0.5">
                                             {relationshipCodexes.map((codex: UserCodex) => {
                                                 const installed = !isMentorSide && installedOriginCodexIds.has(codex.id);
                                                 const preview = receivedCodexPreviewById.get(codex.id) || (
@@ -1763,12 +1769,8 @@ export const RelationshipHubModal: React.FC<{
                                                         subtitle={isMentorSide ? 'Entregue por voce neste vinculo.' : 'Toque para abrir e instalar no app.'}
                                                         preview={preview}
                                                         onClick={() => {
-                                                            if (isMentorSide) {
-                                                                setSelectedMentorshipCampaignId(codex.id);
-                                                                return;
-                                                            }
                                                             if (preview) {
-                                                                setSelectedCampaignPreview(preview);
+                                                                setSelectedRelationshipCampaign({ codex, preview });
                                                                 return;
                                                             }
                                                             showToast('Nao foi possivel abrir essa campanha agora.', 'warning');
@@ -1788,24 +1790,11 @@ export const RelationshipHubModal: React.FC<{
                                                                 </span>
                                                             )
                                                         }
-                                                        action={
-                                                            <button
-                                                                onClick={async (event) => {
-                                                                    event.stopPropagation();
-                                                                    await handleDeleteMentorshipCodex(codex);
-                                                                }}
-                                                                disabled={busyKey === `delete-codex:${codex.id}`}
-                                                                aria-label="Remover campanha"
-                                                                title={busyKey === `delete-codex:${codex.id}` ? 'Removendo' : 'Remover campanha'}
-                                                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-300/20 bg-red-500/12 text-red-100 transition-all hover:bg-red-500/18 disabled:opacity-50"
-                                                            >
-                                                                <Trash2Icon className="h-4 w-4" />
-                                                            </button>
-                                                        }
                                                         className="w-[13.6rem] shrink-0"
                                                     />
                                                 );
                                             })}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -2596,19 +2585,14 @@ export const RelationshipHubModal: React.FC<{
                     onClose={() => setSelectedArenaDetail(null)}
                 />
             )}
-            {selectedCampaignPreview && (
+            {selectedRelationshipCampaign && (
                 <CampaignsCodex
-                    onClose={() => setSelectedCampaignPreview(null)}
-                    initialCampaignId={selectedCampaignPreview.campaign.id}
-                    previewCampaign={selectedCampaignPreview.campaign}
-                    previewArenas={selectedCampaignPreview.arenas}
-                    previewActions={selectedCampaignPreview.actions}
-                />
-            )}
-            {selectedMentorshipCampaignId && (
-                <CampaignsCodex
-                    onClose={() => setSelectedMentorshipCampaignId(null)}
-                    initialCampaignId={selectedMentorshipCampaignId}
+                    onClose={() => setSelectedRelationshipCampaign(null)}
+                    initialCampaignId={selectedRelationshipCampaign.preview.campaign.id}
+                    previewCampaign={selectedRelationshipCampaign.preview.campaign}
+                    previewArenas={selectedRelationshipCampaign.preview.arenas}
+                    previewActions={selectedRelationshipCampaign.preview.actions}
+                    onDeletePreviewCampaign={() => handleDeleteMentorshipCodex(selectedRelationshipCampaign.codex)}
                 />
             )}
         </>

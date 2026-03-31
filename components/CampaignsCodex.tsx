@@ -23,6 +23,7 @@ interface CampaignsCodexProps {
     previewCampaign?: Campaign | null;
     previewArenas?: Arena[];
     previewActions?: Action[];
+    onDeletePreviewCampaign?: (() => void | Promise<void>) | null;
     previewMeta?: {
         coverImage?: string;
         badgeLabel?: string;
@@ -58,7 +59,15 @@ const getCampaignSourceLabel = (codex: UserCodex | null | undefined) => {
     return 'Meu codex';
 };
 
-export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initialCampaignId, previewCampaign, previewArenas = [], previewActions = [], previewMeta }) => {
+export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
+    onClose,
+    initialCampaignId,
+    previewCampaign,
+    previewArenas = [],
+    previewActions = [],
+    onDeletePreviewCampaign = null,
+    previewMeta,
+}) => {
     const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, installCodex, showToast } = useGame();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
@@ -211,6 +220,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         ? userCodexes.find(codex => codex.id === campaignCodexOriginId) ?? null
         : null;
     const isReadOnlyCodexCampaign = campaignCodex?.source_type === 'gift_link' || campaignCodex?.source_type === 'gift_in_app';
+    const canDeletePreviewCampaign = isPreviewCampaign && typeof onDeletePreviewCampaign === 'function';
     const canEditCampaignMetadata = !isPreviewCampaign;
     const canEditCampaignStructure = canEditCampaignMetadata && !isReadOnlyCodexCampaign;
     const availableArenaIdsForNewCampaign = useMemo(
@@ -242,8 +252,18 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
         }
     };
 
-    const handleDeleteCampaign = () => {
-        if (!selectedCampaign || isPreviewCampaign || isReadOnlyCodexCampaign) return;
+    const handleDeleteCampaign = async () => {
+        if (!selectedCampaign) return;
+
+        if (canDeletePreviewCampaign) {
+            if (confirm('Tem certeza que deseja remover esta campanha deste vínculo? Isso não pode ser desfeito.')) {
+                await Promise.resolve(onDeletePreviewCampaign?.());
+                onClose();
+            }
+            return;
+        }
+
+        if (isPreviewCampaign || isReadOnlyCodexCampaign) return;
         if (confirm('Tem certeza que deseja excluir esta campanha?TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
             deleteCampaign(selectedCampaign.id);
             setSelectedCampaignId(null);
@@ -860,6 +880,16 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                         </div>
 
                                         <div className="flex shrink-0 items-center gap-2">
+                                            {canDeletePreviewCampaign && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { void handleDeleteCampaign(); }}
+                                                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-400/18 bg-red-500/10 text-red-200 transition-all hover:bg-red-500/18"
+                                                    title="Remover campanha deste vínculo"
+                                                >
+                                                    <TrashIcon className="h-4 w-4" />
+                                                </button>
+                                            )}
                                             <button
                                                 type="button"
                                                 onClick={handleOpenCampaignStore}
@@ -912,7 +942,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({ onClose, initial
                                 )}
                                 {canEditCampaignStructure && isEditing && (
                                     <button
-                                        onClick={handleDeleteCampaign}
+                                        onClick={() => { void handleDeleteCampaign(); }}
                                         className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
                                         title="Excluir campanha"
                                     >

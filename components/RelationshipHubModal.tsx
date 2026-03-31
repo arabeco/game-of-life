@@ -272,7 +272,7 @@ const MentorshipCampaignBoardCard: React.FC<{
     action?: React.ReactNode;
     onClick: () => void;
     className?: string;
-}> = ({ title, subtitle, preview, badge, action, onClick, className = 'w-[15rem] shrink-0' }) => {
+}> = ({ title, subtitle, preview, badge, action, onClick, className = 'w-[13.6rem] shrink-0' }) => {
     const visualPalette = getContentVisualPalette('shared');
 
     return (
@@ -303,7 +303,7 @@ const MentorshipCampaignBoardCard: React.FC<{
                                 Campanha
                             </div>
                             <div className="mt-1 truncate text-sm font-black text-white">{title}</div>
-                            <div className="mt-1 text-[11px] text-white/52">{subtitle}</div>
+                            <div className="mt-1 line-clamp-2 min-h-[2rem] text-[11px] leading-snug text-white/52">{subtitle}</div>
                         </div>
                         {badge}
                     </div>
@@ -316,7 +316,7 @@ const MentorshipCampaignBoardCard: React.FC<{
                                 background: visualPalette.stackBackground,
                             }}
                         >
-                            <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="md" />
+                            <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="sm" />
                         </div>
                     ) : (
                         <div className="mt-3 rounded-[16px] border border-dashed border-white/10 bg-black/16 px-3 py-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/36">
@@ -675,9 +675,7 @@ export const RelationshipHubModal: React.FC<{
         createCompetitionChallenge,
         createLinkedRelationshipArena,
         createRelationshipInvite,
-        deleteArena,
         duplicateUserCodexToRecipient,
-        deleteUserCodex,
         endRelationshipLink,
         fetchRelationshipHubData,
         friends,
@@ -692,6 +690,8 @@ export const RelationshipHubModal: React.FC<{
 
     const [activeTab, setActiveTab] = useState<RelationshipHubTab>(initialTab);
     const [loading, setLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [summary, setSummary] = useState<RelationshipCapacitySummary | null>(null);
     const [invites, setInvites] = useState<RelationshipLinkInvite[]>([]);
@@ -802,8 +802,13 @@ export const RelationshipHubModal: React.FC<{
         setProfilesById(nextProfiles);
     };
 
-    const refreshHub = async () => {
-        setLoading(true);
+    const refreshHub = async (options?: { initial?: boolean }) => {
+        const useBlockingLoader = Boolean(options?.initial || !hasLoadedOnce);
+        if (useBlockingLoader) {
+            setLoading(true);
+        } else {
+            setIsRefreshing(true);
+        }
         setError(null);
         try {
             const hub = await fetchRelationshipHubData();
@@ -849,11 +854,13 @@ export const RelationshipHubModal: React.FC<{
             setError(hubError?.message || 'Nao foi possivel carregar a Central de Vinculos.');
         } finally {
             setLoading(false);
+            setIsRefreshing(false);
+            setHasLoadedOnce(true);
         }
     };
 
     useEffect(() => {
-        void refreshHub();
+        void refreshHub({ initial: true });
     }, []);
 
     useEffect(() => {
@@ -1141,7 +1148,15 @@ export const RelationshipHubModal: React.FC<{
 
         setBusyKey(`delete-codex:${codex.id}`);
         try {
-            await deleteUserCodex(codex.id);
+            const { data, error } = await supabase.rpc('delete_relationship_mentor_codex', {
+                p_codex_id: codex.id,
+            });
+
+            if (error) throw error;
+            if ((data as any)?.success === false) {
+                throw new Error(String((data as any)?.error || 'DELETE_RELATIONSHIP_MENTOR_CODEX_FAILED'));
+            }
+
             if (selectedCampaignPreview?.campaign.id === codex.id) {
                 setSelectedCampaignPreview(null);
             }
@@ -1149,6 +1164,17 @@ export const RelationshipHubModal: React.FC<{
                 setSelectedMentorshipCampaignId(null);
             }
             await refreshHub();
+            window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            showToast('Campanha removida da mentoria.', 'success');
+        } catch (error: any) {
+            console.error('Error deleting mentorship codex from relationship hub:', error);
+            const message = String(error?.message || '');
+            showToast(
+                message.includes('delete_relationship_mentor_codex')
+                    ? 'Essa base ainda nao recebeu o SQL novo para remover campanhas da mentoria.'
+                    : 'Nao foi possivel remover essa campanha agora.',
+                'error'
+            );
         } finally {
             setBusyKey(null);
         }
@@ -1167,15 +1193,13 @@ export const RelationshipHubModal: React.FC<{
 
         setBusyKey(`delete-arena:${arenaId}`);
         try {
-            const localArenaExists = assets.some((asset) => asset.arenas.some((candidate) => candidate.id === arenaId));
-            if (!localArenaExists) {
-                const { error } = await supabase.rpc('delete_linked_relationship_arena', {
-                    p_arena_id: arenaId,
-                });
+            const { data, error } = await supabase.rpc('delete_linked_relationship_arena', {
+                p_arena_id: arenaId,
+            });
 
-                if (error) throw error;
-            } else {
-                await Promise.resolve(deleteArena(arenaId));
+            if (error) throw error;
+            if ((data as any)?.success === false) {
+                throw new Error(String((data as any)?.error || 'DELETE_LINKED_RELATIONSHIP_ARENA_FAILED'));
             }
 
             if (selectedArenaDetail?.arena.id === arenaId) {
@@ -1538,45 +1562,46 @@ export const RelationshipHubModal: React.FC<{
         </RelationshipSectionCard>
     );
 
-    const renderInviteSection = () => (
-        <RelationshipSectionCard
-            eyebrow="Convites"
-            title="Pendentes dessa aba"
-            description="O custo volta se cancelar ou expirar."
-            action={
-                <div className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
-                    {filteredInvites.length}
+    const renderInviteSection = () => {
+        if (filteredInvites.length === 0) return null;
+
+        return (
+            <RelationshipSectionCard
+                eyebrow="Convites"
+                title="Pendentes dessa aba"
+                description="O custo volta se cancelar ou expirar."
+                action={
+                    <div className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
+                        {filteredInvites.length}
+                    </div>
+                }
+            >
+                <div className="space-y-3">
+                    {incomingInvites.map((invite) => (
+                        <InviteCard
+                            key={invite.id}
+                            invite={invite}
+                            profile={profileFor(invite.senderId)}
+                            mode="incoming"
+                            busy={busyKey === `accept:${invite.id}` || busyKey === `decline:${invite.id}`}
+                            onAccept={() => handleInviteAction(invite.id, 'accept')}
+                            onDecline={() => handleInviteAction(invite.id, 'decline')}
+                        />
+                    ))}
+                    {outgoingInvites.map((invite) => (
+                        <InviteCard
+                            key={invite.id}
+                            invite={invite}
+                            profile={profileFor(invite.recipientId)}
+                            mode="outgoing"
+                            busy={busyKey === `revoke:${invite.id}`}
+                            onRevoke={() => handleInviteAction(invite.id, 'revoke')}
+                        />
+                    ))}
                 </div>
-            }
-        >
-            <div className="space-y-3">
-                {incomingInvites.map((invite) => (
-                    <InviteCard
-                        key={invite.id}
-                        invite={invite}
-                        profile={profileFor(invite.senderId)}
-                        mode="incoming"
-                        busy={busyKey === `accept:${invite.id}` || busyKey === `decline:${invite.id}`}
-                        onAccept={() => handleInviteAction(invite.id, 'accept')}
-                        onDecline={() => handleInviteAction(invite.id, 'decline')}
-                    />
-                ))}
-                {outgoingInvites.map((invite) => (
-                    <InviteCard
-                        key={invite.id}
-                        invite={invite}
-                        profile={profileFor(invite.recipientId)}
-                        mode="outgoing"
-                        busy={busyKey === `revoke:${invite.id}`}
-                        onRevoke={() => handleInviteAction(invite.id, 'revoke')}
-                    />
-                ))}
-                {filteredInvites.length === 0 && (
-                    <EmptyState title="Sem convites" text="Nada pendente agora." />
-                )}
-            </div>
-        </RelationshipSectionCard>
-    );
+            </RelationshipSectionCard>
+        );
+    };
 
     const renderLinkDetail = (link: RelationshipLink) => {
         const profile = otherParticipant(link);
@@ -1591,7 +1616,7 @@ export const RelationshipHubModal: React.FC<{
                 : receivedCodexesByLinkId.get(link.id) || [];
             const hasMentorshipContent = arenasForLink.length > 0 || relationshipCodexes.length > 0;
             return (
-                <div className={`space-y-4 ${isMentorSide ? 'pb-32' : ''}`}>
+                <div className={`space-y-4 ${isMentorSide ? 'pb-24' : ''}`}>
                     <GlassCard className="rounded-[22px] border border-[rgba(226,233,241,0.16)] bg-[linear-gradient(160deg,rgba(208,214,223,0.12)_0%,rgba(26,31,42,0.90)_34%,rgba(8,10,15,0.98)_100%)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
                         <div className="flex flex-col gap-3">
                             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1750,12 +1775,12 @@ export const RelationshipHubModal: React.FC<{
                                                         subtitle={isMentorSide ? 'Entregue por voce neste vinculo.' : 'Toque para abrir e instalar no app.'}
                                                         preview={preview}
                                                         onClick={() => {
-                                                            if (isMentorSide) {
-                                                                setSelectedMentorshipCampaignId(codex.id);
-                                                                return;
-                                                            }
                                                             if (preview) {
                                                                 setSelectedCampaignPreview(preview);
+                                                                return;
+                                                            }
+                                                            if (isMentorSide) {
+                                                                setSelectedMentorshipCampaignId(codex.id);
                                                                 return;
                                                             }
                                                             showToast('Nao foi possivel abrir essa campanha agora.', 'warning');
@@ -1808,7 +1833,7 @@ export const RelationshipHubModal: React.FC<{
                                                                 </button>
                                                             )
                                                         }
-                                                        className="w-[15rem] shrink-0"
+                                                        className="w-[13.6rem] shrink-0"
                                                     />
                                                 );
                                             })}
@@ -2213,15 +2238,15 @@ export const RelationshipHubModal: React.FC<{
                 <div className="ui-modal-backdrop z-[140]" onClick={onClose}>
                     <GlassCard
                         variant="neutral"
-                        className="relationship-hub-modal relationship-hub-sheet ui-modal-panel w-full max-w-[40rem] lg:max-w-[44rem] max-h-[95vh] overflow-hidden"
+                        className="relationship-hub-modal relationship-hub-sheet ui-modal-panel w-full max-w-[34rem] lg:max-w-[36rem] max-h-[92vh] overflow-hidden"
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="relative h-full">
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(255,255,255,0.75),rgba(255,255,255,0.14)_25%,transparent_60%)] pointer-events-none" />
-                            <div className="relative z-10 flex h-full max-h-[95vh] flex-col">
+                            <div className="relative z-10 flex h-full max-h-[92vh] flex-col">
                                 <div className="border-b border-white/10 px-4 py-3 md:px-5">
                                     <div className="flex items-start justify-between gap-3">
-                                        <div>
+                                        <div className="min-w-0">
                                             <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/24 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/46">
                                                 <SparklesIcon className="w-3.5 h-3.5" />
                                                 <span>Central de vínculos</span>
@@ -2271,7 +2296,12 @@ export const RelationshipHubModal: React.FC<{
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-3 md:p-4 custom-scrollbar">
+                                <div className="flex-1 overflow-y-auto p-2.5 md:p-3 custom-scrollbar">
+                                    {isRefreshing && !loading && (
+                                        <div className="mb-3 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/46">
+                                            Atualizando central...
+                                        </div>
+                                    )}
                                     {error && (
                                         <div className="mb-4 rounded-[22px] border border-red-400/18 bg-red-500/10 px-4 py-3 text-sm text-red-100/90">
                                             {error}
@@ -2289,16 +2319,10 @@ export const RelationshipHubModal: React.FC<{
                                             {renderTabBoard()}
                                             {renderInviteSection()}
                                             {renderRelationshipCards()}
-                                            {resolvedSelectedDetailLink ? (
-                                                renderLinkDetail(resolvedSelectedDetailLink)
-                                            ) : (
-                                                <RelationshipSectionCard
-                                                    eyebrow="Detalhe"
-                                                    title="Escolha um vinculo"
-                                                    description="Selecione um card acima para ver so as arenas, campanhas e acoes daquele vinculo."
-                                                >
-                                                    <EmptyState title="Nada selecionado" text="Toque em um vinculo desta aba para abrir o conteudo dele aqui embaixo." />
-                                                </RelationshipSectionCard>
+                                            {resolvedSelectedDetailLink ? renderLinkDetail(resolvedSelectedDetailLink) : (
+                                                <div className="rounded-[18px] border border-dashed border-white/10 bg-black/14 px-4 py-3 text-[11px] font-semibold text-white/42">
+                                                    Toque em um vinculo acima para abrir so o conteudo dele.
+                                                </div>
                                             )}
                                         </div>
                                     )}

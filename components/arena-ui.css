@@ -262,9 +262,29 @@
   letter-spacing: 0.13em;
 }
 
+.arena-title-readable {
+  color: rgba(248, 250, 252, 0.98) !important;
+  font-weight: 900;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.98),
+    0 0 10px rgba(0, 0, 0, 0.78),
+    0 0 18px rgba(0, 0, 0, 0.42);
+  -webkit-text-stroke: 0.38px rgba(6, 10, 16, 0.82);
+}
+
+.mode-game.theme-light .arena-plate .arena-title-readable,
+.mode-office.theme-light .arena-plate .arena-title-readable {
+  color: rgba(250, 252, 255, 0.995) !important;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 1),
+    0 0 12px rgba(0, 0, 0, 0.84),
+    0 0 22px rgba(7, 12, 18, 0.48);
+  -webkit-text-stroke: 0.46px rgba(5, 8, 14, 0.9);
+}
+
 .arena-thumb-title {
   font-family: var(--font-body);
-  font-weight: 700;
+  font-weight: 900;
   letter-spacing: 0.02em;
   line-height: 0.95;
   margin: 0;

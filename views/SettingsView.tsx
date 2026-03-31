@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
@@ -51,29 +51,29 @@ const AssetDecagon = lazy(() =>
     import('../components/AssetDecagon').then((module) => ({ default: module.AssetDecagon }))
 );
 
-type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
+type SettingsTab = 'Geral' | 'PreferÃªncias' | 'Premium' | 'Temporada';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
 type ProfileVisibilityOption = ProfileVisibilityScope;
 type UiSettingsSkinOption = { id: string; name: string };
 
 const UI_SKIN_SELECTOR_ORDER = ['BASIC', 'GOLD', 'FROST', 'EMBER', 'CYBER', 'AURORA', 'VOID', 'GENESIS', 'item_theme_nebulosa'] as const;
 const UI_SKIN_SELECTOR_META: Record<string, { label: string; title: string; previewSkinId?: string; prefersLightText?: boolean; }> = {
-    BASIC: { label: 'BÁSICO', title: 'Básico Profissional' },
+    BASIC: { label: 'BÃSICO', title: 'BÃ¡sico Profissional' },
     GOLD: { label: 'OURO', title: 'Ouro Soberano' },
     FROST: { label: 'GELO', title: 'Gelo Eterno' },
     EMBER: { label: 'CHAMA', title: 'Chama Viva', prefersLightText: true },
     CYBER: { label: 'CYBER', title: 'Cyberpunk', prefersLightText: true },
     AURORA: { label: 'AURORA', title: 'Aurora Boreal', prefersLightText: true },
     VOID: { label: 'VAZIO', title: 'Vazio Primordial', prefersLightText: true },
-    GENESIS: { label: 'GÊNESIS', title: 'Gênesis', prefersLightText: true },
+    GENESIS: { label: 'GÃŠNESIS', title: 'GÃªnesis', prefersLightText: true },
     item_theme_nebulosa: { label: 'NEBULOSA', title: 'Nebulosa Astral', prefersLightText: true },
 };
 
 const notificationModes: { id: NotificationMode, name: string, icon: string, description: string }[] = [
-    { id: 'Silencioso', name: 'O Monge', icon: '🧘', description: "Nenhuma notificação será enviada. O sistema aguarda sua busca ativa." },
-    { id: 'Reflexivo', name: 'O Estoico', icon: '⚖️', description: "Um resumo diário com seu score e ações restantes é enviado à noite." },
-    { id: 'Essencial', name: 'O Executivo', icon: '👔', description: "Apenas alertas para compromissos com horário fixo." },
-    { id: 'Militar', name: 'O Soldado', icon: '⚔️', description: "Modo ativo com lembretes para planejar, executar e revisar seu dia." },
+    { id: 'Silencioso', name: 'O Monge', icon: 'ðŸ§˜', description: "Nenhuma notificaÃ§Ã£o serÃ¡ enviada. O sistema aguarda sua busca ativa." },
+    { id: 'Reflexivo', name: 'O Estoico', icon: 'âš–ï¸', description: "Um resumo diÃ¡rio com seu score e aÃ§Ãµes restantes Ã© enviado Ã  noite." },
+    { id: 'Essencial', name: 'O Executivo', icon: 'ðŸ‘”', description: "Apenas alertas para compromissos com horÃ¡rio fixo." },
+    { id: 'Militar', name: 'O Soldado', icon: 'âš”ï¸', description: "Modo ativo com lembretes para planejar, executar e revisar seu dia." },
 ];
 
 const NotificationCard: React.FC<{ icon: React.ReactNode, title: string, time?: string, message: string, fixedAtTop?: boolean, stackIndex?: number }> = ({ icon, title, time, message, fixedAtTop = true, stackIndex = 0 }) => {
@@ -106,13 +106,13 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
     const renderPreview = () => {
         switch (selectedMode) {
             case 'Silencioso': return (<div className="text-center text-gray-400 space-y-2 p-4"><svg viewBox="0 0 100 20" className="w-24 mx-auto"><path d="M 0 10 Q 25 10, 50 10 T 100 10" stroke="currentColor" strokeWidth="2" fill="none" /></svg><p className="text-sm">{notificationModes.find(m => m.id === 'Silencioso')?.description}</p></div>);
-            case 'Reflexivo': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2. 'A felicidade da sua vida depende da qualidade dos seus pensamentos.'" fixedAtTop stackIndex={0} />);
-            case 'Essencial': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-blue-400" />} title="Alerta de Compromisso" time="12:00" message="Reunião de Alinhamento em 2h." fixedAtTop stackIndex={0} />);
+            case 'Reflexivo': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim DiÃ¡rio" time="20:00" message="Score: 85 | AÃ§Ãµes Restantes: 2. 'A felicidade da sua vida depende da qualidade dos seus pensamentos.'" fixedAtTop stackIndex={0} />);
+            case 'Essencial': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-blue-400" />} title="Alerta de Compromisso" time="12:00" message="ReuniÃ£o de Alinhamento em 2h." fixedAtTop stackIndex={0} />);
             case 'Militar': return (
                 <>
-                    <NotificationCard icon={<LightbulbIcon className="w-5 h-5 text-green-400" />} title="Alvorada (Planning)" time="08:00" message="Inicie o Planejamento Tático. Verifique o Grid ou o Painel Diário." fixedAtTop stackIndex={0} />
-                    <NotificationCard icon={<ClockIcon className="w-5 h-5 text-orange-400" />} title="Radar de Batalha" time="09:00" message="Próxima ação: Treino de Força (11:00). Prepare-se." fixedAtTop stackIndex={1} />
-                    <NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações Restantes: 2." fixedAtTop stackIndex={2} />
+                    <NotificationCard icon={<LightbulbIcon className="w-5 h-5 text-green-400" />} title="Alvorada (Planning)" time="08:00" message="Inicie o Planejamento TÃ¡tico. Verifique o Grid ou o Painel DiÃ¡rio." fixedAtTop stackIndex={0} />
+                    <NotificationCard icon={<ClockIcon className="w-5 h-5 text-orange-400" />} title="Radar de Batalha" time="09:00" message="PrÃ³xima aÃ§Ã£o: Treino de ForÃ§a (11:00). Prepare-se." fixedAtTop stackIndex={1} />
+                    <NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim DiÃ¡rio" time="20:00" message="Score: 85 | AÃ§Ãµes Restantes: 2." fixedAtTop stackIndex={2} />
                 </>
             );
             default: return null;
@@ -123,7 +123,7 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
         <Portal>
             <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
                 <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                    <h2 className="text-lg font-bold uppercase tracking-wider text-center">Configurar Notificações</h2>
+                    <h2 className="text-lg font-bold uppercase tracking-wider text-center">Configurar NotificaÃ§Ãµes</h2>
                     <div className="grid grid-cols-2 gap-2">
                         {notificationModes.map(mode => (<button key={mode.id} onClick={() => setSelectedMode(mode.id)} className={`p-3 rounded-xl transition-colors text-center ${selectedMode === mode.id ? 'bg-white/20 ring-2 ring-white/30' : 'bg-black/20 hover:bg-white/10'}`}><span className="text-2xl">{mode.icon}</span><p className="text-sm font-bold">{mode.name}</p></button>))}
                     </div>
@@ -154,21 +154,47 @@ const PreferenceToggleChip: React.FC<{
     label: string;
     enabled: boolean;
     onClick: () => void;
-}> = ({ label, enabled, onClick }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        aria-pressed={enabled}
-        className={`inline-flex w-full min-w-0 items-center justify-between gap-2 rounded-full border px-2.5 py-2 text-[9px] font-black uppercase tracking-[0.14em] transition-all ${
+    lightTheme?: boolean;
+}> = ({ label, enabled, onClick, lightTheme = false }) => {
+    const className = lightTheme
+        ? `inline-flex min-w-0 items-center justify-between gap-2 rounded-full border px-2.5 py-2.5 text-[10px] font-black uppercase tracking-[0.08em] transition-all ${
+            enabled
+                ? 'border-slate-600/30 bg-white/90 text-slate-950 shadow-[0_8px_20px_rgba(83,98,120,0.14)]'
+                : 'border-slate-500/18 bg-white/72 text-slate-800 hover:bg-white/88'
+        }`
+        : `inline-flex min-w-0 items-center justify-between gap-2 rounded-full border px-2.5 py-2 text-[9px] font-black uppercase tracking-[0.14em] transition-all ${
             enabled
                 ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]'
                 : 'border-white/10 bg-black/20 text-gray-400 hover:bg-white/5 hover:text-white'
-        }`}
-    >
-        <span className="truncate">{label}</span>
-        <span className={`h-2.5 w-2.5 rounded-full ${enabled ? 'bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--sephirot-glow-color)]' : 'bg-white/15'}`} />
-    </button>
-);
+        }`;
+
+    const style = lightTheme
+        ? enabled
+            ? {
+                background: 'color-mix(in srgb, var(--skin-accent-color) 18%, rgba(255,255,255,0.92))',
+                borderColor: 'color-mix(in srgb, var(--skin-accent-color) 34%, rgba(51,65,85,0.18))',
+                color: 'var(--ui-shell-strong)',
+            }
+            : {
+                background: 'rgba(255,255,255,0.74)',
+                borderColor: 'rgba(100,116,139,0.18)',
+                color: 'var(--ui-shell-strong)',
+            }
+        : undefined;
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-pressed={enabled}
+            className={className}
+            style={style}
+        >
+            <span className="truncate">{label}</span>
+            <span className={`h-2.5 w-2.5 rounded-full ${enabled ? 'bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--sephirot-glow-color)]' : lightTheme ? 'bg-slate-500/25' : 'bg-white/15'}`} />
+        </button>
+    );
+};
 
 const VISIBILITY_OPTIONS: { value: ProfileVisibilityOption; label: string }[] = [
     { value: 'all', label: 'Todos' },
@@ -346,6 +372,7 @@ const UiPreferencesModal: React.FC<{
     onClose,
 }) => {
     if (!open) return null;
+    const isLightTheme = activeTheme === 'LIGHT';
 
     return (
         <Portal>
@@ -369,10 +396,10 @@ const UiPreferencesModal: React.FC<{
                         <div className="flex items-center justify-between gap-3">
                             <div className="space-y-1">
                                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Skins UI</div>
-                                <div className="text-[11px] text-gray-500">No modo básico, a interface fica fixa no corte essencial.</div>
+                                <div className="text-[11px] text-gray-500">No modo bÃ¡sico, a interface fica fixa no corte essencial.</div>
                             </div>
                             <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">
-                                {appMode === 'BASIC' ? 'Básico fixo' : 'Tema livre'}
+                                {appMode === 'BASIC' ? 'BÃ¡sico fixo' : 'Tema livre'}
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
@@ -415,13 +442,23 @@ const UiPreferencesModal: React.FC<{
                                                 boxShadow: `0 0 8px ${previewTokens.accentHex}`,
                                             }}
                                         />
-                                        <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/82">
+                                        <span
+                                            className="text-[9px] font-black uppercase tracking-[0.14em]"
+                                            style={{
+                                                color: isLightTheme ? previewTokens.cardTextColor : 'rgba(255,255,255,0.84)',
+                                                textShadow: isLightTheme ? '0 1px 0 rgba(255,255,255,0.42)' : undefined,
+                                            }}
+                                        >
                                             {skinMeta.label}
                                         </span>
                                         <span
                                             className="text-[8px] font-black uppercase tracking-[0.16em]"
                                             style={{
-                                                color: selected ? previewTokens.accentTextColor : 'rgba(255,255,255,0.42)',
+                                                color: selected
+                                                    ? previewTokens.accentTextColor
+                                                    : isLightTheme
+                                                        ? previewTokens.cardTextSoftColor
+                                                        : 'rgba(255,255,255,0.42)',
                                             }}
                                         >
                                             {selected ? 'ATIVA' : disabledByMode ? 'BASIC' : unlocked ? '' : 'LOJA'}
@@ -463,21 +500,24 @@ const UiPreferencesModal: React.FC<{
                             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Feedback sensorial</div>
                             <div className="text-[11px] text-gray-500">Controle o que anima, toca e vibra.</div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                             <PreferenceToggleChip
-                                label="Animações"
+                                label="AnimaÃ§Ãµes"
                                 enabled={Boolean(oraclePreferences?.animationsEnabled)}
                                 onClick={() => updateOraclePreferences({ animationsEnabled: !Boolean(oraclePreferences?.animationsEnabled) })}
+                                lightTheme={isLightTheme}
                             />
                             <PreferenceToggleChip
                                 label="Sons"
                                 enabled={Boolean(oraclePreferences?.soundsEnabled)}
                                 onClick={() => updateOraclePreferences({ soundsEnabled: !Boolean(oraclePreferences?.soundsEnabled) })}
+                                lightTheme={isLightTheme}
                             />
                             <PreferenceToggleChip
-                                label="Vibração"
+                                label="VibraÃ§Ã£o"
                                 enabled={Boolean(oraclePreferences?.hapticsEnabled)}
                                 onClick={() => updateOraclePreferences({ hapticsEnabled: !Boolean(oraclePreferences?.hapticsEnabled) })}
+                                lightTheme={isLightTheme}
                             />
                         </div>
                     </div>
@@ -560,7 +600,7 @@ const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () 
 const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const handleRequestModeGame = () => {
         onClose();
-        window.dispatchEvent(new CustomEvent('tutorialTabChange', { detail: { tab: 'Preferências' } }));
+        window.dispatchEvent(new CustomEvent('tutorialTabChange', { detail: { tab: 'PreferÃªncias' } }));
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialFocusModeGame'));
         }, 70);
@@ -576,7 +616,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                             <div className="text-[10px] font-black tracking-[0.28em] text-white/45 uppercase">Estacoes</div>
                             <h2 className="text-base font-black uppercase tracking-[0.14em] text-center">Tutoriais</h2>
                             <p className="text-[11px] text-white/55 leading-snug">
-                                No basico voce revisita os cards 1 e 2. Ativando o Modo Jogo em Preferências, entram os cards 3 e 4 com progresso, mundo e metajogo.
+                                No basico voce revisita os cards 1 e 2. Ativando o Modo Jogo em PreferÃªncias, entram os cards 3 e 4 com progresso, mundo e metajogo.
                             </p>
                         </div>
                     </div>
@@ -761,7 +801,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setLoading(true);
         try {
             const { data: arenaData, error: arenaError } = await supabase.from('arenas').select('*').eq('id', link.arenaId).single();
-            if (arenaError || !arenaData) throw new Error("Arena não encontrada.");
+            if (arenaError || !arenaData) throw new Error("Arena nÃ£o encontrada.");
 
             const { data: actionsData } = await supabase.from('actions').select('*').eq('arena_id', link.arenaId);
 
@@ -907,7 +947,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center">
-                        <div className="text-xs font-bold uppercase tracking-wider accent-text">VÍNCULOS</div>
+                        <div className="text-xs font-bold uppercase tracking-wider accent-text">VÃNCULOS</div>
                         <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
 
@@ -919,7 +959,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                     {!sessionReady && (
                         <div className="text-center text-sm text-gray-400 bg-black/20 border border-white/10 rounded-xl p-3">
-                            Faça login no Supabase para usar Vínculos.
+                            FaÃ§a login no Supabase para usar VÃ­nculos.
                         </div>
                     )}
 
@@ -946,7 +986,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                     </div>
                                                                     <div className="flex-1">
                                                                         <div className="text-sm font-bold text-white">{senderNickname}</div>
-                                                                        <div className="text-xs text-gray-400">convoca você para observar {invite.arenaSnapshot?.name || 'uma arena'}</div>
+                                                                        <div className="text-xs text-gray-400">convoca vocÃª para observar {invite.arenaSnapshot?.name || 'uma arena'}</div>
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex gap-2">
@@ -973,7 +1013,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         Mentoria ativa como mentor e envio de campanhas para pupilos aparecem aqui.
                                                     </div>
                                                 {myPupils.length === 0 ? (
-                                                    <div className="text-center text-sm text-gray-500 py-4">Nenhum vínculo ativo.</div>
+                                                    <div className="text-center text-sm text-gray-500 py-4">Nenhum vÃ­nculo ativo.</div>
                                                 ) : (
                                                     myPupils.map(link => {
                                                         const pupil = getProfile(link.pupilId);
@@ -986,7 +1026,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                     </div>
                                                                     <div className="flex-1">
                                                                         <div className="text-sm font-bold text-white">{pupil?.nickname || 'Pupilo'}</div>
-                                                                        <div className="text-xs text-gray-400">{link.arenaSnapshot?.icon || '👁️'} {link.arenaSnapshot?.name || 'Arena'}</div>
+                                                                        <div className="text-xs text-gray-400">{link.arenaSnapshot?.icon || 'ðŸ‘ï¸'} {link.arenaSnapshot?.name || 'Arena'}</div>
                                                                     </div>
                                                                     <div className={`text-xs font-bold ${localValue <= 33 ? 'text-red-400' : localValue <= 66 ? 'text-yellow-400' : 'text-green-400'}`}>{Math.round(localValue)}%</div>
                                                                 </div>
@@ -1033,7 +1073,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                     </div>
                                                                     <div className="flex-1">
                                                                         <div className="text-sm font-bold text-white">{mentor?.nickname || 'Mentor'}</div>
-                                                                        <div className="text-xs text-gray-400">observa {link.arenaSnapshot?.icon || '👁️'} {link.arenaSnapshot?.name || 'Arena'}</div>
+                                                                        <div className="text-xs text-gray-400">observa {link.arenaSnapshot?.icon || 'ðŸ‘ï¸'} {link.arenaSnapshot?.name || 'Arena'}</div>
                                                                     </div>
                                                                     <div className={`text-xs font-bold ${value < 34 ? 'text-red-400' : value < 67 ? 'text-yellow-400' : 'text-green-400'}`}>{value}%</div>
                                                                 </div>
@@ -1056,7 +1096,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     onClick={handleOpenMentorshipModal}
                                                     className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
                                                 >
-                                                    <span>💎</span>
+                                                    <span>ðŸ’Ž</span>
                                                     NOVA MENTORIA
                                                 </button>
                                             </div>
@@ -1066,7 +1106,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     {activeTab === 'parcerias' && (
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center px-1">
-                                                <div className="text-[10px] font-black tracking-widest text-gray-400">VÍNCULOS DE SANGUE</div>
+                                                <div className="text-[10px] font-black tracking-widest text-gray-400">VÃNCULOS DE SANGUE</div>
                                                 <button
                                                     onClick={handleOpenPartnershipModal}
                                                     className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--skin-accent-color)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
@@ -1118,7 +1158,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     onClick={handleOpenPartnershipModal}
                                                     className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
                                                 >
-                                                    <span>🤝</span>
+                                                    <span>ðŸ¤</span>
                                                     NOVA PARCERIA
                                                 </button>
                                             </div>
@@ -1148,7 +1188,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                         <div key={link.id} className="bg-black/20 border border-white/10 rounded-2xl p-4 text-center space-y-2 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => fetchSpectatorData(link, opponent?.nickname || 'Oponente')}>
                                                             <div className="flex justify-between items-center mb-2">
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-xl">{link.arenaSnapshot?.icon || '⚔️'}</span>
+                                                                    <span className="text-xl">{link.arenaSnapshot?.icon || 'âš”ï¸'}</span>
                                                                     <div className="text-left">
                                                                         <div className="text-sm font-bold text-white leading-none">{link.arenaSnapshot?.name || 'Desafio'}</div>
                                                                         <div className="text-[10px] text-gray-400">vs {opponent?.nickname || 'Oponente'}</div>
@@ -1176,7 +1216,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     onClick={handleOpenChallengeModal}
                                                     className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
                                                 >
-                                                    <span>⚔️</span>
+                                                    <span>âš”ï¸</span>
                                                     NOVO DESAFIO
                                                 </button>
                                             </div>
@@ -1353,7 +1393,7 @@ const ChallengeSelectionModal: React.FC<{ title?: string; onClose: () => void; o
                                     </div>
                                     <div className="flex-1">
                                         <div className="text-sm font-bold text-white">{friend.nickname}</div>
-                                        <div className="text-[10px] text-gray-400">Nível {friend.level || 1}</div>
+                                        <div className="text-[10px] text-gray-400">NÃ­vel {friend.level || 1}</div>
                                     </div>
                                     <div className="px-3 py-1 bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] text-[10px] font-bold rounded-lg uppercase">
                                         Desafiar
@@ -1373,21 +1413,21 @@ type FeedbackQuestion = { id: number; label: string; category: 'Core' | 'Dopamin
 const feedbackQuestions: FeedbackQuestion[] = [
     { id: 1, label: 'Fluidez do Campo de Batalha (Planner)', category: 'Core' },
     { id: 2, label: 'Estabilidade do Sistema (Bugs & Performance)', category: 'Core' },
-    { id: 3, label: 'Ritualística (Painel Diário & Fechamento)', category: 'Core' },
-    { id: 4, label: 'Senso de Progresso (XP & Níveis)', category: 'Dopamina' },
+    { id: 3, label: 'RitualÃ­stica (Painel DiÃ¡rio & Fechamento)', category: 'Core' },
+    { id: 4, label: 'Senso de Progresso (XP & NÃ­veis)', category: 'Dopamina' },
     { id: 5, label: 'Identidade Visual (UI & Avatar)', category: 'Dopamina' },
-    { id: 6, label: 'Mecânica do Santuário (Manutenção)', category: 'Dopamina' },
-    { id: 7, label: 'Pressão Social (Clãs & Vínculos)', category: 'Valor' },
+    { id: 6, label: 'MecÃ¢nica do SantuÃ¡rio (ManutenÃ§Ã£o)', category: 'Dopamina' },
+    { id: 7, label: 'PressÃ£o Social (ClÃ£s & VÃ­nculos)', category: 'Valor' },
     { id: 8, label: 'Utilidade das campanhas (templates)', category: 'Valor' },
     { id: 9, label: 'Impacto na Realidade', category: 'Valor' },
-    { id: 10, label: 'Nível de Recomendação (NPS)', category: 'Valor' },
+    { id: 10, label: 'NÃ­vel de RecomendaÃ§Ã£o (NPS)', category: 'Valor' },
 ];
 
 const getSovereignLabel = (value: number) => {
     const rounded = Math.max(1, Math.min(5, Math.round(value)));
-    if (rounded === 1) return 'Péssimo / Caos';
+    if (rounded === 1) return 'PÃ©ssimo / Caos';
     if (rounded === 2) return 'Fraco';
-    if (rounded === 3) return 'Aceitável';
+    if (rounded === 3) return 'AceitÃ¡vel';
     if (rounded === 4) return 'Muito Bom';
     return 'Excelente / Soberano';
 };
@@ -1400,11 +1440,11 @@ const getSovereignPhrase = (questionId: number, value: number) => {
 
     const prefix = core ? 'Motor:' : dopamine ? 'Dopamina:' : 'Valor:';
 
-    if (rounded === 1) return `${prefix} em colapso. Precisa de reforço imediato.`;
-    if (rounded === 2) return `${prefix} instável. Dá pra usar, mas sangra fricção.`;
+    if (rounded === 1) return `${prefix} em colapso. Precisa de reforÃ§o imediato.`;
+    if (rounded === 2) return `${prefix} instÃ¡vel. DÃ¡ pra usar, mas sangra fricÃ§Ã£o.`;
     if (rounded === 3) return `${prefix} funcional. Ainda falta impacto e polimento.`;
-    if (rounded === 4) return `${prefix} forte. Começa a parecer uma ferramenta séria.`;
-    return `${prefix} soberano. Está virando extensão da mente.`;
+    if (rounded === 4) return `${prefix} forte. ComeÃ§a a parecer uma ferramenta sÃ©ria.`;
+    return `${prefix} soberano. EstÃ¡ virando extensÃ£o da mente.`;
 };
 
 const SovereignSlider: React.FC<{ value: number; onChange: (next: number) => void }> = ({ value, onChange }) => {
@@ -1452,7 +1492,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             const { data: sessionData } = await supabase.auth.getSession();
             const uid = sessionData.session?.user.id;
             if (!uid || !isUuid(uid)) {
-                setStatus('Faça login para enviar o relatório.');
+                setStatus('FaÃ§a login para enviar o relatÃ³rio.');
                 setSending(false);
                 return;
             }
@@ -1482,7 +1522,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 return;
             }
 
-            setStatus('Relatório enviado.');
+            setStatus('RelatÃ³rio enviado.');
             window.setTimeout(() => {
                 setSending(false);
                 onClose();
@@ -1499,7 +1539,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center">
                         <div>
-                            <div className="text-xs font-bold uppercase tracking-wider accent-text">Relatório de Inteligência Beta</div>
+                            <div className="text-xs font-bold uppercase tracking-wider accent-text">RelatÃ³rio de InteligÃªncia Beta</div>
                             <div className="text-[10px] text-gray-500">ID: {userProfile.nickname}</div>
                         </div>
                         <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
@@ -1528,13 +1568,13 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         })}
 
                         <div className="bg-black/20 border border-white/10 rounded-2xl p-3 space-y-2">
-                            <div className="text-xs font-bold text-gray-400">Observações Táticas (Bugs ou Ideias)</div>
+                            <div className="text-xs font-bold text-gray-400">ObservaÃ§Ãµes TÃ¡ticas (Bugs ou Ideias)</div>
                             <textarea
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 rows={5}
                                 className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)] text-sm"
-                                placeholder="Descreva o bug, a ideia ou o ajuste que você quer ver no campo."
+                                placeholder="Descreva o bug, a ideia ou o ajuste que vocÃª quer ver no campo."
                             />
                         </div>
                     </div>
@@ -1548,7 +1588,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         disabled={sending}
                         className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-60"
                     >
-                        {sending ? 'ENVIANDO DADOS PARA O QG...' : 'ENVIAR RELATÓRIO'}
+                        {sending ? 'ENVIANDO DADOS PARA O QG...' : 'ENVIAR RELATÃ“RIO'}
                     </button>
                 </GlassCard>
             </div>
@@ -1575,14 +1615,14 @@ const NobrezaHierarchyView: React.FC = () => {
                 <div className="mt-4">
                     <div className="flex justify-between text-xs font-bold" style={{ color: 'var(--ui-card-text-soft)' }}>
                         <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
-                        <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP` : 'Topo'}</span>
+                        <span>{nextRank ? `PRÃ“XIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP` : 'Topo'}</span>
                     </div>
                     <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
                         <div className="bg-[var(--skin-accent-color)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div>
                     </div>
                     <div className="mt-2 flex justify-between text-[10px] font-bold" style={{ color: 'var(--ui-card-text-soft)' }}>
                         <span>{currentRank ? `${currentRank.expTotalRequired.toLocaleString('pt-BR')} XP (patente)` : ''}</span>
-                        <span>{nextRank ? `${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP (próxima)` : 'Topo'}</span>
+                        <span>{nextRank ? `${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP (prÃ³xima)` : 'Topo'}</span>
                     </div>
                 </div>
             </GlassCard>
@@ -1643,7 +1683,7 @@ const GeralTab: React.FC = () => {
         if (confirmation === null) return;
 
         if (confirmation.trim().toUpperCase() !== 'DELETAR') {
-            showToast('Exclusão cancelada. Digite DELETAR para confirmar.', 'info');
+            showToast('ExclusÃ£o cancelada. Digite DELETAR para confirmar.', 'info');
             return;
         }
 
@@ -1656,7 +1696,7 @@ const GeralTab: React.FC = () => {
         });
         if (!result.success) {
             setIsDeletingAccount(false);
-            showToast(result.error || 'Não foi possível excluir a conta.', 'error');
+            showToast(result.error || 'NÃ£o foi possÃ­vel excluir a conta.', 'error');
             return;
         }
 
@@ -1668,7 +1708,7 @@ const GeralTab: React.FC = () => {
         clearSupabaseSessionStorage();
         await signOutAndClearSupabaseSession('local');
 
-        showToast('Conta excluída. Encerrando sessão...', 'success');
+        showToast('Conta excluÃ­da. Encerrando sessÃ£o...', 'success');
         window.setTimeout(() => window.location.reload(), 900);
     };
 
@@ -1722,7 +1762,7 @@ const GeralTab: React.FC = () => {
                     <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Modo Jogo</h3>
                     <div className={`text-[10px] px-2 py-0.5 rounded font-mono ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-white/10 text-gray-300'}`}>{appMode === 'GAME' ? 'LIGADO' : 'DESLIGADO'}</div>
                 </div>
-                <p className="text-[11px] leading-relaxed text-gray-500">O core fica sempre ligado. O Modo Jogo adiciona quests, patentes, baús, inventário, Hall da Fama e soberano.</p>
+                <p className="text-[11px] leading-relaxed text-gray-500">O core fica sempre ligado. O Modo Jogo adiciona quests, patentes, baÃºs, inventÃ¡rio, Hall da Fama e soberano.</p>
 
                 <div className="flex gap-2">
                     <button
@@ -1730,7 +1770,7 @@ const GeralTab: React.FC = () => {
                         className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden group ${appMode === 'BASIC' ? 'bg-white text-black shadow-lg ring-1 ring-white/50' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
                     >
                         <div className="relative z-10 flex flex-col items-center">
-                            <span className="text-xl mb-1">🎮</span>
+                            <span className="text-xl mb-1">ðŸŽ®</span>
                             <span className="text-xs tracking-widest">DESLIGADO</span>
                         </div>
                         {appMode === 'BASIC' && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
@@ -1741,7 +1781,7 @@ const GeralTab: React.FC = () => {
                         className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_var(--sephirot-glow-color)] ring-1 ring-white/20' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
                     >
                         <div className="relative z-10 flex flex-col items-center">
-                            <span className="text-xl mb-1">💼</span>
+                            <span className="text-xl mb-1">ðŸ’¼</span>
                             <span className="text-xs tracking-widest">LIGADO</span>
                         </div>
                         {appMode === 'GAME' && <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none" />}
@@ -1782,7 +1822,7 @@ const GeralTab: React.FC = () => {
                     <div className="mt-6 px-2">
                         <div className="mb-2 flex justify-between text-[10px] font-bold tracking-wider" style={{ color: 'var(--ui-card-text-soft)' }}>
                             <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
-                            <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')}` : 'MÁXIMO'}</span>
+                            <span>{nextRank ? `PRÃ“XIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')}` : 'MÃXIMO'}</span>
                         </div>
                         <div className="w-full bg-black/40 rounded-full h-3 p-0.5 border border-white/5">
                             <div className="bg-[var(--skin-accent-color)] h-full rounded-full transition-all duration-700 shadow-[0_0_10px_var(--sephirot-glow-color)]" style={{ width: `${progressPercentage}%` }}></div>
@@ -1840,13 +1880,13 @@ const GeralTab: React.FC = () => {
                         {activeCycle ? (
                             <>
                                 <div className="text-lg font-bold text-white truncate">{activeCycle.name}</div>
-                                <div className="text-xs text-gray-500 mt-1 font-mono">{activeCycle.startDate} → {activeCycle.endDate}</div>
-                                <div className="text-[11px] text-gray-500 mt-1">Dia 1 = início do ciclo. O último dia também conta.</div>
+                                <div className="text-xs text-gray-500 mt-1 font-mono">{activeCycle.startDate} â†’ {activeCycle.endDate}</div>
+                                <div className="text-[11px] text-gray-500 mt-1">Dia 1 = inÃ­cio do ciclo. O Ãºltimo dia tambÃ©m conta.</div>
                             </>
                         ) : (
                             <>
                                 <div className="text-lg font-bold text-white">Sem ciclo ativo</div>
-                                <div className="text-xs text-gray-500 mt-1">Crie um ciclo para registrar sua história.</div>
+                                <div className="text-xs text-gray-500 mt-1">Crie um ciclo para registrar sua histÃ³ria.</div>
                             </>
                         )}
                     </div>
@@ -1876,12 +1916,12 @@ const GeralTab: React.FC = () => {
                 <GlassCard variant="neutral" className="p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Seu nível</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Seu nÃ­vel</div>
                             <div className="text-2xl font-black text-white">{masteryTotalLevel}</div>
                         </div>
                         <div className="text-right">
                             <div className="text-xs text-gray-500">Legado / Soberano</div>
-                            <div className="text-xs text-gray-400">Editar por área ao abrir</div>
+                            <div className="text-xs text-gray-400">Editar por Ã¡rea ao abrir</div>
                         </div>
                     </div>
                 </GlassCard>
@@ -1890,15 +1930,15 @@ const GeralTab: React.FC = () => {
             <div className="space-y-4">
                 {installPrompt ? (
                     <button onClick={promptInstall} className="w-full py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2">
-                        <span>📱</span> Instalar App na Tela Inicial
+                        <span>ðŸ“±</span> Instalar App na Tela Inicial
                     </button>
                 ) : (
                     <div className="space-y-1">
                         <button disabled className="w-full py-3 rounded-xl bg-white/5 text-gray-500 font-bold flex items-center justify-center gap-2 border border-white/5 cursor-not-allowed">
-                            <span>📱</span> App Instalado / Indisponível
+                            <span>ðŸ“±</span> App Instalado / IndisponÃ­vel
                         </button>
                         <p className="text-[10px] text-center text-gray-600 px-4">
-                            Se não aparecer: No PC, clique no ícone de install na barra de endereço. No iOS, use Compartilhar {'>'} Adicionar à Tela de Início.
+                            Se nÃ£o aparecer: No PC, clique no Ã­cone de install na barra de endereÃ§o. No iOS, use Compartilhar {'>'} Adicionar Ã  Tela de InÃ­cio.
                         </p>
                     </div>
                 )}
@@ -1919,7 +1959,7 @@ const GeralTab: React.FC = () => {
             {showDeleteConfirm && (
                 <ConfirmationModal
                     title="Deletar Conta"
-                    message="Tem certeza? Esta ação é irreversível."
+                    message="Tem certeza? Esta aÃ§Ã£o Ã© irreversÃ­vel."
                     onConfirm={handleDeleteAccount}
                     onCancel={() => setShowDeleteConfirm(false)}
                 />
@@ -1960,7 +2000,7 @@ const GeralTab: React.FC = () => {
                                 />
                                 {pendingCycleTiming ? (
                                     <p className="text-[11px] leading-relaxed text-gray-400">
-                                        {pendingCycleTiming.statusLabel}. Dia 1 = início do ciclo e o último dia também conta.
+                                        {pendingCycleTiming.statusLabel}. Dia 1 = inÃ­cio do ciclo e o Ãºltimo dia tambÃ©m conta.
                                     </p>
                                 ) : null}
                             </div>
@@ -2066,10 +2106,10 @@ const PreferenciasTab: React.FC = () => {
         if (!selectedSkin) return appMode === 'BASIC' ? 'Basica' : 'Tema atual';
         return selectedSkin.name.replace(/^Tema:\s*/i, '').replace(/^Interface\s*/i, '');
     }, [appMode, effectiveUiSkinId, uiSkinCatalog]);
-    const uiPreferencesSummary = `${currentUiSkinName} · ${activeTheme === 'LIGHT' ? 'Claro' : 'Escuro'}`;
+    const uiPreferencesSummary = `${currentUiSkinName} Â· ${activeTheme === 'LIGHT' ? 'Claro' : 'Escuro'}`;
     const modeGameSummary = appMode === 'GAME'
-        ? 'Itens, missões, grupo casual e temas de UI.'
-        : 'Apenas o necessário para produtividade.';
+        ? 'Itens, missÃµes, grupo casual e temas de UI.'
+        : 'Apenas o necessÃ¡rio para produtividade.';
 
     useEffect(() => {
         setAssetsVisibility(normalizeAssetsVisibilityOption(userProfile.assetsVisibility));
@@ -2116,7 +2156,7 @@ const PreferenciasTab: React.FC = () => {
         <div className="space-y-8 animate-fade-in pb-10">
             {/* Grupo Geral */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">PreferÃªncias</h2>
                 <div className="space-y-2">
                     <div
                         id="mode-game-toggle"
@@ -2137,7 +2177,7 @@ const PreferenciasTab: React.FC = () => {
                                     onClick={() => setAppMode('BASIC')}
                                     className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${appMode === 'BASIC' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
-                                    MODO BÁSICO
+                                    MODO BÃSICO
                                 </button>
 
                                 <button
@@ -2156,7 +2196,7 @@ const PreferenciasTab: React.FC = () => {
                     </div>
                     <SettingSelector label="Interface & Som" value={currentUiSkinName} onClick={() => setModal('ui')} />
                     <div id="oracle-preferences-setting">
-                        <SettingSelector label="Oráculo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />
+                        <SettingSelector label="OrÃ¡culo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />
                     </div>
                     <SettingSelector label="Privacidade" value={termsStatus} onClick={() => setModal('privacy')} />
                     <SettingSelector label="Tutoriais" value={tutorialStatus} onClick={() => setModal('tutorial')} />
@@ -2170,7 +2210,7 @@ const PreferenciasTab: React.FC = () => {
                     onClick={() => setFeedbackOpen(true)}
                     className="w-full py-4 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest accent-text flex items-center justify-center gap-2 transition-all"
                 >
-                    <span>📊</span> ENVIAR FEEDBACK BETA
+                    <span>ðŸ“Š</span> ENVIAR FEEDBACK BETA
                 </button>
             </section>
 
@@ -2241,8 +2281,8 @@ const LegacyPremiumTab: React.FC = () => {
                             onClick={() => setLinksOpen(true)}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center`}
                         >
-                            <span className="text-3xl group-hover:scale-110 transition-transform">🔗</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Vínculos</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">ðŸ”—</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">VÃ­nculos</span>
                             {!isPremium && <span className="text-[8px] text-[var(--skin-accent-color)] opacity-70">Convites</span>}
                         </button>
                         <button
@@ -2250,7 +2290,7 @@ const LegacyPremiumTab: React.FC = () => {
                             onClick={() => setCodexOpen(true)}
                             className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
                         >
-                            <span className="text-3xl group-hover:scale-110 transition-transform">📜</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">ðŸ“œ</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Biblioteca</span>
                         </button>
                         <button
@@ -2262,7 +2302,7 @@ const LegacyPremiumTab: React.FC = () => {
                             }}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center`}
                         >
-                            <span className="text-3xl group-hover:scale-110 transition-transform">🤖</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">ðŸ¤–</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">
                                 Assistente
                             </span>
@@ -2273,7 +2313,7 @@ const LegacyPremiumTab: React.FC = () => {
                             disabled={!isPremium}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                         >
-                            <span className="text-3xl group-hover:scale-110 transition-transform">🎯</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">ðŸŽ¯</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Campanhas</span>
                         </button>
                     </div>
@@ -2325,7 +2365,7 @@ const PremiumTab: React.FC = () => {
     const [confirmPremium, setConfirmPremium] = useState(false);
     const [isBuyingPremium, setIsBuyingPremium] = useState(false);
     const isPremium = hasPremiumAccess(userProfile);
-    const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÍVEL';
+    const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÃVEL';
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
     const premiumExpiresLabel = userProfile.premiumExpiresAt
         ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(userProfile.premiumExpiresAt))
@@ -2371,7 +2411,7 @@ const PremiumTab: React.FC = () => {
                                 <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Assinatura</div>
                                 <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[color:var(--ui-card-text)]">Soberania premium</h3>
                                 <p className="max-w-[28rem] text-xs leading-relaxed text-[color:var(--ui-card-text-soft)]">
-                                    Benefícios ativos, validade real de 30 dias e recompensas concretas de renovação dentro do próprio ritual premium.
+                                    BenefÃ­cios ativos, validade real de 30 dias e recompensas concretas de renovaÃ§Ã£o dentro do prÃ³prio ritual premium.
                                 </p>
                             </div>
                             <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
@@ -2386,21 +2426,21 @@ const PremiumTab: React.FC = () => {
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--ui-card-text-soft)]">Validade</div>
                                 <div className="mt-1 text-xl font-black text-[color:var(--ui-card-text)]">{premiumCycleLabel}</div>
                                 <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">
-                                    {isPremium && premiumExpiresLabel ? `até ${premiumExpiresLabel}` : 'por ativação'}
+                                    {isPremium && premiumExpiresLabel ? `atÃ© ${premiumExpiresLabel}` : 'por ativaÃ§Ã£o'}
                                 </div>
                             </div>
                             <div className="rounded-2xl border border-[var(--skin-accent-color)]/16 bg-[var(--skin-accent-color)]/10 px-3 py-3">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)]/80">Custo</div>
                                 <div className="mt-1 inline-flex items-center gap-1.5 text-xl font-black text-[var(--ui-text-accent)]">
-                                    <span className="text-[14px] leading-none">🪙</span>
+                                    <span className="text-[14px] leading-none">ðŸª™</span>
                                     <span>{GOLD_PREMIUM_PRODUCT.priceGold}</span>
                                 </div>
-                                <div className="text-[11px] text-[var(--ui-text-accent)]/72">renovação manual</div>
+                                <div className="text-[11px] text-[var(--ui-text-accent)]/72">renovaÃ§Ã£o manual</div>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Benefícios ativos</div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">BenefÃ­cios ativos</div>
                             <div className="grid gap-2">
                                 {GOLD_PREMIUM_PRODUCT.benefits.map((benefit) => (
                                     <div key={benefit} className="flex items-start gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
@@ -2497,7 +2537,7 @@ const MentorCodexModal: React.FC<{
                         onClick={onCreateNew}
                         className="w-full py-3 rounded-2xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold tracking-wider hover:bg-[var(--skin-accent-color)]/20 transition-all"
                     >
-                        CRIAR NOVA CAMPANHA PARA ESTE PUPILO · 100 OURO
+                        CRIAR NOVA CAMPANHA PARA ESTE PUPILO Â· 100 OURO
                     </button>
 
                     <div className="space-y-2">
@@ -2516,7 +2556,7 @@ const MentorCodexModal: React.FC<{
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="relative w-12 h-12 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center text-2xl overflow-hidden">
-                                                {codex.template?.coverImage || codex.template?.icon || '📜'}
+                                                {codex.template?.coverImage || codex.template?.icon || 'ðŸ“œ'}
                                                 <SharedCodexCoverArt
                                                     cover={codex.template?.coverImage || codex.template?.icon}
                                                     title={codex.name}
@@ -2526,7 +2566,7 @@ const MentorCodexModal: React.FC<{
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-sm font-bold text-white truncate">{codex.name}</div>
-                                                <div className="text-[11px] text-gray-400 line-clamp-2">{codex.description || 'Sem descrição.'}</div>
+                                                <div className="text-[11px] text-gray-400 line-clamp-2">{codex.description || 'Sem descriÃ§Ã£o.'}</div>
                                                 <div className="text-[10px] text-gray-500 mt-1">{codex.template?.levels?.length || 0} fases</div>
                                             </div>
                                         </div>
@@ -2614,7 +2654,7 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
 
                             {friends.length === 0 ? (
                                 <div className="text-center text-xs text-gray-500 py-4">
-                                    Você não possui aliados conectados.
+                                    VocÃª nÃ£o possui aliados conectados.
                                 </div>
                             ) : (
                                 <div className="max-h-[150px] overflow-y-auto space-y-2 pr-1">
@@ -2666,12 +2706,12 @@ export const SettingsView: React.FC = () => {
     useEffect(() => {
         const handleTabChange = (e: any) => {
             const tab = e.detail?.tab;
-            if (tab && ['Geral', 'Preferências', 'Premium'].includes(tab)) {
+            if (tab && ['Geral', 'PreferÃªncias', 'Premium'].includes(tab)) {
                 setActiveTab(tab as SettingsTab);
             }
         };
         const handleSettingsReturn = () => {
-            setActiveTab('Preferências');
+            setActiveTab('PreferÃªncias');
             setTimeout(() => {
                 window.dispatchEvent(new CustomEvent('tutorialSettingsOpenModal'));
             }, 50);
@@ -2692,13 +2732,13 @@ export const SettingsView: React.FC = () => {
     const renderContent = () => {
         switch (activeTab) {
             case 'Geral': return <GeralTab />;
-            case 'Preferências': return <PreferenciasTab />;
+            case 'PreferÃªncias': return <PreferenciasTab />;
             case 'Premium': return <PremiumTab />;
             default: return null;
         }
     }
 
-    let tabs: SettingsTab[] = ['Geral', 'Preferências', 'Premium'];
+    let tabs: SettingsTab[] = ['Geral', 'PreferÃªncias', 'Premium'];
 
     return (
         <>

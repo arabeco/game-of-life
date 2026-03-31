@@ -789,6 +789,32 @@ body {
   background-color: rgba(246, 239, 228, 0.82) !important;
 }
 
+.arena-detail-title {
+  color: var(--skin-accent-color) !important;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 14px rgba(0, 0, 0, 0.14);
+}
+
+.arena-detail-title-input::placeholder {
+  color: color-mix(in srgb, var(--skin-accent-color) 42%, rgba(71, 90, 109, 0.72));
+}
+
+.mode-game.theme-light .arena-detail-modal .arena-detail-title,
+.mode-office.theme-light .arena-detail-modal .arena-detail-title {
+  color: color-mix(in srgb, var(--skin-accent-color) 18%, #fbfdff) !important;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.98),
+    0 0 10px rgba(0, 0, 0, 0.56),
+    0 0 20px rgba(11, 17, 24, 0.24);
+  -webkit-text-stroke: 0.46px rgba(8, 12, 18, 0.82);
+}
+
+.mode-game.theme-light .arena-detail-modal .arena-detail-title-input,
+.mode-office.theme-light .arena-detail-modal .arena-detail-title-input {
+  border-bottom-color: rgba(83, 98, 120, 0.22) !important;
+}
+
 .mode-game.theme-light .arenas-view-root {
   background: var(--app-background);
 }

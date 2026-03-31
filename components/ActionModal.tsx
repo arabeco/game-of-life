@@ -1835,28 +1835,32 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             </button>
                                                         )}
                                                     </div>
-                                                    <div className="relative overflow-hidden bg-[#1a1512] rounded-xl p-6 border border-white/5 shadow-inner min-h-[300px]">
-                                                        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#1a1512] via-[#1a1512]/92 to-transparent pointer-events-none" />
-                                                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono">
-                                                            {briefingPreviewText || "Nenhuma anotação disponível."}
-                                                        </p>
-                                                        {briefingPages.length > 0 && (
-                                                            <div className="absolute left-4 bottom-4">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={openBriefingReader}
-                                                                    className="inline-flex items-center gap-2 rounded-full border border-[var(--skin-line-color)]/60 bg-black/45 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)] transition-colors hover:bg-black/60"
-                                                                >
-                                                                    <PlayIcon className="h-3.5 w-3.5" />
-                                                                    Iniciar leitura
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                        {briefingPages.length > 1 && (
-                                                            <div className="absolute bottom-4 right-4 rounded-full border border-[var(--skin-line-color)]/50 bg-black/35 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--ui-text-accent)]">
-                                                                {briefingPages.length} páginas
-                                                            </div>
-                                                        )}
+                                                    <div className="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-xl border border-white/5 bg-[#1a1512] p-4 shadow-inner">
+                                                        <div className="rounded-[18px] border border-white/6 bg-black/16 px-4 py-4">
+                                                            <p
+                                                                className="text-sm leading-relaxed whitespace-pre-wrap font-mono text-gray-300"
+                                                                style={{
+                                                                    display: '-webkit-box',
+                                                                    WebkitLineClamp: 8,
+                                                                    WebkitBoxOrient: 'vertical',
+                                                                    overflow: 'hidden',
+                                                                }}
+                                                            >
+                                                                {briefingPreviewText || "Nenhuma anotação disponível."}
+                                                            </p>
+                                                        </div>
+                                                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/6 pt-3 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)]/75">
+                                                            <span>
+                                                                {briefingPages.length > 1
+                                                                    ? `${briefingPages.length} páginas`
+                                                                    : briefingPages.length === 1
+                                                                        ? '1 página'
+                                                                        : 'Sem páginas'}
+                                                            </span>
+                                                            <span className="text-white/38">
+                                                                {briefingPages.length > 0 ? 'Leitor em tela cheia' : 'Adicione texto para liberar o leitor'}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}

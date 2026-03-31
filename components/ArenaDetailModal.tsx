@@ -609,7 +609,7 @@ export const ArenaDetailModal: React.FC<{
                                 )}
                             </div>
                             <div className="flex-1 flex flex-col items-center text-center">
-                                <h2 className="ui-modal-title luxe-title-ornate text-[color:var(--skin-accent-color)]">
+                                <h2 className="ui-modal-title arena-detail-title luxe-title-ornate text-[1.15rem] tracking-[0.12em] text-[color:var(--skin-accent-color)]">
                                     {isEditing ?"EDITAR ARENA" : arena.name}
                                 </h2>
                                 {parentAsset?.name && (
@@ -712,7 +712,7 @@ export const ArenaDetailModal: React.FC<{
                                         type="text"
                                         value={editableArena.name}
                                         onChange={(e) => setEditableArena(prev => ({ ...prev, name: e.target.value }))}
-                                        className="luxe-title-ornate w-full text-center bg-transparent text-2xl font-bold uppercase tracking-widest text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/20"
+                                        className="arena-detail-title arena-detail-title-input luxe-title-ornate w-full text-center bg-transparent text-[1.6rem] font-bold uppercase tracking-[0.12em] text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/20"
                                     />
                                     <textarea
                                         value={editableArena.description}

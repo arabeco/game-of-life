@@ -233,43 +233,16 @@ const RelationshipArenaBoardCard: React.FC<{
     };
 
     return (
-        <div
-            className="shrink-0"
-            style={{ width: '200px', height: '96px' }}
-        >
-            <div
-                role="button"
-                tabIndex={0}
+        <div className="h-[6.15rem] w-[4.9rem] shrink-0">
+            <ArenaCard
+                arena={previewArena}
+                actions={arena.actions || []}
+                tasks={arena.tasks || []}
+                relationshipBadgeType={arena.linkType ?? null}
                 onClick={onClick}
-                onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        onClick();
-                    }
-                }}
-                className="block rounded-[1.25rem] text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
-                style={{ width: '200px', height: '96px' }}
-            >
-                <div
-                    className="drop-shadow-[0_12px_20px_rgba(0,0,0,0.38)]"
-                    style={{
-                        width: '204px',
-                        height: '94px',
-                        transform: 'scale(0.98)',
-                        transformOrigin: 'top left',
-                    }}
-                >
-                    <ArenaCard
-                        arena={previewArena}
-                        actions={arena.actions || []}
-                        tasks={arena.tasks || []}
-                        relationshipBadgeType={arena.linkType ?? null}
-                        onClick={() => undefined}
-                        variant="overview"
-                        assetName={assetName}
-                    />
-                </div>
-            </div>
+                variant="compact"
+                assetName={assetName}
+            />
         </div>
     );
 };
@@ -1731,7 +1704,7 @@ export const RelationshipHubModal: React.FC<{
                                             </span>
                                         </div>
                                         <div
-                                            className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
+                                            className="flex min-w-max gap-2 overflow-x-auto pb-1.5 pr-1 custom-scrollbar"
                                             style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
                                         >
                                             {arenasForLink.map((linkedArena) => (
@@ -1757,7 +1730,7 @@ export const RelationshipHubModal: React.FC<{
                                             </span>
                                         </div>
                                         <div
-                                            className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
+                                            className="flex min-w-max gap-2 overflow-x-auto pb-1.5 pr-1 custom-scrollbar"
                                             style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
                                         >
                                             {relationshipCodexes.map((codex: UserCodex) => {
@@ -1892,7 +1865,7 @@ export const RelationshipHubModal: React.FC<{
                             <EmptyState title="Sem arena sua" text="Exponha uma arena sua." />
                         ) : (
                             <div
-                                className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
+                                className="flex min-w-max gap-2 overflow-x-auto pb-1.5 pr-1 custom-scrollbar"
                                 style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
                             >
                                 {ownArenasForLink.map((linkedArena) => (
@@ -1920,7 +1893,7 @@ export const RelationshipHubModal: React.FC<{
                             <EmptyState title="Sem arena do aliado" text="O parceiro ainda nao expôs nenhuma arena." />
                         ) : (
                             <div
-                                className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar"
+                                className="flex min-w-max gap-2 overflow-x-auto pb-1.5 pr-1 custom-scrollbar"
                                 style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pinch-zoom', overscrollBehaviorX: 'contain' }}
                             >
                                 {partnerArenasForLink.map((linkedArena) => (

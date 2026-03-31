@@ -30,6 +30,7 @@ import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaC
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { emitDailyCompletionPrompt } from '../utils/dailyCompletionPrompt';
+import { emitAppSensoryCue } from '../utils/sensoryCue';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
 import { hasRemotePushSubscription, syncRemotePushSubscription } from '../utils/webPush';
@@ -3999,7 +4000,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 () => supabase.from('actions').select('*').eq('user_id', userId),
                 () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate),
                 () => supabase.from('asset_levels').select('*').eq('user_id', userId),
-                () => supabase.from('cycles').select('*').eq('user_id', userId).is('report_data', null).limit(1),
+                () => supabase
+                    .from('cycles')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .is('report_data', null)
+                    .order('start_date', { ascending: false })
+                    .order('created_at', { ascending: false })
+                    .limit(1),
             ]) as any[];
 
             let loadedArenas: Arena[] = [];
@@ -6515,6 +6523,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const villageBonusExp = Math.round((expDepositBase + sitrepBonus) * villageBonusFactor);
 
         const expDeposited = expDepositBase + sitrepBonus + villageBonusExp;
+        emitAppSensoryCue('daily_panel_closed');
         if (relationshipBonusXp > 0) {
             showToast(`Bonus de Duelo: +${relationshipBonusXp} EXP no fechamento do ciclo.`, 'success');
         }
@@ -8011,6 +8020,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Adicionar relatório à lista
         setReports(prev => [newReport, ...prev]);
+        emitAppSensoryCue('cycle_complete');
 
         return { report: newReport, expGained };
     };
@@ -8162,6 +8172,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 .select('*')
                 .eq('user_id', userId)
                 .is('report_data', null)
+                .order('start_date', { ascending: false })
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();

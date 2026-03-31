@@ -6,10 +6,12 @@ import { isSharedArena } from '../../utils/taskDomain.js';
 import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTaskSnapshot } from '../../utils/taskMutationUtils.js';
 import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../utils/progressUtils';
 import { emitArenaAttention } from '../../utils/arenaAttention';
+import { emitAppSensoryCue } from '../../utils/sensoryCue';
 
 type ToastTone = 'success' | 'error' | 'info';
 type AchievementState = { type: FeedEventType; data: any } | null;
 type SupabaseLike = { from: (table: string) => any };
+type CompletionAttentionResult = 'arena' | 'campaign' | null;
 
 const DAY_MAP: DayOfWeek[] = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 
@@ -132,11 +134,11 @@ export const createTaskDomain = ({
         action: Action | undefined,
         previousTasks: ScheduledTask[],
         nextTasks: ScheduledTask[],
-    ) => {
-        if (!action) return false;
+    ): CompletionAttentionResult => {
+        if (!action) return null;
 
         const arena = getArenas().find(item => item.id === action.arenaId);
-        if (!arena) return false;
+        if (!arena) return null;
 
         const normalizedArenaName = (arena.name || '')
             .normalize('NFD')
@@ -144,13 +146,13 @@ export const createTaskDomain = ({
             .toLowerCase();
 
         if (normalizedArenaName.includes('quests - cla') || normalizedArenaName.includes('quests - season')) {
-            return false;
+            return null;
         }
 
-        if (getClanQuestForAction(action)) return false;
+        if (getClanQuestForAction(action)) return null;
 
         const arenaActions = getActionsForArena(arena.id);
-        if (arenaActions.length === 0) return false;
+        if (arenaActions.length === 0) return null;
 
         const previousProgress = calculateArenaProgress({
             arena,
@@ -165,7 +167,7 @@ export const createTaskDomain = ({
         });
 
         if (previousProgress.progressPercent >= 100 || nextProgress.progressPercent < 100 || !nextProgress.isCleared) {
-            return false;
+            return null;
         }
 
         const parentCampaign = campaigns.find((campaign) => campaign.arenaIds.includes(arena.id)) || null;
@@ -212,6 +214,7 @@ export const createTaskDomain = ({
                     navigateToArenas: true,
                 }
         );
+        emitAppSensoryCue(campaignJustCleared ? 'campaign_complete' : 'arena_complete');
 
         showToast(
             campaignJustCleared && parentCampaign
@@ -236,6 +239,8 @@ export const createTaskDomain = ({
         if (handleCompetitionArenaCompletion) {
             void handleCompetitionArenaCompletion(arena.id);
         }
+
+        return campaignJustCleared ? 'campaign' : 'arena';
     };
 
     const maybePromptSitrepFollowUp = (task: ScheduledTask, action?: Action) => {
@@ -519,7 +524,12 @@ export const createTaskDomain = ({
             return;
         }
 
-        maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks);
+        const completionAttention = updatedTask.completed
+            ? maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks)
+            : null;
+        if (updatedTask.completed && !completionAttention) {
+            emitAppSensoryCue('task_complete');
+        }
         runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
         maybePromptSitrepFollowUp(updatedTask, action);
     };
@@ -604,7 +614,10 @@ export const createTaskDomain = ({
             }
         }
 
-        maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
+        const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
+        if (!completionAttention) {
+            emitAppSensoryCue('task_complete');
+        }
         maybePromptSitrepFollowUp(newTask, action);
     };
 
@@ -673,7 +686,10 @@ export const createTaskDomain = ({
             void updateCustomClanMissionProgress(questId, 1);
         }
 
-        maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
+        const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
+        if (!completionAttention) {
+            emitAppSensoryCue('task_complete');
+        }
         maybePromptSitrepFollowUp(newTask, action);
         setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
         addFeedEvent({
@@ -717,7 +733,11 @@ export const createTaskDomain = ({
             showClosedDayMutationBlockedToast();
             return;
         }
-        const shouldReconcileDailyCommitment = updates.date !== undefined || updates.actionId !== undefined;
+        const shouldReconcileDailyCommitment =
+            updates.date !== undefined ||
+            updates.actionId !== undefined ||
+            updates.startTime !== undefined ||
+            updates.completed !== undefined;
 
         setTasks(prevTasks => prevTasks.map(task => task.id === taskId ? nextTask : task));
 

@@ -11,6 +11,7 @@ import { updateInstalledAppBadge } from '../utils/appBadge';
 import { buildPremiumRewardsToast } from '../utils/premiumRewards';
 import { buildVanguardRewardsToast } from '../utils/vanguardRewards';
 import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
+import { APP_SENSORY_CUE_EVENT, type AppSensoryCuePayload } from '../utils/sensoryCue';
 import {
     LEGAL_ACCEPT_SOURCE_INITIAL,
     LEGAL_ACCEPT_SOURCE_REVIEW,
@@ -60,6 +61,7 @@ const SeasonTransitionModal = React.lazy(() => import('./SeasonDetailModal').the
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
+type ViewTransitionKind = 'forward' | 'backward' | 'rest';
 
 const CORE_NAV_VIEWS: View[] = ['assets', 'arenas', 'planner', 'social', 'settings'];
 
@@ -157,11 +159,16 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         return defaultRestScreenOpen ? 'planner' : getDefaultView(canUseAssetsView, isBuilderMode);
     });
     const [isRestScreenVisible, setRestScreenVisible] = useState(defaultRestScreenOpen);
+    const [viewTransitionKind, setViewTransitionKind] = useState<ViewTransitionKind>('rest');
+    const [viewTransitionVersion, setViewTransitionVersion] = useState(0);
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
     const [dailyCompletionPrompt, setDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
     const [pendingSitrepOpen, setPendingSitrepOpen] = useState(false);
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
+    const previousViewRef = useRef<View>(currentView);
+    const previousRestVisibilityRef = useRef(isRestScreenVisible);
+    const hasInitializedViewTransitionRef = useRef(false);
 
     useEffect(() => {
         void updateInstalledAppBadge(unreadNotificationsCount);
@@ -405,6 +412,38 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [canUseAssetsView, isBuilderMode]);
 
     useEffect(() => {
+        const previousView = previousViewRef.current;
+        const wasRestVisible = previousRestVisibilityRef.current;
+
+        if (!hasInitializedViewTransitionRef.current) {
+            hasInitializedViewTransitionRef.current = true;
+            previousViewRef.current = currentView;
+            previousRestVisibilityRef.current = isRestScreenVisible;
+            return;
+        }
+
+        let nextTransition: ViewTransitionKind | null = null;
+
+        if (defaultRestScreenOpen && wasRestVisible && !isRestScreenVisible) {
+            nextTransition = 'rest';
+        } else if (!isRestScreenVisible && previousView !== currentView) {
+            const previousIndex = availableViews.indexOf(previousView);
+            const nextIndex = availableViews.indexOf(currentView);
+            nextTransition = previousIndex === -1 || nextIndex === -1 || nextIndex >= previousIndex
+                ? 'forward'
+                : 'backward';
+        }
+
+        previousViewRef.current = currentView;
+        previousRestVisibilityRef.current = isRestScreenVisible;
+
+        if (nextTransition) {
+            setViewTransitionKind(nextTransition);
+            setViewTransitionVersion(prev => prev + 1);
+        }
+    }, [availableViews, currentView, defaultRestScreenOpen, isRestScreenVisible]);
+
+    useEffect(() => {
         const state = window.history.state as { view?: View } | null;
         const initialView = sanitizeView(state?.view ?? currentView, canUseAssetsView, isBuilderMode);
         if (initialView !== currentView) {
@@ -507,7 +546,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                     </div>
                 }
             >
-                {viewContent}
+                <div
+                    key={`${currentView}:${viewTransitionVersion}`}
+                    className={`auth-view-stage${viewTransitionVersion > 0 ? ` auth-view-stage--${viewTransitionKind}` : ''}`}
+                >
+                    {viewContent}
+                </div>
             </Suspense>
         );
     };
@@ -713,6 +757,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const [premiumRenewalOfferSeen, setPremiumRenewalOfferSeen] = useState(false);
     const [premiumRenewalBusy, setPremiumRenewalBusy] = useState(false);
     const lastToastSignatureRef = useRef('');
+    const toastSensorySuppressedUntilRef = useRef(0);
     const effectiveUiSkin = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
 
     useEffect(() => {
@@ -737,6 +782,36 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         window.addEventListener('openTermsOverlay', handleOpenTerms);
         return () => window.removeEventListener('openTermsOverlay', handleOpenTerms);
     }, []);
+
+    useEffect(() => {
+        const handleAppSensoryCue = (event: Event) => {
+            const detail = (event as CustomEvent<AppSensoryCuePayload>).detail;
+            if (!detail?.cue) return;
+
+            if (detail.cue !== 'task_complete') {
+                toastSensorySuppressedUntilRef.current = Date.now() + 420;
+            }
+
+            switch (detail.cue) {
+                case 'task_complete':
+                    trigger('impact');
+                    break;
+                case 'daily_panel_closed':
+                case 'arena_complete':
+                    trigger('success');
+                    break;
+                case 'campaign_complete':
+                    trigger('level_up');
+                    break;
+                case 'cycle_complete':
+                    trigger('fanfare');
+                    break;
+            }
+        };
+
+        window.addEventListener(APP_SENSORY_CUE_EVENT, handleAppSensoryCue as EventListener);
+        return () => window.removeEventListener(APP_SENSORY_CUE_EVENT, handleAppSensoryCue as EventListener);
+    }, [trigger]);
 
     useEffect(() => {
         const handleGoldShortage = (event: Event) => {
@@ -987,6 +1062,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         const signature = `${toast.type || 'info'}:${toast.message}`;
         if (lastToastSignatureRef.current === signature) return;
         lastToastSignatureRef.current = signature;
+        if (Date.now() < toastSensorySuppressedUntilRef.current) return;
 
         if (toast.type === 'success') trigger('success');
         if (toast.type === 'warning') trigger('warning');

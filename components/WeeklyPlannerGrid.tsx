@@ -145,14 +145,14 @@ const WeeklyTask: React.FC<{ task: ScheduledTask; action?: Action; scaleFactor: 
                 className={`relative h-full p-1 flex items-center justify-center text-center overflow-hidden ${isFreeAction ? `free-action-shell free-action-outline rounded-xl ${task.completed ? 'text-slate-200/75' : 'text-slate-100'}` : `border-l-2 border-[var(--bronze)] rounded-r-lg ${task.completed ? 'text-white/80' : 'text-white'}`}`}
                 style={isFreeAction ? undefined : backgroundStyle}
             >
-                <div className={`absolute inset-0 transition-opacity duration-300 ${task.completed ? 'opacity-100' : 'opacity-0'}`} style={{ background: isFreeAction ? 'linear-gradient(135deg, rgba(110,231,183,0.16), rgba(15,23,42,0.5) 72%)' : 'linear-gradient(135deg, rgba(110,231,183,0.24), rgba(3,7,18,0.62) 74%)' }}></div>
-                <div className={`absolute inset-0 transition-all duration-300 ${task.completed ? 'shadow-[inset_0_0_0_1px_rgba(110,231,183,0.68),0_0_16px_rgba(110,231,183,0.18)]' : ''} ${isFreeAction ? 'rounded-xl' : 'rounded-r-lg'}`}></div>
+                <div className={`absolute inset-0 transition-opacity duration-300 ${task.completed ? 'opacity-100' : 'opacity-0'}`} style={{ background: isFreeAction ? 'linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 66%, rgba(15,23,42,0.12) 100%)' : 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 68%, rgba(3,7,18,0.14) 100%)' }}></div>
+                <div className={`absolute inset-0 transition-all duration-300 ${task.completed ? 'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_0_12px_rgba(255,255,255,0.08)]' : ''} ${isFreeAction ? 'rounded-xl' : 'rounded-r-lg'}`}></div>
 
                 <div className="text-xl z-10">
                     <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
                 </div>
                 {task.completed && (
-                    <div className="absolute right-1 top-1 z-20 flex h-4.5 w-4.5 items-center justify-center rounded-full border border-emerald-300/70 bg-emerald-500/18 text-emerald-100 shadow-[0_0_10px_rgba(110,231,183,0.22)]">
+                    <div className="absolute right-1 top-1 z-20 flex h-4.5 w-4.5 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]">
                         <CheckCircleIcon className="h-3 w-3" />
                     </div>
                 )}

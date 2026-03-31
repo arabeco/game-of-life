@@ -7,7 +7,7 @@ import { shareElementWithFeedback } from './Share';
 import { PoolAction } from './PoolAction';
 import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoopUtils.js';
 import { getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
-import { isClanQuestAction } from '../utils/taskDomain.js';
+import { hasScheduledTime, isClanQuestAction } from '../utils/taskDomain.js';
 import './core-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 
@@ -511,7 +511,10 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
 
     const renderNoCycle = () => {
         const today = getOperationalDateString();
-        const todaysTasks = tasks.filter(t => taskMatchesOperationalDate(t, today));
+        const todaysTasks = tasks.filter(t =>
+            taskMatchesOperationalDate(t, today) &&
+            (hasScheduledTime(t) || t.completed)
+        );
         const completedTasks = todaysTasks.filter(t => t.completed);
 
         const checklistCompleted = checklistItems.filter(i => i.completed).length;

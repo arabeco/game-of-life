@@ -58,13 +58,17 @@ export const getInitialDailyCommitmentTaskIds = (tasks, commitmentDate, isQuestA
 /**
  * @param {string[]} taskIds
  * @param {string} taskId
- * @param {Pick<ScheduledTask, 'actionId' | 'date'>} nextTask
+ * @param {Pick<ScheduledTask, 'actionId' | 'date' | 'startTime' | 'completed'>} nextTask
  * @param {string} commitmentDate
  * @param {(actionId: string) => boolean} isQuestActionId
  * @returns {string[]}
  */
 export const reconcileTaskInCommitment = (taskIds, taskId, nextTask, commitmentDate, isQuestActionId) => {
-    const shouldTrack = taskMatchesOperationalDate(nextTask, commitmentDate) && !isQuestActionId(nextTask.actionId);
+    const shouldTrack = (
+        taskMatchesOperationalDate(nextTask, commitmentDate) &&
+        !isQuestActionId(nextTask.actionId) &&
+        (hasScheduledTime(nextTask) || nextTask.completed)
+    );
     const isTracked = taskIds.includes(taskId);
 
     if (shouldTrack && !isTracked) {

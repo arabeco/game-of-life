@@ -8,7 +8,6 @@ import { CampaignsCodex } from './CampaignsCodex';
 import { buildCodexCampaignPreview } from '../utils/codexPreview';
 import { CampaignArenaStack } from './CampaignArenaStack';
 import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
-import { CodexCoverArt } from './CodexCoverArt';
 
 interface CodexClaimModalProps {
   onClose: () => void;

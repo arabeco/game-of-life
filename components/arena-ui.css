@@ -258,12 +258,20 @@
   justify-content: flex-start;
 }
 
+.arena-thumb-layout .arena-title {
+  letter-spacing: 0.13em;
+}
+
 .arena-thumb-title {
   font-family: var(--font-body);
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 0.95;
   margin: 0;
+}
+
+.arena-thumb-title.arena-title {
+  letter-spacing: 0.13em;
 }
 
 @keyframes arenaPopulatePulse {

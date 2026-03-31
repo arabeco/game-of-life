@@ -137,9 +137,35 @@ const SettingSelector: React.FC<{ label: string; value: string; onClick: () => v
     <div className="settings-panel-card">
         <div className="flex justify-between items-center">
             <label className="text-sm font-semibold">{label}</label>
-            <button onClick={onClick} className="flex items-center space-x-2 text-sm text-gray-400"><span>{value}</span><ChevronRightIcon className="w-4 h-4" /></button>
+            <button
+                onClick={onClick}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)] transition-all hover:bg-[var(--skin-accent-color)]/16 hover:border-[var(--skin-accent-color)]/38"
+            >
+                <span>{value}</span>
+                <ChevronRightIcon className="w-4 h-4" />
+            </button>
         </div>
     </div>
+);
+
+const PreferenceToggleChip: React.FC<{
+    label: string;
+    enabled: boolean;
+    onClick: () => void;
+}> = ({ label, enabled, onClick }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={enabled}
+        className={`inline-flex items-center justify-between gap-3 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
+            enabled
+                ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]'
+                : 'border-white/10 bg-black/20 text-gray-400 hover:bg-white/5 hover:text-white'
+        }`}
+    >
+        <span>{label}</span>
+        <span className={`h-2.5 w-2.5 rounded-full ${enabled ? 'bg-[var(--skin-accent-color)] shadow-[0_0_8px_var(--sephirot-glow-color)]' : 'bg-white/15'}`} />
+    </button>
 );
 
 const VISIBILITY_OPTIONS: { value: ProfileVisibilityOption; label: string }[] = [
@@ -1773,7 +1799,7 @@ const GeralTab: React.FC = () => {
 };
 
 const PreferenciasTab: React.FC = () => {
-    const { userProfile, oraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin } = useGame();
+    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
     const [highlightModeGame, setHighlightModeGame] = useState(false);
@@ -1838,6 +1864,9 @@ const PreferenciasTab: React.FC = () => {
         return unlocked;
     }, [inventory, userProfile.skin, userProfile.unlockedItems]);
     const effectiveUiSkinId = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
+    const modeGameSummary = appMode === 'GAME'
+        ? 'Itens, missões, grupo casual e temas de UI.'
+        : 'Apenas o necessário para produtividade.';
 
     useEffect(() => {
         setAssetsVisibility(normalizeAssetsVisibilityOption(userProfile.assetsVisibility));
@@ -1916,10 +1945,14 @@ const PreferenciasTab: React.FC = () => {
                                 </button>
                             </div>
 
+                            <p className="text-[11px] leading-relaxed text-gray-400">
+                                {modeGameSummary}
+                            </p>
+
                             <div className="pt-3 border-t border-white/5 animate-fade-in">
                                 <div className="mb-3">
                                     <div className="mb-2 flex items-center justify-between">
-                                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Skin UI</h4>
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Interface</h4>
                                         <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
                                             {appMode === 'BASIC' ? 'Básico fixo' : 'Tags da interface'}
                                         </span>
@@ -2000,14 +2033,31 @@ const PreferenciasTab: React.FC = () => {
                                         MODO ESCURO
                                     </button>
                                 </div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <PreferenceToggleChip
+                                        label="Animações"
+                                        enabled={Boolean(oraclePreferences?.animationsEnabled)}
+                                        onClick={() => updateOraclePreferences({ animationsEnabled: !Boolean(oraclePreferences?.animationsEnabled) })}
+                                    />
+                                    <PreferenceToggleChip
+                                        label="Sons"
+                                        enabled={Boolean(oraclePreferences?.soundsEnabled)}
+                                        onClick={() => updateOraclePreferences({ soundsEnabled: !Boolean(oraclePreferences?.soundsEnabled) })}
+                                    />
+                                    <PreferenceToggleChip
+                                        label="Vibração"
+                                        enabled={Boolean(oraclePreferences?.hapticsEnabled)}
+                                        onClick={() => updateOraclePreferences({ hapticsEnabled: !Boolean(oraclePreferences?.hapticsEnabled) })}
+                                    />
+                                </div>
                             </div>
                         </GlassCard>
                     </div>
-                    <SettingSelector label="Tutoriais" value={tutorialStatus} onClick={() => setModal('tutorial')} />
-                    <SettingSelector label="Privacidade" value={termsStatus} onClick={() => setModal('privacy')} />
                     <div id="oracle-preferences-setting">
-                        <SettingSelector label="Oráculo & Notificações" value={activeModeName} onClick={() => setModal('oracle')} />
+                        <SettingSelector label="Oráculo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />
                     </div>
+                    <SettingSelector label="Privacidade" value={termsStatus} onClick={() => setModal('privacy')} />
+                    <SettingSelector label="Tutoriais" value={tutorialStatus} onClick={() => setModal('tutorial')} />
                 </div>
             </section>
 
@@ -2542,7 +2592,7 @@ export const SettingsView: React.FC = () => {
                             key={tab}
                             id={`settings-tab-${tab.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]+/g, '-')}`}
                             onClick={() => setActiveTab(tab)}
-                            className={`w-full px-2 py-2 text-xs font-semibold rounded-xl transition-colors ${activeTab === tab ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'
+                            className={`w-full px-2 py-2 text-xs font-semibold rounded-xl transition-colors ${activeTab === tab ? 'bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)] border border-[var(--skin-accent-color)]/28 shadow-[0_0_14px_var(--sephirot-glow-color-soft)]' : 'text-gray-400 hover:bg-white/5'
                                 }`}
                         >
                             {tab}

@@ -93,7 +93,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 autoPlay
                 playsInline
                 muted
-                defaultMuted
                 preload={preload}
                 loop={loop}
                 onEnded={handleEnd}

@@ -140,7 +140,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     }: {
         icon: string;
         label: string;
-        description: string;
+        description?: string;
         enabled: boolean;
         onToggle: () => void;
         accentClass?: string;
@@ -151,7 +151,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                     <span className="text-lg">{icon}</span>
                     <span className="text-sm font-semibold text-gray-200">{label}</span>
                 </div>
-                <p className="mt-1 pl-8 text-xs text-gray-500">{description}</p>
+                {description ? <p className="mt-1 pl-8 text-xs text-gray-500">{description}</p> : null}
             </div>
             <button
                 onClick={onToggle}
@@ -292,7 +292,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     onClick={() => setActiveTab(tab)}
                                     className={`flex-1 rounded-lg py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
                                         activeTab === tab
-                                            ? 'bg-white/10 text-white shadow-sm'
+                                            ? 'border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)] shadow-[0_0_12px_var(--sephirot-glow-color-soft)]'
                                             : 'text-gray-500 hover:text-gray-300'
                                     }`}
                                 >
@@ -311,25 +311,25 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Oraculo</h3>
+                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Alertas</h3>
                                     {renderSwitchRow({
                                         icon: '✨',
                                         label: 'Oraculo IA',
-                                        description: `Gera mensagens personalizadas no modo ${activeModeConfig.name}.`,
+                                        description: `Mensagens personalizadas no modo ${activeModeConfig.name}.`,
                                         enabled: Boolean(oraclePreferences.iaEnabled),
                                         onToggle: () => handleToggle('iaEnabled'),
                                     })}
                                     {renderSwitchRow({
                                         icon: '🔔',
                                         label: 'Avisos do Oraculo',
-                                        description: `Controla cards automaticos e avisos internos. A entrega segue o modo ${activeModeConfig.name}.`,
+                                        description: 'Cards automáticos e avisos internos.',
                                         enabled: Boolean(oraclePreferences.notificationsEnabled),
                                         onToggle: () => handleToggle('notificationsEnabled'),
                                     })}
                                     {renderSwitchRow({
                                         icon: '💬',
                                         label: 'Mensagens diretas',
-                                        description: 'Quando alguem te chamar no DM, gera aviso e push no aparelho quando essa trilha estiver armada.',
+                                        description: 'Aviso e push quando alguém te chama no DM.',
                                         enabled: Boolean(oraclePreferences.dmNotificationsEnabled),
                                         onToggle: () => handleToggle('dmNotificationsEnabled'),
                                         accentClass: 'bg-sky-500/70',
@@ -337,14 +337,14 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     {renderSwitchRow({
                                         icon: '📲',
                                         label: 'Push no aparelho',
-                                        description: `${PUSH_PERMISSION_LABEL[pushPermission]}. O que vira push segue o modo ${activeModeConfig.name}.`,
+                                        description: PUSH_PERMISSION_LABEL[pushPermission],
                                         enabled: Boolean(oraclePreferences.pushEnabled),
                                         onToggle: handlePushToggle,
                                         accentClass: 'bg-emerald-500/70',
                                     })}
                                 </div>
 
-                                <div className="space-y-2">
+                                {false && <div className="space-y-2">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Sensorial</h3>
                                     {renderSwitchRow({
                                         icon: '✨',
@@ -367,7 +367,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                         enabled: Boolean(oraclePreferences.hapticsEnabled),
                                         onToggle: () => handleToggle('hapticsEnabled'),
                                     })}
-                                </div>
+                                </div>}
                             </div>
                         ) : (
                             <>

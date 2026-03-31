@@ -257,6 +257,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const repsInputRef = useRef<HTMLDivElement>(null);
     const saveButtonRef = useRef<HTMLButtonElement>(null);
     const briefingReaderPointerStartRef = useRef<number | null>(null);
+    const briefingReaderTouchStartRef = useRef<number | null>(null);
     const briefingReaderTurnTimeoutRef = useRef<number | null>(null);
     const completeNowHoldIntervalRef = useRef<number | null>(null);
     const [completeNowHoldProgress, setCompleteNowHoldProgress] = useState(0);
@@ -1049,6 +1050,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         if (!isBriefingReaderOpen) {
             setBriefingPageStage('idle');
             briefingReaderPointerStartRef.current = null;
+            briefingReaderTouchStartRef.current = null;
         }
     }, [isBriefingReaderOpen]);
 
@@ -2183,6 +2185,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                         <div
                             className="relative flex-1 overflow-hidden bg-[linear-gradient(180deg,rgba(255,250,235,0.86),rgba(243,224,184,0.92))]"
+                            style={{ touchAction: 'pan-y' }}
                             onPointerDown={(event) => {
                                 briefingReaderPointerStartRef.current = event.clientX;
                             }}
@@ -2199,6 +2202,24 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             }}
                             onPointerCancel={() => {
                                 briefingReaderPointerStartRef.current = null;
+                            }}
+                            onTouchStart={(event) => {
+                                briefingReaderTouchStartRef.current = event.touches[0]?.clientX ?? null;
+                            }}
+                            onTouchEnd={(event) => {
+                                if (briefingReaderTouchStartRef.current === null) return;
+                                const endX = event.changedTouches[0]?.clientX ?? briefingReaderTouchStartRef.current;
+                                const deltaX = endX - briefingReaderTouchStartRef.current;
+                                briefingReaderTouchStartRef.current = null;
+                                if (Math.abs(deltaX) < 44) return;
+                                if (deltaX < 0) {
+                                    navigateBriefingPage(briefingPageIndex + 1);
+                                } else {
+                                    navigateBriefingPage(briefingPageIndex - 1);
+                                }
+                            }}
+                            onTouchCancel={() => {
+                                briefingReaderTouchStartRef.current = null;
                             }}
                         >
                             <div
@@ -2245,7 +2266,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                         type="button"
                                         onClick={() => navigateBriefingPage(briefingPageIndex - 1)}
                                         disabled={briefingPageIndex === 0}
-                                        className="luxe-button-secondary inline-flex h-10 min-w-[3rem] items-center justify-center rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="luxe-skin-button inline-flex h-10 min-w-[3rem] items-center justify-center rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
                                         aria-label="Página anterior"
                                     >
                                         <ChevronLeftIcon className="h-4 w-4" />

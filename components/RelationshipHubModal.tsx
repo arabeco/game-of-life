@@ -300,13 +300,14 @@ const MentorshipCampaignBoardCard: React.FC<{
                 className="block cursor-pointer rounded-[18px] text-left transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/24"
             >
                 <div
-                    className="rounded-[18px] border p-2.5"
+                    className="relative rounded-[18px] border p-2.5"
                     style={{
                         borderColor: visualPalette.border,
                         background: visualPalette.listBackground,
                         boxShadow: `0 12px 26px ${visualPalette.glow}`,
                     }}
                 >
+                    {action ? <div className="absolute right-2 top-2 z-20">{action}</div> : null}
                     <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                             <div className="truncate text-[10px] font-black uppercase tracking-[0.16em]" style={{ color: visualPalette.chipText }}>
@@ -335,7 +336,6 @@ const MentorshipCampaignBoardCard: React.FC<{
                     )}
                 </div>
             </div>
-            {action ? <div className="mt-3 flex items-center justify-end gap-2">{action}</div> : null}
         </div>
     );
 };
@@ -1808,37 +1808,18 @@ export const RelationshipHubModal: React.FC<{
                                                             )
                                                         }
                                                         action={
-                                                            isMentorSide ? (
-                                                                <button
-                                                                    onClick={async (event) => {
-                                                                        event.stopPropagation();
-                                                                        await handleDeleteMentorshipCodex(codex);
-                                                                    }}
-                                                                    disabled={busyKey === `delete-codex:${codex.id}`}
-                                                                    className="shrink-0 rounded-full border border-red-300/16 bg-red-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-100 transition-all hover:bg-red-500/14 disabled:opacity-50"
-                                                                >
-                                                                    <span className="inline-flex items-center gap-1.5">
-                                                                        <Trash2Icon className="h-3.5 w-3.5" />
-                                                                        <span>{busyKey === `delete-codex:${codex.id}` ? 'Removendo' : 'Remover'}</span>
-                                                                    </span>
-                                                                </button>
-                                                            ) : installed ? null : (
-                                                                <button
-                                                                    onClick={async (event) => {
-                                                                        event.stopPropagation();
-                                                                        setBusyKey(`install:${codex.id}`);
-                                                                        try {
-                                                                            await installCodex(codex.id);
-                                                                        } finally {
-                                                                            setBusyKey(null);
-                                                                        }
-                                                                    }}
-                                                                    disabled={busyKey === `install:${codex.id}`}
-                                                                    className="shrink-0 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/84 transition-all hover:bg-white/12 disabled:opacity-50"
-                                                                >
-                                                                    {busyKey === `install:${codex.id}` ? 'Instalando' : 'Instalar no app'}
-                                                                </button>
-                                                            )
+                                                            <button
+                                                                onClick={async (event) => {
+                                                                    event.stopPropagation();
+                                                                    await handleDeleteMentorshipCodex(codex);
+                                                                }}
+                                                                disabled={busyKey === `delete-codex:${codex.id}`}
+                                                                aria-label="Remover campanha"
+                                                                title={busyKey === `delete-codex:${codex.id}` ? 'Removendo' : 'Remover campanha'}
+                                                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-300/20 bg-red-500/12 text-red-100 transition-all hover:bg-red-500/18 disabled:opacity-50"
+                                                            >
+                                                                <Trash2Icon className="h-4 w-4" />
+                                                            </button>
                                                         }
                                                         className="w-[13.6rem] shrink-0"
                                                     />

@@ -795,6 +795,15 @@ export const RelationshipHubModal: React.FC<{
         setError(null);
         try {
             const hub = await fetchRelationshipHubData();
+            setInvites(hub.invites || []);
+            setLinks(hub.links || []);
+            setLinkedArenas(hub.linkedArenas || []);
+            setCompetitionChallenges(hub.competitionChallenges || []);
+            setSummary(hub.summary || null);
+            setLoading(false);
+            setIsRefreshing(false);
+            setHasLoadedOnce(true);
+
             const mentorLinkIds = (hub.links || [])
                 .filter((link) => link.linkType === 'mentoria' && link.mentorId === sessionUid)
                 .map((link) => link.id);
@@ -825,13 +834,12 @@ export const RelationshipHubModal: React.FC<{
                 }
             }
 
-            setInvites(hub.invites || []);
-            setLinks(hub.links || []);
-            setLinkedArenas(hub.linkedArenas || []);
-            setCompetitionChallenges(hub.competitionChallenges || []);
-            setSummary(hub.summary || (await getRelationshipCapacitySummary()));
+            if (!hub.summary) {
+                const freshSummary = await getRelationshipCapacitySummary();
+                setSummary(freshSummary || null);
+            }
             setMentorSentCodexesByLinkId(nextMentorSentCodexesByLinkId);
-            await hydrateProfiles(hub.invites || [], hub.links || []);
+            void hydrateProfiles(hub.invites || [], hub.links || []);
         } catch (hubError: any) {
             console.error('Relationship hub load failed:', hubError);
             setError(hubError?.message || 'Nao foi possivel carregar a Central de Vinculos.');
@@ -2196,10 +2204,16 @@ export const RelationshipHubModal: React.FC<{
                                     )}
 
                                     {loading ? (
-                                        <div className="space-y-4">
-                                            <div className="h-28 rounded-[24px] border border-white/10 bg-black/16 animate-pulse" />
-                                            <div className="h-40 rounded-[24px] border border-white/10 bg-black/16 animate-pulse" />
-                                            <div className="h-48 rounded-[24px] border border-white/10 bg-black/16 animate-pulse" />
+                                        <div className="rounded-[22px] border border-white/10 bg-black/18 px-4 py-5 text-center">
+                                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/38">
+                                                Central de vínculos
+                                            </div>
+                                            <div className="mt-2 text-sm font-semibold text-white/82">
+                                                Carregando vínculos...
+                                            </div>
+                                            <div className="mt-2 text-[11px] text-white/42">
+                                                Abrindo mentorias, arenas e campanhas sem travar o modal.
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">

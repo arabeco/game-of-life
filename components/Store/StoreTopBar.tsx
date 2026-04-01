@@ -9,11 +9,11 @@ type StoreTopBarProps = {
     onTabChange: (tab: StoreTab) => void;
 };
 
-const STORE_TABS: Array<{ id: StoreTab; label: string; mobileLabel?: string; icon?: string }> = [
-    { id: 'codexes', label: 'Campanhas', mobileLabel: 'Camp.' },
+const STORE_TABS: Array<{ id: StoreTab; label: string; icon: string }> = [
+    { id: 'codexes', label: 'Campanhas', icon: '\u{1F4DA}' },
+    { id: 'items', label: 'Itens', icon: '\u{1F6E1}\u{FE0F}' },
+    { id: 'forge', label: 'Forja', icon: '\u{1F48E}' },
     { id: 'store', label: 'Ouro', icon: '\u{1FA99}' },
-    { id: 'forge', label: 'Forja' },
-    { id: 'items', label: 'Itens' },
 ];
 
 export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange }) => {
@@ -50,14 +50,7 @@ export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange
                             aria-label={tab.label}
                             title={tab.label}
                         >
-                            {tab.icon ? (
-                                <span className="text-[14px] leading-none">{tab.icon}</span>
-                            ) : (
-                                <span className="leading-none">
-                                    <span className="sm:hidden">{tab.mobileLabel || tab.label}</span>
-                                    <span className="hidden sm:inline">{tab.label}</span>
-                                </span>
-                            )}
+                            <span className="text-[16px] leading-none">{tab.icon}</span>
                         </button>
                     ))}
                 </div>

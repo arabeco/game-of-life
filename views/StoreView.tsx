@@ -8,15 +8,15 @@ import { useGame } from '../contexts/GameContext';
 
 export const StoreView: React.FC = () => {
   const { appMode } = useGame();
-  const [activeTab, setActiveTab] = useState<StoreTab>('store');
+  const [activeTab, setActiveTab] = useState<StoreTab>('codexes');
   const [scrollRequest, setScrollRequest] = useState<{ section: string; nonce: number } | null>(null);
   const allowedTabs = appMode === 'BASIC'
-    ? (['store', 'codexes'] as const)
-    : (['store', 'forge', 'codexes', 'items'] as const);
+    ? (['codexes', 'store'] as const)
+    : (['codexes', 'items', 'forge', 'store'] as const);
 
   const sanitizeTab = React.useCallback((tab?: StoreTab | null): StoreTab => {
     if (!tab || !allowedTabs.includes(tab)) {
-      return 'store';
+      return 'codexes';
     }
     return tab;
   }, [allowedTabs]);

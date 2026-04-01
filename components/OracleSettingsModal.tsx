@@ -59,6 +59,43 @@ const getRemotePushFailureMessage = (result: WebPushSyncResult): string => {
     }
 };
 
+const normalizeOracleCopy = (value: string) => value
+    .replaceAll('Ã¡', 'a')
+    .replaceAll('Ã¢', 'a')
+    .replaceAll('Ã£', 'a')
+    .replaceAll('Ã ', 'a')
+    .replaceAll('Ã§', 'c')
+    .replaceAll('Ã©', 'e')
+    .replaceAll('Ãª', 'e')
+    .replaceAll('Ã­', 'i')
+    .replaceAll('Ã³', 'o')
+    .replaceAll('Ã´', 'o')
+    .replaceAll('Ãµ', 'o')
+    .replaceAll('Ãº', 'u')
+    .replaceAll('Â°', 'o')
+    .replaceAll('Â', '')
+    .replaceAll('â€¦', '...')
+    .replaceAll('â€”', '-')
+    .replaceAll('â€“', '-')
+    .replaceAll('â†’', '->');
+
+const normalizeOracleIcon = (value: string) => {
+    const iconMap: Record<string, string> = {
+        'ðŸ”¥': '\u{1F525}',
+        'ðŸ§ ': '\u{1F9E0}',
+        'ðŸ“œ': '\u{1F4DC}',
+        'ðŸŒ¿': '\u{1F33F}',
+        'ðŸ‘ï¸': '\u{1F441}\u{FE0F}',
+        'âœ¨': '\u{2728}',
+        'ðŸ””': '\u{1F514}',
+        'ðŸ’¬': '\u{1F4AC}',
+        'ðŸ“²': '\u{1F4F2}',
+        'ðŸ”Š': '\u{1F50A}',
+        'ðŸ“³': '\u{1F4F3}',
+    };
+    return iconMap[value] || value;
+};
+
 export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     onClose,
     onOpenChat,
@@ -145,32 +182,35 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         onToggle: () => void;
         accentClass?: string;
     }) => (
-        <div className="flex items-center justify-between rounded-xl bg-black/20 p-3 transition-colors hover:bg-black/30">
+        <div className="flex items-center justify-between rounded-xl bg-black/20 px-3 py-2.5 transition-colors hover:bg-black/30">
             <div className="min-w-0 pr-3">
-                <div className="flex items-center gap-3">
-                    <span className="text-lg">{icon}</span>
-                    <span className="text-sm font-semibold text-gray-200">{label}</span>
+                <div className="flex items-center gap-2.5">
+                    <span className="text-base leading-none">{normalizeOracleIcon(icon)}</span>
+                    <span className="text-sm font-semibold text-gray-200">{normalizeOracleCopy(label)}</span>
                 </div>
-                {description ? <p className="mt-1 pl-8 text-xs text-gray-500">{description}</p> : null}
+                {description ? <p className="mt-0.5 pl-7 text-[11px] leading-relaxed text-gray-500">{normalizeOracleCopy(description)}</p> : null}
             </div>
             <button
                 onClick={onToggle}
-                className={`relative h-5 w-10 rounded-full transition-colors ${enabled ? accentClass : 'bg-gray-700'}`}
+                className={`relative h-5 w-9 rounded-full transition-colors ${enabled ? accentClass : 'bg-gray-700'}`}
             >
-                <div className={`absolute top-1 h-3 w-3 rounded-full bg-white transition-transform ${enabled ? 'left-6' : 'left-1'}`} />
+                <div className={`absolute top-1 h-3 w-3 rounded-full bg-white transition-transform ${enabled ? 'left-5' : 'left-1'}`} />
             </button>
         </div>
     );
 
     const renderModeSummaryCard = () => (
         <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Modo Atual</div>
-            <div className="mt-2 text-sm font-bold text-white">{activeModeConfig.name}</div>
-            <p className="mt-1 text-xs text-gray-400">{activeModeConfig.description}</p>
-            <div className="mt-3 space-y-2 text-[11px] leading-relaxed text-gray-500">
-                <p><span className="font-semibold text-gray-300">Cards:</span> {activeModeConfig.cardSummary}</p>
-                <p><span className="font-semibold text-gray-300">Avisos:</span> {activeModeConfig.notificationSummary}</p>
-                <p><span className="font-semibold text-gray-300">Push:</span> {activeModeConfig.pushSummary}</p>
+            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Modo atual</div>
+            <div className="mt-1 text-sm font-bold text-white">{normalizeOracleCopy(activeModeConfig.name)}</div>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-gray-400">{normalizeOracleCopy(activeModeConfig.description)}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-300">
+                    Auto {normalizeOracleCopy(activeModeConfig.attentionProfile)}
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-300">
+                    Push {normalizeOracleCopy(activeModeConfig.pushProfile)}
+                </span>
             </div>
         </div>
     );
@@ -179,7 +219,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         <div className="space-y-4">
             {renderModeSummaryCard()}
 
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 gap-1.5">
                 {Object.values(ORACLE_MODES).map((mode) => {
                     const isSelected = oraclePreferences.activeMode === mode.id;
                     const isLocked = !isPremium && mode.id !== 'neutro';
@@ -188,30 +228,33 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         <button
                             key={mode.id}
                             onClick={() => !isLocked && handleModeSelect(mode.id)}
-                            className={`relative overflow-hidden rounded-xl border p-3 text-left transition-all ${
+                            className={`relative overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-all ${
                                 isSelected
                                     ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10'
                                     : 'border-white/5 bg-black/20 hover:bg-white/5'
                             } ${isLocked ? 'cursor-not-allowed opacity-50' : ''}`}
                         >
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-2.5">
                                 <div className={`mt-1 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-[var(--skin-accent-color)]' : 'border-gray-500'}`}>
                                     {isSelected && <div className="h-2 w-2 rounded-full bg-[var(--skin-accent-color)]" />}
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center justify-between gap-2">
-                                        <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>{mode.name}</span>
+                                        <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>{normalizeOracleCopy(mode.name)}</span>
                                         {isLocked && (
                                             <span className="rounded border border-amber-500/20 bg-black/40 px-2 py-0.5 text-[10px] text-amber-500">
                                                 PREMIUM
                                             </span>
                                         )}
                                     </div>
-                                    <p className="mt-1 text-xs text-gray-500">{mode.description}</p>
-                                    <div className="mt-2 space-y-1 text-[11px] leading-relaxed text-gray-500">
-                                        <p><span className="font-semibold text-gray-300">Cards:</span> {mode.cardSummary}</p>
-                                        <p><span className="font-semibold text-gray-300">Avisos:</span> {mode.notificationSummary}</p>
-                                        <p><span className="font-semibold text-gray-300">Push:</span> {mode.pushSummary}</p>
+                                    <p className="mt-0.5 text-[11px] leading-relaxed text-gray-500">{normalizeOracleCopy(mode.description)}</p>
+                                    <div className="mt-1 flex flex-wrap gap-1.5">
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">
+                                            {normalizeOracleCopy(mode.attentionProfile)}
+                                        </span>
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">
+                                            Push {normalizeOracleCopy(mode.pushProfile)}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -236,31 +279,31 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     );
 
     const renderManualLibraryCategories = () => (
-        <div className="space-y-3">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Biblioteca manual</div>
-                <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                    O automatico tenta girar 1 pulso por tema marcado ao longo do dia. No Premium, o botao manual pode puxar ate 5 cards por dia.
-                </p>
-            </div>
-            {MANUAL_LIBRARY_CATEGORIES.map((cat) => {
-                const isEnabled = oraclePreferences.enabledCategories.includes(cat.id);
-                return (
-                    <button
-                        key={cat.id}
-                        onClick={() => handleCategoryToggle(cat.id)}
-                        className={`flex w-full items-center justify-between rounded-xl border p-3 transition-all ${
-                            isEnabled
-                                ? 'border-white/20 bg-white/10'
-                                : 'border-transparent bg-black/20 hover:bg-black/30'
-                        }`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="text-lg">{cat.icon}</span>
-                            <span className={`text-sm font-medium ${isEnabled ? 'text-white' : 'text-gray-400'}`}>{cat.label}</span>
-                        </div>
-                        {isEnabled && <CheckIcon className="h-4 w-4 text-[var(--skin-accent-color)]" />}
-                    </button>
+            <div className="space-y-3">
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Biblioteca manual</div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
+                        O automatico tenta girar 1 pulso por tema marcado ao longo do dia. No Premium, o botao manual pode puxar ate 5 cards por dia.
+                    </p>
+                </div>
+                {MANUAL_LIBRARY_CATEGORIES.map((cat) => {
+                    const isEnabled = oraclePreferences.enabledCategories.includes(cat.id);
+                    return (
+                        <button
+                            key={cat.id}
+                            onClick={() => handleCategoryToggle(cat.id)}
+                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 transition-all ${
+                                isEnabled
+                                    ? 'border-white/20 bg-white/10'
+                                    : 'border-transparent bg-black/20 hover:bg-black/30'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-base leading-none">{normalizeOracleIcon(cat.icon)}</span>
+                                <span className={`text-sm font-medium ${isEnabled ? 'text-white' : 'text-gray-400'}`}>{normalizeOracleCopy(cat.label)}</span>
+                            </div>
+                            {isEnabled && <CheckIcon className="h-4 w-4 text-[var(--skin-accent-color)]" />}
+                        </button>
                 );
             })}
         </div>
@@ -304,13 +347,13 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
                     <div className="custom-scrollbar flex-1 overflow-y-auto p-4">
                         {variant === 'preferences' ? (
-                            <div className="space-y-4">
+                            <div className="space-y-5">
                                 <div className="space-y-2">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Modo do Oraculo</h3>
                                     {renderModes()}
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-1.5 pt-1">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Alertas</h3>
                                     {renderSwitchRow({
                                         icon: '✨',

@@ -54,6 +54,15 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
         return `${expBoostLabel || '2x ativo'}${expBoostHoursRemaining != null ? ` - ${expBoostHoursRemaining}h` : ''}`;
     }, [expBoostHoursRemaining, expBoostLabel, hasExpBoost]);
 
+    const premiumBenefits = useMemo(() => ([
+        'Ate 25 arenas ativas',
+        'Dossies ampliados',
+        'Todos os modos do Oraculo',
+        'Bonus de legado +10% XP',
+        'Deep Focus premium',
+        'Renovacao com recompensa',
+    ]), []);
+
     const handleBuyPack = async (packId: string) => {
         const pack = GOLD_PACK_CATALOG.find((entry) => entry.id === packId);
         if (!pack) return;
@@ -92,37 +101,56 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
             <div className="space-y-6 animate-fade-in pb-8">
                 <GlassCard id="gold-store-premium" className="relative overflow-hidden border-[var(--ui-border-accent-soft)]">
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-yellow-900/20 via-yellow-500/5 to-transparent" />
-                    <div className="relative z-10 flex flex-col items-center justify-between gap-6 p-6 md:flex-row">
-                        <div className="flex items-center gap-4">
-                            <div className="rounded-full border border-[var(--ui-border-accent)] bg-[var(--ui-core-surface-strong-bg)] p-4 shadow-[0_0_20px_var(--ui-button-primary-glow)]">
-                                <CrownIcon className="h-8 w-8 text-[var(--ui-text-accent)]" />
+                    <div className="relative z-10 grid gap-5 p-5 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_auto] md:items-center">
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-full border border-[var(--ui-border-accent)] bg-[var(--ui-core-surface-strong-bg)] p-3 shadow-[0_0_20px_var(--ui-button-primary-glow)]">
+                                    <CrownIcon className="h-6 w-6 text-[var(--ui-text-accent)]" />
+                                </div>
+                                <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
+                                    {isPremium ? 'Ativo' : 'Disponivel'}
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-black uppercase tracking-tight text-[color:var(--ui-card-text)]">{GOLD_PREMIUM_PRODUCT.name}</h2>
-                                <p className="text-sm font-bold uppercase tracking-wider text-[color:var(--ui-card-text-soft)]">Assinatura mensal</p>
+
+                            <div className="mt-3">
+                                <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Soberania premium</h2>
+                                <p className="mt-1 max-w-[26rem] text-sm leading-relaxed text-[color:var(--ui-card-text-soft)]">
+                                    30 dias de acesso, mais alcance no Oraculo, mais espaco no app e bonus real de legado.
+                                </p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <span className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
+                                        {premiumBadgeLabel}
+                                    </span>
+                                    <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">
+                                        +10% XP legado
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-x-8 gap-y-2 text-sm text-[color:var(--ui-card-text-soft)] md:grid-cols-2">
-                            {GOLD_PREMIUM_PRODUCT.benefits.map((benefit) => (
-                                <div key={benefit} className="flex items-center gap-2">
+                        <div className="grid gap-2">
+                            {premiumBenefits.map((benefit) => (
+                                <div key={benefit} className="flex items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
                                     <CheckIcon className="h-4 w-4 text-green-400" />
-                                    <span>{benefit}</span>
+                                    <span className="text-sm text-[color:var(--ui-card-text-soft)]">{benefit}</span>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="flex min-w-[150px] flex-col items-center gap-2">
+                        <div className="flex min-w-[176px] flex-col items-stretch gap-2">
                             <button
                                 onClick={() => setConfirmState({ kind: 'premium', costGold: GOLD_PREMIUM_PRODUCT.priceGold })}
                                 disabled={!!loading}
-                                className="luxe-skin-button inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                <span className="text-[12px] leading-none">{GOLD_SYMBOL}</span>
-                                <span>{loading === 'premium' ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
+                                <span>{isPremium ? 'Estender premium' : 'Ativar premium'}</span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
+                                    <span className="text-[12px] leading-none">{GOLD_SYMBOL}</span>
+                                    <span>{loading === 'premium' ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
+                                </span>
                             </button>
-                            <span className="text-[10px] font-bold uppercase text-[color:var(--ui-card-text-soft)]">
-                                {premiumBadgeLabel}
+                            <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
+                                {isPremium ? 'Renove quando quiser' : 'Compra manual em ouro'}
                             </span>
                         </div>
                     </div>

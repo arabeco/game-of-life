@@ -2369,8 +2369,16 @@ const PremiumTab: React.FC = () => {
     const [confirmPremium, setConfirmPremium] = useState(false);
     const [isBuyingPremium, setIsBuyingPremium] = useState(false);
     const isPremium = hasPremiumAccess(userProfile);
-    const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÃVEL';
+    const premiumLabel = isPremium ? 'ATIVO' : 'DISPONIVEL';
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
+    const premiumBenefits = [
+        'Ate 25 arenas ativas',
+        'Dossies ampliados',
+        'Todos os modos do Oraculo',
+        'Bonus de legado +10% XP',
+        'Deep Focus premium',
+        'Renovacao com recompensa',
+    ];
     const premiumExpiresLabel = userProfile.premiumExpiresAt
         ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(userProfile.premiumExpiresAt))
         : null;
@@ -2415,7 +2423,7 @@ const PremiumTab: React.FC = () => {
                                 <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Assinatura</div>
                                 <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[color:var(--ui-card-text)]">Soberania premium</h3>
                                 <p className="max-w-[28rem] text-xs leading-relaxed text-[color:var(--ui-card-text-soft)]">
-                                    BenefÃ­cios ativos, validade real de 30 dias e recompensas concretas de renovaÃ§Ã£o dentro do prÃ³prio ritual premium.
+                                    Beneficios ativos, validade real de 30 dias e recompensas concretas de renovacao dentro do proprio ritual premium.
                                 </p>
                             </div>
                             <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
@@ -2430,23 +2438,23 @@ const PremiumTab: React.FC = () => {
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--ui-card-text-soft)]">Validade</div>
                                 <div className="mt-1 text-xl font-black text-[color:var(--ui-card-text)]">{premiumCycleLabel}</div>
                                 <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">
-                                    {isPremium && premiumExpiresLabel ? `atÃ© ${premiumExpiresLabel}` : 'por ativaÃ§Ã£o'}
+                                    {isPremium && premiumExpiresLabel ? `ate ${premiumExpiresLabel}` : 'por ativacao'}
                                 </div>
                             </div>
                             <div className="rounded-2xl border border-[var(--skin-accent-color)]/16 bg-[var(--skin-accent-color)]/10 px-3 py-3">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)]/80">Custo</div>
                                 <div className="mt-1 inline-flex items-center gap-1.5 text-xl font-black text-[var(--ui-text-accent)]">
-                                    <span className="text-[14px] leading-none">ðŸª™</span>
+                                    <span className="text-[14px] leading-none">{GOLD_SYMBOL}</span>
                                     <span>{GOLD_PREMIUM_PRODUCT.priceGold}</span>
                                 </div>
-                                <div className="text-[11px] text-[var(--ui-text-accent)]/72">renovaÃ§Ã£o manual</div>
+                                <div className="text-[11px] text-[var(--ui-text-accent)]/72">renovacao manual</div>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">BenefÃ­cios ativos</div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Beneficios ativos</div>
                             <div className="grid gap-2">
-                                {GOLD_PREMIUM_PRODUCT.benefits.map((benefit) => (
+                                {premiumBenefits.map((benefit) => (
                                     <div key={benefit} className="flex items-start gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
                                         <span className="mt-0.5 text-[var(--skin-accent-color)]">
                                             <CheckIcon className="h-4 w-4" />

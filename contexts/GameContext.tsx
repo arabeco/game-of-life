@@ -2523,6 +2523,63 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }));
     }, [getSupabaseUserId]);
 
+    const normalizeLoadedReportFromCycleRow = useCallback((row: any): Report | null => {
+        if (!row?.report_data) return null;
+
+        const rawReport = mapToCamelCase(row.report_data) as Partial<Report>;
+        const fallbackDate = getLocalDateString();
+        const startDate = String(rawReport.startDate || row.start_date || row.end_date || fallbackDate);
+        const endDate = String(rawReport.endDate || row.end_date || row.start_date || startDate);
+        const rawMetrics = rawReport.metrics && typeof rawReport.metrics === 'object' ? rawReport.metrics : {};
+        const rawHighlight = rawReport.highlight && typeof rawReport.highlight === 'object' ? rawReport.highlight : {};
+
+        return {
+            id: String(rawReport.id || row.id),
+            cycleId: String(rawReport.cycleId || row.id),
+            startDate,
+            endDate,
+            performanceScore: Number(rawReport.performanceScore ?? row.performance_score ?? 0),
+            cycleName: String(rawReport.cycleName || row.name || 'Ciclo'),
+            seasonId: rawReport.seasonId || row.season_id || undefined,
+            clanPoints: typeof rawReport.clanPoints === 'number' ? rawReport.clanPoints : Number(rawReport.clanPoints || 0),
+            expGained: typeof rawReport.expGained === 'number' ? rawReport.expGained : Number(rawMetrics.expGained || rawReport.expGained || 0),
+            identitySnapshot: rawReport.identitySnapshot,
+            metrics: {
+                actionsCompleted: Number(rawMetrics.actionsCompleted || 0),
+                totalPlannedActions: Number(rawMetrics.totalPlannedActions || 0),
+                arenasInvolved: Number(rawMetrics.arenasInvolved || 0),
+                goalsMet: Number(rawMetrics.goalsMet || 0),
+                plannedMetas: Number(rawMetrics.plannedMetas || rawMetrics.goalsMet || 0),
+                sealedMetas: Number(rawMetrics.sealedMetas || rawMetrics.goalsMet || 0),
+                totalHours: Number(rawMetrics.totalHours || 0),
+                questsCompleted: Number(rawMetrics.questsCompleted || 0),
+                consistencyDays: Number(rawMetrics.consistencyDays || 0),
+                expGained: Number(rawMetrics.expGained || rawReport.expGained || 0),
+                plannedEndDate: rawMetrics.plannedEndDate,
+                avgHoursPerDay: typeof rawMetrics.avgHoursPerDay === 'number' ? rawMetrics.avgHoursPerDay : undefined,
+                maxStreak: Number(rawMetrics.maxStreak || 0),
+                bestDay: rawMetrics.bestDay,
+                bestDayCount: Number(rawMetrics.bestDayCount || 0),
+                daysWithoutCompletion: Number(rawMetrics.daysWithoutCompletion || 0),
+                executionRatePct: typeof rawMetrics.executionRatePct === 'number' ? rawMetrics.executionRatePct : undefined,
+                timeElapsedPct: typeof rawMetrics.timeElapsedPct === 'number' ? rawMetrics.timeElapsedPct : undefined,
+                paceDeltaPct: typeof rawMetrics.paceDeltaPct === 'number' ? rawMetrics.paceDeltaPct : undefined,
+                top3Actions: Array.isArray(rawMetrics.top3Actions) ? rawMetrics.top3Actions : [],
+                weeklyAtlas: Array.isArray(rawMetrics.weeklyAtlas) ? rawMetrics.weeklyAtlas : [],
+                scoreModelVersion: rawMetrics.scoreModelVersion,
+                fairness: rawMetrics.fairness,
+                scoreBreakdown: rawMetrics.scoreBreakdown,
+            },
+            highlight: {
+                mostFocusedArena: String(rawHighlight.mostFocusedArena || 'Sem arena'),
+                mostFocusedArenaId: rawHighlight.mostFocusedArenaId,
+                mostRepeatedAction: String(rawHighlight.mostRepeatedAction || 'Nenhuma'),
+                mostRepeatedActionCount: Number(rawHighlight.mostRepeatedActionCount || 0),
+            },
+            assetProgress: Array.isArray(rawReport.assetProgress) ? rawReport.assetProgress : [],
+        };
+    }, []);
+
     const hydrateReportsWithFairScore = useCallback((loadedReports: Report[]) => {
         const normalizedReports = loadedReports.map((report) => ({
             ...report,
@@ -4186,16 +4243,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
                 const { data: reportsData, error: reportsError } = reportsResult;
                 if (!reportsError && reportsData) {
-                    const nextReports = reportsData.map((row: any) => {
-                        if (row.report_data) {
-                            const report = mapToCamelCase(row.report_data) as Report;
-                            if (!report.cycleId) {
-                                report.cycleId = row.id;
-                            }
-                            return report;
-                        }
-                        return null;
-                    }).filter(Boolean) as Report[];
+                    const nextReports = reportsData
+                        .map((row: any) => normalizeLoadedReportFromCycleRow(row))
+                        .filter(Boolean) as Report[];
 
                     if (nextReports.length > 0) {
                         const { reports: recalculatedReports, changedReportIds } = hydrateReportsWithFairScore(nextReports);

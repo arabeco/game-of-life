@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, RelationshipLinkType, ScheduledTask } from '../types';
-import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon, FolderStarIcon, EditIcon, CheckIcon } from '../components/Icons';
+import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon, FolderStarIcon, EditIcon, CheckIcon, LinkIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
 import { ArenaCard } from '../components/ArenaCard';
@@ -14,6 +14,7 @@ import { CampaignDetailModal } from '../components/CampaignDetailModal';
 import { CampaignsCodex } from '../components/CampaignsCodex';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
 import { CampaignArenaStack } from '../components/CampaignArenaStack';
+import { RelationshipHubModal } from '../components/RelationshipHubModal';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 import { calculateArenaProgress, calculateCampaignProgress, calculateCampaignProgressSummary } from '../utils/progressUtils';
 import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
@@ -134,6 +135,7 @@ export const ArenasView: React.FC = () => {
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
     const [isCampaignHubOpen, setCampaignHubOpen] = useState(false);
+    const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const [arenaPresentationMode, setArenaPresentationMode] = useState<'cards' | 'list'>('cards');
@@ -264,6 +266,14 @@ export const ArenasView: React.FC = () => {
         });
         return linkTypes;
     }, [sharedLinkedArenas]);
+    const linkedRelationshipCount = useMemo(
+        () => new Set(sharedLinkedArenas.map((linkedArena) => linkedArena.relationshipLinkId)).size,
+        [sharedLinkedArenas]
+    );
+    const premiumHeaderButtonStyle: React.CSSProperties = {
+        background: 'linear-gradient(180deg, color-mix(in srgb, var(--skin-accent-color) 18%, rgba(255,255,255,0.08)) 0%, rgba(0,0,0,0.42) 100%)',
+        boxShadow: '0 10px 18px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.08)',
+    };
     
     const allArenas = getArenas().filter(a => (showArchived || !a.isArchived));
     const rootArenas = allArenas
@@ -1889,12 +1899,26 @@ export const ArenasView: React.FC = () => {
                     <button
                         id="campaigns-button-top"
                         onClick={() => setCampaignHubOpen(true)}
-                        className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--ui-text-accent)] transition-colors hover:bg-white/8"
+                        className="group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--ui-border-accent-soft)] text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--ui-border-accent)]"
+                        style={premiumHeaderButtonStyle}
                         title="Abrir campanhas"
                     >
-                        <FolderStarIcon className="h-3.5 w-3.5" />
+                        <FolderStarIcon className="h-3.5 w-3.5 drop-shadow-[0_0_8px_var(--skin-accent-color)] transition-transform duration-200 group-hover:scale-105" />
                         <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/85 px-1 py-0.5 text-[7px] font-black leading-none text-white">
                             {campaigns.length}
+                        </span>
+                    </button>
+                    <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
+                    <button
+                        id="relationships-button-top"
+                        onClick={() => setRelationshipHubOpen(true)}
+                        className="group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--ui-border-accent-soft)] text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--ui-border-accent)]"
+                        style={premiumHeaderButtonStyle}
+                        title="Abrir vínculos"
+                    >
+                        <LinkIcon className="h-3.5 w-3.5 drop-shadow-[0_0_8px_var(--skin-accent-color)] transition-transform duration-200 group-hover:scale-105" />
+                        <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/85 px-1 py-0.5 text-[7px] font-black leading-none text-white">
+                            {linkedRelationshipCount}
                         </span>
                     </button>
                     <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
@@ -2223,12 +2247,26 @@ export const ArenasView: React.FC = () => {
                     <button
                         id="campaigns-button"
                         onClick={() => setCampaignHubOpen(true)}
-                        className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--ui-text-accent)] transition-colors hover:bg-white/8"
+                        className="group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--ui-border-accent-soft)] text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--ui-border-accent)]"
+                        style={premiumHeaderButtonStyle}
                         title="Abrir campanhas"
                     >
-                        <FolderStarIcon className="h-3.5 w-3.5" />
+                        <FolderStarIcon className="h-3.5 w-3.5 drop-shadow-[0_0_8px_var(--skin-accent-color)] transition-transform duration-200 group-hover:scale-105" />
                         <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/85 px-1 py-0.5 text-[7px] font-black leading-none text-white">
                             {campaigns.length}
+                        </span>
+                    </button>
+                    <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
+                    <button
+                        id="relationships-button"
+                        onClick={() => setRelationshipHubOpen(true)}
+                        className="group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--ui-border-accent-soft)] text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--ui-border-accent)]"
+                        style={premiumHeaderButtonStyle}
+                        title="Abrir vínculos"
+                    >
+                        <LinkIcon className="h-3.5 w-3.5 drop-shadow-[0_0_8px_var(--skin-accent-color)] transition-transform duration-200 group-hover:scale-105" />
+                        <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/85 px-1 py-0.5 text-[7px] font-black leading-none text-white">
+                            {linkedRelationshipCount}
                         </span>
                     </button>
                     <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
@@ -2565,6 +2603,9 @@ export const ArenasView: React.FC = () => {
             )}
             {isCampaignHubOpen && (
                 <CampaignsCodex onClose={() => setCampaignHubOpen(false)} />
+            )}
+            {isRelationshipHubOpen && (
+                <RelationshipHubModal onClose={() => setRelationshipHubOpen(false)} />
             )}
             {selectedCampaign && (
                 <CampaignsCodex

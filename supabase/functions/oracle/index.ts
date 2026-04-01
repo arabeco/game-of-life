@@ -1164,6 +1164,31 @@ const handleAutomaticOracleCron = async (req: Request, origin: string | null) =>
 
   const limit = clamp(asNumber(body.limit, 25), 1, 50);
   const supabaseAdmin = getSupabaseAdmin();
+  const requestedUserId = asTrimmedString(body.userId) || asTrimmedString(body.user_id);
+
+  if (requestedUserId) {
+    try {
+      const result = await createAutomaticOracleMessage(supabaseAdmin, requestedUserId, origin);
+      return jsonResponse(origin, 200, {
+        ok: true,
+        processed: 1,
+        generated: result.status === "generated" ? 1 : 0,
+        skipped: result.status === "skipped" ? 1 : 0,
+        errored: result.status === "error" ? 1 : 0,
+        results: [{ userId: requestedUserId, ...result }],
+      });
+    } catch (error) {
+      return jsonResponse(origin, 200, {
+        ok: true,
+        processed: 1,
+        generated: 0,
+        skipped: 0,
+        errored: 1,
+        results: [{ userId: requestedUserId, status: "error", reason: String(error) }],
+      });
+    }
+  }
+
   const { data: activeSubscriptions, error: subscriptionsError } = await supabaseAdmin
     .from("push_subscriptions")
     .select("user_id")

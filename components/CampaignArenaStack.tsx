@@ -11,30 +11,30 @@ interface CampaignArenaStackProps {
 
 const STACK_SIZE = {
     xs: {
-        scale: 0.56,
-        step: 48,
-        width: 156,
-        height: 56,
-        cardWidth: 132,
-        cardHeight: 84,
+        scale: 0.58,
+        step: 42,
+        width: 142,
+        height: 52,
+        cardWidth: 176,
+        cardHeight: 79,
         badgeClass: 'text-[8px] px-1.5 py-0.5',
     },
     sm: {
-        scale: 0.98,
-        step: 84,
-        width: 298,
-        height: 104,
-        cardWidth: 204,
-        cardHeight: 94,
+        scale: 0.94,
+        step: 68,
+        width: 246,
+        height: 88,
+        cardWidth: 176,
+        cardHeight: 79,
         badgeClass: 'text-[9px] px-1.5 py-0.5',
     },
     md: {
-        scale: 1.03,
-        step: 100,
-        width: 350,
-        height: 112,
-        cardWidth: 216,
-        cardHeight: 98,
+        scale: 1,
+        step: 78,
+        width: 278,
+        height: 92,
+        cardWidth: 176,
+        cardHeight: 79,
         badgeClass: 'text-[10px] px-2 py-0.5',
     },
 };
@@ -71,7 +71,7 @@ export const CampaignArenaStack: React.FC<CampaignArenaStackProps> = ({ arenas, 
                             actions={actionSource.filter(action => action.arenaId === arena.id)}
                             tasks={[]}
                             onClick={() => {}}
-                            variant="overview"
+                            variant="compact"
                         />
                     </div>
                 </div>

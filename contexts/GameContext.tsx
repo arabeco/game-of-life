@@ -21,7 +21,7 @@ import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { getOracleFeedMessagesForOperationalDay, getOracleFeedQuotaStatus, isManualOracleFeedMessage } from '../utils/oracleFeedUtils';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
-import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
+import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getExpBoostMultiplier, getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
@@ -5932,8 +5932,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         try {
             for (const [index, level] of template.levels.entries()) {
+                const levelNumber = typeof level?.level === 'number' ? level.level : index + 1;
                 const createdArena = await addArena(assetId, {
-                    name: level.title,
+                    name: getCodexLevelDisplayTitle(level.title, levelNumber),
                     description: level.description || '',
                     icon: level.actions?.[0]?.icon || '?',
                     originCodexId: codex.id,
@@ -5953,9 +5954,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 });
                 const previousArenaId = arenaIds[arenaIds.length - 2];
                 arenaConfig[createdArena.id] = {
-                    isLocked: level.level > 1,
+                    isLocked: levelNumber > 1,
                     isHidden: false,
-                    prerequisiteArenaIds: level.level > 1 && previousArenaId ? [previousArenaId] : []
+                    prerequisiteArenaIds: levelNumber > 1 && previousArenaId ? [previousArenaId] : []
                 };
 
                 for (const levelAction of level.actions || []) {

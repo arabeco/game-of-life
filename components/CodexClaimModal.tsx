@@ -5,7 +5,7 @@ import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { CheckIcon, EyeIcon, FolderIcon, LinkIcon, XIcon } from './Icons';
 import { CampaignsCodex } from './CampaignsCodex';
-import { buildCodexCampaignPreview } from '../utils/codexPreview';
+import { buildCodexCampaignPreview, getCodexLevelDisplayTitle } from '../utils/codexPreview';
 import { CampaignArenaStack } from './CampaignArenaStack';
 import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
 
@@ -218,7 +218,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                               Fase {level.level}
                             </div>
                             <div className="mt-1 truncate text-sm font-bold text-white">
-                              {level.title}
+                              {getCodexLevelDisplayTitle(level.title, level.level)}
                             </div>
                           </div>
                           <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/38">

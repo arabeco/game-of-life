@@ -182,7 +182,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         onToggle: () => void;
         accentClass?: string;
     }) => (
-        <div className="flex items-center justify-between rounded-xl bg-black/20 px-3 py-2.5 transition-colors hover:bg-black/30">
+        <div className="flex items-center justify-between rounded-[14px] bg-black/20 px-3 py-2 transition-colors hover:bg-black/30">
             <div className="min-w-0 pr-3">
                 <div className="flex items-center gap-2.5">
                     <span className="text-base leading-none">{normalizeOracleIcon(icon)}</span>
@@ -200,7 +200,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     );
 
     const renderModeSummaryCard = () => (
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+        <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5">
             <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Modo atual</div>
             <div className="mt-1 text-sm font-bold text-white">{normalizeOracleCopy(activeModeConfig.name)}</div>
             <p className="mt-0.5 text-[11px] leading-relaxed text-gray-400">{normalizeOracleCopy(activeModeConfig.description)}</p>
@@ -216,10 +216,10 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     );
 
     const renderModes = () => (
-        <div className="space-y-4">
+        <div className="space-y-3.5">
             {renderModeSummaryCard()}
 
-            <div className="grid grid-cols-1 gap-1.5">
+            <div className="grid grid-cols-1 gap-1">
                 {Object.values(ORACLE_MODES).map((mode) => {
                     const isSelected = oraclePreferences.activeMode === mode.id;
                     const isLocked = !isPremium && mode.id !== 'neutro';
@@ -228,7 +228,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         <button
                             key={mode.id}
                             onClick={() => !isLocked && handleModeSelect(mode.id)}
-                            className={`relative overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-all ${
+                            className={`relative overflow-hidden rounded-[14px] border px-3 py-2 text-left transition-all ${
                                 isSelected
                                     ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10'
                                     : 'border-white/5 bg-black/20 hover:bg-white/5'
@@ -247,12 +247,12 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                             </span>
                                         )}
                                     </div>
-                                    <p className="mt-0.5 text-[11px] leading-relaxed text-gray-500">{normalizeOracleCopy(mode.description)}</p>
+                                    <p className="mt-0.5 text-[10px] leading-relaxed text-gray-500">{normalizeOracleCopy(mode.description)}</p>
                                     <div className="mt-1 flex flex-wrap gap-1.5">
-                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-[3px] text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">
                                             {normalizeOracleCopy(mode.attentionProfile)}
                                         </span>
-                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-[3px] text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">
                                             Push {normalizeOracleCopy(mode.pushProfile)}
                                         </span>
                                     </div>
@@ -280,10 +280,10 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
     const renderManualLibraryCategories = () => (
             <div className="space-y-3">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5">
                     <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Biblioteca manual</div>
                     <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
-                        O automatico tenta girar 1 pulso por tema marcado ao longo do dia. No Premium, o botao manual pode puxar ate 5 cards por dia.
+                        O automático tenta girar 1 pulso por tema marcado ao longo do dia. No Premium, o botão manual pode puxar até 5 cards por dia.
                     </p>
                 </div>
                 {MANUAL_LIBRARY_CATEGORIES.map((cat) => {
@@ -292,7 +292,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         <button
                             key={cat.id}
                             onClick={() => handleCategoryToggle(cat.id)}
-                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 transition-all ${
+                            className={`flex w-full items-center justify-between rounded-[14px] border px-3 py-2 transition-all ${
                                 isEnabled
                                     ? 'border-white/20 bg-white/10'
                                     : 'border-transparent bg-black/20 hover:bg-black/30'
@@ -320,7 +320,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                 >
                     <div className="flex flex-shrink-0 items-center justify-between border-b border-white/10 p-4">
                         <h2 className="text-sm font-black uppercase tracking-widest text-[var(--skin-accent-color)]">
-                            {variant === 'preferences' ? 'Preferencias do Oraculo' : 'Configurar Oraculo'}
+                            {variant === 'preferences' ? 'Preferências do Oráculo' : 'Configurar Oráculo'}
                         </h2>
                         <button onClick={onClose} className="rounded-full p-2 transition-colors hover:bg-white/10">
                             <XIcon className="h-5 w-5 text-gray-400" />
@@ -347,13 +347,13 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
                     <div className="custom-scrollbar flex-1 overflow-y-auto p-4">
                         {variant === 'preferences' ? (
-                            <div className="space-y-5">
+                            <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Modo do Oraculo</h3>
+                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Modo do Oráculo</h3>
                                     {renderModes()}
                                 </div>
 
-                                <div className="space-y-1.5 pt-1">
+                                <div className="space-y-1 pt-1">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Alertas</h3>
                                     {renderSwitchRow({
                                         icon: '✨',

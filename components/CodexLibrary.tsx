@@ -5,7 +5,7 @@ import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { ArchiveBoxIcon, CheckIcon, DollarSignIcon, EyeIcon, FolderIcon, LayersIcon, LinkIcon, PlusIcon, ShareIcon, Trash2Icon, XIcon } from './Icons';
 import { CampaignsCodex } from './CampaignsCodex';
-import { buildCodexCampaignPreview, CodexCampaignPreview } from '../utils/codexPreview';
+import { buildCodexCampaignPreview, CodexCampaignPreview, getCodexLevelDisplayTitle } from '../utils/codexPreview';
 import { CodexModal } from './CodexModal';
 import { CampaignArenaStack } from './CampaignArenaStack';
 import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
@@ -229,7 +229,7 @@ const CodexCard: React.FC<{
         {levels.length > 0 ? levels.slice(0, 3).map((level) => (
           <div key={`${codex.id}-${level.level}`} className="rounded-2xl bg-black/25 border border-white/10 px-3 py-2 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-white truncate">{level.title}</div>
+              <div className="text-sm font-semibold text-white truncate">{getCodexLevelDisplayTitle(level.title, level.level)}</div>
               <div className="text-[11px] text-gray-500">Fase {level.level}</div>
             </div>
             <div className="text-[11px] text-gray-400 whitespace-nowrap">{Array.isArray(level.actions) ? level.actions.length : 0} acoes</div>

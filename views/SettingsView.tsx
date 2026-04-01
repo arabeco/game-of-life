@@ -51,7 +51,7 @@ const AssetDecagon = lazy(() =>
     import('../components/AssetDecagon').then((module) => ({ default: module.AssetDecagon }))
 );
 
-type SettingsTab = 'Geral' | 'PreferÃªncias' | 'Premium' | 'Temporada';
+type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
 type ProfileVisibilityOption = ProfileVisibilityScope;
 type UiSettingsSkinOption = { id: string; name: string };
@@ -604,7 +604,7 @@ const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () 
 const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const handleRequestModeGame = () => {
         onClose();
-        window.dispatchEvent(new CustomEvent('tutorialTabChange', { detail: { tab: 'PreferÃªncias' } }));
+        window.dispatchEvent(new CustomEvent('tutorialTabChange', { detail: { tab: 'Preferências' } }));
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialFocusModeGame'));
         }, 70);
@@ -2110,10 +2110,10 @@ const PreferenciasTab: React.FC = () => {
         if (!selectedSkin) return appMode === 'BASIC' ? 'Basica' : 'Tema atual';
         return selectedSkin.name.replace(/^Tema:\s*/i, '').replace(/^Interface\s*/i, '');
     }, [appMode, effectiveUiSkinId, uiSkinCatalog]);
-    const uiPreferencesSummary = `${currentUiSkinName} Â· ${activeTheme === 'LIGHT' ? 'Claro' : 'Escuro'}`;
+    const uiPreferencesSummary = `${currentUiSkinName} · ${activeTheme === 'LIGHT' ? 'Claro' : 'Escuro'}`;
     const modeGameSummary = appMode === 'GAME'
-        ? 'Itens, missÃµes, grupo casual e temas de UI.'
-        : 'Apenas o necessÃ¡rio para produtividade.';
+        ? 'Itens, missões, grupo casual e temas de UI.'
+        : 'Apenas o necessário para produtividade.';
 
     useEffect(() => {
         setAssetsVisibility(normalizeAssetsVisibilityOption(userProfile.assetsVisibility));
@@ -2160,7 +2160,7 @@ const PreferenciasTab: React.FC = () => {
         <div className="space-y-8 animate-fade-in pb-10">
             {/* Grupo Geral */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">PreferÃªncias</h2>
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>
                 <div className="space-y-2">
                     <div
                         id="mode-game-toggle"
@@ -2181,7 +2181,7 @@ const PreferenciasTab: React.FC = () => {
                                     onClick={() => setAppMode('BASIC')}
                                     className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${appMode === 'BASIC' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
-                                    MODO BÃSICO
+                                    MODO BÁSICO
                                 </button>
 
                                 <button
@@ -2200,7 +2200,7 @@ const PreferenciasTab: React.FC = () => {
                     </div>
                     <SettingSelector label="Interface & Som" value={currentUiSkinName} onClick={() => setModal('ui')} />
                     <div id="oracle-preferences-setting">
-                        <SettingSelector label="OrÃ¡culo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />
+                        <SettingSelector label="Oráculo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />
                     </div>
                     <SettingSelector label="Privacidade" value={termsStatus} onClick={() => setModal('privacy')} />
                     <SettingSelector label="Tutoriais" value={tutorialStatus} onClick={() => setModal('tutorial')} />
@@ -2385,7 +2385,7 @@ const PremiumTab: React.FC = () => {
     const premiumCycleLabel = premiumDaysRemaining != null
         ? `${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'} restantes`
         : isPremium
-            ? 'legado ativo'
+            ? 'Ativo'
             : '30 dias';
     const premiumBadgeLabel = isPremium && premiumExpiresLabel
         ? `${premiumDaysRemaining ?? 0}d - ate ${premiumExpiresLabel}`
@@ -2718,12 +2718,12 @@ export const SettingsView: React.FC = () => {
     useEffect(() => {
         const handleTabChange = (e: any) => {
             const tab = e.detail?.tab;
-            if (tab && ['Geral', 'PreferÃªncias', 'Premium'].includes(tab)) {
+            if (tab && ['Geral', 'Preferências', 'Premium'].includes(tab)) {
                 setActiveTab(tab as SettingsTab);
             }
         };
         const handleSettingsReturn = () => {
-            setActiveTab('PreferÃªncias');
+            setActiveTab('Preferências');
             setTimeout(() => {
                 window.dispatchEvent(new CustomEvent('tutorialSettingsOpenModal'));
             }, 50);
@@ -2744,13 +2744,13 @@ export const SettingsView: React.FC = () => {
     const renderContent = () => {
         switch (activeTab) {
             case 'Geral': return <GeralTab />;
-            case 'PreferÃªncias': return <PreferenciasTab />;
+            case 'Preferências': return <PreferenciasTab />;
             case 'Premium': return <PremiumTab />;
             default: return null;
         }
     }
 
-    let tabs: SettingsTab[] = ['Geral', 'PreferÃªncias', 'Premium'];
+    let tabs: SettingsTab[] = ['Geral', 'Preferências', 'Premium'];
 
     return (
         <>

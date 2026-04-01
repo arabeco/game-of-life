@@ -4,8 +4,9 @@ $ErrorActionPreference = "Stop"
 $repoRoot = "C:\Users\Afonso\Downloads\GOL1.006"
 $marketingRoot = Join-Path $repoRoot "marketing"
 $generator = Join-Path $repoRoot "scripts\generate-ponte-01-imperio.ps1"
-$definitionsPath = Join-Path $marketingRoot "ponte-definicoes-01-15.md"
+$definitionsPath = Join-Path $marketingRoot "ponte-definicoes-16-25.md"
 $plaquePath = Join-Path $marketingRoot "round0\placa.jpg"
+$backgroundRoot = Join-Path $marketingRoot "abertura"
 
 function Remove-Diacritics {
     param([string]$Text)
@@ -31,36 +32,31 @@ function Get-Slug {
 
 $raw = [System.IO.File]::ReadAllText($definitionsPath, [System.Text.Encoding]::UTF8)
 $matches = [regex]::Matches($raw, '(?ms)^\s*(\d+)\.\s+`([^`]+)`\s*\r?\n\s*Defini\S*:\s*`([^`]+)`')
-if ($matches.Count -ne 15) {
-    throw "Nao consegui ler as 15 definicoes da ponte em $definitionsPath."
+if ($matches.Count -ne 10) {
+    throw "Nao consegui ler as 10 definicoes da ponte em $definitionsPath."
 }
 
 $printMap = @{
-    1  = (Join-Path $marketingRoot "round11\arenas2.jpeg")
-    2  = (Join-Path $marketingRoot "round14\acaomodal.jpeg")
-    3  = (Join-Path $marketingRoot "round12\maestria2.jpg")
-    4  = (Join-Path $marketingRoot "round11\arenamodal.jpeg")
-    5  = (Join-Path $marketingRoot "round2\planner.jpeg")
-    6  = (Join-Path $marketingRoot "round3\relatoriocard.jpeg")
-    7  = (Join-Path $marketingRoot "round7\relatorioatlas.jpeg")
-    8  = (Join-Path $marketingRoot "round6\deepwork.jpeg")
-    9  = (Join-Path $marketingRoot "round13\codexes2.jpg")
-    10 = (Join-Path $marketingRoot "round8\patentes.jpeg")
-    11 = (Join-Path $marketingRoot "vitrine-01-customizacao\inventario.jpeg")
-    12 = (Join-Path $marketingRoot "round13\codexes.jpeg")
-    13 = (Join-Path $marketingRoot "round9\oraculo.jpeg")
-    14 = (Join-Path $marketingRoot "round10\quests.jpeg")
-    15 = (Join-Path $marketingRoot "round10\clan.png")
+    16 = (Join-Path $marketingRoot "round11\arenas2.jpeg")
+    17 = (Join-Path $marketingRoot "round2\planner.jpeg")
+    18 = (Join-Path $marketingRoot "round3\relatoriocard.jpeg")
+    19 = (Join-Path $marketingRoot "round6\deepwork.jpeg")
+    20 = (Join-Path $marketingRoot "vitrine-01-customizacao\inventario.jpeg")
+    21 = (Join-Path $marketingRoot "round9\oraculo.jpeg")
+    22 = (Join-Path $marketingRoot "round14\acaomodal.jpeg")
+    23 = (Join-Path $marketingRoot "round7\relatorioatlas.jpeg")
+    24 = (Join-Path $marketingRoot "round8\patentes.jpeg")
+    25 = (Join-Path $marketingRoot "round10\clan.png")
 }
 
-$brightBackgrounds = @(2, 4, 9, 14, 15)
+$brightBackgrounds = @(19, 21, 24, 25)
 
 $items = foreach ($match in $matches) {
     $id = [int]$match.Groups[1].Value
     $word = $match.Groups[2].Value.Trim()
     $definition = $match.Groups[3].Value.Trim()
     $slug = Get-Slug -Text $word
-    $backgroundPath = Join-Path $marketingRoot ("round0\{0}.jpg" -f $id)
+    $backgroundPath = Join-Path $backgroundRoot ("{0}.jpg" -f $id)
     $printPath = $printMap[$id]
 
     if (-not (Test-Path $backgroundPath)) { throw "Fundo nao encontrado para item ${id}: $backgroundPath" }
@@ -73,22 +69,31 @@ $items = foreach ($match in $matches) {
         Slug = $slug
         BackgroundPath = $backgroundPath
         PrintPath = $printPath
-        PlaqueTone = if ($id -ge 11) { "Jade" } else { "Default" }
+        PlaqueTone = if ($id -le 20) { "Red" } else { "Velvet" }
         BrightBackground = ($brightBackgrounds -contains $id)
         OutputDir = Join-Path $marketingRoot ("ponte-{0}-{1}\slides" -f $id.ToString("00"), $slug)
     }
 }
 
 foreach ($item in $items | Sort-Object Id) {
-    & $generator `
-        -OutputDir $item.OutputDir `
-        -BackgroundPath $item.BackgroundPath `
-        -PlaquePath $plaquePath `
-        -PrintPath $item.PrintPath `
-        -Word $item.Word `
-        -Definition $item.Definition `
-        -PlaqueTone $item.PlaqueTone `
-        -BrightBackground:$item.BrightBackground
+    $args = @(
+        "-ExecutionPolicy", "Bypass",
+        "-File", $generator,
+        "-OutputDir", $item.OutputDir,
+        "-BackgroundPath", $item.BackgroundPath,
+        "-PlaquePath", $plaquePath,
+        "-PrintPath", $item.PrintPath,
+        "-Word", $item.Word,
+        "-Definition", $item.Definition,
+        "-SheetTitle", ("Ponte {0} | {1}" -f $item.Id.ToString("00"), $item.Word),
+        "-PlaqueTone", $item.PlaqueTone
+    )
+
+    if ($item.BrightBackground) {
+        $args += "-BrightBackground"
+    }
+
+    & powershell @args
 }
 
-($items | Sort-Object Id | Select-Object Id,Word,Slug,PrintPath,OutputDir) | Format-Table -AutoSize
+($items | Sort-Object Id | Select-Object Id,Word,PlaqueTone,PrintPath,OutputDir) | Format-Table -AutoSize

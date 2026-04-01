@@ -1054,7 +1054,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                     >
                                         {(showPhaseHeaders || isEditing) && (
                                             <div className="px-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--skin-accent-color)]/80">
-                                                Fase {phase + 1}
+                                                {`Fase ${phase + 1}`}
                                             </div>
                                         )}
                                         <div className={`flex ${isPreviewCampaign ? 'min-h-[6.9rem]' : 'min-h-[7.1rem]'} gap-3 overflow-x-auto rounded-[1rem] border border-white/6 pb-2 pr-1 hide-scrollbar ${isEditing ?'bg-black/15 p-2' : isPreviewCampaign ? 'bg-black/10 p-1.5' : ''}`}>
@@ -1108,8 +1108,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                             <div className="relative">
                                                 
                                                 {/* Floating Controls (Top Right) - Only for custom campaigns */}
-                                                {canEditCampaignStructure && !isLinkingMode && (
-                                                    <div className="absolute right-1 top-1 z-30 flex items-center gap-1 rounded-lg border border-white/10 bg-black/60 p-1 opacity-0 transition-opacity backdrop-blur-sm group-hover:opacity-100">
+                                                {canEditCampaignStructure && isEditing && !isLinkingMode && (
+                                                    <div className="absolute right-1 top-1 z-30 flex items-center gap-1 rounded-lg border border-white/10 bg-black/72 p-1 opacity-100 backdrop-blur-sm">
                                                         <button 
                                                             onClick={(e) => handleMoveArena(arena.id, 'left', e)}
                                                             disabled={index === 0}

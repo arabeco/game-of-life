@@ -1618,6 +1618,7 @@ const LegacyPreviewButton: React.FC = () => {
                     eras={mockEras}
                     sovereignName={session?.user?.email?.split('@')[0] || 'Soberano'}
                     isPremium={true}
+                    showLayoutEditors
                     sceneGoldCost={null}
                     sceneButtonLabel="Abrir cena teste"
                     confirmKickerLabel="Laboratorio GM"

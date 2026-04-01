@@ -24,6 +24,7 @@ interface LegacyProjectionSceneProps {
     sovereignName: string;
     projectionActive?: boolean;
     interactive?: boolean;
+    showLayoutEditor?: boolean;
     autoAdvance?: boolean;
     enteringProjection?: boolean;
     fallbackIdentity?: ReportIdentitySnapshot;
@@ -110,8 +111,8 @@ const LayoutSlider: React.FC<{
 }> = ({ label, value, min, max, step, onChange }) => (
     <label className="space-y-1">
         <div className="flex items-center justify-between gap-3">
-            <span className="text-[9px] font-black uppercase tracking-[0.22em] text-amber-100/82">{label}</span>
-            <span className="text-[10px] font-bold text-white/72">{value.toFixed(step < 1 ? 2 : 0)}</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-100/82">{label}</span>
+            <span className="text-[11px] font-bold text-white/72">{value.toFixed(step < 1 ? 2 : 0)}</span>
         </div>
         <input
             type="range"
@@ -120,10 +121,13 @@ const LayoutSlider: React.FC<{
             step={step}
             value={value}
             onChange={(event) => onChange(Number(event.target.value))}
-            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/12 accent-[var(--skin-accent-color)]"
+            className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-white/12 accent-[var(--skin-accent-color)]"
         />
     </label>
 );
+
+const LEGACY_STAGE_WIDTH = 390;
+const LEGACY_STAGE_HEIGHT = 844;
 
 export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     id,
@@ -131,6 +135,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     sovereignName,
     projectionActive = true,
     interactive = false,
+    showLayoutEditor = false,
     autoAdvance = false,
     enteringProjection = false,
     fallbackIdentity,
@@ -157,6 +162,10 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     const layout = useLegacyLayoutConfig();
     const scenePlaqueWidth = getLegacyPlaqueWidthPx('scene', layout);
     const scenePlaqueScale = getLegacyPlaqueScale('scene', layout);
+    const [viewportSize, setViewportSize] = useState(() => ({
+        width: typeof window !== 'undefined' ? window.innerWidth : LEGACY_STAGE_WIDTH,
+        height: typeof window !== 'undefined' ? window.innerHeight : LEGACY_STAGE_HEIGHT,
+    }));
 
     const [activeCycleId, setActiveCycleId] = useState<string>(() => {
         if (!cycleEntries.length) return '';
@@ -334,12 +343,13 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
             const scrollerWidth = scroller.clientWidth || 320;
             const cardWidth = firstCard.offsetWidth || 188;
             const edgePadding = Math.max((scrollerWidth - cardWidth) / 2, 18);
+            const trailingPadding = edgePadding + Math.max(Math.round(cardWidth * 0.82), 132);
 
             setTimelineEdgePadding((current) => {
-                if (Math.abs(current.left - edgePadding) < 1 && Math.abs(current.right - edgePadding) < 1) {
+                if (Math.abs(current.left - edgePadding) < 1 && Math.abs(current.right - trailingPadding) < 1) {
                     return current;
                 }
-                return { left: edgePadding, right: edgePadding };
+                return { left: edgePadding, right: trailingPadding };
             });
         };
 
@@ -376,6 +386,20 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         }
     }, []);
 
+    useEffect(() => {
+        if (!interactive) return;
+        const handleResize = () => {
+            setViewportSize({
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [interactive]);
+
     if (!eras.length) return null;
 
     const activePatent = activeIdentity.nobilityRankName || activeIdentity.title || 'Vagante';
@@ -388,10 +412,27 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
             : 'text-[1.02rem] tracking-[0.02em]';
     const timelineVisible = !interactive || projectionActive;
     const sceneCyclesTranslateX = layout.cyclesOffsetX;
-    const sceneCyclesTranslateY = layout.cyclesOffsetY + 22;
+    const sceneCyclesTranslateY = layout.cyclesOffsetY + 8;
+    const backdropScale = interactive ? layout.backdropZoom : 1.02;
+    const stageScale = interactive
+        ? Math.min(
+            Math.max((viewportSize.width - 10) / LEGACY_STAGE_WIDTH, 0.1),
+            Math.max((viewportSize.height - 10) / LEGACY_STAGE_HEIGHT, 0.1),
+        )
+        : 1;
+    const stageWidth = LEGACY_STAGE_WIDTH * stageScale;
+    const stageHeight = LEGACY_STAGE_HEIGHT * stageScale;
     const sceneClass = interactive
-        ? 'relative min-h-full overflow-hidden px-0 py-0 text-white'
+        ? 'relative min-h-full overflow-hidden bg-black px-0 py-0 text-white'
         : 'relative overflow-hidden rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.08),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0.035),_rgba(255,255,255,0.012))] p-5 text-white shadow-[0_24px_60px_rgba(0,0,0,0.42)] w-[1720px]';
+    const interactiveBackdropStyle: React.CSSProperties = {
+        backgroundImage: `url(${backdropSkin.imageUrl})`,
+        backgroundPosition: 'center 8%',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        transform: `scale(${backdropScale})`,
+        transformOrigin: 'center top',
+    };
 
     const handleTimelineScroll = () => {
         if (!interactive) return;
@@ -479,16 +520,85 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         );
     };
 
+    const renderInteractiveEraGroup = (
+        era: LegacyEraSummary,
+        eraIndex: number,
+    ) => {
+        const skin = getEraRibbonSkin(era.skinId);
+        const isLastEra = eraIndex === orderedEras.length - 1;
+
+        return (
+            <div key={era.key || era.label} className="relative flex shrink-0 items-start gap-2.5 pt-5 pb-5">
+                {eraIndex > 0 && (
+                    <div className="pointer-events-none absolute -left-4 bottom-0 top-5 flex w-8 flex-col items-center">
+                        <div className="h-7 w-px" style={{ background: `${skin.edge}66` }} />
+                        <div className="mt-1 h-2.5 w-2.5 rotate-45 border" style={{ borderColor: `${skin.edge}66`, background: `${skin.baseTop}22` }} />
+                        <div className="mt-1 w-px flex-1 bg-white/10" />
+                    </div>
+                )}
+
+                <button
+                    type="button"
+                    onClick={() => onOpenEra?.(era)}
+                    className={`group flex shrink-0 flex-col items-center gap-1.5 pt-1 ${onOpenEra ? 'cursor-pointer' : 'cursor-default'}`}
+                    title={onOpenEra ? `Abrir ${era.label}` : era.label}
+                >
+                    <span
+                        className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] shadow-[0_8px_18px_rgba(0,0,0,0.18)] transition-colors group-hover:text-white"
+                        style={{
+                            borderColor: `${skin.edge}40`,
+                            color: skin.edge,
+                            background: 'linear-gradient(180deg, rgba(3,5,8,0.72), rgba(3,5,8,0.5))',
+                        }}
+                    >
+                        {era.label}
+                    </span>
+                    <div className="h-[72px] w-[10px] overflow-hidden rounded-sm">
+                        <EraRibbon label="" skinId={era.skinId} className="h-full w-full" />
+                    </div>
+                </button>
+
+                <div className="relative flex gap-1.5 pb-4">
+                    <div className="pointer-events-none absolute inset-x-0 -top-2.5 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
+                    <div
+                        className="pointer-events-none absolute bottom-[6px] left-2 right-2 h-px"
+                        style={{
+                            background: `linear-gradient(90deg, ${skin.edge}00 0%, ${skin.edge}66 18%, ${skin.edge}88 50%, ${skin.edge}66 82%, ${skin.edge}00 100%)`,
+                            boxShadow: `0 0 18px ${skin.edge}28`,
+                        }}
+                    />
+                    <div className="pointer-events-none absolute bottom-[3px] left-2 h-[7px] w-[7px] rounded-full" style={{ backgroundColor: skin.edge, boxShadow: `0 0 14px ${skin.edge}44` }} />
+                    <div className="pointer-events-none absolute bottom-[3px] right-2 h-[7px] w-[7px] rounded-full" style={{ backgroundColor: skin.edge, boxShadow: `0 0 14px ${skin.edge}44` }} />
+                    {(era.cycles || []).map((cycle) => renderCycleNode(cycle, skin, true))}
+                </div>
+
+                {!isLastEra && (
+                    <div className="pointer-events-none flex shrink-0 flex-col items-center justify-start gap-1 pt-2">
+                        <span className="rounded-full border border-white/10 bg-black/32 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-[0.18em] text-white/55">
+                            Fim
+                        </span>
+                        <div className="h-2.5 w-2.5 rotate-45 border" style={{ borderColor: `${skin.edge}55`, background: `${skin.baseTop}22` }} />
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <section id={id} className={sceneClass}>
             <div
                 className="legacy-scene-backdrop"
                 aria-hidden="true"
                 style={{
-                    backgroundImage: interactive ? `url(${backdropSkin.imageUrl})` : `url(${backdropSkin.imageUrl})`,
+                    backgroundImage: `url(${backdropSkin.imageUrl})`,
                     borderRadius: interactive ? '0px' : '34px',
                     backgroundPosition: interactive ? 'center center' : 'center top',
-                    backgroundSize: interactive ? '100% 100%' : 'cover',
+                    backgroundSize: 'cover',
+                    backgroundRepeat: 'no-repeat',
+                    transform: interactive ? `scale(${Math.max(backdropScale, 1.06)})` : `scale(${backdropScale})`,
+                    transformOrigin: interactive ? 'center center' : 'center top',
+                    filter: interactive ? 'blur(16px) saturate(0.92) brightness(0.62)' : 'none',
+                    opacity: interactive ? 0.56 : 1,
                 }}
             />
 
@@ -502,7 +612,34 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                 }}
             />
 
-            <div className={`relative z-10 flex min-h-full flex-col ${interactive ? 'px-4 pb-3 pt-5 sm:px-5 sm:pb-4 sm:pt-5' : ''}`}>
+            <div className={`relative z-10 ${interactive ? 'flex min-h-full items-center justify-center p-1.5' : ''}`}>
+                <div
+                    className={interactive ? 'relative overflow-hidden' : 'relative z-10 flex min-h-full flex-col'}
+                    style={interactive ? { width: `${stageWidth}px`, height: `${stageHeight}px` } : undefined}
+                >
+                <div
+                    className={interactive ? 'relative flex h-full w-full flex-col overflow-hidden px-4 pb-3 pt-5 text-white' : 'relative z-10 flex min-h-full flex-col text-white'}
+                    style={interactive ? { width: `${LEGACY_STAGE_WIDTH}px`, height: `${LEGACY_STAGE_HEIGHT}px`, transform: `scale(${stageScale})`, transformOrigin: 'top left' } : undefined}
+                >
+                {interactive && (
+                    <>
+                        <div
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0"
+                            style={interactiveBackdropStyle}
+                        />
+                        <div
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0"
+                            style={{
+                                background: [
+                                    'linear-gradient(180deg, rgba(0,0,0,0.08), rgba(0,0,0,0.02) 18%, rgba(0,0,0,0.18) 100%)',
+                                    'radial-gradient(circle at 50% 11%, rgba(255,255,255,0.08), transparent 18%)',
+                                ].join(', '),
+                            }}
+                        />
+                    </>
+                )}
                 {interactive && (
                     <>
                         <div className="pointer-events-none absolute inset-x-4 top-2 z-20 flex items-start justify-between gap-3 sm:top-3 sm:inset-x-5">
@@ -540,34 +677,36 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                                 </div>
                             </div>
 
-                            <div className="pointer-events-auto flex flex-col items-end gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setLayoutEditorOpen((current) => !current)}
-                                    className={`rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_10px_24px_rgba(0,0,0,0.22)] backdrop-blur-xl transition ${layoutEditorOpen ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)]' : 'border-white/10 bg-black/35 text-white/56 hover:text-white/82'}`}
-                                >
-                                    {layoutEditorOpen ? 'Fechar ajuste' : 'Ajuste'}
-                                </button>
-                                {layoutEditorOpen && (
-                                    <div className="w-[172px] rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,10,14,0.82),rgba(3,6,10,0.7))] px-3 py-3 shadow-[0_16px_30px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl">
-                                        <div className="space-y-2.5">
-                                            <LayoutSlider label="Placa X" value={layout.plaqueOffsetX} min={-120} max={120} step={1} onChange={(value) => updateLayout({ plaqueOffsetX: value })} />
-                                            <LayoutSlider label="Placa Y" value={layout.plaqueOffsetY} min={-120} max={120} step={1} onChange={(value) => updateLayout({ plaqueOffsetY: value })} />
-                                            <LayoutSlider label="Placa zoom" value={layout.plaqueZoom} min={0.65} max={1.45} step={0.01} onChange={(value) => updateLayout({ plaqueZoom: value })} />
-                                            <LayoutSlider label="Faixa X" value={layout.cyclesOffsetX} min={-140} max={140} step={1} onChange={(value) => updateLayout({ cyclesOffsetX: value })} />
-                                            <LayoutSlider label="Faixa Y" value={layout.cyclesOffsetY} min={-240} max={140} step={1} onChange={(value) => updateLayout({ cyclesOffsetY: value })} />
-                                            <LayoutSlider label="Faixa zoom" value={layout.cyclesZoom} min={0.75} max={1.8} step={0.01} onChange={(value) => updateLayout({ cyclesZoom: value })} />
+                            {showLayoutEditor && (
+                                <div className="pointer-events-auto flex flex-col items-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLayoutEditorOpen((current) => !current)}
+                                        className={`rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_10px_24px_rgba(0,0,0,0.22)] backdrop-blur-xl transition ${layoutEditorOpen ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)]' : 'border-white/10 bg-black/35 text-white/56 hover:text-white/82'}`}
+                                    >
+                                        {layoutEditorOpen ? 'Fechar ajuste' : 'Ajustar cena'}
+                                    </button>
+                                    {layoutEditorOpen && (
+                                        <div className="w-[228px] rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,10,14,0.82),rgba(3,6,10,0.7))] px-3.5 py-3.5 shadow-[0_16px_30px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl">
+                                            <div className="space-y-2.5">
+                                                <LayoutSlider label="Zoom do fundo" value={layout.backdropZoom} min={1} max={1.22} step={0.01} onChange={(value) => updateLayout({ backdropZoom: value })} />
+                                                <LayoutSlider label="Zoom da placa" value={layout.plaqueZoom} min={0.8} max={1.55} step={0.01} onChange={(value) => updateLayout({ plaqueZoom: value })} />
+                                                <LayoutSlider label="Y da placa" value={layout.plaqueOffsetY} min={-120} max={120} step={1} onChange={(value) => updateLayout({ plaqueOffsetY: value })} />
+                                                <LayoutSlider label="Zoom do ciclo" value={layout.cyclesZoom} min={0.75} max={1.8} step={0.01} onChange={(value) => updateLayout({ cyclesZoom: value })} />
+                                                <LayoutSlider label="Y do ciclo" value={layout.cyclesOffsetY} min={-360} max={140} step={1} onChange={(value) => updateLayout({ cyclesOffsetY: value })} />
+                                                <LayoutSlider label="Y do perfil" value={layout.playerOffsetY} min={-140} max={140} step={1} onChange={(value) => updateLayout({ playerOffsetY: value })} />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleCopyLayoutJson}
+                                                className="mt-3 w-full rounded-full border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)] transition hover:bg-[var(--skin-accent-color)]/16"
+                                            >
+                                                {layoutCopyState === 'copied' ? 'JSON copiado' : layoutCopyState === 'prompt' ? 'JSON aberto' : 'Gravar JSON'}
+                                            </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleCopyLayoutJson}
-                                            className="mt-3 w-full rounded-full border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--skin-accent-color)] transition hover:bg-[var(--skin-accent-color)]/16"
-                                        >
-                                            {layoutCopyState === 'copied' ? 'JSON copiado' : layoutCopyState === 'prompt' ? 'JSON aberto' : 'Gravar JSON'}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
@@ -575,9 +714,9 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                     className={`mx-auto transition-all duration-700 ${timelineVisible ? 'opacity-100' : 'pointer-events-none opacity-40'} ${interactive ? 'cursor-pointer' : ''}`}
                     onClick={interactive ? onActivatePlaque : undefined}
                     style={{
-                        marginTop: interactive ? '6vh' : undefined,
+                        marginTop: interactive ? '74px' : undefined,
                         width: interactive ? `${scenePlaqueWidth}px` : undefined,
-                        maxWidth: interactive ? 'calc(100vw - 2.5rem)' : undefined,
+                        maxWidth: interactive ? `${LEGACY_STAGE_WIDTH - 20}px` : undefined,
                         transform: `translate(${layout.plaqueOffsetX}px, ${(timelineVisible ? 0 : -16) + layout.plaqueOffsetY}px) scale(${(enteringProjection ? 0.985 : 1) * scenePlaqueScale})`,
                         transformOrigin: 'top center',
                         boxShadow: eraTransitionPulse
@@ -593,7 +732,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                                 : undefined,
                         }}
                     >
-                        <LegacyGrandPlaque eras={orderedEras} sovereignName={sovereignName} compact />
+                        <LegacyGrandPlaque eras={orderedEras} sovereignName={sovereignName} compact hideSovereignName={interactive} portrait={interactive} />
                     </div>
                 </div>
 
@@ -607,11 +746,11 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                         >
                             <div
                                 ref={timelineContentRef}
-                                className="relative inline-flex min-w-full items-start gap-1 pt-2"
+                                className={`relative inline-flex min-w-full items-start gap-1 ${interactive ? 'pt-6' : 'pt-2'}`}
                                 style={interactive ? { paddingLeft: `${timelineEdgePadding.left}px`, paddingRight: `${timelineEdgePadding.right}px` } : undefined}
                             >
                                 {interactive ? (
-                                    cycleEntries.map((entry) => renderCycleNode(entry.cycle, getEraRibbonSkin(entry.era.skinId), true))
+                                    orderedEras.map((era, eraIndex) => renderInteractiveEraGroup(era, eraIndex))
                                 ) : (
                                     orderedEras.map((era, eraIndex) => {
                                         const skin = getEraRibbonSkin(era.skinId);
@@ -679,6 +818,8 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                             </div>
                         </div>
                     </div>
+                </div>
+                </div>
                 </div>
             </div>
         </section>

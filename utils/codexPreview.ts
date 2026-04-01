@@ -67,6 +67,20 @@ const normalizeActionType = (actionType?: string): Action['actionType'] => {
   return RECURRING_ACTION_TYPE;
 };
 
+export const getCodexLevelDisplayTitle = (rawTitle?: string, levelNumber?: number): string => {
+  const fallback = typeof levelNumber === 'number' ? `Arena ${levelNumber}` : 'Arena';
+  const trimmed = typeof rawTitle === 'string' ? rawTitle.trim() : '';
+
+  if (!trimmed) return fallback;
+
+  const cleaned = trimmed
+    .replace(/^\s*fase\s*\d+\s*[:\-–—]?\s*/i, '')
+    .replace(/^\s*\d+\s*[:\-–—]\s*/i, '')
+    .trim();
+
+  return cleaned || fallback;
+};
+
 export const buildCodexCampaignPreview = (
   codexId: string,
   template: CodexTemplateLike,
@@ -87,11 +101,12 @@ export const buildCodexCampaignPreview = (
     const arenaId = `codex-preview-arena-${codexId}-${levelNumber}`;
     const arenaActions = Array.isArray(level?.actions) ? level.actions : [];
     const previousArenaId = arenaIds[arenaIds.length - 1];
+    const levelTitle = getCodexLevelDisplayTitle(level?.title, levelNumber);
 
     const arena: Arena = {
       id: arenaId,
       assetId: primaryAssetId,
-      name: level?.title || `Fase ${levelNumber}`,
+      name: levelTitle,
       description: level?.description || '',
       icon: suggestEmojiForLabel(level?.title, 'arena', {
         fallback: arenaActions[0]?.icon || '\u{1F3DB}\uFE0F',
@@ -174,7 +189,7 @@ export const buildCodexTemplateFromDraft = (draft: {
     }),
     levels: arenas.map((arena, index) => ({
       level: index + 1,
-      title: arena.name || `Fase ${index + 1}`,
+      title: getCodexLevelDisplayTitle(arena.name, index + 1),
       description: arena.description || '',
       actions: actions
         .filter((action) => action.arenaId === arena.id)

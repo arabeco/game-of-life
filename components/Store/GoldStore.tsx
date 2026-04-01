@@ -58,6 +58,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
         'Ate 25 arenas ativas',
         'Dossies ampliados',
         'Todos os modos do Oraculo',
+        'Cena do legado com 50% off',
         'Bonus de legado +10% XP',
         'Deep Focus premium',
         'Renovacao com recompensa',

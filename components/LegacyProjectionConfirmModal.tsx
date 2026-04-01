@@ -45,7 +45,7 @@ export const LegacyProjectionConfirmModal: React.FC<LegacyProjectionConfirmModal
 
                         {typeof sceneGoldCost === 'number' && sceneGoldCost > 0 && (
                             <div className="mt-4 inline-flex items-center rounded-full border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/12 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
-                                Custo . {sceneGoldCost} ouro
+                                {sceneGoldCost <= 25 ? `Custo premium ${sceneGoldCost} ouro` : `Custo ${sceneGoldCost} ouro`}
                             </div>
                         )}
 

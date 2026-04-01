@@ -24,6 +24,7 @@ import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks } from '../utils/fairScoreUtils.js';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
 import { buildChestRewardPayload } from '../utils/chestRewardPresentation';
+import { getLegacyProjectionScenePrice } from '../utils/premiumAccess';
 const CycleComparator = React.lazy(() => import('../components/CycleComparator').then(m => ({ default: m.CycleComparator })));
 const ReportGenerationModal = React.lazy(() => import('../components/ReportGenerationModal').then(m => ({ default: m.ReportGenerationModal })));
 const LegacyExportDocument = React.lazy(() => import('../components/LegacyExportDocument').then(m => ({ default: m.LegacyExportDocument })));
@@ -64,7 +65,7 @@ const LEGACY_EXPORT_CAPTURE_ID = 'legacy-complete-capture';
 const ERA_METADATA_STORAGE_PREFIX = 'glyph-era-metadata-v1';
 const LEGACY_PLAQUE_STORAGE_PREFIX = 'glyph-legacy-plaque-v1';
 const LEGACY_HISTORY_PREVIEW_BACKDROP_URL = '/legacy-skins/10.jpg';
-const LEGACY_PROJECTION_SCENE_GOLD_COST = getGoldMechanicPrice('legacy_projection_scene', 50);
+const LEGACY_PROJECTION_SCENE_BASE_GOLD_COST = getGoldMechanicPrice('legacy_projection_scene', 50);
 const BOOTSTRAP_ERA_KEY = 'bootstrap-era-1';
 const FREE_ERA_RIBBON_SKIN_ID = ERA_RIBBON_SKINS.find((skin) => !skin.isPremium)?.id || ERA_RIBBON_SKINS[0].id;
 const PREMIUM_ERA_RIBBON_SKIN_IDS = ERA_RIBBON_SKINS.filter((skin) => skin.isPremium).map((skin) => skin.id);
@@ -1426,6 +1427,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const historyStartDate = eraSummaries[eraSummaries.length - 1]?.startDate;
     const historyEndDate = eraSummaries[0]?.endDate;
     const legacyPlaqueUnlocked = useMemo(() => !!userProfile.isPremium || eraSummaries.length >= 3, [eraSummaries.length, userProfile.isPremium]);
+    const legacyProjectionSceneGoldCost = useMemo(
+        () => getLegacyProjectionScenePrice(userProfile, LEGACY_PROJECTION_SCENE_BASE_GOLD_COST),
+        [userProfile.isPremium, userProfile.premiumExpiresAt, userProfile.role],
+    );
 
     const openInlineEraEditor = (payload: InlineEraEditorState, initialName: string, initialSkinId: string) => {
         setInlineEraEditor(payload);
@@ -1653,13 +1658,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const handleUnlockLegacyProjectionScene = useCallback(async () => {
         const currentGold = Number(userProfile.wallet?.gold || 0);
-        if (currentGold < LEGACY_PROJECTION_SCENE_GOLD_COST) {
-            const missingGold = Math.max(0, LEGACY_PROJECTION_SCENE_GOLD_COST - currentGold);
+        if (currentGold < legacyProjectionSceneGoldCost) {
+            const missingGold = Math.max(0, legacyProjectionSceneGoldCost - currentGold);
             showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para gerar a cena do legado.`, 'warning');
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('gold-shortage', {
                     detail: {
-                        requiredGold: LEGACY_PROJECTION_SCENE_GOLD_COST,
+                        requiredGold: legacyProjectionSceneGoldCost,
                         currentGold,
                         label: 'gerar a cena do legado',
                         storeTab: 'store',
@@ -1675,12 +1680,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             console.error('Erro ao cobrar a cena do legado:', error);
             const rawMessage = String(error.message || error.details || error.hint || '');
             if (rawMessage.toLowerCase().includes('saldo insuficiente')) {
-                const missingGold = Math.max(0, LEGACY_PROJECTION_SCENE_GOLD_COST - currentGold);
+                const missingGold = Math.max(0, legacyProjectionSceneGoldCost - currentGold);
                 showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para gerar a cena do legado.`, 'warning');
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('gold-shortage', {
                         detail: {
-                            requiredGold: LEGACY_PROJECTION_SCENE_GOLD_COST,
+                            requiredGold: legacyProjectionSceneGoldCost,
                             currentGold,
                             label: 'gerar a cena do legado',
                             storeTab: 'store',
@@ -1694,7 +1699,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             return false;
         }
 
-        const nextGold = Number((data as any)?.new_gold ?? Math.max(0, currentGold - LEGACY_PROJECTION_SCENE_GOLD_COST));
+        const debitedGold = Number((data as any)?.cost_gold ?? legacyProjectionSceneGoldCost);
+        const nextGold = Number((data as any)?.new_gold ?? Math.max(0, currentGold - debitedGold));
         updateUserProfile({
             wallet: {
                 ...(userProfile.wallet || { fragments: 0 }),
@@ -1702,9 +1708,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 fragments: Number(userProfile.wallet?.fragments || 0),
             },
         });
-        showToast(`Cena do legado liberada. ${LEGACY_PROJECTION_SCENE_GOLD_COST} ouro debitados.`, 'success');
+        showToast(`Cena do legado liberada. ${debitedGold} ouro debitados.`, 'success');
         return true;
-    }, [showToast, updateUserProfile, userProfile.wallet]);
+    }, [legacyProjectionSceneGoldCost, showToast, updateUserProfile, userProfile.wallet]);
 
     const renderLegacySummary = () => {
         if (sortedReports.length === 0) return null;
@@ -2495,7 +2501,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     onToast={showToast}
                     onClose={() => setShowLegacyProjectionModal(false)}
                     isPremium={!!userProfile.isPremium}
-                    sceneGoldCost={LEGACY_PROJECTION_SCENE_GOLD_COST}
+                    sceneGoldCost={legacyProjectionSceneGoldCost}
                     onPurchaseProjection={handleUnlockLegacyProjectionScene}
                     onOpenCycle={handleOpenLegacyCycle}
                     onOpenEra={(era) => {

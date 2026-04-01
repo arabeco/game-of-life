@@ -48,6 +48,16 @@ export const getDiscountedPremiumPrice = (basePrice: number, discountPercent: nu
   return Math.max(0, Math.round(basePrice * (1 - discountPercent)));
 };
 
+export const LEGACY_PROJECTION_PREMIUM_DISCOUNT = 0.5;
+
+export const getLegacyProjectionScenePrice = (
+  profile?: PremiumLikeProfile | null,
+  basePrice: number = 50,
+): number => {
+  if (!hasPremiumAccess(profile)) return basePrice;
+  return getDiscountedPremiumPrice(basePrice, LEGACY_PROJECTION_PREMIUM_DISCOUNT);
+};
+
 export const getNextPremiumExpiryAt = (currentExpiresAt?: string | null, now: number = Date.now()): string => {
   const currentExpiry = currentExpiresAt ? new Date(currentExpiresAt).getTime() : NaN;
   const baseTime = Number.isFinite(currentExpiry) && currentExpiry > now ? currentExpiry : now;

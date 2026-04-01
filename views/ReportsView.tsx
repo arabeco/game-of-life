@@ -19,6 +19,7 @@ import { Portal } from '../components/Portal';
 import { RewardPackModal } from '../components/RewardPackModal';
 
 import { NOBILITY_RANKS } from '../constants/nobility';
+import { getGoldMechanicPrice } from '../constants/goldCatalog';
 import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks } from '../utils/fairScoreUtils.js';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
@@ -62,6 +63,8 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 const LEGACY_EXPORT_CAPTURE_ID = 'legacy-complete-capture';
 const ERA_METADATA_STORAGE_PREFIX = 'glyph-era-metadata-v1';
 const LEGACY_PLAQUE_STORAGE_PREFIX = 'glyph-legacy-plaque-v1';
+const LEGACY_HISTORY_PREVIEW_BACKDROP_URL = '/legacy-skins/10.jpg';
+const LEGACY_PROJECTION_SCENE_GOLD_COST = getGoldMechanicPrice('legacy_projection_scene', 50);
 const BOOTSTRAP_ERA_KEY = 'bootstrap-era-1';
 const FREE_ERA_RIBBON_SKIN_ID = ERA_RIBBON_SKINS.find((skin) => !skin.isPremium)?.id || ERA_RIBBON_SKINS[0].id;
 const PREMIUM_ERA_RIBBON_SKIN_IDS = ERA_RIBBON_SKINS.filter((skin) => skin.isPremium).map((skin) => skin.id);
@@ -498,7 +501,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const {
         reports, activeCycle, startCycle, updateCycle, endCycle, assets, actions,
         applyExp, addChest, addFeedEvent, seasons, userProfile,
-        oraclePreferences, showToast, grantInventoryItem, grantUserUnlock,
+        oraclePreferences, showToast, grantInventoryItem, grantUserUnlock, updateUserProfile,
         setAchievementUnlocked, deleteCycle, fetchNotifications, openChest // Added deleteCycle here
     } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
@@ -1648,28 +1651,103 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         if (report) handleViewReport(report);
     };
 
+    const handleUnlockLegacyProjectionScene = useCallback(async () => {
+        const currentGold = Number(userProfile.wallet?.gold || 0);
+        if (currentGold < LEGACY_PROJECTION_SCENE_GOLD_COST) {
+            const missingGold = Math.max(0, LEGACY_PROJECTION_SCENE_GOLD_COST - currentGold);
+            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para gerar a cena do legado.`, 'warning');
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('gold-shortage', {
+                    detail: {
+                        requiredGold: LEGACY_PROJECTION_SCENE_GOLD_COST,
+                        currentGold,
+                        label: 'gerar a cena do legado',
+                        storeTab: 'store',
+                        section: 'packs',
+                    },
+                }));
+            }
+            return false;
+        }
+
+        const { data, error } = await supabase.rpc('buy_legacy_projection_scene');
+        if (error) {
+            console.error('Erro ao cobrar a cena do legado:', error);
+            const rawMessage = String(error.message || error.details || error.hint || '');
+            if (rawMessage.toLowerCase().includes('saldo insuficiente')) {
+                const missingGold = Math.max(0, LEGACY_PROJECTION_SCENE_GOLD_COST - currentGold);
+                showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para gerar a cena do legado.`, 'warning');
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('gold-shortage', {
+                        detail: {
+                            requiredGold: LEGACY_PROJECTION_SCENE_GOLD_COST,
+                            currentGold,
+                            label: 'gerar a cena do legado',
+                            storeTab: 'store',
+                            section: 'packs',
+                        },
+                    }));
+                }
+                return false;
+            }
+            showToast('Nao foi possivel debitar o ouro da cena do legado.', 'error');
+            return false;
+        }
+
+        const nextGold = Number((data as any)?.new_gold ?? Math.max(0, currentGold - LEGACY_PROJECTION_SCENE_GOLD_COST));
+        updateUserProfile({
+            wallet: {
+                ...(userProfile.wallet || { fragments: 0 }),
+                gold: nextGold,
+                fragments: Number(userProfile.wallet?.fragments || 0),
+            },
+        });
+        showToast(`Cena do legado liberada. ${LEGACY_PROJECTION_SCENE_GOLD_COST} ouro debitados.`, 'success');
+        return true;
+    }, [showToast, updateUserProfile, userProfile.wallet]);
+
     const renderLegacySummary = () => {
         if (sortedReports.length === 0) return null;
         return (
-            <GlassCard variant="neutral" className="mb-4 px-4 py-3">
-                <div className="flex flex-col gap-3">
-                    <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">
-                        <span className="text-[var(--skin-accent-color)]">Legado</span>
-                        <span>{sortedReports.length} ciclos</span>
-                        <span className="text-white/15">/</span>
-                        <span>{effectiveEraCount} eras</span>
-                        <span className="text-white/15">/</span>
-                        <span>{Math.round(totalHistoricalHours)}h</span>
-                        <span className="text-white/15">/</span>
-                        <span>score {Math.round(historicalAverageScore)}</span>
-                    </div>
-                    <div className="flex justify-center">
-                        <button
-                            onClick={handleStartLegacyExport}
-                            className="w-full max-w-[260px] rounded-xl luxe-skin-button px-5 py-3.5 text-xs"
-                        >
-                            VER LEGADO
-                        </button>
+            <GlassCard variant="neutral" className="mb-4 overflow-hidden p-0">
+                <div className="relative">
+                    <div
+                        className="pointer-events-none absolute inset-0 opacity-90"
+                        style={{
+                            backgroundImage: `linear-gradient(180deg, rgba(4,4,6,0.18), rgba(4,4,6,0.82)), url(${LEGACY_HISTORY_PREVIEW_BACKDROP_URL})`,
+                            backgroundPosition: 'center top',
+                            backgroundSize: 'cover',
+                        }}
+                    />
+                    <div className="relative z-10 flex flex-col gap-3 px-4 py-4">
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-300">
+                            <span className="text-[var(--skin-accent-color)]">Legado</span>
+                            <span>{sortedReports.length} ciclos</span>
+                            <span className="text-white/15">/</span>
+                            <span>{effectiveEraCount} eras</span>
+                            <span className="text-white/15">/</span>
+                            <span>{Math.round(totalHistoricalHours)}h</span>
+                            <span className="text-white/15">/</span>
+                            <span>score {Math.round(historicalAverageScore)}</span>
+                        </div>
+                        <div className="rounded-[24px] border border-white/10 bg-black/38 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
+                            <div className="mx-auto max-w-[248px]">
+                                <LegacyPlaqueArtifact
+                                    eras={eraSummaries}
+                                    sovereignName={sovereignName}
+                                    plaqueUnlocked={legacyPlaqueUnlocked}
+                                    compact
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-center">
+                            <button
+                                onClick={handleStartLegacyExport}
+                                className="w-full max-w-[260px] rounded-xl luxe-skin-button px-5 py-3.5 text-xs"
+                            >
+                                VER LEGADO
+                            </button>
+                        </div>
                     </div>
                 </div>
             </GlassCard>
@@ -2417,6 +2495,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     onToast={showToast}
                     onClose={() => setShowLegacyProjectionModal(false)}
                     isPremium={!!userProfile.isPremium}
+                    sceneGoldCost={LEGACY_PROJECTION_SCENE_GOLD_COST}
+                    onPurchaseProjection={handleUnlockLegacyProjectionScene}
                     onOpenCycle={handleOpenLegacyCycle}
                     onOpenEra={(era) => {
                         setShowLegacyProjectionModal(false);

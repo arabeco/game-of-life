@@ -369,6 +369,94 @@
   color: rgba(255, 244, 222, 0.82);
 }
 
+.campaign-quiz-see-also {
+  margin-top: 22px;
+  text-align: left;
+}
+
+.campaign-quiz-see-also-label {
+  margin-bottom: 10px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 244, 222, 0.52);
+}
+
+.campaign-quiz-see-also-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(201, 168, 76, 0.16), transparent 40%),
+    rgba(255, 255, 255, 0.035);
+  padding: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.campaign-quiz-see-also-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.campaign-quiz-see-also-title {
+  font-size: 1.02rem;
+  font-weight: 900;
+  line-height: 1.25;
+  color: rgba(255, 248, 232, 0.95);
+}
+
+.campaign-quiz-see-also-price {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(201, 168, 76, 0.88);
+}
+
+.campaign-quiz-see-also-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.campaign-quiz-see-also-copy {
+  margin-top: 12px;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: rgba(255, 244, 222, 0.7);
+}
+
+.campaign-quiz-secondary-cta {
+  margin-top: 14px;
+  width: 100%;
+  border: 1px solid rgba(201, 168, 76, 0.18);
+  border-radius: 999px;
+  background: rgba(201, 168, 76, 0.08);
+  padding: 14px 18px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 244, 222, 0.9);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, opacity 180ms ease;
+}
+
+.campaign-quiz-secondary-cta:hover {
+  transform: translateY(-1px);
+  border-color: rgba(201, 168, 76, 0.3);
+  background: rgba(201, 168, 76, 0.12);
+}
+
+.campaign-quiz-secondary-cta:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
 .campaign-quiz-result-actions {
   display: flex;
   flex-direction: column;
@@ -437,6 +525,14 @@
     width: 44px;
     height: 44px;
     font-size: 1.08rem;
+  }
+
+  .campaign-quiz-see-also-header {
+    flex-direction: column;
+  }
+
+  .campaign-quiz-see-also-pills {
+    justify-content: flex-start;
   }
 }
 

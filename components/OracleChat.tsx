@@ -340,40 +340,42 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Load initial messages from history without overriding the chosen preference mode
   useEffect(() => {
-    const history: Message[] = (oracleMessages || [])
+    const latestFeedMessage = (oracleMessages || [])
       .filter((message) => message.deliveryType === 'feed')
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      .map((message) => ({
-        role: 'assistant',
-        content: message.content,
-        timestamp: new Date(message.createdAt),
-        mode: message.mode,
-        feedId: message.id,
-        feedCategory: message.category,
-        feedPresentation: resolveFeedPresentation(message.category, message.contextSnapshot),
-        feedSummary: message.contextSnapshot?.summary || message.contextSnapshot?.categoryLabel || undefined,
-        feedTrigger: message.contextSnapshot?.triggerType,
-      }));
+      .at(-1);
 
-    if (history.length === 0) {
+    if (!latestFeedMessage) {
       if (isInitialLoadRef.current) {
         isInitialLoadRef.current = false;
       }
       return;
     }
 
+    const latestFeedCard: Message = {
+      role: 'assistant',
+      content: latestFeedMessage.content,
+      timestamp: new Date(latestFeedMessage.createdAt),
+      mode: latestFeedMessage.mode,
+      feedId: latestFeedMessage.id,
+      feedCategory: latestFeedMessage.category,
+      feedPresentation: resolveFeedPresentation(latestFeedMessage.category, latestFeedMessage.contextSnapshot),
+      feedSummary: latestFeedMessage.contextSnapshot?.summary || latestFeedMessage.contextSnapshot?.categoryLabel || undefined,
+      feedTrigger: latestFeedMessage.contextSnapshot?.triggerType,
+    };
+
     setMessages((previous) => {
       if (isInitialLoadRef.current) {
-        return history;
+        // Keep the chat clean: open with only the freshest Oracle pulse instead of stacking old feed cards.
+        return [latestFeedCard];
       }
 
-      const knownFeedIds = new Set(previous.map((message) => message.feedId).filter(Boolean));
-      const incomingMessages = history.filter((message) => message.feedId && !knownFeedIds.has(message.feedId));
-      if (incomingMessages.length === 0) {
+      if (previous.some((message) => message.feedId === latestFeedCard.feedId)) {
         return previous;
       }
 
-      return [...previous, ...incomingMessages];
+      const preservedMessages = previous.filter((message) => !(message.feedId && message.feedTrigger !== 'manual'));
+      return [...preservedMessages, latestFeedCard];
     });
     isInitialLoadRef.current = false;
   }, [oracleMessages]);
@@ -839,19 +841,17 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   const manualGenerateDisabled = isGeneratingCard || isLoading;
   const selectedThemeCount = oraclePreferences?.enabledCategories?.length || 0;
-  const autoQuotaLabel = `${oracleFeedStatus.autoSentToday}/${oracleFeedStatus.autoDailyTarget} temas do dia`;
-  const manualQuotaLabel = `${oracleFeedStatus.manualSentToday}/${oracleFeedStatus.manualDailyTarget} manuais`;
-  const autoScheduleLabel = oracleFeedStatus.autoRemainingToday <= 0
-    ? 'todos os temas de hoje ja passaram'
-    : oracleFeedStatus.nextAutoInMs > 0
-      ? `proximo pulso em ${formatCooldownLabel(oracleFeedStatus.nextAutoInMs)}`
-      : 'proximo pulso pronto';
-
+  const autoQuotaLabel = `${oracleFeedStatus.autoSentToday}/${oracleFeedStatus.autoDailyTarget}`;
+  const manualQuotaLabel = `${oracleFeedStatus.manualSentToday}/${oracleFeedStatus.manualDailyTarget}`;
   const manualGenerateLabel = !isPremiumUser
     ? 'Premium'
-    : oracleFeedStatus.manualRemainingToday <= 0
-      ? 'Limite hoje'
-      : (isGeneratingCard ? 'Gerando...' : 'Pedir card');
+    : isGeneratingCard
+      ? 'Gerando...'
+      : 'Card do Oraculo';
+  const selectedThemeLabel = selectedThemeCount === 1 ? '1 tema marcado' : `${selectedThemeCount} temas marcados`;
+  const oracleInputHint = selectedThemeCount > 0
+    ? `Auto: 1 por tema por dia (${autoQuotaLabel}). Manual Premium: ate 5 por dia, sem cooldown, sorteando seus ${selectedThemeLabel}.`
+    : `Auto: 1 por tema por dia. Manual Premium: ate 5 por dia, sem cooldown.`;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1037,66 +1037,51 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
         {/* Input */}
         <div className="p-4 border-t border-white/10 bg-black/40 flex-shrink-0">
-          <div className="mb-3 rounded-[20px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">Cadencia do Oraculo</div>
-                <div className="mt-1 text-[12px] font-semibold text-white/88">
-                  Automatico: 1 pulso por tema marcado por dia.
-                </div>
-                <div className="mt-1 text-[10px] leading-relaxed text-white/52">
-                  Hoje: {autoQuotaLabel}. Premium pode puxar ate 5 cards manuais por dia sem cooldown, com reset no dia operacional. {selectedThemeCount > 0 ? `${selectedThemeCount} tema(s) marcados.` : 'Nenhum tema marcado ainda.'}
-                </div>
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="relative shrink-0">
               <button
                 onClick={handleGenerateCard}
                 disabled={manualGenerateDisabled}
-                className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.22em] transition-all ${
+                className={`group relative flex h-12 w-12 items-center justify-center rounded-full border transition-all ${
                   manualGenerateDisabled
                     ? 'cursor-not-allowed border-white/10 bg-white/5 text-gray-500'
-                    : 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/18'
+                    : 'border-[var(--skin-accent-color)]/30 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.18),rgba(255,255,255,0.03)_45%,rgba(6,9,14,0.94)_100%)] text-[var(--skin-accent-color)] shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_10px_28px_rgba(0,0,0,0.22),0_0_28px_rgba(255,255,255,0.04)] hover:border-[var(--skin-accent-color)]/45 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_12px_30px_rgba(0,0,0,0.24),0_0_34px_rgba(255,255,255,0.06)]'
                 }`}
+                title={oracleInputHint}
+                aria-label={`${manualGenerateLabel}. ${manualQuotaLabel} hoje.`}
               >
-                {!isPremiumUser ? <CrownIcon className="h-3.5 w-3.5" /> : <SparklesIcon className="h-3.5 w-3.5" />}
-                <span>{manualGenerateLabel}</span>
+                {!isPremiumUser ? <CrownIcon className="h-4.5 w-4.5" /> : <GameLogoIcon className="h-6 w-6 transition-transform group-hover:scale-105" />}
               </button>
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2">
-                <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/38">Automatico</div>
-                <div className="mt-1 text-[11px] font-black text-white/86">{autoQuotaLabel}</div>
-                <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-white/42">{autoScheduleLabel}</div>
-              </div>
-              <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2">
-                <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/38">Manual</div>
-                <div className="mt-1 text-[11px] font-black text-white/86">{manualQuotaLabel}</div>
-                <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-white/42">{isPremiumUser ? 'premium puxa agora' : 'premium desbloqueia'}</div>
-              </div>
-              <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2">
-                <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/38">Push</div>
-                <div className="mt-1 text-[11px] font-black text-white/86">{oraclePreferences?.pushEnabled ? 'Ativo' : 'Dentro do app'}</div>
-                <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-white/42">1 por tema marcado</div>
+              <div className={`pointer-events-none absolute -right-1 -top-1 rounded-full border px-1.5 py-0.5 text-[8px] font-black tracking-[0.12em] ${
+                manualGenerateDisabled
+                  ? 'border-white/10 bg-black text-gray-500'
+                  : 'border-[var(--skin-accent-color)]/25 bg-black text-[var(--skin-accent-color)]'
+              }`}>
+                {manualQuotaLabel}
               </div>
             </div>
-          </div>
-          <div className="relative flex items-center">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Consulte o Oráculo..."
-              disabled={isLoading}
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[var(--skin-accent-color)]/50 focus:ring-1 focus:ring-[var(--skin-accent-color)]/20 transition-all"
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isLoading}
-              className="absolute right-2 p-2 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10 rounded-lg transition-colors text-[var(--skin-accent-color)]"
-            >
-              <SendIcon className="w-4 h-4" />
-            </button>
+            <div className="relative min-w-0 flex-1">
+              <div className="pointer-events-none absolute inset-0 rounded-[20px] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0))]" />
+              <div className="relative flex items-center rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(13,17,24,0.96),rgba(6,9,14,0.94))] pl-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_26px_rgba(0,0,0,0.18)]">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Consulte o Oráculo..."
+                  disabled={isLoading}
+                  className="h-12 w-full bg-transparent pl-3 pr-2 text-sm text-white placeholder:text-white/34 focus:outline-none"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!input.trim() || isLoading}
+                  className="mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] text-[var(--skin-accent-color)] shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] disabled:opacity-30 disabled:hover:border-[var(--skin-accent-color)]/22 disabled:hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))]"
+                >
+                  <SendIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </>

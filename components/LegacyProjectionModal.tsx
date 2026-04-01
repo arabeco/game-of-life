@@ -7,6 +7,7 @@ import { LegacyGrandPlaque } from './LegacyGrandPlaque';
 import { LegacyProjectionConfirmModal } from './LegacyProjectionConfirmModal';
 import { LegacyExportKit, type LegacyExportKitHandle } from './LegacyExportKit';
 import type { LegacyEraSummary } from './LegacyExportDocument';
+import { getGoldMechanicPrice } from '../constants/goldCatalog';
 import { DEFAULT_LEGACY_BACKDROP_SKIN_ID, getLegacyBackdropSkin, type LegacyBackdropSkinId } from '../constants/legacyBackdropSkins';
 import { useLegacyLayoutConfig } from '../hooks/useLegacyLayoutConfig';
 import {
@@ -25,10 +26,18 @@ interface LegacyProjectionModalProps {
     onOpenCycle?: (cycleId: string) => void;
     onOpenEra?: (era: LegacyEraSummary) => void;
     onOpenPlaque?: () => void;
+    sceneGoldCost?: number | null;
+    onPurchaseProjection?: () => Promise<boolean>;
+    sceneButtonLabel?: string;
+    confirmKickerLabel?: string;
+    confirmTitle?: string;
+    confirmDescription?: string;
+    confirmButtonLabel?: string;
 }
 
 const LEGACY_PROJECTION_CAPTURE_ID = 'legacy-projection-capture';
 const LEGACY_PREVIEW_BACKDROP_URL = '/legacy-skins/10.jpg';
+const LEGACY_SCENE_GOLD_COST = getGoldMechanicPrice('legacy_projection_scene', 50);
 
 export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     eras,
@@ -40,12 +49,20 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     onOpenCycle,
     onOpenEra,
     onOpenPlaque,
+    sceneGoldCost = LEGACY_SCENE_GOLD_COST,
+    onPurchaseProjection,
+    sceneButtonLabel = 'Gerar a cena',
+    confirmKickerLabel = 'Legado premium',
+    confirmTitle = 'Gerar a cena do legado?',
+    confirmDescription = 'Escolha a pele de fundo da projeção. A placa e a timeline serão abertas sobre esse ambiente.',
+    confirmButtonLabel = 'Gerar a cena',
 }) => {
     const [projectionActive, setProjectionActive] = useState(false);
     const [showProjectionConfirm, setShowProjectionConfirm] = useState(false);
     const [selectedBackdropSkinId, setSelectedBackdropSkinId] = useState<LegacyBackdropSkinId>(DEFAULT_LEGACY_BACKDROP_SKIN_ID);
     const [isProjectionTransitioning, setIsProjectionTransitioning] = useState(false);
     const [sequenceComplete, setSequenceComplete] = useState(false);
+    const [isPurchasingProjection, setIsPurchasingProjection] = useState(false);
     const exportKitRef = useRef<LegacyExportKitHandle | null>(null);
 
     const summary = useMemo(() => buildLegacyPlaqueSummary(eras), [eras]);
@@ -75,9 +92,19 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
         }, 260);
     };
 
-    const handleConfirmProjection = () => {
-        setShowProjectionConfirm(false);
-        startProjection();
+    const handleConfirmProjection = async () => {
+        if (isPurchasingProjection) return;
+        setIsPurchasingProjection(true);
+        try {
+            if (onPurchaseProjection) {
+                const unlocked = await onPurchaseProjection();
+                if (!unlocked) return;
+            }
+            setShowProjectionConfirm(false);
+            startProjection();
+        } finally {
+            setIsPurchasingProjection(false);
+        }
     };
 
     const handleProjectionSequenceComplete = () => {
@@ -114,9 +141,22 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                     type="button"
                     onClick={handlePromptProjection}
                     disabled={!isPremium || summary.totalCycles === 0}
-                    className={`min-w-[220px] rounded-full px-6 py-3 text-xs font-black uppercase tracking-[0.24em] ${isPremium && summary.totalCycles > 0 ? 'luxe-skin-button' : 'cursor-not-allowed border border-white/10 bg-white/5 text-gray-500'}`}
+                    className={`min-w-[248px] rounded-full px-6 py-3 text-xs font-black uppercase tracking-[0.24em] ${isPremium && summary.totalCycles > 0 ? 'luxe-skin-button' : 'cursor-not-allowed border border-white/10 bg-white/5 text-gray-500'}`}
                 >
-                    {!isPremium ? 'Legado premium' : summary.totalCycles === 0 ? 'Feche 1 ciclo' : 'Gerar legado'}
+                    {!isPremium ? (
+                        'Legado premium'
+                    ) : summary.totalCycles === 0 ? (
+                        'Feche 1 ciclo'
+                    ) : (
+                        <span className="flex flex-col items-center gap-1 leading-none">
+                            <span>{sceneButtonLabel}</span>
+                            {typeof sceneGoldCost === 'number' && sceneGoldCost > 0 && (
+                                <span className="rounded-full border border-black/15 bg-black/20 px-2.5 py-1 text-[9px] tracking-[0.18em] text-black/80">
+                                    {sceneGoldCost} ouro
+                                </span>
+                            )}
+                        </span>
+                    )}
                 </button>
             </div>
         </div>
@@ -217,8 +257,14 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                 {showProjectionConfirm && (
                     <LegacyProjectionConfirmModal
                         selectedSkinId={selectedBackdropSkinId}
+                        sceneGoldCost={sceneGoldCost}
+                        isProcessing={isPurchasingProjection}
+                        kickerLabel={confirmKickerLabel}
+                        title={confirmTitle}
+                        description={confirmDescription}
+                        confirmLabel={confirmButtonLabel}
                         onSelectSkin={setSelectedBackdropSkinId}
-                        onConfirm={handleConfirmProjection}
+                        onConfirm={() => { void handleConfirmProjection(); }}
                         onCancel={() => setShowProjectionConfirm(false)}
                     />
                 )}

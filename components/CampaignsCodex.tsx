@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Action, Arena, Campaign } from '../types';
-import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, CheckIcon } from './Icons';
+import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, LightbulbIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
 import { NewArenaModal } from './NewArenaModal';
 import { ArenaDetailModal } from './ArenaDetailModal';
@@ -16,6 +16,8 @@ import { CATEGORY_LABELS, resolveTemplateCampaignMeta } from '../utils/campaignC
 import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 import { UserCodex } from '../types';
 import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
+import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQuizModal';
+import { hasCompletedFreeCampaignQuiz } from '../utils/campaignQuiz';
 
 interface CampaignsCodexProps {
     onClose: () => void;
@@ -84,6 +86,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const [visiblePhaseCount, setVisiblePhaseCount] = useState(1);
     const [libraryPreview, setLibraryPreview] = useState<CodexCampaignPreview | null>(null);
     const [libraryPreviewCodex, setLibraryPreviewCodex] = useState<UserCodex | null>(null);
+    const [isRecommendationQuizOpen, setRecommendationQuizOpen] = useState(false);
 
     // Expandable Description State
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -106,17 +109,24 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         () => new Set(allArenas.map((arena) => arena.originCodexId).filter(Boolean)),
         [allArenas],
     );
-    const installableLibraryEntries = useMemo(() => (
+    const libraryEntries = useMemo(() => (
         userCodexes
             .filter((codex) => Array.isArray(codex.template?.levels) && codex.template.levels.length > 0)
-            .filter((codex) => !installedCodexIds.has(codex.id))
-            .sort((left, right) => new Date(right.updated_at || right.created_at).getTime() - new Date(left.updated_at || left.created_at).getTime())
+            .sort((left, right) => {
+                const leftInstalled = installedCodexIds.has(left.id);
+                const rightInstalled = installedCodexIds.has(right.id);
+                if (leftInstalled !== rightInstalled) {
+                    return leftInstalled ? 1 : -1;
+                }
+                return new Date(right.updated_at || right.created_at).getTime() - new Date(left.updated_at || left.created_at).getTime();
+            })
             .map((codex) => {
                 const catalogRefId = codex.catalog_id || codex.origin_codex_id || codex.id;
                 const preview = buildCodexCampaignPreview(codex.id, codex.template);
                 const templateMeta = resolveTemplateCampaignMeta(catalogRefId, codex.template);
                 const campaignType = templateMeta.campaignType || 'pratica';
                 const sourceLabel = getCampaignSourceLabel(codex);
+                const isInstalled = installedCodexIds.has(codex.id);
                 const visualPalette = getContentVisualPalette(resolveCampaignVisualFamily({
                     campaign: preview.campaign,
                     arenas: preview.arenas,
@@ -132,10 +142,16 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                     durationDays: Number(codex.template?.durationDays ?? 7),
                     typeLabel: CATEGORY_LABELS[campaignType],
                     sourceLabel,
+                    isInstalled,
                     visualPalette,
                 };
             })
     ), [installedCodexIds, userCodexes]);
+    const readyToInstallLibraryCount = useMemo(
+        () => libraryEntries.filter((entry) => !entry.isInstalled).length,
+        [libraryEntries],
+    );
+    const hasPendingFreeQuiz = !hasCompletedFreeCampaignQuiz();
     const handleInstallLibraryCampaign = async (codex: UserCodex) => {
         if (installedCodexIds.has(codex.id)) {
             showToast('Essa campanha ja esta instalada nas suas campanhas.', 'info');
@@ -535,135 +551,53 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
             <Portal>
                 <div className="fixed inset-0 z-[230] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
                     <GlassCard variant="neutral" className="dossier-bg relative flex max-h-[82vh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.7rem] border border-[color:var(--skin-accent-color)]/16 shadow-2xl shadow-black/60" onClick={e => e.stopPropagation()}>
-                        <div className="border-b border-white/10 bg-black/20 p-4">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Campanhas</div>
-                                    <h2 className="mt-1 text-lg font-black uppercase tracking-[0.08em] text-white">Painel de campanhas</h2>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={handleOpenCampaignStore}
-                                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10"
-                                    >
-                                        Loja de campanhas
-                                    </button>
-                                    <button onClick={onClose} className="luxe-skin-button flex h-11 min-w-[3.25rem] items-center justify-center rounded-2xl px-4 text-sm font-bold">
-                                        <CheckIcon className="h-5 w-5" />
-                                    </button>
-                                </div>
+                        <div className="border-b border-white/10 bg-black/20 px-4 pb-4 pt-3">
+                            <div className="relative flex min-h-[2.75rem] items-center justify-center">
+                                <h2 className="text-lg font-black uppercase tracking-[0.12em] text-white">
+                                    Campanhas
+                                </h2>
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="luxe-skin-button absolute right-0 top-1/2 inline-flex h-10 min-w-[3.5rem] -translate-y-1/2 items-center justify-center rounded-2xl px-4 text-[11px] font-black uppercase tracking-[0.16em]"
+                                >
+                                    OK
+                                </button>
+                            </div>
+                            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setRecommendationQuizOpen(true)}
+                                    className={`inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
+                                        hasPendingFreeQuiz
+                                            ? 'border border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/16 text-[var(--ui-text-accent)] shadow-[0_0_0_1px_rgba(255,255,255,0.04)] hover:border-[var(--skin-accent-color)]/45 hover:bg-[var(--skin-accent-color)]/22'
+                                            : 'border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)] hover:border-[var(--skin-accent-color)]/38 hover:bg-[var(--skin-accent-color)]/16'
+                                    }`}
+                                >
+                                    <LightbulbIcon className="h-3.5 w-3.5" />
+                                    <span>{hasPendingFreeQuiz ? 'Quiz gratis' : 'Fazer quiz'}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleOpenCampaignStore}
+                                    className="inline-flex min-h-[42px] items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/86 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10"
+                                >
+                                    Loja
+                                </button>
                             </div>
                         </div>
                         
                         <div className="overflow-y-auto p-4">
-                            {installableLibraryEntries.length > 0 && (
-                                <div className="mb-4 space-y-3">
+                            <div className="space-y-5">
+                                <div className="space-y-3">
                                     <div className="flex items-end justify-between gap-3">
-                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Biblioteca pronta para instalar</div>
+                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Ativas</div>
                                         <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/65">
-                                            {installableLibraryEntries.length} na fila
+                                            {visibleCampaigns.length} em uso
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {installableLibraryEntries.map(({ codex, preview, actionCount, arenaCount, durationDays, typeLabel, sourceLabel, visualPalette }) => (
-                                            <GlassCard
-                                                key={`library-${codex.id}`}
-                                                variant="neutral"
-                                                className="overflow-hidden p-3"
-                                                style={{
-                                                    borderColor: visualPalette.border,
-                                                    background: visualPalette.listBackground,
-                                                    boxShadow: `0 14px 28px ${visualPalette.glow}`,
-                                                }}
-                                            >
-                                                <div className="flex h-full flex-col gap-3">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handlePreviewLibraryCampaign(codex)}
-                                                        className="rounded-[1.15rem] border px-3 py-3 text-left transition-all"
-                                                        style={{
-                                                            borderColor: visualPalette.chipBorder,
-                                                            background: visualPalette.footerBackground,
-                                                        }}
-                                                    >
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div className="min-w-0">
-                                                                <div
-                                                                    className="inline-flex items-center rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em]"
-                                                                    style={{
-                                                                        borderColor: visualPalette.chipBorder,
-                                                                        background: visualPalette.chipBackground,
-                                                                        color: visualPalette.chipText,
-                                                                    }}
-                                                                >
-                                                                    {sourceLabel}
-                                                                </div>
-                                                                <div className="mt-2 text-base font-black uppercase tracking-[0.05em] leading-tight text-white">
-                                                                    {codex.name}
-                                                                </div>
-                                                            </div>
-                                                            <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/25">
-                                                                <SharedCodexCoverArt
-                                                                    cover={codex.template?.coverImage}
-                                                                    title={codex.name}
-                                                                    emojiSize="cover-sm"
-                                                                    backgroundClassName="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_58%),linear-gradient(180deg,rgba(33,24,16,0.95),rgba(10,8,10,0.98))]"
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        <div
-                                                            className="mt-3 flex items-center justify-center rounded-[1rem] border px-2 py-2"
-                                                            style={{
-                                                                borderColor: visualPalette.chipBorder,
-                                                                background: visualPalette.stackBackground,
-                                                            }}
-                                                        >
-                                                            <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="sm" />
-                                                        </div>
-
-                                                        <div className="mt-3 flex flex-wrap gap-1.5">
-                                                            <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
-                                                                {typeLabel}
-                                                            </span>
-                                                            <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
-                                                                {durationDays} dias
-                                                            </span>
-                                                            <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
-                                                                {arenaCount} arenas
-                                                            </span>
-                                                            <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
-                                                                {actionCount} acoes
-                                                            </span>
-                                                        </div>
-                                                    </button>
-
-                                                    <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/6 pt-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handlePreviewLibraryCampaign(codex)}
-                                                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10"
-                                                        >
-                                                            Ver
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => { void handleInstallLibraryCampaign(codex); }}
-                                                            className="luxe-skin-button px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em]"
-                                                        >
-                                                            Instalar
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </GlassCard>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {/* Create New Button */}
                                 <button 
                                     onClick={handleCreateCampaign}
@@ -726,7 +660,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                                 {/* Tech footer */}
                                                 <div className="px-4 py-2 bg-emerald-900/20 border-t border-emerald-500/10 flex items-center justify-between relative z-10 backdrop-blur-sm">
                                                     <div className="text-[9px] text-emerald-400/60 font-mono flex items-center gap-1">
-                                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"/>
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.45)]"/>
                                                         {campaign.arenaIds.length} MÓDULOS
                                                     </div>
                                                     <ChevronRightIcon className="w-3 h-3 text-emerald-500/50 group-hover:translate-x-1 transition-transform" />
@@ -815,6 +749,126 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                         </div>
                                     );
                                 })}
+                                    </div>
+                                </div>
+
+                                {libraryEntries.length > 0 && (
+                                    <div className="space-y-3 border-t border-white/8 pt-4">
+                                        <div className="flex items-end justify-between gap-3">
+                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Biblioteca</div>
+                                            <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/65">
+                                                {readyToInstallLibraryCount > 0 ? `${readyToInstallLibraryCount} prontas` : 'Todas instaladas'}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {libraryEntries.map(({ codex, preview, actionCount, arenaCount, durationDays, typeLabel, sourceLabel, isInstalled, visualPalette }) => (
+                                                <GlassCard
+                                                    key={`library-${codex.id}`}
+                                                    variant="neutral"
+                                                    className="overflow-hidden p-3"
+                                                    style={{
+                                                        borderColor: visualPalette.border,
+                                                        background: visualPalette.listBackground,
+                                                        boxShadow: `0 14px 28px ${visualPalette.glow}`,
+                                                    }}
+                                                >
+                                                    <div className="flex h-full flex-col gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handlePreviewLibraryCampaign(codex)}
+                                                            className="rounded-[1.15rem] border px-3 py-3 text-left transition-all"
+                                                            style={{
+                                                                borderColor: visualPalette.chipBorder,
+                                                                background: visualPalette.footerBackground,
+                                                            }}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div className="min-w-0">
+                                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                                        <div
+                                                                            className="inline-flex items-center rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em]"
+                                                                            style={{
+                                                                                borderColor: visualPalette.chipBorder,
+                                                                                background: visualPalette.chipBackground,
+                                                                                color: visualPalette.chipText,
+                                                                            }}
+                                                                        >
+                                                                            {sourceLabel}
+                                                                        </div>
+                                                                        {isInstalled && (
+                                                                            <div className="inline-flex items-center rounded-full border border-emerald-400/28 bg-emerald-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-emerald-200">
+                                                                                Instalada
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="mt-2 text-base font-black uppercase tracking-[0.05em] leading-tight text-white">
+                                                                        {codex.name}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/25">
+                                                                    <SharedCodexCoverArt
+                                                                        cover={codex.template?.coverImage}
+                                                                        title={codex.name}
+                                                                        emojiSize="cover-sm"
+                                                                        backgroundClassName="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_58%),linear-gradient(180deg,rgba(33,24,16,0.95),rgba(10,8,10,0.98))]"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            <div
+                                                                className="mt-3 flex items-center justify-center rounded-[1rem] border px-2 py-2"
+                                                                style={{
+                                                                    borderColor: visualPalette.chipBorder,
+                                                                    background: visualPalette.stackBackground,
+                                                                }}
+                                                            >
+                                                                <CampaignArenaStack arenas={preview.arenas} actions={preview.actions} size="sm" />
+                                                            </div>
+
+                                                            <div className="mt-3 flex flex-wrap gap-1.5">
+                                                                <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
+                                                                    {typeLabel}
+                                                                </span>
+                                                                <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
+                                                                    {durationDays} dias
+                                                                </span>
+                                                                <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
+                                                                    {arenaCount} arenas
+                                                                </span>
+                                                                <span className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ borderColor: visualPalette.chipBorder, background: visualPalette.chipBackground, color: visualPalette.chipText }}>
+                                                                    {actionCount} acoes
+                                                                </span>
+                                                            </div>
+                                                        </button>
+
+                                                        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/6 pt-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handlePreviewLibraryCampaign(codex)}
+                                                                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/30 hover:bg-white/10"
+                                                            >
+                                                                Ver
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { void handleInstallLibraryCampaign(codex); }}
+                                                                disabled={isInstalled}
+                                                                className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] ${
+                                                                    isInstalled
+                                                                        ? 'rounded-xl border border-emerald-400/24 bg-emerald-500/10 text-emerald-200/85'
+                                                                        : 'luxe-skin-button'
+                                                                }`}
+                                                            >
+                                                                {isInstalled ? 'Instalada' : 'Instalar'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </GlassCard>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </GlassCard>
@@ -1325,6 +1379,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 note: 'Essa campanha ja e sua e pode ser instalada a qualquer momento.',
                             }}
                         />
+                    )}
+                    {isRecommendationQuizOpen && (
+                        <CampaignRecommendationQuizModal onClose={() => setRecommendationQuizOpen(false)} />
                     )}
                 </GlassCard>
             </div>

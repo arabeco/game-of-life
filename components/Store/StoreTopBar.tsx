@@ -10,9 +10,9 @@ type StoreTopBarProps = {
 };
 
 const STORE_TABS: Array<{ id: StoreTab; label: string; mobileLabel?: string; icon?: string }> = [
+    { id: 'codexes', label: 'Campanhas', mobileLabel: 'Camp.' },
     { id: 'store', label: 'Ouro', icon: '\u{1FA99}' },
     { id: 'forge', label: 'Forja' },
-    { id: 'codexes', label: 'Campanhas', mobileLabel: 'Camp.' },
     { id: 'items', label: 'Itens' },
 ];
 

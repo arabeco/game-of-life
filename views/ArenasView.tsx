@@ -22,6 +22,7 @@ import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/c
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { getContentVisualPalette, resolveArenaVisualFamily, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 import { supabase } from '../supabaseClient';
+import { hasCompletedFreeCampaignQuiz } from '../utils/campaignQuiz';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -257,6 +258,31 @@ export const ArenasView: React.FC = () => {
         assets.forEach(asset => asset.arenas.forEach(arena => ids.add(arena.id)));
         return ids;
     }, [assets]);
+    const installedCampaignCodexIds = useMemo(() => {
+        const ids = new Set<string>();
+        assets.forEach((asset) => asset.arenas.forEach((arena) => {
+            if (arena.originCodexId) ids.add(arena.originCodexId);
+        }));
+        return ids;
+    }, [assets]);
+    const installableCampaignLibraryCount = useMemo(
+        () => userCodexes
+            .filter((codex) => Array.isArray(codex.template?.levels) && codex.template.levels.length > 0)
+            .filter((codex) => !installedCampaignCodexIds.has(codex.id))
+            .length,
+        [installedCampaignCodexIds, userCodexes],
+    );
+    const hasPendingFreeCampaignQuiz = !hasCompletedFreeCampaignQuiz();
+    const shouldSpotlightCampaignFolder = installableCampaignLibraryCount > 0 || hasPendingFreeCampaignQuiz || (campaigns.length === 0 && ownedArenaIds.size <= 2);
+    const campaignFolderBadgeCount = shouldSpotlightCampaignFolder
+        ? installableCampaignLibraryCount + (hasPendingFreeCampaignQuiz ? 1 : 0)
+        : campaigns.length;
+    const campaignFolderBadgeLabel = String(campaignFolderBadgeCount);
+    const campaignFolderButtonClassName = `group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] ${
+        shouldSpotlightCampaignFolder
+            ? 'border-[var(--ui-border-accent)] bg-[var(--skin-accent-color)]/10 shadow-[0_0_0_1px_rgba(212,175,55,0.08),0_0_18px_rgba(212,175,55,0.14)]'
+            : 'border-[var(--ui-border-accent-soft)] hover:border-[var(--ui-border-accent)]'
+    }`;
     const relationshipLinkTypeByArenaId = useMemo(() => {
         const linkTypes = new Map<string, RelationshipLinkType>();
         sharedLinkedArenas.forEach((linkedArena) => {
@@ -1899,13 +1925,13 @@ export const ArenasView: React.FC = () => {
                     <button
                         id="campaigns-button-top"
                         onClick={() => setCampaignHubOpen(true)}
-                        className="group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--ui-border-accent-soft)] text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--ui-border-accent)]"
+                        className={campaignFolderButtonClassName}
                         style={premiumHeaderButtonStyle}
-                        title="Abrir campanhas"
+                        title={shouldSpotlightCampaignFolder ? 'Abrir suas campanhas e recomendacoes' : 'Abrir suas campanhas'}
                     >
-                        <FolderStarIcon className="h-3.5 w-3.5 drop-shadow-[0_0_8px_var(--skin-accent-color)] transition-transform duration-200 group-hover:scale-105" />
+                        <FolderStarIcon className={`h-3.5 w-3.5 drop-shadow-[0_0_8px_var(--skin-accent-color)] transition-transform duration-200 group-hover:scale-105 ${shouldSpotlightCampaignFolder ? 'scale-105' : ''}`} />
                         <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/85 px-1 py-0.5 text-[7px] font-black leading-none text-white">
-                            {campaigns.length}
+                            {campaignFolderBadgeLabel}
                         </span>
                     </button>
                     <div className="w-[1px] h-3 bg-white/10 mx-0.5" />

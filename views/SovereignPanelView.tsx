@@ -1141,7 +1141,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       id: 'legacy-c1',
       name: 'Rito de Abertura',
       startDate: '2025-01-06',
-      score: 78,
+      score: 58,
       focusArena: 'Saude',
       signatureAction: 'Treino de alvorada',
       plannedMetas: 5,
@@ -1157,7 +1157,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       id: 'legacy-c2',
       name: 'Cadencia de Ferro',
       startDate: '2025-01-20',
-      score: 84,
+      score: 72,
       focusArena: 'Trabalho',
       signatureAction: 'Bloco de foco 90m',
       plannedMetas: 6,
@@ -1173,7 +1173,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       id: 'legacy-c3',
       name: 'Primeira Tracao',
       startDate: '2025-02-03',
-      score: 88,
+      score: 86,
       focusArena: 'Estudos',
       signatureAction: 'Leitura tática',
       plannedMetas: 7,
@@ -1192,7 +1192,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       id: 'legacy-c4',
       name: 'Cerco do Planner',
       startDate: '2025-03-03',
-      score: 90,
+      score: 64,
       focusArena: 'Planejamento',
       signatureAction: 'Janela de comando',
       plannedMetas: 8,
@@ -1208,7 +1208,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       id: 'legacy-c5',
       name: 'Forja da Mentoria',
       startDate: '2025-03-17',
-      score: 92,
+      score: 83,
       focusArena: 'Mentoria',
       signatureAction: 'Sessao de pupilo',
       plannedMetas: 8,
@@ -1224,7 +1224,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       id: 'legacy-c6',
       name: 'Dominio do Mobile',
       startDate: '2025-03-31',
-      score: 89,
+      score: 77,
       focusArena: 'Produto',
       signatureAction: 'Passada de interface',
       plannedMetas: 7,
@@ -1243,7 +1243,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       id: 'legacy-c7',
       name: 'Expansao do Trono',
       startDate: '2025-05-05',
-      score: 93,
+      score: 91,
       focusArena: 'Coroa',
       signatureAction: 'Leitura de comando',
       plannedMetas: 9,
@@ -1275,7 +1275,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       id: 'legacy-c9',
       name: 'Registro de Soberania',
       startDate: '2025-06-02',
-      score: 97,
+      score: 99,
       focusArena: 'Legado',
       signatureAction: 'Selar a placa',
       plannedMetas: 10,
@@ -1301,7 +1301,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       cycles: eraOneCycles,
       startDate: '2025-01-06',
       endDate: '2025-02-16',
-      avgScore: 83,
+      avgScore: 72,
       totalExp: 1420,
       totalHours: 126,
       totalMetas: 15,
@@ -1313,7 +1313,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
         { name: 'Leitura tática', count: 15 },
       ],
       bestStreak: 12,
-      grade: 'A',
+      grade: 'C',
       color: '#EAB308',
     },
     {
@@ -1327,7 +1327,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       cycles: eraTwoCycles,
       startDate: '2025-03-03',
       endDate: '2025-04-13',
-      avgScore: 90,
+      avgScore: 75,
       totalExp: 1880,
       totalHours: 154,
       totalMetas: 23,
@@ -1339,7 +1339,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
         { name: 'Passada de interface', count: 16 },
       ],
       bestStreak: 16,
-      grade: 'S',
+      grade: 'B',
       color: '#60A5FA',
     },
     {
@@ -1610,7 +1610,7 @@ const LegacyPreviewButton: React.FC = () => {
                 className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/20 px-6 py-3 text-xs font-black uppercase tracking-[0.2em] text-cyan-300 transition-all hover:bg-cyan-500/30 hover:scale-[1.02]"
             >
                 <Zap className="h-4 w-4" />
-                Visualizar Legado Premium
+                Gerar Cena Teste GM
             </button>
 
             {showPreview && (
@@ -1618,6 +1618,12 @@ const LegacyPreviewButton: React.FC = () => {
                     eras={mockEras}
                     sovereignName={session?.user?.email?.split('@')[0] || 'Soberano'}
                     isPremium={true}
+                    sceneGoldCost={null}
+                    sceneButtonLabel="Abrir cena teste"
+                    confirmKickerLabel="Laboratorio GM"
+                    confirmTitle="Abrir cena teste do legado?"
+                    confirmDescription="Isso abre a cena curada do GM com 3 eras e 9 ciclos de exemplo, sem cobrar ouro."
+                    confirmButtonLabel="Abrir cena teste"
                     onClose={() => setShowPreview(false)}
                     onToast={(msg) => showToast(msg)}
                 />

@@ -3,6 +3,7 @@ import { useGame } from '../../contexts/GameContext';
 import { CodexCatalogItem, UserCodex } from '../../types';
 import { Portal } from '../Portal';
 import { CATEGORY_LABELS, resolveTemplateCampaignMeta, type CampaignThemeId, type CampaignTypeId } from '../../utils/campaignCatalogMeta';
+import { hasCompletedFreeCampaignQuiz, markFreeCampaignQuizCompleted } from '../../utils/campaignQuiz';
 import './CampaignRecommendationQuiz.css';
 
 type QuizAnswerKey = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
@@ -29,18 +30,9 @@ type CampaignEntry = {
 type CampaignRecommendation = { entry: CampaignEntry; upgradeNote: string | null; desiredDuration: number };
 
 const TOTAL_QUESTIONS = 7;
-const FREE_QUIZ_COMPLETED_KEY = 'glyph_campaign_quiz_free_completed_v1';
 
 const normalizeToken = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 const tierFromDuration = (days: number) => (days >= 21 ? 3 : days >= 14 ? 2 : 1);
-const storedFreeQuizDone = () => {
-    if (typeof window === 'undefined') return false;
-    try { return window.localStorage.getItem(FREE_QUIZ_COMPLETED_KEY) === '1'; } catch { return false; }
-};
-const markFreeQuizDone = () => {
-    if (typeof window === 'undefined') return;
-    try { window.localStorage.setItem(FREE_QUIZ_COMPLETED_KEY, '1'); } catch { /* noop */ }
-};
 
 const q2Options: Record<string, QuizOption[]> = {
     A: [
@@ -228,7 +220,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     const [result, setResult] = useState<CampaignRecommendation | null>(null);
     const [statusMessage, setStatusMessage] = useState('');
     const [isSyncingLibrary, setIsSyncingLibrary] = useState(false);
-    const [isInstalling, setIsInstalling] = useState(false);
+    const [installingCatalogId, setInstallingCatalogId] = useState<string | null>(null);
     const ensuredCatalogIdsRef = useRef<Set<string>>(new Set());
 
     const catalogEntries = useMemo(() => codexCatalog.map(buildEntry).filter((entry): entry is CampaignEntry => Boolean(entry)), [codexCatalog]);
@@ -240,7 +232,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     }), [catalogEntries, userCodexes]);
 
     useEffect(() => {
-        if (storedFreeQuizDone() || hasOwnedFreeCampaign) setQuizMode('full');
+        if (hasCompletedFreeCampaignQuiz() || hasOwnedFreeCampaign) setQuizMode('full');
     }, [hasOwnedFreeCampaign]);
 
     const allArenas = getArenas();
@@ -256,6 +248,13 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     const progressPercent = ((Math.min(questionIndex + 1, TOTAL_QUESTIONS)) / TOTAL_QUESTIONS) * 100;
     const ownedResultCodex = result ? findOwnedCodex(result.entry.catalog.id) : null;
     const isResultInstalled = Boolean(ownedResultCodex && installedCodexIds.has(ownedResultCodex.id));
+    const secondaryRecommendation = useMemo(() => {
+        if (!result || quizMode !== 'free') return null;
+        const premiumEntries = catalogEntries.filter((entry) => !entry.isFree && entry.catalog.id !== result.entry.catalog.id);
+        return resolveRecommendation(answers, premiumEntries, 'full');
+    }, [answers, catalogEntries, quizMode, result]);
+    const ownedSecondaryCodex = secondaryRecommendation ? findOwnedCodex(secondaryRecommendation.entry.catalog.id) : null;
+    const isSecondaryInstalled = Boolean(ownedSecondaryCodex && installedCodexIds.has(ownedSecondaryCodex.id));
 
     useEffect(() => {
         if (!currentQuestion) {
@@ -300,19 +299,12 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         void ensureCampaignInLibrary(result, { autoAcquire: result.entry.isFree });
     }, [ensureCampaignInLibrary, result]);
 
-    const promoteToFullRecommendation = () => {
-        markFreeQuizDone();
-        setQuizMode('full');
-        setResult(resolveRecommendation(answers, catalogEntries, 'full'));
-        setStatusMessage('');
-    };
-
     const handleContinue = () => {
         if (!selectedOption) return;
         const nextAnswers = { ...answers, [currentQuestion.id]: selectedOption } as QuizAnswers;
         setAnswers(nextAnswers);
         if (questionIndex === TOTAL_QUESTIONS - 1) {
-            if (quizMode === 'free') markFreeQuizDone();
+            if (quizMode === 'free') markFreeCampaignQuizCompleted();
             setResult(resolveRecommendation(nextAnswers, quizMode === 'free' ? freeCatalog : catalogEntries, quizMode));
             return;
         }
@@ -324,29 +316,31 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         setQuestionIndex((current) => Math.max(0, current - 1));
     };
 
-    const handleInstall = async () => {
-        if (!result || isInstalling) return;
-        setIsInstalling(true);
+    const handleInstallRecommendation = async (recommendation: CampaignRecommendation | null, options: { closeOnSuccess?: boolean } = {}) => {
+        if (!recommendation || installingCatalogId) return;
+        const closeOnSuccess = options.closeOnSuccess ?? true;
+        setInstallingCatalogId(recommendation.entry.catalog.id);
         try {
-            const ownedCodex = await ensureCampaignInLibrary(result, { autoAcquire: true });
-            const resolved = ownedCodex || findOwnedCodex(result.entry.catalog.id);
+            const ownedCodex = await ensureCampaignInLibrary(recommendation, { autoAcquire: true });
+            const resolved = ownedCodex || findOwnedCodex(recommendation.entry.catalog.id);
             if (!resolved) {
                 showToast('Nao foi possivel preparar a campanha para instalacao.', 'warning');
                 return;
             }
             if (installedCodexIds.has(resolved.id)) {
                 showToast('Essa campanha ja esta instalada nas suas campanhas.', 'info');
-                onClose();
+                if (closeOnSuccess) onClose();
                 return;
             }
             await installCodex(resolved.id);
-            onClose();
+            if (closeOnSuccess) onClose();
         } finally {
-            setIsInstalling(false);
+            setInstallingCatalogId(null);
         }
     };
 
     const resultPriceLabel = result?.entry.isFree ? 'Gratuita' : `${result?.entry.priceGold} ouro`;
+    const secondaryPriceLabel = secondaryRecommendation ? `${secondaryRecommendation.entry.priceGold} ouro` : null;
 
     return (
         <Portal>
@@ -409,12 +403,44 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                         <p className="campaign-quiz-result-copy">{result.entry.description}</p>
                                         {result.upgradeNote && <div className="campaign-quiz-result-note">{result.upgradeNote}</div>}
                                         {statusMessage && <div className="campaign-quiz-result-status">{statusMessage}</div>}
+                                        {quizMode === 'free' && secondaryRecommendation && (
+                                            <div className="campaign-quiz-see-also">
+                                                <div className="campaign-quiz-see-also-label">Veja tambem</div>
+                                                <div className="campaign-quiz-see-also-card">
+                                                    <div className="campaign-quiz-see-also-header">
+                                                        <div>
+                                                            <div className="campaign-quiz-see-also-title">{secondaryRecommendation.entry.title}</div>
+                                                            <div className="campaign-quiz-see-also-price">{secondaryPriceLabel}</div>
+                                                        </div>
+                                                        <div className="campaign-quiz-see-also-pills">
+                                                            <span className="campaign-quiz-result-pill">{secondaryRecommendation.entry.typeLabel}</span>
+                                                            <span className="campaign-quiz-result-pill">{secondaryRecommendation.entry.durationDays} dias</span>
+                                                        </div>
+                                                    </div>
+                                                    <p className="campaign-quiz-see-also-copy">{secondaryRecommendation.entry.description}</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { void handleInstallRecommendation(secondaryRecommendation); }}
+                                                        disabled={installingCatalogId !== null || isSyncingLibrary || isSecondaryInstalled}
+                                                        className="campaign-quiz-secondary-cta"
+                                                    >
+                                                        {installingCatalogId === secondaryRecommendation.entry.catalog.id
+                                                            ? 'Preparando...'
+                                                            : isSecondaryInstalled
+                                                                ? 'Campanha instalada'
+                                                                : ownedSecondaryCodex
+                                                                    ? 'Instalar esta'
+                                                                    : `Comprar e instalar (${secondaryPriceLabel})`}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="campaign-quiz-result-actions">
-                                            <button type="button" onClick={handleInstall} disabled={isInstalling || isSyncingLibrary || isResultInstalled} className="luxe-skin-button w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50">
-                                                {isInstalling ? 'Instalando...' : isResultInstalled ? 'Campanha instalada' : 'Instalar Campanha'}
+                                            <button type="button" onClick={() => { void handleInstallRecommendation(result); }} disabled={installingCatalogId !== null || isSyncingLibrary || isResultInstalled} className="luxe-skin-button w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50">
+                                                {installingCatalogId === result.entry.catalog.id ? 'Instalando...' : isResultInstalled ? 'Campanha instalada' : 'Instalar Campanha'}
                                             </button>
                                             {quizMode === 'free' ? (
-                                                <button type="button" onClick={promoteToFullRecommendation} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver recomendacao completa</button>
+                                                <button type="button" onClick={onClose} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver catalogo completo</button>
                                             ) : (
                                                 <button type="button" onClick={onClose} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver catalogo completo</button>
                                             )}

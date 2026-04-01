@@ -380,6 +380,11 @@ const resolveDirectMessagePushPresentation = async (
 };
 
 const getOracleMessageTitle = (message: NormalizedOracleMessage): string => {
+  const presentation = (asTrimmedString(message.contextSnapshot.presentation) || "ambient_pulse") as OraclePresentation;
+  if (presentation === "info_card") {
+    return "Novo card do Oraculo";
+  }
+
   switch (message.mode) {
     case "coach":
       return "Oraculo - Coach";
@@ -399,8 +404,19 @@ const getOracleMessageTitle = (message: NormalizedOracleMessage): string => {
   }
 };
 
-const getOracleMessageBody = (message: NormalizedOracleMessage): string =>
-  message.content || "O Oraculo trouxe um novo card para voce.";
+const getOracleMessageBody = (message: NormalizedOracleMessage): string => {
+  const normalized = (message.content || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) {
+    return "O Oraculo trouxe um novo card para voce.";
+  }
+
+  return normalized.length > 180
+    ? `${normalized.slice(0, 177).trimEnd()}...`
+    : normalized;
+};
 
 const shouldPushNotification = (
   notification: NormalizedNotification,
@@ -844,14 +860,17 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
       continue;
     }
 
+    const presentation = (asTrimmedString(message.contextSnapshot.presentation) || "ambient_pulse") as OraclePresentation;
     const payload = {
       title: getOracleMessageTitle(message),
       body: getOracleMessageBody(message),
-      tag: `glyph-oracle-${message.id}`,
+      tag: `glyph-notification-${message.id}`,
       url: "/?oracle=chat",
       icon: "/logo-diamond.png",
       badge: "/logo-diamond.png",
-      requireInteraction: false,
+      requireInteraction: presentation === "info_card",
+      renotify: presentation === "info_card",
+      notificationId: message.id,
       oracleMessageId: message.id,
       type: "oracle_prompt",
     };

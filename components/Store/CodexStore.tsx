@@ -8,6 +8,7 @@ import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../util
 import { CampaignArenaStack } from '../CampaignArenaStack';
 import { CodexCoverArt as SharedCodexCoverArt } from '../CodexCoverArt';
 import { CampaignRecommendationQuizModal } from './CampaignRecommendationQuizModal';
+import { hasCompletedFreeCampaignQuiz } from '../../utils/campaignQuiz';
 import {
     CATEGORY_LABELS,
     THEME_CATEGORY_ORDER,
@@ -35,8 +36,6 @@ const CodexCoverArt: React.FC<{ cover?: string; title: string }> = ({ cover, tit
         </div>
     );
 };
-
-type AccessTab = 'free' | 'premium';
 
 type CatalogEntry = {
     codex: any;
@@ -128,7 +127,6 @@ export const CodexStore: React.FC = () => {
     const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
     const [pendingPurchase, setPendingPurchase] = useState<{ id: string; title: string; goldPrice: number } | null>(null);
     const [isRecommendationQuizOpen, setRecommendationQuizOpen] = useState(false);
-    const [accessTab, setAccessTab] = useState<AccessTab>('free');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState<string>('all');
     const [selectedCategory, setSelectedCategory] = useState<'all' | CampaignCategoryId>('all');
@@ -213,9 +211,17 @@ export const CodexStore: React.FC = () => {
         })
     ), [assets, codexCatalog]);
 
-    const visibleByAccess = useMemo(() => (
-        catalogEntries.filter((entry) => accessTab === 'free' ? entry.isFree : !entry.isFree)
-    ), [accessTab, catalogEntries]);
+    const visibleCatalogEntries = useMemo(() => (
+        catalogEntries.filter((entry) => !entry.isFree)
+    ), [catalogEntries]);
+
+    const hasOwnedFreeCampaign = useMemo(() => userCodexes.some((userCodex) => {
+        if (!userCodex.catalog_id) return false;
+        const catalogEntry = catalogEntries.find((entry) => entry.codex.id === userCodex.catalog_id);
+        return Boolean(catalogEntry?.isFree);
+    }), [catalogEntries, userCodexes]);
+
+    const hasPendingFreeQuiz = !hasCompletedFreeCampaignQuiz() && !hasOwnedFreeCampaign;
 
     const availableAssetFilters = useMemo(() => (
         ASSET_FILTER_ORDER.map((assetId) => ({
@@ -227,7 +233,7 @@ export const CodexStore: React.FC = () => {
     const filteredEntries = useMemo(() => {
         const normalizedQuery = searchQuery.trim().toLowerCase();
 
-        return visibleByAccess.filter((entry) => {
+        return visibleCatalogEntries.filter((entry) => {
             if (selectedAssetId !== 'all' && !entry.assetIds.includes(selectedAssetId)) return false;
             if (selectedCategory !== 'all' && !entry.filterCategories.includes(selectedCategory)) return false;
             if (!normalizedQuery) return true;
@@ -247,7 +253,7 @@ export const CodexStore: React.FC = () => {
 
             return haystack.includes(normalizedQuery);
         });
-    }, [searchQuery, selectedAssetId, selectedCategory, visibleByAccess]);
+    }, [searchQuery, selectedAssetId, selectedCategory, visibleCatalogEntries]);
 
     const activePreviewEntry = useMemo(() => {
         if (!campaignPreview) return null;
@@ -263,6 +269,35 @@ export const CodexStore: React.FC = () => {
     return (
         <>
             <div className="space-y-3 animate-fade-in pb-8">
+                <GlassCard variant="neutral" className="overflow-hidden border-[var(--skin-accent-color)]/18 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.14),transparent_58%),linear-gradient(180deg,rgba(22,18,12,0.96),rgba(8,8,10,0.98))] p-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="max-w-xl">
+                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]/82">
+                                Porta principal das campanhas
+                            </div>
+                            <h2 className="mt-2 text-lg font-black uppercase tracking-[0.05em] text-white">
+                                {hasPendingFreeQuiz ? 'Seu primeiro quiz libera uma campanha recomendada' : 'Escolha uma campanha pronta para instalar agora'}
+                            </h2>
+                            <p className="mt-2 text-sm leading-relaxed text-white/62">
+                                {hasPendingFreeQuiz
+                                    ? 'As campanhas gratis nao ficam mais espalhadas no catalogo. O quiz encontra a melhor para o seu momento e ainda mostra uma opcao premium como veja tambem.'
+                                    : 'O catalogo aberto foca nas campanhas premium. Se quiser uma rota mais guiada, o quiz ainda recomenda a proxima campanha certa para voce.'}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                            <button
+                                type="button"
+                                onClick={handleQuizTeaser}
+                                className="luxe-skin-button inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em]"
+                            >
+                                <LightbulbIcon className="h-4 w-4" />
+                                {hasPendingFreeQuiz ? 'Fazer quiz gratis' : 'Fazer quiz'}
+                            </button>
+                        </div>
+                    </div>
+                </GlassCard>
+
                 <GlassCard variant="neutral" className="overflow-hidden border-white/10 p-3">
                     <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -278,32 +313,24 @@ export const CodexStore: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <div className="flex flex-1 gap-2 rounded-2xl border border-white/10 bg-black/20 p-1">
-                                <button
-                                    type="button"
-                                    onClick={() => setAccessTab('free')}
-                                    className={`flex-1 rounded-xl px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition-all ${accessTab === 'free' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                >
-                                    Gratis
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setAccessTab('premium')}
-                                    className={`flex-1 rounded-xl px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition-all ${accessTab === 'premium' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                >
-                                    Premium
-                                </button>
+                        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                            <div className="min-w-0 flex-1">
+                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Catalogo premium</div>
+                                <div className="mt-1 text-[11px] leading-relaxed text-white/62">
+                                    Campanhas gratis entram pelo quiz. Aqui ficam as campanhas para compra direta.
+                                </div>
                             </div>
-
                             <button
                                 type="button"
                                 onClick={handleQuizTeaser}
-                                className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/78 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white"
+                                className="inline-flex min-h-[42px] shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-white/78 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white"
                                 title="Quiz de recomendacao"
                                 aria-label="Quiz de recomendacao"
                             >
                                 <LightbulbIcon className="h-4 w-4" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.16em]">
+                                    {hasPendingFreeQuiz ? 'Quiz gratis' : 'Quiz'}
+                                </span>
                             </button>
                         </div>
 

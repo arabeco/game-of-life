@@ -1,6 +1,8 @@
 # PROGRESSO HISTORICO: GLYPH
-Data de consolidacao: 31/03/2026
+Data de consolidacao: 01/04/2026
 Fonte: itens [v] removidos do relatorio operacional
+
+Nota 01/04/2026: o relatorio operacional foi enxugado e reconciliado. Os itens `[v]` dessa rodada ja estavam consolidados abaixo e nao foram duplicados.
 
 ## Fechamento 31/03/2026
 [v] Refino do fluxo de `Campanhas`: criar, comprar, instalar e anexar arenas sem gambiarra.

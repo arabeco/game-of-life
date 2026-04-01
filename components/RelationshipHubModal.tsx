@@ -1830,10 +1830,10 @@ export const RelationshipHubModal: React.FC<{
                                         </button>
                                         <button
                                             onClick={() => setSelectedPupilLink(link)}
-                                            className="inline-flex items-center justify-between gap-3 rounded-[18px] border border-cyan-300/18 bg-cyan-400/12 px-4 py-3 text-left text-cyan-100 shadow-[0_18px_40px_rgba(0,0,0,0.22)] transition-all hover:bg-cyan-400/16"
+                                            className="inline-flex min-w-0 items-center justify-between gap-2 overflow-hidden rounded-[18px] border border-cyan-300/18 bg-cyan-400/12 px-4 py-3 text-left text-cyan-100 shadow-[0_18px_40px_rgba(0,0,0,0.22)] transition-all hover:bg-cyan-400/16"
                                         >
-                                            <span className="text-[10px] font-black uppercase tracking-[0.16em]">Nova campanha</span>
-                                            <span className="rounded-full border border-cyan-200/18 bg-cyan-950/22 px-2 py-1 text-[10px] font-black leading-none text-cyan-100">
+                                            <span className="min-w-0 text-[10px] font-black uppercase tracking-[0.16em]">Nova campanha</span>
+                                            <span className="shrink-0 whitespace-nowrap rounded-full border border-cyan-200/18 bg-cyan-950/22 px-2 py-1 text-[10px] font-black leading-none text-cyan-100">
                                                 {COIN_GLYPH} {MENTOR_CAMPAIGN_FORGE_GOLD_COST}
                                             </span>
                                         </button>
@@ -2307,12 +2307,12 @@ export const RelationshipHubModal: React.FC<{
                                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">Campanha exclusiva</div>
                                         <p className="mt-1 text-sm text-white/58">Cria algo novo para {profileFor(selectedPupilLink.pupilId)?.nickname || 'o pupilo'}.</p>
                                     </div>
-                                    <button
-                                        onClick={() => setIsMentorCreatorOpen(true)}
-                                        className="shrink-0 luxe-skin-button rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em]"
-                                    >
-                                        Nova · {COIN_GLYPH} {MENTOR_CAMPAIGN_FORGE_GOLD_COST}
-                                    </button>
+                                            <button
+                                                onClick={() => setIsMentorCreatorOpen(true)}
+                                                className="shrink min-w-0 max-w-full whitespace-nowrap luxe-skin-button rounded-full px-3 py-2 text-[9px] font-black uppercase tracking-[0.12em]"
+                                            >
+                                                Nova · {COIN_GLYPH} {MENTOR_CAMPAIGN_FORGE_GOLD_COST}
+                                            </button>
                                 </div>
                             </div>
 

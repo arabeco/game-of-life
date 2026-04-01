@@ -1,11 +1,10 @@
 import { OracleMessage, OraclePreferences } from '../types';
 import { getOperationalDateString as getOperationalDateStringValue } from './operationalDay.js';
 
-const MIN_ORACLE_DAILY_TARGET = 3;
+const MIN_ORACLE_AUTO_TARGET = 1;
 const MAX_ORACLE_DAILY_TARGET = 5;
 const DAY_MINUTES = 24 * 60;
-
-export const ORACLE_MANUAL_COOLDOWN_MS = 5 * 60 * 1000;
+export const ORACLE_MANUAL_DAILY_TARGET = 5;
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 
@@ -36,13 +35,13 @@ const getQuietWindowMinutes = (preferences: Pick<OraclePreferences, 'quietHoursS
   return (DAY_MINUTES - start) + end;
 };
 
-export const resolveOracleDailyTarget = (preferences: Pick<OraclePreferences, 'enabledCategories'> | null | undefined): number => {
+export const resolveOracleAutoDailyTarget = (preferences: Pick<OraclePreferences, 'enabledCategories'> | null | undefined): number => {
   const enabledCount = preferences?.enabledCategories?.length ?? 0;
-  return clamp(enabledCount || MIN_ORACLE_DAILY_TARGET, MIN_ORACLE_DAILY_TARGET, MAX_ORACLE_DAILY_TARGET);
+  return clamp(enabledCount || MAX_ORACLE_DAILY_TARGET, MIN_ORACLE_AUTO_TARGET, MAX_ORACLE_DAILY_TARGET);
 };
 
 export const getOracleAutoGapMs = (preferences: Pick<OraclePreferences, 'enabledCategories' | 'quietHoursStart' | 'quietHoursEnd'> | null | undefined): number => {
-  const target = resolveOracleDailyTarget(preferences);
+  const target = resolveOracleAutoDailyTarget(preferences);
   const activeWindowMinutes = Math.max(4 * 60, DAY_MINUTES - getQuietWindowMinutes(preferences));
   const gapMinutes = Math.max(60, Math.round(activeWindowMinutes / target));
   return gapMinutes * 60 * 1000;
@@ -69,13 +68,20 @@ export const getOracleFeedMessagesForOperationalDay = (messages: OracleMessage[]
   ));
 };
 
+export const isManualOracleFeedMessage = (message: OracleMessage): boolean => (
+  message.deliveryType === 'feed' && message.contextSnapshot?.triggerType === 'manual'
+);
+
 export type OracleFeedQuotaStatus = {
-  dailyTarget: number;
-  sentToday: number;
-  remainingToday: number;
+  autoDailyTarget: number;
+  autoSentToday: number;
+  autoRemainingToday: number;
+  manualDailyTarget: number;
+  manualSentToday: number;
+  manualRemainingToday: number;
+  combinedSentToday: number;
   autoGapMs: number;
   nextAutoInMs: number;
-  manualCooldownRemainingMs: number;
   latestFeedAt: string | null;
 };
 
@@ -84,30 +90,34 @@ export const getOracleFeedQuotaStatus = (
   preferences: Pick<OraclePreferences, 'enabledCategories' | 'quietHoursStart' | 'quietHoursEnd'> | null | undefined,
   now: Date = new Date(),
 ): OracleFeedQuotaStatus => {
-  const dailyTarget = resolveOracleDailyTarget(preferences);
+  const autoDailyTarget = resolveOracleAutoDailyTarget(preferences);
+  const manualDailyTarget = ORACLE_MANUAL_DAILY_TARGET;
   const todayMessages = getOracleFeedMessagesForOperationalDay(messages, now);
-  const sentToday = todayMessages.length;
-  const remainingToday = Math.max(0, dailyTarget - sentToday);
+  const autoMessagesToday = todayMessages.filter((message) => !isManualOracleFeedMessage(message));
+  const manualMessagesToday = todayMessages.filter(isManualOracleFeedMessage);
+  const autoSentToday = autoMessagesToday.length;
+  const manualSentToday = manualMessagesToday.length;
+  const autoRemainingToday = Math.max(0, autoDailyTarget - autoSentToday);
+  const manualRemainingToday = Math.max(0, manualDailyTarget - manualSentToday);
   const autoGapMs = getOracleAutoGapMs(preferences);
-  const latestTodayMessage = getLatestOracleFeedMessage(todayMessages);
+  const latestAutoTodayMessage = getLatestOracleFeedMessage(autoMessagesToday);
   const latestFeedMessage = getLatestOracleFeedMessage(messages);
   const nowMs = now.getTime();
 
-  const nextAutoInMs = latestTodayMessage
-    ? Math.max(0, autoGapMs - (nowMs - new Date(latestTodayMessage.createdAt).getTime()))
-    : 0;
-
-  const manualCooldownRemainingMs = latestFeedMessage
-    ? Math.max(0, ORACLE_MANUAL_COOLDOWN_MS - (nowMs - new Date(latestFeedMessage.createdAt).getTime()))
+  const nextAutoInMs = latestAutoTodayMessage
+    ? Math.max(0, autoGapMs - (nowMs - new Date(latestAutoTodayMessage.createdAt).getTime()))
     : 0;
 
   return {
-    dailyTarget,
-    sentToday,
-    remainingToday,
+    autoDailyTarget,
+    autoSentToday,
+    autoRemainingToday,
+    manualDailyTarget,
+    manualSentToday,
+    manualRemainingToday,
+    combinedSentToday: todayMessages.length,
     autoGapMs,
     nextAutoInMs,
-    manualCooldownRemainingMs,
     latestFeedAt: latestFeedMessage?.createdAt ?? null,
   };
 };

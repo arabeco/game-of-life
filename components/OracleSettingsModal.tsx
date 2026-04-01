@@ -240,7 +240,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
             <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                 <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Biblioteca manual</div>
                 <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                    Esses sao os cards do botao manual. O automatico segue o modo do Oraculo e escolhe o tom sozinho.
+                    O automatico tenta girar 1 pulso por tema marcado ao longo do dia. No Premium, o botao manual pode puxar ate 5 cards por dia.
                 </p>
             </div>
             {MANUAL_LIBRARY_CATEGORIES.map((cat) => {

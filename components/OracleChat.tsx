@@ -781,7 +781,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       case 'disabled':
         return 'Ative a IA do Oráculo para gerar cards informativos no chat.';
       case 'daily_limit':
-        return `Limite diario atingido. Hoje o Oraculo ja fechou ${oracleFeedStatus.sentToday}/${oracleFeedStatus.dailyTarget} cards.`;
+        return `Limite manual atingido. Hoje voce ja puxou ${oracleFeedStatus.manualSentToday}/${oracleFeedStatus.manualDailyTarget} cards.`;
       case 'cooldown':
         return `Novo card manual em ${formatCooldownLabel(cooldownMs || 0)}.`;
       case 'error':
@@ -838,16 +838,20 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   };
 
   const manualGenerateDisabled = isGeneratingCard || isLoading;
+  const selectedThemeCount = oraclePreferences?.enabledCategories?.length || 0;
+  const autoQuotaLabel = `${oracleFeedStatus.autoSentToday}/${oracleFeedStatus.autoDailyTarget} temas do dia`;
+  const manualQuotaLabel = `${oracleFeedStatus.manualSentToday}/${oracleFeedStatus.manualDailyTarget} manuais`;
+  const autoScheduleLabel = oracleFeedStatus.autoRemainingToday <= 0
+    ? 'todos os temas de hoje ja passaram'
+    : oracleFeedStatus.nextAutoInMs > 0
+      ? `proximo pulso em ${formatCooldownLabel(oracleFeedStatus.nextAutoInMs)}`
+      : 'proximo pulso pronto';
 
   const manualGenerateLabel = !isPremiumUser
     ? 'Premium'
-    : oracleFeedStatus.remainingToday <= 0
+    : oracleFeedStatus.manualRemainingToday <= 0
       ? 'Limite hoje'
-      : oracleFeedStatus.manualCooldownRemainingMs > 0
-        ? formatCooldownLabel(oracleFeedStatus.manualCooldownRemainingMs)
-        : (isGeneratingCard ? 'Gerando...' : 'Gerar card');
-
-  const oracleQuotaLabel = `${oracleFeedStatus.sentToday}/${oracleFeedStatus.dailyTarget} hoje`;
+      : (isGeneratingCard ? 'Gerando...' : 'Pedir card');
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1033,31 +1037,47 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
         {/* Input */}
         <div className="p-4 border-t border-white/10 bg-black/40 flex-shrink-0">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">Cards do Oráculo</div>
-              <div className="text-[11px] text-gray-400">
-                {oracleQuotaLabel}
-                {oracleFeedStatus.manualCooldownRemainingMs > 0 && (
-                  <span className="ml-2 text-gray-500">manual em {formatCooldownLabel(oracleFeedStatus.manualCooldownRemainingMs)}</span>
-                )}
+          <div className="mb-3 rounded-[20px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">Cadencia do Oraculo</div>
+                <div className="mt-1 text-[12px] font-semibold text-white/88">
+                  Automatico: 1 pulso por tema marcado por dia.
+                </div>
+                <div className="mt-1 text-[10px] leading-relaxed text-white/52">
+                  Hoje: {autoQuotaLabel}. Premium pode puxar ate 5 cards manuais por dia sem cooldown, com reset no dia operacional. {selectedThemeCount > 0 ? `${selectedThemeCount} tema(s) marcados.` : 'Nenhum tema marcado ainda.'}
+                </div>
               </div>
-              <div className="mt-1 text-[10px] text-gray-500">
-                O botão gera cartas de frases, reflexão, sabedoria e dicas de vida aqui no chat. Os cards automáticos de foco continuam chegando ao longo do dia.
+              <button
+                onClick={handleGenerateCard}
+                disabled={manualGenerateDisabled}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.22em] transition-all ${
+                  manualGenerateDisabled
+                    ? 'cursor-not-allowed border-white/10 bg-white/5 text-gray-500'
+                    : 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/18'
+                }`}
+              >
+                {!isPremiumUser ? <CrownIcon className="h-3.5 w-3.5" /> : <SparklesIcon className="h-3.5 w-3.5" />}
+                <span>{manualGenerateLabel}</span>
+              </button>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2">
+                <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/38">Automatico</div>
+                <div className="mt-1 text-[11px] font-black text-white/86">{autoQuotaLabel}</div>
+                <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-white/42">{autoScheduleLabel}</div>
+              </div>
+              <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2">
+                <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/38">Manual</div>
+                <div className="mt-1 text-[11px] font-black text-white/86">{manualQuotaLabel}</div>
+                <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-white/42">{isPremiumUser ? 'premium puxa agora' : 'premium desbloqueia'}</div>
+              </div>
+              <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2">
+                <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/38">Push</div>
+                <div className="mt-1 text-[11px] font-black text-white/86">{oraclePreferences?.pushEnabled ? 'Ativo' : 'Dentro do app'}</div>
+                <div className="mt-1 text-[9px] uppercase tracking-[0.14em] text-white/42">1 por tema marcado</div>
               </div>
             </div>
-            <button
-              onClick={handleGenerateCard}
-              disabled={manualGenerateDisabled}
-              className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.22em] transition-all ${
-                manualGenerateDisabled
-                  ? 'cursor-not-allowed border-white/10 bg-white/5 text-gray-500'
-                  : 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/18'
-              }`}
-            >
-              {!isPremiumUser ? <CrownIcon className="h-3.5 w-3.5" /> : <SparklesIcon className="h-3.5 w-3.5" />}
-              <span>{manualGenerateLabel}</span>
-            </button>
           </div>
           <div className="relative flex items-center">
             <input

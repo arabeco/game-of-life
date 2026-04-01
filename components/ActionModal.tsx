@@ -257,7 +257,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const repsInputRef = useRef<HTMLDivElement>(null);
     const saveButtonRef = useRef<HTMLButtonElement>(null);
     const briefingReaderPointerStartRef = useRef<number | null>(null);
+    const briefingReaderPointerStartYRef = useRef<number | null>(null);
     const briefingReaderTouchStartRef = useRef<number | null>(null);
+    const briefingReaderTouchStartYRef = useRef<number | null>(null);
     const briefingReaderTurnTimeoutRef = useRef<number | null>(null);
     const completeNowHoldIntervalRef = useRef<number | null>(null);
     const [completeNowHoldProgress, setCompleteNowHoldProgress] = useState(0);
@@ -1050,7 +1052,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         if (!isBriefingReaderOpen) {
             setBriefingPageStage('idle');
             briefingReaderPointerStartRef.current = null;
+            briefingReaderPointerStartYRef.current = null;
             briefingReaderTouchStartRef.current = null;
+            briefingReaderTouchStartYRef.current = null;
         }
     }, [isBriefingReaderOpen]);
 
@@ -1858,16 +1862,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                         : 'Sem páginas'}
                                                             </span>
                                                             <span className="text-white/62">
-                                                                {briefingPages.length > 0 ? 'Leitor em tela cheia' : 'Adicione texto para liberar o leitor'}
+                                                                {briefingPages.length > 0 ? 'Abrir leitura' : 'Adicione texto para liberar o leitor'}
                                                             </span>
                                                         </div>
                                                         {briefingPages.length > 0 && (
                                                             <button
                                                                 type="button"
                                                                 onClick={openBriefingReader}
-                                                                className="luxe-skin-button mt-3 inline-flex items-center justify-center rounded-2xl border px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em]"
+                                                                className="reader-cta-button mt-3 inline-flex items-center justify-center rounded-2xl border px-4 py-3 text-[11px] font-black uppercase tracking-[0.18em]"
                                                             >
-                                                                Ler em tela cheia
+                                                                Iniciar leitura
                                                             </button>
                                                         )}
                                                     </div>
@@ -2188,12 +2192,15 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             style={{ touchAction: 'pan-y' }}
                             onPointerDown={(event) => {
                                 briefingReaderPointerStartRef.current = event.clientX;
+                                briefingReaderPointerStartYRef.current = event.clientY;
                             }}
                             onPointerUp={(event) => {
                                 if (briefingReaderPointerStartRef.current === null) return;
                                 const deltaX = event.clientX - briefingReaderPointerStartRef.current;
+                                const deltaY = event.clientY - (briefingReaderPointerStartYRef.current ?? event.clientY);
                                 briefingReaderPointerStartRef.current = null;
-                                if (Math.abs(deltaX) < 50) return;
+                                briefingReaderPointerStartYRef.current = null;
+                                if (Math.abs(deltaX) < 50 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
                                 if (deltaX < 0) {
                                     navigateBriefingPage(briefingPageIndex + 1);
                                 } else {
@@ -2202,16 +2209,21 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             }}
                             onPointerCancel={() => {
                                 briefingReaderPointerStartRef.current = null;
+                                briefingReaderPointerStartYRef.current = null;
                             }}
                             onTouchStart={(event) => {
                                 briefingReaderTouchStartRef.current = event.touches[0]?.clientX ?? null;
+                                briefingReaderTouchStartYRef.current = event.touches[0]?.clientY ?? null;
                             }}
                             onTouchEnd={(event) => {
                                 if (briefingReaderTouchStartRef.current === null) return;
                                 const endX = event.changedTouches[0]?.clientX ?? briefingReaderTouchStartRef.current;
+                                const endY = event.changedTouches[0]?.clientY ?? briefingReaderTouchStartYRef.current ?? 0;
                                 const deltaX = endX - briefingReaderTouchStartRef.current;
+                                const deltaY = endY - (briefingReaderTouchStartYRef.current ?? endY);
                                 briefingReaderTouchStartRef.current = null;
-                                if (Math.abs(deltaX) < 44) return;
+                                briefingReaderTouchStartYRef.current = null;
+                                if (Math.abs(deltaX) < 44 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
                                 if (deltaX < 0) {
                                     navigateBriefingPage(briefingPageIndex + 1);
                                 } else {
@@ -2220,8 +2232,27 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             }}
                             onTouchCancel={() => {
                                 briefingReaderTouchStartRef.current = null;
+                                briefingReaderTouchStartYRef.current = null;
                             }}
                         >
+                            <button
+                                type="button"
+                                onClick={() => navigateBriefingPage(briefingPageIndex - 1)}
+                                disabled={briefingPageIndex === 0}
+                                className="absolute inset-y-0 left-0 z-[2] hidden w-[16%] min-w-[3.5rem] items-center justify-start pl-2 text-[#6b522b]/44 transition-opacity hover:text-[#6b522b]/78 disabled:pointer-events-none disabled:opacity-0 sm:flex"
+                                aria-label="Voltar página"
+                            >
+                                <ChevronLeftIcon className="h-6 w-6" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => navigateBriefingPage(briefingPageIndex + 1)}
+                                disabled={briefingPageIndex >= briefingPages.length - 1}
+                                className="absolute inset-y-0 right-0 z-[2] hidden w-[16%] min-w-[3.5rem] items-center justify-end pr-2 text-[#6b522b]/44 transition-opacity hover:text-[#6b522b]/78 disabled:pointer-events-none disabled:opacity-0 sm:flex"
+                                aria-label="Avançar página"
+                            >
+                                <ChevronRightIcon className="h-6 w-6" />
+                            </button>
                             <div
                                 className="pointer-events-none absolute inset-0 opacity-60"
                                 style={{
@@ -2266,19 +2297,19 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                         type="button"
                                         onClick={() => navigateBriefingPage(briefingPageIndex - 1)}
                                         disabled={briefingPageIndex === 0}
-                                        className="luxe-skin-button inline-flex h-10 min-w-[3rem] items-center justify-center rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="reader-nav-button inline-flex h-10 min-w-[3rem] items-center justify-center rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
                                         aria-label="Página anterior"
                                     >
                                         <ChevronLeftIcon className="h-4 w-4" />
                                     </button>
                                     <div className="text-center text-[11px] font-bold uppercase tracking-[0.28em] text-[#7d6237]">
-                                        Arraste ou use as setas
+                                        Toque nas laterais, arraste ou use as setas
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => navigateBriefingPage(briefingPageIndex + 1)}
                                         disabled={briefingPageIndex >= briefingPages.length - 1}
-                                        className="luxe-skin-button inline-flex h-10 min-w-[3rem] items-center justify-center rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="reader-nav-button inline-flex h-10 min-w-[3rem] items-center justify-center rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
                                         aria-label="Próxima página"
                                     >
                                         <ChevronRightIcon className="h-4 w-4" />

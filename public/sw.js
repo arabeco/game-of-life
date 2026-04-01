@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'glyph-app-v6';
+const CACHE_VERSION = 'glyph-app-v7';
 const SUPABASE_CACHE = 'glyph-supabase-assets-v1';
 const ASSETS = [
   '/',
@@ -117,15 +117,6 @@ self.addEventListener('push', event => {
 
   event.waitUntil((async () => {
     const payload = parsePayload();
-    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const hasVisibleClient = clientList.some(client =>
-      client.visibilityState === 'visible' || client.focused === true
-    );
-
-    if (hasVisibleClient) {
-      return;
-    }
-
     await self.registration.showNotification(payload.title || 'Glyph', {
       body: payload.body || 'Voce recebeu um novo aviso.',
       icon: payload.icon || '/logo-diamond.png',

@@ -18,7 +18,7 @@ import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
 import { buildCyclePaceMetrics, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
-import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
+import { getOracleFeedMessagesForOperationalDay, getOracleFeedQuotaStatus, isManualOracleFeedMessage } from '../utils/oracleFeedUtils';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft } from '../utils/codexPreview';
@@ -365,9 +365,12 @@ type OracleTriggerStatus =
 type OracleTriggerResult = {
     status: OracleTriggerStatus;
     message?: OracleMessage;
-    dailyTarget?: number;
-    sentToday?: number;
-    remainingToday?: number;
+    autoDailyTarget?: number;
+    autoSentToday?: number;
+    autoRemainingToday?: number;
+    manualDailyTarget?: number;
+    manualSentToday?: number;
+    manualRemainingToday?: number;
     cooldownMs?: number;
 };
 
@@ -425,6 +428,9 @@ const hasOracleStructuralNeed = (contextData: ReturnType<typeof buildOracleOpera
 const resolveAutomaticOracleCategory = (
     mode: OracleMode,
     contextData: ReturnType<typeof buildOracleOperationalContext>,
+    messages: OracleMessage[],
+    enabledCategories: OracleCategory[] = [],
+    now: Date = new Date(),
 ): OracleCategory => {
     if (hasOracleStructuralNeed(contextData)) {
         return 'dicas_produtividade';
@@ -434,6 +440,19 @@ const resolveAutomaticOracleCategory = (
 
     if (contextData.cycleRisk === 'alto') {
         return contextData.overdueActions > 0 ? categoryProfile.critical : categoryProfile.high;
+    }
+
+    const ambientPool = normalizeOracleManualCategories(enabledCategories);
+    const todayFeedMessages = getOracleFeedMessagesForOperationalDay(messages, now).filter((message) => !isManualOracleFeedMessage(message));
+    const sentAmbientCategories = new Set(
+        todayFeedMessages
+            .map((message) => message.category)
+            .filter((category): category is OracleCategory => ambientPool.includes(category as OracleCategory))
+    );
+    const nextAmbientCategory = ambientPool.find((category) => !sentAmbientCategories.has(category));
+
+    if (nextAmbientCategory) {
+        return nextAmbientCategory;
     }
 
     if (contextData.cycleRisk === 'medio') {
@@ -473,6 +492,11 @@ const shouldSkipAutomaticOracle = (
 const shouldPushOracleFeedMessage = (message: OracleMessage): boolean => {
     const modeConfig = getOracleModeConfig(message.mode);
     const presentation = message.contextSnapshot?.presentation;
+    const triggerType = message.contextSnapshot?.triggerType;
+
+    if (triggerType === 'manual') {
+        return false;
+    }
 
     if (modeConfig.pushProfile === 'essencial') {
         return false;
@@ -824,7 +848,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const [oraclePreferences, setOraclePreferences] = useState<OraclePreferences | null>(null);
     const [oracleMessages, setOracleMessages] = useState<OracleMessage[]>([]);
-    const [oracleMessagesReady, setOracleMessagesReady] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
     const [dmConversations, setDMConversations] = useState<DMConversation[]>([]);
@@ -845,8 +868,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // Campaigns State
     const [campaigns, setCampaigns] = useState<Campaign[]>(() => []);
-    const oracleBootKeyRef = useRef<string | null>(null);
-    const triggerOracleRef = useRef<GameContextType['triggerOracle'] | null>(null);
     const seenNotificationIdsRef = useRef<Set<string>>(new Set());
     const notificationsHydratedRef = useRef(false);
     const seenCodexGiftNotificationIdsRef = useRef<Set<string>>(new Set());
@@ -1276,14 +1297,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error fetching oracle messages:", error);
-            setOracleMessagesReady(true);
             return;
         }
 
         if (data) {
             setOracleMessages(mapToCamelCase(data));
         }
-        setOracleMessagesReady(true);
     }, []);
 
     const markOracleMessageAsRead = async (messageId: string) => {
@@ -1348,20 +1367,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        if (quota.remainingToday <= 0) {
-            if (triggerType === 'manual') {
-                showToast(`Limite diario do Oraculo atingido (${quota.dailyTarget}/${quota.dailyTarget}).`, 'info');
-            }
+        if (triggerType === 'manual' && quota.manualRemainingToday <= 0) {
+            showToast(`Limite manual do Oraculo atingido (${quota.manualDailyTarget}/${quota.manualDailyTarget}).`, 'info');
             return { status: 'daily_limit', ...quota };
         }
 
-        if (triggerType === 'manual' && quota.manualCooldownRemainingMs > 0) {
-            const remainingMinutes = Math.max(1, Math.ceil(quota.manualCooldownRemainingMs / 60000));
-            showToast(`Novo card manual em ${remainingMinutes} min.`, 'info');
-            return { status: 'cooldown', cooldownMs: quota.manualCooldownRemainingMs, ...quota };
+        if (triggerType !== 'manual' && quota.autoRemainingToday <= 0) {
+            return { status: 'daily_limit', ...quota };
         }
 
-        if (triggerType !== 'manual' && quota.sentToday > 0 && quota.nextAutoInMs > 0) {
+        if (triggerType !== 'manual' && quota.autoSentToday > 0 && quota.nextAutoInMs > 0) {
             return { status: 'cooldown', cooldownMs: quota.nextAutoInMs, ...quota };
         }
 
@@ -1395,7 +1410,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const enabled = oraclePreferences.enabledCategories || [];
 
         if (triggerType !== 'manual') {
-            category = resolveAutomaticOracleCategory(selectedMode, contextData);
+            category = resolveAutomaticOracleCategory(selectedMode, contextData, oracleMessages, enabled, now);
         } else if (enabled.length > 0 && !enabled.includes(category as any)) {
             category = enabled[0];
         }
@@ -1524,15 +1539,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             console.log('Oracle generated message:', text);
             if (triggerType === 'manual') {
-                const sentAfterGeneration = quota.sentToday + 1;
-                showToast(`Card do Oraculo gerado (${sentAfterGeneration}/${quota.dailyTarget}).`, 'success');
+                const manualSentAfterGeneration = quota.manualSentToday + 1;
+                showToast(`Card manual do Oraculo (${manualSentAfterGeneration}/${quota.manualDailyTarget}).`, 'success');
             }
             return {
                 status: 'generated',
                 message: newMessage,
-                dailyTarget: quota.dailyTarget,
-                sentToday: quota.sentToday + 1,
-                remainingToday: Math.max(0, quota.remainingToday - 1),
+                autoDailyTarget: quota.autoDailyTarget,
+                autoSentToday: quota.autoSentToday + (triggerType === 'manual' ? 0 : 1),
+                autoRemainingToday: Math.max(0, quota.autoRemainingToday - (triggerType === 'manual' ? 0 : 1)),
+                manualDailyTarget: quota.manualDailyTarget,
+                manualSentToday: quota.manualSentToday + (triggerType === 'manual' ? 1 : 0),
+                manualRemainingToday: Math.max(0, quota.manualRemainingToday - (triggerType === 'manual' ? 1 : 0)),
             };
 
         } catch (error) {
@@ -1543,40 +1561,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return { status: 'error', ...quota };
         }
     };
-
-    useEffect(() => {
-        triggerOracleRef.current = triggerOracle;
-    }, [triggerOracle]);
-
-    useEffect(() => {
-        const userId = session?.user.id;
-        if (!userId || !isUuid(userId) || !oraclePreferences || !oracleMessagesReady) return;
-
-        const bootKey = `${userId}:${getOperationalDateString()}`;
-        if (oracleBootKeyRef.current !== bootKey) {
-            oracleBootKeyRef.current = bootKey;
-            void triggerOracleRef.current?.('app_open');
-        }
-
-        const intervalId = window.setInterval(() => {
-            if (document.visibilityState === 'visible') {
-                void triggerOracleRef.current?.('cron');
-            }
-        }, 10 * 60 * 1000);
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                void triggerOracleRef.current?.('cron');
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            window.clearInterval(intervalId);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, [session?.user.id, oraclePreferences, oracleMessagesReady]);
 
     // --- Notifications Implementation ---
     const fetchNotifications = useCallback(async (targetUserId?: string) => {
@@ -1625,15 +1609,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     useEffect(() => {
         const userId = session?.user.id;
         if (userId && isUuid(userId)) {
-            setOracleMessagesReady(false);
             fetchOraclePreferences(userId);
             fetchOracleMessages(userId);
             fetchNotifications();
         } else {
             setOraclePreferences(null);
             setOracleMessages([]);
-            setOracleMessagesReady(false);
-            oracleBootKeyRef.current = null;
             setNotifications([]);
         }
     }, [session?.user.id, fetchOraclePreferences, fetchOracleMessages, fetchNotifications]);

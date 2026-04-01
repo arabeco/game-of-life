@@ -122,6 +122,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
     const totalDays = Math.max(1, daysBetween(parseDate(startDate), parseDate(endDate)) + 1);
     const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, startDate, endDate);
     const completedTasks = cycleTasks.filter(t => t.completed);
+    const cycleProgress = cycleTasks.length > 0 ? Math.round((completedTasks.length / cycleTasks.length) * 100) : 0;
     const totalMinutes = completedTasks.reduce((sum, t) => sum + (t.duration || 0), 0);
     const totalHours = Math.floor(totalMinutes / 60);
     const reportsChronological = [...reports].sort((left, right) => new Date(left.endDate).getTime() - new Date(right.endDate).getTime());

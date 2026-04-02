@@ -2,7 +2,7 @@
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
-import { GOLD_PREMIUM_PRODUCT, getGoldMechanicPrice } from '../constants/goldCatalog';
+import { GOLD_PLATINUM_PRODUCT, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, ProfileVisibilityScope, Arena, Action, ScheduledTask } from '../types';
 import { ChevronRightIcon, XIcon, LightbulbIcon, ClockIcon, TrashIcon, CheckIcon, SendIcon, CrownIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
@@ -19,7 +19,7 @@ import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../c
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
-import { getLegacyProjectionScenePrice, getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
+import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
 import './settings-ui.css';
@@ -662,6 +662,12 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => {
         wallet: row.wallet ?? { gold: row.gold ?? 0, fragments: row.fragments ?? 0 },
         inventory: [],
         role,
+        isPremium: row.is_premium ?? row.isPremium ?? false,
+        premiumExpiresAt: row.premium_expires_at ?? row.premiumExpiresAt ?? null,
+        subscriptionTier: row.subscription_tier ?? row.subscriptionTier ?? ((row.is_premium ?? row.isPremium) ? 'premium' : null),
+        legacyProjectionSceneCredits: row.legacy_projection_scene_credits ?? row.legacyProjectionSceneCredits ?? 0,
+        campaignQuizFreeCredits: row.campaign_quiz_free_credits ?? row.campaignQuizFreeCredits ?? 0,
+        campaignQuizMediumCredits: row.campaign_quiz_medium_credits ?? row.campaignQuizMediumCredits ?? 0,
         completedSeasonMissions: Array.isArray(row.completed_season_missions) ? row.completed_season_missions : [],
     };
 };
@@ -2274,7 +2280,7 @@ const LegacyPremiumTab: React.FC = () => {
         <div className="space-y-8 animate-fade-in pb-10">
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">
-                    <h2 className="text-sm font-bold accent-text uppercase tracking-widest">Soberania (Premium)</h2>
+                    <h2 className="text-sm font-bold accent-text uppercase tracking-widest">Premium</h2>
                     {!isPremium && <span className="text-[10px] font-bold text-gray-500 bg-white/5 px-2 py-1 rounded">BLOQUEADO</span>}
                 </div>
 
@@ -2285,8 +2291,8 @@ const LegacyPremiumTab: React.FC = () => {
                             onClick={() => setLinksOpen(true)}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center`}
                         >
-                            <span className="text-3xl group-hover:scale-110 transition-transform">ðŸ”—</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">VÃ­nculos</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">🔗</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Vínculos</span>
                             {!isPremium && <span className="text-[8px] text-[var(--skin-accent-color)] opacity-70">Convites</span>}
                         </button>
                         <button
@@ -2294,7 +2300,7 @@ const LegacyPremiumTab: React.FC = () => {
                             onClick={() => setCodexOpen(true)}
                             className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center"
                         >
-                            <span className="text-3xl group-hover:scale-110 transition-transform">ðŸ“œ</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">📜</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Biblioteca</span>
                         </button>
                         <button
@@ -2306,7 +2312,7 @@ const LegacyPremiumTab: React.FC = () => {
                             }}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center`}
                         >
-                            <span className="text-3xl group-hover:scale-110 transition-transform">ðŸ¤–</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">🤖</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">
                                 Assistente
                             </span>
@@ -2317,13 +2323,13 @@ const LegacyPremiumTab: React.FC = () => {
                             disabled={!isPremium}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center ${!isPremium ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                         >
-                            <span className="text-3xl group-hover:scale-110 transition-transform">ðŸŽ¯</span>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">🎯</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Campanhas</span>
                         </button>
                     </div>
                     {!isPremium && (
                         <div className="text-center pt-2">
-                            <p className="text-xs text-gray-400">Torne-se um Soberano para desbloquear.</p>
+                            <p className="text-xs text-gray-400">Ative o Premium para desbloquear.</p>
                         </div>
                     )}
                 </GlassCard>
@@ -2366,44 +2372,61 @@ const LegacyPremiumTab: React.FC = () => {
 
 const PremiumTab: React.FC = () => {
     const { userProfile, buyStoreItem } = useGame();
-    const [confirmPremium, setConfirmPremium] = useState(false);
-    const [isBuyingPremium, setIsBuyingPremium] = useState(false);
+    const [confirmMembership, setConfirmMembership] = useState<'premium' | 'platinum' | null>(null);
+    const [isBuyingMembership, setIsBuyingMembership] = useState<'premium' | 'platinum' | null>(null);
     const isPremium = hasPremiumAccess(userProfile);
-    const premiumLabel = isPremium ? 'ATIVO' : 'DISPONIVEL';
+    const isPlatinum = hasPlatinumAccess(userProfile);
+    const activeMembershipTier = getActiveSubscriptionTier(userProfile);
+    const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÍVEL';
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
-    const legacyScenePrice = getLegacyProjectionScenePrice(userProfile, getGoldMechanicPrice('legacy_projection_scene', 50));
     const premiumBenefits = [
-        'Ate 25 arenas ativas',
-        'Dossies ampliados',
-        'Todos os modos do Oraculo',
+        'Até 15 arenas ativas',
+        'Fundos premium de perfil',
+        'Todos os modos do Oráculo',
         'Cena do legado com 50% off',
-        'Bonus de legado +10% XP',
-        'Deep Focus premium',
-        'Renovacao com recompensa',
+        'Bônus de legado +10% XP',
+        '1 ficha grátis de quiz por renovação',
+    ];
+    const platinumBenefits = [
+        'Todas as vantagens do Premium',
+        'Até 30 arenas ativas',
+        '1 cena de legado grátis por renovação',
+        '1 ficha média de quiz por renovação',
+        'Todos os planos de fundo',
+        'Todas as aparências premium',
+        '1 baú da Temporada + 1 baú raro por renovação',
     ];
     const premiumExpiresLabel = userProfile.premiumExpiresAt
         ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(userProfile.premiumExpiresAt))
         : null;
-    const premiumCycleLabel = premiumDaysRemaining != null
-        ? `${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'} restantes`
-        : isPremium
-            ? 'Ativo'
-            : '30 dias';
-    const premiumBadgeLabel = isPremium && premiumExpiresLabel
-        ? `${premiumDaysRemaining ?? 0}d - ate ${premiumExpiresLabel}`
-        : '30 dias';
-    const premiumActionLabel = isPremium ? 'Estender premium' : 'Ativar premium';
+    const premiumStatusCopy = isPremium
+        ? premiumDaysRemaining != null
+            ? `Expira em ${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'}`
+            : premiumExpiresLabel
+                ? `Válido até ${premiumExpiresLabel}`
+                : null
+        : '30 dias por ativação';
+    const platinumStatusCopy = isPlatinum
+        ? premiumDaysRemaining != null
+            ? `Expira em ${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'}`
+            : premiumExpiresLabel
+                ? `Válido até ${premiumExpiresLabel}`
+                : null
+        : '30 dias por ativação';
+    const premiumActionLabel = isPlatinum ? 'Platinum ativo' : isPremium ? 'Estender premium' : 'Ativar premium';
+    const platinumActionLabel = isPlatinum ? 'Estender platinum' : activeMembershipTier === 'premium' ? 'Subir para platinum' : 'Ativar platinum';
+    const isPremiumExpiringSoon = isPremium && premiumDaysRemaining != null && premiumDaysRemaining <= 7;
 
-    const handleConfirmPremiumPurchase = async () => {
-        if (isBuyingPremium) return;
-        setIsBuyingPremium(true);
+    const handleConfirmMembershipPurchase = async () => {
+        if (!confirmMembership || isBuyingMembership) return;
+        setIsBuyingMembership(confirmMembership);
         try {
-            await buyStoreItem('premium_30d', 'premium');
-            setConfirmPremium(false);
+            await buyStoreItem(confirmMembership === 'platinum' ? GOLD_PLATINUM_PRODUCT.id : GOLD_PREMIUM_PRODUCT.id, 'premium');
+            setConfirmMembership(null);
         } catch (error) {
-            console.error('Premium purchase failed from settings tab', error);
+            console.error('Membership purchase failed from settings tab', error);
         } finally {
-            setIsBuyingPremium(false);
+            setIsBuyingMembership(null);
         }
     };
 
@@ -2411,86 +2434,105 @@ const PremiumTab: React.FC = () => {
         <>
         <div className="space-y-8 animate-fade-in pb-10">
             <section className="space-y-4">
-                <div className="flex items-center justify-between px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">
+                <div className="flex items-center px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">
                     <h2 className="text-sm font-bold accent-text uppercase tracking-widest">Premium</h2>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded ${isPremium ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
-                        {premiumLabel}
-                    </span>
                 </div>
 
                 <GlassCard variant="neutral" className="relative overflow-hidden border-[var(--ui-border-accent-soft)]">
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-yellow-900/20 via-yellow-500/5 to-transparent" />
-                    <div className="relative z-10 space-y-5 p-5">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="rounded-full border border-[var(--ui-border-accent)] bg-[var(--ui-core-surface-strong-bg)] p-3 shadow-[0_0_20px_var(--ui-button-primary-glow)]">
-                                    <CrownIcon className="h-6 w-6 text-[var(--ui-text-accent)]" />
-                                </div>
-                                <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
-                                    {premiumLabel}
-                                </div>
+                    <div className="relative z-10 space-y-3 p-4">
+                        <div className="flex items-start gap-3">
+                            <div className="rounded-full border border-[var(--ui-border-accent)] bg-[var(--ui-core-surface-strong-bg)] p-3 shadow-[0_0_20px_var(--ui-button-primary-glow)]">
+                                <CrownIcon className="h-6 w-6 text-[var(--ui-text-accent)]" />
                             </div>
-                            <div className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {premiumBadgeLabel}
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <h3 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Soberania premium</h3>
-                            <p className="max-w-[30rem] text-sm leading-relaxed text-[color:var(--ui-card-text-soft)]">
-                                A mesma linguagem da loja de ouro, mas com a validade do seu premium e o ganho real do legado em destaque.
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                            <div className="rounded-2xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-4 py-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--ui-card-text-soft)]">Premium</div>
-                                <div className="mt-1 text-xl font-black text-[color:var(--ui-card-text)]">{premiumCycleLabel}</div>
-                                <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">
-                                    {isPremium && premiumExpiresLabel ? `ate ${premiumExpiresLabel}` : '30 dias por ativacao'}
+                            <div className="min-w-0 flex-1 space-y-1 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                    <h3 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Premium</h3>
+                                    <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
+                                        {premiumLabel}
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="rounded-2xl border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-4 py-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)]/82">Cena do legado</div>
-                                <div className="mt-1 inline-flex items-center gap-1.5 text-xl font-black text-[var(--ui-text-accent)]">
-                                    <span className="text-[14px] leading-none">{GOLD_SYMBOL}</span>
-                                    <span>{legacyScenePrice}</span>
-                                </div>
-                                <div className="text-[11px] text-[var(--ui-text-accent)]/72">50% off no premium</div>
-                            </div>
-                            <div className="rounded-2xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-4 py-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--ui-card-text-soft)]">Renovacao</div>
-                                <div className="mt-1 inline-flex items-center gap-1.5 text-xl font-black text-[color:var(--ui-card-text)]">
-                                    <span className="text-[14px] leading-none">{GOLD_SYMBOL}</span>
-                                    <span>{GOLD_PREMIUM_PRODUCT.priceGold}</span>
-                                </div>
-                                <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">manual, quando quiser</div>
+                                {premiumStatusCopy && (
+                                    <p className={`text-[11px] font-bold uppercase tracking-[0.14em] ${isPremiumExpiringSoon ? 'text-red-200/88' : 'text-[color:var(--ui-card-text-soft)]'}`}>
+                                        {premiumStatusCopy}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
-                        <div className="grid gap-2">
+                        <div className="grid gap-2 min-[360px]:grid-cols-2">
                             {premiumBenefits.map((benefit) => (
-                                <div key={benefit} className="flex items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
-                                    <CheckIcon className="h-4 w-4 text-green-400" />
-                                    <span className="text-sm text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                                <div key={benefit} className="flex min-h-[40px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
+                                    <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
+                                    <span className="text-[12px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="flex min-w-[176px] flex-col items-stretch gap-2">
+                        <div className="flex min-w-[176px] flex-col items-stretch gap-1.5">
                             <button
-                                onClick={() => setConfirmPremium(true)}
-                                disabled={isBuyingPremium}
-                                className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-60"
+                                onClick={() => setConfirmMembership('premium')}
+                                disabled={isBuyingMembership !== null || isPlatinum}
+                                className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <span>{premiumActionLabel}</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
                                     <span className="text-[12px] leading-none">{GOLD_SYMBOL}</span>
-                                    <span>{isBuyingPremium ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
+                                    <span>{isBuyingMembership === 'premium' ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {isPremium ? 'Renove quando quiser' : 'Compra manual em ouro'}
+                                {isPlatinum ? 'Já incluso no plano maior' : isPremium ? 'Renove quando quiser' : 'Compra manual em ouro'}
+                            </span>
+                        </div>
+                    </div>
+                </GlassCard>
+
+                <GlassCard variant="neutral" className="relative overflow-hidden border-[var(--ui-border-accent)]">
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,244,206,0.18),transparent_56%),linear-gradient(135deg,rgba(186,144,255,0.12),transparent_46%)]" />
+                    <div className="relative z-10 space-y-3 p-4">
+                        <div className="flex items-start gap-3">
+                            <div className="rounded-full border border-white/20 bg-white/10 p-3 shadow-[0_0_26px_rgba(240,218,160,0.2)]">
+                                <CrownIcon className="h-6 w-6 text-amber-100" />
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                    <h3 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Platinum</h3>
+                                    <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPlatinum ? 'border-amber-200/30 bg-amber-200/12 text-amber-100' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
+                                        {isPlatinum ? 'ATIVO' : 'DISPONÍVEL'}
+                                    </div>
+                                </div>
+                                {platinumStatusCopy && (
+                                    <p className={`text-[11px] font-bold uppercase tracking-[0.14em] ${isPlatinum && isPremiumExpiringSoon ? 'text-red-200/88' : 'text-[color:var(--ui-card-text-soft)]'}`}>
+                                        {platinumStatusCopy}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid gap-2 min-[360px]:grid-cols-2">
+                            {platinumBenefits.map((benefit) => (
+                                <div key={benefit} className="flex min-h-[40px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
+                                    <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
+                                    <span className="text-[12px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex min-w-[176px] flex-col items-stretch gap-1.5">
+                            <button
+                                onClick={() => setConfirmMembership('platinum')}
+                                disabled={isBuyingMembership !== null}
+                                className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <span>{platinumActionLabel}</span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
+                                    <span className="text-[12px] leading-none">{GOLD_SYMBOL}</span>
+                                    <span>{isBuyingMembership === 'platinum' ? '...' : GOLD_PLATINUM_PRODUCT.priceGold}</span>
+                                </span>
+                            </button>
+                            <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
+                                {isPlatinum ? 'Renove quando quiser' : activeMembershipTier === 'premium' ? 'Upgrade manual em ouro' : 'Compra manual em ouro'}
                             </span>
                         </div>
                     </div>
@@ -2498,16 +2540,22 @@ const PremiumTab: React.FC = () => {
             </section>
 
         </div>
-        {confirmPremium && (
+        {confirmMembership && (
             <ConfirmationModal
-                title={isPremium ? 'Estender premium' : 'Ativar premium'}
-                message={isPremium
-                    ? `Estender o premium vai debitar ${GOLD_PREMIUM_PRODUCT.priceGold} ouro da sua conta e somar mais 30 dias ao periodo atual. Deseja continuar?`
-                    : `Ativar o premium vai debitar ${GOLD_PREMIUM_PRODUCT.priceGold} ouro da sua conta e liberar 30 dias de acesso. Deseja continuar?`}
-                confirmLabel={`${isPremium ? 'ESTENDER' : 'ATIVAR'} - ${GOLD_PREMIUM_PRODUCT.priceGold} ${GOLD_SYMBOL}`}
-                onConfirm={() => { void handleConfirmPremiumPurchase(); }}
+                title={confirmMembership === 'platinum'
+                    ? (isPlatinum ? 'Estender platinum' : activeMembershipTier === 'premium' ? 'Subir para platinum' : 'Ativar platinum')
+                    : (isPremium ? 'Estender premium' : 'Ativar premium')}
+                message={confirmMembership === 'platinum'
+                    ? `${isPlatinum ? 'Estender o platinum' : 'Ativar o platinum'} vai debitar ${GOLD_PLATINUM_PRODUCT.priceGold} ouro da sua conta e ajustar seu acesso por mais 30 dias. Deseja continuar?`
+                    : isPremium
+                        ? `Estender o premium vai debitar ${GOLD_PREMIUM_PRODUCT.priceGold} ouro da sua conta e somar mais 30 dias ao período atual. Deseja continuar?`
+                        : `Ativar o premium vai debitar ${GOLD_PREMIUM_PRODUCT.priceGold} ouro da sua conta e liberar 30 dias de acesso. Deseja continuar?`}
+                confirmLabel={`${confirmMembership === 'platinum'
+                    ? (isPlatinum ? 'ESTENDER' : 'ATIVAR')
+                    : (isPremium ? 'ESTENDER' : 'ATIVAR')} - ${confirmMembership === 'platinum' ? GOLD_PLATINUM_PRODUCT.priceGold : GOLD_PREMIUM_PRODUCT.priceGold} ${GOLD_SYMBOL}`}
+                onConfirm={() => { void handleConfirmMembershipPurchase(); }}
                 onCancel={() => {
-                    if (!isBuyingPremium) setConfirmPremium(false);
+                    if (!isBuyingMembership) setConfirmMembership(null);
                 }}
             />
         )}

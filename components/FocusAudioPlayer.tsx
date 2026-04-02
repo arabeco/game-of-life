@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlayIcon, PauseIcon, LockIcon } from './Icons';
+import { PlayIcon, PauseIcon } from './Icons';
 import { useGame } from '../contexts/GameContext';
 import { clearActiveMediaHint, persistActiveMediaHint } from '../utils/mediaResumeHint';
 
@@ -16,24 +16,22 @@ interface Track {
 const FOCUS_TRACKS: Track[] = [
     { id: 'brown', emoji: '🌫️', url: 'brown-noise.mp3', isPremium: false, title: 'O Vazio' }, // névoa
     { id: 'rain', emoji: '⛈️', url: 'rain.mp3', isPremium: false, title: 'Tempestade no Feudo' },
-    { id: '528', emoji: '✨', url: '528-healing.mp3', isPremium: true, title: 'Frequência Divina 528Hz' },
-    { id: '432', emoji: '🌀', url: '432-focus.mp3', isPremium: true, title: 'Ressonância 432Hz' },
-    { id: 'temple', emoji: '🎐', url: 'tibetan.mp3', isPremium: true, title: 'Templo Etéreo' },
-    { id: 'pub', emoji: '🕯️', url: 'pub.mp3', isPremium: true, title: 'Taverna do Clã' },
-    { id: 'fireplace', emoji: '🪵', url: 'fireplace.mp3', isPremium: true, title: 'Lareira do Arquiteto' },
-    { id: 'hacker', emoji: '⌨️', url: 'lo-fi.mp3', isPremium: true, title: 'Foco Hacker' },
-    { id: 'city', emoji: '🌙', url: 'quiet-city.mp3', isPremium: true, title: 'Vigília Urbana' },
+    { id: '528', emoji: '✨', url: '528-healing.mp3', isPremium: false, title: 'Frequência Divina 528Hz' },
+    { id: '432', emoji: '🌀', url: '432-focus.mp3', isPremium: false, title: 'Ressonância 432Hz' },
+    { id: 'temple', emoji: '🎐', url: 'tibetan.mp3', isPremium: false, title: 'Templo Etéreo' },
+    { id: 'pub', emoji: '🕯️', url: 'pub.mp3', isPremium: false, title: 'Taverna do Clã' },
+    { id: 'fireplace', emoji: '🪵', url: 'fireplace.mp3', isPremium: false, title: 'Lareira do Arquiteto' },
+    { id: 'hacker', emoji: '⌨️', url: 'lo-fi.mp3', isPremium: false, title: 'Foco Hacker' },
+    { id: 'city', emoji: '🌙', url: 'quiet-city.mp3', isPremium: false, title: 'Vigília Urbana' },
 ];
 
 export const FocusAudioPlayer: React.FC = () => {
-    const { userProfile, showToast } = useGame();
+    const { showToast } = useGame();
     const [isExpanded, setIsExpanded] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const pageHideWhilePlayingRef = useRef(false);
-
-    const isPremiumUser = userProfile?.isPremium || userProfile?.plan === 'Soberano' || userProfile?.plan === 'Premium';
 
     // Initialize audio element only once
     useEffect(() => {
@@ -121,11 +119,6 @@ export const FocusAudioPlayer: React.FC = () => {
     }, [currentTrack]);
 
     const playTrack = (track: Track) => {
-        if (track.isPremium && !isPremiumUser) {
-            showToast('Acesso negado. Recurso restrito a assinantes Premium.', 'error');
-            return;
-        }
-
         if (audioRef.current) {
             if (currentTrack?.id !== track.id) {
                 audioRef.current.src = BASE_URL + track.url;

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { CodexCatalogItem, UserCodex } from '../../types';
 import { Portal } from '../Portal';
@@ -9,7 +9,7 @@ import './CampaignRecommendationQuiz.css';
 type QuizAnswerKey = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 type QuizQuestionId = 'p1' | 'p2' | 'p3' | 'p4' | 'p5' | 'p6' | 'p7';
 type QuizAnswers = Partial<Record<QuizQuestionId, QuizAnswerKey>>;
-type QuizMode = 'free' | 'full';
+type QuizMode = 'free' | 'medium' | 'full';
 
 type QuizOption = { key: QuizAnswerKey; title: string; subtitle: string };
 type QuizQuestion = { id: QuizQuestionId; title: string; subtitle: string; options?: QuizOption[]; getOptions?: (answers: QuizAnswers) => QuizOption[] };
@@ -200,7 +200,7 @@ const resolveRecommendation = (answers: QuizAnswers, entries: CampaignEntry[], m
             return left.title.localeCompare(right.title);
         });
         const entry = ordered[0];
-        return entry ? { entry, desiredDuration, upgradeNote: entry.durationDays < desiredDuration ? `Quer esse ciclo em ${desiredDuration} dias? Disponivel na loja.` : null } : null;
+        return entry ? { entry, desiredDuration, upgradeNote: entry.durationDays < desiredDuration ? `Quer esse ciclo em ${desiredDuration} dias? Disponível na loja.` : null } : null;
     }
     const orderMap = new Map(fullTitles(answers).map((title, index) => [normalizeToken(title), index]));
     const ranked = [...entries]
@@ -212,7 +212,7 @@ const resolveRecommendation = (answers: QuizAnswers, entries: CampaignEntry[], m
 interface CampaignRecommendationQuizModalProps { onClose: () => void }
 
 export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQuizModalProps> = ({ onClose }) => {
-    const { codexCatalog, userCodexes, getArenas, buyCodex, installCodex, showToast } = useGame();
+    const { codexCatalog, userCodexes, userProfile, getArenas, buyCodex, installCodex, showToast } = useGame();
     const [quizMode, setQuizMode] = useState<QuizMode>('free');
     const [questionIndex, setQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState<QuizAnswers>({});
@@ -225,15 +225,34 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
 
     const catalogEntries = useMemo(() => codexCatalog.map(buildEntry).filter((entry): entry is CampaignEntry => Boolean(entry)), [codexCatalog]);
     const freeCatalog = useMemo(() => catalogEntries.filter((entry) => entry.isFree), [catalogEntries]);
+    const mediumCatalog = useMemo(
+        () => catalogEntries.filter((entry) => !entry.isFree && entry.tierRank === 2),
+        [catalogEntries],
+    );
     const hasOwnedFreeCampaign = useMemo(() => userCodexes.some((userCodex) => {
         if (!userCodex.catalog_id) return false;
         const catalogEntry = catalogEntries.find((entry) => entry.catalog.id === userCodex.catalog_id);
         return Boolean(catalogEntry?.isFree);
     }), [catalogEntries, userCodexes]);
+    const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
+    const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
+    const hasFreeQuizCredit = campaignQuizFreeCredits > 0;
+    const hasMediumQuizCredit = campaignQuizMediumCredits > 0;
+    const hasStarterFreeQuiz = !hasCompletedFreeCampaignQuiz() && !hasOwnedFreeCampaign;
+    const canPickFreeQuiz = hasStarterFreeQuiz || hasFreeQuizCredit;
+    const shouldConsumeFreeQuizCredit = quizMode === 'free' && !hasStarterFreeQuiz && hasFreeQuizCredit;
 
     useEffect(() => {
-        if (hasCompletedFreeCampaignQuiz() || hasOwnedFreeCampaign) setQuizMode('full');
-    }, [hasOwnedFreeCampaign]);
+        if (canPickFreeQuiz) {
+            setQuizMode('free');
+            return;
+        }
+        if (hasMediumQuizCredit) {
+            setQuizMode('medium');
+            return;
+        }
+        setQuizMode('full');
+    }, [canPickFreeQuiz, hasMediumQuizCredit]);
 
     const allArenas = getArenas();
     const installedCodexIds = useMemo(() => new Set(allArenas.map((arena) => arena.originCodexId).filter(Boolean)), [allArenas]);
@@ -266,28 +285,55 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         setSelectedOption(isStillValid ? savedAnswer : null);
     }, [answers, currentOptions, currentQuestion]);
 
-    const ensureCampaignInLibrary = useCallback(async (recommendation: CampaignRecommendation, options: { autoAcquire?: boolean } = {}): Promise<UserCodex | null> => {
+    const ensureCampaignInLibrary = useCallback(async (
+        recommendation: CampaignRecommendation,
+        options: { autoAcquire?: boolean; useCampaignQuizFreeCredit?: boolean; useCampaignQuizMediumCredit?: boolean } = {},
+    ): Promise<UserCodex | null> => {
         const existing = findOwnedCodex(recommendation.entry.catalog.id);
         if (existing) {
             setStatusMessage(installedCodexIds.has(existing.id) ? 'Essa campanha ja esta instalada nas suas campanhas.' : 'Campanha adicionada a sua biblioteca. Ela ja aparece no menu de Campanhas.');
             return existing;
         }
         if (!options.autoAcquire) {
-            setStatusMessage(recommendation.entry.isFree ? 'Campanha gratuita pronta para entrar na sua biblioteca. Depois voce instala no app quando quiser.' : 'Campanha recomendada encontrada. Ao comprar, ela entra na sua biblioteca e depois pode ser instalada no app.');
+            setStatusMessage(
+                recommendation.entry.isFree
+                    ? 'Campanha gratuita pronta para entrar na sua biblioteca. Depois você instala no app quando quiser.'
+                    : options.useCampaignQuizFreeCredit
+                        ? 'Sua ficha grátis pode liberar essa campanha para instalar agora.'
+                    : options.useCampaignQuizMediumCredit
+                        ? 'Sua ficha média pode liberar essa campanha para instalar agora.'
+                        : 'Campanha recomendada encontrada. Ao comprar, ela entra na sua biblioteca e depois pode ser instalada no app.',
+            );
             return null;
         }
         if (ensuredCatalogIdsRef.current.has(recommendation.entry.catalog.id)) return null;
         ensuredCatalogIdsRef.current.add(recommendation.entry.catalog.id);
         setIsSyncingLibrary(true);
-        setStatusMessage(recommendation.entry.isFree ? 'Adicionando a campanha recomendada a sua biblioteca...' : 'Adquirindo a campanha recomendada e colocando na sua biblioteca...');
+        setStatusMessage(
+            recommendation.entry.isFree
+                ? (options.useCampaignQuizFreeCredit ? 'Aplicando sua ficha grátis e liberando a campanha...' : 'Adicionando a campanha recomendada à sua biblioteca...')
+                : options.useCampaignQuizMediumCredit
+                    ? 'Aplicando sua ficha média e liberando a campanha...'
+                    : 'Adquirindo a campanha recomendada e colocando na sua biblioteca...',
+        );
         try {
-            const acquired = await buyCodex(recommendation.entry.catalog.id, { silentSuccess: true });
+            const acquired = await buyCodex(recommendation.entry.catalog.id, {
+                silentSuccess: true,
+                useCampaignQuizFreeCredit: options.useCampaignQuizFreeCredit,
+                useCampaignQuizMediumCredit: options.useCampaignQuizMediumCredit,
+            });
             const resolved = acquired || findOwnedCodex(recommendation.entry.catalog.id);
             if (resolved) {
-                setStatusMessage(recommendation.entry.isFree ? 'Campanha adicionada a sua biblioteca. Se quiser, instale agora.' : 'Campanha adquirida e adicionada a sua biblioteca. Se quiser, instale agora.');
+                setStatusMessage(
+                    recommendation.entry.isFree
+                        ? (options.useCampaignQuizFreeCredit ? 'Campanha liberada com sua ficha grátis. Se quiser, instale agora.' : 'Campanha adicionada à sua biblioteca. Se quiser, instale agora.')
+                        : options.useCampaignQuizMediumCredit
+                            ? 'Campanha liberada com sua ficha média. Se quiser, instale agora.'
+                            : 'Campanha adquirida e adicionada à sua biblioteca. Se quiser, instale agora.',
+                );
                 return resolved;
             }
-            setStatusMessage('Nao foi possivel preparar essa campanha agora.');
+            setStatusMessage('Não foi possível preparar essa campanha agora.');
             return null;
         } finally {
             setIsSyncingLibrary(false);
@@ -296,16 +342,24 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
 
     useEffect(() => {
         if (!result) return;
-        void ensureCampaignInLibrary(result, { autoAcquire: result.entry.isFree });
-    }, [ensureCampaignInLibrary, result]);
+        void ensureCampaignInLibrary(result, {
+            autoAcquire: result.entry.isFree,
+            useCampaignQuizFreeCredit: result.entry.isFree && shouldConsumeFreeQuizCredit,
+        });
+    }, [ensureCampaignInLibrary, result, shouldConsumeFreeQuizCredit]);
 
     const handleContinue = () => {
         if (!selectedOption) return;
         const nextAnswers = { ...answers, [currentQuestion.id]: selectedOption } as QuizAnswers;
         setAnswers(nextAnswers);
         if (questionIndex === TOTAL_QUESTIONS - 1) {
-            if (quizMode === 'free') markFreeCampaignQuizCompleted();
-            setResult(resolveRecommendation(nextAnswers, quizMode === 'free' ? freeCatalog : catalogEntries, quizMode));
+            if (quizMode === 'free' && hasStarterFreeQuiz) markFreeCampaignQuizCompleted();
+            const pool = quizMode === 'free'
+                ? freeCatalog
+                : quizMode === 'medium'
+                    ? (mediumCatalog.length ? mediumCatalog : catalogEntries.filter((entry) => !entry.isFree))
+                    : catalogEntries.filter((entry) => !entry.isFree);
+            setResult(resolveRecommendation(nextAnswers, pool, quizMode));
             return;
         }
         setQuestionIndex((current) => current + 1);
@@ -321,10 +375,14 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         const closeOnSuccess = options.closeOnSuccess ?? true;
         setInstallingCatalogId(recommendation.entry.catalog.id);
         try {
-            const ownedCodex = await ensureCampaignInLibrary(recommendation, { autoAcquire: true });
+            const ownedCodex = await ensureCampaignInLibrary(recommendation, {
+                autoAcquire: true,
+                useCampaignQuizFreeCredit: quizMode === 'free' && shouldConsumeFreeQuizCredit,
+                useCampaignQuizMediumCredit: quizMode === 'medium',
+            });
             const resolved = ownedCodex || findOwnedCodex(recommendation.entry.catalog.id);
             if (!resolved) {
-                showToast('Nao foi possivel preparar a campanha para instalacao.', 'warning');
+                showToast('Não foi possível preparar a campanha para instalação.', 'warning');
                 return;
             }
             if (installedCodexIds.has(resolved.id)) {
@@ -339,8 +397,27 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         }
     };
 
-    const resultPriceLabel = result?.entry.isFree ? 'Gratuita' : `${result?.entry.priceGold} ouro`;
+    const resultPriceLabel = quizMode === 'medium'
+        ? 'Grátis com ficha'
+        : shouldConsumeFreeQuizCredit
+            ? 'Grátis com ficha'
+        : result?.entry.isFree
+            ? 'Gratuita'
+            : `${result?.entry.priceGold} ouro`;
     const secondaryPriceLabel = secondaryRecommendation ? `${secondaryRecommendation.entry.priceGold} ouro` : null;
+    const modeLabel = quizMode === 'free'
+        ? (hasStarterFreeQuiz ? 'Primeiro quiz gratuito' : `${campaignQuizFreeCredits} ficha${campaignQuizFreeCredits === 1 ? '' : 's'} grátis disponível${campaignQuizFreeCredits === 1 ? '' : 'eis'}`)
+        : quizMode === 'medium'
+            ? `${campaignQuizMediumCredits} ficha${campaignQuizMediumCredits === 1 ? '' : 's'} média${campaignQuizMediumCredits === 1 ? '' : 's'} disponível${campaignQuizMediumCredits === 1 ? '' : 'eis'}`
+            : 'Catálogo completo';
+    const resultModeLabel = quizMode === 'free'
+        ? (shouldConsumeFreeQuizCredit ? 'Resultado com ficha grátis' : 'Resultado do quiz')
+        : quizMode === 'medium'
+            ? 'Resultado com ficha média'
+            : 'Resultado do quiz';
+    const installLabel = quizMode === 'medium' || shouldConsumeFreeQuizCredit
+        ? 'Liberar e instalar campanha'
+        : 'Instalar campanha';
 
     return (
         <Portal>
@@ -361,8 +438,37 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                 <div className="campaign-quiz-scroll">
                                     <div className="campaign-quiz-meta">
                                         <div className="campaign-quiz-index">{String(questionIndex + 1).padStart(2, '0')} / 07</div>
-                                        <div>{quizMode === 'free' ? 'Filtro inicial: gratuitas' : 'Recomendacao completa'}</div>
+                                        <div>{modeLabel}</div>
                                     </div>
+                                    {(canPickFreeQuiz || hasMediumQuizCredit) && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {canPickFreeQuiz && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setQuizMode('free')}
+                                                    className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${quizMode === 'free' ? 'luxe-skin-button' : 'campaign-quiz-secondary'}`}
+                                                >
+                                                    {hasStarterFreeQuiz ? 'Quiz grátis' : `Ficha grátis · ${campaignQuizFreeCredits}`}
+                                                </button>
+                                            )}
+                                            {hasMediumQuizCredit && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setQuizMode('medium')}
+                                                    className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${quizMode === 'medium' ? 'luxe-skin-button' : 'campaign-quiz-secondary'}`}
+                                                >
+                                                    Ficha média · {campaignQuizMediumCredits}
+                                                </button>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={() => setQuizMode('full')}
+                                                className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${quizMode === 'full' ? 'luxe-skin-button' : 'campaign-quiz-secondary'}`}
+                                            >
+                                                Catálogo completo
+                                            </button>
+                                        </div>
+                                    )}
                                     <div className="campaign-quiz-copy">
                                         <h1 className="campaign-quiz-title">{currentQuestion.title}</h1>
                                         <p className="campaign-quiz-subtitle">{currentQuestion.subtitle}</p>
@@ -389,7 +495,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                 <div className="campaign-quiz-scroll campaign-quiz-scroll-result">
                                     <div className="campaign-quiz-meta">
                                         <div className="campaign-quiz-index">07 / 07</div>
-                                        <div>{quizMode === 'free' ? 'Resultado gratuito' : 'Resultado completo'}</div>
+                                        <div>{resultModeLabel}</div>
                                     </div>
                                     <div className="campaign-quiz-result">
                                         <h1 className="campaign-quiz-result-title">Sua campanha foi identificada</h1>
@@ -405,7 +511,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                         {statusMessage && <div className="campaign-quiz-result-status">{statusMessage}</div>}
                                         {quizMode === 'free' && secondaryRecommendation && (
                                             <div className="campaign-quiz-see-also">
-                                                <div className="campaign-quiz-see-also-label">Veja tambem</div>
+                                                <div className="campaign-quiz-see-also-label">Veja também</div>
                                                 <div className="campaign-quiz-see-also-card">
                                                     <div className="campaign-quiz-see-also-header">
                                                         <div>
@@ -437,13 +543,9 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                         )}
                                         <div className="campaign-quiz-result-actions">
                                             <button type="button" onClick={() => { void handleInstallRecommendation(result); }} disabled={installingCatalogId !== null || isSyncingLibrary || isResultInstalled} className="luxe-skin-button w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50">
-                                                {installingCatalogId === result.entry.catalog.id ? 'Instalando...' : isResultInstalled ? 'Campanha instalada' : 'Instalar Campanha'}
+                                                {installingCatalogId === result.entry.catalog.id ? 'Instalando...' : isResultInstalled ? 'Campanha instalada' : installLabel}
                                             </button>
-                                            {quizMode === 'free' ? (
-                                                <button type="button" onClick={onClose} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver catalogo completo</button>
-                                            ) : (
-                                                <button type="button" onClick={onClose} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver catalogo completo</button>
-                                            )}
+                                            <button type="button" onClick={onClose} className="campaign-quiz-secondary w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Ver catálogo completo</button>
                                         </div>
                                     </div>
                                 </div>
@@ -455,3 +557,4 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         </Portal>
     );
 };
+

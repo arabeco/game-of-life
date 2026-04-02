@@ -3,7 +3,7 @@
 export type EraRibbonSkin = {
     id: string;
     name: string;
-    isPremium: boolean;
+    accessTier: 'base' | 'platinum';
     baseTop: string;
     baseBottom: string;
     glow: string;
@@ -17,7 +17,7 @@ export const ERA_RIBBON_SKINS: EraRibbonSkin[] = [
     {
         id: 'foundry-free',
         name: 'Foundry',
-        isPremium: false,
+        accessTier: 'base',
         baseTop: '#161616',
         baseBottom: '#050505',
         glow: '#7dd3fc',
@@ -29,7 +29,7 @@ export const ERA_RIBBON_SKINS: EraRibbonSkin[] = [
     {
         id: 'royal-gold',
         name: 'Royal Gold',
-        isPremium: true,
+        accessTier: 'platinum',
         baseTop: '#3a2a10',
         baseBottom: '#090603',
         glow: '#facc15',
@@ -41,7 +41,7 @@ export const ERA_RIBBON_SKINS: EraRibbonSkin[] = [
     {
         id: 'obsidian-rune',
         name: 'Obsidian Rune',
-        isPremium: true,
+        accessTier: 'platinum',
         baseTop: '#151127',
         baseBottom: '#05030d',
         glow: '#c084fc',
@@ -53,7 +53,7 @@ export const ERA_RIBBON_SKINS: EraRibbonSkin[] = [
     {
         id: 'verdigris-relic',
         name: 'Verdigris Relic',
-        isPremium: true,
+        accessTier: 'platinum',
         baseTop: '#0f2925',
         baseBottom: '#030807',
         glow: '#5eead4',

@@ -177,7 +177,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     onDeletePreviewCampaign = null,
     previewMeta,
 }) => {
-    const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, installCodex, showToast } = useGame();
+    const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, userProfile, installCodex, showToast } = useGame();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
@@ -253,6 +253,14 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         [libraryEntries],
     );
     const hasPendingFreeQuiz = !hasCompletedFreeCampaignQuiz();
+    const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
+    const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
+    const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
+    const quizButtonLabel = hasPendingFreeQuiz
+        ? 'Quiz grátis'
+        : totalQuizCredits > 0
+            ? `Quiz · ${totalQuizCredits}`
+            : 'Fazer quiz';
     const handleInstallLibraryCampaign = async (codex: UserCodex) => {
         if (installedCodexIds.has(codex.id)) {
             showToast('Essa campanha ja esta instalada nas suas campanhas.', 'info');
@@ -676,7 +684,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                     }`}
                                 >
                                     <LightbulbIcon className="h-3.5 w-3.5" />
-                                    <span>{hasPendingFreeQuiz ? 'Quiz gratis' : 'Fazer quiz'}</span>
+                                    <span>{quizButtonLabel}</span>
                                 </button>
                                 <button
                                     type="button"
@@ -1305,6 +1313,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         </Portal>
     );
 };
+
 
 
 

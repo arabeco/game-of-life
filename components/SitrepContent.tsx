@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon } from './Icons';
+import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon, ZapIcon } from './Icons';
 import { ScheduledTask, Action, DailyCommitment } from '../types';
 import { shareElementWithFeedback } from './Share';
 import { PoolAction } from './PoolAction';
@@ -9,6 +9,7 @@ import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoop
 import { getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasScheduledTime, isClanQuestAction } from '../utils/taskDomain.js';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
+import { getExpBoostHoursRemaining, getExpBoostLabel, hasActiveExpBoost } from '../utils/expBoostAccess';
 import './core-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 
@@ -49,6 +50,29 @@ const CycleHeader: React.FC = () => {
     return (
         <div className="text-center space-y-2 text-xs p-2 rounded-xl sitrep-neutral-panel">
             <h3 className="arena-title-text text-[11px] text-white leading-tight tracking-[0.08em]">{activeCycle.name} · Dia {daysElapsed}/{totalDays}</h3>
+        </div>
+    );
+};
+
+const SitrepBoostStatus: React.FC = () => {
+    const { userProfile } = useGame();
+    const hasExpBoost = hasActiveExpBoost(userProfile);
+    const expBoostLabel = getExpBoostLabel(userProfile);
+    const expBoostHoursRemaining = getExpBoostHoursRemaining(userProfile);
+
+    if (!hasExpBoost) return null;
+
+    return (
+        <div className="flex justify-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)] shadow-[0_0_18px_rgba(212,175,55,0.12)]">
+                <ZapIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>{expBoostLabel || 'Boost XP'}</span>
+                {expBoostHoursRemaining != null && (
+                    <span className="rounded-full border border-white/10 bg-black/20 px-1.5 py-0.5 text-[9px] tracking-[0.12em] text-white/70">
+                        {expBoostHoursRemaining}h
+                    </span>
+                )}
+            </div>
         </div>
     );
 };
@@ -224,6 +248,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     const renderPlanning = () => (
         <>
             <CycleHeader />
+            <SitrepBoostStatus />
 
             <div className="sitrep-neutral-panel p-3 rounded-xl">
                 <h3 className="core-label text-center mb-2">Tarefas disponíveis</h3>
@@ -304,6 +329,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                     <div className="w-9"></div>
                 </div>
                 <CycleHeader />
+                <SitrepBoostStatus />
                 <div className='text-center'>
                     <div className={`w-full rounded-full h-1.5 mt-1 ${progressTrackClass}`}><div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
                     <p className="text-xs text-gray-400 mt-1">
@@ -420,6 +446,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
             <>
                 <div id="sitrep-capture-area" className="space-y-4">
                     <CycleHeader />
+                    <SitrepBoostStatus />
                     <div className="text-center space-y-2 py-4">
                         <div className="relative inline-block mb-4">
                             <p className={`text-9xl font-black italic tracking-tighter ${rankColor} transition-all duration-1000 animate-in zoom-in-50 fade-in duration-700`}>

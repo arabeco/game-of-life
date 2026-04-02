@@ -23,7 +23,7 @@ interface OracleSettingsModalProps {
 }
 
 type SettingsTab = 'modos' | 'categorias';
-type ToggleKey = 'iaEnabled' | 'notificationsEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
+type ToggleKey = 'iaEnabled' | 'notificationsEnabled' | 'dailyFocusCardEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
 
 const PUSH_PERMISSION_LABEL: Record<ReturnType<typeof getLocalNotificationPermission>, string> = {
     default: 'Aguardando permissao',
@@ -365,9 +365,17 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     {renderSwitchRow({
                                         icon: '🔔',
                                         label: 'Avisos do Oraculo',
-                                        description: 'Cards automáticos e avisos internos.',
+                                        description: 'Avisos internos do sistema e sinais do Oraculo dentro do app.',
                                         enabled: Boolean(oraclePreferences.notificationsEnabled),
                                         onToggle: () => handleToggle('notificationsEnabled'),
+                                    })}
+                                    {renderSwitchRow({
+                                        icon: '🎯',
+                                        label: 'Card de foco diario',
+                                        description: 'Opt-in do automatico: ate 1 card por dia, respeitando seu horario de silencio.',
+                                        enabled: Boolean(oraclePreferences.dailyFocusCardEnabled),
+                                        onToggle: () => handleToggle('dailyFocusCardEnabled'),
+                                        accentClass: 'bg-amber-500/70',
                                     })}
                                     {renderSwitchRow({
                                         icon: '💬',

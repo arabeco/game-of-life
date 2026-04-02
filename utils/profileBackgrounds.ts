@@ -2,7 +2,7 @@ export interface ProfileBackgroundOption {
     id: string;
     name: string;
     value: string;
-    isPremiumOnly?: boolean;
+    accessTier?: 'base' | 'premium' | 'platinum';
 }
 
 const STORAGE_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
@@ -163,18 +163,18 @@ const buildProfileBackgroundSources = (basename: string): string[] => {
 };
 
 export const PROFILE_BACKGROUND_OPTIONS: ProfileBackgroundOption[] = [
-    { id: 'gold', name: 'Gold', value: toProfileBackgroundToken('gold') },
-    { id: 'silver', name: 'Silver', value: toProfileBackgroundToken('silver') },
-    { id: 'black', name: 'Black', value: toProfileBackgroundToken('black'), isPremiumOnly: true },
-    { id: 'blue', name: 'Blue', value: toProfileBackgroundToken('blue'), isPremiumOnly: true },
-    { id: 'darkblue', name: 'Dark Blue', value: toProfileBackgroundToken('darkblue'), isPremiumOnly: true },
-    { id: 'violet', name: 'Violet', value: toProfileBackgroundToken('violet'), isPremiumOnly: true },
-    { id: 'pink', name: 'Pink', value: toProfileBackgroundToken('pink'), isPremiumOnly: true },
-    { id: 'purple', name: 'Purple', value: toProfileBackgroundToken('purple'), isPremiumOnly: true },
-    { id: 'ruby', name: 'Rubi', value: toProfileBackgroundToken('ruby'), isPremiumOnly: true },
-    { id: 'white', name: 'White', value: toProfileBackgroundToken('white'), isPremiumOnly: true },
-    { id: 'autumn', name: 'Autumn', value: toProfileBackgroundToken('autumn'), isPremiumOnly: true },
-    { id: 'anime', name: 'Anime', value: toProfileBackgroundToken('anime'), isPremiumOnly: true },
+    { id: 'gold', name: 'Gold', value: toProfileBackgroundToken('gold'), accessTier: 'base' },
+    { id: 'silver', name: 'Silver', value: toProfileBackgroundToken('silver'), accessTier: 'base' },
+    { id: 'black', name: 'Black', value: toProfileBackgroundToken('black'), accessTier: 'base' },
+    { id: 'blue', name: 'Blue', value: toProfileBackgroundToken('blue'), accessTier: 'premium' },
+    { id: 'darkblue', name: 'Dark Blue', value: toProfileBackgroundToken('darkblue'), accessTier: 'premium' },
+    { id: 'violet', name: 'Violet', value: toProfileBackgroundToken('violet'), accessTier: 'premium' },
+    { id: 'pink', name: 'Pink', value: toProfileBackgroundToken('pink'), accessTier: 'premium' },
+    { id: 'purple', name: 'Purple', value: toProfileBackgroundToken('purple'), accessTier: 'platinum' },
+    { id: 'ruby', name: 'Rubi', value: toProfileBackgroundToken('ruby'), accessTier: 'platinum' },
+    { id: 'white', name: 'White', value: toProfileBackgroundToken('white'), accessTier: 'platinum' },
+    { id: 'autumn', name: 'Autumn', value: toProfileBackgroundToken('autumn'), accessTier: 'platinum' },
+    { id: 'anime', name: 'Anime', value: toProfileBackgroundToken('anime'), accessTier: 'platinum' },
 ];
 
 const LEGACY_BACKGROUND_ALIASES: Record<string, string> = {

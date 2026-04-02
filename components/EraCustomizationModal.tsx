@@ -14,7 +14,7 @@ interface EraCustomizationModalProps {
     cycles: LegacyEraCycleDigest[];
     selectedSkinId: string;
     defaultSkinId: string;
-    isPremium: boolean;
+    hasPlatinumAccess: boolean;
     onClose: () => void;
     onSave: (payload: { name: string; skinId: string; description: string; finalSummary: string }) => void;
 }
@@ -28,7 +28,7 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
     cycles,
     selectedSkinId,
     defaultSkinId,
-    isPremium,
+    hasPlatinumAccess,
     onClose,
     onSave,
 }) => {
@@ -46,8 +46,8 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
 
     const availableSkins = useMemo(() => ERA_RIBBON_SKINS.map((skin) => ({
         ...skin,
-        locked: skin.isPremium && !isPremium,
-    })), [isPremium]);
+        locked: skin.accessTier === 'platinum' && !hasPlatinumAccess,
+    })), [hasPlatinumAccess]);
 
     const previewLabel = name.trim() || era.defaultLabel || era.label;
     const currentNarrative = finalSummary.trim() || description.trim() || aiSummary;
@@ -129,7 +129,7 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <label className="text-xs font-bold uppercase tracking-[0.22em] text-gray-400">Skin da Era</label>
-                                        {!isPremium && <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200/75">1 grátis · 3 premium</span>}
+                                        {!hasPlatinumAccess && <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200/75">1 livre � 3 platinum</span>}
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                         {availableSkins.map((skin) => {
@@ -143,20 +143,20 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
                                                     disabled={locked}
                                                     onClick={() => setSkinId(skin.id)}
                                                     className={`space-y-2 rounded-2xl border p-2 transition-all ${active ? 'border-[var(--skin-accent-color)] bg-white/8' : 'border-white/10 bg-black/20'} ${locked ? 'cursor-not-allowed opacity-60' : 'hover:border-white/20'}`}
-                                                    title={locked ? 'Disponivel no premium' : skin.name}
+                                                    title={locked ? 'Disponivel no platinum' : skin.name}
                                                 >
                                                     <div className="mx-auto h-24 w-8 overflow-hidden rounded-sm">
                                                         <EraRibbon label="" skinId={skin.id} locked={locked} className="h-full w-full" />
                                                     </div>
                                                     <div>
                                                         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/90">{skin.name}</p>
-                                                        <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-gray-500">{skin.isPremium ? 'Premium' : 'Livre'}</p>
+                                                        <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-gray-500">{skin.accessTier === 'platinum' ? 'Platinum' : 'Livre'}</p>
                                                     </div>
                                                 </button>
                                             );
                                         })}
                                     </div>
-                                    {isPremium && skinId !== defaultSkinId && (
+                                    {hasPlatinumAccess && skinId !== defaultSkinId && (
                                         <button
                                             type="button"
                                             onClick={() => setSkinId(defaultSkinId)}
@@ -193,3 +193,5 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
         </Portal>
     );
 };
+
+

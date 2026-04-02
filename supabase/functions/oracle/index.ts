@@ -69,6 +69,7 @@ type OraclePreferencesRuntime = {
   userId: string;
   iaEnabled: boolean;
   notificationsEnabled: boolean;
+  dailyFocusCardEnabled: boolean;
   enabledCategories: OracleCategory[];
   activeMode: OracleMode;
   customModeInstructions: string | null;
@@ -154,6 +155,7 @@ type OraclePreferencesRow = {
   user_id: string;
   ia_enabled?: boolean | null;
   notifications_enabled?: boolean | null;
+  daily_focus_card_enabled?: boolean | null;
   enabled_categories?: unknown;
   active_mode?: string | null;
   custom_mode_instructions?: string | null;
@@ -166,7 +168,10 @@ type UserProfileRow = {
   nickname?: string | null;
   level?: number | null;
   chests?: unknown;
+  app_mode?: string | null;
 };
+
+type AppMode = "BASIC" | "GAME";
 
 const SAO_PAULO_PARTS_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   timeZone: TIME_ZONE,
@@ -211,6 +216,7 @@ const ORACLE_CATEGORY_LABELS: Record<OracleCategory, string> = {
 const DEFAULT_ORACLE_PREFERENCES = {
   iaEnabled: true,
   notificationsEnabled: true,
+  dailyFocusCardEnabled: false,
   enabledCategories: [...ORACLE_MANUAL_LIBRARY_CATEGORIES],
   activeMode: "neutro" as OracleMode,
   customModeInstructions: null,
@@ -415,6 +421,7 @@ const resolveRuntimeOraclePreferences = (userId: string, row: OraclePreferencesR
   userId,
   iaEnabled: row?.ia_enabled ?? DEFAULT_ORACLE_PREFERENCES.iaEnabled,
   notificationsEnabled: row?.notifications_enabled ?? DEFAULT_ORACLE_PREFERENCES.notificationsEnabled,
+  dailyFocusCardEnabled: row?.daily_focus_card_enabled ?? DEFAULT_ORACLE_PREFERENCES.dailyFocusCardEnabled,
   enabledCategories: normalizeOracleManualCategories(
     normalizeOracleCategories(row?.enabled_categories ?? DEFAULT_ORACLE_PREFERENCES.enabledCategories),
   ),
@@ -497,13 +504,23 @@ const isQuietHours = (date: Date, preferences: Pick<OraclePreferencesRuntime, "q
   return currentMinutes >= start || currentMinutes < end;
 };
 
-const resolveOracleAutoDailyTarget = (preferences: Pick<OraclePreferencesRuntime, "enabledCategories">): number => {
+const resolveOracleAutoDailyTarget = (
+  preferences: Pick<OraclePreferencesRuntime, "enabledCategories">,
+  appMode: AppMode,
+): number => {
+  if (appMode === "BASIC") {
+    return 1;
+  }
+
   const enabledCount = preferences.enabledCategories.length;
   return clamp(enabledCount || MAX_ORACLE_DAILY_TARGET, MIN_ORACLE_AUTO_TARGET, MAX_ORACLE_DAILY_TARGET);
 };
 
-const getOracleAutoGapMs = (preferences: Pick<OraclePreferencesRuntime, "enabledCategories" | "quietHoursStart" | "quietHoursEnd">): number => {
-  const target = resolveOracleAutoDailyTarget(preferences);
+const getOracleAutoGapMs = (
+  preferences: Pick<OraclePreferencesRuntime, "enabledCategories" | "quietHoursStart" | "quietHoursEnd">,
+  appMode: AppMode,
+): number => {
+  const target = resolveOracleAutoDailyTarget(preferences, appMode);
   const activeWindowMinutes = Math.max(4 * 60, DAY_MINUTES - getQuietWindowMinutes(preferences));
   const gapMinutes = Math.max(60, Math.round(activeWindowMinutes / target));
   return gapMinutes * 60 * 1000;
@@ -556,12 +573,14 @@ const hasOracleStructuralNeed = (contextData: OracleContext): boolean => (
 );
 
 const resolveAutomaticOracleCategory = (
+  appMode: AppMode,
   mode: OracleMode,
   contextData: OracleContext,
   messages: OracleMessageRuntime[],
   enabledCategories: OracleCategory[],
   now: Date,
 ): OracleCategory => {
+  if (appMode === "BASIC") return "dicas_produtividade";
   if (hasOracleStructuralNeed(contextData)) return "dicas_produtividade";
 
   const categoryProfile = ORACLE_MODES[mode].automaticCategories;
@@ -583,12 +602,14 @@ const resolveAutomaticOracleCategory = (
 };
 
 const shouldSkipAutomaticOracle = (
+  appMode: AppMode,
   mode: OracleMode,
   triggerType: OracleTriggerType,
   contextData: OracleContext,
   isCriticalTrigger: boolean,
 ): boolean => {
   if (triggerType === "manual") return false;
+  if (appMode === "BASIC") return false;
 
   const automationProfile = ORACLE_MODES[mode].automationProfile;
   const hasStructuralNeed = hasOracleStructuralNeed(contextData);
@@ -960,12 +981,12 @@ const createAutomaticOracleMessage = async (
   ] = await Promise.all([
     supabaseAdmin
       .from("oracle_preferences")
-      .select("user_id, ia_enabled, notifications_enabled, enabled_categories, active_mode, custom_mode_instructions, quiet_hours_start, quiet_hours_end")
+      .select("user_id, ia_enabled, notifications_enabled, daily_focus_card_enabled, enabled_categories, active_mode, custom_mode_instructions, quiet_hours_start, quiet_hours_end")
       .eq("user_id", userId)
       .maybeSingle<OraclePreferencesRow>(),
     supabaseAdmin
       .from("user_profiles")
-      .select("id, nickname, level, chests")
+      .select("id, nickname, level, chests, app_mode")
       .eq("id", userId)
       .maybeSingle<UserProfileRow>(),
     supabaseAdmin
@@ -1022,9 +1043,11 @@ const createAutomaticOracleMessage = async (
   const preferences = resolveRuntimeOraclePreferences(userId, preferencesResult.data ?? null);
   if (!preferences.iaEnabled) return { status: "skipped", reason: "ia_disabled" };
   if (!preferences.notificationsEnabled) return { status: "skipped", reason: "notifications_disabled" };
+  if (!preferences.dailyFocusCardEnabled) return { status: "skipped", reason: "daily_focus_disabled" };
   if (isQuietHours(now, preferences)) return { status: "skipped", reason: "quiet_hours" };
 
   const profile = profileResult.data ?? null;
+  const appMode: AppMode = asTrimmedString(profile?.app_mode) === "BASIC" ? "BASIC" : "GAME";
   const activeCycle = cycleResult.data ?? null;
   const arenas = arenasResult.data ?? [];
   const actions = actionsResult.data ?? [];
@@ -1044,14 +1067,14 @@ const createAutomaticOracleMessage = async (
     assetLevels,
   });
 
-  const autoDailyTarget = resolveOracleAutoDailyTarget(preferences);
+  const autoDailyTarget = resolveOracleAutoDailyTarget(preferences, appMode);
   const todayMessages = getOracleFeedMessagesForOperationalDay(oracleMessages, now);
   const autoMessagesToday = todayMessages.filter((message) => !isManualOracleFeedMessage(message));
   const autoSentToday = autoMessagesToday.length;
   const autoRemainingToday = Math.max(0, autoDailyTarget - autoSentToday);
   if (autoRemainingToday <= 0) return { status: "skipped", reason: "daily_limit" };
 
-  const autoGapMs = getOracleAutoGapMs(preferences);
+  const autoGapMs = getOracleAutoGapMs(preferences, appMode);
   const latestAutoTodayMessage = getLatestOracleFeedMessage(autoMessagesToday);
   if (latestAutoTodayMessage) {
     const nextAutoInMs = Math.max(0, autoGapMs - (now.getTime() - new Date(latestAutoTodayMessage.createdAt).getTime()));
@@ -1061,11 +1084,12 @@ const createAutomaticOracleMessage = async (
   const triggerType: OracleTriggerType = autoSentToday === 0 ? "app_open" : "cron";
   const unreadClanAlerts = unreadClanAlertResult.count ?? 0;
   const isCriticalTrigger = unreadClanAlerts > 0 || isCycleClosingSoon(activeCycle, contextData, now);
-  if (shouldSkipAutomaticOracle(preferences.activeMode, triggerType, contextData, isCriticalTrigger)) {
+  if (shouldSkipAutomaticOracle(appMode, preferences.activeMode, triggerType, contextData, isCriticalTrigger)) {
     return { status: "skipped", reason: "profile_skip" };
   }
 
   const category = resolveAutomaticOracleCategory(
+    appMode,
     preferences.activeMode,
     contextData,
     oracleMessages,

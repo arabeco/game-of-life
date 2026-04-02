@@ -24,7 +24,7 @@ import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks } from '../utils/fairScoreUtils.js';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
 import { buildChestRewardPayload } from '../utils/chestRewardPresentation';
-import { getLegacyProjectionScenePrice } from '../utils/premiumAccess';
+import { getLegacyProjectionScenePrice, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
 const CycleComparator = React.lazy(() => import('../components/CycleComparator').then(m => ({ default: m.CycleComparator })));
 const ReportGenerationModal = React.lazy(() => import('../components/ReportGenerationModal').then(m => ({ default: m.ReportGenerationModal })));
 const LegacyExportDocument = React.lazy(() => import('../components/LegacyExportDocument').then(m => ({ default: m.LegacyExportDocument })));
@@ -67,8 +67,8 @@ const LEGACY_PLAQUE_STORAGE_PREFIX = 'glyph-legacy-plaque-v1';
 const LEGACY_HISTORY_PREVIEW_BACKDROP_URL = '/legacy-skins/10.jpg';
 const LEGACY_PROJECTION_SCENE_BASE_GOLD_COST = getGoldMechanicPrice('legacy_projection_scene', 50);
 const BOOTSTRAP_ERA_KEY = 'bootstrap-era-1';
-const FREE_ERA_RIBBON_SKIN_ID = ERA_RIBBON_SKINS.find((skin) => !skin.isPremium)?.id || ERA_RIBBON_SKINS[0].id;
-const PREMIUM_ERA_RIBBON_SKIN_IDS = ERA_RIBBON_SKINS.filter((skin) => skin.isPremium).map((skin) => skin.id);
+const FREE_ERA_RIBBON_SKIN_ID = ERA_RIBBON_SKINS.find((skin) => skin.accessTier === 'base')?.id || ERA_RIBBON_SKINS[0].id;
+const PLATINUM_ERA_RIBBON_SKIN_IDS = ERA_RIBBON_SKINS.filter((skin) => skin.accessTier === 'platinum').map((skin) => skin.id);
 
 type EraMetadataEntry = {
     name?: string;
@@ -1194,10 +1194,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
             const requestedSkinId = eraMetadata[key]?.skinId;
             const matchedSkin = ERA_RIBBON_SKINS.find((skin) => skin.id === requestedSkinId);
-            const defaultSkinId = (!userProfile.isPremium || PREMIUM_ERA_RIBBON_SKIN_IDS.length === 0)
+            const defaultSkinId = (!hasPlatinumAccess(userProfile) || PLATINUM_ERA_RIBBON_SKIN_IDS.length === 0)
                 ?FREE_ERA_RIBBON_SKIN_ID
-                : (PREMIUM_ERA_RIBBON_SKIN_IDS[index % PREMIUM_ERA_RIBBON_SKIN_IDS.length] || FREE_ERA_RIBBON_SKIN_ID);
-            const skinId = matchedSkin ?((matchedSkin.isPremium && !userProfile.isPremium) ?FREE_ERA_RIBBON_SKIN_ID : matchedSkin.id) : defaultSkinId;
+                : (PLATINUM_ERA_RIBBON_SKIN_IDS[index % PLATINUM_ERA_RIBBON_SKIN_IDS.length] || FREE_ERA_RIBBON_SKIN_ID);
+            const skinId = matchedSkin ?((matchedSkin.accessTier === 'platinum' && !hasPlatinumAccess(userProfile)) ?FREE_ERA_RIBBON_SKIN_ID : matchedSkin.id) : defaultSkinId;
             const aiSummary = buildEraAiSummary({
                 cycleCount: segmentReports.length,
                 avgScore,
@@ -1247,7 +1247,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 color,
             };
         });
-    }, [eraMetadata, eraSegments, sortedReports, userProfile.isPremium]);
+    }, [eraMetadata, eraSegments, sortedReports, userProfile]);
     const reportEraSummaryByIndex = useMemo(() => {
         const map = new Map<number, LegacyEraSummary>();
         eraSegments.forEach((segment, index) => {
@@ -1306,10 +1306,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }));
     }, [draftEraSlots, draftReportEraIds, sortedReports]);
     function getEraRibbonSkinId(index: number) {
-        if (!userProfile.isPremium || PREMIUM_ERA_RIBBON_SKIN_IDS.length === 0) {
+        if (!hasPlatinumAccess(userProfile) || PLATINUM_ERA_RIBBON_SKIN_IDS.length === 0) {
             return FREE_ERA_RIBBON_SKIN_ID;
         }
-        return PREMIUM_ERA_RIBBON_SKIN_IDS[index % PREMIUM_ERA_RIBBON_SKIN_IDS.length] || FREE_ERA_RIBBON_SKIN_ID;
+        return PLATINUM_ERA_RIBBON_SKIN_IDS[index % PLATINUM_ERA_RIBBON_SKIN_IDS.length] || FREE_ERA_RIBBON_SKIN_ID;
     }
 
     function resolveEraSkinId(summary: LegacyEraSummary | null | undefined, index: number) {
@@ -1317,7 +1317,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const requestedSkinId = eraMetadata[summary.key]?.skinId;
         const matchedSkin = ERA_RIBBON_SKINS.find((skin) => skin.id === requestedSkinId);
         if (!matchedSkin) return getEraRibbonSkinId(index);
-        if (matchedSkin.isPremium && !userProfile.isPremium) return FREE_ERA_RIBBON_SKIN_ID;
+        if (matchedSkin.accessTier === 'platinum' && !hasPlatinumAccess(userProfile)) return FREE_ERA_RIBBON_SKIN_ID;
         return matchedSkin.id;
     }
 
@@ -1426,10 +1426,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     );
     const historyStartDate = eraSummaries[eraSummaries.length - 1]?.startDate;
     const historyEndDate = eraSummaries[0]?.endDate;
-    const legacyPlaqueUnlocked = useMemo(() => !!userProfile.isPremium || eraSummaries.length >= 3, [eraSummaries.length, userProfile.isPremium]);
+    const legacyPlaqueUnlocked = useMemo(() => hasPremiumAccess(userProfile) || eraSummaries.length >= 3, [eraSummaries.length, userProfile]);
     const legacyProjectionSceneGoldCost = useMemo(
         () => getLegacyProjectionScenePrice(userProfile, LEGACY_PROJECTION_SCENE_BASE_GOLD_COST),
-        [userProfile.isPremium, userProfile.premiumExpiresAt, userProfile.role],
+        [userProfile],
     );
 
     const openInlineEraEditor = (payload: InlineEraEditorState, initialName: string, initialSkinId: string) => {
@@ -1701,16 +1701,23 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         const debitedGold = Number((data as any)?.cost_gold ?? legacyProjectionSceneGoldCost);
         const nextGold = Number((data as any)?.new_gold ?? Math.max(0, currentGold - debitedGold));
+        const creditsRemaining = Math.max(0, Number((data as any)?.legacy_projection_scene_credits_remaining ?? (userProfile.legacyProjectionSceneCredits || 0)));
         updateUserProfile({
             wallet: {
                 ...(userProfile.wallet || { fragments: 0 }),
                 gold: nextGold,
                 fragments: Number(userProfile.wallet?.fragments || 0),
             },
+            legacyProjectionSceneCredits: creditsRemaining,
         });
-        showToast(`Cena do legado liberada. ${debitedGold} ouro debitados.`, 'success');
+        showToast(
+            debitedGold > 0
+                ? `Cena do legado liberada. ${debitedGold} ouro debitados.`
+                : 'Cena do legado liberada. Crédito platinum consumido.',
+            'success',
+        );
         return true;
-    }, [legacyProjectionSceneGoldCost, showToast, updateUserProfile, userProfile.wallet]);
+    }, [legacyProjectionSceneGoldCost, showToast, updateUserProfile, userProfile]);
 
     const renderLegacySummary = () => {
         if (sortedReports.length === 0) return null;
@@ -2468,7 +2475,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Skin</p>
                                     <div className="mt-2 flex flex-wrap gap-2">
                                         {ERA_RIBBON_SKINS.map((skin) => {
-                                            const locked = skin.isPremium && !userProfile.isPremium;
+                                            const locked = skin.accessTier === 'platinum' && !hasPlatinumAccess(userProfile);
                                             const active = inlineEraSkinId === skin.id;
                                             return (
                                                 <button
@@ -2477,7 +2484,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     disabled={locked}
                                                     onClick={() => setInlineEraSkinId(skin.id)}
                                                     className={`flex h-9 w-9 items-center justify-center rounded-full border ${active ?'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10' : 'border-white/10 bg-black/25'} ${locked ?'cursor-not-allowed opacity-40' : ''}`}
-                                                    title={locked ?'Disponivel no premium' : skin.name}
+                                                    title={locked ?'Disponivel no platinum' : skin.name}
                                                 >
                                                     <span className="inline-flex h-4 w-4 rounded-full" style={{ backgroundColor: skin.edge }} />
                                                 </button>
@@ -2500,7 +2507,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     sovereignName={sovereignName}
                     onToast={showToast}
                     onClose={() => setShowLegacyProjectionModal(false)}
-                    isPremium={!!userProfile.isPremium}
+                    isPremium={hasPremiumAccess(userProfile)}
                     sceneGoldCost={legacyProjectionSceneGoldCost}
                     onPurchaseProjection={handleUnlockLegacyProjectionScene}
                     onOpenCycle={handleOpenLegacyCycle}

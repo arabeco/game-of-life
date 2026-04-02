@@ -6,6 +6,7 @@ import {
   Check,
   ChevronRight,
   Flag,
+  Gift,
   Mail,
   Minus,
   RotateCcw,
@@ -19,13 +20,14 @@ import {
 import { GlassCard } from '../components/GlassCard';
 import { LegacyProjectionModal } from '../components/LegacyProjectionModal';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
+import { RewardPackModal } from '../components/RewardPackModal';
 import { SvgRadarChart } from '../components/SvgRadarChart';
 import { SupabaseService } from '../services/SupabaseService';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
 import { requestLocalNotificationPermission, showLocalNotification } from '../utils/localNotification';
 import { SKINS_DATA } from '../constants';
-import type { ChestType, LegacyRenderCycleDigest, LegacyRenderEraSummary, NotificationType, Report, ReportAtlasWeek, ReportIdentitySnapshot } from '../types';
+import type { ChestType, LegacyRenderCycleDigest, LegacyRenderEraSummary, NotificationType, Report, ReportAtlasWeek, ReportIdentitySnapshot, RewardModalPayload } from '../types';
 
 type BetaTier = 'ouro' | 'prata' | 'bronze' | null;
 
@@ -1568,6 +1570,129 @@ const CYCLE_REPORT_SHOWCASE: Report = (() => {
   };
 })();
 
+const GM_PREMIUM_ACTIVE_BENEFITS = [
+  'Até 15 arenas ativas',
+  'Fundos premium de perfil',
+  'Todos os modos do Oráculo',
+  'Cena do legado com 50% off',
+  'Bônus de legado +10% XP',
+];
+
+const GM_PLATINUM_ACTIVE_BENEFITS = [
+  'Todas as vantagens do Premium',
+  'Até 30 arenas ativas',
+  '1 cena de legado grátis por renovação',
+  'Todos os planos de fundo',
+  'Todas as aparências premium',
+  '1 baú da Temporada + 1 baú raro por renovação',
+];
+
+const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardModalPayload => {
+  const isPlatinum = tier === 'platinum';
+
+  return {
+    eyebrow: isPlatinum ? 'Renovação platinum' : 'Renovação premium',
+    title: isPlatinum ? 'Platinum ativo' : 'Premium ativo',
+    summary: isPlatinum
+      ? 'Preview do GM para validar a renovação do plano maior, com as entregas da rodada e as vantagens ativas do Platinum.'
+      : 'Preview do GM para validar a renovação do Premium, com as entregas da rodada e as vantagens ativas do plano.',
+    buttonLabel: 'Fechar preview',
+    metricCards: [
+      { label: 'Plano', value: isPlatinum ? 'Platinum' : 'Premium', detail: '30 dias ativos' },
+      { label: 'Ativo até', value: isPlatinum ? '02 mai' : '02 mai', detail: 'validade atual' },
+      {
+        label: 'Entrega',
+        value: isPlatinum ? 'Temporada + raro' : 'Baú raro + ficha',
+        detail: isPlatinum ? 'rodada do Platinum' : 'rodada do Premium',
+      },
+    ],
+    rewardHighlightsTitle: 'Entregue agora',
+        rewardHighlights: isPlatinum
+      ? [
+          {
+            label: 'Baús',
+            value: 'Temporada + raro',
+            detail: 'Os dois baús de renovação do Platinum.',
+            tone: 'gold',
+          },
+          {
+            label: 'Legado',
+            value: '1 grátis',
+            detail: 'Crédito aplicado para a próxima cena do legado.',
+            tone: 'violet',
+          },
+          {
+            label: 'Quiz',
+            value: '1 ficha média',
+            detail: 'Use no próximo quiz para liberar uma campanha média.',
+            tone: 'cyan',
+          },
+        ]
+      : [
+          {
+            label: 'Baú',
+            value: 'Raro',
+            detail: 'Entrega real da renovação do Premium.',
+            tone: 'gold',
+          },
+          {
+            label: 'Quiz',
+            value: '1 ficha grátis',
+            detail: 'Use no próximo quiz para liberar uma campanha grátis.',
+            tone: 'cyan',
+          },
+          {
+            label: 'Arsenal',
+            value: '2 itens',
+            detail: 'Genesis e cosméticos da Temporada quando faltarem.',
+            tone: 'emerald',
+          },
+        ],
+    itemSectionTitle: 'Cosméticos integrados',
+    itemIds: isPlatinum ? [] : ['item_border_genesis_01', 'item_banner_origin_01'],
+    emptyMessage: isPlatinum
+      ? 'Nenhum cosmético novo precisava cair agora, mas os baús, o crédito de legado e a ficha da rodada já foram aplicados.'
+      : 'Nenhum cosmético novo precisava cair agora, mas o baú raro e a ficha da rodada já foram aplicados.',
+    activeBenefitsTitle: 'Vantagens ativas',
+    activeBenefits: isPlatinum ? GM_PLATINUM_ACTIVE_BENEFITS : GM_PREMIUM_ACTIVE_BENEFITS,
+    campaignQuizFreeCreditsGranted: isPlatinum ? 0 : 1,
+    campaignQuizMediumCreditsGranted: isPlatinum ? 1 : 0,
+  };
+};
+
+const MembershipRewardPreviewButton: React.FC<{ tier: 'premium' | 'platinum' }> = ({ tier }) => {
+  const [open, setOpen] = useState(false);
+  const payload = useMemo(() => buildMembershipRewardMockPayload(tier), [tier]);
+  const accentClass = tier === 'platinum'
+    ? 'border-violet-500/30 bg-violet-500/20 text-violet-200 hover:bg-violet-500/30'
+    : 'border-yellow-500/30 bg-yellow-500/20 text-yellow-200 hover:bg-yellow-500/30';
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`flex items-center gap-2 rounded-xl px-6 py-3 text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-[1.02] ${accentClass}`}
+      >
+        <Gift className="h-4 w-4" />
+        {tier === 'platinum' ? 'Preview Platinum' : 'Preview Premium'}
+      </button>
+
+      <RewardPackModal
+        open={open}
+        payload={payload}
+        onClose={() => setOpen(false)}
+        fallbackEyebrow="Renovação premium"
+        fallbackTitle="Recompensas da assinatura"
+        fallbackSummary="Preview do GM."
+        fallbackButtonLabel="Fechar preview"
+        fallbackItemSectionTitle="Cosméticos integrados"
+        fallbackEmptyMessage="Nenhum cosmético novo precisava ser entregue agora."
+      />
+    </>
+  );
+};
+
 const LegacyPreviewButton: React.FC = () => {
     const { session, showToast } = useGame();
     const [showPreview, setShowPreview] = useState(false);
@@ -2407,6 +2532,22 @@ export const SovereignPanelView: React.FC = () => {
             <div className="flex flex-wrap gap-3">
               <LegacyPreviewButton />
               <CycleReportPreviewButton />
+            </div>
+          </div>
+        </GlassCard>
+      </section>
+
+      <section>
+        <GlassCard variant="neutral" className="p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-400">Laboratório de Assinatura</p>
+              <h2 className="text-lg font-black text-white">Preview do modal de renovação</h2>
+              <p className="text-xs text-zinc-400">Abra o mesmo modal usado no app para validar Premium e Platinum sem depender de compra real.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <MembershipRewardPreviewButton tier="premium" />
+              <MembershipRewardPreviewButton tier="platinum" />
             </div>
           </div>
         </GlassCard>

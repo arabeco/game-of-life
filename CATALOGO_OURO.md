@@ -35,8 +35,8 @@ Regra pratica:
 | Produto | ID | Ouro |
 | :--- | :--- | :--- |
 | Premium Soberano (30 dias) | `premium_30d` | 200 |
-| Boost XP 2x (24h) | `boost_xp_24h` | 50 |
-| Boost XP 2x (7 dias) | `boost_xp_7d` | 200 |
+| Boost XP +5% (24h) | `boost_xp_24h` | 50 |
+| Boost XP +10% (7 dias) | `boost_xp_7d` | 200 |
 
 ## Campanhas do catalogo
 

@@ -1,4 +1,4 @@
-export const ECONOMY = {
+﻿export const ECONOMY = {
   currency: {
     gold_to_brl_rate: 10,
   },
@@ -64,12 +64,26 @@ export const ECONOMY = {
       name: 'Premium (30 dias)',
       cost: 200,
       benefits: [
-        'Ate 25 arenas ativas (vs 15 no plano base)',
-        'Dossies ampliados (6 slots vs 3)',
-        'Deep Focus Audio: 9 faixas exclusivas',
-        'Oraculo: todos os modos (Tatico, Reflexivo...)',
-        'Bonus de Legado: +10% XP em tudo',
-        'Pack Genesis: 4 itens exclusivos',
+        'Até 15 arenas ativas (vs 7 no plano base)',
+        'Fundos premium de perfil',
+        'Cena do legado com 50% off',
+        'Oráculo: todos os modos',
+        'Bônus de legado: +10% XP no ciclo',
+        '1 ficha grátis de quiz por renovação',
+      ],
+    },
+    platinum_monthly: {
+      id: 'platinum_30d',
+      name: 'Platinum (30 dias)',
+      cost: 500,
+      benefits: [
+        'Todas as vantagens do Premium',
+        'Até 30 arenas ativas',
+        '1 cena de legado grátis por renovação',
+        '1 ficha média de quiz por renovação',
+        'Todos os planos de fundo',
+        'Todas as aparências premium',
+        '1 baú da Temporada + 1 baú raro por renovação',
       ],
     },
     codex: 150,
@@ -77,3 +91,4 @@ export const ECONOMY = {
     boost_7d: 200,
   },
 };
+

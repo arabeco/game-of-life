@@ -31,9 +31,9 @@ import {
     getSeasonTransitionStorageKey,
     resolveRuntimeSeasonTransition,
 } from '../utils/seasonPresentation';
-import { getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess, isPremiumInLastDay } from '../utils/premiumAccess';
+import { getActiveSubscriptionTier, getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess, isPremiumInLastDay } from '../utils/premiumAccess';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
-import { GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
+import { getGoldMembershipProductByTier, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 import { ConfirmationModal } from './ConfirmationModal';
 import { DailyCompletionPromptModal } from './DailyCompletionPromptModal';
 import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../utils/dailyCompletionPrompt';
@@ -949,7 +949,9 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         hasPremiumRewardPayload;
 
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
-    const discountedPremiumPrice = getDiscountedPremiumPrice(GOLD_PREMIUM_PRODUCT.priceGold, 0.1);
+    const activeMembershipTier = getActiveSubscriptionTier(userProfile);
+    const activeMembershipProduct = getGoldMembershipProductByTier(activeMembershipTier) || GOLD_PREMIUM_PRODUCT;
+    const discountedPremiumPrice = getDiscountedPremiumPrice(activeMembershipProduct.priceGold, 0.1);
     const premiumRenewalOfferStorageKey = userProfile.premiumExpiresAt
         ? `glyph:premium-renewal-offer:${userProfile.id}:${userProfile.premiumExpiresAt}`
         : null;
@@ -994,15 +996,15 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
 
         setPremiumRenewalBusy(true);
         try {
-            await buyStoreItem('premium_30d', 'premium', {
+            await buyStoreItem(activeMembershipProduct.id, 'premium', {
                 costOverrideGold: discountedPremiumPrice,
-                successMessage: `Renovação premium com 10% de desconto confirmada por ${discountedPremiumPrice} ouro.`,
+                successMessage: `Renovação ${activeMembershipProduct.tier} com 10% de desconto confirmada por ${discountedPremiumPrice} ouro.`,
             });
             handleDismissPremiumRenewalOffer();
         } finally {
             setPremiumRenewalBusy(false);
         }
-    }, [buyStoreItem, discountedPremiumPrice, handleDismissPremiumRenewalOffer, userProfile.wallet?.gold]);
+    }, [activeMembershipProduct.id, activeMembershipProduct.tier, buyStoreItem, discountedPremiumPrice, handleDismissPremiumRenewalOffer, userProfile.wallet?.gold]);
 
     const handleAcceptTerms = () => {
         const acceptedAt = new Date().toISOString();
@@ -1138,8 +1140,8 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 )}
                 {shouldShowPremiumRenewalOffer && (
                     <ConfirmationModal
-                        title="Último dia do premium"
-                        message={`Seu premium termina em ${premiumDaysRemaining || 1} dia. Se quiser renovar agora, você garante 10% de desconto e fecha por ${discountedPremiumPrice} ouro.`}
+                        title={`Último dia do ${activeMembershipProduct.tier}`}
+                        message={`Seu ${activeMembershipProduct.tier} termina em ${premiumDaysRemaining || 1} dia. Se quiser renovar agora, você garante 10% de desconto e fecha por ${discountedPremiumPrice} ouro.`}
                         confirmLabel={premiumRenewalBusy ? 'RENOVANDO...' : `RENOVAR · ${discountedPremiumPrice} \u{1FA99}`}
                         cancelLabel="AGORA NÃO"
                         onConfirm={() => { void handleConfirmPremiumRenewalOffer(); }}

@@ -1,4 +1,4 @@
-import { OracleMessage, OraclePreferences } from '../types';
+import { AppMode, OracleMessage, OraclePreferences } from '../types';
 import { getOperationalDateString as getOperationalDateStringValue } from './operationalDay.js';
 
 const MIN_ORACLE_AUTO_TARGET = 1;
@@ -35,13 +35,23 @@ const getQuietWindowMinutes = (preferences: Pick<OraclePreferences, 'quietHoursS
   return (DAY_MINUTES - start) + end;
 };
 
-export const resolveOracleAutoDailyTarget = (preferences: Pick<OraclePreferences, 'enabledCategories'> | null | undefined): number => {
+export const resolveOracleAutoDailyTarget = (
+  preferences: Pick<OraclePreferences, 'enabledCategories'> | null | undefined,
+  appMode: AppMode = 'GAME',
+): number => {
+  if (appMode === 'BASIC') {
+    return 1;
+  }
+
   const enabledCount = preferences?.enabledCategories?.length ?? 0;
   return clamp(enabledCount || MAX_ORACLE_DAILY_TARGET, MIN_ORACLE_AUTO_TARGET, MAX_ORACLE_DAILY_TARGET);
 };
 
-export const getOracleAutoGapMs = (preferences: Pick<OraclePreferences, 'enabledCategories' | 'quietHoursStart' | 'quietHoursEnd'> | null | undefined): number => {
-  const target = resolveOracleAutoDailyTarget(preferences);
+export const getOracleAutoGapMs = (
+  preferences: Pick<OraclePreferences, 'enabledCategories' | 'quietHoursStart' | 'quietHoursEnd'> | null | undefined,
+  appMode: AppMode = 'GAME',
+): number => {
+  const target = resolveOracleAutoDailyTarget(preferences, appMode);
   const activeWindowMinutes = Math.max(4 * 60, DAY_MINUTES - getQuietWindowMinutes(preferences));
   const gapMinutes = Math.max(60, Math.round(activeWindowMinutes / target));
   return gapMinutes * 60 * 1000;
@@ -89,8 +99,9 @@ export const getOracleFeedQuotaStatus = (
   messages: OracleMessage[],
   preferences: Pick<OraclePreferences, 'enabledCategories' | 'quietHoursStart' | 'quietHoursEnd'> | null | undefined,
   now: Date = new Date(),
+  appMode: AppMode = 'GAME',
 ): OracleFeedQuotaStatus => {
-  const autoDailyTarget = resolveOracleAutoDailyTarget(preferences);
+  const autoDailyTarget = resolveOracleAutoDailyTarget(preferences, appMode);
   const manualDailyTarget = ORACLE_MANUAL_DAILY_TARGET;
   const todayMessages = getOracleFeedMessagesForOperationalDay(messages, now);
   const autoMessagesToday = todayMessages.filter((message) => !isManualOracleFeedMessage(message));
@@ -99,7 +110,7 @@ export const getOracleFeedQuotaStatus = (
   const manualSentToday = manualMessagesToday.length;
   const autoRemainingToday = Math.max(0, autoDailyTarget - autoSentToday);
   const manualRemainingToday = Math.max(0, manualDailyTarget - manualSentToday);
-  const autoGapMs = getOracleAutoGapMs(preferences);
+  const autoGapMs = getOracleAutoGapMs(preferences, appMode);
   const latestAutoTodayMessage = getLatestOracleFeedMessage(autoMessagesToday);
   const latestFeedMessage = getLatestOracleFeedMessage(messages);
   const nowMs = now.getTime();

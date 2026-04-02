@@ -6,8 +6,8 @@ import { ProfileBackgroundSurface } from './ProfileBackgroundSurface';
 import { useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
 import { compressDataUrlToWebP } from '../utils/imageUtils';
-import { hasPremiumAccess } from '../utils/premiumAccess';
-import { PROFILE_BACKGROUND_OPTIONS, resolveProfileBackgroundValue } from '../utils/profileBackgrounds';
+import { hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
+import { PROFILE_BACKGROUND_OPTIONS, resolveProfileBackgroundValue, type ProfileBackgroundOption } from '../utils/profileBackgrounds';
 
 const ImageCropper = lazy(() =>
     import('./ImageCropper').then((module) => ({ default: module.ImageCropper }))
@@ -20,7 +20,7 @@ interface BackgroundImageSelectionModalProps {
     currentBackground: string;
     onClose: () => void;
     onSelect: (backgroundValue: string) => void;
-    options?: Array<{ id: string; name: string; value: string; isPremiumOnly?: boolean }>;
+    options?: ProfileBackgroundOption[];
     title?: string;
     showUpload?: boolean;
     isPremiumUser?: boolean;
@@ -40,15 +40,27 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const isPremiumUser = propIsPremium ?? hasPremiumAccess(userProfile);
+    const isPlatinumUser = hasPlatinumAccess(userProfile);
     const userFolder = userProfile.id && userProfile.id !== 'placeholder_user' ? userProfile.id : 'guest';
 
     const backgroundOptions = (options as any) ?? PROFILE_BACKGROUND_OPTIONS;
     const modalTitle = title ?? 'Selecionar Plano de Fundo';
-    const allowUpload = showUpload ?? true;
+    const allowUpload = showUpload ?? false;
 
-    const handleSelect = (bg: { value: string; isPremiumOnly?: boolean }) => {
-        if (bg.isPremiumOnly && !isPremiumUser) {
-            showToast('Acesso negado. Recurso restrito a assinantes Premium.', 'error');
+    const canUseBackground = (bg: ProfileBackgroundOption) => {
+        if (bg.accessTier === 'platinum') return isPlatinumUser;
+        if (bg.accessTier === 'premium') return isPremiumUser;
+        return true;
+    };
+
+    const handleSelect = (bg: ProfileBackgroundOption) => {
+        if (!canUseBackground(bg)) {
+            showToast(
+                bg.accessTier === 'platinum'
+                    ? 'Acesso negado. Recurso restrito ao Platinum.'
+                    : 'Acesso negado. Recurso restrito ao Premium.',
+                'error',
+            );
             return;
         }
         onSelect(resolveProfileBackgroundValue(bg.value));
@@ -93,8 +105,8 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
     };
 
     const handleFileUpload = () => {
-        if (!isPremiumUser) {
-            showToast('Acesso negado. Recurso restrito a assinantes Premium.', 'error');
+        if (!isPlatinumUser) {
+            showToast('Acesso negado. Upload manual desativado neste plano.', 'error');
             return;
         }
         if (!isUploading) fileInputRef.current?.click();
@@ -178,14 +190,14 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
                                 <div key={bg.id} className="text-center relative">
                                     <button
                                         onClick={() => handleSelect(bg)}
-                                        className={`aspect-[16/9] w-full rounded-lg overflow-hidden transition-all duration-200 relative ${isSelected ? 'ring-4 ring-offset-2 ring-offset-gray-800 ring-white' : ''} ${bg.isPremiumOnly && !isPremiumUser ? 'opacity-80 grayscale-[0.5]' : ''}`}
+                                        className={`aspect-[16/9] w-full rounded-lg overflow-hidden transition-all duration-200 relative ${isSelected ? 'ring-4 ring-offset-2 ring-offset-gray-800 ring-white' : ''} ${!canUseBackground(bg) ? 'opacity-80 grayscale-[0.5]' : ''}`}
                                     >
                                         <ProfileBackgroundSurface
                                             value={resolvedValue}
                                             className="w-full h-full object-cover"
                                             alt={bg.name}
                                         />
-                                        {bg.isPremiumOnly && !isPremiumUser && (
+                                        {!canUseBackground(bg) && (
                                             <div className="absolute top-1 right-1 bg-black/80 rounded-full w-5 h-5 flex items-center justify-center border border-yellow-500/50 shadow-lg">
                                                 <LockIcon className="w-2.5 h-2.5 text-yellow-300" />
                                             </div>

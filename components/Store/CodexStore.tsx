@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { CheckIcon, LightbulbIcon } from '../Icons';
@@ -122,7 +122,7 @@ const resolveTypeFromTags = (tags: string[]): CampaignTypeId => {
 };
 
 export const CodexStore: React.FC = () => {
-    const { userCodexes, codexCatalog, buyCodex, installCodex, getArenas, showToast, assets } = useGame();
+    const { userCodexes, userProfile, codexCatalog, buyCodex, installCodex, getArenas, showToast, assets } = useGame();
     const [purchasing, setPurchasing] = useState<string | null>(null);
     const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
     const [pendingPurchase, setPendingPurchase] = useState<{ id: string; title: string; goldPrice: number } | null>(null);
@@ -141,7 +141,7 @@ export const CodexStore: React.FC = () => {
 
         const isOwned = userCodexes.some((userCodex) => userCodex.catalog_id === catalogItem.id || userCodex.name === catalogItem.title);
         if (isOwned) {
-            showToast('Voce ja possui esta campanha na sua biblioteca.');
+            showToast('Você já possui esta campanha na sua biblioteca.');
             return;
         }
 
@@ -222,6 +222,30 @@ export const CodexStore: React.FC = () => {
     }), [catalogEntries, userCodexes]);
 
     const hasPendingFreeQuiz = !hasCompletedFreeCampaignQuiz() && !hasOwnedFreeCampaign;
+    const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
+    const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
+    const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
+    const hasMediumQuizCredit = campaignQuizMediumCredits > 0;
+    const hasFreeQuizCredit = campaignQuizFreeCredits > 0;
+    const quizHeroTitle = hasPendingFreeQuiz
+        ? 'Seu primeiro quiz libera uma campanha recomendada'
+        : hasFreeQuizCredit
+            ? 'Você tem uma ficha grátis pronta para usar'
+        : hasMediumQuizCredit
+            ? 'Você tem uma ficha média pronta para usar'
+            : 'Escolha uma campanha pronta para instalar agora';
+    const quizHeroCopy = hasPendingFreeQuiz
+        ? 'As campanhas grátis não ficam mais espalhadas no catálogo. O quiz encontra a melhor para o seu momento e ainda mostra uma opção premium como veja também.'
+        : hasFreeQuizCredit
+            ? `Sua renovação liberou ${campaignQuizFreeCredits} ficha${campaignQuizFreeCredits === 1 ? '' : 's'} grátis para usar no próximo quiz e puxar uma campanha recomendada sem custo.`
+        : hasMediumQuizCredit
+            ? `Sua renovação liberou ${campaignQuizMediumCredits} ficha${campaignQuizMediumCredits === 1 ? '' : 's'} média${campaignQuizMediumCredits === 1 ? '' : 's'} para usar no próximo quiz e liberar uma campanha recomendada sem custo em ouro.`
+            : 'O catálogo aberto foca nas campanhas premium. Se quiser uma rota mais guiada, o quiz ainda recomenda a próxima campanha certa para você.';
+    const quizButtonLabel = hasPendingFreeQuiz
+        ? 'Fazer quiz grátis'
+        : totalQuizCredits > 0
+            ? `Quiz · ${totalQuizCredits}`
+            : 'Fazer quiz';
 
     const availableAssetFilters = useMemo(() => (
         ASSET_FILTER_ORDER.map((assetId) => ({
@@ -276,12 +300,10 @@ export const CodexStore: React.FC = () => {
                                 Porta principal das campanhas
                             </div>
                             <h2 className="mt-2 text-lg font-black uppercase tracking-[0.05em] text-white">
-                                {hasPendingFreeQuiz ? 'Seu primeiro quiz libera uma campanha recomendada' : 'Escolha uma campanha pronta para instalar agora'}
+                                {quizHeroTitle}
                             </h2>
                             <p className="mt-2 text-sm leading-relaxed text-white/62">
-                                {hasPendingFreeQuiz
-                                    ? 'As campanhas gratis nao ficam mais espalhadas no catalogo. O quiz encontra a melhor para o seu momento e ainda mostra uma opcao premium como veja tambem.'
-                                    : 'O catalogo aberto foca nas campanhas premium. Se quiser uma rota mais guiada, o quiz ainda recomenda a proxima campanha certa para voce.'}
+                                {quizHeroCopy}
                             </p>
                         </div>
 
@@ -292,7 +314,7 @@ export const CodexStore: React.FC = () => {
                                 className="luxe-skin-button inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em]"
                             >
                                 <LightbulbIcon className="h-4 w-4" />
-                                {hasPendingFreeQuiz ? 'Fazer quiz gratis' : 'Fazer quiz'}
+                                {quizButtonLabel}
                             </button>
                         </div>
                     </div>
@@ -315,21 +337,23 @@ export const CodexStore: React.FC = () => {
 
                         <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
                             <div className="min-w-0 flex-1">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Catalogo premium</div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Catálogo premium</div>
                                 <div className="mt-1 text-[11px] leading-relaxed text-white/62">
-                                    Campanhas gratis entram pelo quiz. Aqui ficam as campanhas para compra direta.
+                                    {hasMediumQuizCredit
+                                        ? 'Você ainda pode usar sua ficha no quiz ou comprar direto por aqui.'
+                                        : 'Campanhas grátis entram pelo quiz. Aqui ficam as campanhas para compra direta.'}
                                 </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={handleQuizTeaser}
                                 className="inline-flex min-h-[42px] shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-white/78 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white"
-                                title="Quiz de recomendacao"
-                                aria-label="Quiz de recomendacao"
+                                title="Quiz de recomendação"
+                                aria-label="Quiz de recomendação"
                             >
                                 <LightbulbIcon className="h-4 w-4" />
                                 <span className="text-[10px] font-black uppercase tracking-[0.16em]">
-                                    {hasPendingFreeQuiz ? 'Quiz gratis' : 'Quiz'}
+                                    {hasPendingFreeQuiz ? 'Quiz grátis' : totalQuizCredits > 0 ? `Quiz · ${totalQuizCredits}` : 'Quiz'}
                                 </span>
                             </button>
                         </div>
@@ -502,9 +526,9 @@ export const CodexStore: React.FC = () => {
                     previewActions={campaignPreview.actions}
                     previewMeta={{
                         coverImage: activePreviewEntry?.coverVisual,
-                        badgeLabel: activePreviewEntry?.isFree ? 'Campanha gratis' : 'Campanha premium',
+                        badgeLabel: activePreviewEntry?.isFree ? 'Campanha grátis' : 'Campanha premium',
                         note: activePreviewEntry?.isFree
-                            ? 'Disponivel para instalar agora sem custo.'
+                            ? 'Disponível para instalar agora sem custo.'
                             : 'Ao adquirir, entra nas suas campanhas e tenta instalar na hora.',
                         hideArenaDetails: true,
                     }}
@@ -527,3 +551,4 @@ export const CodexStore: React.FC = () => {
         </>
     );
 };
+

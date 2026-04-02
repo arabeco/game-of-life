@@ -34,7 +34,8 @@ export const getExpBoostHoursRemaining = (profile?: ExpBoostLikeProfile | null, 
 export const getExpBoostLabel = (profile?: ExpBoostLikeProfile | null, now: number = Date.now()): string | null => {
   if (!hasActiveExpBoost(profile, now)) return null;
   const multiplier = getExpBoostMultiplier(profile, now);
-  return `${multiplier}x XP`;
+  const percent = Math.max(0, Math.round((multiplier - 1) * 100));
+  return `+${percent}% XP`;
 };
 
 export const getNextExpBoostExpiryAt = (durationHours: number, currentExpiresAt?: string | null, now: number = Date.now()): string => {

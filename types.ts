@@ -266,10 +266,21 @@ export interface RewardMetricCard {
   detail?: string;
 }
 
+export interface RewardHighlightLine {
+  label: string;
+  value: string;
+  detail?: string;
+  tone?: 'gold' | 'emerald' | 'cyan' | 'violet';
+}
+
 export interface RewardModalPayload {
+  membershipTier?: 'premium' | 'platinum';
   gold?: number;
   chestType?: ChestType | null;
   itemIds?: string[];
+  legacyProjectionSceneCreditsGranted?: number;
+  campaignQuizFreeCreditsGranted?: number;
+  campaignQuizMediumCreditsGranted?: number;
   eyebrow?: string;
   title?: string;
   summary?: string;
@@ -277,6 +288,10 @@ export interface RewardModalPayload {
   itemSectionTitle?: string;
   emptyMessage?: string;
   metricCards?: RewardMetricCard[];
+  rewardHighlightsTitle?: string;
+  rewardHighlights?: RewardHighlightLine[];
+  activeBenefitsTitle?: string;
+  activeBenefits?: string[];
 }
 
 export interface VanguardWelcomePayload extends RewardModalPayload {
@@ -380,9 +395,13 @@ export interface UserProfile {
   vanguardWelcomeShownAt?: string;
   vanguardWelcomePayload?: VanguardWelcomePayload | null;
   premiumExpiresAt?: string | null;
+  subscriptionTier?: 'premium' | 'platinum' | null;
   premiumRewardPending?: boolean;
   premiumRewardShownAt?: string;
   premiumRewardPayload?: RewardModalPayload | null;
+  legacyProjectionSceneCredits?: number;
+  campaignQuizFreeCredits?: number;
+  campaignQuizMediumCredits?: number;
   expBoostMultiplier?: number | null;
   expBoostExpiresAt?: string | null;
   expBoostProductId?: string | null;
@@ -1057,6 +1076,7 @@ export interface OraclePreferences {
   userId: string;
   iaEnabled: boolean;
   notificationsEnabled: boolean;
+  dailyFocusCardEnabled?: boolean;
   dmNotificationsEnabled: boolean;
   // Local-only preference for browser/device notifications.
   pushEnabled?: boolean;

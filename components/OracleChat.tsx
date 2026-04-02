@@ -309,7 +309,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   const [currentMode, setCurrentMode] = useState<OracleMode>(oraclePreferences?.activeMode || 'neutro');
   const isPremiumUser = useMemo(() => hasPremiumAccess(userProfile), [userProfile]);
-  const oracleFeedStatus = useMemo(() => getOracleFeedQuotaStatus(oracleMessages, oraclePreferences), [oracleMessages, oraclePreferences]);
+  const oracleFeedStatus = useMemo(
+    () => getOracleFeedQuotaStatus(
+      oracleMessages,
+      oraclePreferences,
+      new Date(),
+      userProfile.appMode === 'BASIC' ? 'BASIC' : 'GAME',
+    ),
+    [oracleMessages, oraclePreferences, userProfile.appMode],
+  );
 
   const availableTaskPool = useMemo(() => buildActionPoolByDate(actions, taskPool, tasks, null), [actions, taskPool, tasks]);
   const bayAreaTasks = useMemo(() => tasks.filter(isTaskInPool), [tasks]);

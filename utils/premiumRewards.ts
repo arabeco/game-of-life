@@ -1,4 +1,4 @@
-import { resolveItemDef } from '../constants/items';
+﻿import { resolveItemDef } from '../constants/items';
 import type { RewardModalPayload } from '../types';
 
 const joinNames = (names: string[]): string => {
@@ -18,17 +18,31 @@ export const buildPremiumRewardsToast = (payload?: RewardModalPayload | null): s
         ),
     );
 
-    const parts: string[] = ['Premium renovado por 30 dias.'];
+    const isPlatinum = payload.membershipTier === 'platinum' || (payload.title || '').toLowerCase().includes('platinum');
+    const parts: string[] = [isPlatinum ? 'Platinum renovado por 30 dias.' : 'Premium renovado por 30 dias.'];
 
     if (payload.chestType) {
-        parts.push(`Baú ${payload.chestType} entregue.`);
+        parts.push(`Baú ${payload.chestType === 'Season' ? 'Temporada' : payload.chestType} entregue.`);
     }
 
-    if (itemNames.length > 3) {
-        parts.push(`${itemNames.length} itens sazonais foram integrados ao Arsenal.`);
+    if (itemNames.length > 2) {
+        parts.push(`Itens recebidos: ${joinNames(itemNames.slice(0, 2))} e +${itemNames.length - 2} ${itemNames.length - 2 === 1 ? 'item' : 'itens'}.`);
     } else if (itemNames.length > 0) {
         parts.push(`Itens recebidos: ${joinNames(itemNames)}.`);
     }
 
+    if ((payload.campaignQuizFreeCreditsGranted || 0) > 0) {
+        parts.push(`${payload.campaignQuizFreeCreditsGranted} ficha grátis de quiz liberada.`);
+    }
+
+    if ((payload.campaignQuizMediumCreditsGranted || 0) > 0) {
+        parts.push(`${payload.campaignQuizMediumCreditsGranted} ficha média de quiz liberada.`);
+    }
+
+    if ((payload.legacyProjectionSceneCreditsGranted || 0) > 0) {
+        parts.push(`${payload.legacyProjectionSceneCreditsGranted} cena de legado grátis liberada.`);
+    }
+
     return parts.join(' ').trim();
 };
+

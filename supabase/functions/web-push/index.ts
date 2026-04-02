@@ -41,6 +41,7 @@ type NormalizedOracleMessage = {
   deliveryType: "feed" | "push" | "chat";
   read: boolean;
   contextSnapshot: JsonRecord;
+  createdAt: string;
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -248,6 +249,7 @@ const normalizeOracleMessage = (payload: unknown): NormalizedOracleMessage => {
     mode,
     deliveryType: (deliveryType === "push" || deliveryType === "chat" ? deliveryType : "feed") as "feed" | "push" | "chat",
     read: asBoolean(record.read),
+    createdAt: asTrimmedString(record.created_at) || asTrimmedString(record.createdAt) || new Date().toISOString(),
     contextSnapshot: isRecord(record.context_snapshot)
       ? record.context_snapshot
       : isRecord(record.contextSnapshot)
@@ -433,9 +435,22 @@ const shouldPushNotification = (
   return pushProfile.includes(policy.priority);
 };
 
-const shouldPushOracleMessage = (message: NormalizedOracleMessage): boolean => {
+const shouldPushOracleMessage = (
+  message: NormalizedOracleMessage,
+  appMode: AppMode,
+  dailyFocusCardEnabled: boolean,
+): boolean => {
   if (message.read || message.deliveryType !== "feed") {
     return false;
+  }
+
+  const triggerType = asTrimmedString(message.contextSnapshot.triggerType);
+  if (triggerType === "manual") {
+    return false;
+  }
+
+  if (appMode === "BASIC" && dailyFocusCardEnabled) {
+    return true;
   }
 
   const modePushProfile = MODE_PUSH_PROFILE[message.mode] || "equilibrado";
@@ -807,7 +822,7 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
   }
 
   const supabaseAdmin = getSupabaseAdmin();
-  const [{ data: subscriptions, error: subscriptionsError }, { data: preferenceRow }] = await Promise.all([
+  const [{ data: subscriptions, error: subscriptionsError }, { data: preferenceRow }, { data: profileRow }] = await Promise.all([
     supabaseAdmin
       .from("push_subscriptions")
       .select("id, user_id, endpoint, subscription, failure_count")
@@ -815,8 +830,13 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
       .is("disabled_at", null),
     supabaseAdmin
       .from("oracle_preferences")
-      .select("notifications_enabled")
+      .select("notifications_enabled, daily_focus_card_enabled")
       .eq("user_id", message.userId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from("user_profiles")
+      .select("app_mode")
+      .eq("id", message.userId)
       .maybeSingle(),
   ]);
 
@@ -828,7 +848,10 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
     return jsonResponse(origin, 200, { skipped: true, reason: "notifications_disabled" });
   }
 
-  if (!shouldPushOracleMessage(message)) {
+  const appMode: AppMode = asTrimmedString(profileRow?.app_mode) === "BASIC" ? "BASIC" : "GAME";
+  const dailyFocusCardEnabled = preferenceRow?.daily_focus_card_enabled === true;
+
+  if (!shouldPushOracleMessage(message, appMode, dailyFocusCardEnabled)) {
     return jsonResponse(origin, 200, { skipped: true, reason: "policy_filtered" });
   }
 

@@ -9,7 +9,7 @@ interface AssetArtButtonProps {
     assetId: string;
     assetName: string;
     currentUrl?: string;
-    onSave: (url: string) => void;
+    onSave: (url: string, options?: { applyToAll?: boolean }) => void;
     onRemove?: () => void;
     compact?: boolean;
     iconOnly?: boolean;
@@ -38,8 +38,8 @@ export const AssetArtButton: React.FC<AssetArtButtonProps> = ({
         setIsPickerOpen(true);
     };
 
-    const handleSelect = (nextValue: string) => {
-        onSave(getProfileBackgroundPrimarySource(nextValue));
+    const handleSelect = (nextValue: string, options?: { applyToAll?: boolean }) => {
+        onSave(getProfileBackgroundPrimarySource(nextValue), options);
         setIsPickerOpen(false);
     };
 
@@ -82,6 +82,7 @@ export const AssetArtButton: React.FC<AssetArtButtonProps> = ({
                     onSelect={handleSelect}
                     onClose={() => setIsPickerOpen(false)}
                     title={`Fundo de ${assetName}`}
+                    allowApplyToAll
                 />
             )}
         </>

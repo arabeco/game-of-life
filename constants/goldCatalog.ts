@@ -11,13 +11,14 @@ export const GOLD_PREMIUM_PRODUCT = {
     name: 'Premium (30 dias)',
     tier: 'premium',
     priceGold: 200,
+    priceBrl: 17.9,
     benefits: [
         'Até 15 arenas ativas (vs 7 no plano base)',
-        'Fundos premium de perfil',
+        'Fundos premium de perfil e ativos',
         'Oráculo: todos os modos',
         'Bônus de legado: +10% XP no ciclo',
         'Cena do legado com 50% off',
-        '1 ficha grátis de quiz por renovação',
+        '1 baú raro + 1 ficha grátis por renovação',
     ],
 } as const;
 
@@ -26,13 +27,13 @@ export const GOLD_PLATINUM_PRODUCT = {
     name: 'Platinum (30 dias)',
     tier: 'platinum',
     priceGold: 500,
+    priceBrl: 44.9,
     benefits: [
         'Todas as vantagens do Premium',
         'Até 30 arenas ativas',
         '1 cena de legado grátis por renovação',
         '1 ficha média de quiz por renovação',
-        'Todos os planos de fundo',
-        'Todas as aparências premium',
+        'Todos os planos de fundo e aparências premium',
         '1 baú da Temporada + 1 baú raro por renovação',
     ],
 } as const;

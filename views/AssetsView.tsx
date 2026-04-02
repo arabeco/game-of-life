@@ -84,7 +84,7 @@ const isSlotValueEmpty = (value: SlotValue | undefined): boolean => {
 };
 
 export const AssetsView: React.FC = () => {
-    const { assets, userProfile, updateUserProfile, appMode, activeCycle, dailyCommitment, cycleProgress, getArenas, actions, tasks } = useGame();
+    const { assets, userProfile, updateUserProfile, showToast, appMode, activeCycle, dailyCommitment, cycleProgress, getArenas, actions, tasks } = useGame();
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
     const [isEditingAssetDetail, setIsEditingAssetDetail] = useState(false);
     const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
@@ -390,26 +390,40 @@ export const AssetsView: React.FC = () => {
         setEditingSlot(null);
     };
 
-    const persistAssetArt = (nextUrl?: string) => {
+    const persistAssetArt = (nextUrl?: string, options?: { applyToAll?: boolean }) => {
         if (!selectedAsset) return;
 
-        const normalizedCurrent = (currentSelectedAssetArtUrl || '').trim();
+        const applyToAll = !!options?.applyToAll;
         const normalizedNext = (nextUrl || '').trim();
-        if (normalizedCurrent === normalizedNext) return;
-
         const nextAssetArtById = { ...(userProfile.assetArtById || {}) };
-        if (normalizedNext) {
-            nextAssetArtById[selectedAsset.id] = normalizedNext;
-        } else {
-            delete nextAssetArtById[selectedAsset.id];
-        }
+        const targetAssets = (applyToAll ? assets.filter((asset) => asset.id !== 'geral') : [selectedAsset])
+            .filter((asset): asset is Asset => Boolean(asset));
+
+        const hasChanges = targetAssets.some((asset) => {
+            const currentValue = (nextAssetArtById[asset.id] || '').trim();
+            return currentValue !== normalizedNext;
+        });
+
+        if (!hasChanges) return;
+
+        targetAssets.forEach((asset) => {
+            if (normalizedNext) {
+                nextAssetArtById[asset.id] = normalizedNext;
+            } else {
+                delete nextAssetArtById[asset.id];
+            }
+        });
 
         updateUserProfile({ assetArtById: nextAssetArtById });
+
+        if (applyToAll) {
+            showToast('Fundo aplicado a todos os ativos.', 'success');
+        }
     };
 
-    const handleSaveAssetArtDraft = (nextUrl: string) => {
+    const handleSaveAssetArtDraft = (nextUrl: string, options?: { applyToAll?: boolean }) => {
         setDraftAssetArtUrl(nextUrl);
-        persistAssetArt(nextUrl);
+        persistAssetArt(nextUrl, options);
     };
 
     const handleRemoveAssetArt = () => {

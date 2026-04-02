@@ -5,11 +5,23 @@ import { GlassCard } from '../GlassCard';
 import { XIcon } from '../Icons';
 import { Portal } from '../Portal';
 
-interface MercadoPagoBrickProps {
+type GoldCheckoutConfig = {
+    kind: 'gold';
     amount: number;
     goldAmount: number;
     onClose: () => void;
-}
+};
+
+type MembershipCheckoutConfig = {
+    kind: 'membership';
+    amount: number;
+    membershipTier: 'premium' | 'platinum';
+    membershipName: string;
+    equivalentGold: number;
+    onClose: () => void;
+};
+
+type MercadoPagoBrickProps = GoldCheckoutConfig | MembershipCheckoutConfig;
 
 declare global {
     interface Window {
@@ -34,8 +46,10 @@ const MERCADO_PAGO_STATUS_LABELS: Record<string, string> = {
     refunded: 'pagamento devolvido',
 };
 
-const getMercadoPagoStatusLabel = (paymentResult: any, creditDetected: boolean) => {
-    if (creditDetected) return 'ouro adicionado a sua conta';
+const getMercadoPagoStatusLabel = (paymentResult: any, deliveryDetected: boolean, kind: MercadoPagoBrickProps['kind']) => {
+    if (deliveryDetected) {
+        return kind === 'membership' ? 'assinatura ativada' : 'ouro adicionado a sua conta';
+    }
 
     const statusDetail = String(paymentResult?.status_detail || '').trim().toLowerCase();
     const status = String(paymentResult?.status || '').trim().toLowerCase();
@@ -106,14 +120,22 @@ const splitFullName = (value: string) => {
 type CheckoutMode = 'account' | 'custom';
 type CheckoutStep = 'mode' | 'payer';
 
-export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, goldAmount, onClose }) => {
+const formatBrl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
+    const { amount, onClose } = props;
     const { userProfile, showToast, updateUserProfile } = useGame();
+    const isMembershipCheckout = props.kind === 'membership';
+    const goldAmount = props.kind === 'gold' ? props.goldAmount : 0;
+    const membershipTier = props.kind === 'membership' ? props.membershipTier : null;
+    const membershipName = props.kind === 'membership' ? props.membershipName : null;
+    const equivalentGold = props.kind === 'membership' ? props.equivalentGold : 0;
     const profileEmail = String(userProfile.email || '').trim();
     const hasValidProfileEmail = isValidCheckoutEmail(profileEmail);
     const initialCheckoutEmail = hasValidProfileEmail ? profileEmail : '';
     const [loading, setLoading] = useState(false);
     const [paymentResult, setPaymentResult] = useState<any>(null);
-    const [creditDetected, setCreditDetected] = useState(false);
+    const [deliveryDetected, setDeliveryDetected] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
     const [emailInput, setEmailInput] = useState(initialCheckoutEmail);
     const [firstNameInput, setFirstNameInput] = useState('');
@@ -126,14 +148,22 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('mode');
     const latestRefs = useRef({ onClose, showToast });
     const baselineGoldRef = useRef<number>(Number(userProfile.wallet?.gold || 0));
-    const creditToastShownRef = useRef(false);
+    const baselineMembershipRef = useRef({
+        premiumExpiresAt: userProfile.premiumExpiresAt || null,
+        subscriptionTier: userProfile.subscriptionTier || null,
+        premiumRewardPending: Boolean(userProfile.premiumRewardPending),
+        legacyProjectionSceneCredits: Number(userProfile.legacyProjectionSceneCredits || 0),
+        campaignQuizFreeCredits: Number(userProfile.campaignQuizFreeCredits || 0),
+        campaignQuizMediumCredits: Number(userProfile.campaignQuizMediumCredits || 0),
+    });
+    const deliveryToastShownRef = useRef(false);
 
     const pixTransactionData = paymentResult?.point_of_interaction?.transaction_data ?? null;
     const pixQrCode = typeof pixTransactionData?.qr_code === 'string' ? pixTransactionData.qr_code : '';
     const pixQrCodeBase64 = typeof pixTransactionData?.qr_code_base64 === 'string' ? pixTransactionData.qr_code_base64 : '';
     const pixTicketUrl = typeof pixTransactionData?.ticket_url === 'string' ? pixTransactionData.ticket_url : '';
-    const paymentStatusLabel = getMercadoPagoStatusLabel(paymentResult, creditDetected);
-    const brlAmountLabel = amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const paymentStatusLabel = getMercadoPagoStatusLabel(paymentResult, deliveryDetected, props.kind);
+    const brlAmountLabel = formatBrl(amount);
     const hasPixPayload = Boolean(pixQrCodeBase64 || pixQrCode || pixTicketUrl);
 
     useEffect(() => {
@@ -194,6 +224,11 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                     userId: userProfile.id,
                     goldAmount,
                     amount,
+                    purchaseKind: props.kind,
+                    membershipTier,
+                    productId: isMembershipCheckout ? `${membershipTier}_30d` : null,
+                    productLabel: isMembershipCheckout ? membershipName : `${goldAmount} ouro`,
+                    equivalentGold: isMembershipCheckout ? equivalentGold : goldAmount,
                 }),
             });
 
@@ -227,69 +262,123 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     };
 
     useEffect(() => {
-        if (!paymentResult?.id || creditDetected) return;
+        if (!paymentResult?.id || deliveryDetected) return;
 
         let cancelled = false;
         let attempts = 0;
         const maxAttempts = 45;
 
-        const pollWallet = async () => {
+        const pollDelivery = async () => {
             attempts += 1;
+
+            if (!isMembershipCheckout) {
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .select('wallet')
+                    .eq('id', userProfile.id)
+                    .maybeSingle();
+
+                if (cancelled) return;
+
+                if (error) {
+                    console.warn('Erro ao verificar crédito do Mercado Pago:', error.message);
+                    return;
+                }
+
+                const detectedGold = Number((data as any)?.wallet?.gold || 0);
+                if (detectedGold > baselineGoldRef.current) {
+                    const gainedGold = detectedGold - baselineGoldRef.current;
+                    updateUserProfile({
+                        wallet: {
+                            ...(userProfile.wallet || { fragments: 0 }),
+                            gold: detectedGold,
+                            fragments: Number(userProfile.wallet?.fragments || 0),
+                        },
+                    });
+                    setDeliveryDetected(true);
+                    if (!deliveryToastShownRef.current) {
+                        deliveryToastShownRef.current = true;
+                        showToast(`${gainedGold} de Ouro foram adicionados à sua conta.`, 'success');
+                    }
+                }
+                return;
+            }
+
             const { data, error } = await supabase
                 .from('user_profiles')
-                .select('wallet')
+                .select('is_premium,premium_expires_at,subscription_tier,premium_reward_pending,premium_reward_payload,legacy_projection_scene_credits,campaign_quiz_free_credits,campaign_quiz_medium_credits')
                 .eq('id', userProfile.id)
                 .maybeSingle();
 
             if (cancelled) return;
 
             if (error) {
-                console.warn('Erro ao verificar credito do Mercado Pago:', error.message);
+                console.warn('Erro ao verificar assinatura do Mercado Pago:', error.message);
                 return;
             }
 
-            const detectedGold = Number((data as any)?.wallet?.gold || 0);
-            if (detectedGold > baselineGoldRef.current) {
-                const gainedGold = detectedGold - baselineGoldRef.current;
-                updateUserProfile({
-                    wallet: {
-                        ...(userProfile.wallet || { fragments: 0 }),
-                        gold: detectedGold,
-                        fragments: Number(userProfile.wallet?.fragments || 0),
-                    },
-                });
-                setCreditDetected(true);
-                if (!creditToastShownRef.current) {
-                    creditToastShownRef.current = true;
-                    showToast(`${gainedGold} de Ouro foram adicionados a sua conta.`, 'success');
-                }
+            const profileRow = data as any;
+            const detectedTier = String(profileRow?.subscription_tier || '').toLowerCase() || null;
+            const detectedExpiry = String(profileRow?.premium_expires_at || '').trim() || null;
+            const detectedPending = Boolean(profileRow?.premium_reward_pending);
+            const detectedLegacyCredits = Number(profileRow?.legacy_projection_scene_credits || 0);
+            const detectedFreeCredits = Number(profileRow?.campaign_quiz_free_credits || 0);
+            const detectedMediumCredits = Number(profileRow?.campaign_quiz_medium_credits || 0);
+
+            const membershipDelivered =
+                Boolean(profileRow?.is_premium) &&
+                detectedTier === membershipTier &&
+                (
+                    (detectedPending && detectedPending !== baselineMembershipRef.current.premiumRewardPending) ||
+                    detectedExpiry !== baselineMembershipRef.current.premiumExpiresAt ||
+                    detectedLegacyCredits !== baselineMembershipRef.current.legacyProjectionSceneCredits ||
+                    detectedFreeCredits !== baselineMembershipRef.current.campaignQuizFreeCredits ||
+                    detectedMediumCredits !== baselineMembershipRef.current.campaignQuizMediumCredits
+                );
+
+            if (!membershipDelivered) return;
+
+            updateUserProfile({
+                isPremium: Boolean(profileRow?.is_premium),
+                premiumExpiresAt: detectedExpiry,
+                subscriptionTier: detectedTier === 'platinum' ? 'platinum' : 'premium',
+                premiumRewardPending: detectedPending,
+                premiumRewardPayload: profileRow?.premium_reward_payload || null,
+                legacyProjectionSceneCredits: detectedLegacyCredits,
+                campaignQuizFreeCredits: detectedFreeCredits,
+                campaignQuizMediumCredits: detectedMediumCredits,
+            });
+            setDeliveryDetected(true);
+            if (!deliveryToastShownRef.current) {
+                deliveryToastShownRef.current = true;
+                showToast(`${membershipName || 'Assinatura'} ativado com sucesso.`, 'success');
             }
         };
 
-        void pollWallet();
+        void pollDelivery();
         const interval = window.setInterval(() => {
             if (attempts >= maxAttempts || cancelled) {
                 window.clearInterval(interval);
                 return;
             }
-            void pollWallet();
+            void pollDelivery();
         }, 4000);
 
         return () => {
             cancelled = true;
             window.clearInterval(interval);
         };
-    }, [paymentResult?.id, creditDetected, showToast, updateUserProfile, userProfile.id, userProfile.wallet]);
+    }, [deliveryDetected, isMembershipCheckout, membershipName, membershipTier, paymentResult?.id, showToast, updateUserProfile, userProfile.id, userProfile.wallet]);
 
     useEffect(() => {
-        if (!creditDetected) return;
+        if (!deliveryDetected) return;
 
         const closeTimer = window.setTimeout(() => {
             onClose();
         }, 1600);
 
         return () => window.clearTimeout(closeTimer);
-    }, [creditDetected, onClose]);
+    }, [deliveryDetected, onClose]);
 
     const handleCopyPixCode = async () => {
         if (!pixQrCode) {
@@ -345,7 +434,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
     const handleOpenPixForm = () => {
         setPaymentError(null);
         setPaymentResult(null);
-        setCreditDetected(false);
+        setDeliveryDetected(false);
         setCheckoutStep('payer');
         if (checkoutMode === 'account' && hasValidProfileEmail) {
             setEmailInput(profileEmail);
@@ -362,7 +451,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
         setCheckoutStep('mode');
         setCheckoutMode(hasValidProfileEmail ? 'account' : 'custom');
         setPaymentResult(null);
-        setCreditDetected(false);
+        setDeliveryDetected(false);
         setPaymentError(null);
         setCheckoutEmail('');
         setCheckoutFullName('');
@@ -377,10 +466,10 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                     <div className="mercado-pago-header flex items-center justify-between border-b border-white/10 bg-black/40 p-3 backdrop-blur-md">
                         <div>
                             <h2 className="text-lg font-black uppercase tracking-tight text-white">
-                                {paymentResult ? (creditDetected ? 'Pagamento Confirmado' : 'Aguardando Pagamento') : 'Pagamento Seguro'}
+                                {paymentResult ? (deliveryDetected ? (isMembershipCheckout ? 'Assinatura Confirmada' : 'Pagamento Confirmado') : 'Aguardando Pagamento') : 'Pagamento Seguro'}
                             </h2>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--skin-accent-color)]">
-                                {brlAmountLabel} - {goldAmount} ouro
+                                {isMembershipCheckout ? `${brlAmountLabel} - ${membershipName}` : `${brlAmountLabel} - ${goldAmount} ouro`}
                             </p>
                         </div>
                         <button onClick={onClose} className="rounded-full p-2 text-gray-400 transition-all hover:scale-110 hover:bg-white/10 hover:text-white">
@@ -437,8 +526,10 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                                     <div className="mt-1 text-base font-black text-white">{brlAmountLabel}</div>
                                                 </div>
                                                 <div>
-                                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Recebe</div>
-                                                    <div className="mt-1 text-base font-black text-[var(--skin-accent-color)]">{goldAmount} ouro</div>
+                                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{isMembershipCheckout ? 'Plano' : 'Recebe'}</div>
+                                                    <div className="mt-1 text-base font-black text-[var(--skin-accent-color)]">
+                                                        {isMembershipCheckout ? (membershipTier === 'platinum' ? 'Platinum 30d' : 'Premium 30d') : `${goldAmount} ouro`}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -596,7 +687,9 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 <div className="space-y-2">
                                     <h3 className="text-xl font-bold text-white">Pix pronto para pagar</h3>
                                     <p className="text-sm text-gray-400">
-                                        Escaneie o QR Code ou copie o codigo Pix abaixo. O ouro entra depois da aprovacao do pagamento.
+                                        {isMembershipCheckout
+                                            ? 'Escaneie o QR Code ou copie o código Pix abaixo. O plano ativa logo depois da aprovação do pagamento.'
+                                            : 'Escaneie o QR Code ou copie o código Pix abaixo. O ouro entra depois da aprovação do pagamento.'}
                                     </p>
                                 </div>
 
@@ -606,8 +699,12 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                         <div className="mt-1 text-lg font-black text-white">{brlAmountLabel}</div>
                                     </div>
                                     <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left">
-                                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">Ouro</div>
-                                        <div className="mt-1 text-lg font-black text-[var(--skin-accent-color)]">{goldAmount}</div>
+                                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">
+                                            {isMembershipCheckout ? 'Produto' : 'Ouro'}
+                                        </div>
+                                        <div className="mt-1 text-lg font-black text-[var(--skin-accent-color)]">
+                                            {isMembershipCheckout ? membershipName : goldAmount}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -652,7 +749,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                 <div className="mercado-pago-panel w-full space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
                                     <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
                                         <span className="text-gray-500">Status</span>
-                                        <span className={creditDetected ? 'text-emerald-400' : 'animate-pulse text-yellow-500'}>
+                                        <span className={deliveryDetected ? 'text-emerald-400' : 'animate-pulse text-yellow-500'}>
                                             {paymentStatusLabel}
                                         </span>
                                     </div>
@@ -660,9 +757,9 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                         <span className="text-gray-500">ID da Transacao</span>
                                         <span className="break-all text-right text-gray-300">{paymentResult.id}</span>
                                     </div>
-                                    {creditDetected && (
+                                    {deliveryDetected && (
                                         <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
-                                            O ouro ja foi adicionado a sua conta.
+                                            {isMembershipCheckout ? 'Seu plano já foi ativado.' : 'O ouro já foi adicionado à sua conta.'}
                                         </div>
                                     )}
                                 </div>
@@ -671,7 +768,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = ({ amount, gold
                                     onClick={onClose}
                                     className="luxe-skin-button w-full rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-all"
                                 >
-                                    {creditDetected ? 'Fechando...' : 'Fechar e Aguardar Ouro'}
+                                    {deliveryDetected ? 'Fechando...' : isMembershipCheckout ? 'Fechar e Aguardar Plano' : 'Fechar e Aguardar Ouro'}
                                 </button>
                             </div>
                         )}

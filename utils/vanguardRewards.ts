@@ -13,7 +13,11 @@ export const buildVanguardRewardsToast = (payload?: VanguardWelcomePayload | nul
     const itemNames = Array.from(
         new Set(
             (payload.itemIds || [])
-                .map((itemId) => resolveItemDef(itemId)?.name || null)
+                .map((itemId) => {
+                    const itemDef = resolveItemDef(itemId);
+                    if (!itemDef || itemDef.category === 'hair') return null;
+                    return itemDef.name;
+                })
                 .filter((name): name is string => Boolean(name)),
         ),
     );
@@ -21,7 +25,7 @@ export const buildVanguardRewardsToast = (payload?: VanguardWelcomePayload | nul
     const parts: string[] = [];
 
     if ((payload.gold || 0) > 0) {
-        parts.push(`+${payload.gold} 🪙 confirmados.`);
+        parts.push(`+${payload.gold} ouro confirmados.`);
     }
 
     if (payload.chestType) {

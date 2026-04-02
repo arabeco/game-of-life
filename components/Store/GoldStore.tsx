@@ -8,19 +8,36 @@ import { getExpBoostHoursRemaining, getExpBoostLabel, hasActiveExpBoost } from '
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess } from '../../utils/premiumAccess';
 import { ConfirmationModal } from '../ConfirmationModal';
 
-type GoldConfirmState =
-    | { kind: 'membership'; membershipId: string; membershipName: string; costGold: number }
-    | { kind: 'boost'; boostId: string; boostName: string; costGold: number };
+type GoldConfirmState = { kind: 'boost'; boostId: string; boostName: string; costGold: number };
+
+type MembershipCheckoutState = {
+    amount: number;
+    membershipId: string;
+    membershipName: string;
+    membershipTier: 'premium' | 'platinum';
+    equivalentGold: number;
+};
 
 const GOLD_SYMBOL = '\u{1FA99}';
+const formatBrl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const BASIC_MEMBERSHIP_BENEFIT_LIMIT = 4;
+
+const splitBenefitsIntoColumns = (benefits: readonly string[]) => {
+    const midpoint = Math.ceil(benefits.length / 2);
+    return [benefits.slice(0, midpoint), benefits.slice(midpoint)];
+};
 
 export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: number } | null }> = ({ scrollRequest = null }) => {
     const { buyStoreItem, userProfile } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
     const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number } | null>(null);
+    const [selectedMembership, setSelectedMembership] = useState<MembershipCheckoutState | null>(null);
     const [confirmState, setConfirmState] = useState<GoldConfirmState | null>(null);
+    const [showAllPremiumBenefits, setShowAllPremiumBenefits] = useState(false);
+    const [showAllPlatinumBenefits, setShowAllPlatinumBenefits] = useState(false);
     const isPremium = hasPremiumAccess(userProfile);
     const isPlatinum = hasPlatinumAccess(userProfile);
+    const isBasicMode = (userProfile.appMode || 'GAME') !== 'GAME';
     const activeMembershipTier = getActiveSubscriptionTier(userProfile);
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
     const premiumExpiresLabel = userProfile.premiumExpiresAt
@@ -62,7 +79,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
         'Todos os modos do Oráculo',
         'Cena do legado com 50% off',
         'Bônus de legado +10% XP',
-        '1 ficha grátis de quiz por renovação',
+        '1 baú raro + 1 ficha grátis por renovação',
     ]), []);
 
     const platinumBenefits = useMemo(() => ([
@@ -70,10 +87,21 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     'Até 30 arenas ativas',
     '1 cena de legado grátis por renovação',
     '1 ficha média de quiz por renovação',
-    'Todos os planos de fundo de perfil e ativos',
-    'Todas as aparências premium',
+    'Todos os planos de fundo e aparências premium',
     '1 baú da Temporada + 1 baú raro por renovação',
     ]), []);
+    const visiblePremiumBenefits = useMemo(
+        () => (isBasicMode && !showAllPremiumBenefits ? premiumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : premiumBenefits),
+        [isBasicMode, premiumBenefits, showAllPremiumBenefits],
+    );
+    const visiblePlatinumBenefits = useMemo(
+        () => (isBasicMode && !showAllPlatinumBenefits ? platinumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : platinumBenefits),
+        [isBasicMode, platinumBenefits, showAllPlatinumBenefits],
+    );
+    const hiddenPremiumCount = Math.max(0, premiumBenefits.length - visiblePremiumBenefits.length);
+    const hiddenPlatinumCount = Math.max(0, platinumBenefits.length - visiblePlatinumBenefits.length);
+    const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(visiblePremiumBenefits), [visiblePremiumBenefits]);
+    const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(visiblePlatinumBenefits), [visiblePlatinumBenefits]);
 
     const handleBuyPack = async (packId: string) => {
         const pack = GOLD_PACK_CATALOG.find((entry) => entry.id === packId);
@@ -83,19 +111,6 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
 
     const handleConfirmPurchase = async () => {
         if (!confirmState || loading) return;
-
-        if (confirmState.kind === 'membership') {
-            setLoading(confirmState.membershipId);
-            try {
-                await buyStoreItem(confirmState.membershipId, 'premium');
-            } catch (error) {
-                console.error('Membership purchase failed', error);
-            } finally {
-                setLoading(null);
-                setConfirmState(null);
-            }
-            return;
-        }
 
         setLoading(confirmState.boostId);
         try {
@@ -140,29 +155,49 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                             </div>
                         </div>
 
-                        <div className="grid gap-2">
-                            {premiumBenefits.map((benefit) => (
-                                <div key={benefit} className="flex items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
-                                    <CheckIcon className="h-4 w-4 text-green-400" />
-                                    <span className="text-sm text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[premiumBenefitLeft, premiumBenefitRight].map((column, columnIndex) => (
+                                <div key={`premium-col-${columnIndex}`} className="space-y-2">
+                                    {column.map((benefit) => (
+                                        <div key={benefit} className="flex min-h-[38px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2.5 py-2">
+                                            <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
+                                            <span className="text-[11px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             ))}
                         </div>
+                        {isBasicMode && (
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAllPremiumBenefits((current) => !current)}
+                                    className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/45 hover:bg-[var(--skin-accent-color)]/10"
+                                >
+                                    {showAllPremiumBenefits ? 'Menos' : `Mais${hiddenPremiumCount > 0 ? ` +${hiddenPremiumCount}` : ''}`}
+                                </button>
+                            </div>
+                        )}
 
                         <div className="flex min-w-[176px] flex-col items-stretch gap-2">
                             <button
-                                onClick={() => setConfirmState({ kind: 'membership', membershipId: GOLD_PREMIUM_PRODUCT.id, membershipName: GOLD_PREMIUM_PRODUCT.name, costGold: GOLD_PREMIUM_PRODUCT.priceGold })}
+                                onClick={() => setSelectedMembership({
+                                    amount: GOLD_PREMIUM_PRODUCT.priceBrl,
+                                    membershipId: GOLD_PREMIUM_PRODUCT.id,
+                                    membershipName: GOLD_PREMIUM_PRODUCT.name,
+                                    membershipTier: 'premium',
+                                    equivalentGold: GOLD_PREMIUM_PRODUCT.priceGold,
+                                })}
                                 disabled={!!loading || isPlatinum}
                                 className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <span>{isPlatinum ? 'Platinum ativo' : isPremium ? 'Estender premium' : 'Ativar premium'}</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
-                                    <span className="text-[12px] leading-none">{GOLD_SYMBOL}</span>
-                                    <span>{loading === GOLD_PREMIUM_PRODUCT.id ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
+                                    <span>{formatBrl(GOLD_PREMIUM_PRODUCT.priceBrl)}</span>
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {isPlatinum ? 'Já incluso no plano maior' : isPremium ? 'Renove quando quiser' : 'Compra manual em ouro'}
+                                {isPlatinum ? 'Já incluso no plano maior' : 'Produto direto no Pix'}
                             </span>
                         </div>
                     </div>
@@ -197,29 +232,49 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                             </div>
                         </div>
 
-                        <div className="grid gap-2">
-                            {platinumBenefits.map((benefit) => (
-                                <div key={benefit} className="flex items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
-                                    <CheckIcon className="h-4 w-4 text-green-400" />
-                                    <span className="text-sm text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[platinumBenefitLeft, platinumBenefitRight].map((column, columnIndex) => (
+                                <div key={`platinum-col-${columnIndex}`} className="space-y-2">
+                                    {column.map((benefit) => (
+                                        <div key={benefit} className="flex min-h-[38px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2.5 py-2">
+                                            <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
+                                            <span className="text-[11px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             ))}
                         </div>
+                        {isBasicMode && (
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAllPlatinumBenefits((current) => !current)}
+                                    className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-amber-100 transition-all hover:border-amber-200/35 hover:bg-amber-200/10"
+                                >
+                                    {showAllPlatinumBenefits ? 'Menos' : `Mais${hiddenPlatinumCount > 0 ? ` +${hiddenPlatinumCount}` : ''}`}
+                                </button>
+                            </div>
+                        )}
 
                         <div className="flex min-w-[176px] flex-col items-stretch gap-2">
                             <button
-                                onClick={() => setConfirmState({ kind: 'membership', membershipId: GOLD_PLATINUM_PRODUCT.id, membershipName: GOLD_PLATINUM_PRODUCT.name, costGold: GOLD_PLATINUM_PRODUCT.priceGold })}
+                                onClick={() => setSelectedMembership({
+                                    amount: GOLD_PLATINUM_PRODUCT.priceBrl,
+                                    membershipId: GOLD_PLATINUM_PRODUCT.id,
+                                    membershipName: GOLD_PLATINUM_PRODUCT.name,
+                                    membershipTier: 'platinum',
+                                    equivalentGold: GOLD_PLATINUM_PRODUCT.priceGold,
+                                })}
                                 disabled={!!loading}
                                 className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <span>{isPlatinum ? 'Estender platinum' : activeMembershipTier === 'premium' ? 'Subir para platinum' : 'Ativar platinum'}</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
-                                    <span className="text-[12px] leading-none">{GOLD_SYMBOL}</span>
-                                    <span>{loading === GOLD_PLATINUM_PRODUCT.id ? '...' : GOLD_PLATINUM_PRODUCT.priceGold}</span>
+                                    <span>{formatBrl(GOLD_PLATINUM_PRODUCT.priceBrl)}</span>
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {isPlatinum ? 'Renove quando quiser' : activeMembershipTier === 'premium' ? 'Upgrade manual em ouro' : 'Compra manual em ouro'}
+                                {activeMembershipTier === 'premium' && !isPlatinum ? 'Upgrade direto no Pix' : 'Produto direto no Pix'}
                             </span>
                         </div>
                     </div>
@@ -297,18 +352,24 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                     </div>
                 </GlassCard>
 
-                {selectedPack && <MercadoPagoBrick amount={selectedPack.amount} goldAmount={selectedPack.goldAmount} onClose={() => setSelectedPack(null)} />}
+                {selectedPack && <MercadoPagoBrick kind="gold" amount={selectedPack.amount} goldAmount={selectedPack.goldAmount} onClose={() => setSelectedPack(null)} />}
+                {selectedMembership && (
+                    <MercadoPagoBrick
+                        kind="membership"
+                        amount={selectedMembership.amount}
+                        membershipTier={selectedMembership.membershipTier}
+                        membershipName={selectedMembership.membershipName}
+                        equivalentGold={selectedMembership.equivalentGold}
+                        onClose={() => setSelectedMembership(null)}
+                    />
+                )}
             </div>
 
             {confirmState && (
                 <ConfirmationModal
-                    title={confirmState.kind === 'membership' ? `Confirmar ${confirmState.membershipName}` : 'Confirmar boost'}
-                    message={confirmState.kind === 'membership'
-                        ? `Ativar ou renovar ${confirmState.membershipName} vai debitar ${confirmState.costGold} ouro da sua conta. Deseja continuar?`
-                        : `${confirmState.boostName} vai debitar ${confirmState.costGold} ouro da sua conta. Deseja continuar?`}
-                    confirmLabel={confirmState.kind === 'membership'
-                        ? `${confirmState.membershipName.toUpperCase()} - ${confirmState.costGold} ${GOLD_SYMBOL}`
-                        : `BOOST - ${confirmState.costGold} ${GOLD_SYMBOL}`}
+                    title="Confirmar boost"
+                    message={`${confirmState.boostName} vai debitar ${confirmState.costGold} ouro da sua conta. Deseja continuar?`}
+                    confirmLabel={`BOOST - ${confirmState.costGold} ${GOLD_SYMBOL}`}
                     onConfirm={() => { void handleConfirmPurchase(); }}
                     onCancel={() => setConfirmState(null)}
                 />

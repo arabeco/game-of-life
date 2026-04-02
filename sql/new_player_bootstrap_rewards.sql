@@ -391,8 +391,6 @@ begin
 
     perform public._starter_reward_grant_inventory_item_once(p_user_id, 'item_border_vanguarda_01');
     perform public._starter_reward_grant_inventory_item_once(p_user_id, 'item_banner_vanguarda_01');
-    perform public._starter_reward_grant_inventory_item_once(p_user_id, 'dreads');
-    perform public._starter_reward_grant_inventory_item_once(p_user_id, 'mullet_topete');
 
     v_artifact_ids := public._starter_reward_pick_items(p_user_id, v_artifact_pool, 3);
     foreach v_item_id in array v_artifact_ids loop

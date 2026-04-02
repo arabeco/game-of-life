@@ -108,13 +108,9 @@ begin
 
     perform public._starter_reward_grant_inventory_item_once(p_user_id, 'item_border_vanguarda_01');
     perform public._starter_reward_grant_inventory_item_once(p_user_id, 'item_banner_vanguarda_01');
-    perform public._starter_reward_grant_inventory_item_once(p_user_id, 'dreads');
-    perform public._starter_reward_grant_inventory_item_once(p_user_id, 'mullet_topete');
 
     v_vanguard_item_ids := array_append(v_vanguard_item_ids, 'item_border_vanguarda_01');
     v_vanguard_item_ids := array_append(v_vanguard_item_ids, 'item_banner_vanguarda_01');
-    v_vanguard_item_ids := array_append(v_vanguard_item_ids, 'dreads');
-    v_vanguard_item_ids := array_append(v_vanguard_item_ids, 'mullet_topete');
 
     v_artifact_ids := public._starter_reward_pick_items(p_user_id, v_artifact_pool, 3);
     foreach v_item_id in array v_artifact_ids loop
@@ -136,6 +132,17 @@ begin
 
     perform public._starter_reward_mark_purchase(p_user_id, 'invite_ouro_pack', v_ouro_marker, false);
     v_vanguard_payload := jsonb_build_object(
+      'eyebrow', 'Convite dourado',
+      'title', 'Bem-vindo a Vanguarda',
+      'summary', 'Seu acesso ouro foi selado. O pacote real da Vanguarda ja entrou no Arsenal.',
+      'buttonLabel', 'Entrar na Vanguarda',
+      'itemSectionTitle', 'Itens da Vanguarda',
+      'rewardHighlightsTitle', 'Entregue agora',
+      'rewardHighlights', jsonb_build_array(
+        jsonb_build_object('label', 'Ouro', 'value', '+50', 'detail', 'Reserva inicial da Vanguarda.', 'tone', 'gold'),
+        jsonb_build_object('label', 'Bau', 'value', v_chest_type, 'detail', 'Entrega inicial do convite ouro.', 'tone', 'cyan'),
+        jsonb_build_object('label', 'Arsenal', 'value', 'Kit Vanguarda', 'detail', 'Borda, banner e itens de vitrine ja foram adicionados.', 'tone', 'emerald')
+      ),
       'inviteCode', v_invite.code,
       'gold', 50,
       'chestType', v_chest_type,

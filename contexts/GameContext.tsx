@@ -253,14 +253,7 @@ const PREMIUM_ACTIVE_BENEFITS = [
 const PLATINUM_ACTIVE_BENEFITS = [
     'Todas as vantagens do Premium',
     'Até 30 arenas ativas',
-    '1 cena de legado grátis por renovação',
-    'Todos os planos de fundo de perfil e ativos',
-    'Todas as aparências premium',
-    '1 baú da Temporada + 1 baú raro por renovação',
-] as const;
-const PREMIUM_GENESIS_REWARD_ITEM_IDS = [
-    'item_border_genesis_01',
-    'item_banner_origin_01',
+    'Todos os planos de fundo e aparências premium',
 ] as const;
 
 const formatPremiumExpiryLabel = (expiresAt: string): string => {
@@ -7388,30 +7381,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return { item: null, granted: false };
     };
 
-    const grantPremiumRewardItem = async (itemId: string): Promise<boolean> => {
-        const itemDef = resolveItemDef(itemId);
-        if (!itemDef) return false;
-
-        if (itemDef.category === 'insignia' || itemDef.category === 'insignias') {
-            grantUserUnlock('insignias', itemId);
-        }
-
-        const result = await grantInventoryItem(itemId, true);
-        return result.granted;
-    };
-
-    const getPremiumSeasonRewardItemIds = (): string[] => {
-        const activeSeason = activeRuntimeSeasonConfig;
-        if (!activeSeason) return [];
-
-        return Array.from(
-            new Set([
-                ...(activeSeason.launchHighlights?.itemIds || []),
-                ...(activeSeason.launchRewardItemIds || []),
-            ]),
-        );
-    };
-
     const formatMembershipChestLabel = (chestType: ChestType): string => {
         if (chestType === 'Season') return 'Temporada';
         return chestType;
@@ -7426,8 +7395,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         campaignQuizFreeCreditsGranted: number,
         campaignQuizMediumCreditsGranted: number,
     ): RewardModalPayload => {
-        const activeSeasonName = activeRuntimeSeasonConfig?.name || 'Temporada atual';
-        const grantedSeasonRewards = grantedItemIds.length > 0;
         const isPlatinum = tier === 'platinum';
         const chestSummary = grantedChests.length > 0
             ? grantedChests.map(formatMembershipChestLabel).join(' + ')
@@ -7467,9 +7434,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     tone: 'cyan' as const,
                 },
                 {
-                    label: 'Arsenal',
-                    value: grantedItemIds.length > 0 ? `${grantedItemIds.length} item${grantedItemIds.length === 1 ? '' : 's'}` : 'Sem item novo',
-                    detail: grantedItemIds.length > 0 ? `${activeSeasonName} e acervo Genesis integrados.` : 'Nenhum cosmético novo precisava ser entregue.',
+                    label: 'Ciclo',
+                    value: '+10% XP',
+                    detail: 'Bônus ativo enquanto o Premium durar.',
                     tone: 'emerald' as const,
                 },
             ];
@@ -7479,12 +7446,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             eyebrow: isPlatinum ? 'Renovação platinum' : 'Renovação premium',
             title: isPlatinum ? 'Platinum ativo' : 'Premium ativo',
             summary: isPlatinum
-                ? grantedSeasonRewards
-                    ? 'Seu plano maior foi renovado por mais 30 dias. As entregas desta rodada já caíram, incluindo a ficha média de quiz e o crédito grátis de legado.'
-                    : 'Seu plano maior foi renovado por mais 30 dias. As entregas desta rodada já foram consolidadas e o acesso Platinum segue ativo.'
-                : grantedSeasonRewards
-                    ? `Seu Premium foi renovado por mais 30 dias. As entregas desta rodada já caíram no Arsenal e a ficha grátis de quiz foi liberada.`
-                    : 'Seu Premium foi renovado por mais 30 dias. O baú raro e a ficha grátis de quiz desta rodada já foram consolidados.',
+                ? 'Seu plano maior foi renovado por mais 30 dias. Os baús desta rodada, a ficha média de quiz e o crédito grátis de legado já foram liberados.'
+                : 'Seu Premium foi renovado por mais 30 dias. O baú raro e a ficha grátis de quiz desta rodada já foram liberados.',
             buttonLabel: 'Seguir',
             rewardHighlightsTitle: 'Entregue agora',
             rewardHighlights,
@@ -7520,18 +7483,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const unlockPremiumPack = async (expiresAt: string): Promise<{ payload: RewardModalPayload; campaignQuizFreeCreditsGranted: number; campaignQuizMediumCreditsGranted: number }> => {
-        const candidateItemIds = Array.from(
-            new Set([
-                ...PREMIUM_GENESIS_REWARD_ITEM_IDS,
-                ...getPremiumSeasonRewardItemIds(),
-            ]),
-        );
-
         const grantedItemIds: string[] = [];
-        for (const itemId of candidateItemIds) {
-            const granted = await grantPremiumRewardItem(itemId);
-            if (granted) grantedItemIds.push(itemId);
-        }
 
         const grantedChests: ChestType[] = [];
         const chestGranted = await addChest(PREMIUM_REWARD_CHEST);

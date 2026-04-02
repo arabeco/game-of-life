@@ -19,11 +19,12 @@ import {
 interface BackgroundImageSelectionModalProps {
     currentBackground: string;
     onClose: () => void;
-    onSelect: (backgroundValue: string) => void;
+    onSelect: (backgroundValue: string, options?: { applyToAll?: boolean }) => void;
     options?: ProfileBackgroundOption[];
     title?: string;
     showUpload?: boolean;
     isPremiumUser?: boolean;
+    allowApplyToAll?: boolean;
 }
 
 export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionModalProps> = ({
@@ -34,6 +35,7 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
     title,
     showUpload,
     isPremiumUser: propIsPremium,
+    allowApplyToAll = false,
 }) => {
     const { userProfile, showToast } = useGame();
     const isPremiumUser = propIsPremium ?? hasPremiumAccess(userProfile);
@@ -42,6 +44,7 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
     const backgroundOptions = options ?? PROFILE_BACKGROUND_OPTIONS;
     const modalTitle = title ?? 'Selecionar Plano de Fundo';
     const [bucketBackgroundOptions, setBucketBackgroundOptions] = React.useState<ProfileBackgroundOption[]>([]);
+    const [applyToAll, setApplyToAll] = React.useState(false);
     void showUpload;
 
     React.useEffect(() => {
@@ -166,7 +169,7 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
             );
             return;
         }
-        onSelect(resolveProfileBackgroundValue(bg.value));
+        onSelect(resolveProfileBackgroundValue(bg.value), { applyToAll });
     };
 
     return (
@@ -202,6 +205,24 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
                             );
                         })}
                     </div>
+                    {allowApplyToAll && (
+                        <label className="mx-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-left">
+                            <input
+                                type="checkbox"
+                                checked={applyToAll}
+                                onChange={(event) => setApplyToAll(event.target.checked)}
+                                className="h-4 w-4 rounded border-white/20 bg-black/30 accent-[var(--skin-accent-color)]"
+                            />
+                            <span className="min-w-0">
+                                <span className="block text-[11px] font-black uppercase tracking-[0.16em] text-white">
+                                    Aplicar a todos
+                                </span>
+                                <span className="block text-[11px] leading-snug text-white/58">
+                                    Usa este mesmo fundo em todos os ativos.
+                                </span>
+                            </span>
+                        </label>
+                    )}
                     <button onClick={onClose} className="w-full py-2 rounded-xl luxe-skin-button">
                         FECHAR
                     </button>

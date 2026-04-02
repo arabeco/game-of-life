@@ -9,6 +9,7 @@ import { GlassCard } from '../components/GlassCard';
 import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
+import { MercadoPagoBrick } from '../components/Store/MercadoPagoBrick';
 import { supabase } from '../supabaseClient';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { CODEXES, getCatalogItemsByCategory } from '../constants/items';
@@ -55,6 +56,13 @@ type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
 type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
 type ProfileVisibilityOption = ProfileVisibilityScope;
 type UiSettingsSkinOption = { id: string; name: string };
+
+const splitBenefitsIntoColumns = (benefits: readonly string[]) => {
+    const midpoint = Math.ceil(benefits.length / 2);
+    return [benefits.slice(0, midpoint), benefits.slice(midpoint)];
+};
+const formatBrl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const BASIC_MEMBERSHIP_BENEFIT_LIMIT = 4;
 
 const UI_SKIN_SELECTOR_ORDER = ['BASIC', 'GOLD', 'FROST', 'EMBER', 'CYBER', 'AURORA', 'VOID', 'GENESIS', 'item_theme_nebulosa'] as const;
 const UI_SKIN_SELECTOR_META: Record<string, { label: string; title: string; previewSkinId?: string; prefersLightText?: boolean; }> = {
@@ -2371,11 +2379,18 @@ const LegacyPremiumTab: React.FC = () => {
 };
 
 const PremiumTab: React.FC = () => {
-    const { userProfile, buyStoreItem } = useGame();
-    const [confirmMembership, setConfirmMembership] = useState<'premium' | 'platinum' | null>(null);
-    const [isBuyingMembership, setIsBuyingMembership] = useState<'premium' | 'platinum' | null>(null);
+    const { userProfile } = useGame();
+    const [selectedMembership, setSelectedMembership] = useState<{
+        tier: 'premium' | 'platinum';
+        amount: number;
+        name: string;
+        equivalentGold: number;
+    } | null>(null);
+    const [showAllPremiumBenefits, setShowAllPremiumBenefits] = useState(false);
+    const [showAllPlatinumBenefits, setShowAllPlatinumBenefits] = useState(false);
     const isPremium = hasPremiumAccess(userProfile);
     const isPlatinum = hasPlatinumAccess(userProfile);
+    const isBasicMode = (userProfile.appMode || 'GAME') !== 'GAME';
     const activeMembershipTier = getActiveSubscriptionTier(userProfile);
     const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÍVEL';
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
@@ -2385,17 +2400,28 @@ const PremiumTab: React.FC = () => {
         'Todos os modos do Oráculo',
         'Cena do legado com 50% off',
         'Bônus de legado +10% XP',
-        '1 ficha grátis de quiz por renovação',
+        '1 baú raro + 1 ficha grátis por renovação',
     ];
     const platinumBenefits = [
         'Todas as vantagens do Premium',
         'Até 30 arenas ativas',
         '1 cena de legado grátis por renovação',
         '1 ficha média de quiz por renovação',
-        'Todos os planos de fundo de perfil e ativos',
-        'Todas as aparências premium',
+        'Todos os planos de fundo e aparências premium',
         '1 baú da Temporada + 1 baú raro por renovação',
     ];
+    const visiblePremiumBenefits = useMemo(
+        () => (isBasicMode && !showAllPremiumBenefits ? premiumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : premiumBenefits),
+        [isBasicMode, premiumBenefits, showAllPremiumBenefits],
+    );
+    const visiblePlatinumBenefits = useMemo(
+        () => (isBasicMode && !showAllPlatinumBenefits ? platinumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : platinumBenefits),
+        [isBasicMode, platinumBenefits, showAllPlatinumBenefits],
+    );
+    const hiddenPremiumCount = Math.max(0, premiumBenefits.length - visiblePremiumBenefits.length);
+    const hiddenPlatinumCount = Math.max(0, platinumBenefits.length - visiblePlatinumBenefits.length);
+    const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(visiblePremiumBenefits), [visiblePremiumBenefits]);
+    const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(visiblePlatinumBenefits), [visiblePlatinumBenefits]);
     const premiumExpiresLabel = userProfile.premiumExpiresAt
         ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(userProfile.premiumExpiresAt))
         : null;
@@ -2416,19 +2442,6 @@ const PremiumTab: React.FC = () => {
     const premiumActionLabel = isPlatinum ? 'Platinum ativo' : isPremium ? 'Estender premium' : 'Ativar premium';
     const platinumActionLabel = isPlatinum ? 'Estender platinum' : activeMembershipTier === 'premium' ? 'Subir para platinum' : 'Ativar platinum';
     const isPremiumExpiringSoon = isPremium && premiumDaysRemaining != null && premiumDaysRemaining <= 7;
-
-    const handleConfirmMembershipPurchase = async () => {
-        if (!confirmMembership || isBuyingMembership) return;
-        setIsBuyingMembership(confirmMembership);
-        try {
-            await buyStoreItem(confirmMembership === 'platinum' ? GOLD_PLATINUM_PRODUCT.id : GOLD_PREMIUM_PRODUCT.id, 'premium');
-            setConfirmMembership(null);
-        } catch (error) {
-            console.error('Membership purchase failed from settings tab', error);
-        } finally {
-            setIsBuyingMembership(null);
-        }
-    };
 
     return (
         <>
@@ -2460,29 +2473,48 @@ const PremiumTab: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="grid gap-2 min-[360px]:grid-cols-2">
-                            {premiumBenefits.map((benefit) => (
-                                <div key={benefit} className="flex min-h-[40px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
-                                    <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
-                                    <span className="text-[12px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[premiumBenefitLeft, premiumBenefitRight].map((column, columnIndex) => (
+                                <div key={`premium-column-${columnIndex}`} className="space-y-2">
+                                    {column.map((benefit) => (
+                                        <div key={benefit} className="flex min-h-[38px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2.5 py-2">
+                                            <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
+                                            <span className="text-[11px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             ))}
                         </div>
+                        {isBasicMode && (
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAllPremiumBenefits((current) => !current)}
+                                    className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/45 hover:bg-[var(--skin-accent-color)]/10"
+                                >
+                                    {showAllPremiumBenefits ? 'Menos' : `Mais${hiddenPremiumCount > 0 ? ` +${hiddenPremiumCount}` : ''}`}
+                                </button>
+                            </div>
+                        )}
 
                         <div className="flex min-w-[176px] flex-col items-stretch gap-1.5">
                             <button
-                                onClick={() => setConfirmMembership('premium')}
-                                disabled={isBuyingMembership !== null || isPlatinum}
+                                onClick={() => setSelectedMembership({
+                                    tier: 'premium',
+                                    amount: GOLD_PREMIUM_PRODUCT.priceBrl,
+                                    name: GOLD_PREMIUM_PRODUCT.name,
+                                    equivalentGold: GOLD_PREMIUM_PRODUCT.priceGold,
+                                })}
+                                disabled={isPlatinum}
                                 className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <span>{premiumActionLabel}</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
-                                    <span className="text-[12px] leading-none">{GOLD_SYMBOL}</span>
-                                    <span>{isBuyingMembership === 'premium' ? '...' : GOLD_PREMIUM_PRODUCT.priceGold}</span>
+                                    <span>{formatBrl(GOLD_PREMIUM_PRODUCT.priceBrl)}</span>
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {isPlatinum ? 'Já incluso no plano maior' : isPremium ? 'Renove quando quiser' : 'Compra manual em ouro'}
+                                {isPlatinum ? 'Já incluso no plano maior' : 'Produto direto no Pix'}
                             </span>
                         </div>
                     </div>
@@ -2510,29 +2542,47 @@ const PremiumTab: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="grid gap-2 min-[360px]:grid-cols-2">
-                            {platinumBenefits.map((benefit) => (
-                                <div key={benefit} className="flex min-h-[40px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-2">
-                                    <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
-                                    <span className="text-[12px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[platinumBenefitLeft, platinumBenefitRight].map((column, columnIndex) => (
+                                <div key={`platinum-column-${columnIndex}`} className="space-y-2">
+                                    {column.map((benefit) => (
+                                        <div key={benefit} className="flex min-h-[38px] items-center gap-2 rounded-xl border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-2.5 py-2">
+                                            <CheckIcon className="h-3.5 w-3.5 shrink-0 text-green-400" />
+                                            <span className="text-[11px] leading-snug text-[color:var(--ui-card-text-soft)]">{benefit}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             ))}
                         </div>
+                        {isBasicMode && (
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAllPlatinumBenefits((current) => !current)}
+                                    className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-amber-100 transition-all hover:border-amber-200/35 hover:bg-amber-200/10"
+                                >
+                                    {showAllPlatinumBenefits ? 'Menos' : `Mais${hiddenPlatinumCount > 0 ? ` +${hiddenPlatinumCount}` : ''}`}
+                                </button>
+                            </div>
+                        )}
 
                         <div className="flex min-w-[176px] flex-col items-stretch gap-1.5">
                             <button
-                                onClick={() => setConfirmMembership('platinum')}
-                                disabled={isBuyingMembership !== null}
+                                onClick={() => setSelectedMembership({
+                                    tier: 'platinum',
+                                    amount: GOLD_PLATINUM_PRODUCT.priceBrl,
+                                    name: GOLD_PLATINUM_PRODUCT.name,
+                                    equivalentGold: GOLD_PLATINUM_PRODUCT.priceGold,
+                                })}
                                 className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <span>{platinumActionLabel}</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
-                                    <span className="text-[12px] leading-none">{GOLD_SYMBOL}</span>
-                                    <span>{isBuyingMembership === 'platinum' ? '...' : GOLD_PLATINUM_PRODUCT.priceGold}</span>
+                                    <span>{formatBrl(GOLD_PLATINUM_PRODUCT.priceBrl)}</span>
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {isPlatinum ? 'Renove quando quiser' : activeMembershipTier === 'premium' ? 'Upgrade manual em ouro' : 'Compra manual em ouro'}
+                                {activeMembershipTier === 'premium' && !isPlatinum ? 'Upgrade direto no Pix' : 'Produto direto no Pix'}
                             </span>
                         </div>
                     </div>
@@ -2540,23 +2590,14 @@ const PremiumTab: React.FC = () => {
             </section>
 
         </div>
-        {confirmMembership && (
-            <ConfirmationModal
-                title={confirmMembership === 'platinum'
-                    ? (isPlatinum ? 'Estender platinum' : activeMembershipTier === 'premium' ? 'Subir para platinum' : 'Ativar platinum')
-                    : (isPremium ? 'Estender premium' : 'Ativar premium')}
-                message={confirmMembership === 'platinum'
-                    ? `${isPlatinum ? 'Estender o platinum' : 'Ativar o platinum'} vai debitar ${GOLD_PLATINUM_PRODUCT.priceGold} ouro da sua conta e ajustar seu acesso por mais 30 dias. Deseja continuar?`
-                    : isPremium
-                        ? `Estender o premium vai debitar ${GOLD_PREMIUM_PRODUCT.priceGold} ouro da sua conta e somar mais 30 dias ao período atual. Deseja continuar?`
-                        : `Ativar o premium vai debitar ${GOLD_PREMIUM_PRODUCT.priceGold} ouro da sua conta e liberar 30 dias de acesso. Deseja continuar?`}
-                confirmLabel={`${confirmMembership === 'platinum'
-                    ? (isPlatinum ? 'ESTENDER' : 'ATIVAR')
-                    : (isPremium ? 'ESTENDER' : 'ATIVAR')} - ${confirmMembership === 'platinum' ? GOLD_PLATINUM_PRODUCT.priceGold : GOLD_PREMIUM_PRODUCT.priceGold} ${GOLD_SYMBOL}`}
-                onConfirm={() => { void handleConfirmMembershipPurchase(); }}
-                onCancel={() => {
-                    if (!isBuyingMembership) setConfirmMembership(null);
-                }}
+        {selectedMembership && (
+            <MercadoPagoBrick
+                kind="membership"
+                amount={selectedMembership.amount}
+                membershipTier={selectedMembership.tier}
+                membershipName={selectedMembership.name}
+                equivalentGold={selectedMembership.equivalentGold}
+                onClose={() => setSelectedMembership(null)}
             />
         )}
         </>

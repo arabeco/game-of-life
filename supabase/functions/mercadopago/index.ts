@@ -67,6 +67,13 @@ const splitFullName = (value: string) => {
   };
 };
 
+const normalizeMembershipTier = (value: string | null | undefined) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "platinum") return "platinum";
+  if (normalized === "premium") return "premium";
+  return null;
+};
+
 const maskEmail = (value: string) => {
   const email = String(value || "").trim().toLowerCase();
   const [localPart, domain] = email.split("@");
@@ -97,6 +104,11 @@ const buildSafePaymentMetadata = (paymentData: any) => {
     },
     glyph_purchase: {
       user_id: paymentData?.metadata?.user_id ?? null,
+      purchase_kind: paymentData?.metadata?.purchase_kind ?? "gold",
+      product_id: paymentData?.metadata?.product_id ?? null,
+      product_label: paymentData?.metadata?.product_label ?? null,
+      membership_tier: paymentData?.metadata?.membership_tier ?? null,
+      equivalent_gold: paymentData?.metadata?.equivalent_gold ?? null,
       gold_amount: paymentData?.metadata?.gold_amount ?? null,
       amount_paid: paymentData?.metadata?.amount_paid ?? null,
     },
@@ -211,10 +223,19 @@ serve(async (req) => {
 
     // --- 2. ENDPOINT DE PROCESSAMENTO (CRIAR PAGAMENTO REAL) ---
     if (url.pathname.endsWith("/process_payment")) {
-      const { formData, userId, goldAmount, amount } = await req.json();
+      const { formData, userId, goldAmount, amount, purchaseKind, membershipTier, productId, productLabel, equivalentGold } = await req.json();
       const payerEmail = String(formData?.payer?.email || "").trim();
       const payerFullName = normalizeFullName(formData?.payer?.fullName || "");
       const payerCpf = sanitizeCpf(formData?.payer?.cpf || "");
+      const normalizedPurchaseKind = String(purchaseKind || "gold").trim().toLowerCase() === "membership" ? "membership" : "gold";
+      const normalizedMembershipTier = normalizeMembershipTier(membershipTier);
+
+      if (normalizedPurchaseKind === "membership" && !normalizedMembershipTier) {
+        return new Response(JSON.stringify({ error: "Plano de assinatura inválido." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
 
       if (!isValidEmail(payerEmail)) {
         return new Response(JSON.stringify({ error: "E-mail do pagador invalido." }), {
@@ -260,6 +281,11 @@ serve(async (req) => {
           },
           metadata: {
             user_id: userId,
+            purchase_kind: normalizedPurchaseKind,
+            product_id: productId || (normalizedPurchaseKind === "membership" ? `${normalizedMembershipTier}_30d` : null),
+            product_label: productLabel || (normalizedPurchaseKind === "membership" ? `${normalizedMembershipTier} 30d` : `${goldAmount} ouro`),
+            membership_tier: normalizedMembershipTier,
+            equivalent_gold: equivalentGold ?? goldAmount,
             gold_amount: goldAmount,
             amount_paid: amount
           },
@@ -327,23 +353,41 @@ serve(async (req) => {
 
       // Se o pagamento foi aprovado, creditar o ouro via RPC
       if (paymentData.status === "approved") {
-        const { user_id, gold_amount, amount_paid } = paymentData.metadata;
+        const { user_id, gold_amount, amount_paid, purchase_kind, membership_tier } = paymentData.metadata;
         const safeMetadata = buildSafePaymentMetadata(paymentData);
+        const normalizedPurchaseKind = String(purchase_kind || "gold").trim().toLowerCase();
+        const normalizedMembershipTier = normalizeMembershipTier(membership_tier);
+        const rpcName = normalizedPurchaseKind === "membership"
+          ? "process_approved_membership_payment"
+          : "process_approved_payment";
+        const rpcPayload = normalizedPurchaseKind === "membership"
+          ? {
+              p_user_id: user_id,
+              p_payment_id: paymentId.toString(),
+              p_membership_tier: normalizedMembershipTier,
+              p_amount_paid: parseFloat(amount_paid),
+              p_metadata: safeMetadata,
+            }
+          : {
+              p_user_id: user_id,
+              p_payment_id: paymentId.toString(),
+              p_gold_amount: parseInt(gold_amount),
+              p_amount_paid: parseFloat(amount_paid),
+              p_metadata: safeMetadata,
+            };
 
-        const { error } = await supabase.rpc("process_approved_payment", {
-          p_user_id: user_id,
-          p_payment_id: paymentId.toString(),
-          p_gold_amount: parseInt(gold_amount),
-          p_amount_paid: parseFloat(amount_paid),
-          p_metadata: safeMetadata
-        });
+        const { error } = await supabase.rpc(rpcName, rpcPayload as Record<string, unknown>);
 
         if (error) {
           console.error("RPC Error:", error);
           throw error;
         }
         
-        console.log(`[Glyph Pay] Sucesso: ${gold_amount} ouros para ${user_id}`);
+        console.log(
+          normalizedPurchaseKind === "membership"
+            ? `[Glyph Pay] Sucesso: ${normalizedMembershipTier} ativado para ${user_id}`
+            : `[Glyph Pay] Sucesso: ${gold_amount} ouros para ${user_id}`,
+        );
       }
 
       return new Response("OK", { status: 200 });

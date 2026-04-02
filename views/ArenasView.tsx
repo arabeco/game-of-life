@@ -277,9 +277,7 @@ export const ArenasView: React.FC = () => {
     const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
     const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
     const shouldSpotlightCampaignFolder = installableCampaignLibraryCount > 0 || hasPendingFreeCampaignQuiz || totalQuizCredits > 0 || (campaigns.length === 0 && ownedArenaIds.size <= 2);
-    const campaignFolderBadgeCount = shouldSpotlightCampaignFolder
-        ? installableCampaignLibraryCount + (hasPendingFreeCampaignQuiz ? 1 : 0) + totalQuizCredits
-        : campaigns.length;
+    const campaignFolderBadgeCount = campaigns.length + installableCampaignLibraryCount;
     const campaignFolderBadgeLabel = String(campaignFolderBadgeCount);
     const campaignFolderButtonClassName = `group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] ${
         shouldSpotlightCampaignFolder

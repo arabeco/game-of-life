@@ -256,11 +256,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
     const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
     const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
-    const quizButtonLabel = hasPendingFreeQuiz
-        ? 'Quiz grátis'
-        : totalQuizCredits > 0
-            ? `Quiz · ${totalQuizCredits}`
-            : 'Fazer quiz';
+    const quizButtonLabel = hasPendingFreeQuiz ? 'Quiz grátis' : 'Quiz';
+    const quizButtonBadgeLabel = totalQuizCredits > 0 ? String(totalQuizCredits) : null;
     const handleInstallLibraryCampaign = async (codex: UserCodex) => {
         if (installedCodexIds.has(codex.id)) {
             showToast('Essa campanha ja esta instalada nas suas campanhas.', 'info');
@@ -677,7 +674,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => setRecommendationQuizOpen(true)}
-                                    className={`inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
+                                    className={`relative inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
                                         hasPendingFreeQuiz
                                             ? 'border border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/16 text-[var(--ui-text-accent)] shadow-[0_0_0_1px_rgba(255,255,255,0.04)] hover:border-[var(--skin-accent-color)]/45 hover:bg-[var(--skin-accent-color)]/22'
                                             : 'border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)] hover:border-[var(--skin-accent-color)]/38 hover:bg-[var(--skin-accent-color)]/16'
@@ -685,6 +682,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 >
                                     <LightbulbIcon className="h-3.5 w-3.5" />
                                     <span>{quizButtonLabel}</span>
+                                    {quizButtonBadgeLabel ? (
+                                        <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/20 bg-black/85 px-1.5 py-0.5 text-[8px] font-black leading-none text-white">
+                                            {quizButtonBadgeLabel}
+                                        </span>
+                                    ) : null}
                                 </button>
                                 <button
                                     type="button"

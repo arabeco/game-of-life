@@ -5,92 +5,10 @@ export interface ProfileBackgroundOption {
     accessTier?: 'base' | 'premium' | 'platinum';
 }
 
-const STORAGE_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
+export const PROFILE_BACKGROUND_BUCKET_NAME = 'user-images';
+export const PROFILE_BACKGROUND_BUCKET_FOLDER = 'background';
+export const PROFILE_BACKGROUND_STORAGE_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
 const PROFILE_BACKGROUND_TOKEN_PREFIX = 'profile-bg:';
-
-const svgToDataUri = (svg: string): string =>
-    `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-        svg.replace(/\s{2,}/g, ' ').replace(/>\s+</g, '><').trim(),
-    )}`;
-
-const GOLD_TEXTURE = svgToDataUri(`
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="none">
-  <defs>
-    <linearGradient id="goldBase" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#090603"/>
-      <stop offset="22%" stop-color="#241505"/>
-      <stop offset="48%" stop-color="#6f4711"/>
-      <stop offset="66%" stop-color="#3d2408"/>
-      <stop offset="100%" stop-color="#080503"/>
-    </linearGradient>
-    <radialGradient id="goldGlow" cx="50%" cy="-8%" r="68%">
-      <stop offset="0%" stop-color="#f6dda0" stop-opacity="0.95"/>
-      <stop offset="18%" stop-color="#d7ab49" stop-opacity="0.72"/>
-      <stop offset="42%" stop-color="#8e5c17" stop-opacity="0.28"/>
-      <stop offset="78%" stop-color="#000000" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="goldBeam" x1="50%" y1="0" x2="50%" y2="1">
-      <stop offset="0%" stop-color="#f7e8bb" stop-opacity="0.35"/>
-      <stop offset="12%" stop-color="#e7bf63" stop-opacity="0.24"/>
-      <stop offset="40%" stop-color="#c18426" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="grain" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="17" stitchTiles="stitch" result="noise"/>
-      <feColorMatrix in="noise" type="saturate" values="0"/>
-      <feComponentTransfer>
-        <feFuncA type="table" tableValues="0 0.22"/>
-      </feComponentTransfer>
-      <feBlend in="SourceGraphic" in2="noise" mode="screen"/>
-    </filter>
-  </defs>
-  <rect width="1600" height="900" fill="#050302"/>
-  <rect width="1600" height="900" fill="url(#goldBase)"/>
-  <rect width="1600" height="900" fill="url(#goldGlow)"/>
-  <rect x="480" y="0" width="640" height="900" fill="url(#goldBeam)" opacity="0.9"/>
-  <ellipse cx="800" cy="102" rx="355" ry="86" fill="#ffefb8" opacity="0.16"/>
-  <rect width="1600" height="900" fill="#e0b453" opacity="0.22" filter="url(#grain)"/>
-  <rect width="1600" height="900" fill="none" stroke="#f4db9d" stroke-opacity="0.08" stroke-width="10"/>
-</svg>
-`);
-
-const SILVER_TEXTURE = svgToDataUri(`
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="none">
-  <defs>
-    <linearGradient id="steelBase" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#05070a"/>
-      <stop offset="18%" stop-color="#1d232a"/>
-      <stop offset="50%" stop-color="#8d98a3"/>
-      <stop offset="78%" stop-color="#2b3138"/>
-      <stop offset="100%" stop-color="#040608"/>
-    </linearGradient>
-    <linearGradient id="steelSheen" x1="50%" y1="0" x2="50%" y2="1">
-      <stop offset="0%" stop-color="#eef4fa" stop-opacity="0.2"/>
-      <stop offset="18%" stop-color="#f8fbff" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-    </linearGradient>
-    <pattern id="brush" width="1600" height="8" patternUnits="userSpaceOnUse">
-      <rect width="1600" height="8" fill="transparent"/>
-      <path d="M0 1H1600 M0 4H1600 M0 7H1600" stroke="#ffffff" stroke-opacity="0.05" stroke-width="1"/>
-      <path d="M0 2H1600 M0 6H1600" stroke="#000000" stroke-opacity="0.08" stroke-width="1"/>
-    </pattern>
-    <filter id="grain" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="2" seed="11" stitchTiles="stitch" result="noise"/>
-      <feColorMatrix in="noise" type="saturate" values="0"/>
-      <feComponentTransfer>
-        <feFuncA type="table" tableValues="0 0.18"/>
-      </feComponentTransfer>
-      <feBlend in="SourceGraphic" in2="noise" mode="overlay"/>
-    </filter>
-  </defs>
-  <rect width="1600" height="900" fill="#050608"/>
-  <rect width="1600" height="900" fill="url(#steelBase)"/>
-  <rect x="420" y="0" width="760" height="900" fill="url(#steelSheen)" opacity="0.95"/>
-  <rect width="1600" height="900" fill="url(#brush)" opacity="0.58"/>
-  <rect width="1600" height="900" fill="#dfe8f0" opacity="0.16" filter="url(#grain)"/>
-  <rect width="1600" height="900" fill="none" stroke="#d9e2ea" stroke-opacity="0.08" stroke-width="10"/>
-</svg>
-`);
 
 interface ProfileBackgroundAssetDefinition {
     basename: string;
@@ -114,15 +32,23 @@ const PROFILE_BACKGROUND_ASSETS: Record<string, ProfileBackgroundAssetDefinition
     },
     [toProfileBackgroundToken('silver')]: {
         basename: 'silverback',
-        fallbackValue: SILVER_TEXTURE,
+        fallbackValue: 'linear-gradient(135deg, #12161c 0%, #586674 48%, #c7d1dc 100%)',
     },
     [toProfileBackgroundToken('gold')]: {
         basename: 'goldback',
-        fallbackValue: GOLD_TEXTURE,
+        fallbackValue: 'linear-gradient(135deg, #140b03 0%, #6f4711 48%, #f0d48b 100%)',
     },
     [toProfileBackgroundToken('pink')]: {
         basename: 'pinkback',
         fallbackValue: 'linear-gradient(135deg, #280816 0%, #7e2148 48%, #f29ac2 100%)',
+    },
+    [toProfileBackgroundToken('aurora')]: {
+        basename: 'aurora',
+        fallbackValue: 'linear-gradient(135deg, #0a1026 0%, #2c4d8a 45%, #a0d9ff 100%)',
+    },
+    [toProfileBackgroundToken('cyber')]: {
+        basename: 'cyber',
+        fallbackValue: 'linear-gradient(135deg, #0b0f1e 0%, #0f6b7b 42%, #7fffd4 100%)',
     },
     [toProfileBackgroundToken('purple')]: {
         basename: 'purpleback',
@@ -152,37 +78,107 @@ const PROFILE_BACKGROUND_ASSETS: Record<string, ProfileBackgroundAssetDefinition
         basename: 'animeback',
         fallbackValue: 'linear-gradient(135deg, #1d1025 0%, #4f2a73 48%, #ff8ab5 100%)',
     },
+    [toProfileBackgroundToken('ember')]: {
+        basename: 'ember',
+        fallbackValue: 'linear-gradient(135deg, #1e120b 0%, #8d3d11 42%, #ffb26c 100%)',
+    },
+    [toProfileBackgroundToken('frost')]: {
+        basename: 'frost',
+        fallbackValue: 'linear-gradient(135deg, #0d1720 0%, #3f6f94 45%, #c9f1ff 100%)',
+    },
+    [toProfileBackgroundToken('genesis')]: {
+        basename: 'genesis',
+        fallbackValue: 'linear-gradient(135deg, #120615 0%, #4f1a64 42%, #f0d7ff 100%)',
+    },
+    [toProfileBackgroundToken('garden-aurora')]: {
+        basename: 'gardenaurora',
+        fallbackValue: 'linear-gradient(135deg, #112118 0%, #2c6f73 44%, #b5f5e4 100%)',
+    },
+    [toProfileBackgroundToken('garden-ember')]: {
+        basename: 'gardenember',
+        fallbackValue: 'linear-gradient(135deg, #23140c 0%, #92501d 44%, #ffcc80 100%)',
+    },
+    [toProfileBackgroundToken('garden-frost')]: {
+        basename: 'gardenfrost',
+        fallbackValue: 'linear-gradient(135deg, #0e1821 0%, #4d7391 44%, #d6f1ff 100%)',
+    },
+    [toProfileBackgroundToken('land-16')]: {
+        basename: '16',
+        fallbackValue: 'linear-gradient(135deg, #182233 0%, #456b8b 48%, #b9d5eb 100%)',
+    },
+    [toProfileBackgroundToken('land-19')]: {
+        basename: '19',
+        fallbackValue: 'linear-gradient(135deg, #1b2235 0%, #5b6f95 48%, #ccd6ee 100%)',
+    },
+    [toProfileBackgroundToken('land-22')]: {
+        basename: '22',
+        fallbackValue: 'linear-gradient(135deg, #18222b 0%, #51687c 48%, #d7dfe8 100%)',
+    },
+    [toProfileBackgroundToken('land-01')]: {
+        basename: 'land01',
+        fallbackValue: 'linear-gradient(135deg, #162114 0%, #466a44 48%, #d1e6b8 100%)',
+    },
+    [toProfileBackgroundToken('office-01')]: {
+        basename: 'office1',
+        fallbackValue: 'linear-gradient(135deg, #19191a 0%, #4e4438 48%, #cbb99a 100%)',
+    },
+};
+
+export const buildProfileBackgroundPublicUrl = (fileName: string): string => {
+    return `${PROFILE_BACKGROUND_STORAGE_BASE_URL}/${PROFILE_BACKGROUND_BUCKET_FOLDER}/${fileName}`;
 };
 
 const buildProfileBackgroundSources = (basename: string): string[] => {
     return [
-        `${STORAGE_BASE_URL}/background/${basename}.jpg`,
-        `${STORAGE_BASE_URL}/background/${basename}.png`,
-        `${STORAGE_BASE_URL}/background/${basename}.jpeg`,
+        buildProfileBackgroundPublicUrl(`${basename}.jpg`),
+        buildProfileBackgroundPublicUrl(`${basename}.png`),
+        buildProfileBackgroundPublicUrl(`${basename}.jpeg`),
     ];
 };
 
+const buildProfileBackgroundAliases = (): Record<string, string> => {
+    const aliases: Record<string, string> = {};
+
+    Object.entries(PROFILE_BACKGROUND_ASSETS).forEach(([token, definition]) => {
+        buildProfileBackgroundSources(definition.basename).forEach((source) => {
+            aliases[source] = token;
+        });
+    });
+
+    return aliases;
+};
+
 export const PROFILE_BACKGROUND_OPTIONS: ProfileBackgroundOption[] = [
-    { id: 'gold', name: 'Gold', value: toProfileBackgroundToken('gold'), accessTier: 'base' },
-    { id: 'silver', name: 'Silver', value: toProfileBackgroundToken('silver'), accessTier: 'base' },
-    { id: 'black', name: 'Black', value: toProfileBackgroundToken('black'), accessTier: 'base' },
-    { id: 'blue', name: 'Blue', value: toProfileBackgroundToken('blue'), accessTier: 'premium' },
-    { id: 'darkblue', name: 'Dark Blue', value: toProfileBackgroundToken('darkblue'), accessTier: 'premium' },
-    { id: 'violet', name: 'Violet', value: toProfileBackgroundToken('violet'), accessTier: 'premium' },
-    { id: 'pink', name: 'Pink', value: toProfileBackgroundToken('pink'), accessTier: 'premium' },
-    { id: 'purple', name: 'Purple', value: toProfileBackgroundToken('purple'), accessTier: 'platinum' },
+    { id: 'gold', name: 'Ouro', value: toProfileBackgroundToken('gold'), accessTier: 'base' },
+    { id: 'silver', name: 'Prata', value: toProfileBackgroundToken('silver'), accessTier: 'base' },
+    { id: 'black', name: 'Sombra', value: toProfileBackgroundToken('black'), accessTier: 'base' },
+    { id: 'blue', name: 'Azul', value: toProfileBackgroundToken('blue'), accessTier: 'premium' },
+    { id: 'darkblue', name: 'Abismo', value: toProfileBackgroundToken('darkblue'), accessTier: 'premium' },
+    { id: 'pink', name: 'Rosa', value: toProfileBackgroundToken('pink'), accessTier: 'premium' },
+    { id: 'aurora', name: 'Aurora', value: toProfileBackgroundToken('aurora'), accessTier: 'premium' },
+    { id: 'cyber', name: 'Cyber', value: toProfileBackgroundToken('cyber'), accessTier: 'premium' },
+    { id: 'land-16', name: 'Horizonte 16', value: toProfileBackgroundToken('land-16'), accessTier: 'premium' },
+    { id: 'land-19', name: 'Horizonte 19', value: toProfileBackgroundToken('land-19'), accessTier: 'premium' },
+    { id: 'land-22', name: 'Horizonte 22', value: toProfileBackgroundToken('land-22'), accessTier: 'premium' },
+    { id: 'purple', name: 'Roxo', value: toProfileBackgroundToken('purple'), accessTier: 'platinum' },
     { id: 'ruby', name: 'Rubi', value: toProfileBackgroundToken('ruby'), accessTier: 'platinum' },
-    { id: 'white', name: 'White', value: toProfileBackgroundToken('white'), accessTier: 'platinum' },
-    { id: 'autumn', name: 'Autumn', value: toProfileBackgroundToken('autumn'), accessTier: 'platinum' },
+    { id: 'autumn', name: 'Outono', value: toProfileBackgroundToken('autumn'), accessTier: 'platinum' },
     { id: 'anime', name: 'Anime', value: toProfileBackgroundToken('anime'), accessTier: 'platinum' },
+    { id: 'ember', name: 'Ember', value: toProfileBackgroundToken('ember'), accessTier: 'platinum' },
+    { id: 'frost', name: 'Frost', value: toProfileBackgroundToken('frost'), accessTier: 'platinum' },
+    { id: 'genesis', name: 'Genesis', value: toProfileBackgroundToken('genesis'), accessTier: 'platinum' },
+    { id: 'garden-aurora', name: 'Jardim Aurora', value: toProfileBackgroundToken('garden-aurora'), accessTier: 'platinum' },
+    { id: 'garden-ember', name: 'Jardim Ember', value: toProfileBackgroundToken('garden-ember'), accessTier: 'platinum' },
+    { id: 'garden-frost', name: 'Jardim Frost', value: toProfileBackgroundToken('garden-frost'), accessTier: 'platinum' },
+    { id: 'land-01', name: 'Horizonte 01', value: toProfileBackgroundToken('land-01'), accessTier: 'platinum' },
+    { id: 'office-01', name: 'Office 01', value: toProfileBackgroundToken('office-01'), accessTier: 'platinum' },
 ];
 
 const LEGACY_BACKGROUND_ALIASES: Record<string, string> = {
     'linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%)': toProfileBackgroundToken('silver'),
     'radial-gradient(circle, #bf953f 0%, #fcf6ba 50%, #b38728 100%)': toProfileBackgroundToken('gold'),
     'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)': toProfileBackgroundToken('emerald'),
-    SILVER_TEXTURE: toProfileBackgroundToken('silver'),
-    GOLD_TEXTURE: toProfileBackgroundToken('gold'),
+    ...buildProfileBackgroundAliases(),
 };
 
 export const resolveProfileBackgroundValue = (value: string): string => {
@@ -207,6 +203,30 @@ export const getProfileBackgroundSources = (value: string): string[] => {
 export const getProfileBackgroundFallbackValue = (value: string): string | undefined => {
     const resolvedValue = resolveProfileBackgroundValue(value);
     return PROFILE_BACKGROUND_ASSETS[resolvedValue]?.fallbackValue;
+};
+
+export const getProfileBackgroundPrimarySource = (value: string): string => {
+    const resolvedValue = resolveProfileBackgroundValue(value);
+    const [primarySource] = getProfileBackgroundSources(resolvedValue);
+    return primarySource || resolvedValue;
+};
+
+export const getProfileBackgroundBasename = (value: string): string | null => {
+    const resolvedValue = resolveProfileBackgroundValue(value);
+    const assetDefinition = PROFILE_BACKGROUND_ASSETS[resolvedValue];
+
+    if (assetDefinition) {
+        return assetDefinition.basename.toLowerCase();
+    }
+
+    try {
+        const url = new URL(resolvedValue);
+        const fileName = url.pathname.split('/').pop();
+        if (!fileName) return null;
+        return fileName.replace(/\.[^.]+$/, '').toLowerCase();
+    } catch {
+        return null;
+    }
 };
 
 export const isCssProfileBackground = (value: string): boolean => {

@@ -245,7 +245,7 @@ const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_FREE_CREDITS = 1;
 const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_MEDIUM_CREDITS = 1;
 const PREMIUM_ACTIVE_BENEFITS = [
     'Até 15 arenas ativas',
-    'Fundos premium de perfil',
+    'Fundos premium de perfil e ativos',
     'Todos os modos do Oráculo',
     'Cena do legado com 50% off',
     'Bônus de legado +10% XP',
@@ -254,7 +254,7 @@ const PLATINUM_ACTIVE_BENEFITS = [
     'Todas as vantagens do Premium',
     'Até 30 arenas ativas',
     '1 cena de legado grátis por renovação',
-    'Todos os planos de fundo',
+    'Todos os planos de fundo de perfil e ativos',
     'Todas as aparências premium',
     '1 baú da Temporada + 1 baú raro por renovação',
 ] as const;

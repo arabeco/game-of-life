@@ -58,7 +58,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
 
     const premiumBenefits = useMemo(() => ([
         'Até 15 arenas ativas',
-        'Fundos premium de perfil',
+        'Fundos premium de perfil e ativos',
         'Todos os modos do Oráculo',
         'Cena do legado com 50% off',
         'Bônus de legado +10% XP',
@@ -70,7 +70,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     'Até 30 arenas ativas',
     '1 cena de legado grátis por renovação',
     '1 ficha média de quiz por renovação',
-    'Todos os planos de fundo',
+    'Todos os planos de fundo de perfil e ativos',
     'Todas as aparências premium',
     '1 baú da Temporada + 1 baú raro por renovação',
     ]), []);

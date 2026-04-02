@@ -996,6 +996,9 @@ const buildShowcaseIdentity = (
   capturedAt: new Date('2026-03-16T19:30:00Z').toISOString(),
 });
 
+const GM_SHOWCASE_IDENTITY = buildShowcaseIdentity('Aurelia Vale', 'Arquimandrita', 18, 'Aurora', 'Pilar de Campo');
+const GM_SHOWCASE_SOVEREIGN_NAME = GM_SHOWCASE_IDENTITY.nickname || 'Aurelia Vale';
+
 const buildShowcaseWeek = ({
   cycleId,
   weekIndex,
@@ -1134,9 +1137,9 @@ const buildShowcaseCycle = ({
 });
 
 const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
-  const identityA = buildShowcaseIdentity('Aurelia Vale', 'Arquimandrita', 18, 'Aurora', 'Pilar de Campo');
-  const identityB = buildShowcaseIdentity('Caio North', 'Vanguarda', 16, 'Aurora', 'Sentinela');
-  const identityC = buildShowcaseIdentity('Mira Sol', 'Curadora', 14, 'Aurora', 'Tece-rotas');
+  const identityA = GM_SHOWCASE_IDENTITY;
+  const identityB = GM_SHOWCASE_IDENTITY;
+  const identityC = GM_SHOWCASE_IDENTITY;
 
   const eraOneCycles = [
     buildShowcaseCycle({
@@ -1380,7 +1383,7 @@ const CYCLE_REPORT_SHOWCASE: Report = (() => {
   const startDate = '2026-02-03';
   const endDate = '2026-03-16';
   const plannedEndDate = '2026-03-23';
-  const identitySnapshot = buildShowcaseIdentity('Aurelia Vale', 'Arquimandrita', 19, 'Aurora', 'Pilar de Campo');
+  const identitySnapshot = GM_SHOWCASE_IDENTITY;
   const weeklyAtlas = [
     buildShowcaseWeek({
       cycleId,
@@ -1694,7 +1697,7 @@ const MembershipRewardPreviewButton: React.FC<{ tier: 'premium' | 'platinum' }> 
 };
 
 const LegacyPreviewButton: React.FC = () => {
-    const { session, showToast } = useGame();
+    const { showToast } = useGame();
     const [showPreview, setShowPreview] = useState(false);
 
     const mockEras: LegacyRenderEraSummary[] = LEGACY_SHOWCASE_ERAS; /*
@@ -1741,9 +1744,10 @@ const LegacyPreviewButton: React.FC = () => {
             {showPreview && (
                 <LegacyProjectionModal
                     eras={mockEras}
-                    sovereignName={session?.user?.email?.split('@')[0] || 'Soberano'}
+                    sovereignName={GM_SHOWCASE_SOVEREIGN_NAME}
                     isPremium={true}
                     showLayoutEditors
+                    fallbackIdentity={GM_SHOWCASE_IDENTITY}
                     sceneGoldCost={null}
                     sceneButtonLabel="Abrir cena teste"
                     confirmKickerLabel="Laboratorio GM"

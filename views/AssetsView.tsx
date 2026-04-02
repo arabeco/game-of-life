@@ -10,6 +10,7 @@ import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
+import { getProfileBackgroundPrimarySource } from '../utils/profileBackgrounds';
 import type { Asset, Slot, SlotValue } from '../types';
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
@@ -106,6 +107,9 @@ export const AssetsView: React.FC = () => {
     const currentSelectedAssetWidgetValue = selectedAsset ? assetWidgetValues[selectedAsset.id] : undefined;
     const selectedAssetArtUrl = selectedAsset
         ? (draftAssetArtUrl !== undefined ? draftAssetArtUrl : currentSelectedAssetArtUrl)
+        : undefined;
+    const selectedAssetArtBackgroundUrl = selectedAssetArtUrl
+        ? getProfileBackgroundPrimarySource(selectedAssetArtUrl)
         : undefined;
     const selectedAssetPrimarySlot = useMemo(() => {
         if (!selectedAsset?.slots?.[0]) return null;
@@ -427,12 +431,12 @@ export const AssetsView: React.FC = () => {
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 48px rgba(0,0,0,0.42)',
     };
     const selectedAssetCanvasStyle: React.CSSProperties = {
-        backgroundImage: `${selectedAssetArtUrl ? `linear-gradient(180deg, rgba(5,5,7,0.08) 0%, rgba(5,5,7,0.54) 44%, rgba(5,5,7,0.78) 100%), url("${selectedAssetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 16% 0%, rgba(255,246,204,0.24), transparent 29%),
+        backgroundImage: `${selectedAssetArtBackgroundUrl ? `linear-gradient(180deg, rgba(5,5,7,0.08) 0%, rgba(5,5,7,0.54) 44%, rgba(5,5,7,0.78) 100%), url("${selectedAssetArtBackgroundUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 16% 0%, rgba(255,246,204,0.24), transparent 29%),
             radial-gradient(circle at 92% 88%, ${rgbaString(selectedAssetAccentRgb, 0.16)}, transparent 24%),
             linear-gradient(180deg, rgba(9,11,16,0.72) 0%, rgba(5,6,9,0.86) 100%)`,
-        backgroundSize: selectedAssetArtUrl ? 'cover, cover, auto, auto' : undefined,
-        backgroundPosition: selectedAssetArtUrl ? 'center, center, center, center' : undefined,
-        backgroundRepeat: selectedAssetArtUrl ? 'no-repeat, no-repeat, no-repeat, no-repeat' : undefined,
+        backgroundSize: selectedAssetArtBackgroundUrl ? 'cover, cover, auto, auto' : undefined,
+        backgroundPosition: selectedAssetArtBackgroundUrl ? 'center, center, center, center' : undefined,
+        backgroundRepeat: selectedAssetArtBackgroundUrl ? 'no-repeat, no-repeat, no-repeat, no-repeat' : undefined,
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -28px 72px rgba(0,0,0,0.14)',
     };
     const selectedAssetWidgetShellStyle: React.CSSProperties = {
@@ -706,6 +710,9 @@ export const AssetsView: React.FC = () => {
                                 const asset = assets.find(a => a.id === coord.id);
                                 if (!asset) return null;
                                 const assetArtUrl = assetArtById[asset.id];
+                                const assetArtBackgroundUrl = assetArtUrl
+                                    ? getProfileBackgroundPrimarySource(assetArtUrl)
+                                    : undefined;
 
                                 const yNorm = coord.y / 100;
                                 const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
@@ -729,9 +736,9 @@ export const AssetsView: React.FC = () => {
                                             className="group relative flex min-h-[70px] w-[124px] flex-col items-center overflow-visible rounded-[22px] border px-2 pb-0.5 pt-[18px] text-center transition-all duration-300 hover:-translate-y-[2px]"
                                             style={{
                                                 borderColor: rgbaString(accentRgb, 0.42),
-                                                backgroundImage: `${assetArtUrl ? `linear-gradient(180deg, rgba(6,7,10,0.04) 0%, rgba(6,7,10,0.4) 42%, rgba(6,7,10,0.62) 100%), url("${assetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.17)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.09)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.04)} 0%, rgba(32,36,45,0.72) 18%, rgba(10,12,16,0.82) 100%)`,
-                                                backgroundSize: assetArtUrl ? 'cover, auto, auto, auto' : undefined,
-                                                backgroundPosition: assetArtUrl ? 'center, center, center, center' : undefined,
+                                                backgroundImage: `${assetArtBackgroundUrl ? `linear-gradient(180deg, rgba(6,7,10,0.04) 0%, rgba(6,7,10,0.4) 42%, rgba(6,7,10,0.62) 100%), url("${assetArtBackgroundUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.17)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.09)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.04)} 0%, rgba(32,36,45,0.72) 18%, rgba(10,12,16,0.82) 100%)`,
+                                                backgroundSize: assetArtBackgroundUrl ? 'cover, auto, auto, auto' : undefined,
+                                                backgroundPosition: assetArtBackgroundUrl ? 'center, center, center, center' : undefined,
                                                 boxShadow: `0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 999px ${rgbaString(accentRgb, 0.022)}, 0 0 0 1px ${rgbaString(accentRgb, 0.12)}`,
                                             }}
                                         >

@@ -2381,7 +2381,7 @@ const PremiumTab: React.FC = () => {
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
     const premiumBenefits = [
         'Até 15 arenas ativas',
-        'Fundos premium de perfil',
+        'Fundos premium de perfil e ativos',
         'Todos os modos do Oráculo',
         'Cena do legado com 50% off',
         'Bônus de legado +10% XP',
@@ -2392,7 +2392,7 @@ const PremiumTab: React.FC = () => {
         'Até 30 arenas ativas',
         '1 cena de legado grátis por renovação',
         '1 ficha média de quiz por renovação',
-        'Todos os planos de fundo',
+        'Todos os planos de fundo de perfil e ativos',
         'Todas as aparências premium',
         '1 baú da Temporada + 1 baú raro por renovação',
     ];

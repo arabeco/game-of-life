@@ -142,7 +142,7 @@ export const ArenasView: React.FC = () => {
     const [arenaPresentationMode, setArenaPresentationMode] = useState<'cards' | 'list'>('cards');
     const [expandedArenaRows, setExpandedArenaRows] = useState<Record<string, boolean>>({});
     const shouldEnableListReorder = arenaPresentationMode === 'list' && (arenasViewMode === 'free' || arenasViewMode === 'priorities');
-    const shouldEnableTouchReorder = shouldEnableListReorder;
+    const shouldEnableTouchReorder = arenasViewMode === 'priorities' || shouldEnableListReorder;
     // Remove local viewMode state
     const fabRef = useRef<HTMLButtonElement>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);

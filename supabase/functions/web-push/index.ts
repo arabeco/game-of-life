@@ -272,6 +272,9 @@ const getNotificationTitle = (notification: NormalizedNotification): string => {
     case "direct_message":
       return asTrimmedString(notification.metadata.senderNickname) || "Nova mensagem direta.";
     case "clan_invite":
+      if (notification.metadata?.joinRequest === true) {
+        return "Novo pedido para o seu grupo.";
+      }
       return "Voce recebeu um convite de grupo.";
     case "friend_request":
       return "Voce recebeu um convite de amizade.";

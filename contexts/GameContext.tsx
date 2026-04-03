@@ -10912,6 +10912,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (data) {
             const mapped = mapToCamelCase(data) as ClanJoinRequest;
             setClanJoinRequestsOutgoing(prev => [...prev, { ...mapped, clanProfile: clanToJoin }]);
+            const leaderId = String(clanToJoin.leaderId || '').trim();
+            if (isUuid(leaderId) && leaderId !== userId) {
+                await SupabaseService.createNotification(
+                    leaderId,
+                    'clan_invite',
+                    `${userProfile.nickname || 'Um jogador'} solicitou entrada no grupo ${clanToJoin.name}.`,
+                    {
+                        clanId: clanToJoin.id,
+                        clanName: clanToJoin.name,
+                        joinRequest: true,
+                        requestId: mapped.id,
+                        requesterId: userId,
+                        requesterNickname: userProfile.nickname || null,
+                        url: '/?oracle=clan',
+                    },
+                );
+            }
             window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         }
     };

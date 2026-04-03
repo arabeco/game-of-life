@@ -252,7 +252,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         () => libraryEntries.filter((entry) => !entry.isInstalled).length,
         [libraryEntries],
     );
-    const hasPendingFreeQuiz = !hasCompletedFreeCampaignQuiz();
+    const hasOwnedFreeCampaign = useMemo(
+        () => libraryEntries.some((entry) => Number(entry.codex.price || 0) <= 0),
+        [libraryEntries],
+    );
+    const hasPendingFreeQuiz = !hasCompletedFreeCampaignQuiz() && !hasOwnedFreeCampaign;
     const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
     const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
     const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
@@ -847,6 +851,16 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
 
                                         <div className="flex shrink-0 items-center gap-2">
                                             {canDeletePreviewCampaign && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsEditing((current) => !current)}
+                                                    className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-all ${isEditing ? 'border-white/18 bg-white/12 text-white' : 'border-white/10 bg-white/5 text-white/78 hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white'}`}
+                                                    title={isEditing ? 'Fechar edição' : 'Editar campanha'}
+                                                >
+                                                    <EditIcon className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                            {canDeletePreviewCampaign && isEditing && (
                                                 <button
                                                     type="button"
                                                     onClick={() => { void handleDeleteCampaign(); }}

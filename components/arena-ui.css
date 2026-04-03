@@ -284,14 +284,28 @@
 
 .arena-thumb-title {
   font-family: var(--font-body);
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  line-height: 0.95;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  line-height: 1.08;
   margin: 0;
 }
 
 .arena-thumb-title.arena-title {
   letter-spacing: 0.13em;
+}
+
+.arena-thumb-title--plain.arena-title-readable {
+  color: rgba(255, 255, 255, 0.98) !important;
+  font-weight: 600;
+  display: block;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  transform-origin: center center;
+  font-family: var(--font-body) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.13em !important;
+  line-height: 1.08 !important;
+  transform: scaleX(0.94);
 }
 
 @keyframes arenaPopulatePulse {

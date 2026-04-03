@@ -498,9 +498,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                     {getIcon()}
                                 </span>
                             </span>
-                            <div className="ml-[0.38rem] flex h-[1.56rem] w-[calc(100%-0.38rem)] items-center justify-center overflow-hidden rounded-[0.58rem] bg-black/30 px-[0.16rem] py-[0.04rem]">
+                            <div className="ml-[0.38rem] flex h-[1.56rem] w-[calc(100%-0.38rem)] items-center justify-center overflow-hidden rounded-[0.58rem] bg-black/24 px-[0.16rem] py-[0.04rem]">
                                 <div className="flex h-full w-full items-center justify-center overflow-hidden py-[0.08rem]">
-                                    <h3 className={`arena-title arena-title-text arena-title-readable w-full break-normal [overflow-wrap:normal] text-white luxe-title-shadow text-center leading-[0.88] tracking-[0.03em] line-clamp-2 ${arena.name.length > 18 ? 'text-[5.45px]' : arena.name.length > 14 ? 'text-[5.7px]' : arena.name.length > 10 ? 'text-[6px]' : arena.name.length > 8 ? 'text-[6.3px]' : 'text-[6.55px]'}`}>{arena.name}</h3>
+                                    <h3 className={`arena-title arena-title-text arena-title-readable arena-thumb-title arena-thumb-title--plain w-full break-normal [overflow-wrap:normal] text-white text-center leading-[0.98] tracking-[0.06em] line-clamp-2 ${arena.name.length > 18 ? 'text-[5.9px]' : arena.name.length > 14 ? 'text-[6.1px]' : arena.name.length > 10 ? 'text-[6.35px]' : arena.name.length > 8 ? 'text-[6.65px]' : 'text-[6.95px]'}`}>{arena.name}</h3>
                                 </div>
                             </div>
                         </div>
@@ -520,7 +520,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         </div>
                         <div className="arena-title-wrap">
                             <div className="flex flex-col items-center justify-start">
-                                <h3 className="arena-title arena-title-text arena-title-readable text-[11.6px] text-white luxe-title-shadow leading-tight line-clamp-2 arena-thumb-title">{arena.name}</h3>
+                                <h3 className="arena-title arena-title-text arena-title-readable arena-thumb-title arena-thumb-title--plain text-[12.4px] text-white leading-tight tracking-[0.06em] line-clamp-2">{arena.name}</h3>
                                 {isOverview && assetName && <span className="arena-subtitle">{assetName}</span>}
                             </div>
                         </div>

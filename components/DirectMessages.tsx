@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { DMConversation, DirectMessage, UserProfile } from '../types';
-import { SendIcon, MessageIcon, ChevronLeftIcon, SparklesIcon, UsersIcon } from './Icons';
+import { SendIcon, MessageIcon, ChevronLeftIcon, SparklesIcon, UsersIcon, XCircleIcon } from './Icons';
 import { UserAvatar } from './UserAvatar';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
+import { ConfirmationModal } from './ConfirmationModal';
+import { ModerationReportModal } from './ModerationReportModal';
 
 export const DirectMessages: React.FC = () => {
     const { 
@@ -12,12 +14,19 @@ export const DirectMessages: React.FC = () => {
         sendDirectMessage, 
         markDMAsRead, 
         userProfile,
-        friends
+        friends,
+        blockedUserIds,
+        blockUser,
+        unblockUser,
+        submitModerationReport,
     } = useGame();
     
     const { trigger } = useSensoryFeedback();
     const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
     const [inputValue, setInputValue] = useState('');
+    const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+    const [reportTarget, setReportTarget] = useState<{ type: 'user' | 'message'; message?: DirectMessage } | null>(null);
+    const [isModerationBusy, setIsModerationBusy] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Sort conversations by last message date
@@ -38,6 +47,7 @@ export const DirectMessages: React.FC = () => {
     const friendProfile = friends.find(f => f.id === selectedParticipantId);
     const selectedConversation = dmConversations.find(c => c.participantId === selectedParticipantId) || 
                                 (friendProfile ? { participantId: friendProfile.id, profile: friendProfile, unreadCount: 0 } : null);
+    const isSelectedUserBlocked = selectedParticipantId ? blockedUserIds.includes(selectedParticipantId) : false;
 
     // Scroll to bottom on new messages
     useEffect(() => {
@@ -71,6 +81,53 @@ export const DirectMessages: React.FC = () => {
             e.preventDefault();
             handleSend();
         }
+    };
+
+    const handleToggleBlock = async () => {
+        if (!selectedParticipantId) return;
+        setIsModerationBusy(true);
+        if (isSelectedUserBlocked) {
+            await unblockUser(selectedParticipantId);
+        } else {
+            await blockUser(selectedParticipantId);
+        }
+        setIsModerationBusy(false);
+        setShowBlockConfirm(false);
+    };
+
+    const handleSubmitReport = async ({ reason, details }: { reason: any; details: string }) => {
+        if (!selectedParticipantId || !reportTarget) return;
+        setIsModerationBusy(true);
+        if (reportTarget.type === 'user') {
+            await submitModerationReport({
+                targetUserId: selectedParticipantId,
+                targetKind: 'user',
+                channelKind: 'dm',
+                targetId: selectedParticipantId,
+                reason,
+                details,
+                metadata: {
+                    surface: 'direct_messages',
+                    participantId: selectedParticipantId,
+                },
+            });
+        } else if (reportTarget.message) {
+            await submitModerationReport({
+                targetUserId: reportTarget.message.senderId,
+                targetKind: 'direct_message',
+                channelKind: 'dm',
+                targetId: reportTarget.message.id,
+                reason,
+                details,
+                metadata: {
+                    surface: 'direct_messages',
+                    participantId: selectedParticipantId,
+                    messagePreview: reportTarget.message.content.slice(0, 180),
+                },
+            });
+        }
+        setIsModerationBusy(false);
+        setReportTarget(null);
     };
 
     // Helper to format time
@@ -233,17 +290,51 @@ export const DirectMessages: React.FC = () => {
                                 )}
                             </div>
                             
-                            <button 
-                                onClick={() => setSelectedParticipantId(null)}
-                                className="sm:hidden p-2 rounded-full hover:bg-white/10 text-gray-400 active:scale-90 transition-transform"
-                            >
-                                <ChevronLeftIcon className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {selectedParticipantId && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setReportTarget({ type: 'user' })}
+                                            className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/72 transition-colors hover:border-white/20 hover:text-white"
+                                        >
+                                            Denunciar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowBlockConfirm(true)}
+                                            className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${
+                                                isSelectedUserBlocked
+                                                    ? 'border-emerald-500/30 bg-emerald-500/12 text-emerald-200 hover:border-emerald-400/45'
+                                                    : 'border-red-500/25 bg-red-500/10 text-red-200 hover:border-red-400/40'
+                                            }`}
+                                        >
+                                            {isSelectedUserBlocked ? 'Desbloquear' : 'Bloquear'}
+                                        </button>
+                                    </>
+                                )}
+                                <button 
+                                    onClick={() => setSelectedParticipantId(null)}
+                                    className="sm:hidden p-2 rounded-full hover:bg-white/10 text-gray-400 active:scale-90 transition-transform"
+                                >
+                                    <ChevronLeftIcon className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Messages Area */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)]">
-                            {activeMessages.length === 0 ? (
+                            {isSelectedUserBlocked ? (
+                                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                    <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4">
+                                        <XCircleIcon className="w-8 h-8 text-red-300" />
+                                    </div>
+                                    <p className="text-sm font-bold uppercase tracking-[0.18em] text-white">Usuario bloqueado</p>
+                                    <p className="mt-2 max-w-[240px] text-[11px] leading-relaxed text-white/55">
+                                        As mensagens desta conversa ficaram ocultas. Desbloqueie para voltar a ver e responder.
+                                    </p>
+                                </div>
+                            ) : activeMessages.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full text-gray-600 italic text-center p-8 animate-in zoom-in-95 duration-700">
                                     <SparklesIcon className="w-12 h-12 mb-4 opacity-5 animate-pulse" />
                                     <p className="text-xs max-w-[200px] leading-relaxed">
@@ -279,6 +370,15 @@ export const DirectMessages: React.FC = () => {
                                                     )}
                                                 </div>
                                             </div>
+                                            {!isMe && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setReportTarget({ type: 'message', message: msg })}
+                                                    className="mt-1 mr-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/32 transition-colors hover:text-red-200"
+                                                >
+                                                    Denunciar mensagem
+                                                </button>
+                                            )}
                                         </div>
                                     );
                                 })
@@ -302,11 +402,12 @@ export const DirectMessages: React.FC = () => {
                                         target.style.height = 'auto';
                                         target.style.height = `${target.scrollHeight}px`;
                                     }}
+                                    disabled={isSelectedUserBlocked}
                                 />
                             </div>
                             <button 
                                 onClick={handleSend}
-                                disabled={!inputValue.trim()}
+                                disabled={!inputValue.trim() || isSelectedUserBlocked}
                                 className="w-12 h-12 rounded-2xl bg-[var(--skin-accent-color)] flex items-center justify-center text-black hover:scale-105 active:scale-95 disabled:opacity-20 disabled:grayscale disabled:scale-100 transition-all shadow-xl"
                             >
                                 <SendIcon className="w-6 h-6" />
@@ -315,6 +416,28 @@ export const DirectMessages: React.FC = () => {
                     </>
                 )}
             </div>
+            {showBlockConfirm && selectedParticipantId && (
+                <ConfirmationModal
+                    title={isSelectedUserBlocked ? 'Desbloquear usuario' : 'Bloquear usuario'}
+                    message={isSelectedUserBlocked
+                        ? 'Deseja permitir contato novamente nesta conversa?'
+                        : 'As mensagens dessa pessoa serao ocultadas e a conversa ficara bloqueada para envio.'}
+                    onConfirm={() => void handleToggleBlock()}
+                    onCancel={() => setShowBlockConfirm(false)}
+                    confirmLabel={isSelectedUserBlocked ? 'DESBLOQUEAR' : 'BLOQUEAR'}
+                />
+            )}
+
+            <ModerationReportModal
+                open={!!reportTarget && !!selectedParticipantId}
+                title={reportTarget?.type === 'user' ? 'Denunciar usuario' : 'Denunciar mensagem'}
+                subjectLabel={reportTarget?.type === 'user'
+                    ? (selectedConversation && 'profile' in selectedConversation ? selectedConversation.profile.nickname : friendProfile?.nickname || 'Contato')
+                    : `"${reportTarget?.message?.content.slice(0, 48) || ''}${(reportTarget?.message?.content || '').length > 48 ? '…' : ''}"`}
+                submitting={isModerationBusy}
+                onClose={() => !isModerationBusy && setReportTarget(null)}
+                onSubmit={handleSubmitReport}
+            />
         </div>
     );
 };

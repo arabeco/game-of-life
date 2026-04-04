@@ -1,5 +1,5 @@
 ﻿import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload } from '../types';
+import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload, UserBlock, ModerationReportInput } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { getGoldBoostProduct, getGoldMechanicPrice, getGoldMembershipProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
@@ -691,9 +691,14 @@ export interface GameContextType {
     // Direct Messages
     directMessages: DirectMessage[];
     dmConversations: DMConversation[];
+    blockedUsers: UserBlock[];
+    blockedUserIds: string[];
     sendDirectMessage: (recipientId: string, content: string) => Promise<void>;
     markDMAsRead: (senderId: string) => Promise<void>;
     fetchDMs: () => Promise<void>;
+    blockUser: (blockedUserId: string, options?: { reason?: string | null }) => Promise<boolean>;
+    unblockUser: (blockedUserId: string) => Promise<boolean>;
+    submitModerationReport: (input: ModerationReportInput) => Promise<boolean>;
 
     // Aldeia
     getAldeiaSlots: (clanId: string) => Promise<AldeiaSlot[]>;
@@ -875,8 +880,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
     const [dmConversations, setDMConversations] = useState<DMConversation[]>([]);
+    const [blockedUsers, setBlockedUsers] = useState<UserBlock[]>([]);
     const [remotePushRegistered, setRemotePushRegistered] = useState(false);
     const [toast, setToast] = useState<{ message: string; visible: boolean; type?: 'success' | 'error' | 'warning' | 'info' }>({ message: '', visible: false, type: 'info' });
+    const blockedUserIds = useMemo(() => blockedUsers.map((entry) => entry.blockedUserId), [blockedUsers]);
 
     // PWA Installation State
     const [installPrompt, setInstallPrompt] = useState<any>(() => getInstallPrompt());
@@ -11203,9 +11210,136 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
 
+    const fetchBlockedUsers = useCallback(async (targetUserId?: string) => {
+        const userId = targetUserId || session?.user.id;
+        if (!userId) {
+            setBlockedUsers([]);
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('user_blocks')
+            .select('id, blocker_user_id, blocked_user_id, reason, created_at')
+            .eq('blocker_user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            const message = String(error.message || '');
+            if (message.includes('user_blocks')) {
+                return;
+            }
+            console.error('Error fetching blocked users:', error);
+            return;
+        }
+
+        setBlockedUsers(mapToCamelCase(data || []) as UserBlock[]);
+    }, [session?.user.id]);
+
+    const blockUser = async (blockedUserId: string, options?: { reason?: string | null }): Promise<boolean> => {
+        const userId = session?.user.id;
+        if (!userId) return false;
+        if (!blockedUserId || blockedUserId === userId) {
+            showToast('Nao e possivel bloquear este usuario.', 'warning');
+            return false;
+        }
+
+        const payload = {
+            blocker_user_id: userId,
+            blocked_user_id: blockedUserId,
+            reason: options?.reason?.trim() || null,
+        };
+
+        const { error } = await supabase
+            .from('user_blocks')
+            .upsert(payload, { onConflict: 'blocker_user_id,blocked_user_id' });
+
+        if (error) {
+            console.error('Error blocking user:', error);
+            showToast('Nao foi possivel bloquear este usuario.', 'error');
+            return false;
+        }
+
+        await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('user_id', userId)
+            .eq('type', 'direct_message')
+            .contains('metadata', { senderId: blockedUserId });
+
+        setNotifications(prev => prev.map(notification => (
+            notification.userId === userId
+            && notification.type === 'direct_message'
+            && String(notification.metadata?.senderId || '') === blockedUserId
+                ? { ...notification, read: true }
+                : notification
+        )));
+
+        await fetchBlockedUsers(userId);
+        await fetchDMs(userId);
+        showToast('Usuario bloqueado.', 'success');
+        return true;
+    };
+
+    const unblockUser = async (blockedUserId: string): Promise<boolean> => {
+        const userId = session?.user.id;
+        if (!userId) return false;
+
+        const { error } = await supabase
+            .from('user_blocks')
+            .delete()
+            .eq('blocker_user_id', userId)
+            .eq('blocked_user_id', blockedUserId);
+
+        if (error) {
+            console.error('Error unblocking user:', error);
+            showToast('Nao foi possivel desbloquear este usuario.', 'error');
+            return false;
+        }
+
+        await fetchBlockedUsers(userId);
+        await fetchDMs(userId);
+        showToast('Usuario desbloqueado.', 'success');
+        return true;
+    };
+
+    const submitModerationReport = async (input: ModerationReportInput): Promise<boolean> => {
+        const userId = session?.user.id;
+        if (!userId) return false;
+
+        const payload = {
+            reporter_user_id: userId,
+            target_user_id: input.targetUserId || null,
+            target_kind: input.targetKind,
+            channel_kind: input.channelKind,
+            target_id: input.targetId || null,
+            reason: input.reason,
+            details: input.details?.trim() || null,
+            metadata: input.metadata || {},
+        };
+
+        const { error } = await supabase
+            .from('moderation_reports')
+            .insert(payload);
+
+        if (error) {
+            const message = String(error.message || '');
+            console.error('Error submitting moderation report:', error);
+            if (message.includes('moderation_reports')) {
+                showToast('O canal de denuncia ainda nao foi publicado no banco.', 'warning');
+                return false;
+            }
+            showToast('Nao foi possivel enviar a denuncia.', 'error');
+            return false;
+        }
+
+        showToast('Denuncia enviada para revisao.', 'success');
+        return true;
+    };
+
     const fetchDMs = useCallback(async (targetUserId?: string) => {
         const userId = targetUserId || session?.user.id;
         if (!userId) return;
+        const blockedSet = new Set(blockedUserIds);
 
         const { data, error } = await supabase
             .from('direct_messages')
@@ -11233,6 +11367,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const convsMap = new Map<string, DMConversation>();
         mapped.forEach(msg => {
             const otherId = msg.senderId === userId ?msg.recipientId : msg.senderId;
+            const isBlockedConversation = blockedSet.has(otherId);
             if (!convsMap.has(otherId)) {
                 // Find profile for this conversation
                 let profile = msg.senderId === otherId ?msg.senderProfile : undefined;
@@ -11247,20 +11382,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         participantId: otherId,
                         profile,
                         lastMessage: msg,
-                        unreadCount: msg.recipientId === userId && !msg.read ?1 : 0
+                        unreadCount: !isBlockedConversation && msg.recipientId === userId && !msg.read ?1 : 0,
+                        isBlocked: isBlockedConversation,
                     });
                 }
-            } else if (msg.recipientId === userId && !msg.read) {
+            } else if (!isBlockedConversation && msg.recipientId === userId && !msg.read) {
                 const conv = convsMap.get(otherId)!;
                 conv.unreadCount += 1;
             }
         });
         setDMConversations(Array.from(convsMap.values()));
-    }, [session?.user.id]);
+    }, [blockedUserIds, session?.user.id]);
 
     const sendDirectMessage = async (recipientId: string, content: string) => {
         const userId = session?.user.id;
         if (!userId) return;
+        if (blockedUserIds.includes(recipientId)) {
+            showToast('Desbloqueie este usuario para voltar a enviar mensagens.', 'warning');
+            return;
+        }
 
         const newMessage = {
             sender_id: userId,
@@ -11281,6 +11421,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error('Error sending DM:', error);
+            const message = String(error.message || '');
+            if (message.includes('DIRECT_MESSAGE_BLOCKED')) {
+                showToast('Essa conversa esta bloqueada.', 'warning');
+                return;
+            }
             showToast('Erro ao enviar mensagem');
             return;
         }
@@ -11359,6 +11504,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             )));
         }
     };
+
+    useEffect(() => {
+        const userId = session?.user.id;
+        if (!userId) {
+            setBlockedUsers([]);
+            return;
+        }
+
+        void fetchBlockedUsers(userId);
+    }, [fetchBlockedUsers, session?.user.id]);
 
     useEffect(() => {
         const userId = session?.user.id;
@@ -11531,7 +11686,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonQuest,
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
-            directMessages, dmConversations, sendDirectMessage, markDMAsRead, fetchDMs,
+            directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence

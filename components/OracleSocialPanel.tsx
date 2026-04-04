@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { ChevronLeftIcon, MessageIcon, SendIcon, UsersIcon } from './Icons';
+import { ChevronLeftIcon, MessageIcon, SendIcon, UsersIcon, XCircleIcon } from './Icons';
 import { UserAvatar } from './UserAvatar';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { ClanChat } from './ClanChat';
+import { ConfirmationModal } from './ConfirmationModal';
+import { ModerationReportModal } from './ModerationReportModal';
 
 type SocialSelection =
   | { type: 'dm'; participantId: string }
@@ -19,11 +21,18 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
     markDMAsRead,
     sendDirectMessage,
     userProfile,
+    blockedUserIds,
+    blockUser,
+    unblockUser,
+    submitModerationReport,
   } = useGame();
   const { trigger } = useSensoryFeedback();
 
   const [selection, setSelection] = useState<SocialSelection>(null);
   const [inputValue, setInputValue] = useState('');
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ type: 'user' | 'message'; messageId?: string; messageContent?: string; messageSenderId?: string } | null>(null);
+  const [isModerationBusy, setIsModerationBusy] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const sortedConversations = useMemo(
@@ -41,6 +50,7 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
   );
 
   const selectedParticipantId = selection?.type === 'dm' ? selection.participantId : null;
+  const isSelectedUserBlocked = selectedParticipantId ? blockedUserIds.includes(selectedParticipantId) : false;
 
   const activeMessages = useMemo(() => {
     if (!selectedParticipantId) return [];
@@ -100,6 +110,53 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
       event.preventDefault();
       void handleSend();
     }
+  };
+
+  const handleToggleBlock = async () => {
+    if (!selectedParticipantId) return;
+    setIsModerationBusy(true);
+    if (isSelectedUserBlocked) {
+      await unblockUser(selectedParticipantId);
+    } else {
+      await blockUser(selectedParticipantId);
+    }
+    setIsModerationBusy(false);
+    setShowBlockConfirm(false);
+  };
+
+  const handleSubmitReport = async ({ reason, details }: { reason: any; details: string }) => {
+    if (!selectedParticipantId || !reportTarget) return;
+    setIsModerationBusy(true);
+    if (reportTarget.type === 'user') {
+      await submitModerationReport({
+        targetUserId: selectedParticipantId,
+        targetKind: 'user',
+        channelKind: 'dm',
+        targetId: selectedParticipantId,
+        reason,
+        details,
+        metadata: {
+          surface: 'oracle_social_panel',
+          participantId: selectedParticipantId,
+        },
+      });
+    } else {
+      await submitModerationReport({
+        targetUserId: reportTarget.messageSenderId || selectedParticipantId,
+        targetKind: 'direct_message',
+        channelKind: 'dm',
+        targetId: reportTarget.messageId || null,
+        reason,
+        details,
+        metadata: {
+          surface: 'oracle_social_panel',
+          participantId: selectedParticipantId,
+          messagePreview: reportTarget.messageContent?.slice(0, 180) || null,
+        },
+      });
+    }
+    setIsModerationBusy(false);
+    setReportTarget(null);
   };
 
   const formatTime = (dateString: string) => {
@@ -245,12 +302,36 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
                   <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Chat do clã</div>
                 </div>
               </div>
-              <button
-                onClick={() => setSelection(null)}
-                className="rounded-full p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white sm:hidden"
-              >
-                <ChevronLeftIcon className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedParticipantId && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setReportTarget({ type: 'user' })}
+                      className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/72 transition-colors hover:border-white/20 hover:text-white"
+                    >
+                      Denunciar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowBlockConfirm(true)}
+                      className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${
+                        isSelectedUserBlocked
+                          ? 'border-emerald-500/30 bg-emerald-500/12 text-emerald-200 hover:border-emerald-400/45'
+                          : 'border-red-500/25 bg-red-500/10 text-red-200 hover:border-red-400/40'
+                      }`}
+                    >
+                      {isSelectedUserBlocked ? 'Desbloquear' : 'Bloquear'}
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setSelection(null)}
+                  className="rounded-full p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white sm:hidden"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
             <div className="min-h-0 flex-1 p-2">
               <ClanChat />
@@ -279,16 +360,50 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setSelection(null)}
-                className="rounded-full p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white sm:hidden"
-              >
-                <ChevronLeftIcon className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedParticipantId && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setReportTarget({ type: 'user' })}
+                      className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/72 transition-colors hover:border-white/20 hover:text-white"
+                    >
+                      Denunciar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowBlockConfirm(true)}
+                      className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${
+                        isSelectedUserBlocked
+                          ? 'border-emerald-500/30 bg-emerald-500/12 text-emerald-200 hover:border-emerald-400/45'
+                          : 'border-red-500/25 bg-red-500/10 text-red-200 hover:border-red-400/40'
+                      }`}
+                    >
+                      {isSelectedUserBlocked ? 'Desbloquear' : 'Bloquear'}
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setSelection(null)}
+                  className="rounded-full p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white sm:hidden"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)] p-4">
-              {activeMessages.length === 0 ? (
+              {isSelectedUserBlocked ? (
+                <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10">
+                    <XCircleIcon className="h-8 w-8 text-red-300" />
+                  </div>
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-white">Usuario bloqueado</p>
+                  <p className="mt-2 max-w-[240px] text-[11px] leading-relaxed text-white/55">
+                    As mensagens desta conversa ficaram ocultas. Desbloqueie para voltar a ver e responder.
+                  </p>
+                </div>
+              ) : activeMessages.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center p-8 text-center text-gray-600">
                   <MessageIcon className="mb-4 h-12 w-12 opacity-10" />
                   <p className="text-xs leading-relaxed">
@@ -314,6 +429,20 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
                             {isMe && <span className={`text-[10px] ${message.read ? 'text-blue-700' : 'text-black/30'}`}>{message.read ? '✓✓' : '✓'}</span>}
                           </div>
                         </div>
+                        {!isMe && (
+                          <button
+                            type="button"
+                            onClick={() => setReportTarget({
+                              type: 'message',
+                              messageId: message.id,
+                              messageContent: message.content,
+                              messageSenderId: message.senderId,
+                            })}
+                            className="mr-1 mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/32 transition-colors hover:text-red-200"
+                          >
+                            Denunciar mensagem
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -333,14 +462,15 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
                     target.style.height = `${target.scrollHeight}px`;
                   }}
                   onKeyDown={handleKeyDown}
-                  placeholder="Mensagem direta..."
+                  placeholder={isSelectedUserBlocked ? 'Desbloqueie para voltar a conversar...' : 'Mensagem direta...'}
                   rows={1}
                   className="max-h-32 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-[13px] text-white transition-all placeholder-gray-600 focus:border-[var(--skin-accent-color)]/50 focus:bg-white/10 focus:outline-none"
+                  disabled={isSelectedUserBlocked}
                 />
               </div>
               <button
                 onClick={() => void handleSend()}
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() || isSelectedUserBlocked}
                 className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--skin-accent-color)] text-black shadow-xl transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-20 disabled:hover:scale-100"
               >
                 <SendIcon className="h-6 w-6" />
@@ -349,6 +479,29 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
           </>
         )}
       </div>
+
+      {showBlockConfirm && selectedParticipantId && (
+        <ConfirmationModal
+          title={isSelectedUserBlocked ? 'Desbloquear usuario' : 'Bloquear usuario'}
+          message={isSelectedUserBlocked
+            ? 'Deseja permitir contato novamente nesta conversa?'
+            : 'As mensagens dessa pessoa serao ocultadas e a conversa ficara bloqueada para envio.'}
+          onConfirm={() => void handleToggleBlock()}
+          onCancel={() => setShowBlockConfirm(false)}
+          confirmLabel={isSelectedUserBlocked ? 'DESBLOQUEAR' : 'BLOQUEAR'}
+        />
+      )}
+
+      <ModerationReportModal
+        open={!!reportTarget && !!selectedParticipantId}
+        title={reportTarget?.type === 'user' ? 'Denunciar usuario' : 'Denunciar mensagem'}
+        subjectLabel={reportTarget?.type === 'user'
+          ? (selectedConversation && 'profile' in selectedConversation ? selectedConversation.profile.nickname : 'Contato')
+          : `"${reportTarget?.messageContent?.slice(0, 48) || ''}${(reportTarget?.messageContent || '').length > 48 ? '...' : ''}"`}
+        submitting={isModerationBusy}
+        onClose={() => !isModerationBusy && setReportTarget(null)}
+        onSubmit={handleSubmitReport}
+      />
     </div>
   );
 };

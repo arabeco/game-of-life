@@ -1224,6 +1224,36 @@ export interface DMConversation {
   profile: UserProfile;
   lastMessage?: DirectMessage;
   unreadCount: number;
+  isBlocked?: boolean;
+}
+
+export interface UserBlock {
+  id: string;
+  blockerUserId: string;
+  blockedUserId: string;
+  reason?: string | null;
+  createdAt: string;
+}
+
+export type ModerationReportTargetKind = 'direct_message' | 'clan_message' | 'user';
+export type ModerationReportChannelKind = 'dm' | 'clan' | 'profile';
+export type ModerationReportReason =
+  | 'abuse'
+  | 'harassment'
+  | 'spam'
+  | 'sexual_content'
+  | 'hate'
+  | 'impersonation'
+  | 'other';
+
+export interface ModerationReportInput {
+  targetUserId?: string | null;
+  targetKind: ModerationReportTargetKind;
+  channelKind: ModerationReportChannelKind;
+  targetId?: string | null;
+  reason: ModerationReportReason;
+  details?: string | null;
+  metadata?: Record<string, any> | null;
 }
 
 // --- Aldeia System ---

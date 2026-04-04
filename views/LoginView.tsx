@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
+import { GoldenToast } from '../components/GoldenToast';
 import { GoldenInvite, UserProfile } from '../types';
 import {
     LEGAL_PRIVACY_URL_PLACEHOLDER,
@@ -55,6 +56,7 @@ export const LoginView: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [appleToastVisible, setAppleToastVisible] = useState(false);
     const [goldenInviteGuide, setGoldenInviteGuide] = useState<{ title: string; text: string } | null>(null);
     const [installPromptAvailable, setInstallPromptAvailable] = useState(() => Boolean(getInstallPrompt()));
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
@@ -527,6 +529,11 @@ export const LoginView: React.FC = () => {
         }
     };
 
+    const handleAppleLogin = () => {
+        setAppleToastVisible(false);
+        window.setTimeout(() => setAppleToastVisible(true), 10);
+    };
+
     const handlePrimarySubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (loading) return;
@@ -611,6 +618,7 @@ export const LoginView: React.FC = () => {
         : goldenInviteGuide?.text ?? null;
 
     return (
+        <>
         <div className="login-shell animate-fade-in">
             <div className="login-card">
                 {installPromptAvailable && (
@@ -677,21 +685,36 @@ export const LoginView: React.FC = () => {
                     )}
 
                     <form className="login-form" onSubmit={handlePrimarySubmit}>
-                        <button
-                            id="login-google-button"
-                            type="button"
-                            onClick={handleGoogleLogin}
-                            disabled={loading}
-                            className="login-google-button"
-                        >
-                            <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
-                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                            </svg>
-                            <span className="text-sm">Entrar com Google</span>
-                        </button>
+                        <div className="login-provider-stack">
+                            <button
+                                id="login-google-button"
+                                type="button"
+                                onClick={handleGoogleLogin}
+                                disabled={loading}
+                                className="login-google-button"
+                            >
+                                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                                </svg>
+                                <span className="text-sm">Entrar com Google</span>
+                            </button>
+
+                            <button
+                                id="login-apple-button"
+                                type="button"
+                                onClick={handleAppleLogin}
+                                disabled={loading}
+                                className="login-apple-button"
+                            >
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path d="M16.365 1.43c0 1.14-.466 2.25-1.173 3.037-.765.85-2.02 1.506-3.098 1.422-.13-1.048.38-2.155 1.11-2.945.802-.87 2.154-1.495 3.16-1.514zM20.908 17.16c-.545 1.223-.805 1.77-1.507 2.853-.98 1.52-2.363 3.414-4.083 3.428-1.53.014-1.924-.998-4.001-.985-2.077.01-2.51 1.004-4.04.99-1.72-.016-3.03-1.726-4.012-3.244C.52 16.384-.748 9.36 2.036 5.063 3.391 2.972 5.535 1.75 7.55 1.75c2.056 0 3.352 1.009 5.052 1.009 1.65 0 2.654-1.01 5.036-1.01 1.794 0 3.695.977 5.046 2.66-4.44 2.435-3.72 8.8-.776 10.75z" />
+                                </svg>
+                                <span className="text-sm">Entrar com Apple</span>
+                            </button>
+                        </div>
 
                         {!showManualFields && (
                             <div className="login-manual-entry-row">
@@ -875,5 +898,14 @@ export const LoginView: React.FC = () => {
                 </div>
             </div>
         </div>
+            {appleToastVisible && (
+                <GoldenToast
+                    message="Sign in with Apple ainda nao implementado."
+                    type="info"
+                    duration={3200}
+                    onClose={() => setAppleToastVisible(false)}
+                />
+            )}
+        </>
     );
 };

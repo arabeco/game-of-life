@@ -1,5 +1,5 @@
 ============================================================
-           GLYPH: MASTER SYSTEM STATE (01/04/26)
+           GLYPH: MASTER SYSTEM STATE (04/04/26)
 ============================================================
 STATUS: [X] ALPHA  |  [ ] BETA  |  [ ] LIVE
 FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
@@ -22,9 +22,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 - Consolidados movidos para `progresso.md`.
 
 ### FEITOS HOJE [x]
-[x] Persistencia critica: troca de dia, reabertura, cronometro, temporada, modais e rituais. - Responsavel: SENTINELA
-[x] Mobile final: `Ativos`, `Arenas`, `Planner`, `Mundo`, `Config`, modais e scroll. - Responsavel: SENTINELA
-[x] Leitor paginado: swipe, setas, preview e `[[page]]` no mobile. - Responsavel: SENTINELA
+[x] Planner blindado: o pool/bay area nao reaproveita mais task antiga julgada; ciclo novo reseta estoque pela janela do ciclo e, sem ciclo ativo, o planner fica preso ao dia operacional visivel. - Responsavel: SENTINELA
+[x] Base mobile preparada: runtime `web` vs `native` separado para iniciar `Capacitor` sem vazar `service worker` e `install prompt` no shell nativo. - Responsavel: SENTINELA
+[x] Trilha de publicacao documentada: `Data Safety`, `App Privacy`, `Play Console`, `widgets` futuros e semana `1` de `Capacitor/Android` consolidados em `.md`. - Responsavel: PROTOCOLO
 
 ## 4. MATRIZ DE EXECUCAO
 ### BLOQUEIA O BETA 25
@@ -36,6 +36,7 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 ### FORA DO HOT PATH
 [ ] pt-BR residual e robustez final do `Oraculo`. - Responsavel: PROTOCOLO
 [ ] Fechar os `3 reels` restantes e alinhar landing/site antes de empurrar trafego. - Responsavel: DOMINIO
+[ ] Executar a `Semana 1` de `Capacitor/Android shell` e provar o app local fora da web. - Responsavel: SENTINELA + PROTOCOLO
 
 ## 5. CORTE BETA 25 (O QUE FALTA PARA ABRIR LOGO)
 [ ] Fechar a passada final de `Campanhas`, `Mentoria`, `Parceria` e `Competicao` no app real.
@@ -74,9 +75,9 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 [ ] Friccao mobile critica (P0/P1): 0/0
 
 ## 9. RESUMO ATUALIZADO
-- Data: 01/04/2026
+- Data: 04/04/2026
 - Atualizado por: GPT-5 Codex
-- Resumo: o GLYPH segue em ALPHA na Fundacao (T1), e o relatorio operacional agora esta mais enxuto. Os `[v]` consolidados ficaram reunidos em `Prontos` e reconciliados com o historico de `progresso.md`; o que ainda trava o Beta `25` foi reduzido ao miolo real: passada final de `Campanhas`/`Vinculos`, `PIX/Ouro`, `Premium remoto`, notificacoes/e-mails e o ultimo polimento de mobile/skins.
+- Resumo: o GLYPH segue em ALPHA na Fundacao (T1). Hoje o miolo tecnico ficou mais robusto: o `Planner` parou de vazar task antiga julgada para o pool, o fallback sem ciclo foi endurecido para o dia operacional visivel, e a frente mobile/compliance ganhou trilha executavel de `Capacitor`, `Play Console`, `Data Safety`, `App Privacy` e widgets futuros. O que ainda segura o Beta `25` continua sendo o mesmo nucleo: passada final de `Campanhas`/`Vinculos`, `PIX/Ouro`, `Premium remoto`, notificacoes/e-mails e o ultimo polimento de mobile/skins.
 
 ## 10. MODO DE USO DO RELATORIO
 1. Ler `relatorio.md`, `status.md`, `roadmap-soberania.md` e `progresso.md` antes de mexer no estado do projeto.

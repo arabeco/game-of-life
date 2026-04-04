@@ -13,7 +13,7 @@ import { ActionModal } from '../components/ActionModal';
 import { GlassCard } from '../components/GlassCard';
 import { useTutorial } from '../contexts/TutorialContext';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
-import { OPERATIONAL_DAY_END_HOUR, OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getTaskDisplayStartTime } from '../utils/operationalDay.js';
+import { OPERATIONAL_DAY_END_HOUR, OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getTaskDisplayStartTime, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasScheduledTime, isTaskInPool } from '../utils/taskDomain.js';
 import { useLongPress } from '../hooks/useLongPress';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
@@ -1138,24 +1138,36 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         }
     }, [viewMode, currentDate, zoomLevel, currentTime]);
 
-    const cycleScopedTasks = useMemo(() => {
-        if (!activeCycle) return tasks;
-        return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
-    }, [activeCycle, tasks]);
+    const selectedOperationalDateString = formatLocalDateString(currentDate);
+    const plannerScopedTasks = useMemo(() => {
+        if (activeCycle) {
+            return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
+        }
+
+        // Outside a cycle, the planner must stay local to the day on screen.
+        // Old historical tasks cannot consume stock or leak back into the bay area.
+        return tasks.filter(task => taskMatchesOperationalDate(task, selectedOperationalDateString));
+    }, [activeCycle, selectedOperationalDateString, tasks]);
 
     // Marco availability is cycle-scoped. Old completions must not block a new cycle.
     const milestoneActions = actions.filter(
-        action => action.actionType === 'Marco' && !cycleScopedTasks.some(task => task.actionId === action.id)
+        action => action.actionType === 'Marco' && !plannerScopedTasks.some(task => task.actionId === action.id)
     );
 
-    // Planner bay is global stock: changing day cannot create a second count for the same action.
-    const availableTaskPool = useMemo(() => buildActionPoolByDate(actions, taskPool, tasks, null), [actions, taskPool, tasks]);
+    // Planner bay is global only inside the current cycle window.
+    // Old tasks from previous cycles must not consume stock in a new cycle.
+    // Without an active cycle, keep stock scoped to the operational day currently on screen.
+    const availableTaskPool = useMemo(
+        () => buildActionPoolByDate(actions, taskPool, plannerScopedTasks, activeCycle ? null : selectedOperationalDateString),
+        [actions, taskPool, plannerScopedTasks, activeCycle, selectedOperationalDateString]
+    );
 
     const getActionById = (id: string) => actions.find(a => a.id === id);
+    const tasksById = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);
     const changeDate = (amount: number) => setCurrentDate(prev => { const newDate = new Date(prev); newDate.setDate(newDate.getDate() + amount); return newDate; });
     
     const dailyTasks = getTasksForDate(currentDate);
-    const bayAreaTasks = tasks.filter(isTaskInPool); // Global waiting bay, independent of selected day
+    const bayAreaTasks = plannerScopedTasks.filter(isTaskInPool); // Waiting bay scoped to the active cycle or visible operational day
     const scheduledTasks = dailyTasks.filter(hasScheduledTime); // For DailyView
     
     const allTasksCompleted = checklistItems.every(item => item.completed);
@@ -1287,8 +1299,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                      visibleBayAreaEntries.map(([actionId, payload]) => {
                                          const action = getActionById(actionId);
                                          if (!action) return null;
-                                         // Use the first available taskId (FIFO) if any exist in Bay Area
-                                         const nextTaskId = payload.taskIds && payload.taskIds.length > 0 ?payload.taskIds[0] : undefined;
+                                         // Only reuse a concrete bay task if it still belongs to the operational day on screen.
+                                         // This prevents ancient locked pool tasks from poisoning the current cycle/day flow.
+                                         const nextTaskId = payload.taskIds?.find(taskId => {
+                                             const task = tasksById.get(taskId);
+                                             return Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
+                                         });
                                          
                                          return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} taskId={nextTaskId} onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })} />);
                                      }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 tracking-[0.12em] row-span-full col-span-full">{'Sem a\u00E7\u00F5es'}</div>)}

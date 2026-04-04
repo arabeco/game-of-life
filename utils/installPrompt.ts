@@ -1,3 +1,5 @@
+import { shouldUsePwaInstallPrompt } from './runtimePlatform';
+
 type DeferredInstallPrompt = any;
 
 let cachedPrompt: DeferredInstallPrompt | null = null;
@@ -9,7 +11,7 @@ const notifyListeners = () => {
 };
 
 export const startInstallPromptCapture = () => {
-  if (initialized || typeof window === 'undefined') return;
+  if (initialized || typeof window === 'undefined' || !shouldUsePwaInstallPrompt()) return;
   initialized = true;
 
   window.addEventListener('beforeinstallprompt', (event: Event) => {
@@ -36,6 +38,7 @@ export const subscribeInstallPrompt = (listener: (prompt: DeferredInstallPrompt 
 };
 
 export const promptForInstall = async () => {
+  if (!shouldUsePwaInstallPrompt()) return false;
   if (!cachedPrompt) return false;
 
   const prompt = cachedPrompt;

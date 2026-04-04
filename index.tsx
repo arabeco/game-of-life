@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { shouldUseBrowserServiceWorker } from './utils/runtimePlatform';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -16,7 +17,7 @@ root.render(
   </React.StrictMode>
 );
 
-if ('serviceWorker' in navigator) {
+if (shouldUseBrowserServiceWorker()) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => registration.update().catch(() => undefined))

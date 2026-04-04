@@ -32,3 +32,9 @@ temp/
 
 # Local marketing assets
 /marketing/
+
+# Mobile/Firebase local secrets
+/android/app/*firebase-adminsdk*.json
+/android/keystore.properties
+/android/app/*.jks
+/android/app/*.keystore

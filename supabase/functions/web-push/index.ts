@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { SignJWT, importPKCS8 } from "npm:jose@5.9.6";
 import webpush from "npm:web-push@3.6.7";
 
 type JsonRecord = Record<string, unknown>;
@@ -19,6 +20,7 @@ type StoredPushSubscription = {
   user_id: string;
   endpoint: string;
   subscription: JsonRecord;
+  device_label?: string | null;
   failure_count?: number | null;
 };
 
@@ -52,6 +54,10 @@ const WEB_PUSH_VAPID_PRIVATE_KEY = Deno.env.get("WEB_PUSH_VAPID_PRIVATE_KEY") ||
 const WEB_PUSH_VAPID_SUBJECT = Deno.env.get("WEB_PUSH_VAPID_SUBJECT") || "mailto:oraculo@glyph.life";
 const WEB_PUSH_WEBHOOK_SECRET = Deno.env.get("WEB_PUSH_WEBHOOK_SECRET") || "";
 const SITE_URL = Deno.env.get("SITE_URL") || "https://app.glyph.life";
+const FCM_SERVICE_ACCOUNT_JSON = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON") || "";
+const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID") || "";
+const FCM_CLIENT_EMAIL = Deno.env.get("FCM_CLIENT_EMAIL") || "";
+const FCM_PRIVATE_KEY = Deno.env.get("FCM_PRIVATE_KEY") || "";
 const ALLOWED_ORIGINS = (
   Deno.env.get("ALLOWED_ORIGINS") ||
   "https://app.glyph.life,https://www.glyph.life,https://glyph.life,https://glyph-app-arabecos-projects.vercel.app,http://localhost:3000,http://localhost:5173"
@@ -59,6 +65,16 @@ const ALLOWED_ORIGINS = (
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+const FCM_OAUTH_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
+const FCM_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
+
+let cachedFcmAccessToken:
+  | {
+    token: string;
+    expiresAt: number;
+  }
+  | null = null;
 
 const POLICY: Record<string, { priority: NotificationPriority; basicVisible: boolean; gameVisible: boolean }> = {
   mentor_invite: { priority: "critical", basicVisible: true, gameVisible: true },
@@ -122,6 +138,223 @@ const asBoolean = (value: unknown): boolean => {
     return ["true", "1", "yes", "t"].includes(value.trim().toLowerCase());
   }
   return false;
+};
+
+type FcmServiceAccount = {
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+};
+
+type PushDispatchPayload = {
+  title: string;
+  body: string;
+  tag: string;
+  url: string;
+  icon: string;
+  badge: string;
+  requireInteraction: boolean;
+  renotify: boolean;
+  notificationId?: string;
+  oracleMessageId?: string;
+  type: string;
+};
+
+const resolveFcmServiceAccount = (): FcmServiceAccount | null => {
+  if (FCM_SERVICE_ACCOUNT_JSON.trim()) {
+    try {
+      const parsed = JSON.parse(FCM_SERVICE_ACCOUNT_JSON);
+      const projectId = asTrimmedString(parsed.project_id);
+      const clientEmail = asTrimmedString(parsed.client_email);
+      const privateKey = asTrimmedString(parsed.private_key).replace(/\\n/g, "\n");
+
+      if (projectId && clientEmail && privateKey) {
+        return {
+          projectId,
+          clientEmail,
+          privateKey,
+        };
+      }
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  const projectId = asTrimmedString(FCM_PROJECT_ID);
+  const clientEmail = asTrimmedString(FCM_CLIENT_EMAIL);
+  const privateKey = asTrimmedString(FCM_PRIVATE_KEY).replace(/\\n/g, "\n");
+
+  if (!projectId || !clientEmail || !privateKey) {
+    return null;
+  }
+
+  return {
+    projectId,
+    clientEmail,
+    privateKey,
+  };
+};
+
+const hasFcmServerConfig = (): boolean => Boolean(resolveFcmServiceAccount());
+
+const getFcmAccessToken = async (): Promise<string> => {
+  const serviceAccount = resolveFcmServiceAccount();
+  if (!serviceAccount) {
+    throw new Error("Missing FCM service account configuration.");
+  }
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (cachedFcmAccessToken && cachedFcmAccessToken.expiresAt > nowSeconds + 60) {
+    return cachedFcmAccessToken.token;
+  }
+
+  const privateKey = await importPKCS8(serviceAccount.privateKey, "RS256");
+  const assertion = await new SignJWT({ scope: FCM_OAUTH_SCOPE })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuer(serviceAccount.clientEmail)
+    .setSubject(serviceAccount.clientEmail)
+    .setAudience(FCM_OAUTH_TOKEN_URL)
+    .setIssuedAt(nowSeconds)
+    .setExpirationTime(nowSeconds + 3600)
+    .sign(privateKey);
+
+  const tokenResponse = await fetch(FCM_OAUTH_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+
+  const tokenText = await tokenResponse.text();
+  let tokenPayload: JsonRecord = {};
+
+  if (tokenText) {
+    try {
+      tokenPayload = JSON.parse(tokenText);
+    } catch (_error) {
+      tokenPayload = { error: tokenText };
+    }
+  }
+
+  if (!tokenResponse.ok) {
+    throw new Error(`FCM auth failed (${tokenResponse.status}): ${String(tokenPayload.error || tokenPayload.error_description || tokenText || "unknown_error")}`);
+  }
+
+  const accessToken = asTrimmedString(tokenPayload.access_token);
+  const expiresIn = Number(tokenPayload.expires_in || 3600);
+  if (!accessToken) {
+    throw new Error("FCM auth returned an empty access token.");
+  }
+
+  cachedFcmAccessToken = {
+    token: accessToken,
+    expiresAt: nowSeconds + Math.max(60, expiresIn),
+  };
+
+  return accessToken;
+};
+
+const normalizeFcmDataValue = (value: unknown): string => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return JSON.stringify(value);
+};
+
+const shouldDisableFailedNativeSubscription = (statusCode: number | null, errorMessage: string): boolean => {
+  if (statusCode === 404) return true;
+
+  const normalized = errorMessage.toLowerCase();
+  return normalized.includes("unregistered")
+    || normalized.includes("registration token is not a valid fcm registration token")
+    || normalized.includes("requested entity was not found")
+    || normalized.includes("invalid registration token");
+};
+
+const sendNativePushNotification = async (
+  subscriptionRow: StoredPushSubscription,
+  payload: PushDispatchPayload,
+) => {
+  const serviceAccount = resolveFcmServiceAccount();
+  if (!serviceAccount) {
+    throw new Error("FCM server configuration is missing.");
+  }
+
+  const token = asTrimmedString(isRecord(subscriptionRow.subscription) ? subscriptionRow.subscription.token : "");
+  if (!token) {
+    throw new Error("Missing native push token in subscription row.");
+  }
+
+  const accessToken = await getFcmAccessToken();
+  const response = await fetch(
+    `https://fcm.googleapis.com/v1/projects/${serviceAccount.projectId}/messages:send`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: {
+          token,
+          notification: {
+            title: payload.title,
+            body: payload.body,
+          },
+          data: {
+            url: normalizeFcmDataValue(payload.url),
+            tag: normalizeFcmDataValue(payload.tag),
+            type: normalizeFcmDataValue(payload.type),
+            notificationId: normalizeFcmDataValue(payload.notificationId),
+            oracleMessageId: normalizeFcmDataValue(payload.oracleMessageId),
+            requireInteraction: normalizeFcmDataValue(payload.requireInteraction),
+            renotify: normalizeFcmDataValue(payload.renotify),
+          },
+          android: {
+            priority: "high",
+            notification: {
+              tag: payload.tag,
+              click_action: "OPEN_APP",
+            },
+          },
+        },
+      }),
+    },
+  );
+
+  const rawText = await response.text();
+  let parsed: JsonRecord = {};
+
+  if (rawText) {
+    try {
+      parsed = JSON.parse(rawText);
+    } catch (_error) {
+      parsed = { raw: rawText };
+    }
+  }
+
+  if (!response.ok) {
+    const googleError = isRecord(parsed.error) ? parsed.error : {};
+    const details = Array.isArray(googleError.details) ? googleError.details : [];
+    const detailMessages = details
+      .map((detail) => (isRecord(detail) ? asTrimmedString(detail.errorCode) || asTrimmedString(detail.message) : ""))
+      .filter(Boolean);
+    const message = asTrimmedString(googleError.message)
+      || detailMessages.join(" | ")
+      || rawText
+      || `http_${response.status}`;
+
+    throw new Error(`FCM send failed (${response.status}): ${message}`);
+  }
+
+  return {
+    statusCode: response.status || 200,
+    data: parsed,
+  };
 };
 
 const isInvalidPushEndpoint = (endpoint: string): boolean => {
@@ -587,6 +820,27 @@ const normalizeStoredSubscription = (row: StoredPushSubscription): JsonRecord | 
   };
 };
 
+const isNativeTokenSubscription = (row: StoredPushSubscription): boolean => {
+  if (!isRecord(row.subscription)) return false;
+  return asTrimmedString(row.subscription.kind) === "native_token";
+};
+
+const deliverPushToSubscription = async (
+  subscriptionRow: StoredPushSubscription,
+  payload: PushDispatchPayload,
+) => {
+  if (isNativeTokenSubscription(subscriptionRow)) {
+    return await sendNativePushNotification(subscriptionRow, payload);
+  }
+
+  const pushSubscription = normalizeStoredSubscription(subscriptionRow);
+  if (!pushSubscription) {
+    throw new Error("invalid_subscription_payload");
+  }
+
+  return await webpush.sendNotification(pushSubscription as any, JSON.stringify(payload));
+};
+
 const registerSubscription = async (req: Request, body: JsonRecord, origin: string | null) => {
   const user = await getAuthenticatedUser(req);
   if (!user) {
@@ -669,6 +923,143 @@ const unregisterSubscription = async (req: Request, body: JsonRecord, origin: st
   return jsonResponse(origin, 200, { success: true });
 };
 
+const registerNativeSubscription = async (req: Request, body: JsonRecord, origin: string | null) => {
+  const user = await getAuthenticatedUser(req);
+  if (!user) {
+    return jsonResponse(origin, 401, { error: "Unauthorized request." });
+  }
+
+  const token = asTrimmedString(body.token);
+  const platform = asTrimmedString(body.platform) || "android";
+  const userAgent = asTrimmedString(body.userAgent);
+  const deviceLabel = asTrimmedString(body.deviceLabel) || `glyph-${platform}-native`;
+  const legacyDeviceLabel = `glyph-${platform}-native`;
+  if (!token) {
+    return jsonResponse(origin, 400, { error: "Missing native push token." });
+  }
+
+  const endpoint = `native:${platform}:${token}`;
+  const subscription = {
+    kind: "native_token",
+    platform,
+    token,
+  };
+
+  const supabaseAdmin = getSupabaseAdmin();
+  const now = new Date().toISOString();
+  let cleanupQuery = supabaseAdmin
+    .from("push_subscriptions")
+    .update({
+      disabled_at: now,
+      updated_at: now,
+      last_error: "superseded_by_new_native_token",
+    })
+    .eq("user_id", user.id)
+    .is("disabled_at", null)
+    .neq("endpoint", endpoint)
+    .like("endpoint", `native:${platform}:%`);
+
+  if (userAgent) {
+    cleanupQuery = cleanupQuery.eq("user_agent", userAgent);
+  } else {
+    cleanupQuery = cleanupQuery.eq("device_label", deviceLabel);
+  }
+
+  await cleanupQuery;
+
+  if (legacyDeviceLabel !== deviceLabel) {
+    await supabaseAdmin
+      .from("push_subscriptions")
+      .update({
+        disabled_at: now,
+        updated_at: now,
+        last_error: "superseded_by_new_native_token",
+      })
+      .eq("user_id", user.id)
+      .eq("device_label", legacyDeviceLabel)
+      .is("disabled_at", null)
+      .neq("endpoint", endpoint)
+      .like("endpoint", `native:${platform}:%`);
+  }
+
+  const { error } = await supabaseAdmin
+    .from("push_subscriptions")
+    .upsert({
+      user_id: user.id,
+      endpoint,
+      subscription,
+      user_agent: userAgent,
+      device_label: deviceLabel,
+      disabled_at: null,
+      last_seen_at: now,
+      updated_at: now,
+      failure_count: 0,
+      last_error: null,
+    }, {
+      onConflict: "endpoint",
+    });
+
+  if (error) {
+    return jsonResponse(origin, 500, { error: error.message || "Could not register native token." });
+  }
+
+  return jsonResponse(origin, 200, {
+    success: true,
+    delivery: hasFcmServerConfig() ? "fcm_ready" : "pending_fcm_server",
+  });
+};
+
+const unregisterNativeSubscription = async (req: Request, body: JsonRecord, origin: string | null) => {
+  const user = await getAuthenticatedUser(req);
+  if (!user) {
+    return jsonResponse(origin, 401, { error: "Unauthorized request." });
+  }
+
+  const token = asTrimmedString(body.token);
+  const platform = asTrimmedString(body.platform) || "android";
+  const userAgent = asTrimmedString(body.userAgent);
+  const deviceLabel = asTrimmedString(body.deviceLabel) || "";
+  if (!token) {
+    return jsonResponse(origin, 400, { error: "Missing native push token." });
+  }
+
+  const endpoint = `native:${platform}:${token}`;
+  const supabaseAdmin = getSupabaseAdmin();
+  const { error } = await supabaseAdmin
+    .from("push_subscriptions")
+    .update({
+      disabled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id)
+    .eq("endpoint", endpoint);
+
+  if (!error && deviceLabel) {
+    let cleanupQuery = supabaseAdmin
+      .from("push_subscriptions")
+      .update({
+        disabled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", user.id)
+      .eq("device_label", deviceLabel)
+      .is("disabled_at", null)
+      .like("endpoint", `native:${platform}:%`);
+
+    if (userAgent) {
+      cleanupQuery = cleanupQuery.eq("user_agent", userAgent);
+    }
+
+    await cleanupQuery;
+  }
+
+  if (error) {
+    return jsonResponse(origin, 500, { error: error.message || "Could not unregister native token." });
+  }
+
+  return jsonResponse(origin, 200, { success: true });
+};
+
 const dispatchNotification = async (req: Request, body: JsonRecord, origin: string | null) => {
   if (!WEB_PUSH_WEBHOOK_SECRET || req.headers.get("x-web-push-secret") !== WEB_PUSH_WEBHOOK_SECRET) {
     return jsonResponse(origin, 401, { error: "Invalid webhook secret." });
@@ -685,7 +1076,7 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
   const [{ data: subscriptions, error: subscriptionsError }, { data: preferenceRow }, { data: profileRow }] = await Promise.all([
     supabaseAdmin
       .from("push_subscriptions")
-      .select("id, user_id, endpoint, subscription, failure_count")
+      .select("id, user_id, endpoint, subscription, device_label, failure_count")
       .eq("user_id", notification.userId)
       .is("disabled_at", null),
     supabaseAdmin
@@ -728,12 +1119,17 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
   let failed = 0;
 
   for (const subscriptionRow of activeSubscriptions) {
-    const pushSubscription = normalizeStoredSubscription(subscriptionRow);
-    if (!pushSubscription) {
+    const isNativeSubscription = isNativeTokenSubscription(subscriptionRow);
+    const pushSubscription = isNativeSubscription ? {} : normalizeStoredSubscription(subscriptionRow);
+    const nativeToken = isNativeSubscription
+      ? asTrimmedString(isRecord(subscriptionRow.subscription) ? subscriptionRow.subscription.token : "")
+      : "";
+
+    if ((!isNativeSubscription && !pushSubscription) || (isNativeSubscription && !nativeToken)) {
       skipped += 1;
       await updateSubscriptionHealth(subscriptionRow.id, {
         failure_count: Number(subscriptionRow.failure_count || 0) + 1,
-        last_error: "invalid_subscription_payload",
+        last_error: isNativeSubscription ? "invalid_native_token_payload" : "invalid_subscription_payload",
         disabled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -763,7 +1159,7 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
     };
 
     try {
-      const result = await webpush.sendNotification(pushSubscription as any, JSON.stringify(payload));
+      const result = await deliverPushToSubscription(subscriptionRow, payload);
       sent += 1;
 
       await markDispatchResult(notification.id, subscriptionRow.id, {
@@ -793,7 +1189,9 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
         sent_at: null,
       });
 
-      const disableSubscription = shouldDisableFailedSubscription(statusCode, errorMessage);
+      const disableSubscription = isNativeSubscription
+        ? shouldDisableFailedNativeSubscription(statusCode, errorMessage)
+        : shouldDisableFailedSubscription(statusCode, errorMessage);
       await updateSubscriptionHealth(subscriptionRow.id, {
         failure_count: Number(subscriptionRow.failure_count || 0) + 1,
         last_error: errorMessage,
@@ -828,7 +1226,7 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
   const [{ data: subscriptions, error: subscriptionsError }, { data: preferenceRow }, { data: profileRow }] = await Promise.all([
     supabaseAdmin
       .from("push_subscriptions")
-      .select("id, user_id, endpoint, subscription, failure_count")
+      .select("id, user_id, endpoint, subscription, device_label, failure_count")
       .eq("user_id", message.userId)
       .is("disabled_at", null),
     supabaseAdmin
@@ -868,12 +1266,17 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
   let failed = 0;
 
   for (const subscriptionRow of activeSubscriptions) {
-    const pushSubscription = normalizeStoredSubscription(subscriptionRow);
-    if (!pushSubscription) {
+    const isNativeSubscription = isNativeTokenSubscription(subscriptionRow);
+    const pushSubscription = isNativeSubscription ? {} : normalizeStoredSubscription(subscriptionRow);
+    const nativeToken = isNativeSubscription
+      ? asTrimmedString(isRecord(subscriptionRow.subscription) ? subscriptionRow.subscription.token : "")
+      : "";
+
+    if ((!isNativeSubscription && !pushSubscription) || (isNativeSubscription && !nativeToken)) {
       skipped += 1;
       await updateSubscriptionHealth(subscriptionRow.id, {
         failure_count: Number(subscriptionRow.failure_count || 0) + 1,
-        last_error: "invalid_subscription_payload",
+        last_error: isNativeSubscription ? "invalid_native_token_payload" : "invalid_subscription_payload",
         disabled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -902,7 +1305,7 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
     };
 
     try {
-      const result = await webpush.sendNotification(pushSubscription as any, JSON.stringify(payload));
+      const result = await deliverPushToSubscription(subscriptionRow, payload);
       sent += 1;
 
       await markOracleDispatchResult(message.id, subscriptionRow.id, {
@@ -932,7 +1335,9 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
         sent_at: null,
       });
 
-      const disableSubscription = shouldDisableFailedSubscription(statusCode, errorMessage);
+      const disableSubscription = isNativeSubscription
+        ? shouldDisableFailedNativeSubscription(statusCode, errorMessage)
+        : shouldDisableFailedSubscription(statusCode, errorMessage);
       await updateSubscriptionHealth(subscriptionRow.id, {
         failure_count: Number(subscriptionRow.failure_count || 0) + 1,
         last_error: errorMessage,
@@ -987,6 +1392,14 @@ Deno.serve(async (req) => {
 
     if (action === "unregister") {
       return await unregisterSubscription(req, body, origin);
+    }
+
+    if (action === "register_native") {
+      return await registerNativeSubscription(req, body, origin);
+    }
+
+    if (action === "unregister_native") {
+      return await unregisterNativeSubscription(req, body, origin);
     }
 
     if (action === "dispatch-notification") {

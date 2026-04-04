@@ -4,9 +4,12 @@ import { supabase } from '../../supabaseClient';
 import { GlassCard } from '../GlassCard';
 import { XIcon } from '../Icons';
 import { Portal } from '../Portal';
+import { getBillingCatalogEntry } from '../../constants/billingCatalog';
+import { getMoneyCheckoutRuntimeWarning } from '../../utils/billingRuntime';
 
 type GoldCheckoutConfig = {
     kind: 'gold';
+    internalProductId?: string;
     amount: number;
     goldAmount: number;
     onClose: () => void;
@@ -14,6 +17,7 @@ type GoldCheckoutConfig = {
 
 type MembershipCheckoutConfig = {
     kind: 'membership';
+    internalProductId?: string;
     amount: number;
     membershipTier: 'premium' | 'platinum';
     membershipName: string;
@@ -165,6 +169,10 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
     const paymentStatusLabel = getMercadoPagoStatusLabel(paymentResult, deliveryDetected, props.kind);
     const brlAmountLabel = formatBrl(amount);
     const hasPixPayload = Boolean(pixQrCodeBase64 || pixQrCode || pixTicketUrl);
+    const runtimeWarning = getMoneyCheckoutRuntimeWarning();
+    const billingCatalogEntry = getBillingCatalogEntry(
+        props.internalProductId || (isMembershipCheckout ? `${membershipTier}_30d` : ''),
+    );
 
     useEffect(() => {
         latestRefs.current = { onClose, showToast };
@@ -226,7 +234,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                     amount,
                     purchaseKind: props.kind,
                     membershipTier,
-                    productId: isMembershipCheckout ? `${membershipTier}_30d` : null,
+                    productId: props.internalProductId || (isMembershipCheckout ? `${membershipTier}_30d` : null),
                     productLabel: isMembershipCheckout ? membershipName : `${goldAmount} ouro`,
                     equivalentGold: isMembershipCheckout ? equivalentGold : goldAmount,
                 }),
@@ -480,6 +488,20 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                     <div className="mercado-pago-body custom-scrollbar flex min-h-[320px] flex-1 flex-col overflow-y-auto bg-black/60 p-2 scroll-smooth">
                         {!paymentResult ? (
                             <div className="relative flex flex-1 flex-col gap-5 px-4 py-8">
+                                {runtimeWarning && (
+                                    <div className="rounded-2xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-left">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">Billing nativo em preparo</div>
+                                        <p className="mt-1 text-[11px] leading-relaxed text-amber-100/90">
+                                            {runtimeWarning}
+                                        </p>
+                                        {billingCatalogEntry && (
+                                            <div className="mt-2 flex flex-col gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-50/80">
+                                                <span>Play SKU: {billingCatalogEntry.googlePlayProductId}</span>
+                                                <span>App Store SKU: {billingCatalogEntry.appStoreProductId}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="space-y-2 text-center">
                                     <h3 className="text-xl font-bold text-white">Escolha a forma de pagamento</h3>
                                     <p className="text-sm text-gray-400">

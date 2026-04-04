@@ -80,6 +80,11 @@ $items = foreach ($match in $matches) {
 }
 
 foreach ($item in $items | Sort-Object Id) {
+    $backgroundZoom = if ($item.Id -ge 11) { 1.08 } else { 1.0 }
+    $footerTextBottom = if ($item.Id -ge 11) { 112 } else { 88 }
+    $footerLogoRight = if ($item.Id -ge 11) { 96 } else { 74 }
+    $footerLogoBottom = if ($item.Id -ge 11) { 88 } else { 62 }
+
     & $generator `
         -OutputDir $item.OutputDir `
         -BackgroundPath $item.BackgroundPath `
@@ -88,6 +93,10 @@ foreach ($item in $items | Sort-Object Id) {
         -Word $item.Word `
         -Definition $item.Definition `
         -PlaqueTone $item.PlaqueTone `
+        -BackgroundZoom $backgroundZoom `
+        -FooterTextBottom $footerTextBottom `
+        -FooterLogoRight $footerLogoRight `
+        -FooterLogoBottom $footerLogoBottom `
         -BrightBackground:$item.BrightBackground
 }
 

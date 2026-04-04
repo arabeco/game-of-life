@@ -15,7 +15,10 @@ import {
 } from '../utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
+import { Browser } from '@capacitor/browser';
 import { signOutAndClearSupabaseSession } from '../utils/authSession';
+import { getGoogleAuthRedirectUrl } from '../utils/nativeAuth';
+import { isCapacitorNativeRuntime } from '../utils/runtimePlatform';
 import './login-ui.css';
 
 const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
@@ -510,17 +513,27 @@ export const LoginView: React.FC = () => {
         setMessage(null);
         setGoldenInviteGuide(null);
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
+            const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
                     },
-                    redirectTo: `${canonicalAppOrigin}/`
+                    redirectTo: getGoogleAuthRedirectUrl(canonicalAppOrigin),
+                    skipBrowserRedirect: isCapacitorNativeRuntime(),
                 }
             });
             if (error) throw error;
+
+            if (isCapacitorNativeRuntime()) {
+                const authUrl = typeof data?.url === 'string' ? data.url.trim() : '';
+                if (!authUrl) {
+                    throw new Error('O Supabase nao retornou a URL do Google para o app nativo.');
+                }
+
+                await Browser.open({ url: authUrl });
+            }
         } catch (error: any) {
             clearClosedBetaGoogleAuthPending();
             setError(error.message || 'Erro no login com Google');

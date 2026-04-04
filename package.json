@@ -18,6 +18,13 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.29",
     "@ai-sdk/openai": "^3.0.36",
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.3",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/local-notifications": "^8.0.2",
+    "@capacitor/push-notifications": "^8.0.3",
     "@supabase/supabase-js": "^2.45.0",
     "ai": "^6.0.86",
     "dotenv": "^17.3.1",

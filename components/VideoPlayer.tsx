@@ -29,6 +29,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [hasError, setHasError] = useState(false);
+    const [isReady, setIsReady] = useState(false);
     const hasEndedRef = useRef(false);
 
     const handleEnd = () => {
@@ -36,6 +37,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         hasEndedRef.current = true;
         onEnd();
     };
+
+    useEffect(() => {
+        setHasError(false);
+        setIsReady(false);
+        hasEndedRef.current = false;
+    }, [src]);
 
     useEffect(() => {
         if (!videoRef.current) return;
@@ -75,6 +82,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         setHasError(true);
     };
 
+    const handleReady = () => {
+        setIsReady(true);
+    };
+
     if (!src || hasError) {
         return (
             <div className={`flex flex-col items-center justify-center bg-black text-gray-400 ${className}`}>
@@ -86,10 +97,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return (
         <div className={`relative bg-black transform-gpu ${className}`}>
+            {!isReady && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.07),transparent_30%),linear-gradient(180deg,#050505_0%,#000000_100%)] text-gray-300">
+                    <div className="mb-4 h-14 w-14 animate-pulse rounded-full border border-white/10 bg-[radial-gradient(circle,rgba(255,215,0,0.18),transparent_72%)] shadow-[0_0_28px_rgba(255,215,0,0.18)]" />
+                    <p className="text-[11px] font-black uppercase tracking-[0.34em] text-white/50">{placeholderLabel}</p>
+                </div>
+            )}
             <video
                 ref={videoRef}
                 src={src}
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover transition-opacity duration-300 ${isReady ? 'opacity-100' : 'opacity-0'}`}
                 autoPlay
                 playsInline
                 muted
@@ -97,6 +114,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 loop={loop}
                 onEnded={handleEnd}
                 onError={handleError}
+                onLoadedData={handleReady}
+                onCanPlay={handleReady}
                 controls={false}
                 disablePictureInPicture
             />

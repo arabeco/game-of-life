@@ -933,7 +933,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
         const permission = await requestLocalNotificationPermission();
         if (permission !== 'granted') {
-            showToast('Permita push no navegador para receber esse aviso.', 'warning');
+            showToast('Permita notificacoes neste aparelho para receber esse aviso.', 'warning');
             return;
         }
 

@@ -3,10 +3,11 @@ import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG, GOLD_PLATINUM_PRODUCT, GOLD_PREMIUM_PRODUCT } from '../../constants/goldCatalog';
 import { CheckIcon, CrownIcon } from '../Icons';
-import { MercadoPagoBrick } from './MercadoPagoBrick';
+import { BillingCheckoutGate } from './BillingCheckoutGate';
 import { getExpBoostHoursRemaining, getExpBoostLabel, hasActiveExpBoost } from '../../utils/expBoostAccess';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess } from '../../utils/premiumAccess';
 import { ConfirmationModal } from '../ConfirmationModal';
+import { getGoldPackChannelBadgeCopy, getMoneyCheckoutSalesCopy } from '../../utils/billingRuntime';
 
 type GoldConfirmState = { kind: 'boost'; boostId: string; boostName: string; costGold: number };
 
@@ -30,7 +31,7 @@ const splitBenefitsIntoColumns = (benefits: readonly string[]) => {
 export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: number } | null }> = ({ scrollRequest = null }) => {
     const { buyStoreItem, userProfile } = useGame();
     const [loading, setLoading] = useState<string | null>(null);
-    const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number } | null>(null);
+    const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number; internalProductId: string } | null>(null);
     const [selectedMembership, setSelectedMembership] = useState<MembershipCheckoutState | null>(null);
     const [confirmState, setConfirmState] = useState<GoldConfirmState | null>(null);
     const [showAllPremiumBenefits, setShowAllPremiumBenefits] = useState(false);
@@ -46,6 +47,8 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     const hasExpBoost = hasActiveExpBoost(userProfile);
     const expBoostHoursRemaining = getExpBoostHoursRemaining(userProfile);
     const expBoostLabel = getExpBoostLabel(userProfile);
+    const moneyCheckoutSalesCopy = getMoneyCheckoutSalesCopy();
+    const goldPackChannelBadgeCopy = getGoldPackChannelBadgeCopy();
 
     useEffect(() => {
         if (!scrollRequest) return;
@@ -106,7 +109,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     const handleBuyPack = async (packId: string) => {
         const pack = GOLD_PACK_CATALOG.find((entry) => entry.id === packId);
         if (!pack) return;
-        setSelectedPack({ amount: pack.priceBrl, goldAmount: pack.totalGold });
+        setSelectedPack({ amount: pack.priceBrl, goldAmount: pack.totalGold, internalProductId: pack.id });
     };
 
     const handleConfirmPurchase = async () => {
@@ -197,7 +200,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {isPlatinum ? 'Já incluso no plano maior' : 'Produto direto no Pix'}
+                                {isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
                             </span>
                         </div>
                     </div>
@@ -274,7 +277,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {activeMembershipTier === 'premium' && !isPlatinum ? 'Upgrade direto no Pix' : 'Produto direto no Pix'}
+                                {moneyCheckoutSalesCopy}
                             </span>
                         </div>
                     </div>
@@ -284,7 +287,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                     <div className="flex items-center justify-between gap-3">
                         <h3 className="text-lg font-bold text-[color:var(--ui-card-text)]">Pacotes de Ouro</h3>
                         <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-300">
-                            Compra avulsa
+                            {goldPackChannelBadgeCopy}
                         </div>
                     </div>
 
@@ -352,10 +355,19 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                     </div>
                 </GlassCard>
 
-                {selectedPack && <MercadoPagoBrick kind="gold" amount={selectedPack.amount} goldAmount={selectedPack.goldAmount} onClose={() => setSelectedPack(null)} />}
+                {selectedPack && (
+                    <BillingCheckoutGate
+                        kind="gold"
+                        internalProductId={selectedPack.internalProductId}
+                        amount={selectedPack.amount}
+                        goldAmount={selectedPack.goldAmount}
+                        onClose={() => setSelectedPack(null)}
+                    />
+                )}
                 {selectedMembership && (
-                    <MercadoPagoBrick
+                    <BillingCheckoutGate
                         kind="membership"
+                        internalProductId={selectedMembership.membershipId}
                         amount={selectedMembership.amount}
                         membershipTier={selectedMembership.membershipTier}
                         membershipName={selectedMembership.membershipName}

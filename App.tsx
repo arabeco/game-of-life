@@ -1,5 +1,7 @@
 import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { supabase } from './supabaseClient';
 import { SplashScreen } from './components/SplashScreen';
 import { ClosedBetaGoogleInviteModal } from './components/ClosedBetaGoogleInviteModal';
@@ -17,6 +19,8 @@ import { parseBooleanEnvFlag } from './utils/envFlags';
 import { startInstallPromptCapture } from './utils/installPrompt';
 import { signOutAndClearSupabaseSession } from './utils/authSession';
 import { ensureClosedBetaUserProfile } from './utils/closedBetaProfile';
+import { isNativeAuthCallbackUrl, parseNativeAuthCallback } from './utils/nativeAuth';
+import { isCapacitorNativeRuntime } from './utils/runtimePlatform';
 import { resolveUiSkinId } from './utils/uiSkinTokens';
 
 const LoginView = React.lazy(() => import('./views/LoginView').then((m) => ({ default: m.LoginView })));
@@ -142,6 +146,69 @@ const App: React.FC = () => {
             renderMode: renderModeRef.current,
             theme: bootVisualsRef.current.theme,
         });
+    }, []);
+
+    useEffect(() => {
+        if (!isCapacitorNativeRuntime()) return;
+
+        let disposed = false;
+        let listenerHandle: { remove: () => Promise<void> } | null = null;
+
+        const setupNativeAuthCallback = async () => {
+            listenerHandle = await CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
+                if (disposed || !isNativeAuthCallbackUrl(url)) return;
+
+                const { code, error, errorDescription } = parseNativeAuthCallback(url);
+
+                try {
+                    await Browser.close();
+                } catch (_closeError) {
+                    // noop
+                }
+
+                if (error) {
+                    clearClosedBetaGoogleAuthPending();
+                    setGoogleAuthPending(false);
+                    saveClosedBetaGoogleRedirect({
+                        mode: 'login',
+                        email: '',
+                        message: errorDescription || 'Nao consegui concluir o login nativo com Google.',
+                    });
+                    return;
+                }
+
+                if (!code) {
+                    clearClosedBetaGoogleAuthPending();
+                    setGoogleAuthPending(false);
+                    saveClosedBetaGoogleRedirect({
+                        mode: 'login',
+                        email: '',
+                        message: 'O Google voltou para o app sem codigo de autenticacao.',
+                    });
+                    return;
+                }
+
+                const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+                if (exchangeError) {
+                    clearClosedBetaGoogleAuthPending();
+                    setGoogleAuthPending(false);
+                    saveClosedBetaGoogleRedirect({
+                        mode: 'login',
+                        email: '',
+                        message: exchangeError.message || 'Falha ao trocar o codigo do Google pela sessao no app.',
+                    });
+                }
+            });
+        };
+
+        void setupNativeAuthCallback();
+
+        return () => {
+            disposed = true;
+            if (listenerHandle) {
+                void listenerHandle.remove();
+            }
+        };
     }, []);
 
     useEffect(() => {

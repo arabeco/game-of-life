@@ -86,7 +86,11 @@ foreach ($item in $items | Sort-Object Id) {
         "-Word", $item.Word,
         "-Definition", $item.Definition,
         "-SheetTitle", ("Ponte {0} | {1}" -f $item.Id.ToString("00"), $item.Word),
-        "-PlaqueTone", $item.PlaqueTone
+        "-PlaqueTone", $item.PlaqueTone,
+        "-BackgroundZoom", "1.08",
+        "-FooterTextBottom", "112",
+        "-FooterLogoRight", "96",
+        "-FooterLogoBottom", "88"
     )
 
     if ($item.BrightBackground) {

@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 declare global {
   interface Window {
     Capacitor?: {
@@ -11,6 +13,17 @@ export const isCapacitorNativeRuntime = (): boolean => {
   if (typeof window === 'undefined') return false;
 
   try {
+    if (typeof Capacitor?.isNativePlatform === 'function' && Capacitor.isNativePlatform()) {
+      return true;
+    }
+
+    if (typeof Capacitor?.getPlatform === 'function') {
+      const platform = String(Capacitor.getPlatform() || '').toLowerCase();
+      if (platform === 'ios' || platform === 'android') {
+        return true;
+      }
+    }
+
     if (typeof window.Capacitor?.isNativePlatform === 'function') {
       return Boolean(window.Capacitor.isNativePlatform());
     }

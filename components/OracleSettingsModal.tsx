@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { OracleCategory, OracleMode, OraclePreferences } from '../types';
 import { GlassCard } from './GlassCard';
@@ -6,15 +6,15 @@ import { Portal } from './Portal';
 import { XIcon, CheckIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
 import {
-    getLocalNotificationPermission,
-    requestLocalNotificationPermission,
-} from '../utils/localNotification';
-import {
-    disableRemotePushSubscription,
-    getRemoteWebPushSupport,
-    syncRemotePushSubscription,
-} from '../utils/webPush';
-import type { WebPushSyncResult } from '../utils/webPush';
+    disableAppPushRegistration,
+    getAppPushPermission,
+    hasAppPushRemoteDeliveryReady,
+    getAppPushSupport,
+    requestAppPushPermission,
+    syncAppPushRegistration,
+    type AppPushPermission,
+    type AppPushSyncResult,
+} from '../utils/pushRuntime';
 
 interface OracleSettingsModalProps {
     onClose: () => void;
@@ -25,11 +25,52 @@ interface OracleSettingsModalProps {
 type SettingsTab = 'modos' | 'categorias';
 type ToggleKey = 'iaEnabled' | 'notificationsEnabled' | 'dailyFocusCardEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
 
-const PUSH_PERMISSION_LABEL: Record<ReturnType<typeof getLocalNotificationPermission>, string> = {
+const PUSH_PERMISSION_LABEL: Record<AppPushPermission, string> = {
     default: 'Aguardando permissao',
-    granted: 'Permitido no navegador',
-    denied: 'Bloqueado no navegador',
+    granted: 'Permitido no aparelho',
+    denied: 'Bloqueado no aparelho',
     unsupported: 'Sem suporte neste aparelho',
+};
+
+const getPushDeliveryLabel = ({
+    pushEnabled,
+    isNative,
+    remoteReady,
+    permission,
+}: {
+    pushEnabled: boolean;
+    isNative: boolean;
+    remoteReady: boolean;
+    permission: AppPushPermission;
+}) => {
+    if (!pushEnabled) return 'Push desligado neste aparelho';
+    if (permission === 'denied') return 'O aparelho bloqueou notificacoes';
+    if (permission === 'unsupported') return 'Este aparelho nao suporta este tipo de push';
+
+    if (isNative) {
+        return remoteReady
+            ? 'Entrega remota pronta neste aparelho'
+            : 'Push local pronto. Remoto ainda em sincronizacao';
+    }
+
+    return remoteReady
+        ? 'Push remoto pronto neste navegador'
+        : 'Push local habilitado neste navegador';
+};
+
+const getPushDeliveryTone = ({
+    pushEnabled,
+    remoteReady,
+    permission,
+}: {
+    pushEnabled: boolean;
+    remoteReady: boolean;
+    permission: AppPushPermission;
+}) => {
+    if (!pushEnabled) return 'border-white/10 bg-white/5 text-gray-400';
+    if (permission === 'denied' || permission === 'unsupported') return 'border-amber-500/30 bg-amber-500/10 text-amber-200';
+    if (remoteReady) return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200';
+    return 'border-sky-500/30 bg-sky-500/10 text-sky-200';
 };
 
 const MANUAL_LIBRARY_CATEGORIES: { id: OracleCategory; label: string; icon: string }[] = [
@@ -40,12 +81,12 @@ const MANUAL_LIBRARY_CATEGORIES: { id: OracleCategory; label: string; icon: stri
     { id: 'sussurros_maestria', label: 'Sussurros da Maestria', icon: '👁️' },
 ];
 
-const getRemotePushFailureMessage = (result: WebPushSyncResult): string => {
+const getRemotePushFailureMessage = (result: AppPushSyncResult): string => {
     switch (result.status) {
         case 'not_signed_in':
             return 'Push local ativado, mas a sessao expirou antes do registro remoto.';
         case 'permission_denied':
-            return 'Push local ativado, mas o navegador nao liberou notificacoes.';
+            return 'Push local ativado, mas este aparelho nao liberou notificacoes.';
         case 'missing_public_key':
             return 'Push local ativado, mas a chave publica do push remoto nao entrou neste build.';
         case 'unsupported':
@@ -54,6 +95,18 @@ const getRemotePushFailureMessage = (result: WebPushSyncResult): string => {
             return `Push local ativado, mas o backend recusou o registro remoto${result.detail ? `: ${result.detail}` : '.'}`;
         case 'subscribe_failed':
             return `Push local ativado, mas o navegador nao conseguiu criar uma subscription valida${result.detail ? `: ${result.detail}` : '.'}`;
+        case 'native_permission_denied':
+            return 'Push nativo negado no aparelho.';
+        case 'native_permission_prompt':
+            return 'O aparelho ainda nao liberou a permissao de push.';
+        case 'native_register_failed':
+            return `O Android nao conseguiu registrar o push nativo${result.detail ? `: ${result.detail}` : '.'}`;
+        case 'native_backend_register_failed':
+            return `O aparelho gerou o token nativo, mas o backend ainda nao conseguiu salvar esse aparelho${result.detail ? `: ${result.detail}` : '.'}`;
+        case 'native_remote_pending':
+            return 'O aparelho ja gerou o token nativo. Falta concluir a trilha Firebase/backend para o push remoto chegar com o app fechado.';
+        case 'native_ok':
+            return 'Push nativo do aparelho pronto para entrega remota.';
         default:
             return 'Push ativado, mas o registro remoto do aparelho falhou. Fora do app ainda pode falhar.';
     }
@@ -103,12 +156,33 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 }) => {
     const { oraclePreferences, updateOraclePreferences, userProfile, showToast } = useGame();
     const [activeTab, setActiveTab] = useState<SettingsTab>('modos');
-    const [pushPermission, setPushPermission] = useState(getLocalNotificationPermission());
+    const [pushPermission, setPushPermission] = useState<AppPushPermission>('default');
+    const [pushRemoteReady, setPushRemoteReady] = useState(false);
 
     if (!oraclePreferences) return null;
 
     const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
     const activeModeConfig = ORACLE_MODES[oraclePreferences.activeMode] || ORACLE_MODES.neutro;
+    const pushSupport = getAppPushSupport();
+
+    useEffect(() => {
+        let cancelled = false;
+
+        void (async () => {
+            const [permission, remoteReady] = await Promise.all([
+                getAppPushPermission(),
+                hasAppPushRemoteDeliveryReady(),
+            ]);
+            if (!cancelled) {
+                setPushPermission(permission);
+                setPushRemoteReady(remoteReady);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [oraclePreferences.pushEnabled]);
 
     const handleToggle = (key: ToggleKey) => {
         updateOraclePreferences({ [key]: !Boolean(oraclePreferences[key]) } as Partial<OraclePreferences>);
@@ -118,37 +192,44 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         const nextEnabled = !Boolean(oraclePreferences.pushEnabled);
 
         if (!nextEnabled) {
-            await disableRemotePushSubscription();
+            await disableAppPushRegistration();
             await updateOraclePreferences({ pushEnabled: false });
+            setPushRemoteReady(false);
             showToast('Push no aparelho desativado.', 'info');
             return;
         }
 
-        const permission = await requestLocalNotificationPermission();
+        const permission = await requestAppPushPermission();
         setPushPermission(permission);
 
         if (permission !== 'granted') {
             await updateOraclePreferences({ pushEnabled: false });
+            setPushRemoteReady(false);
             showToast('Permissao de push negada. Os avisos continuam dentro do app.', 'warning');
             return;
         }
 
-        const remoteSupport = getRemoteWebPushSupport();
-        const remoteSync = await syncRemotePushSubscription();
+        const remoteSync = await syncAppPushRegistration();
         await updateOraclePreferences({ pushEnabled: true });
+        setPushRemoteReady(remoteSync.remoteDeliveryReady);
 
-        if (!remoteSupport.supported) {
+        if (!pushSupport.supported) {
             showToast('Push local ativado. Este aparelho nao suporta push remoto completo.', 'warning');
             return;
         }
 
-        if (!remoteSupport.configured) {
+        if (!pushSupport.configured) {
             showToast('Push local ativado. Falta configurar a chave publica do push remoto.', 'warning');
             return;
         }
 
         if (!remoteSync.ok) {
             showToast(getRemotePushFailureMessage(remoteSync), 'warning');
+            return;
+        }
+
+        if (!remoteSync.remoteDeliveryReady && remoteSync.isNative) {
+            showToast(getRemotePushFailureMessage(remoteSync), 'info');
             return;
         }
 
@@ -393,6 +474,20 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                         onToggle: handlePushToggle,
                                         accentClass: 'bg-emerald-500/70',
                                     })}
+                                    <div
+                                        className={`ml-7 rounded-xl border px-3 py-2 text-[11px] font-semibold ${getPushDeliveryTone({
+                                            pushEnabled: Boolean(oraclePreferences.pushEnabled),
+                                            remoteReady: pushRemoteReady,
+                                            permission: pushPermission,
+                                        })}`}
+                                    >
+                                        {getPushDeliveryLabel({
+                                            pushEnabled: Boolean(oraclePreferences.pushEnabled),
+                                            isNative: pushSupport.isNative,
+                                            remoteReady: pushRemoteReady,
+                                            permission: pushPermission,
+                                        })}
+                                    </div>
                                 </div>
 
                                 {false && <div className="space-y-2">

@@ -33,7 +33,7 @@ import { emitDailyCompletionPrompt } from '../utils/dailyCompletionPrompt';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
-import { hasRemotePushSubscription, syncRemotePushSubscription } from '../utils/webPush';
+import { hasAppPushRemoteDeliveryReady, syncAppPushRegistration } from '../utils/pushRuntime';
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, shouldPushNotificationForProfile } from '../constants/oracleNotificationPolicy';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import { resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
@@ -949,19 +949,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             try {
-                const syncResult = await syncRemotePushSubscription();
+                const syncResult = await syncAppPushRegistration();
                 if (cancelled) return;
 
-                if (syncResult.ok) {
+                if (syncResult.remoteDeliveryReady) {
                     setRemotePushRegistered(true);
                     return;
                 }
 
-                setRemotePushRegistered(await hasRemotePushSubscription());
+                setRemotePushRegistered(await hasAppPushRemoteDeliveryReady());
             } catch (error) {
                 console.warn('Remote push sync failed:', error);
                 if (!cancelled) {
-                    setRemotePushRegistered(await hasRemotePushSubscription());
+                    setRemotePushRegistered(await hasAppPushRemoteDeliveryReady());
                 }
             }
         };

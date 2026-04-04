@@ -25,7 +25,9 @@ import { SvgRadarChart } from '../components/SvgRadarChart';
 import { SupabaseService } from '../services/SupabaseService';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
-import { requestLocalNotificationPermission, showLocalNotification } from '../utils/localNotification';
+import { requestLocalNotificationPermission, scheduleLocalNotification, showLocalNotification } from '../utils/localNotification';
+import { isCapacitorNativeRuntime } from '../utils/runtimePlatform';
+import { hasAppPushRemoteDeliveryReady } from '../utils/pushRuntime';
 import { SKINS_DATA } from '../constants';
 import type { ChestType, LegacyRenderCycleDigest, LegacyRenderEraSummary, NotificationType, Report, ReportAtlasWeek, ReportIdentitySnapshot, RewardModalPayload } from '../types';
 
@@ -1998,6 +2000,22 @@ const NotificationTestButton: React.FC = () => {
     const { session, fetchNotifications, showToast } = useGame();
     const [isPending, setIsPending] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
+    const [remoteReady, setRemoteReady] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        void (async () => {
+            const ready = await hasAppPushRemoteDeliveryReady();
+            if (!cancelled) {
+                setRemoteReady(ready);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const handleTest = async () => {
         if (!session?.user.id) {
@@ -2025,8 +2043,41 @@ const NotificationTestButton: React.FC = () => {
             });
         }, 1000);
 
+        let notificationPermission: Awaited<ReturnType<typeof requestLocalNotificationPermission>> = 'default';
+        let nativePushScheduled = false;
+        const remoteDeliveryReady = await hasAppPushRemoteDeliveryReady();
+        setRemoteReady(remoteDeliveryReady);
+
+        if (!remoteDeliveryReady) {
+            notificationPermission = await requestLocalNotificationPermission();
+            logNotificationLabStep('Sistema + Push (15s)', 'push-permission-result', {
+                permission: notificationPermission,
+                nativeRuntime: isCapacitorNativeRuntime(),
+                remoteDeliveryReady,
+            });
+
+            if (notificationPermission === 'granted' && isCapacitorNativeRuntime()) {
+                nativePushScheduled = await scheduleLocalNotification({
+                    title: 'TESTE GM - Sistema',
+                    body: 'O push local nativo respondeu ao disparo de 15 segundos.',
+                    tag: 'gm-panel-push-test',
+                    url: '/',
+                    requireInteraction: true,
+                }, 15000);
+                logNotificationLabStep('Sistema + Push (15s)', 'native-push-scheduled', {
+                    nativePushScheduled,
+                });
+            }
+        } else {
+            logNotificationLabStep('Sistema + Push (15s)', 'remote-ready-skip-local', {
+                remoteDeliveryReady,
+            });
+        }
+
         logNotificationLabStep('Sistema + Push (15s)', 'timer-scheduled', {
             seconds: 15,
+            nativePushScheduled,
+            remoteDeliveryReady,
         });
 
         window.setTimeout(async () => {
@@ -2035,12 +2086,13 @@ const NotificationTestButton: React.FC = () => {
                 await insertNotificationLabRecord(
                     session.user.id,
                     'system',
-                    'TESTE GM: Notificacao de sistema agendada para 15 segundos. Ela deve aparecer em Avisos e, se permitido, disparar o push local.',
+                    'TESTE GM: Notificacao de sistema agendada para 15 segundos. Ela deve aparecer em Avisos e disparar o push configurado neste aparelho.',
                     {
                         source: 'gm_panel',
                         trigger: 'system_push_15s',
                         test: true,
                         delayed: true,
+                        remoteDeliveryReady,
                     }
                 );
                 logNotificationLabStep('Sistema + Push (15s)', 'insert-finished');
@@ -2049,12 +2101,8 @@ const NotificationTestButton: React.FC = () => {
                 openOracleNotificationsLab();
                 logNotificationLabStep('Sistema + Push (15s)', 'oracle-open-requested');
 
-                let pushDelivered = false;
-                const permission = await requestLocalNotificationPermission();
-                logNotificationLabStep('Sistema + Push (15s)', 'push-permission-result', {
-                    permission,
-                });
-                if (permission === 'granted') {
+                let pushDelivered = nativePushScheduled;
+                if (!remoteDeliveryReady && !nativePushScheduled && notificationPermission === 'granted') {
                     pushDelivered = await showLocalNotification({
                         title: 'TESTE GM - Sistema',
                         body: 'O push local respondeu ao disparo de 15 segundos.',
@@ -2070,8 +2118,11 @@ const NotificationTestButton: React.FC = () => {
                 if (pushDelivered) {
                     showToast('Notificacao interna e push local entregues.', 'success');
                     logNotificationLabStep('Sistema + Push (15s)', 'toast-success-push');
-                } else if (permission === 'denied') {
-                    showToast('Notificacao interna entregue, mas o navegador bloqueou o push local.', 'warning');
+                } else if (remoteDeliveryReady) {
+                    showToast('Notificacao interna criada. Agora o teste depende do push remoto do aparelho.', 'info');
+                    logNotificationLabStep('Sistema + Push (15s)', 'toast-info-remote');
+                } else if (notificationPermission === 'denied') {
+                    showToast('Notificacao interna entregue, mas o aparelho bloqueou o push local.', 'warning');
                     logNotificationLabStep('Sistema + Push (15s)', 'toast-warning-denied');
                 } else {
                     showToast('Notificacao interna entregue. O push local nao apareceu neste aparelho.', 'warning');
@@ -2106,12 +2157,12 @@ const NotificationTestButton: React.FC = () => {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Agendado ({timeLeft}s)
                 </>
-            ) : (
-                <>
-                    <Bell className="h-4 w-4" />
-                    Sistema + Push (15s)
-                </>
-            )}
+                ) : (
+                    <>
+                        <Bell className="h-4 w-4" />
+                    {remoteReady ? 'Sistema Remoto (15s)' : 'Sistema + Push (15s)'}
+                    </>
+                )}
         </button>
     );
 };

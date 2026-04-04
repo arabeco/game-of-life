@@ -8,6 +8,12 @@ param(
     [string]$SheetTitle = "",
     [ValidateSet("Default","Abertura","Jade","Wine","Red","Petrol","Ivory","Velvet")]
     [string]$PlaqueTone = "Default",
+    [float]$BackgroundZoom = 1.0,
+    [int]$FooterTextLeft = 88,
+    [int]$FooterTextBottom = 88,
+    [int]$FooterLogoRight = 74,
+    [int]$FooterLogoBottom = 62,
+    [int]$FooterLogoSize = 72,
     [switch]$BrightBackground,
     [switch]$NoSlide2Darkening
 )
@@ -49,6 +55,7 @@ function New-Canvas {
     $bitmap = [System.Drawing.Bitmap]::new($Width, $Height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
     Initialize-Graphics -Graphics $graphics
+    $graphics.Clear((New-Color 255 0 0 0))
     @{
         Bitmap = $bitmap
         Graphics = $graphics
@@ -209,14 +216,15 @@ function Draw-ImageCoverRect {
         [float]$X,
         [float]$Y,
         [float]$Width,
-        [float]$Height
+        [float]$Height,
+        [float]$Zoom = 1.0
     )
 
     $image = [System.Drawing.Image]::FromFile($ImagePath)
     try {
         $scale = [Math]::Max($Width / $image.Width, $Height / $image.Height)
-        $drawWidth = [float]($image.Width * $scale)
-        $drawHeight = [float]($image.Height * $scale)
+        $drawWidth = [float]($image.Width * $scale * $Zoom)
+        $drawHeight = [float]($image.Height * $scale * $Zoom)
         $drawX = [float]($X + (($Width - $drawWidth) / 2))
         $drawY = [float]($Y + (($Height - $drawHeight) / 2))
         $Graphics.DrawImage($image, $drawX, $drawY, $drawWidth, $drawHeight)
@@ -780,17 +788,22 @@ function Draw-SiteFooter {
         [System.Drawing.Font]$Font,
         [System.Drawing.Brush]$Brush,
         [int]$Width,
-        [int]$Height
+        [int]$Height,
+        [int]$TextLeft = 88,
+        [int]$TextBottom = 88,
+        [int]$LogoRight = 74,
+        [int]$LogoBottom = 62,
+        [int]$LogoSize = 72
     )
 
     $logo = [System.Drawing.Image]::FromFile($LogoPath)
     try {
-        $Graphics.DrawImage($logo, $Width - 146, $Height - 134, 72, 72)
+        $Graphics.DrawImage($logo, $Width - $LogoRight - $LogoSize, $Height - $LogoBottom - $LogoSize, $LogoSize, $LogoSize)
     } finally {
         $logo.Dispose()
     }
 
-    $Graphics.DrawString("glyph.life", $Font, $Brush, [System.Drawing.PointF]::new(88, $Height - 88))
+    $Graphics.DrawString("glyph.life", $Font, $Brush, [System.Drawing.PointF]::new($TextLeft, $Height - $TextBottom))
 }
 
 function Save-Slide {
@@ -917,7 +930,7 @@ $slide1 = New-Canvas -Width $width -Height $height
 $bitmap1 = $slide1.Bitmap
 $graphics1 = $slide1.Graphics
 
-Draw-ImageCoverRect -Graphics $graphics1 -ImagePath $BackgroundPath -X 0 -Y 0 -Width $width -Height $height
+Draw-ImageCoverRect -Graphics $graphics1 -ImagePath $BackgroundPath -X 0 -Y 0 -Width $width -Height $height -Zoom $BackgroundZoom
 $graphics1.FillRectangle($overlayBrush, 0, 0, $width, $height)
 Draw-SubtleGoldShimmer -Graphics $graphics1 -CenterX 300 -CenterY 680 -BandWidth 250 -BandHeight 1600 -Angle -18 -PeakAlpha 12
 Draw-SubtleGoldShimmer -Graphics $graphics1 -CenterX 840 -CenterY 520 -BandWidth 220 -BandHeight 1500 -Angle 16 -PeakAlpha 10
@@ -934,7 +947,7 @@ Draw-PlaqueFrame -Graphics $graphics1 -X $plaqueX -Y $plaqueY -Width $plaqueWidt
 
 Draw-SingleLineFitText -Graphics $graphics1 -Text $Word -Font $wordFont -Brush $goldBrush -X ($plaqueX + 42) -Y ($plaqueY + 88) -Width ($plaqueWidth - 84) -Height 118 -MinScale 0.42
 Draw-CenterText -Graphics $graphics1 -Text $Definition -Font $definitionFont -Brush $silverBrush -X ($plaqueX + 46) -Y ($plaqueY + 204) -Width ($plaqueWidth - 92) -Height 300 -MinScale 0.72
-Draw-SiteFooter -Graphics $graphics1 -LogoPath $logoPath -Font $siteFont -Brush $goldBrush -Width $width -Height $height
+Draw-SiteFooter -Graphics $graphics1 -LogoPath $logoPath -Font $siteFont -Brush $goldBrush -Width $width -Height $height -TextLeft $FooterTextLeft -TextBottom $FooterTextBottom -LogoRight $FooterLogoRight -LogoBottom $FooterLogoBottom -LogoSize $FooterLogoSize
 
 $slide1Path = Join-Path $OutputDir "slide-01-capa.png"
 Save-Slide -Bitmap $bitmap1 -Graphics $graphics1 -Path $slide1Path
@@ -944,7 +957,7 @@ $slide2 = New-Canvas -Width $width -Height $height
 $bitmap2 = $slide2.Bitmap
 $graphics2 = $slide2.Graphics
 
-Draw-ImageCoverRect -Graphics $graphics2 -ImagePath $BackgroundPath -X 0 -Y 0 -Width $width -Height $height
+Draw-ImageCoverRect -Graphics $graphics2 -ImagePath $BackgroundPath -X 0 -Y 0 -Width $width -Height $height -Zoom $BackgroundZoom
 if ($screenAlpha -gt 0) {
     $screenDim = [System.Drawing.SolidBrush]::new((New-Color $screenAlpha 3 4 6))
     $graphics2.FillRectangle($screenDim, 0, 0, $width, $height)
@@ -960,7 +973,7 @@ Draw-RoundedImagePanel -Graphics $graphics2 -ImagePath $PrintPath -X $printBoxX 
 
 Draw-CenterTextWithShadow -Graphics $graphics2 -Text "GLYPH" -Font $miniBrandFont -Brush $brandGoldBrush -ShadowBrush $brandShadowBrush -X 80 -Y 488 -Width 920 -Height 92 -ShadowOffset 4 -MinScale 0.9
 Draw-CenterTextWithShadow -Graphics $graphics2 -Text $tagline -Font $taglineFont -Brush $brandGoldBrush -ShadowBrush $brandShadowBrush -X 70 -Y 586 -Width 940 -Height 68 -ShadowOffset 3 -MinScale 0.86
-Draw-SiteFooter -Graphics $graphics2 -LogoPath $logoPath -Font $siteFont -Brush $goldBrush -Width $width -Height $height
+Draw-SiteFooter -Graphics $graphics2 -LogoPath $logoPath -Font $siteFont -Brush $goldBrush -Width $width -Height $height -TextLeft $FooterTextLeft -TextBottom $FooterTextBottom -LogoRight $FooterLogoRight -LogoBottom $FooterLogoBottom -LogoSize $FooterLogoSize
 
 $slide2Path = Join-Path $OutputDir "slide-02-app.png"
 Save-Slide -Bitmap $bitmap2 -Graphics $graphics2 -Path $slide2Path

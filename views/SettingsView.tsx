@@ -9,7 +9,7 @@ import { GlassCard } from '../components/GlassCard';
 import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
-import { MercadoPagoBrick } from '../components/Store/MercadoPagoBrick';
+import { BillingCheckoutGate } from '../components/Store/BillingCheckoutGate';
 import { supabase } from '../supabaseClient';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { CODEXES, getCatalogItemsByCategory } from '../constants/items';
@@ -21,6 +21,7 @@ import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
+import { getMoneyCheckoutSalesCopy } from '../utils/billingRuntime';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
 import './settings-ui.css';
@@ -2382,6 +2383,7 @@ const PremiumTab: React.FC = () => {
     const { userProfile } = useGame();
     const [selectedMembership, setSelectedMembership] = useState<{
         tier: 'premium' | 'platinum';
+        productId: 'premium_30d' | 'platinum_30d';
         amount: number;
         name: string;
         equivalentGold: number;
@@ -2442,6 +2444,7 @@ const PremiumTab: React.FC = () => {
     const premiumActionLabel = isPlatinum ? 'Platinum ativo' : isPremium ? 'Estender premium' : 'Ativar premium';
     const platinumActionLabel = isPlatinum ? 'Estender platinum' : activeMembershipTier === 'premium' ? 'Subir para platinum' : 'Ativar platinum';
     const isPremiumExpiringSoon = isPremium && premiumDaysRemaining != null && premiumDaysRemaining <= 7;
+    const moneyCheckoutSalesCopy = getMoneyCheckoutSalesCopy();
 
     return (
         <>
@@ -2501,6 +2504,7 @@ const PremiumTab: React.FC = () => {
                             <button
                                 onClick={() => setSelectedMembership({
                                     tier: 'premium',
+                                    productId: 'premium_30d',
                                     amount: GOLD_PREMIUM_PRODUCT.priceBrl,
                                     name: GOLD_PREMIUM_PRODUCT.name,
                                     equivalentGold: GOLD_PREMIUM_PRODUCT.priceGold,
@@ -2514,7 +2518,7 @@ const PremiumTab: React.FC = () => {
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {isPlatinum ? 'Já incluso no plano maior' : 'Produto direto no Pix'}
+                                {isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
                             </span>
                         </div>
                     </div>
@@ -2570,6 +2574,7 @@ const PremiumTab: React.FC = () => {
                             <button
                                 onClick={() => setSelectedMembership({
                                     tier: 'platinum',
+                                    productId: 'platinum_30d',
                                     amount: GOLD_PLATINUM_PRODUCT.priceBrl,
                                     name: GOLD_PLATINUM_PRODUCT.name,
                                     equivalentGold: GOLD_PLATINUM_PRODUCT.priceGold,
@@ -2582,7 +2587,7 @@ const PremiumTab: React.FC = () => {
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {activeMembershipTier === 'premium' && !isPlatinum ? 'Upgrade direto no Pix' : 'Produto direto no Pix'}
+                                {moneyCheckoutSalesCopy}
                             </span>
                         </div>
                     </div>
@@ -2591,8 +2596,9 @@ const PremiumTab: React.FC = () => {
 
         </div>
         {selectedMembership && (
-            <MercadoPagoBrick
+            <BillingCheckoutGate
                 kind="membership"
+                internalProductId={selectedMembership.productId}
                 amount={selectedMembership.amount}
                 membershipTier={selectedMembership.tier}
                 membershipName={selectedMembership.name}

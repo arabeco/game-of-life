@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "435535946342",
+    "project_id": "glyph-5bf05",
+    "storage_bucket": "glyph-5bf05.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:435535946342:android:b20aef3f0d0176e14c83a7",
+        "android_client_info": {
+          "package_name": "life.glyph.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAONklI8wK3FaesA4Tla4X0TvBOtJbsQYM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

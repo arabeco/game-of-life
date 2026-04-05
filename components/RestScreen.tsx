@@ -15,6 +15,7 @@ import { Action, ActionType, Arena, ScheduledTask, DayOfWeek } from '../types';
 import { FocusAudioPlayer } from './FocusAudioPlayer';
 import { REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
 import { showLocalNotification } from '../utils/localNotification';
+import { buildActionSessionWidgetSnapshot } from '../utils/widgetSnapshots';
 import { EmojiGlyph } from './EmojiGlyph';
 import { SKINS_DATA, BORDERS_DATA } from '../constants';
 
@@ -166,6 +167,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const deepWorkOptions = ['15', '20', '25', '30', '40', '45', '50', '60', '90', '120'];
     const currentActionSessionTask = actionSession?.taskId ? tasks.find(task => task.id === actionSession.taskId) : null;
     const isActionSessionCompleted = Boolean(currentActionSessionTask?.completed);
+    const actionSessionSnapshot = React.useMemo(() => buildActionSessionWidgetSnapshot({
+        actionSession,
+        task: currentActionSessionTask,
+        nowMs: Date.now(),
+    }), [actionSession, currentActionSessionTask, actionSessionTimeLeft]);
     const sitrepStatusLabel = isSitrepLocked ? 'Travado' : 'Liberado';
     const isBasicMode = appMode === 'BASIC';
     const isLightTheme = activeTheme === 'LIGHT';
@@ -496,18 +502,20 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         actionSessionNotificationSentRef.current = false;
         actionSessionToastSentRef.current = false;
         actionSessionReturnedRef.current = false;
-        const startedAtMs = new Date(actionSession.startedAt).getTime();
-        const totalSeconds = Math.max(1, Math.round(actionSession.durationMinutes * 60));
 
         const sync = () => {
-            const elapsedSeconds = Math.floor((Date.now() - startedAtMs) / 1000);
-            setActionSessionTimeLeft(totalSeconds - elapsedSeconds);
+            const snapshot = buildActionSessionWidgetSnapshot({
+                actionSession,
+                task: currentActionSessionTask,
+                nowMs: Date.now(),
+            });
+            setActionSessionTimeLeft(snapshot?.remainingSeconds ?? 0);
         };
 
         sync();
         const interval = window.setInterval(sync, 1000);
         return () => window.clearInterval(interval);
-    }, [actionSession]);
+    }, [actionSession, currentActionSessionTask]);
 
     useEffect(() => {
         if (!actionSession || actionSessionTimeLeft > 0 || actionSessionTimeoutPlayedRef.current) return;
@@ -731,13 +739,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
     const cycleProgress = getCycleProgress();
     const daysLeft = activeCycle ? Math.ceil((new Date(activeCycle.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
-    const actionSessionTotalSeconds = actionSession ? Math.max(1, Math.round(actionSession.durationMinutes * 60)) : 1;
-    const actionSessionElapsedSeconds = actionSession
-        ? Math.min(actionSessionTotalSeconds, Math.max(0, actionSessionTotalSeconds - Math.max(actionSessionTimeLeft, 0)))
-        : 0;
-    const actionSessionProgressPercent = actionSession
-        ? Math.min(100, Math.max(0, (actionSessionElapsedSeconds / actionSessionTotalSeconds) * 100))
-        : 0;
+    const actionSessionProgressPercent = actionSessionSnapshot?.progressPercent ?? 0;
 
     if (actionSession) {
         return (

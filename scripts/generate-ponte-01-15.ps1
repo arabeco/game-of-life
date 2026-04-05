@@ -80,10 +80,14 @@ $items = foreach ($match in $matches) {
 }
 
 foreach ($item in $items | Sort-Object Id) {
-    $backgroundZoom = if ($item.Id -ge 11) { 1.08 } else { 1.0 }
-    $footerTextBottom = if ($item.Id -ge 11) { 112 } else { 88 }
-    $footerLogoRight = if ($item.Id -ge 11) { 96 } else { 74 }
-    $footerLogoBottom = if ($item.Id -ge 11) { 88 } else { 62 }
+    $backgroundZoom = if ($item.Id -ge 11) { 1.16 } else { 1.0 }
+    $plaqueWidth = if ($item.Id -ge 11) { 552 } else { 520 }
+    $plaqueYOffset = if ($item.Id -ge 11) { 18 } else { 0 }
+    $footerTextLeft = if ($item.Id -ge 11) { 96 } else { 88 }
+    $footerTextBottom = if ($item.Id -ge 11) { 106 } else { 88 }
+    $footerLogoRight = if ($item.Id -ge 11) { 106 } else { 74 }
+    $footerLogoBottom = if ($item.Id -ge 11) { 92 } else { 62 }
+    $footerLogoSize = if ($item.Id -ge 11) { 66 } else { 72 }
 
     & $generator `
         -OutputDir $item.OutputDir `
@@ -94,9 +98,13 @@ foreach ($item in $items | Sort-Object Id) {
         -Definition $item.Definition `
         -PlaqueTone $item.PlaqueTone `
         -BackgroundZoom $backgroundZoom `
+        -PlaqueWidth $plaqueWidth `
+        -PlaqueYOffset $plaqueYOffset `
+        -FooterTextLeft $footerTextLeft `
         -FooterTextBottom $footerTextBottom `
         -FooterLogoRight $footerLogoRight `
         -FooterLogoBottom $footerLogoBottom `
+        -FooterLogoSize $footerLogoSize `
         -BrightBackground:$item.BrightBackground
 }
 

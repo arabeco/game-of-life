@@ -46,10 +46,12 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
     const [androidError, setAndroidError] = useState<string | null>(null);
     const [isPurchasingAndroid, setIsPurchasingAndroid] = useState(false);
     const [androidPurchaseResult, setAndroidPurchaseResult] = useState<NativeStoreBillingPurchaseResult | null>(null);
+    const [iosStatusMessage, setIosStatusMessage] = useState<string | null>(null);
     const runtimePlatform = getBillingRuntimePlatform();
     const shouldUseNativeStoreBilling = shouldUseStoreBilling() && !forceWebFallback;
     const billingEntry = getBillingCatalogEntry(props.internalProductId);
     const isAndroidStoreFlow = shouldUseNativeStoreBilling && runtimePlatform === 'android' && !!billingEntry;
+    const isIosStoreFlow = shouldUseNativeStoreBilling && runtimePlatform === 'ios' && !!billingEntry;
 
     const productSummary = useMemo(() => {
         if (props.kind === 'gold') {
@@ -126,6 +128,15 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
         }
     };
 
+    const handleIosPlaceholderAction = (action: 'purchase' | 'restore') => {
+        const nextMessage = action === 'purchase'
+            ? 'A compra iOS ja esta preparada nesta tela. No Mac/Xcode, vamos plugar o StoreKit exatamente neste botao.'
+            : 'A restauracao de compras iOS ja esta prevista aqui. Falta conectar o StoreKit e a conciliacao no backend.';
+
+        setIosStatusMessage(nextMessage);
+        showToast(nextMessage, 'info');
+    };
+
     if (!shouldUseNativeStoreBilling) {
         return <MercadoPagoBrick {...props} />;
     }
@@ -154,7 +165,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                             <p className="mt-2 text-sm leading-relaxed text-white">
                                 {runtimePlatform === 'android'
                                     ? 'Este build nativo ja entra na trilha da Google Play. A compra abre pela loja do aparelho, e a conciliacao do credito sera a proxima camada.'
-                                    : 'Este build nativo ja esta separado do checkout web. A proxima etapa e plugar a compra real da loja neste fluxo.'}
+                                    : 'Este fluxo iOS ja ficou separado do checkout web. A proxima etapa no Mac/Xcode e plugar o StoreKit e manter este mesmo layout.'}
                             </p>
                         </div>
 
@@ -197,6 +208,27 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                             </div>
                         )}
 
+                        {isIosStoreFlow && (
+                            <div className="rounded-2xl border border-slate-200/15 bg-slate-100/10 p-4">
+                                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-100">Estado da App Store</div>
+                                <div className="mt-2 space-y-2 text-[12px] leading-relaxed text-slate-100/90">
+                                    <p className="font-bold text-white">{productSummary}</p>
+                                    <p>O produto ja esta mapeado para o SKU da Apple e esta pronto para receber StoreKit assim que o projeto iOS for aberto no Xcode.</p>
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-100/70">
+                                        SKU iOS: {billingEntry?.appStoreProductId}
+                                    </p>
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-100/70">
+                                        Tipo: {billingEntry?.kind === 'subscription' ? 'assinatura' : 'consumivel'}
+                                    </p>
+                                    {iosStatusMessage && (
+                                        <p className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] leading-relaxed text-slate-50">
+                                            {iosStatusMessage}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {androidPurchaseResult && runtimePlatform === 'android' && (
                             <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-[11px] leading-relaxed text-amber-100">
                                 <div className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-50">Ultimo retorno da loja</div>
@@ -228,12 +260,30 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                                             : 'Comprar na Google Play'}
                                 </button>
                             )}
+                            {isIosStoreFlow && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleIosPlaceholderAction('purchase')}
+                                        className="luxe-skin-button w-full rounded-xl py-3 text-xs font-bold uppercase tracking-widest"
+                                    >
+                                        Comprar pela App Store
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleIosPlaceholderAction('restore')}
+                                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-white/10"
+                                    >
+                                        Restaurar compras Apple
+                                    </button>
+                                </>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => setForceWebFallback(true)}
                                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-white/10"
                             >
-                                Abrir fallback web neste build
+                                {runtimePlatform === 'ios' ? 'Abrir fallback web enquanto o StoreKit nao entra' : 'Abrir fallback web neste build'}
                             </button>
                             <button
                                 type="button"

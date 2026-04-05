@@ -86,6 +86,16 @@ Widget quer dado pronto.
 
 ## 4. O que seria a arquitetura certa
 
+Status atual do repo:
+
+- os primeiros builders puros ja foram extraidos para `utils/widgetSnapshots.ts`
+- hoje ja existe snapshot para:
+  - ciclo
+  - painel diario
+  - oraculo
+  - acao ativa com cronometro
+- as telas atuais ja comecaram a consumir essa camada, entao o cano para widget deixou de depender so de JSX
+
 ### Etapa 1 - Extrair builders puros
 
 Criar funcoes como:

@@ -30,7 +30,7 @@ export const getMoneyCheckoutSalesCopy = (): string => {
     }
 
     if (platform === 'ios') {
-        return 'App Store Billing em preparacao';
+        return 'App Store Billing preparado para StoreKit';
     }
 
     return 'Produto direto no Pix';
@@ -58,7 +58,7 @@ export const getMoneyCheckoutRuntimeWarning = (): string | null => {
     }
 
     if (platform === 'ios') {
-        return 'Este build iOS ainda abre o checkout web. Antes da publicacao, ele sera trocado por App Store Billing.';
+        return 'A UI de compra iOS ja esta pronta. Falta ligar StoreKit, restauracao de compras e conciliacao backend quando o projeto abrir no Xcode.';
     }
 
     return null;

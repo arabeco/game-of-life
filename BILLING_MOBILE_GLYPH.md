@@ -65,6 +65,7 @@ Ou seja:
 - o plugin nativo do Android fica em [StoreBillingPlugin.java](/C:/Users/Afonso/Downloads/GOL1.006/android/app/src/main/java/life/glyph/app/billing/StoreBillingPlugin.java)
 - a ponte JS do Android fica em [nativeBilling.ts](/C:/Users/Afonso/Downloads/GOL1.006/utils/nativeBilling.ts)
 - no Android, o gate ja consulta o produto da Google Play e tenta abrir a compra nativa
+- no iOS, a UI do gate ja esta pronta com compra e restauracao desenhadas, faltando apenas plugar o StoreKit no projeto Apple
 
 ## Proxima fase
 

@@ -9,6 +9,8 @@ param(
     [ValidateSet("Default","Abertura","Jade","Wine","Red","Petrol","Ivory","Velvet")]
     [string]$PlaqueTone = "Default",
     [float]$BackgroundZoom = 1.0,
+    [int]$PlaqueWidth = 520,
+    [int]$PlaqueYOffset = 0,
     [int]$FooterTextLeft = 88,
     [int]$FooterTextBottom = 88,
     [int]$FooterLogoRight = 74,
@@ -256,6 +258,72 @@ function Draw-ImageContainRect {
     }
 }
 
+function Add-PlaqueSheen {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [float]$X,
+        [float]$Y,
+        [float]$Width,
+        [float]$Height,
+        [System.Drawing.Color]$TopColor
+    )
+
+    $rect = [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height)
+    $sheen = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
+        $rect,
+        $TopColor,
+        (New-Color 0 $TopColor.R $TopColor.G $TopColor.B),
+        90
+    )
+
+    try {
+        $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
+        $blend.Colors = [System.Drawing.Color[]]@(
+            $TopColor,
+            (New-Color ([Math]::Max(0, [int]($TopColor.A * 0.55))) $TopColor.R $TopColor.G $TopColor.B),
+            (New-Color 0 $TopColor.R $TopColor.G $TopColor.B),
+            (New-Color 0 $TopColor.R $TopColor.G $TopColor.B)
+        )
+        $blend.Positions = [single[]](0.0, 0.16, 0.42, 1.0)
+        $sheen.InterpolationColors = $blend
+        $Graphics.FillRectangle($sheen, $rect)
+    } finally {
+        $sheen.Dispose()
+    }
+}
+
+function Add-PlaqueGrain {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [float]$X,
+        [float]$Y,
+        [float]$Width,
+        [float]$Height,
+        [int]$Seed = 37
+    )
+
+    $random = [System.Random]::new($Seed)
+
+    for ($i = 0; $i -lt 1100; $i++) {
+        $px = $X + ($random.NextDouble() * $Width)
+        $py = $Y + ($random.NextDouble() * $Height)
+        $size = if ($random.NextDouble() -gt 0.82) { 2.0 } else { 1.0 }
+        $alpha = $random.Next(4, 11)
+
+        $brush = if (($i % 2) -eq 0) {
+            [System.Drawing.SolidBrush]::new((New-Color $alpha 255 248 232))
+        } else {
+            [System.Drawing.SolidBrush]::new((New-Color $alpha 4 6 9))
+        }
+
+        try {
+            $Graphics.FillRectangle($brush, [float]$px, [float]$py, [float]$size, [float]$size)
+        } finally {
+            $brush.Dispose()
+        }
+    }
+}
+
 function Apply-PlaqueTone {
     param(
         [System.Drawing.Graphics]$Graphics,
@@ -270,225 +338,49 @@ function Apply-PlaqueTone {
 
     $rect = [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height)
     $brush = $null
+    $sheenColor = $null
     try {
         switch ($Tone) {
             "Abertura" {
-                $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    $rect,
-                    (New-Color 118 42 22 62),
-                    (New-Color 134 70 29 94),
-                    90
-                )
-                $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
-                $blend.Colors = [System.Drawing.Color[]]@(
-                    (New-Color 98 28 13 43),
-                    (New-Color 122 56 21 77),
-                    (New-Color 112 88 34 116),
-                    (New-Color 120 52 18 72),
-                    (New-Color 98 26 11 39)
-                )
-                $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
-                $brush.InterpolationColors = $blend
+                $brush = [System.Drawing.SolidBrush]::new((New-Color 122 56 24 78))
                 $Graphics.FillRectangle($brush, $rect)
-
-                $highlight = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height * 0.6),
-                    (New-Color 24 238 224 196),
-                    (New-Color 0 238 224 196),
-                    90
-                )
-                try {
-                    $Graphics.FillRectangle($highlight, $X, $Y, $Width, $Height * 0.62)
-                } finally {
-                    $highlight.Dispose()
-                }
+                $sheenColor = (New-Color 24 238 224 196)
             }
             "Jade" {
-                $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    $rect,
-                    (New-Color 116 14 62 56),
-                    (New-Color 132 24 92 82),
-                    90
-                )
-                $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
-                $blend.Colors = [System.Drawing.Color[]]@(
-                    (New-Color 98 8 42 39),
-                    (New-Color 122 17 72 64),
-                    (New-Color 108 29 105 94),
-                    (New-Color 120 18 77 69),
-                    (New-Color 96 8 39 36)
-                )
-                $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
-                $brush.InterpolationColors = $blend
+                $brush = [System.Drawing.SolidBrush]::new((New-Color 122 18 83 74))
                 $Graphics.FillRectangle($brush, $rect)
-
-                $highlight = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height * 0.6),
-                    (New-Color 24 209 233 221),
-                    (New-Color 0 209 233 221),
-                    90
-                )
-                try {
-                    $Graphics.FillRectangle($highlight, $X, $Y, $Width, $Height * 0.62)
-                } finally {
-                    $highlight.Dispose()
-                }
+                $sheenColor = (New-Color 24 209 233 221)
             }
             "Wine" {
-                $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    $rect,
-                    (New-Color 116 78 18 32),
-                    (New-Color 132 108 26 44),
-                    90
-                )
-                $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
-                $blend.Colors = [System.Drawing.Color[]]@(
-                    (New-Color 102 58 13 25),
-                    (New-Color 124 92 22 38),
-                    (New-Color 110 126 34 52),
-                    (New-Color 122 88 20 37),
-                    (New-Color 98 54 12 24)
-                )
-                $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
-                $brush.InterpolationColors = $blend
+                $brush = [System.Drawing.SolidBrush]::new((New-Color 120 86 20 36))
                 $Graphics.FillRectangle($brush, $rect)
-
-                $highlight = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height * 0.6),
-                    (New-Color 22 242 213 185),
-                    (New-Color 0 242 213 185),
-                    90
-                )
-                try {
-                    $Graphics.FillRectangle($highlight, $X, $Y, $Width, $Height * 0.62)
-                } finally {
-                    $highlight.Dispose()
-                }
+                $sheenColor = (New-Color 22 242 213 185)
             }
             "Red" {
-                $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    $rect,
-                    (New-Color 116 78 18 32),
-                    (New-Color 132 108 26 44),
-                    90
-                )
-                $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
-                $blend.Colors = [System.Drawing.Color[]]@(
-                    (New-Color 102 58 13 25),
-                    (New-Color 124 92 22 38),
-                    (New-Color 110 126 34 52),
-                    (New-Color 122 88 20 37),
-                    (New-Color 98 54 12 24)
-                )
-                $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
-                $brush.InterpolationColors = $blend
+                $brush = [System.Drawing.SolidBrush]::new((New-Color 120 86 20 36))
                 $Graphics.FillRectangle($brush, $rect)
-
-                $highlight = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height * 0.6),
-                    (New-Color 22 242 213 185),
-                    (New-Color 0 242 213 185),
-                    90
-                )
-                try {
-                    $Graphics.FillRectangle($highlight, $X, $Y, $Width, $Height * 0.62)
-                } finally {
-                    $highlight.Dispose()
-                }
+                $sheenColor = (New-Color 22 242 213 185)
             }
             "Petrol" {
-                $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    $rect,
-                    (New-Color 116 11 52 62),
-                    (New-Color 132 19 74 87),
-                    90
-                )
-                $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
-                $blend.Colors = [System.Drawing.Color[]]@(
-                    (New-Color 102 8 36 44),
-                    (New-Color 126 14 60 72),
-                    (New-Color 112 24 88 103),
-                    (New-Color 124 13 58 70),
-                    (New-Color 98 7 32 39)
-                )
-                $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
-                $brush.InterpolationColors = $blend
+                $brush = [System.Drawing.SolidBrush]::new((New-Color 122 13 64 76))
                 $Graphics.FillRectangle($brush, $rect)
-
-                $highlight = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height * 0.6),
-                    (New-Color 22 209 233 221),
-                    (New-Color 0 209 233 221),
-                    90
-                )
-                try {
-                    $Graphics.FillRectangle($highlight, $X, $Y, $Width, $Height * 0.62)
-                } finally {
-                    $highlight.Dispose()
-                }
+                $sheenColor = (New-Color 22 209 233 221)
             }
             "Ivory" {
-                $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    $rect,
-                    (New-Color 150 220 219 214),
-                    (New-Color 164 190 188 182),
-                    90
-                )
-                $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
-                $blend.Colors = [System.Drawing.Color[]]@(
-                    (New-Color 150 186 184 178),
-                    (New-Color 162 226 224 218),
-                    (New-Color 154 244 242 236),
-                    (New-Color 160 214 212 206),
-                    (New-Color 148 178 176 170)
-                )
-                $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
-                $brush.InterpolationColors = $blend
+                $brush = [System.Drawing.SolidBrush]::new((New-Color 154 214 212 206))
                 $Graphics.FillRectangle($brush, $rect)
-
-                $highlight = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height * 0.6),
-                    (New-Color 20 255 255 255),
-                    (New-Color 0 255 255 255),
-                    90
-                )
-                try {
-                    $Graphics.FillRectangle($highlight, $X, $Y, $Width, $Height * 0.62)
-                } finally {
-                    $highlight.Dispose()
-                }
+                $sheenColor = (New-Color 20 255 255 255)
             }
             "Velvet" {
-                $brush = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    $rect,
-                    (New-Color 132 22 34 72),
-                    (New-Color 146 34 52 104),
-                    90
-                )
-                $blend = [System.Drawing.Drawing2D.ColorBlend]::new()
-                $blend.Colors = [System.Drawing.Color[]]@(
-                    (New-Color 108 14 24 58),
-                    (New-Color 128 28 43 86),
-                    (New-Color 118 49 70 132),
-                    (New-Color 130 26 39 82),
-                    (New-Color 104 12 22 52)
-                )
-                $blend.Positions = [single[]](0.0, 0.24, 0.5, 0.76, 1.0)
-                $brush.InterpolationColors = $blend
+                $brush = [System.Drawing.SolidBrush]::new((New-Color 126 28 45 92))
                 $Graphics.FillRectangle($brush, $rect)
-
-                $highlight = [System.Drawing.Drawing2D.LinearGradientBrush]::new(
-                    [System.Drawing.RectangleF]::new($X, $Y, $Width, $Height * 0.6),
-                    (New-Color 22 198 218 255),
-                    (New-Color 0 198 218 255),
-                    90
-                )
-                try {
-                    $Graphics.FillRectangle($highlight, $X, $Y, $Width, $Height * 0.62)
-                } finally {
-                    $highlight.Dispose()
-                }
+                $sheenColor = (New-Color 22 198 218 255)
             }
+        }
+
+        if ($null -ne $sheenColor) {
+            Add-PlaqueSheen -Graphics $Graphics -X $X -Y $Y -Width $Width -Height $Height -TopColor $sheenColor
+            Add-PlaqueGrain -Graphics $Graphics -X $X -Y $Y -Width $Width -Height $Height
         }
     } finally {
         if ($null -ne $brush) { $brush.Dispose() }
@@ -935,10 +827,9 @@ $graphics1.FillRectangle($overlayBrush, 0, 0, $width, $height)
 Draw-SubtleGoldShimmer -Graphics $graphics1 -CenterX 300 -CenterY 680 -BandWidth 250 -BandHeight 1600 -Angle -18 -PeakAlpha 12
 Draw-SubtleGoldShimmer -Graphics $graphics1 -CenterX 840 -CenterY 520 -BandWidth 220 -BandHeight 1500 -Angle 16 -PeakAlpha 10
 
-$plaqueWidth = 520
 $plaqueHeight = [int][Math]::Round($plaqueWidth * $plaqueRatio)
 $plaqueX = [int][Math]::Round(($width - $plaqueWidth) / 2)
-$plaqueY = [int][Math]::Round(($height - $plaqueHeight) / 2)
+$plaqueY = [int][Math]::Round((($height - $plaqueHeight) / 2) + $PlaqueYOffset)
 Draw-OffsetShadow -Graphics $graphics1 -X $plaqueX -Y $plaqueY -Width $plaqueWidth -Height $plaqueHeight -OffsetX 20 -OffsetY 26 -Layers 12 -PeakAlpha 22
 Draw-SoftShadow -Graphics $graphics1 -X $plaqueX -Y $plaqueY -Width $plaqueWidth -Height $plaqueHeight
 Draw-ImageContainRect -Graphics $graphics1 -ImagePath $PlaquePath -X $plaqueX -Y $plaqueY -Width $plaqueWidth -Height $plaqueHeight

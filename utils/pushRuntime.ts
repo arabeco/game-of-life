@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import {
   PushNotifications,
   Token as CapacitorPushToken,
@@ -34,6 +35,8 @@ export interface AppPushSyncResult {
   detail?: string;
   token?: string | null;
 }
+
+export type NativePushPlatform = 'android' | 'ios';
 
 const NATIVE_PUSH_TOKEN_STORAGE_KEY = 'glyph_native_push_token';
 const NATIVE_PUSH_REMOTE_READY_STORAGE_KEY = 'glyph_native_push_remote_ready';
@@ -86,6 +89,30 @@ const getOrCreateNativePushDeviceId = (): string => {
 
 const getNativePushDeviceLabel = (platform: string): string =>
   `glyph-${platform}-native-${getOrCreateNativePushDeviceId()}`;
+
+export const getNativePushPlatform = (): NativePushPlatform => {
+  try {
+    const platform = String(Capacitor.getPlatform?.() || '').trim().toLowerCase();
+    if (platform === 'ios') return 'ios';
+  } catch (_error) {
+    // noop
+  }
+
+  return 'android';
+};
+
+export const getNativePushProviderLabel = (): string =>
+  getNativePushPlatform() === 'ios' ? 'APNs / Apple' : 'FCM / Google';
+
+export const getAppPushSetupHint = (): string => {
+  if (!isCapacitorNativeRuntime()) {
+    return 'No navegador, o push continua preso ao service worker e ao browser do usuario.';
+  }
+
+  return getNativePushPlatform() === 'ios'
+    ? 'No iPhone, este toggle vai seguir por APNs. Quando o projeto abrir no Xcode, vamos ligar capability, credencial Apple e backend sem trocar esta tela.'
+    : 'No Android, este toggle segue por FCM. O aparelho registra o token nativo e o backend faz a entrega remota quando a trilha Firebase esta pronta.';
+};
 
 const setStoredNativePushRemoteReady = (ready: boolean) => {
   if (typeof window === 'undefined') return;
@@ -225,6 +252,7 @@ export const getAppPushSupport = () => {
   if (isCapacitorNativeRuntime()) {
     return {
       isNative: true,
+      nativePlatform: getNativePushPlatform(),
       supported: true,
       configured: true,
       remoteDeliveryReady: false,
@@ -234,6 +262,7 @@ export const getAppPushSupport = () => {
   const webSupport = getRemoteWebPushSupport();
   return {
     isNative: false,
+    nativePlatform: null,
     supported: webSupport.supported,
     configured: webSupport.configured,
     remoteDeliveryReady: webSupport.supported && webSupport.configured,
@@ -309,6 +338,7 @@ export const syncAppPushRegistration = async (): Promise<AppPushSyncResult> => {
   }
 
   try {
+    const nativePlatform = getNativePushPlatform();
     const token = await waitForNativePushRegistration();
     const nativeToken = String(token?.value || '').trim();
 
@@ -330,8 +360,8 @@ export const syncAppPushRegistration = async (): Promise<AppPushSyncResult> => {
     const backendRegistration = await invokeAppPushFunction(accessToken, {
       action: 'register_native',
       token: nativeToken,
-      platform: 'android',
-      deviceLabel: getNativePushDeviceLabel('android'),
+      platform: nativePlatform,
+      deviceLabel: getNativePushDeviceLabel(nativePlatform),
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
     });
 
@@ -361,8 +391,8 @@ export const syncAppPushRegistration = async (): Promise<AppPushSyncResult> => {
       remoteDeliveryReady,
       token: nativeToken,
       detail: remoteDeliveryReady
-        ? 'FCM token acquired and backend delivery is ready.'
-        : 'FCM token acquired locally. Backend delivery still depends on Firebase server configuration.',
+        ? `${getNativePushProviderLabel()} token acquired and backend delivery is ready.`
+        : `${getNativePushProviderLabel()} token acquired locally. Backend delivery still depends on store/provider configuration.`,
     };
   } catch (error) {
     return {
@@ -388,14 +418,15 @@ export const disableAppPushRegistration = async (): Promise<AppPushSyncResult> =
 
   const currentToken = getStoredNativePushToken();
   const accessToken = await getCurrentAccessToken();
+  const nativePlatform = getNativePushPlatform();
 
   if (currentToken) {
     try {
       await invokeAppPushFunction(accessToken, {
         action: 'unregister_native',
         token: currentToken,
-        platform: 'android',
-        deviceLabel: getNativePushDeviceLabel('android'),
+        platform: nativePlatform,
+        deviceLabel: getNativePushDeviceLabel(nativePlatform),
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
       });
     } catch (_error) {

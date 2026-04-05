@@ -2,42 +2,15 @@
 import React, { useState, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon, ZapIcon } from './Icons';
-import { ScheduledTask, Action, DailyCommitment } from '../types';
+import { ScheduledTask, Action } from '../types';
 import { shareElementWithFeedback } from './Share';
-import { PoolAction } from './PoolAction';
-import { buildDailyArenaFocus, buildSitrepStockOptions } from '../utils/coreLoopUtils.js';
 import { getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
-import { hasScheduledTime, isClanQuestAction } from '../utils/taskDomain.js';
-import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
+import { hasScheduledTime } from '../utils/taskDomain.js';
 import { getExpBoostHoursRemaining, getExpBoostLabel, hasActiveExpBoost } from '../utils/expBoostAccess';
+import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
+import { buildCommitmentStatsSnapshot, buildDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 import './core-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
-
-const buildCommitmentStats = (tasks: ScheduledTask[], dailyCommitment: DailyCommitment, actions: Action[]) => {
-    const actionTypeById = new Map(actions.map(action => [action.id, action.actionType]));
-    const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && taskMatchesOperationalDate(t, dailyCommitment.date));
-
-    const tasksWithStatus = committedTasks.map(task => {
-        return {
-            task,
-            isCompleted: task.completed
-        };
-    });
-
-    const scoredTasksWithStatus = tasksWithStatus.filter(({ task }) => actionTypeById.get(task.actionId) !== 'Livre');
-    const completedAllCount = tasksWithStatus.filter(t => t.isCompleted).length;
-    const completedCount = scoredTasksWithStatus.filter(t => t.isCompleted).length;
-
-    return {
-        committedTasks,
-        tasksWithStatus,
-        scoredTasksWithStatus,
-        completedAllCount,
-        totalAllCount: committedTasks.length,
-        completedCount,
-        totalCount: scoredTasksWithStatus.length,
-    };
-};
 
 const CycleHeader: React.FC = () => {
     const { activeCycle, dailyCommitment } = useGame();
@@ -88,7 +61,8 @@ const BattleTaskItem: React.FC<{
     const { getActionBackgroundStyle } = useGame();
     const [isHolding, setIsHolding] = useState(false);
     const pressTimer = React.useRef<NodeJS.Timeout | null>(null);
-
+    const activeCycle = { startDate: task.date, endDate: task.date };
+    const cycleTiming = { inclusiveLabel: '' };
     if (!action) return null;
 
     const handlePressStart = () => {
@@ -140,7 +114,7 @@ const BattleTaskItem: React.FC<{
                     {isFreeAction ? <div className="free-action-complete-dot" /> : <CheckIcon className="w-5 h-5 accent-text drop-shadow-[0_0_5px_rgba(0,0,0,1)]" />}
                 </div>
             )}
-            <p className="text-[9px] font-semibold text-gray-400">
+            <p className="hidden text-[9px] font-semibold text-gray-400">
                 {formatDate(activeCycle.startDate)} → {formatDate(activeCycle.endDate)} · {cycleTiming.inclusiveLabel}
             </p>
         </div>
@@ -156,16 +130,28 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     const progressTrackClass = 'sitrep-neutral-track';
 
     const arenas = getArenas();
-    const isClanQuestActionId = (actionId: string) => isClanQuestAction(actionId, actions, arenas);
 
     const getActionById = (id: string) => actions.find(a => a.id === id);
 
-    const commitmentStats = useMemo(() => buildCommitmentStats(tasks, dailyCommitment, actions), [tasks, dailyCommitment, actions]);
+    const dailySnapshot = useMemo(() => buildDailyWidgetSnapshot({
+        activeCycle,
+        dailyCommitment,
+        tasks,
+        actions,
+        arenas,
+        checklistItems,
+        taskPool,
+    }), [activeCycle, actions, arenas, checklistItems, dailyCommitment, taskPool, tasks]);
 
-    const dailyArenaFocus = useMemo(() => buildDailyArenaFocus(commitmentStats.scoredTasksWithStatus, actions, arenas), [commitmentStats.scoredTasksWithStatus, actions, arenas]);
+    const commitmentStats = useMemo(
+        () => dailySnapshot.commitmentStats ?? buildCommitmentStatsSnapshot(tasks, dailyCommitment, actions),
+        [actions, dailySnapshot.commitmentStats, dailyCommitment, tasks]
+    );
+
+    const dailyArenaFocus = dailySnapshot.focusArena;
 
     // --- Lógica de Opções do SITREP baseada no taskPool (Alinhada com Planner/Bay Area) ---
-    const groupedAvailableOptions = useMemo(() => buildSitrepStockOptions(actions, taskPool, tasks, dailyCommitment), [actions, dailyCommitment, taskPool, tasks]);
+    const groupedAvailableOptions = dailySnapshot.availableGroups;
 
     const handleCommitAction = async (actionId: string) => {
         const today = dailyCommitment.date;
@@ -294,7 +280,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     );
 
     const renderBattle = () => {
-        const progress = commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 100;
+        const progress = dailySnapshot.progressPercent;
         const isFutureBattle = dailyCommitment.date > getOperationalDateString();
 
         const [y, m, d] = dailyCommitment.date.split('-').map(Number);
@@ -439,8 +425,8 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         let verdict = "Guerreiro. Mantenha a disciplina.";
         if (score === 100) verdict = "Soberano. A vitória foi absoluta.";
         else if (score < 50) verdict = "A Batalha foi dura. Recupere e avance.";
-        const checklistDone = checklistItems.filter(i => i.completed).length;
-        const checklistTotal = checklistItems.length;
+        const checklistDone = dailySnapshot.checklistCompleted;
+        const checklistTotal = dailySnapshot.checklistTotal;
 
         return (
             <>
@@ -532,21 +518,9 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     }
 
     const renderNoCycle = () => {
-        const today = getOperationalDateString();
-        const todaysTasks = tasks.filter(t =>
-            taskMatchesOperationalDate(t, today) &&
-            (hasScheduledTime(t) || t.completed)
-        );
-        const completedTasks = todaysTasks.filter(t => t.completed);
-
-        const checklistCompleted = checklistItems.filter(i => i.completed).length;
-        const checklistTotal = checklistItems.length;
-
-        const expFromActions = completedTasks.reduce((sum, task) => {
-            const action = getActionById(task.actionId);
-            const duration = Number.isFinite(task.duration) ? task.duration : (action?.duration || 0);
-            return sum + duration;
-        }, 0);
+        const checklistCompleted = dailySnapshot.checklistCompleted;
+        const checklistTotal = dailySnapshot.checklistTotal;
+        const expFromActions = dailySnapshot.potentialExpFromActions;
 
         return (
             <div className="space-y-6 py-4">
@@ -561,7 +535,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 <div className="grid grid-cols-2 gap-3 px-2">
                     <div className={`${softPanelClass} p-3 rounded-xl text-center space-y-1`}>
                         <p className="text-xs text-gray-400 uppercase">Tarefas</p>
-                        <p className="text-2xl arena-title-text text-white luxe-title-shadow leading-tight">{completedTasks.length}/{todaysTasks.length}</p>
+                        <p className="text-2xl arena-title-text text-white luxe-title-shadow leading-tight">{dailySnapshot.freeModeCompletedCount}/{dailySnapshot.freeModeTotalCount}</p>
                     </div>
                     <div className={`${softPanelClass} p-3 rounded-xl text-center space-y-1`}>
                         <p className="text-xs text-gray-400 uppercase">Checklist</p>

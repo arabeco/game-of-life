@@ -7,7 +7,10 @@ import { XIcon, CheckIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
 import {
     disableAppPushRegistration,
+    getAppPushSetupHint,
     getAppPushPermission,
+    getNativePushPlatform,
+    getNativePushProviderLabel,
     hasAppPushRemoteDeliveryReady,
     getAppPushSupport,
     requestAppPushPermission,
@@ -15,6 +18,7 @@ import {
     type AppPushPermission,
     type AppPushSyncResult,
 } from '../utils/pushRuntime';
+import { buildOracleWidgetSnapshot } from '../utils/widgetSnapshots';
 
 interface OracleSettingsModalProps {
     onClose: () => void;
@@ -82,6 +86,9 @@ const MANUAL_LIBRARY_CATEGORIES: { id: OracleCategory; label: string; icon: stri
 ];
 
 const getRemotePushFailureMessage = (result: AppPushSyncResult): string => {
+    const nativePlatform = getNativePushPlatform();
+    const providerLabel = getNativePushProviderLabel();
+
     switch (result.status) {
         case 'not_signed_in':
             return 'Push local ativado, mas a sessao expirou antes do registro remoto.';
@@ -100,11 +107,11 @@ const getRemotePushFailureMessage = (result: AppPushSyncResult): string => {
         case 'native_permission_prompt':
             return 'O aparelho ainda nao liberou a permissao de push.';
         case 'native_register_failed':
-            return `O Android nao conseguiu registrar o push nativo${result.detail ? `: ${result.detail}` : '.'}`;
+            return `${nativePlatform === 'ios' ? 'O iPhone' : 'O Android'} nao conseguiu registrar o push nativo${result.detail ? `: ${result.detail}` : '.'}`;
         case 'native_backend_register_failed':
             return `O aparelho gerou o token nativo, mas o backend ainda nao conseguiu salvar esse aparelho${result.detail ? `: ${result.detail}` : '.'}`;
         case 'native_remote_pending':
-            return 'O aparelho ja gerou o token nativo. Falta concluir a trilha Firebase/backend para o push remoto chegar com o app fechado.';
+            return `O aparelho ja gerou o token nativo. Falta concluir a trilha ${providerLabel}/backend para o push remoto chegar com o app fechado.`;
         case 'native_ok':
             return 'Push nativo do aparelho pronto para entrega remota.';
         default:
@@ -154,7 +161,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     onOpenChat,
     variant = 'preferences',
 }) => {
-    const { oraclePreferences, updateOraclePreferences, userProfile, showToast } = useGame();
+    const { oraclePreferences, oracleMessages, updateOraclePreferences, userProfile, showToast } = useGame();
     const [activeTab, setActiveTab] = useState<SettingsTab>('modos');
     const [pushPermission, setPushPermission] = useState<AppPushPermission>('default');
     const [pushRemoteReady, setPushRemoteReady] = useState(false);
@@ -163,6 +170,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
     const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
     const activeModeConfig = ORACLE_MODES[oraclePreferences.activeMode] || ORACLE_MODES.neutro;
+    const oracleSnapshot = buildOracleWidgetSnapshot({ oraclePreferences, oracleMessages });
     const pushSupport = getAppPushSupport();
 
     useEffect(() => {
@@ -291,6 +299,9 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                 </span>
                 <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-300">
                     Push {normalizeOracleCopy(activeModeConfig.pushProfile)}
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-300">
+                    Feed {oracleSnapshot.unreadCount} nao lidos
                 </span>
             </div>
         </div>
@@ -487,6 +498,9 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                             remoteReady: pushRemoteReady,
                                             permission: pushPermission,
                                         })}
+                                    </div>
+                                    <div className="ml-7 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[10px] leading-relaxed text-gray-400">
+                                        {getAppPushSetupHint()}
                                     </div>
                                 </div>
 

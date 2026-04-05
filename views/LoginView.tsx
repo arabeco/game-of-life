@@ -19,6 +19,11 @@ import { Browser } from '@capacitor/browser';
 import { signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getGoogleAuthRedirectUrl } from '../utils/nativeAuth';
 import { isCapacitorNativeRuntime } from '../utils/runtimePlatform';
+import {
+    getAppleSignInPendingMessage,
+    isAppleSignInConfigured,
+    launchAppleSignIn,
+} from '../utils/appleAuth';
 import './login-ui.css';
 
 const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
@@ -544,7 +549,31 @@ export const LoginView: React.FC = () => {
 
     const handleAppleLogin = () => {
         setAppleToastVisible(false);
-        window.setTimeout(() => setAppleToastVisible(true), 10);
+        setLoading(true);
+        setError(null);
+        setMessage(null);
+        setGoldenInviteGuide(null);
+
+        void (async () => {
+            try {
+                const launched = await launchAppleSignIn();
+                if (!launched) {
+                    setMessage(getAppleSignInPendingMessage());
+                    window.setTimeout(() => setAppleToastVisible(true), 10);
+                    return;
+                }
+
+                if (!isCapacitorNativeRuntime()) {
+                    return;
+                }
+
+                setMessage('Abrindo Sign in with Apple neste aparelho...');
+            } catch (error: any) {
+                setError(error?.message || 'Nao foi possivel abrir o fluxo do Apple Sign-In agora.');
+            } finally {
+                setLoading(false);
+            }
+        })();
     };
 
     const handlePrimarySubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -721,6 +750,7 @@ export const LoginView: React.FC = () => {
                                 onClick={handleAppleLogin}
                                 disabled={loading}
                                 className="login-apple-button"
+                                title={isAppleSignInConfigured() ? 'Abrir Sign in with Apple' : 'Sign in with Apple preparado para configuracao posterior'}
                             >
                                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                     <path d="M16.365 1.43c0 1.14-.466 2.25-1.173 3.037-.765.85-2.02 1.506-3.098 1.422-.13-1.048.38-2.155 1.11-2.945.802-.87 2.154-1.495 3.16-1.514zM20.908 17.16c-.545 1.223-.805 1.77-1.507 2.853-.98 1.52-2.363 3.414-4.083 3.428-1.53.014-1.924-.998-4.001-.985-2.077.01-2.51 1.004-4.04.99-1.72-.016-3.03-1.726-4.012-3.244C.52 16.384-.748 9.36 2.036 5.063 3.391 2.972 5.535 1.75 7.55 1.75c2.056 0 3.352 1.009 5.052 1.009 1.65 0 2.654-1.01 5.036-1.01 1.794 0 3.695.977 5.046 2.66-4.44 2.435-3.72 8.8-.776 10.75z" />
@@ -913,7 +943,7 @@ export const LoginView: React.FC = () => {
         </div>
             {appleToastVisible && (
                 <GoldenToast
-                    message="Sign in with Apple ainda nao implementado."
+                    message={getAppleSignInPendingMessage()}
                     type="info"
                     duration={3200}
                     onClose={() => setAppleToastVisible(false)}

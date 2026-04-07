@@ -250,7 +250,9 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                                 className={`w-full flex items-center justify-between text-left p-2 rounded-lg transition-colors border ${isFreeAction ? 'free-action-shell free-action-outline' : ''} ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : isFreeAction ? 'hover:border-white/35 hover:bg-white/[0.02]' : `${softPanelClass} hover:bg-white/[0.04]`}`}
                             >
                                 <span className={`text-sm ${isStockOut ? 'text-gray-500' : isFreeAction ? 'text-slate-100' : ''}`}><PlusIcon className="w-4 h-4 inline-block mr-2" />{group.action.name}</span>
-                                <span className={`text-xs font-mono px-1.5 rounded ${isFreeAction ? 'free-action-chip text-[rgba(234,239,246,0.92)]' : isStockOut ? 'bg-gray-800 text-gray-600' : 'bg-gray-700 text-white'}`}>x{group.count}</span>
+                                {!isFreeAction && (
+                                    <span className={`text-xs font-mono px-1.5 rounded ${isStockOut ? 'bg-gray-800 text-gray-600' : 'bg-gray-700 text-white'}`}>x{group.count}</span>
+                                )}
                             </button>
                         );
                     })}

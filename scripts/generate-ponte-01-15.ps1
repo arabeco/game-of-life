@@ -80,14 +80,14 @@ $items = foreach ($match in $matches) {
 }
 
 foreach ($item in $items | Sort-Object Id) {
-    $backgroundZoom = if ($item.Id -ge 11) { 1.16 } else { 1.0 }
-    $plaqueWidth = if ($item.Id -ge 11) { 552 } else { 520 }
-    $plaqueYOffset = if ($item.Id -ge 11) { 18 } else { 0 }
-    $footerTextLeft = if ($item.Id -ge 11) { 96 } else { 88 }
-    $footerTextBottom = if ($item.Id -ge 11) { 106 } else { 88 }
-    $footerLogoRight = if ($item.Id -ge 11) { 106 } else { 74 }
-    $footerLogoBottom = if ($item.Id -ge 11) { 92 } else { 62 }
-    $footerLogoSize = if ($item.Id -ge 11) { 66 } else { 72 }
+    $backgroundZoom = if ($item.Id -eq 11) { 1.18 } else { 1.0 }
+    $plaqueWidth = 520
+    $plaqueYOffset = 0
+    $footerTextLeft = 88
+    $footerTextBottom = 88
+    $footerLogoRight = 74
+    $footerLogoBottom = 62
+    $footerLogoSize = 72
 
     & $generator `
         -OutputDir $item.OutputDir `

@@ -160,12 +160,12 @@ function Draw-SingleLineFitText {
         [float]$MinScale = 0.5
     )
 
-    $format = [System.Drawing.StringFormat]::new()
-    $createdFont = $null
+        $format = [System.Drawing.StringFormat]::new()
+        $createdFont = $null
     try {
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $format.Trimming = [System.Drawing.StringTrimming]::EllipsisCharacter
+        $format.Trimming = [System.Drawing.StringTrimming]::None
         $format.FormatFlags = [System.Drawing.StringFormatFlags]::NoWrap
 
         $paddingX = [float][Math]::Max(12, [Math]::Ceiling($Font.Size * 0.12))
@@ -179,7 +179,7 @@ function Draw-SingleLineFitText {
 
         $drawFont = $Font
         $fontFound = $false
-        $minSize = [float][Math]::Max(18, [Math]::Floor($Font.Size * $MinScale))
+        $minSize = [float][Math]::Max(12, [Math]::Floor($Font.Size * $MinScale))
 
         for ($size = [float]$Font.Size; $size -ge $minSize; $size -= 1.0) {
             if ([Math]::Abs($size - $Font.Size) -lt 0.05) {

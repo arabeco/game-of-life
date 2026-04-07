@@ -1024,6 +1024,12 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     const displayAction = mode === 'view' ? action : editableAction;
     const displayDifficulty = normalizeActionDifficulty(displayAction?.difficulty);
+    const displayActionTypeLabel = displayAction?.actionType === 'Livre'
+        ? 'Livre (sem alvo)'
+        : (displayAction?.actionType || 'Ação Recorrente');
+    const displayDifficultyLabel = displayDifficulty === 0
+        ? 'LAZER • sem EXP'
+        : null;
     const briefingPages = React.useMemo(() => paginateBriefing(displayAction?.briefing), [displayAction?.briefing]);
     const briefingPreviewText = React.useMemo(() => {
         const previewPage = briefingPages[0] || displayAction?.briefing || '';
@@ -1033,7 +1039,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     // Merge task duration if editing a specific task
     const effectiveDuration = hasTaskInstanceContext && (mode === 'view' || isEditingTaskInstance) ?currentTask.duration : (displayAction?.duration || 60);
 
-    const difficultyLabels = ['DESCANSO', 'LEVE', 'MÉDIA', 'ALTA'];
+    const difficultyLabels = ['LAZER', 'LEVE', 'MÉDIA', 'ALTA'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco', 'Livre'];
@@ -1373,7 +1379,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                         <div className="grid grid-cols-2 gap-3 w-full">
                                             <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Tipo</div>
-                                                <div className="text-xs font-bold accent-text truncate text-center w-full">{displayAction.actionType}</div>
+                                                <div className="text-xs font-bold accent-text truncate text-center w-full">{displayActionTypeLabel}</div>
                                             </div>
                                             <div className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-3 backdrop-blur-sm flex flex-col items-center justify-center min-h-[60px]">
                                                 <div className="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-1">Duração</div>
@@ -1395,7 +1401,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             ? 'text-[var(--skin-accent-color)]'
                                                             : 'text-amber-300'
                                                     }`}>
-                                                    {difficultyLabels[displayDifficulty]}
+                                                    {displayDifficultyLabel || difficultyLabels[displayDifficulty]}
                                                 </div>
                                             </div>
                                         </div>
@@ -1577,9 +1583,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             <div>
                                                 <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de ação</label>
                                                 <button id="onboarding-action-type-button" onClick={() => canEditAuthorialContent && setIsActionTypePickerOpen(true)} disabled={!canEditAuthorialContent} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5 disabled:cursor-not-allowed disabled:opacity-60">
-                                                    <span className="text-sm">{editableAction.actionType || 'Ação Recorrente'}</span>
+                                                    <span className="text-sm">{(editableAction.actionType || 'Ação Recorrente') === 'Livre' ? 'Livre (sem alvo)' : (editableAction.actionType || 'Ação Recorrente')}</span>
                                                     <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                 </button>
+                                                {editableAction.actionType === 'Livre' && (
+                                                    <p className="mt-2 px-1 text-[11px] leading-relaxed text-white/60">
+                                                        Acao Livre nao pede alvo numerico. Ela fica disponivel para voce registrar quando quiser, sem consumir estoque fixo no Planner.
+                                                    </p>
+                                                )}
                                             </div>
                                         </ActionSectionCard>
 
@@ -1624,6 +1635,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 unit={difficultyLabels[normalizeActionDifficulty(editableAction.difficulty)]}
                                                 onChange={val => setEditableAction(p => ({ ...p, difficulty: normalizeActionDifficulty(val) }))}
                                             />
+                                            {normalizeActionDifficulty(editableAction.difficulty) === 0 && (
+                                                <p className="px-1 text-[11px] leading-relaxed text-white/60">
+                                                    Lazer registra essa acao, mas nao rende EXP. Serve para descanso, diversao e atividades que voce quer acompanhar sem gamificar.
+                                                </p>
+                                            )}
                                         </ActionSectionCard>
 
                                         {/* Scheduling */}

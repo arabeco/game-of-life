@@ -126,7 +126,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
         >
             <EmojiGlyph symbol={action.icon || '\u{1F4DD}'} size="action" className={`${isHolding ?'scale-110' : ''} transition-transform text-white ${isFreeAction ?'drop-shadow-[0_0_8px_rgba(191,205,223,0.16)]' : ''}`.trim()} />
 
-            {!clanProgressDisplay && (isUnlimited || count >= 1) && (
+            {!clanProgressDisplay && !isFreeAction && (isUnlimited || count >= 1) && (
                 <div className={`absolute -top-1 -right-1 text-[9px] font-black rounded-full min-w-[14px] h-[14px] px-0.5 flex items-center justify-center shadow-[0_0_10px_rgba(0,0,0,0.5)] z-20 ${isFreeAction ?'free-action-chip text-[rgba(234,239,246,0.92)]' : `${count <= 0 ?'bg-gray-500/80' : 'bg-[var(--bronze)]'} text-black border border-black/20`}`}>
                     {isUnlimited ?'∞' : `${count}`}
                 </div>

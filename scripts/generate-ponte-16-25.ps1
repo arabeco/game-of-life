@@ -87,14 +87,14 @@ foreach ($item in $items | Sort-Object Id) {
         "-Definition", $item.Definition,
         "-SheetTitle", ("Ponte {0} | {1}" -f $item.Id.ToString("00"), $item.Word),
         "-PlaqueTone", $item.PlaqueTone,
-        "-BackgroundZoom", "1.12",
-        "-PlaqueWidth", "542",
-        "-PlaqueYOffset", "14",
-        "-FooterTextLeft", "96",
-        "-FooterTextBottom", "106",
-        "-FooterLogoRight", "106",
-        "-FooterLogoBottom", "92",
-        "-FooterLogoSize", "66"
+        "-BackgroundZoom", "1.0",
+        "-PlaqueWidth", "520",
+        "-PlaqueYOffset", "0",
+        "-FooterTextLeft", "88",
+        "-FooterTextBottom", "88",
+        "-FooterLogoRight", "74",
+        "-FooterLogoBottom", "62",
+        "-FooterLogoSize", "72"
     )
 
     if ($item.BrightBackground) {

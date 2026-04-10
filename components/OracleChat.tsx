@@ -309,7 +309,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const speechRef = useRef<any>(null);
-  const sendMessageRef = useRef<() => void>(() => {});
+  const sendMessageRef = useRef<(overrideInput?: string) => void>(() => {});
 
   const [currentMode, setCurrentMode] = useState<OracleMode>(oraclePreferences?.activeMode || 'neutro');
   const isPremiumUser = useMemo(() => hasPremiumAccess(userProfile), [userProfile]);
@@ -427,7 +427,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       const transcript = event?.results?.[0]?.[0]?.transcript?.trim();
       if (!transcript) return;
       setInput(transcript);
-      sendMessageRef.current();
+      sendMessageRef.current(transcript);
     };
 
     speechRef.current = recognition;
@@ -909,7 +909,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   };
 
-  sendMessageRef.current = () => handleSendMessage();
+  sendMessageRef.current = (overrideInput?: string) => handleSendMessage(overrideInput);
 
   const handleVoiceToggle = () => {
     if (!isSpeechAvailable) {

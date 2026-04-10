@@ -90,7 +90,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         return (
             <div className={`flex flex-col items-center justify-center bg-black text-gray-400 ${className}`}>
                 <div className="w-16 h-16 border-4 border-gray-600 border-t-white rounded-full animate-spin mb-4" />
-                <p className="text-sm font-mono animate-pulse">{placeholderLabel}</p>
+                {placeholderLabel ? <p className="text-sm font-mono animate-pulse">{placeholderLabel}</p> : null}
             </div>
         );
     }
@@ -100,7 +100,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {!isReady && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.07),transparent_30%),linear-gradient(180deg,#050505_0%,#000000_100%)] text-gray-300">
                     <div className="mb-4 h-14 w-14 animate-pulse rounded-full border border-white/10 bg-[radial-gradient(circle,rgba(255,215,0,0.18),transparent_72%)] shadow-[0_0_28px_rgba(255,215,0,0.18)]" />
-                    <p className="text-[11px] font-black uppercase tracking-[0.34em] text-white/50">{placeholderLabel}</p>
+                    {placeholderLabel ? (
+                        <p className="text-[11px] font-black uppercase tracking-[0.34em] text-white/50">{placeholderLabel}</p>
+                    ) : null}
                 </div>
             )}
             <video

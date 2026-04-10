@@ -327,7 +327,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const isLockedFromSource = isSeasonLockedAction;
     const canEditAuthorialContent = !disableAuthoring && !isInstalledCampaignAction && !isSeasonLockedAction;
     const canEditExecutionSettings = !isSeasonLockedAction;
-    const isDetachedCollaborativeArena = collaborativeLinkedArena && !currentArena;
+    const isDetachedCollaborativeArena = collaborativeLinkedArena;
     const collaborativePersistUserId = collaborativeOwnerUserId || null;
     const effectiveTaskPool = isDetachedCollaborativeArena ? collaborativeArenaTasks : tasks;
     const basePendingTask = React.useMemo(() => {
@@ -700,7 +700,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                 onClose();
             } catch (err) {
                 console.error("Error executing save:", err);
-                showToast('Não foi possível salvar a ação.', 'error');
+                const rawMessage = String((err as any)?.message || (err as any)?.details || '');
+                const permissionLikeError = /COLLABORATIVE_OWNER_REQUIRED|row-level|rls|policy|permission|denied|not authorized|violates/i.test(rawMessage);
+                showToast(
+                    isDetachedCollaborativeArena && permissionLikeError
+                        ? 'Mentoria sem permissão no banco para salvar essa ação. Rode as migrations de vínculo.'
+                        : 'Não foi possível salvar a ação.',
+                    'error'
+                );
             }
         };
 
@@ -812,7 +819,14 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                 return;
             } catch (error) {
                 console.error('Error deleting collaborative linked action:', error);
-                showToast('Não foi possível excluir a ação.', 'error');
+                const rawMessage = String((error as any)?.message || (error as any)?.details || '');
+                const permissionLikeError = /COLLABORATIVE_OWNER_REQUIRED|row-level|rls|policy|permission|denied|not authorized|violates/i.test(rawMessage);
+                showToast(
+                    permissionLikeError
+                        ? 'Mentoria sem permissão no banco para excluir essa ação. Rode as migrations de vínculo.'
+                        : 'Não foi possível excluir a ação.',
+                    'error'
+                );
                 return;
             }
         }

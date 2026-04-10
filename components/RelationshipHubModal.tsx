@@ -272,8 +272,9 @@ const MentorshipCampaignBoardCard: React.FC<{
 
     return (
         <div className={className}>
-            <button
-                type="button"
+            <div
+                role="button"
+                tabIndex={0}
                 onClick={onClick}
                 onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
@@ -365,7 +366,7 @@ const MentorshipCampaignBoardCard: React.FC<{
                         </span>
                     </div>
                 </div>
-            </button>
+            </div>
         </div>
     );
 };

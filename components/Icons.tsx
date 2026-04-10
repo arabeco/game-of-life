@@ -154,3 +154,11 @@ export const ArrowRightIcon: React.FC<{ className?: string }> = ({ className }) 
 export const PlayIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><polygon points="5 3 19 12 5 21 5 3"></polygon></IconWrapper>);
 export const PauseIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></IconWrapper>);
 export const ImageIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></IconWrapper>);
+export const MicIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <IconWrapper className={className}>
+        <path d="M12 1a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M5 11a7 7 0 0 0 14 0"></path>
+        <line x1="12" y1="18" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+    </IconWrapper>
+);

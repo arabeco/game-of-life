@@ -762,6 +762,12 @@ export const ArenasView: React.FC = () => {
         setDragOverId(null);
         setDragOverSide(null);
         setDraggedId(null);
+        dragPositionRef.current = null;
+        dragOverRef.current = { id: null, side: null };
+        if (dragRafRef.current !== null) {
+            window.cancelAnimationFrame(dragRafRef.current);
+            dragRafRef.current = null;
+        }
     };
 
     // Unified Interaction State (Mouse & Touch)
@@ -778,6 +784,33 @@ export const ArenasView: React.FC = () => {
     const touchHoldTimeoutRef = useRef<number | null>(null);
     
     const [dragPosition, setDragPosition] = useState<{x: number, y: number} | null>(null);
+    const dragPositionRef = useRef<{x: number, y: number} | null>(null);
+    const dragRafRef = useRef<number | null>(null);
+    const dragOverRef = useRef<{ id: string | null; side: 'left' | 'right' | null }>({ id: null, side: null });
+    const dragOverIdRef = useRef<string | null>(null);
+    const dragOverSideRef = useRef<'left' | 'right' | null>(null);
+
+    useEffect(() => {
+        dragOverIdRef.current = dragOverId;
+    }, [dragOverId]);
+
+    useEffect(() => {
+        dragOverSideRef.current = dragOverSide;
+    }, [dragOverSide]);
+
+    const scheduleDragRender = () => {
+        if (dragRafRef.current !== null) return;
+        dragRafRef.current = window.requestAnimationFrame(() => {
+            dragRafRef.current = null;
+            setDragPosition(dragPositionRef.current);
+            if (dragOverIdRef.current !== dragOverRef.current.id) {
+                setDragOverId(dragOverRef.current.id);
+            }
+            if (dragOverSideRef.current !== dragOverRef.current.side) {
+                setDragOverSide(dragOverRef.current.side);
+            }
+        });
+    };
 
     const handleInteractionStart = (e: React.MouseEvent | React.TouchEvent, id: string, type: 'arena' | 'campaign') => {
         if (isSelectionMode && type === 'arena' && allCampaignArenaIds.includes(id)) return;
@@ -855,7 +888,8 @@ export const ArenasView: React.FC = () => {
         if (currentDraggedId) {
             if (e.cancelable && e.type !== 'mousemove') e.preventDefault(); // Prevent scroll on touch, allow mouse move
             
-            setDragPosition({ x: clientX, y: clientY });
+            dragPositionRef.current = { x: clientX, y: clientY };
+            scheduleDragRender();
 
             // Find drop target manually via elementFromPoint
             const targetEl = document.elementFromPoint(clientX, clientY);
@@ -872,11 +906,12 @@ export const ArenasView: React.FC = () => {
                     const side = isVerticalListTarget
                         ? ((clientY - rect.top) > rect.height / 2 ? 'right' : 'left')
                         : ((clientX - rect.left) > rect.width / 2 ? 'right' : 'left');
-                    setDragOverId(dropId);
-                    setDragOverSide(side);
+                    dragOverRef.current = { id: dropId, side };
+                    scheduleDragRender();
                 }
             } else {
-                setDragOverId(null);
+                dragOverRef.current = { id: null, side: null };
+                scheduleDragRender();
             }
         }
     };
@@ -891,7 +926,9 @@ export const ArenasView: React.FC = () => {
 
         if (!activeDraggedId || !interactionRef.current) {
             interactionRef.current = null;
-            setDragPosition(null);
+            dragPositionRef.current = null;
+            dragOverRef.current = { id: null, side: null };
+            scheduleDragRender();
             return;
         }
 
@@ -940,6 +977,12 @@ export const ArenasView: React.FC = () => {
         setDraggedId(null);
         setDragOverId(null);
         setDragPosition(null);
+        dragPositionRef.current = null;
+        dragOverRef.current = { id: null, side: null };
+        if (dragRafRef.current !== null) {
+            window.cancelAnimationFrame(dragRafRef.current);
+            dragRafRef.current = null;
+        }
         interactionRef.current = null;
     };
 
@@ -993,15 +1036,15 @@ export const ArenasView: React.FC = () => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const x = e.clientX - rect.left;
         const side = x > rect.width / 2 ? 'right' : 'left';
-        
-        setDragOverId(id);
-        setDragOverSide(side);
+
+        dragOverRef.current = { id, side };
+        scheduleDragRender();
     };
 
     const handleDragLeave = (e: React.DragEvent) => {
         if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-        setDragOverId(null);
-        setDragOverSide(null);
+        dragOverRef.current = { id: null, side: null };
+        scheduleDragRender();
     };
 
     const handleDrop = async (e: React.DragEvent, targetId: string, targetType: 'arena' | 'folder' | 'campaign') => {

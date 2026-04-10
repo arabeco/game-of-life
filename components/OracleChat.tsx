@@ -1,6 +1,6 @@
 ﻿import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon } from './Icons';
+import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon, MicIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
 import { OracleCategory, OracleContext, OracleMode } from '../types';
 import { Portal } from './Portal';
@@ -301,11 +301,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [isCampaignQuizOpen, setIsCampaignQuizOpen] = useState(false);
   const [pendingClarification, setPendingClarification] = useState<PendingClarification | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeechAvailable, setIsSpeechAvailable] = useState(false);
   const isInitialLoadRef = useRef(true);
   const firstConversationNotice = 'Aviso: o Oráculo usa IA externa. Evite compartilhar dados sensíveis nas conversas.';
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const speechRef = useRef<any>(null);
+  const sendMessageRef = useRef<() => void>(() => {});
 
   const [currentMode, setCurrentMode] = useState<OracleMode>(oraclePreferences?.activeMode || 'neutro');
   const isPremiumUser = useMemo(() => hasPremiumAccess(userProfile), [userProfile]);
@@ -400,6 +404,43 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         inputRef.current?.focus();
     }
   }, [isEmbedded]);
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setIsSpeechAvailable(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Nao consegui captar audio agora. Tente novamente.', timestamp: new Date(), mode: currentMode }]);
+    };
+    recognition.onresult = (event: any) => {
+      const transcript = event?.results?.[0]?.[0]?.transcript?.trim();
+      if (!transcript) return;
+      setInput(transcript);
+      sendMessageRef.current();
+    };
+
+    speechRef.current = recognition;
+    setIsSpeechAvailable(true);
+
+    return () => {
+      try {
+        recognition.abort?.();
+      } catch {
+        // noop
+      }
+    };
+  }, [currentMode]);
 
   // Build System Prompt based on Mode
   const systemPrompt = useMemo(() => {
@@ -868,6 +909,30 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   };
 
+  sendMessageRef.current = () => handleSendMessage();
+
+  const handleVoiceToggle = () => {
+    if (!isSpeechAvailable) {
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Comando de voz indisponivel neste navegador/app.', timestamp: new Date(), mode: currentMode }]);
+      return;
+    }
+
+    if (isListening) {
+      try {
+        speechRef.current?.stop?.();
+      } catch {
+        // noop
+      }
+      return;
+    }
+
+    try {
+      speechRef.current?.start?.();
+    } catch {
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Nao consegui iniciar o microfone agora.', timestamp: new Date(), mode: currentMode }]);
+    }
+  };
+
   const HeaderIcon = MODE_VISUALS[currentMode].icon || GameLogoIcon;
   
   // Custom header for Embedded mode (since default header might be hidden)
@@ -1081,6 +1146,20 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                   disabled={isLoading}
                   className="h-12 w-full bg-transparent pl-3 pr-2 text-sm text-white placeholder:text-white/34 focus:outline-none"
                 />
+                {isSpeechAvailable && (
+                  <button
+                    onClick={handleVoiceToggle}
+                    disabled={isLoading}
+                    className={`mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all ${
+                      isListening
+                        ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-200'
+                        : 'border-[var(--skin-accent-color)]/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.02))] text-[var(--skin-accent-color)] hover:border-[var(--skin-accent-color)]/35'
+                    } disabled:opacity-30`}
+                    title={isListening ? 'Gravando...' : 'Comando de voz'}
+                  >
+                    <MicIcon className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={handleSendMessage}
                   disabled={!input.trim() || isLoading}

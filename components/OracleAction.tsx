@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, ActionType, Arena, DayOfWeek, ScheduledTask } from '../types';
-import { CalendarIcon, CheckCircleIcon, EditIcon, PlannerIcon, SendIcon, SparklesIcon } from './Icons';
+import { CalendarIcon, CheckCircleIcon, EditIcon, MicIcon, PlannerIcon, SendIcon, SparklesIcon } from './Icons';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import {
   formatDateLabel,
@@ -48,6 +48,7 @@ interface ExecutorPayload {
   assetId?: string;
   targetArenaId?: string;
   targetActionId?: string;
+  reuseActionId?: string;
   targetTaskId?: string;
   candidateArenaIds?: string[];
   candidateActionIds?: string[];
@@ -63,7 +64,9 @@ interface ExecutorPayload {
   daysOfWeek?: DayOfWeek[];
   date?: string;
   startTime?: number;
+  startTimeApprox?: boolean;
   organizeMode?: 'leve' | 'padrao' | 'intenso';
+  forceCreateNew?: boolean;
 }
 
 interface PendingExecutor {
@@ -95,6 +98,15 @@ const ACTION_INTRO = [
 ].join('\n\n');
 
 const normalizeSpaces = (value: string) => value.replace(/\s+/g, ' ').trim();
+const hasExplicitTime = (text: string) => {
+  const normalized = normalizeText(text);
+  return /\b(?:as|ass)?\s*\d{1,2}[:h]\d{2}\b/.test(normalized)
+    || /\b(?:as|ass)?\s*\d{1,2}h\b/.test(normalized)
+    || /\b(?:as|ass)\s*\d{1,2}\b/.test(normalized);
+};
+const hasFuzzyTime = (text: string) => /\b(de manha|demanha|manha|tarde|noite|fim da tarde|cedo)\b/.test(normalizeText(text));
+const wantsForceNewAction = (text: string) =>
+  /\b(nova acao|acao nova|criar nova|cria nova|nova)\b/.test(normalizeText(text));
 
 const ENTITY_STOP_WORDS = new Set([
   'a',
@@ -410,9 +422,13 @@ export const OracleAction: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isWorking, setIsWorking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeechAvailable, setIsSpeechAvailable] = useState(false);
   const [pendingExecutor, setPendingExecutor] = useState<PendingExecutor | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const speechRef = useRef<any>(null);
+  const sendMessageRef = useRef<(overrideInput?: string) => void>(() => {});
 
   const allArenas = useMemo<Arena[]>(() => assets.flatMap((asset) => asset.arenas), [assets]);
 
@@ -474,6 +490,43 @@ export const OracleAction: React.FC = () => {
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setIsSpeechAvailable(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      appendAssistant('Nao consegui captar audio agora. Tente novamente.', 'warning');
+    };
+    recognition.onresult = (event: any) => {
+      const transcript = event?.results?.[0]?.[0]?.transcript?.trim();
+      if (!transcript) return;
+      setInput(transcript);
+      sendMessageRef.current(transcript);
+    };
+
+    speechRef.current = recognition;
+    setIsSpeechAvailable(true);
+
+    return () => {
+      try {
+        recognition.abort?.();
+      } catch {
+        // noop
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -591,6 +644,33 @@ export const OracleAction: React.FC = () => {
     }
 
     if (kind === 'create_action') {
+      if (wantsForceNewAction(text)) {
+        payload.forceCreateNew = true;
+        payload.candidateActionIds = undefined;
+        payload.reuseActionId = undefined;
+        payload.targetActionId = undefined;
+      }
+
+      payload.name = payload.name
+        || quoted
+        || extractEntityTail(text, 'acao')
+        || payload.name;
+
+      const actionMatch = resolveActionMatch(
+        payload.name || text,
+        shouldReuseActionFallback(text) ? payload.targetActionId : undefined,
+        payload.candidateActionIds,
+      );
+      if (payload.candidateActionIds?.length && actionMatch.entity && !payload.forceCreateNew) {
+        payload.reuseActionId = actionMatch.entity.id;
+        payload.targetActionId = actionMatch.entity.id;
+        payload.candidateActionIds = undefined;
+      } else if (!payload.targetActionId && actionMatch.candidates.length > 0 && !payload.forceCreateNew) {
+        const candidateIds = [actionMatch.entity?.id, ...actionMatch.candidates.map((action) => action.id)]
+          .filter((id): id is string => Boolean(id));
+        payload.candidateActionIds = Array.from(new Set(candidateIds));
+      }
+
       const arenaMatch = resolveArenaMatch(
         text,
         shouldReuseArenaFallback(text) ? payload.targetArenaId : undefined,
@@ -603,10 +683,6 @@ export const OracleAction: React.FC = () => {
         payload.candidateArenaIds = arenaMatch.candidates.map((arena) => arena.id);
       }
 
-      payload.name = payload.name
-        || quoted
-        || extractEntityTail(text, 'acao')
-        || payload.name;
       payload.description = extractDescription(text) || payload.description;
       payload.duration = parseDurationMinutes(text) || payload.duration;
       payload.repetitions = parseRepetitions(text) || payload.repetitions;
@@ -614,7 +690,11 @@ export const OracleAction: React.FC = () => {
       const parsedDays = parseDaysOfWeek(text);
       payload.daysOfWeek = parsedDays.length > 0 ? parsedDays : payload.daysOfWeek;
       payload.date = parseDateFromText(text) || payload.date;
-      payload.startTime = parseTimeMinutes(text) ?? payload.startTime;
+      const parsedStartTime = parseTimeMinutes(text);
+      if (typeof parsedStartTime === 'number') {
+        payload.startTime = parsedStartTime;
+        payload.startTimeApprox = !hasExplicitTime(text) && hasFuzzyTime(text);
+      }
       payload.actionType = parseActionType(text) || payload.actionType;
 
       if (!payload.actionType) {
@@ -681,7 +761,11 @@ export const OracleAction: React.FC = () => {
       const parsedDays = parseDaysOfWeek(text);
       payload.daysOfWeek = parsedDays.length > 0 ? parsedDays : payload.daysOfWeek;
       payload.date = parseDateFromText(text) || payload.date;
-      payload.startTime = parseTimeMinutes(text) ?? payload.startTime;
+      const parsedStartTime = parseTimeMinutes(text);
+      if (typeof parsedStartTime === 'number') {
+        payload.startTime = parsedStartTime;
+        payload.startTimeApprox = !hasExplicitTime(text) && hasFuzzyTime(text);
+      }
       if (!payload.date && !payload.daysOfWeek?.length && typeof payload.startTime === 'number') {
         payload.date = getLocalDateString();
       }
@@ -704,7 +788,11 @@ export const OracleAction: React.FC = () => {
         payload.name = payload.name || extractActionReference(text) || quoted || payload.name;
       }
       payload.date = parseDateFromText(text) || payload.date;
-      payload.startTime = parseTimeMinutes(text) ?? payload.startTime;
+      const parsedStartTime = parseTimeMinutes(text);
+      if (typeof parsedStartTime === 'number') {
+        payload.startTime = parsedStartTime;
+        payload.startTimeApprox = !hasExplicitTime(text) && hasFuzzyTime(text);
+      }
       if (!payload.date && typeof payload.startTime === 'number') {
         payload.date = getLocalDateString();
       }
@@ -821,6 +909,9 @@ export const OracleAction: React.FC = () => {
       if (payload.actionType === 'Ação Recorrente' && !payload.daysOfWeek?.length) missing.push('daysOfWeek');
       if ((payload.actionType === 'Ação Recorrente' || payload.actionType === 'Compromisso') && typeof payload.startTime !== 'number') missing.push('startTime');
       if (payload.actionType === 'Compromisso' && !payload.date) missing.push('date');
+      if (missing.length === 0 && payload.candidateActionIds?.length && !payload.forceCreateNew && !payload.reuseActionId) {
+        missing.push('reuseDecision');
+      }
       return missing;
     }
 
@@ -900,6 +991,21 @@ export const OracleAction: React.FC = () => {
         ...(missingFields.includes('startTime')
           ? ['', 'Depois disso ainda preciso do horario.']
           : []),
+      ]);
+    }
+
+    if (missingFields.includes('reuseDecision') && promptPayload?.candidateActionIds?.length) {
+      const options = promptPayload.candidateActionIds
+        .map((id) => actions.find((action) => action.id === id))
+        .filter((action): action is Action => !!action)
+        .map((action, index) => `${index + 1}. ${action.name}`);
+      return formatAssistantText([
+        'Detectei uma acao muito parecida.',
+        '',
+        'Se quiser reutilizar uma existente, diga o numero:',
+        ...options,
+        '',
+        'Se quiser criar outra mesmo, responda "nova".',
       ]);
     }
 
@@ -986,9 +1092,11 @@ export const OracleAction: React.FC = () => {
         : payload.actionType === 'Compromisso'
           ? ` Instancia unica: ${formatDateLabel(payload.date!)} as ${formatTimeLabel(payload.startTime!)}.`
           : '';
+      const approxLine = payload.startTimeApprox ? 'Horario inferido (manha/tarde/noite). Se quiser, ajuste.' : '';
       return formatAssistantText([
         `Rascunho pronto: criar a acao "${payload.name}" na arena "${getPayloadArenaLabel(payload)}" com ${payload.duration || 30} min.${scheduleLine}`,
         payload.createArenaName ? `Como essa arena ainda nao existe, eu tambem vou criar "${payload.createArenaName}".` : '',
+        approxLine,
         ...buildConfirmationFooter(kind),
       ]);
     }
@@ -1019,9 +1127,11 @@ export const OracleAction: React.FC = () => {
       const creationLine = action
         ? ''
         : `Como a acao ainda nao existe, eu vou criar "${actionLabel}" na arena "${getPayloadArenaLabel(payload)}"${payload.createArenaName ? ' e criar essa arena tambem' : ''}.`;
+      const approxLine = payload.startTimeApprox ? 'Horario inferido (manha/tarde/noite). Se quiser, ajuste.' : '';
       return formatAssistantText([
         `Rascunho pronto: programar "${actionLabel}" em ${scheduleLine}.`,
         creationLine,
+        approxLine,
         ...buildConfirmationFooter(kind),
       ]);
     }
@@ -1035,9 +1145,11 @@ export const OracleAction: React.FC = () => {
       const creationLine = action
         ? ''
         : `Como a acao ainda nao existe, eu vou criar "${actionLabel}" na arena "${getPayloadArenaLabel(payload)}"${payload.createArenaName ? ' e criar essa arena tambem' : ''}.`;
+      const approxLine = payload.startTimeApprox ? 'Horario inferido (manha/tarde/noite). Se quiser, ajuste.' : '';
       return formatAssistantText([
         `Rascunho pronto: concluir "${actionLabel}"${timeLine}.`,
         creationLine,
+        approxLine,
         ...buildConfirmationFooter(kind),
       ]);
     }
@@ -1399,6 +1511,27 @@ export const OracleAction: React.FC = () => {
       }
 
       const mergedPayload = parseBasePayload(pendingExecutor.kind, nextInput, pendingExecutor.payload);
+      if (pendingExecutor.kind === 'create_action' && mergedPayload.reuseActionId && !mergedPayload.forceCreateNew) {
+        const existingAction = actions.find((action) => action.id === mergedPayload.reuseActionId);
+        setPendingExecutor({
+          kind: 'schedule_action',
+          payload: {
+            targetActionId: mergedPayload.reuseActionId,
+            startTime: mergedPayload.startTime,
+            startTimeApprox: mergedPayload.startTimeApprox,
+            date: mergedPayload.date,
+            daysOfWeek: mergedPayload.daysOfWeek,
+          },
+          awaitingConfirmation: false,
+        });
+        appendAssistant(
+          formatAssistantText([
+            `Essa acao ja existe: "${existingAction?.name || 'acao selecionada'}".`,
+            'Diga quando programar (data/horario ou dias).',
+          ]),
+        );
+        return;
+      }
       const missingFields = getMissingFields(pendingExecutor.kind, mergedPayload);
       if (missingFields.length > 0) {
         setPendingExecutor({ ...pendingExecutor, payload: mergedPayload });
@@ -1453,6 +1586,7 @@ export const OracleAction: React.FC = () => {
             difficulty: initialPayload.difficulty,
             date: targetDate,
             startTime: initialPayload.startTime,
+            startTimeApprox: initialPayload.startTimeApprox,
           };
           const missingFields = getMissingFields('schedule_action', schedulePayload);
           if (missingFields.length > 0) {
@@ -1471,6 +1605,30 @@ export const OracleAction: React.FC = () => {
     }
 
     handleExecutorStart(detectedKind, initialPayload);
+  };
+
+  sendMessageRef.current = handleSendMessage;
+
+  const handleVoiceToggle = () => {
+    if (!isSpeechAvailable) {
+      appendAssistant('Comando de voz indisponivel neste navegador/app.', 'warning');
+      return;
+    }
+
+    if (isListening) {
+      try {
+        speechRef.current?.stop?.();
+      } catch {
+        // noop
+      }
+      return;
+    }
+
+    try {
+      speechRef.current?.start?.();
+    } catch {
+      appendAssistant('Nao consegui iniciar o microfone agora.', 'warning');
+    }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -1602,13 +1760,25 @@ export const OracleAction: React.FC = () => {
             placeholder="Peca algo operacional. Ex.: criar arena Corrida em Corpo"
             className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-4 pr-12 text-sm text-white placeholder-gray-500 transition-all focus:border-[var(--skin-accent-color)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--skin-accent-color)]/20"
           />
-          <button
-            onClick={() => void handleSendMessage()}
-            disabled={!input.trim() || isWorking}
-            className="absolute right-2 rounded-lg bg-white/10 p-2 text-[var(--skin-accent-color)] transition-colors hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10"
-          >
-            <SendIcon className="h-4 w-4" />
-          </button>
+          <div className="absolute right-2 flex items-center gap-1">
+            {isSpeechAvailable && (
+              <button
+                onClick={handleVoiceToggle}
+                disabled={isWorking}
+                className={`rounded-lg p-2 transition-colors ${isListening ? 'bg-emerald-500/20 text-emerald-200' : 'bg-white/10 text-[var(--skin-accent-color)] hover:bg-white/20'} disabled:opacity-30`}
+                title={isListening ? 'Gravando...' : 'Comando de voz'}
+              >
+                <MicIcon className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              onClick={() => void handleSendMessage()}
+              disabled={!input.trim() || isWorking}
+              className="rounded-lg bg-white/10 p-2 text-[var(--skin-accent-color)] transition-colors hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10"
+            >
+              <SendIcon className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {pendingSelectionOptions.length > 0 && (

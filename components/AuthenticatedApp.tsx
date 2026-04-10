@@ -53,6 +53,7 @@ const GoldenToast = React.lazy(() => import('./GoldenToast').then((m) => ({ defa
 const TermsOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.TermsOverlay })));
 const OfflineOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.OfflineOverlay })));
 const FirstUseOnboardingOverlay = React.lazy(() => import('./FirstUseOnboardingOverlay').then((m) => ({ default: m.FirstUseOnboardingOverlay })));
+const FirstUseOnboardingPrimerModal = React.lazy(() => import('./FirstUseOnboardingPrimerModal').then((m) => ({ default: m.FirstUseOnboardingPrimerModal })));
 const CodexClaimModal = React.lazy(() => import('./CodexClaimModal').then((m) => ({ default: m.CodexClaimModal })));
 const RewardPackModal = React.lazy(() => import('./RewardPackModal').then((m) => ({ default: m.RewardPackModal })));
 const VanguardWelcomeModal = React.lazy(() => import('./VanguardWelcomeModal').then((m) => ({ default: m.VanguardWelcomeModal })));
@@ -843,6 +844,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const showTerms = forceShowTerms || requiresTermsAcceptance;
     const needsFirstUseOnboarding = shouldAutoStartOnboarding(userProfile);
     const [isFirstUseOnboardingActive, setFirstUseOnboardingActive] = useState(false);
+    const [showFirstUseOnboardingPrimer, setShowFirstUseOnboardingPrimer] = useState(false);
     const [onboardingShownInSession, setOnboardingShownInSession] = useState(false);
     const [claimToken, setClaimToken] = useState<string | null>(null);
     const shouldHoldVanguardWelcome =
@@ -857,6 +859,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
 
         updateUserProfile(buildOnboardingStartPatch(userProfile));
         setFirstUseOnboardingActive(true);
+        setShowFirstUseOnboardingPrimer(true);
         setOnboardingShownInSession(true);
     }, [
         userProfile,
@@ -891,11 +894,17 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
 
     const handleDismissOnboarding = useCallback(() => {
         updateUserProfile(buildOnboardingDismissPatch(userProfile));
+        setShowFirstUseOnboardingPrimer(false);
         setFirstUseOnboardingActive(false);
     }, [updateUserProfile, userProfile]);
 
+    const handleStartGuidedOnboarding = useCallback(() => {
+        setShowFirstUseOnboardingPrimer(false);
+    }, []);
+
     const handleCompleteOnboarding = useCallback(() => {
         updateUserProfile(buildOnboardingCompletePatch(userProfile));
+        setShowFirstUseOnboardingPrimer(false);
         setFirstUseOnboardingActive(false);
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialNavigate', {
@@ -1104,8 +1113,13 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             <Suspense fallback={null}>
                 <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
                 <OfflineOverlay open={!isOnline} />
+                <FirstUseOnboardingPrimerModal
+                    open={isFirstUseOnboardingActive && showFirstUseOnboardingPrimer}
+                    onClose={handleDismissOnboarding}
+                    onStartGuidedOnboarding={handleStartGuidedOnboarding}
+                />
                 <FirstUseOnboardingOverlay
-                    active={isFirstUseOnboardingActive}
+                    active={isFirstUseOnboardingActive && !showFirstUseOnboardingPrimer}
                     onDismiss={handleDismissOnboarding}
                     onComplete={handleCompleteOnboarding}
                 />

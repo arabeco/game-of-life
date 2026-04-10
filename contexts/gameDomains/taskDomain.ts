@@ -19,6 +19,7 @@ export interface TaskDomainApi {
     scheduleMultipleTasks: (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => Promise<void>;
     scheduleTask: (actionOrId: string | Action, date: string, startTime: number) => Promise<ScheduledTask | undefined>;
     scheduleAndCompleteNow: (actionId: string, taskId?: string) => Promise<void>;
+    scheduleAndCompleteAt: (actionId: string, date: string, startTime: number, taskId?: string) => Promise<void>;
     scheduleAndCompleteMilestoneNow: (actionId: string) => Promise<void>;
     returnTaskToPool: (taskId: string) => void;
     deleteTask: (taskId: string) => void;
@@ -621,6 +622,106 @@ export const createTaskDomain = ({
         maybePromptSitrepFollowUp(newTask, action);
     };
 
+    const scheduleAndCompleteAt = async (actionId: string, date: string, startTime: number, taskId?: string) => {
+        const action = getActionById(actionId);
+        if (!action || action.actionType === 'Marco') return;
+
+        const existingTask = taskId
+            ? tasks.find(task => task.id === taskId)
+            : tasks.find(task => task.actionId === actionId && task.date === date);
+
+        if (existingTask) {
+            if (isTaskLockedByClosedDay(existingTask)) {
+                showClosedDayMutationBlockedToast();
+                return;
+            }
+
+            const updatedTask: ScheduledTask = {
+                ...existingTask,
+                date,
+                startTime,
+                duration: action.duration,
+                completed: true,
+            };
+
+            if (isCommitmentDayClosedForTask(updatedTask)) {
+                showClosedDayMutationBlockedToast();
+                return;
+            }
+
+            const optimisticTasks = restoreTaskSnapshot(tasks, updatedTask);
+            setTasks(prevTasks => restoreTaskSnapshot(prevTasks, updatedTask));
+            setDailyCommitmentState(prev => ({
+                ...prev,
+                taskIds: reconcileTaskInCommitment(prev.taskIds, updatedTask.id, updatedTask, prev.date, isClanQuestActionId)
+            }));
+
+            try {
+                await persistTaskCompletionUpdate(updatedTask);
+            } catch (error: any) {
+                console.error('Supabase complete task at time error:', error?.message || error);
+                restoreTaskAfterPersistenceFailure(existingTask);
+                showToast('Falha ao registrar a acao concluida.', 'error');
+                return;
+            }
+
+            const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks);
+            if (!completionAttention && !existingTask.completed) {
+                emitAppSensoryCue('task_complete');
+            }
+            if (!existingTask.completed) {
+                runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
+            }
+            maybePromptSitrepFollowUp(updatedTask, action);
+            return;
+        }
+
+        const newTask: ScheduledTask = {
+            id: crypto.randomUUID(),
+            actionId,
+            date,
+            startTime,
+            duration: action.duration,
+            completed: true,
+            createdAt: new Date().toISOString(),
+        };
+
+        if (isCommitmentDayClosedForTask(newTask)) {
+            showClosedDayMutationBlockedToast();
+            return;
+        }
+
+        const optimisticTasks = [...tasks, newTask];
+        setTasks(prev => [...prev, newTask]);
+        if (taskMatchesOperationalDate(newTask, dailyCommitment.date) && !isClanQuestActionId(actionId)) {
+            setDailyCommitmentState(prev => ({
+                ...prev,
+                taskIds: mergeTasksIntoCommitment(prev.taskIds, [newTask], prev.date, isClanQuestActionId)
+            }));
+        }
+
+        const userId = getSupabaseUserId();
+        if (userId) {
+            try {
+                const payload = { ...mapToSnakeCase(newTask), user_id: userId };
+                const { error } = await supabase.from('scheduled_tasks').insert(payload);
+                if (error) throw error;
+            } catch (error: any) {
+                rollbackOptimisticTaskCreation([newTask.id]);
+                console.error('Supabase schedule task at time error:', error?.message || error);
+                showToast('Falha ao registrar a acao concluida.', 'error');
+                return;
+            }
+        }
+
+        const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks);
+        if (!completionAttention) {
+            emitAppSensoryCue('task_complete');
+        }
+        runTaskCompletionSideEffects(newTask, action, optimisticTasks);
+        maybePromptSitrepFollowUp(newTask, action);
+    };
+
     const scheduleAndCompleteMilestoneNow = async (actionId: string) => {
         const action = getActionById(actionId);
         if (!action || action.actionType !== 'Marco') return;
@@ -828,6 +929,7 @@ export const createTaskDomain = ({
         scheduleMultipleTasks,
         scheduleTask,
         scheduleAndCompleteNow,
+        scheduleAndCompleteAt,
         scheduleAndCompleteMilestoneNow,
         returnTaskToPool,
         deleteTask,

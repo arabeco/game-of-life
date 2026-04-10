@@ -9,6 +9,7 @@ import { GlassCard } from '../components/GlassCard';
 import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { OracleSettingsModal } from '../components/OracleSettingsModal';
+import { FirstUseOnboardingPrimerModal } from '../components/FirstUseOnboardingPrimerModal';
 import { BillingCheckoutGate } from '../components/Store/BillingCheckoutGate';
 import { supabase } from '../supabaseClient';
 import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
@@ -540,7 +541,7 @@ const UiPreferencesModal: React.FC<{
     );
 };
 
-const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () => void }> = ({ onStart, onRequestModeGame }) => {
+const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () => void; onOpenPrimer?: () => void }> = ({ onStart, onRequestModeGame, onOpenPrimer }) => {
     const { startTutorialLevel, isFlagCompleted } = useTutorial();
     const { appMode } = useGame();
     const isBasicMode = appMode !== 'GAME';
@@ -548,6 +549,39 @@ const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () 
 
     return (
         <div className="space-y-2.5">
+            <div
+                className="relative overflow-hidden rounded-[18px] border border-[rgba(231,236,244,0.40)] bg-[linear-gradient(180deg,rgba(216,175,55,0.94)_0%,rgba(128,95,22,0.95)_24%,rgba(37,28,12,0.97)_58%,rgba(7,7,8,0.99)_100%)] px-3.5 py-3 shadow-[0_16px_34px_rgba(0,0,0,0.22)]"
+                style={{ boxShadow: '0 16px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -10px 22px rgba(255,255,255,0.03), 0 0 16px rgba(234,179,8,0.18)' }}
+            >
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-18%,rgba(255,255,255,0.74),rgba(255,255,255,0.24)_22%,rgba(255,255,255,0.05)_42%,transparent_66%),linear-gradient(90deg,rgba(255,255,255,0.12),transparent_34%,transparent_72%,rgba(255,255,255,0.03))] pointer-events-none" />
+                <div className="relative flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="inline-flex items-center rounded-full border border-white/14 bg-black/16 px-2 py-0.5 text-[8px] font-black tracking-[0.22em] text-white/84">
+                                VIDEO DE INICIO
+                            </span>
+                            <span className="inline-flex items-center rounded-full border border-white/12 bg-white/10 px-2 py-0.5 text-[8px] font-black tracking-[0.18em] text-white/76">
+                                PRIMEIRO GIRO
+                            </span>
+                        </div>
+                        <h4 className="text-[14px] font-black tracking-[0.03em] text-white leading-none">
+                            Como o app funciona
+                        </h4>
+                        <p className="text-[10px] text-white/72 mt-1">
+                            Relembre o fluxo base: ciclo, arena, acao, planner, bay area e descanso.
+                        </p>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.18em] mt-2 text-yellow-100/80">
+                            7 cenas curtas
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => onOpenPrimer?.()}
+                        className="shrink-0 rounded-full border border-white/12 bg-black/18 px-2.25 py-0.75 text-[7px] font-bold uppercase tracking-[0.18em] text-white/56 transition-all hover:bg-white/10 hover:text-white"
+                    >
+                        Reabrir
+                    </button>
+                </div>
+            </div>
             {levels.map((lvl) => {
                 const isCompleted = isFlagCompleted(lvl.flag);
                 return (
@@ -610,7 +644,7 @@ const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () 
     );
 };
 
-const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const TutorialSettingsModal: React.FC<{ onClose: () => void; onOpenPrimer?: () => void }> = ({ onClose, onOpenPrimer }) => {
     const handleRequestModeGame = () => {
         onClose();
         window.dispatchEvent(new CustomEvent('tutorialTabChange', { detail: { tab: 'Preferências' } }));
@@ -629,11 +663,11 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                             <div className="text-[10px] font-black tracking-[0.28em] text-white/45 uppercase">Estacoes</div>
                             <h2 className="text-base font-black uppercase tracking-[0.14em] text-center">Tutoriais</h2>
                             <p className="text-[11px] text-white/55 leading-snug">
-                                No basico voce revisita os cards 1 e 2. Ativando o Modo Jogo em PreferÃªncias, entram os cards 3 e 4 com progresso, mundo e metajogo.
+                                O video de inicio relembra o fluxo base. No basico voce revisita os cards 1 e 2. Ativando o Modo Jogo em Preferencias, entram os cards 3 e 4 com progresso, mundo e metajogo.
                             </p>
                         </div>
                     </div>
-                    <TutorialSettings onStart={onClose} onRequestModeGame={handleRequestModeGame} />
+                    <TutorialSettings onStart={onClose} onRequestModeGame={handleRequestModeGame} onOpenPrimer={onOpenPrimer} />
                 </GlassCard>
             </div>
         </Portal>
@@ -2056,7 +2090,7 @@ const GeralTab: React.FC = () => {
 
 const PreferenciasTab: React.FC = () => {
     const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin } = useGame();
-    const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | null>(null);
+    const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | 'primer' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
     const [highlightModeGame, setHighlightModeGame] = useState(false);
     const modeGameRef = useRef<HTMLDivElement | null>(null);
@@ -2250,7 +2284,16 @@ const PreferenciasTab: React.FC = () => {
             )}
             {modal === 'oracle' && <OracleSettingsModal onClose={() => setModal(null)} variant="preferences" />}
 
-            {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} />}
+            {modal === 'tutorial' && <TutorialSettingsModal onClose={() => setModal(null)} onOpenPrimer={() => setModal('primer')} />}
+            {modal === 'primer' && (
+                <FirstUseOnboardingPrimerModal
+                    open
+                    onClose={() => setModal('tutorial')}
+                    primaryLabel="Fechar"
+                    headerTitle="Video de inicio"
+                    headerSummary="Reveja o fluxo base do app em cenas curtas, no mesmo ritmo do produto real."
+                />
+            )}
             {modal === 'privacy' && (
                 <PrivacyPreferencesModal
                     open

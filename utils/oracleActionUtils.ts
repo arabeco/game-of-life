@@ -30,17 +30,18 @@ export const isCancellationText = (value: string): boolean =>
   /\b(nao|não|cancelar|cancela|parar|para|deixa|deixa quieto)\b/i.test(normalizeText(value));
 
 export const parseDurationMinutes = (text: string): number | null => {
-  const match = text.match(/\b(\d+)\s*(m|min|mins|minuto|minutos)\b/i);
+  const durationText = normalizeText(text).replace(/\b(?:as|ass)\s*\d{1,2}(?::\d{2}|h\d{2}|h)?\b/g, ' ');
+  const match = durationText.match(/\b(\d+)\s*(m|min|mins|minuto|minutos)\b/i);
   if (match) return parseInt(match[1], 10);
 
-  const mixed = text.match(/\b(\d+)\s*(h|hora|horas)\s*(\d+)?\s*(m|min|mins|minuto|minutos)?\b/i);
+  const mixed = durationText.match(/\b(\d+)\s*(h|hora|horas)\s*(\d+)?\s*(m|min|mins|minuto|minutos)?\b/i);
   if (mixed) {
     const hours = parseInt(mixed[1], 10);
     const minutes = mixed[3] ? parseInt(mixed[3], 10) : 0;
     return (hours * 60) + minutes;
   }
 
-  const matchHours = text.match(/\b(\d+)\s*(h|hora|horas)\b/i);
+  const matchHours = durationText.match(/\b(\d+)\s*(h|hora|horas)\b/i);
   if (matchHours) return parseInt(matchHours[1], 10) * 60;
 
   return null;
@@ -52,17 +53,31 @@ export const parseRepetitions = (text: string): number | null => {
 };
 
 export const parseTimeMinutes = (text: string): number | null => {
-  const match = text.match(/\b(?:as\s*)?(\d{1,2})[:h](\d{2})\b/i);
+  const normalized = normalizeText(text).replace(/\s+/g, ' ');
+
+  const match = normalized.match(/\b(?:as|ass)?\s*(\d{1,2})[:h](\d{2})\b/i);
   if (match) {
     const hour = parseInt(match[1], 10);
     const minute = parseInt(match[2], 10);
+    if (hour > 23 || minute > 59) return null;
     return (hour * 60) + minute;
   }
 
-  const matchH = text.match(/\b(?:as\s*)?(\d{1,2})h\b/i);
+  const matchH = normalized.match(/\b(?:as|ass)?\s*(\d{1,2})h\b/i);
   if (matchH) {
-    return parseInt(matchH[1], 10) * 60;
+    const hour = parseInt(matchH[1], 10);
+    return hour <= 23 ? hour * 60 : null;
   }
+
+  const matchPlainHour = normalized.match(/\b(?:as|ass)\s*(\d{1,2})\b/i);
+  if (matchPlainHour) {
+    const hour = parseInt(matchPlainHour[1], 10);
+    return hour <= 23 ? hour * 60 : null;
+  }
+
+  if (/\b(de manha|demanha|manha|cedo)\b/.test(normalized)) return 9 * 60;
+  if (/\btarde\b/.test(normalized)) return 14 * 60;
+  if (/\b(noite|fim da tarde)\b/.test(normalized)) return 19 * 60;
 
   return null;
 };

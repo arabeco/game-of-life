@@ -323,6 +323,8 @@ export const ArenaDetailModal: React.FC<{
         : currentLinkType === 'parceria'
             ? canUnsharePartnershipArena
             : false;
+    const canDeleteOwnArena = localArenaExists && !isArenaEditLocked && !isRelationshipArena;
+    const canDeleteArenaFromModal = !isReadOnlyArena && (canDeleteOwnArena || allowRelationshipArenaDelete);
     const deleteDialogTitle = isSpecialArena
         ? 'Sair da Missao'
         : arena.isArchived
@@ -570,7 +572,7 @@ export const ArenaDetailModal: React.FC<{
                                     </button>
                                 )}
 
-                                {!isReadOnlyArena && allowRelationshipArenaDelete && (isSpecialArena || isRelationshipArena || arena.isArchived) && !isEditing && (
+                                {canDeleteArenaFromModal && (isSpecialArena || isRelationshipArena || arena.isArchived) && !isEditing && (
                                     <button
                                         onClick={() => {
                                             if (window.confirm(deleteDialogMessage)) {
@@ -668,7 +670,7 @@ export const ArenaDetailModal: React.FC<{
                                 )}
                             </div>
                             {/* Right side actions - redundant delete button removed if we moved it to left for special arenas, but kept for consistency in edit mode */}
-                            {!isReadOnlyArena && allowRelationshipArenaDelete && isEditing && (
+                            {canDeleteArenaFromModal && isEditing && (
                                 <button
                                     onClick={() => {
                                         if (window.confirm(deleteDialogMessage)) {
@@ -676,6 +678,7 @@ export const ArenaDetailModal: React.FC<{
                                         }
                                     }}
                                     className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
+                                    title={deleteDialogTitle}
                                 >
                                     <Trash2Icon className="w-5 h-5 text-red-500" />
                                 </button>

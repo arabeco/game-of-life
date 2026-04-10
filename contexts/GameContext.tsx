@@ -611,6 +611,7 @@ export interface GameContextType {
     scheduleMultipleTasks: (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => Promise<void>;
     clearPendingTasksForAction: (actionId: string) => Promise<void>;
     scheduleAndCompleteNow: (actionId: string, taskId?: string) => Promise<void>;
+    scheduleAndCompleteAt: (actionId: string, date: string, startTime: number, taskId?: string) => Promise<void>;
     scheduleAndCompleteMilestoneNow: (actionId: string) => Promise<void>;
     returnTaskToPool: (taskId: string) => void;
     deleteTask: (taskId: string) => void;
@@ -10379,6 +10380,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         scheduleMultipleTasks,
         scheduleTask,
         scheduleAndCompleteNow,
+        scheduleAndCompleteAt,
         scheduleAndCompleteMilestoneNow,
         returnTaskToPool,
         deleteTask,

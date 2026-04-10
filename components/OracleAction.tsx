@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { Action, ActionType, Arena, DayOfWeek } from '../types';
+import { Action, ActionType, Arena, DayOfWeek, ScheduledTask } from '../types';
 import { CalendarIcon, CheckCircleIcon, EditIcon, PlannerIcon, SendIcon, SparklesIcon } from './Icons';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import {
@@ -30,6 +30,7 @@ type ExecutorKind =
   | 'update_action'
   | 'schedule_action'
   | 'complete_action'
+  | 'unschedule_action'
   | 'organize_day';
 
 type AssistantTone = 'neutral' | 'success' | 'warning';
@@ -47,8 +48,10 @@ interface ExecutorPayload {
   assetId?: string;
   targetArenaId?: string;
   targetActionId?: string;
+  targetTaskId?: string;
   candidateArenaIds?: string[];
   candidateActionIds?: string[];
+  createArenaName?: string;
   name?: string;
   description?: string;
   priority?: Arena['priority'];
@@ -78,15 +81,16 @@ const createMessageId = () => `${Date.now()}_${Math.random().toString(16).slice(
 
 const EXAMPLE_PROMPTS = [
   'criar ciclo Reconstrucao ate 12/04',
-  'criar arena Corrida em Corpo',
-  'criar acao Leitura profunda na arena Foco com 25 min',
+  'marcar consulta medica amanha de manha',
+  'fiz academia as 9h',
+  'desmarcar relatorio',
   'organizar meu dia no modo leve',
 ] as const;
 
 const ACTION_INTRO = [
   'Aba operacional do GLYPH.',
   'Eu executo o core loop com perguntas curtas, rascunho e confirmacao antes de aplicar.',
-  'Posso criar ciclo, ajustar a data final do ciclo, criar/editar arena, criar/editar/programar acao, concluir agora e organizar o dia.',
+  'Posso criar ciclo, ajustar a data final do ciclo, criar/editar arena, criar/editar/programar acao, concluir por horario, desmarcar tarefa e organizar o dia.',
   'Excluir arena fica manual por seguranca.',
 ].join('\n\n');
 
@@ -98,6 +102,7 @@ const ENTITY_STOP_WORDS = new Set([
   'acoes',
   'agenda',
   'agendar',
+  'completei',
   'amanha',
   'arena',
   'arenas',
@@ -109,11 +114,14 @@ const ENTITY_STOP_WORDS = new Set([
   'da',
   'das',
   'de',
+  'desmarca',
+  'desmarcar',
   'do',
   'dos',
   'edita',
   'editar',
   'em',
+  'fiz',
   'hoje',
   'marca',
   'marcar',
@@ -166,8 +174,9 @@ const extractActionReference = (text: string): string | null => {
 
   const normalized = normalizeText(text);
   const patterns = [
-    /(?:agendar|agenda|programar|programa|marcar|marca)\s+(.+?)(?=\s+(?:para|pra|amanha|hoje|seg|ter|qua|qui|sex|sab|dom|as\b|\d{1,2}[/:h]|$))/i,
-    /(?:completar|completa|concluir|conclui)\s+(.+?)(?=\s+(?:agora|para|pra|amanha|hoje|as\b|\d{1,2}[/:h]|$))/i,
+    /(?:agendar|agenda|programar|programa|marcar|marca)\s+(.+?)(?=\s+(?:para|pra|amanha|hoje|de manha|demanha|manha|tarde|noite|seg|ter|qua|qui|sex|sab|dom|as\b|ass\b|\d{1,2}[/:h]|$))/i,
+    /(?:fiz|feito|feita|realizei|terminei|completei|completar|completa|concluir|conclui)\s+(.+?)(?=\s+(?:agora|para|pra|amanha|hoje|de manha|demanha|manha|tarde|noite|as\b|ass\b|\d{1,2}[/:h]|$))/i,
+    /(?:desmarcar|desmarca|desfazer|desfaz|descompletar|descompleta|tirar|remove|remover)\s+(.+?)(?=\s+(?:do planner|da agenda|de hoje|amanha|hoje|as\b|ass\b|\d{1,2}[/:h]|$))/i,
     /(?:editar|edita|alterar|altera|mudar|muda|renomear|renomeia|ajustar|ajusta)\s+(.+?)(?=\s+(?:com|para|pra|na|no|descricao|descriÃ§Ã£o|dificuldade|duracao|repeticoes|repetiÃ§Ãµes|$))/i,
   ];
 
@@ -329,6 +338,46 @@ const priorityScore = (priority?: Arena['priority']) => {
   return 3;
 };
 
+const ACTION_ARENA_HINTS = [
+  {
+    arenaName: 'Saude',
+    aliases: ['saude', 'corpo'],
+    keywords: ['academia', 'treino', 'corrida', 'consulta', 'medico', 'medica', 'dentista', 'exame', 'terapia', 'remedio'],
+  },
+  {
+    arenaName: 'Trabalho',
+    aliases: ['trabalho', 'foco', 'carreira'],
+    keywords: ['relatorio', 'reuniao', 'email', 'cliente', 'projeto', 'documento', 'call', 'apresentacao'],
+  },
+  {
+    arenaName: 'Casa',
+    aliases: ['casa', 'vida', 'rotina'],
+    keywords: ['mercado', 'limpar', 'lavar', 'cozinha', 'conta', 'banco', 'comprar'],
+  },
+  {
+    arenaName: 'Estudo',
+    aliases: ['estudo', 'aprendizado', 'foco'],
+    keywords: ['estudar', 'curso', 'aula', 'livro', 'leitura', 'prova'],
+  },
+] as const;
+
+const ACTION_TYPE_RECURRING: ActionType = 'A\u00e7\u00e3o Recorrente';
+
+const findTaskForActionAndDate = (
+  tasks: ScheduledTask[],
+  actionId: string,
+  date: string,
+): ScheduledTask | undefined =>
+  tasks
+    .filter((task) => task.actionId === actionId && task.date === date)
+    .sort((left, right) => {
+      if (left.completed && !right.completed) return -1;
+      if (!left.completed && right.completed) return 1;
+      if (left.startTime < 0 && right.startTime >= 0) return 1;
+      if (left.startTime >= 0 && right.startTime < 0) return -1;
+      return left.startTime - right.startTime;
+    })[0];
+
 export const OracleAction: React.FC = () => {
   const {
     activeCycle,
@@ -338,6 +387,8 @@ export const OracleAction: React.FC = () => {
     assets,
     clearPendingTasksForAction,
     dailyCommitment,
+    scheduleAndCompleteAt,
+    scheduleAndCompleteMilestoneNow,
     scheduleAndCompleteNow,
     scheduleMultipleTasks,
     scheduleTask,
@@ -345,10 +396,12 @@ export const OracleAction: React.FC = () => {
     startCycle,
     taskPool,
     tasks,
+    toggleTaskCompletion,
     unlockDailyCommitment,
     updateAction,
     updateArena,
     updateCycle,
+    updateTask,
     updateOperationalScratch,
   } = useGame();
 
@@ -361,7 +414,59 @@ export const OracleAction: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const allArenas = useMemo(() => assets.flatMap((asset) => asset.arenas), [assets]);
+  const allArenas = useMemo<Arena[]>(() => assets.flatMap((asset) => asset.arenas), [assets]);
+
+  const getDefaultAssetId = () => assets.find((asset) => asset.id === 'geral')?.id || assets[0]?.id;
+
+  const findArenaByNames = (names: string[]) => {
+    const normalizedNames = names.map(normalizeText);
+    return allArenas.find((arena) => normalizedNames.includes(normalizeText(arena.name)));
+  };
+
+  const inferArenaPlanForAction = (actionName: string, fullText: string): Pick<ExecutorPayload, 'targetArenaId' | 'createArenaName' | 'assetId'> => {
+    const normalized = normalizeText(`${actionName} ${fullText}`);
+    const matchedHint = ACTION_ARENA_HINTS.find((hint) =>
+      hint.keywords.some((keyword) => normalized.includes(keyword)));
+
+    if (matchedHint) {
+      const existing = findArenaByNames([...matchedHint.aliases, matchedHint.arenaName]);
+      if (existing) {
+        return { targetArenaId: existing.id };
+      }
+
+      return {
+        createArenaName: matchedHint.arenaName,
+        assetId: getDefaultAssetId(),
+      };
+    }
+
+    const outros = findArenaByNames(['Outros', 'Geral']);
+    if (outros) {
+      return { targetArenaId: outros.id };
+    }
+
+    return {
+      createArenaName: 'Outros',
+      assetId: getDefaultAssetId(),
+    };
+  };
+
+  const applyCreationFallback = (payload: ExecutorPayload, text: string): ExecutorPayload => {
+    if (payload.targetActionId || payload.candidateActionIds?.length || !payload.name) {
+      return payload;
+    }
+
+    if (!payload.targetArenaId && !payload.createArenaName) {
+      Object.assign(payload, inferArenaPlanForAction(payload.name, text));
+    }
+
+    return payload;
+  };
+
+  const getPayloadArenaLabel = (payload: ExecutorPayload) => {
+    const arena = payload.targetArenaId ? allArenas.find((item) => item.id === payload.targetArenaId) : null;
+    return arena?.name || payload.createArenaName || 'arena selecionada';
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -409,21 +514,21 @@ export const OracleAction: React.FC = () => {
   };
 
   const resolveArena = (text: string, fallbackId?: string): Arena | undefined => {
-    return rankEntities(text, allArenas, (arena) => arena.id, (arena) => arena.name, {
+    return rankEntities<Arena>(text, allArenas, (arena) => arena.id, (arena) => arena.name, {
       fallbackId,
       referenceExtractor: extractArenaReference,
     }).entity;
   };
 
   const resolveActionMatch = (text: string, fallbackId?: string, candidateIds?: string[]): RankedEntity<Action> =>
-    rankEntities(text, actions, (action) => action.id, (action) => action.name, {
+    rankEntities<Action>(text, actions, (action) => action.id, (action) => action.name, {
       fallbackId,
       candidateIds,
       referenceExtractor: extractActionReference,
     });
 
   const resolveArenaMatch = (text: string, fallbackId?: string, candidateIds?: string[]): RankedEntity<Arena> =>
-    rankEntities(text, allArenas, (arena) => arena.id, (arena) => arena.name, {
+    rankEntities<Arena>(text, allArenas, (arena) => arena.id, (arena) => arena.name, {
       fallbackId,
       candidateIds,
       referenceExtractor: extractArenaReference,
@@ -521,7 +626,7 @@ export const OracleAction: React.FC = () => {
           payload.actionType = 'Livre';
         }
       }
-      return payload;
+      return applyCreationFallback(payload, text);
     }
 
     if (kind === 'update_action') {
@@ -570,11 +675,17 @@ export const OracleAction: React.FC = () => {
       } else if (!payload.targetActionId && actionMatch.candidates.length > 0) {
         payload.candidateActionIds = actionMatch.candidates.map((action) => action.id);
       }
+      if (!payload.targetActionId && !payload.candidateActionIds?.length) {
+        payload.name = payload.name || extractActionReference(text) || quoted || payload.name;
+      }
       const parsedDays = parseDaysOfWeek(text);
       payload.daysOfWeek = parsedDays.length > 0 ? parsedDays : payload.daysOfWeek;
       payload.date = parseDateFromText(text) || payload.date;
       payload.startTime = parseTimeMinutes(text) ?? payload.startTime;
-      return payload;
+      if (!payload.date && !payload.daysOfWeek?.length && typeof payload.startTime === 'number') {
+        payload.date = getLocalDateString();
+      }
+      return applyCreationFallback(payload, text);
     }
 
     if (kind === 'complete_action') {
@@ -589,8 +700,30 @@ export const OracleAction: React.FC = () => {
       } else if (!payload.targetActionId && actionMatch.candidates.length > 0) {
         payload.candidateActionIds = actionMatch.candidates.map((action) => action.id);
       }
+      if (!payload.targetActionId && !payload.candidateActionIds?.length) {
+        payload.name = payload.name || extractActionReference(text) || quoted || payload.name;
+      }
       payload.date = parseDateFromText(text) || payload.date;
       payload.startTime = parseTimeMinutes(text) ?? payload.startTime;
+      if (!payload.date && typeof payload.startTime === 'number') {
+        payload.date = getLocalDateString();
+      }
+      return applyCreationFallback(payload, text);
+    }
+
+    if (kind === 'unschedule_action') {
+      const actionMatch = resolveActionMatch(
+        text,
+        shouldReuseActionFallback(text) ? payload.targetActionId : undefined,
+        payload.candidateActionIds,
+      );
+      if (actionMatch.entity) {
+        payload.targetActionId = actionMatch.entity.id;
+        payload.candidateActionIds = undefined;
+      } else if (!payload.targetActionId && actionMatch.candidates.length > 0) {
+        payload.candidateActionIds = actionMatch.candidates.map((action) => action.id);
+      }
+      payload.date = parseDateFromText(text) || payload.date || getLocalDateString();
       return payload;
     }
 
@@ -633,8 +766,12 @@ export const OracleAction: React.FC = () => {
       return 'create_arena';
     }
 
-    if ((/\b(completar|completa|concluir|conclui|feito agora|feita agora)\b/.test(normalized) && hasActionHint)
-      || (/\b(completar|completa|concluir|conclui)\b/.test(normalized) && resolveActionMatch(text).candidates.length > 0)) {
+    if (/\b(desmarcar|desmarca|desfazer|desfaz|descompletar|descompleta|tirar|remover|remove)\b/.test(normalized) && hasActionHint) {
+      return 'unschedule_action';
+    }
+
+    if ((/\b(fiz|feito|feita|realizei|terminei|completei|completar|completa|concluir|conclui)\b/.test(normalized) && hasActionHint)
+      || (/\b(fiz|realizei|terminei|completei|completar|completa|concluir|conclui)\b/.test(normalized) && resolveActionMatch(text).candidates.length > 0)) {
       return 'complete_action';
     }
 
@@ -679,7 +816,8 @@ export const OracleAction: React.FC = () => {
     if (kind === 'create_action') {
       const missing: string[] = [];
       if (!payload.name) missing.push('name');
-      if (!payload.targetArenaId) missing.push('targetArenaId');
+      if (!payload.targetArenaId && !payload.createArenaName) missing.push('targetArenaId');
+      if (payload.createArenaName && !payload.assetId) missing.push('assetId');
       if (payload.actionType === 'Ação Recorrente' && !payload.daysOfWeek?.length) missing.push('daysOfWeek');
       if ((payload.actionType === 'Ação Recorrente' || payload.actionType === 'Compromisso') && typeof payload.startTime !== 'number') missing.push('startTime');
       if (payload.actionType === 'Compromisso' && !payload.date) missing.push('date');
@@ -698,13 +836,23 @@ export const OracleAction: React.FC = () => {
 
     if (kind === 'schedule_action') {
       const missing: string[] = [];
-      if (!payload.targetActionId) missing.push('targetActionId');
+      const canCreateAction = !!payload.name && (!!payload.targetArenaId || !!payload.createArenaName);
+      if (!payload.targetActionId && !canCreateAction) missing.push('targetActionId');
+      if (payload.createArenaName && !payload.assetId) missing.push('assetId');
       if (typeof payload.startTime !== 'number') missing.push('startTime');
       if (!payload.date && (!payload.daysOfWeek || payload.daysOfWeek.length === 0)) missing.push('scheduleMode');
       return missing;
     }
 
     if (kind === 'complete_action') {
+      const missing: string[] = [];
+      const canCreateAction = !!payload.name && (!!payload.targetArenaId || !!payload.createArenaName);
+      if (!payload.targetActionId && !canCreateAction) missing.push('targetActionId');
+      if (payload.createArenaName && !payload.assetId) missing.push('assetId');
+      return missing;
+    }
+
+    if (kind === 'unschedule_action') {
       return payload.targetActionId ? [] : ['targetActionId'];
     }
 
@@ -779,6 +927,10 @@ export const OracleAction: React.FC = () => {
   const buildConfirmationFooter = (kind: PendingExecutor['kind']) => {
     const adjustmentHint = kind === 'schedule_action'
       ? 'Se quiser ajustar, responda so com a mudanca. Ex.: 14h ou sexta.'
+      : kind === 'complete_action'
+        ? 'Se quiser ajustar, responda so com a mudanca. Ex.: 09h ou hoje.'
+        : kind === 'unschedule_action'
+          ? 'Se estiver errado, responda o nome certo da acao ou diga cancelar.'
       : kind === 'create_action' || kind === 'update_action'
         ? 'Se quiser ajustar, responda so com a mudanca. Ex.: 40 min, arena Corpo ou dificuldade 2.'
         : kind === 'create_cycle' || kind === 'edit_cycle_date'
@@ -835,7 +987,8 @@ export const OracleAction: React.FC = () => {
           ? ` Instancia unica: ${formatDateLabel(payload.date!)} as ${formatTimeLabel(payload.startTime!)}.`
           : '';
       return formatAssistantText([
-        `Rascunho pronto: criar a acao "${payload.name}" na arena "${arena?.name || 'selecionada'}" com ${payload.duration || 30} min.${scheduleLine}`,
+        `Rascunho pronto: criar a acao "${payload.name}" na arena "${getPayloadArenaLabel(payload)}" com ${payload.duration || 30} min.${scheduleLine}`,
+        payload.createArenaName ? `Como essa arena ainda nao existe, eu tambem vou criar "${payload.createArenaName}".` : '',
         ...buildConfirmationFooter(kind),
       ]);
     }
@@ -862,16 +1015,44 @@ export const OracleAction: React.FC = () => {
       const scheduleLine = payload.daysOfWeek?.length
         ? `${formatDaysLabel(payload.daysOfWeek)} as ${formatTimeLabel(payload.startTime!)}`
         : `${formatDateLabel(payload.date!)} as ${formatTimeLabel(payload.startTime!)}`;
+      const actionLabel = action?.name || payload.name || 'a acao';
+      const creationLine = action
+        ? ''
+        : `Como a acao ainda nao existe, eu vou criar "${actionLabel}" na arena "${getPayloadArenaLabel(payload)}"${payload.createArenaName ? ' e criar essa arena tambem' : ''}.`;
       return formatAssistantText([
-        `Rascunho pronto: programar "${action?.name || 'a acao'}" em ${scheduleLine}.`,
+        `Rascunho pronto: programar "${actionLabel}" em ${scheduleLine}.`,
+        creationLine,
         ...buildConfirmationFooter(kind),
       ]);
     }
 
     if (kind === 'complete_action') {
       const action = actions.find((item) => item.id === payload.targetActionId);
+      const actionLabel = action?.name || payload.name || 'a acao';
+      const timeLine = typeof payload.startTime === 'number'
+        ? ` em ${formatDateLabel(payload.date || getLocalDateString())} as ${formatTimeLabel(payload.startTime)}`
+        : ' agora';
+      const creationLine = action
+        ? ''
+        : `Como a acao ainda nao existe, eu vou criar "${actionLabel}" na arena "${getPayloadArenaLabel(payload)}"${payload.createArenaName ? ' e criar essa arena tambem' : ''}.`;
       return formatAssistantText([
-        `Rascunho pronto: concluir "${action?.name || 'a acao'}" agora.`,
+        `Rascunho pronto: concluir "${actionLabel}"${timeLine}.`,
+        creationLine,
+        ...buildConfirmationFooter(kind),
+      ]);
+    }
+
+    if (kind === 'unschedule_action') {
+      const action = actions.find((item) => item.id === payload.targetActionId);
+      const targetDate = payload.date || getLocalDateString();
+      const task = action ? findTaskForActionAndDate(tasks, action.id, targetDate) : null;
+      return formatAssistantText([
+        `Rascunho pronto: desmarcar "${action?.name || 'a acao'}" em ${formatDateLabel(targetDate)}.`,
+        task?.completed
+          ? 'Ela esta concluida; vou desfazer a conclusao e devolver para a Bay Area.'
+          : task
+            ? 'Vou tirar essa instancia do horario/planner e devolver para a Bay Area se ela estiver no painel.'
+            : 'Nao achei uma instancia nesse dia ainda; vou checar de novo ao aplicar.',
         ...buildConfirmationFooter(kind),
       ]);
     }
@@ -880,6 +1061,58 @@ export const OracleAction: React.FC = () => {
       `Rascunho pronto: organizar hoje em modo ${payload.organizeMode || 'padrao'}, mexendo no planner e no painel diario.`,
       ...buildConfirmationFooter(kind),
     ]);
+  };
+
+  const ensureArenaIdForPayload = async (payload: ExecutorPayload): Promise<string | null> => {
+    if (payload.targetArenaId) return payload.targetArenaId;
+
+    if (payload.createArenaName) {
+      const existing = findArenaByNames([payload.createArenaName]);
+      if (existing) return existing.id;
+
+      const assetId = payload.assetId || getDefaultAssetId();
+      if (!assetId) return null;
+
+      const createdArena = await addArena(assetId, {
+        name: payload.createArenaName,
+        description: 'Criada pelo Oraculo operacional',
+        icon: '+',
+      });
+      return createdArena.id;
+    }
+
+    return null;
+  };
+
+  const ensureActionForPayload = async (
+    payload: ExecutorPayload,
+    fallbackActionType: ActionType = 'Livre',
+  ): Promise<Action | null> => {
+    if (payload.targetActionId) {
+      return actions.find((item) => item.id === payload.targetActionId) || null;
+    }
+
+    if (!payload.name) return null;
+
+    const arenaId = await ensureArenaIdForPayload(payload);
+    if (!arenaId) return null;
+
+    const actionType = payload.actionType || fallbackActionType;
+    const createdAction = await addAction({
+      arenaId,
+      name: payload.name,
+      description: payload.description || 'Criada pelo Oraculo operacional',
+      icon: '+',
+      duration: payload.duration || 30,
+      repetitions: actionType === ACTION_TYPE_RECURRING ? (payload.repetitions || 1) : 1,
+      actionType,
+      difficulty: typeof payload.difficulty === 'number' ? payload.difficulty : 2,
+      scheduledDays: actionType === ACTION_TYPE_RECURRING ? payload.daysOfWeek : undefined,
+      scheduledStartTime: actionType !== 'Livre' ? payload.startTime : undefined,
+    });
+
+    payload.targetActionId = createdAction.id;
+    return createdAction;
   };
 
   const executeOperation = async (kind: PendingExecutor['kind'], payload: ExecutorPayload): Promise<string> => {
@@ -916,6 +1149,11 @@ export const OracleAction: React.FC = () => {
 
     if (kind === 'create_action') {
       const actionType = payload.actionType || 'Livre';
+      if (!payload.targetArenaId) {
+        const ensuredArenaId = await ensureArenaIdForPayload(payload);
+        if (!ensuredArenaId) return 'Nao consegui escolher uma arena para essa acao.';
+        payload.targetArenaId = ensuredArenaId;
+      }
       const createdAction = await addAction({
         arenaId: payload.targetArenaId!,
         name: payload.name!,
@@ -956,6 +1194,11 @@ export const OracleAction: React.FC = () => {
     }
 
     if (kind === 'schedule_action') {
+      const scheduleActionType: ActionType = payload.daysOfWeek?.length ? ACTION_TYPE_RECURRING : 'Compromisso';
+      const targetAction = await ensureActionForPayload(payload, scheduleActionType);
+      if (!targetAction) return 'Nao consegui encontrar ou criar essa acao.';
+      payload.targetActionId = targetAction.id;
+
       if (payload.daysOfWeek?.length) {
         await clearPendingTasksForAction(payload.targetActionId!);
         updateAction(payload.targetActionId!, {
@@ -976,8 +1219,49 @@ export const OracleAction: React.FC = () => {
     }
 
     if (kind === 'complete_action') {
-      await scheduleAndCompleteNow(payload.targetActionId!);
+      const targetAction = await ensureActionForPayload(payload, 'Livre');
+      if (!targetAction) return 'Nao consegui encontrar ou criar essa acao.';
+
+      if (targetAction.actionType === 'Marco') {
+        await scheduleAndCompleteMilestoneNow(targetAction.id);
+        return 'Marco concluido agora.';
+      }
+
+      if (typeof payload.startTime === 'number') {
+        await scheduleAndCompleteAt(
+          targetAction.id,
+          payload.date || getLocalDateString(),
+          payload.startTime,
+          payload.targetTaskId,
+        );
+        return `Acao concluida em ${formatTimeLabel(payload.startTime)}.`;
+      }
+
+      await scheduleAndCompleteNow(targetAction.id, payload.targetTaskId);
       return 'Acao concluida agora.';
+    }
+
+    if (kind === 'unschedule_action') {
+      const targetDate = payload.date || getLocalDateString();
+      const targetTask = payload.targetTaskId
+        ? tasks.find((task) => task.id === payload.targetTaskId)
+        : findTaskForActionAndDate(tasks, payload.targetActionId!, targetDate);
+
+      if (!targetTask) {
+        return `Nao achei uma instancia de "${actions.find((action) => action.id === payload.targetActionId)?.name || 'acao'}" em ${formatDateLabel(targetDate)}.`;
+      }
+
+      if (targetTask.completed) {
+        await toggleTaskCompletion(targetTask.id);
+        updateTask(targetTask.id, { startTime: -1, completed: false });
+        return 'Conclusao desfeita e tarefa devolvida para a Bay Area.';
+      }
+
+      if (dailyCommitment.taskIds.includes(targetTask.id)) {
+        setDailyCommitment(dailyCommitment.taskIds.filter((taskId) => taskId !== targetTask.id));
+      }
+      updateTask(targetTask.id, { startTime: -1, completed: false });
+      return 'Tarefa desmarcada e devolvida para a Bay Area.';
     }
 
     const targetCount = payload.organizeMode === 'leve'
@@ -1135,9 +1419,9 @@ export const OracleAction: React.FC = () => {
           '',
           'Posso receber coisas como:',
           '1. criar ciclo Reconstrucao ate 12/04',
-          '2. criar arena Corrida em Corpo',
-          '3. criar acao Leitura na arena Foco com 25 min',
-          '4. programar acao Leitura seg qua sex as 07:00',
+          '2. marcar consulta medica amanha de manha',
+          '3. fiz academia as 9h',
+          '4. desmarcar relatorio',
           '5. organizar meu dia no modo leve',
         ]),
         'warning',
@@ -1161,6 +1445,12 @@ export const OracleAction: React.FC = () => {
           const schedulePayload: ExecutorPayload = {
             targetActionId: initialPayload.targetActionId,
             candidateActionIds: initialPayload.candidateActionIds,
+            targetArenaId: initialPayload.targetArenaId,
+            createArenaName: initialPayload.createArenaName,
+            assetId: initialPayload.assetId,
+            name: initialPayload.name,
+            duration: initialPayload.duration,
+            difficulty: initialPayload.difficulty,
             date: targetDate,
             startTime: initialPayload.startTime,
           };

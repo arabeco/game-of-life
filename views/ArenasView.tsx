@@ -309,6 +309,19 @@ export const ArenasView: React.FC = () => {
     const selectedArena = allArenas.find(a => a.id === selectedArenaId);
     const selectedFolder = arenaFolders.find(f => f.id === selectedFolderId);
     const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+    const isCreateArenaFabHidden = Boolean(
+        isSelectionMode
+        || selectedArena
+        || selectedSharedArenaDetail
+        || selectedReceivedCampaignPreview
+        || selectedFolder
+        || selectedCampaign
+        || isCreatingArena
+        || isCampaignHubOpen
+        || isRelationshipHubOpen
+        || showCreateCampaignModal
+        || iconTarget
+    );
 
     // Priorities grouping
     const priorities = {
@@ -2593,7 +2606,7 @@ export const ArenasView: React.FC = () => {
                     id="new-action-button"
                     data-onboarding-id="new-arena-button"
                     onClick={handleOpenCreateArena}
-                    className={`fixed bottom-20 right-4 w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isSelectionMode ? 'opacity-0 pointer-events-none' : ''}`}
+                    className={`fixed bottom-20 right-4 w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
                 >
                     <PlusIcon className="w-6 h-6 text-black" />
                 </button>

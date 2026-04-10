@@ -870,10 +870,9 @@ export const ArenasView: React.FC = () => {
                     window.clearTimeout(touchHoldTimeoutRef.current);
                     touchHoldTimeoutRef.current = null;
                 }
-                interactionRef.current = {
-                    ...interactionRef.current,
-                    touchDragBlocked: true,
-                };
+                interactionRef.current = null;
+                dragOverRef.current = { id: null, side: null };
+                scheduleDragRender();
             }
             return;
         }

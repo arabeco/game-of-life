@@ -4,6 +4,7 @@ import { AssetArenaBoard } from './AssetArenaBoard';
 import { Sephirot } from './Sephirot';
 import { SephirotFog } from './SephirotFog';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
 
 const SEPHIROT_COORDS = [
     { id: 'consciencia', x: 50, y: 7 },
@@ -34,6 +35,20 @@ const hexToRgb = (hex: string): [number, number, number] | null => {
 
 const rgbaString = (rgb: [number, number, number] | null, alpha: number): string =>
     rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : `rgba(212, 175, 55, ${alpha})`;
+
+const escapeCssUrl = (value: string): string => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+const buildAssetArtLayer = (value?: string): string | null => {
+    const normalized = (value || '').trim();
+    if (!normalized) return null;
+
+    const primarySource = getProfileBackgroundPrimarySource(normalized).trim();
+    if (!primarySource) return null;
+
+    return isCssProfileBackground(primarySource)
+        ? primarySource
+        : `url("${escapeCssUrl(primarySource)}")`;
+};
 
 const readCssNumber = (value: string | null | undefined, fallback: number): number => {
     const parsed = Number.parseFloat((value || '').trim());
@@ -158,6 +173,7 @@ export const ProfileAssetsPreview: React.FC<{
     const selectedAssetMasteryPhrase = selectedAsset?.levelDescriptions?.[selectedAssetLevel] || '';
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
     const selectedAssetArtUrl = selectedAsset ? assetArtById[selectedAsset.id] : undefined;
+    const selectedAssetArtLayer = buildAssetArtLayer(selectedAssetArtUrl);
     const selectedAssetPrimarySlot = selectedAsset
         ? getPrimaryAssetSlot(selectedAsset, assetWidgetValues)
         : null;
@@ -175,12 +191,12 @@ export const ProfileAssetsPreview: React.FC<{
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 48px rgba(0,0,0,0.42)',
     };
     const selectedAssetCanvasStyle: React.CSSProperties = {
-        backgroundImage: `${selectedAssetArtUrl ? `linear-gradient(180deg, rgba(5,5,7,0.18) 0%, rgba(5,5,7,0.78) 46%, rgba(5,5,7,0.94) 100%), url("${selectedAssetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 16% 0%, rgba(255,246,204,0.28), transparent 29%),
+        backgroundImage: `${selectedAssetArtLayer ? `linear-gradient(180deg, rgba(5,5,7,0.18) 0%, rgba(5,5,7,0.78) 46%, rgba(5,5,7,0.94) 100%), ${selectedAssetArtLayer}, ` : ''}radial-gradient(circle at 16% 0%, rgba(255,246,204,0.28), transparent 29%),
             radial-gradient(circle at 92% 88%, ${rgbaString(selectedAssetAccentRgb, 0.16)}, transparent 24%),
             linear-gradient(180deg, rgba(9,11,16,0.9) 0%, rgba(5,6,9,0.96) 100%)`,
-        backgroundSize: selectedAssetArtUrl ? 'cover, cover, auto, auto' : undefined,
-        backgroundPosition: selectedAssetArtUrl ? 'center, center, center, center' : undefined,
-        backgroundRepeat: selectedAssetArtUrl ? 'no-repeat, no-repeat, no-repeat, no-repeat' : undefined,
+        backgroundSize: selectedAssetArtLayer ? 'cover, cover, auto, auto' : undefined,
+        backgroundPosition: selectedAssetArtLayer ? 'center, center, center, center' : undefined,
+        backgroundRepeat: selectedAssetArtLayer ? 'no-repeat, no-repeat, no-repeat, no-repeat' : undefined,
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -40px 90px rgba(0,0,0,0.2)',
     };
 
@@ -311,7 +327,7 @@ export const ProfileAssetsPreview: React.FC<{
                         {SEPHIROT_COORDS.map((coord) => {
                             const asset = assets.find((item) => item.id === coord.id);
                             if (!asset) return null;
-                            const assetArtUrl = assetArtById[asset.id];
+                            const assetArtLayer = buildAssetArtLayer(assetArtById[asset.id]);
                             const accent = ASSET_ACCENT_COLORS[asset.id as keyof typeof ASSET_ACCENT_COLORS] || 'var(--skin-accent-color)';
                             const accentRgb = hexToRgb(accent);
                             const activeArenas = asset.arenas.filter((arena) => !arena.isArchived).length;
@@ -336,9 +352,9 @@ export const ProfileAssetsPreview: React.FC<{
                                         className="group relative flex min-h-[66px] w-[118px] flex-col items-center overflow-visible rounded-[22px] border px-2 pb-0.5 pt-[16px] text-center transition-all duration-300 hover:-translate-y-[2px]"
                                         style={{
                                             borderColor: rgbaString(accentRgb, 0.42),
-                                            backgroundImage: `${assetArtUrl ? `linear-gradient(180deg, rgba(6,7,10,0.12) 0%, rgba(6,7,10,0.68) 42%, rgba(6,7,10,0.9) 100%), url("${assetArtUrl.replace(/"/g, '\\"')}"), ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.9) 18%, rgba(10,12,16,0.96) 100%)`,
-                                            backgroundSize: assetArtUrl ? 'cover, auto, auto, auto' : undefined,
-                                            backgroundPosition: assetArtUrl ? 'center, center, center, center' : undefined,
+                                            backgroundImage: `${assetArtLayer ? `linear-gradient(180deg, rgba(6,7,10,0.12) 0%, rgba(6,7,10,0.68) 42%, rgba(6,7,10,0.9) 100%), ${assetArtLayer}, ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.9) 18%, rgba(10,12,16,0.96) 100%)`,
+                                            backgroundSize: assetArtLayer ? 'cover, auto, auto, auto' : undefined,
+                                            backgroundPosition: assetArtLayer ? 'center, center, center, center' : undefined,
                                             boxShadow: `0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 999px ${rgbaString(accentRgb, 0.022)}, 0 0 0 1px ${rgbaString(accentRgb, 0.12)}`,
                                         }}
                                     >

@@ -289,6 +289,19 @@ const MentorshipCampaignBoardCard: React.FC<{
                     boxShadow: `0 14px 28px ${visualPalette.glow}`,
                 }}
             >
+                <button
+                    type="button"
+                    aria-label={`Abrir campanha ${preview.campaign.title}`}
+                    onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onClick();
+                    }}
+                    className="absolute inset-0 z-40 rounded-2xl bg-transparent"
+                />
+                <div
+                    className="pointer-events-none relative z-10"
+                >
                 <div
                     className="flex items-center justify-between gap-2 border-b p-2"
                     style={{
@@ -365,6 +378,7 @@ const MentorshipCampaignBoardCard: React.FC<{
                             {preview.arenas.length} arenas
                         </span>
                     </div>
+                </div>
                 </div>
             </div>
         </div>

@@ -204,14 +204,19 @@ export const ArenaDetailModal: React.FC<{
         () => assets.some((asset) => asset.arenas.some((candidate) => candidate.id === arena.id)),
         [arena.id, assets]
     );
+    const effectiveRelationshipType = currentLinkType || linkedRelationshipType;
+    const effectiveCollaborativeRole = currentCollaborativeRole || collaborativeRole;
+    const canCollaborateMentorship = Boolean(
+        effectiveRelationshipType === 'mentoria' &&
+        (allowLinkedMentorshipEdit || effectiveCollaborativeRole === 'mentor' || effectiveCollaborativeRole === 'pupil')
+    );
     const isDetachedMentorshipCollab = Boolean(
-        allowLinkedMentorshipEdit &&
-        (linkedRelationshipType === 'mentoria' || currentLinkType === 'mentoria') &&
+        canCollaborateMentorship &&
         !localArenaExists
     );
-    const isMentorshipLinkedArena = (linkedRelationshipType === 'mentoria' || currentLinkType === 'mentoria');
-    const isCompetitionLinkedArena = (linkedRelationshipType === 'competicao' || currentLinkType === 'competicao');
-    const isPupilMentorshipArena = isMentorshipLinkedArena && currentCollaborativeRole === 'pupil';
+    const isMentorshipLinkedArena = effectiveRelationshipType === 'mentoria';
+    const isCompetitionLinkedArena = effectiveRelationshipType === 'competicao';
+    const isPupilMentorshipArena = isMentorshipLinkedArena && effectiveCollaborativeRole === 'pupil';
     const isReadOnlyArena = readOnly || previewMode || isCompetitionLinkedArena || (!localArenaExists && !isDetachedMentorshipCollab);
     const activeAssetId = isEditing ? editableArena.assetId : arena.assetId;
     const parentAsset = assets.find(a => a.id === activeAssetId);
@@ -289,7 +294,7 @@ export const ArenaDetailModal: React.FC<{
 
     const isOfficeMode = clan?.clanType === 'Office';
     const isLeader = clan?.leaderId === userProfile?.id;
-    const forceSharedPool = currentLinkType ? true : (isOfficeMode ? true : undefined);
+    const forceSharedPool = effectiveRelationshipType ? true : (isOfficeMode ? true : undefined);
     const tasksForCounts = useMemo(() => {
         if (Array.isArray(tasksOverride)) return tasksOverride;
         if (!activeCycle) return tasks;
@@ -316,11 +321,11 @@ export const ArenaDetailModal: React.FC<{
     const allActionInstances = arenaProgressState.totalPlanned || 0;
     const allCompletedInstances = arenaProgressState.totalCompleted || 0;
     const progress = arenaProgressState.progressPercent || 0;
-    const isRelationshipArena = currentLinkType === 'mentoria' || currentLinkType === 'competicao' || currentLinkType === 'parceria';
-    const canUnsharePartnershipArena = currentLinkType === 'parceria' && localArenaExists;
-    const allowRelationshipArenaDelete = currentLinkType === 'mentoria'
-        ? (currentCollaborativeRole === 'mentor' || currentCollaborativeRole === 'pupil')
-        : currentLinkType === 'parceria'
+    const isRelationshipArena = effectiveRelationshipType === 'mentoria' || effectiveRelationshipType === 'competicao' || effectiveRelationshipType === 'parceria';
+    const canUnsharePartnershipArena = effectiveRelationshipType === 'parceria' && localArenaExists;
+    const allowRelationshipArenaDelete = effectiveRelationshipType === 'mentoria'
+        ? (effectiveCollaborativeRole === 'mentor' || effectiveCollaborativeRole === 'pupil')
+        : effectiveRelationshipType === 'parceria'
             ? canUnsharePartnershipArena
             : false;
     const canDeleteOwnArena = localArenaExists && !isArenaEditLocked && !isRelationshipArena;
@@ -329,22 +334,22 @@ export const ArenaDetailModal: React.FC<{
         ? 'Sair da Missao'
         : arena.isArchived
             ? 'Excluir arena'
-        : currentLinkType === 'competicao'
+        : effectiveRelationshipType === 'competicao'
             ? 'Desafio selado'
-            : currentLinkType === 'parceria'
+            : effectiveRelationshipType === 'parceria'
                 ? 'Remover arena da parceria'
-                : currentLinkType === 'mentoria'
+                : effectiveRelationshipType === 'mentoria'
                     ? 'Remover arena da mentoria'
                     : 'Excluir Arena';
     const deleteDialogMessage = isSpecialArena
         ? 'Ao sair, sua participacao e removida e esta arena e apagada de vez. Tem certeza?'
         : arena.isArchived
             ? 'Esta arena ja esta arquivada. Excluir agora apaga esse registro de forma definitiva. Tem certeza?'
-        : currentLinkType === 'competicao'
+        : effectiveRelationshipType === 'competicao'
             ? 'Essa arena pertence a um duelo selado. Ela fica disponivel apenas para consulta e historico.'
-            : currentLinkType === 'parceria'
+            : effectiveRelationshipType === 'parceria'
                 ? 'Voce esta retirando esta arena da vitrine da parceria. A arena continua sua e o parceiro perde o acesso imediato.'
-                : currentLinkType === 'mentoria'
+                : effectiveRelationshipType === 'mentoria'
                     ? 'Voce vai remover esta arena da mentoria. Todo o progresso registrado nela sera perdido e a mentoria continua ativa. Tem certeza?'
                     : 'Tem certeza que deseja excluir esta arena? Todo o progresso registrado nela sera perdido.';
     const handleEditToggle = async () => {
@@ -395,7 +400,7 @@ export const ArenaDetailModal: React.FC<{
     const handleDeleteArena = async () => {
         setShowDeleteConfirmation(false);
 
-        if (currentLinkType === 'mentoria') {
+        if (effectiveRelationshipType === 'mentoria') {
             try {
                 const { error } = await supabase.rpc('delete_linked_relationship_arena', {
                     p_arena_id: arena.id,
@@ -566,7 +571,7 @@ export const ArenaDetailModal: React.FC<{
                         <div className="arena-detail-modal-header arena-plate-header flex justify-between items-start flex-shrink-0 gap-2 rounded-xl px-2 py-2 bg-black/20">
                             <div className="flex flex-col items-center gap-1">
                                 {/* Allow editing for flexible arenas or if user is the Mentor */}
-                                {!isReadOnlyArena && (!isArenaEditLocked || isEditing || currentLinkType === 'mentoria') && (
+                                {!isReadOnlyArena && (!isArenaEditLocked || isEditing || effectiveRelationshipType === 'mentoria') && (
                                     <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
                                         <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
                                     </button>
@@ -580,7 +585,7 @@ export const ArenaDetailModal: React.FC<{
                                             }
                                         }}
                                         className="p-2 rounded-full transition-colors border border-red-500/30 bg-red-500/10 hover:bg-red-500/20"
-                                        title={arena.isArchived ? 'Excluir arena' : 'Abandonar Missao'}
+                                        title={deleteDialogTitle}
                                     >
                                         <Trash2Icon className="w-5 h-5 text-red-500" />
                                     </button>
@@ -588,8 +593,8 @@ export const ArenaDetailModal: React.FC<{
                                 {!isReadOnlyArena && isEditing && (
                                     <button
                                         onClick={() => {
-                                            if (currentLinkType === 'competicao' || currentLinkType === 'parceria' || currentLinkType === 'mentoria') {
-                                                setSelectionType(currentLinkType);
+                                            if (effectiveRelationshipType === 'competicao' || effectiveRelationshipType === 'parceria' || effectiveRelationshipType === 'mentoria') {
+                                                setSelectionType(effectiveRelationshipType);
                                             } else {
                                                 setSelectionType('mentoria');
                                             }
@@ -625,17 +630,17 @@ export const ArenaDetailModal: React.FC<{
                                         </p>
                                     )}
                                 </div>
-                                {currentLinkType === 'competicao' && (
+                                {effectiveRelationshipType === 'competicao' && (
                                     <div className="bg-red-500/20 border border-red-500/50 text-red-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
                                         <span>PVP</span>
                                     </div>
                                 )}
-                                {currentLinkType === 'mentoria' && (
+                                {effectiveRelationshipType === 'mentoria' && (
                                     <div className="bg-blue-500/20 border border-blue-500/50 text-blue-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
                                         <span>MENTORIA</span>
                                     </div>
                                 )}
-                                {currentLinkType === 'mentoria' && currentCollaborativeRole === 'pupil' && (
+                                {effectiveRelationshipType === 'mentoria' && effectiveCollaborativeRole === 'pupil' && (
                                     <div className="bg-emerald-500/16 border border-emerald-300/30 text-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mt-1">
                                         Plano guiado
                                     </div>

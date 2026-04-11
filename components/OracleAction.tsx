@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, ActionType, Arena, DayOfWeek, ScheduledTask } from '../types';
-import { CalendarIcon, CheckCircleIcon, EditIcon, MicIcon, PlannerIcon, SendIcon, SparklesIcon } from './Icons';
+import { CalendarIcon, CheckCircleIcon, EditIcon, MicIcon, PlannerIcon, SendIcon, SparklesIcon, XIcon } from './Icons';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import {
   formatDateLabel,
@@ -31,7 +31,8 @@ type ExecutorKind =
   | 'schedule_action'
   | 'complete_action'
   | 'unschedule_action'
-  | 'organize_day';
+  | 'organize_day'
+  | 'status';
 
 type AssistantTone = 'neutral' | 'success' | 'warning';
 
@@ -415,6 +416,7 @@ export const OracleAction: React.FC = () => {
     updateCycle,
     updateTask,
     updateOperationalScratch,
+    showToast,
   } = useGame();
 
   const [messages, setMessages] = useState<ActionMessage[]>([
@@ -425,6 +427,7 @@ export const OracleAction: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeechAvailable, setIsSpeechAvailable] = useState(false);
   const [pendingExecutor, setPendingExecutor] = useState<PendingExecutor | null>(null);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const speechRef = useRef<any>(null);
@@ -482,6 +485,18 @@ export const OracleAction: React.FC = () => {
   const getPayloadArenaLabel = (payload: ExecutorPayload) => {
     const arena = payload.targetArenaId ? allArenas.find((item) => item.id === payload.targetArenaId) : null;
     return arena?.name || payload.createArenaName || 'arena selecionada';
+  };
+
+  const getBayAreaSuggestions = (max = 3) => {
+    const pool = buildActionPoolByDate(actions, taskPool, tasks, getLocalDateString(), []);
+    return actions
+      .filter((action) => (pool[action.id]?.count || 0) > 0)
+      .filter((action) => {
+        const arena = allArenas.find((item) => item.id === action.arenaId);
+        return !arena?.isArchived;
+      })
+      .sort((a, b) => (a.duration || 30) - (b.duration || 30))
+      .slice(0, max);
   };
 
   useEffect(() => {
@@ -832,6 +847,10 @@ export const OracleAction: React.FC = () => {
       return 'organize_day';
     }
 
+    if (/\b(status|resumo|pendencias|pendencias|o que tenho|o que falta|como estou|bay area)\b/.test(normalized)) {
+      return 'status';
+    }
+
     if ((/\b(deletar|deleta|apagar|apaga|excluir|exclui)\b/.test(normalized) && /\barena\b/.test(normalized))
       || /\bremover arena\b/.test(normalized)) {
       return 'delete_arena';
@@ -994,6 +1013,20 @@ export const OracleAction: React.FC = () => {
       ]);
     }
 
+    if (missingFields.includes('targetActionId')) {
+      const suggestions = getBayAreaSuggestions();
+      if (suggestions.length > 0) {
+        return formatAssistantText([
+          'Nao encontrei uma acao com esse nome.',
+          '',
+          'Sugestoes da sua Bay Area:',
+          ...suggestions.map((action, index) => `${index + 1}. ${action.name}`),
+          '',
+          'Responda com o numero, o nome ou diga "nova".',
+        ]);
+      }
+    }
+
     if (missingFields.includes('reuseDecision') && promptPayload?.candidateActionIds?.length) {
       const options = promptPayload.candidateActionIds
         .map((id) => actions.find((action) => action.id === id))
@@ -1097,6 +1130,7 @@ export const OracleAction: React.FC = () => {
         `Rascunho pronto: criar a acao "${payload.name}" na arena "${getPayloadArenaLabel(payload)}" com ${payload.duration || 30} min.${scheduleLine}`,
         payload.createArenaName ? `Como essa arena ainda nao existe, eu tambem vou criar "${payload.createArenaName}".` : '',
         approxLine,
+        'Se quiser, posso preencher duracao, repeticoes, dificuldade ou tipo.',
         ...buildConfirmationFooter(kind),
       ]);
     }
@@ -1169,10 +1203,66 @@ export const OracleAction: React.FC = () => {
       ]);
     }
 
+    if (kind === 'status') {
+      return formatAssistantText([
+        'Rascunho pronto: vou te passar um status geral do dia.',
+        ...buildConfirmationFooter(kind),
+      ]);
+    }
+
     return formatAssistantText([
       `Rascunho pronto: organizar hoje em modo ${payload.organizeMode || 'padrao'}, mexendo no planner e no painel diario.`,
       ...buildConfirmationFooter(kind),
     ]);
+  };
+
+  const buildConfirmationSummary = (kind: PendingExecutor['kind'], payload: ExecutorPayload): string => {
+    if (kind === 'create_cycle') {
+      return `Criar ciclo "${payload.cycleName}" ate ${formatDateLabel(payload.endDate!)}.`;
+    }
+    if (kind === 'edit_cycle_date') {
+      return `Mover fim do ciclo para ${formatDateLabel(payload.endDate!)}.`;
+    }
+    if (kind === 'create_arena') {
+      return `Criar arena "${payload.name}" em ${assets.find((item) => item.id === payload.assetId)?.name || payload.assetId}.`;
+    }
+    if (kind === 'update_arena') {
+      const arena = allArenas.find((item) => item.id === payload.targetArenaId);
+      return `Atualizar arena "${arena?.name || 'selecionada'}".`;
+    }
+    if (kind === 'create_action') {
+      return `Criar acao "${payload.name}" na arena ${getPayloadArenaLabel(payload)}.`;
+    }
+    if (kind === 'update_action') {
+      const action = actions.find((item) => item.id === payload.targetActionId);
+      return `Atualizar acao "${action?.name || 'selecionada'}".`;
+    }
+    if (kind === 'schedule_action') {
+      const action = actions.find((item) => item.id === payload.targetActionId);
+      const scheduleLine = payload.daysOfWeek?.length
+        ? `${formatDaysLabel(payload.daysOfWeek)} as ${formatTimeLabel(payload.startTime!)}`
+        : `${formatDateLabel(payload.date!)} as ${formatTimeLabel(payload.startTime!)}`;
+      return `Agendar "${action?.name || payload.name || 'acao'}" em ${scheduleLine}.`;
+    }
+    if (kind === 'complete_action') {
+      const action = actions.find((item) => item.id === payload.targetActionId);
+      const timeLine = typeof payload.startTime === 'number'
+        ? ` em ${formatDateLabel(payload.date || getLocalDateString())} as ${formatTimeLabel(payload.startTime)}`
+        : ' agora';
+      return `Concluir "${action?.name || payload.name || 'acao'}"${timeLine}.`;
+    }
+    if (kind === 'unschedule_action') {
+      const action = actions.find((item) => item.id === payload.targetActionId);
+      const targetDate = payload.date || getLocalDateString();
+      return `Mover "${action?.name || 'acao'}" em ${formatDateLabel(targetDate)}.`;
+    }
+    if (kind === 'organize_day') {
+      return `Organizar o dia no modo ${payload.organizeMode || 'padrao'}.`;
+    }
+    if (kind === 'status') {
+      return 'Mostrar status do dia.';
+    }
+    return 'Confirmar operacao.';
   };
 
   const ensureArenaIdForPayload = async (payload: ExecutorPayload): Promise<string | null> => {
@@ -1376,6 +1466,24 @@ export const OracleAction: React.FC = () => {
       return 'Tarefa desmarcada e devolvida para a Bay Area.';
     }
 
+    if (kind === 'status') {
+      const today = getLocalDateString();
+      const pendingToday = tasks.filter((task) => task.date === today && !task.completed);
+      const completedToday = tasks.filter((task) => task.date === today && task.completed);
+      const bayAreaCount = getBayAreaSuggestions(999).length;
+      const focusArenaName = activeCycle?.focusArenaId
+        ? allArenas.find((arena) => arena.id === activeCycle.focusArenaId)?.name
+        : null;
+
+      return formatAssistantText([
+        'Status rapido do dia:',
+        `Pendencias hoje: ${pendingToday.length}`,
+        `Concluidas hoje: ${completedToday.length}`,
+        `Bay Area ativa: ${bayAreaCount} acoes`,
+        focusArenaName ? `Arena foco do ciclo: ${focusArenaName}` : '',
+      ]);
+    }
+
     const targetCount = payload.organizeMode === 'leve'
       ? 2
       : payload.organizeMode === 'intenso'
@@ -1454,6 +1562,35 @@ export const OracleAction: React.FC = () => {
     appendAssistant(buildPreview(kind, payload));
   };
 
+  const getToastMessage = (kind: PendingExecutor['kind']) => {
+    switch (kind) {
+      case 'create_cycle':
+        return 'Ciclo criado.';
+      case 'edit_cycle_date':
+        return 'Ciclo atualizado.';
+      case 'create_arena':
+        return 'Arena criada.';
+      case 'update_arena':
+        return 'Arena atualizada.';
+      case 'create_action':
+        return 'Ação criada.';
+      case 'update_action':
+        return 'Ação atualizada.';
+      case 'schedule_action':
+        return 'Ação agendada.';
+      case 'complete_action':
+        return 'Ação concluída.';
+      case 'unschedule_action':
+        return 'Ação movida.';
+      case 'organize_day':
+        return 'Dia organizado.';
+      case 'status':
+        return null;
+      default:
+        return 'Atualizado.';
+    }
+  };
+
   const handleDeleteArenaRequest = (text: string) => {
     const arena = resolveArena(text);
     appendAssistant(
@@ -1470,6 +1607,7 @@ export const OracleAction: React.FC = () => {
     const nextInput = (overrideInput ?? input).trim();
     if (!nextInput || isWorking) return;
 
+    if (!hasUserInteracted) setHasUserInteracted(true);
     setMessages((previous) => [...previous, { id: createMessageId(), role: 'user', content: nextInput }]);
     setInput('');
 
@@ -1491,7 +1629,6 @@ export const OracleAction: React.FC = () => {
           }
 
           setPendingExecutor({ kind: pendingExecutor.kind, payload: mergedPayload, awaitingConfirmation: true });
-          appendAssistant('Ajustei o rascunho.');
           appendAssistant(buildPreview(pendingExecutor.kind, mergedPayload));
           return;
         }
@@ -1501,6 +1638,10 @@ export const OracleAction: React.FC = () => {
           const result = await executeOperation(pendingExecutor.kind, pendingExecutor.payload);
           setPendingExecutor(null);
           appendAssistant(result, 'success');
+          const toastMessage = getToastMessage(pendingExecutor.kind);
+          if (toastMessage) {
+            showToast?.(toastMessage, 'success');
+          }
         } catch (error) {
           console.error('OracleAction execute error:', error);
           appendAssistant('Nao consegui aplicar essa operacao agora.', 'warning');
@@ -1591,14 +1732,25 @@ export const OracleAction: React.FC = () => {
           const missingFields = getMissingFields('schedule_action', schedulePayload);
           if (missingFields.length > 0) {
             setPendingExecutor({ kind: 'schedule_action', payload: schedulePayload, awaitingConfirmation: false });
-            appendAssistant('Completar no futuro vira agendamento, mas ainda falta contexto.', 'warning');
-            appendAssistant(buildMissingPrompt('schedule_action', missingFields, schedulePayload), 'warning');
+            appendAssistant(
+              formatAssistantText([
+                'Completar no futuro vira agendamento.',
+                '',
+                buildMissingPrompt('schedule_action', missingFields, schedulePayload),
+              ]),
+              'warning',
+            );
             return;
           }
 
           setPendingExecutor({ kind: 'schedule_action', payload: schedulePayload, awaitingConfirmation: true });
-          appendAssistant('Completar no futuro vira agendamento. Vou converter esse pedido.');
-          appendAssistant(buildPreview('schedule_action', schedulePayload));
+          appendAssistant(
+            formatAssistantText([
+              'Completar no futuro vira agendamento.',
+              '',
+              buildPreview('schedule_action', schedulePayload),
+            ]),
+          );
           return;
         }
       }
@@ -1669,22 +1821,24 @@ export const OracleAction: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-none border-b border-white/5 bg-black/15 px-4 py-3">
-        <div className="flex flex-wrap gap-2">
-          {EXAMPLE_PROMPTS.map((example) => (
-            <button
-              key={example}
-              onClick={() => {
-                setInput(example);
-                inputRef.current?.focus();
-              }}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-300 transition-colors hover:border-[var(--skin-accent-color)]/25 hover:text-white"
-            >
-              {example}
-            </button>
-          ))}
+      {!hasUserInteracted && (
+        <div className="flex-none border-b border-white/5 bg-black/15 px-4 py-3">
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLE_PROMPTS.map((example) => (
+              <button
+                key={example}
+                onClick={() => {
+                  setInput(example);
+                  inputRef.current?.focus();
+                }}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-300 transition-colors hover:border-[var(--skin-accent-color)]/25 hover:text-white"
+              >
+                {example}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
         <div className="space-y-4">
@@ -1795,30 +1949,36 @@ export const OracleAction: React.FC = () => {
           </div>
         )}
 
-        {pendingExecutor?.awaitingConfirmation && (
-          <div className="mt-3 space-y-2">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-gray-500">
-              <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-300" />
-              <span>aplique, ajuste no proprio texto ou cancele</span>
+      {pendingExecutor?.awaitingConfirmation && (
+        <div className="mb-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/8 px-3 py-2 text-xs text-emerald-100">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-200" />
+              <span className="font-semibold">{buildConfirmationSummary(pendingExecutor.kind, pendingExecutor.payload)}</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => void handleSendMessage('pode')}
-                disabled={isWorking}
-                className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-100 transition-colors hover:bg-emerald-500/20 disabled:opacity-40"
-              >
-                Aplicar
-              </button>
-              <button
-                onClick={() => void handleSendMessage('cancelar')}
-                disabled={isWorking}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-300 transition-colors hover:bg-white/10 disabled:opacity-40"
-              >
-                Cancelar
-              </button>
-            </div>
+            <button
+              onClick={() => void handleSendMessage('cancelar')}
+              disabled={isWorking}
+              className="rounded-full border border-white/15 bg-white/5 p-1 text-white/70 transition-colors hover:bg-white/10 disabled:opacity-40"
+              title="Cancelar"
+            >
+              <XIcon className="h-3.5 w-3.5" />
+            </button>
           </div>
-        )}
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              onClick={() => void handleSendMessage('pode')}
+              disabled={isWorking}
+              className="rounded-full border border-emerald-400/25 bg-emerald-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-50 transition-colors hover:bg-emerald-500/30 disabled:opacity-40"
+            >
+              <span className="inline-flex items-center gap-1">
+                <CheckCircleIcon className="h-3.5 w-3.5" />
+                <span>Aplicar</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

@@ -260,8 +260,21 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
     const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
     const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
-    const quizButtonLabel = hasPendingFreeQuiz ? 'Quiz grátis' : 'Quiz';
+    const quizButtonLabel = hasPendingFreeQuiz
+        ? 'Quiz grátis'
+        : campaignQuizFreeCredits > 0
+            ? 'Ficha grátis'
+            : campaignQuizMediumCredits > 0
+                ? 'Ficha média'
+                : 'Quiz';
     const quizButtonBadgeLabel = totalQuizCredits > 0 ? String(totalQuizCredits) : null;
+    const quizHelperLabel = hasPendingFreeQuiz
+        ? 'Libera sua primeira campanha guiada'
+        : campaignQuizFreeCredits > 0
+            ? 'Usa sua ficha grátis para recomendar e liberar'
+            : campaignQuizMediumCredits > 0
+                ? 'Usa sua ficha média para recomendar e liberar'
+                : 'Responde e o sistema aponta a campanha certa';
     const handleInstallLibraryCampaign = async (codex: UserCodex) => {
         if (installedCodexIds.has(codex.id)) {
             showToast('Essa campanha ja esta instalada nas suas campanhas.', 'info');
@@ -677,7 +690,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => setRecommendationQuizOpen(true)}
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        setRecommendationQuizOpen(true);
+                                    }}
                                     className={`relative inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
                                         hasPendingFreeQuiz
                                             ? 'border border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/16 text-[var(--ui-text-accent)] shadow-[0_0_0_1px_rgba(255,255,255,0.04)] hover:border-[var(--skin-accent-color)]/45 hover:bg-[var(--skin-accent-color)]/22'
@@ -699,6 +716,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 >
                                     Loja
                                 </button>
+                            </div>
+                            <div className="mt-2 text-center text-[10px] text-white/48">
+                                {quizHelperLabel}
                             </div>
                         </div>
                         

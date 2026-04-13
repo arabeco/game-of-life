@@ -1243,6 +1243,26 @@ export const ArenasView: React.FC = () => {
             percent: Math.round(progress.progressPercent),
         };
     };
+    const arenaProgressById = useMemo(() => {
+        const map = new Map<string, number>();
+
+        allArenas.forEach((arena) => {
+            const arenaActions = getActionsForArena(arena.id);
+            const progress = calculateArenaProgress({
+                arena,
+                actions: arenaActions,
+                tasks: cycleScopedTasks,
+                clanQuests: getClanQuestsForArena(arena, arenaActions),
+                getClanQuestProgress,
+                getSharedActionPoolProgress,
+                forceSharedPool: relationshipLinkTypeByArenaId.has(arena.id) ? true : undefined,
+            });
+
+            map.set(arena.id, progress.progressPercent);
+        });
+
+        return map;
+    }, [allArenas, cycleScopedTasks, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, relationshipLinkTypeByArenaId, actionsByArenaId]);
     const campaignProgressById = useMemo(() => {
         const map = new Map<string, ReturnType<typeof calculateCampaignProgressSummary>>();
         campaigns.forEach((campaign) => {
@@ -1270,6 +1290,7 @@ export const ArenasView: React.FC = () => {
         });
     };
     const getCampaignProgress = (campaign: Campaign) => getCampaignProgressMetrics(campaign).progressPercent;
+    const shouldDisableBoardCardAnimations = arenaPresentationMode === 'cards' && allArenas.length > 10;
     const renderListValue = (value: string, muted = false) => (
         <span className={`min-w-[2.75rem] text-right text-[10px] font-bold uppercase tracking-[0.08em] tabular-nums ${muted ? 'text-white/42' : 'text-white/78'}`}>
             {value}
@@ -1953,6 +1974,8 @@ export const ArenasView: React.FC = () => {
                         assetName={options.assetName}
                         actions={getActionsForArena(arena.id)}
                         relationshipBadgeType={relationshipLinkTypeByArenaId.get(arena.id) ?? null}
+                        progressPercent={arenaProgressById.get(arena.id)}
+                        disableAnimatedBackground={shouldDisableBoardCardAnimations}
                         onClick={() => {}}
                         variant="overview"
                         highlightPhase={arenaHighlightPhase}

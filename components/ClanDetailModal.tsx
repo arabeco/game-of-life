@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { GlassCard } from './GlassCard';
-import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon } from './Icons';
+import { XIcon, CheckIcon, UsersIcon, DoorIcon, ChevronDownIcon, SendIcon } from './Icons';
 import { supabase } from '../supabaseClient';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { Action, Arena, UserProfile, EnrichedClanMember, SeasonQuest, AldeiaSlot, AldeiaPresence, AldeiaSlotId, ClanCustomQuest } from '../types';
+import { Action, Arena, UserProfile, EnrichedClanMember, SeasonQuest, AldeiaSlot, AldeiaPresence, AldeiaSlotId, ClanCustomQuest, Notification } from '../types';
 import { Sovereign } from './Avatar';
 import { Portal } from './Portal';
 import { ClanManagementModal } from './ClanManagementModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { TransferLeadershipModal } from './TransferLeadershipModal';
 import { ClanMemberCard } from './ClanMemberCard';
-import { AddClanMemberModal } from './AddClanMemberModal';
 import { ClanSlotModal } from './ClanSlotModal';
 import { ArenaDetailModal } from './ArenaDetailModal';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { normalizeDomainLabel } from '../utils/taskDomain.js';
 import { ArenaCard } from './ArenaCard';
+import { SupabaseService } from '../services/SupabaseService';
 
 const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; emoji: string; x: number; y: number; note?: string }[] = [
     { id: 'fogueira', label: 'Fogueira', emoji: '🔥', x: 42, y: 51 },
@@ -327,7 +327,7 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 // --- Main Modal ---
 
 export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, updateAction, deleteAction, deleteArena, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, activateClanQuest, clanQuestProgress, userMissionParticipations, isBasicMode, clan, getAldeiaSlots, getAldeiaPresence, updateAldeiaSlot, performAldeiaDailyUpdate, enterAldeiaSlot, appMode } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, addAction, updateAction, deleteAction, deleteArena, scheduleTask, loadClanAndMembers, acceptSeasonQuest, claimSeasonQuest, showToast, activateClanQuest, clanQuestProgress, userMissionParticipations, isBasicMode, clan, getAldeiaSlots, getAldeiaPresence, updateAldeiaSlot, performAldeiaDailyUpdate, enterAldeiaSlot, appMode, friends, notifications, deleteNotification } = useGame();
     const [now, setNow] = useState(new Date());
     useEffect(() => {
         const interval = setInterval(() => setNow(new Date()), 30000); // Update 'now' every 30 seconds
@@ -833,7 +833,8 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
     };
 
     const [subModal, setSubModal] = useState<'manage' | 'leave' | 'transfer' | null>(null);
-    const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+    const [membersPanel, setMembersPanel] = useState<'people' | 'requests' | 'invite'>('people');
+    const [inviteBusyId, setInviteBusyId] = useState<string | null>(null);
     const [memberToKick, setMemberToKick] = useState<EnrichedClanMember | null>(null);
     const [selectedMember, setSelectedMember] = useState<EnrichedClanMember | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
@@ -848,6 +849,19 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
     const userClanRole = useMemo(() => {
         return enrichedClanMembers.find(m => m.id === userProfile.id)?.role;
     }, [enrichedClanMembers, userProfile.id]);
+    const availableFriendsForInvite = useMemo(
+        () => friends.filter(friend => !enrichedClanMembers.some(member => member.id === friend.id)),
+        [friends, enrichedClanMembers]
+    );
+    const sentClanInvites = useMemo(
+        () => notifications.filter((notification: Notification) =>
+            notification.type === 'clan_invite' &&
+            notification.metadata?.clanId === clan?.id &&
+            notification.metadata?.inviteNotification === true &&
+            notification.metadata?.inviterId === userProfile.id
+        ),
+        [clan?.id, notifications, userProfile.id]
+    );
 
     const activeSeason = seasons.find(s => s.is_active);
     const todayString = getLocalDateString();
@@ -895,6 +909,39 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
         await transferLeadershipAndLeave(newLeaderId);
         setSubModal(null);
         onClose();
+    };
+
+    const handleSendClanInvite = async (friendId: string, nickname: string) => {
+        if (!clan || userClanRole !== 'leader' || inviteBusyId) return;
+
+        const alreadySent = sentClanInvites.some(invite => invite.userId === friendId);
+        if (alreadySent) {
+            showToast('Esse convite já está pendente.', 'info');
+            return;
+        }
+
+        setInviteBusyId(friendId);
+        try {
+            const content = `${userProfile.nickname || 'Um líder'} convidou você para entrar no grupo ${clan.name}. Abra o grupo e solicite entrada.`;
+            await SupabaseService.createNotification(friendId, 'clan_invite', content, {
+                clanId: clan.id,
+                clanName: clan.name,
+                joinRequest: false,
+                inviteNotification: true,
+                inviterId: userProfile.id,
+                senderId: userProfile.id,
+                senderNickname: userProfile.nickname || null,
+                url: '/?oracle=clan',
+            });
+            showToast(`Convite enviado para ${nickname}.`, 'success');
+        } finally {
+            setInviteBusyId(null);
+        }
+    };
+
+    const handleCancelClanInvite = async (notificationId: string) => {
+        await deleteNotification(notificationId);
+        showToast('Convite cancelado.', 'success');
     };
 
     const handleKickMember = async () => {
@@ -1506,47 +1553,144 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                     {userClanRole === 'leader' && (
                                         <div className="flex space-x-2 mb-4 p-2 bg-black/20 rounded-xl sticky top-0 z-10 backdrop-blur-sm">
                                             <button onClick={() => setSubModal('manage')} className="w-full py-2 text-sm rounded-lg luxe-button-secondary">Editar Grupo</button>
-                                            <button onClick={() => setIsAddMemberModalOpen(true)} className="w-full py-2 text-sm rounded-lg luxe-button-secondary">Entradas</button>
+                                            <button onClick={() => setMembersPanel('requests')} className="w-full py-2 text-sm rounded-lg luxe-button-secondary">Entradas</button>
                                         </div>
                                     )}
-                                    {userClanRole === 'leader' && clanJoinRequestsIncoming.length > 0 && (
+                                    {userClanRole === 'leader' && (
+                                        <div className="mb-4 rounded-2xl border border-white/10 bg-black/20 p-2">
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <button
+                                                    onClick={() => setMembersPanel('people')}
+                                                    className={`rounded-xl py-2 text-[11px] font-black uppercase tracking-[0.12em] ${membersPanel === 'people' ? 'luxe-skin-button' : 'bg-white/10 text-white/70'}`}
+                                                >
+                                                    <span className="inline-flex items-center gap-1.5">
+                                                        <UsersIcon className="h-3.5 w-3.5" />
+                                                        Pessoas
+                                                    </span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setMembersPanel('requests')}
+                                                    className={`rounded-xl py-2 text-[11px] font-black uppercase tracking-[0.12em] ${membersPanel === 'requests' ? 'luxe-skin-button' : 'bg-white/10 text-white/70'}`}
+                                                >
+                                                    <span className="inline-flex items-center gap-1.5">
+                                                        <CheckIcon className="h-3.5 w-3.5" />
+                                                        Pedidos
+                                                    </span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setMembersPanel('invite')}
+                                                    className={`rounded-xl py-2 text-[11px] font-black uppercase tracking-[0.12em] ${membersPanel === 'invite' ? 'luxe-skin-button' : 'bg-white/10 text-white/70'}`}
+                                                >
+                                                    <span className="inline-flex items-center gap-1.5">
+                                                        <SendIcon className="h-3.5 w-3.5" />
+                                                        Convidar
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {userClanRole === 'leader' && membersPanel === 'requests' && (
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between px-2 text-xs text-gray-300">
-                                                <span className="font-bold uppercase tracking-wider">{isOfficeClan ? 'Candidatos' : 'Pedidos'}</span>
+                                                <span className="font-bold uppercase tracking-wider">{isOfficeClan ? 'Candidatos' : 'Pedidos de entrada'}</span>
                                                 <span>{clanJoinRequestsIncoming.length} pendentes</span>
                                             </div>
-                                            {clanJoinRequestsIncoming.map(request => {
-                                                const nickname = request.requesterProfile?.nickname || 'Usuario';
+                                            {clanJoinRequestsIncoming.length > 0 ? clanJoinRequestsIncoming.map(request => {
+                                                const nickname = request.requesterProfile?.nickname || 'Usuário';
                                                 const initial = nickname.charAt(0).toUpperCase();
                                                 return (
-                                                    <div key={request.id} className="bg-black/20 p-3 rounded-2xl flex items-center space-x-3 border border-white/10">
-                                                        <div className="w-12 h-12 rounded-full border-2 border-white/20 bg-gray-800 flex items-center justify-center text-sm font-bold">
+                                                    <div key={request.id} className="bg-black/20 p-3 rounded-2xl flex items-center gap-3 border border-white/10">
+                                                        <div className="w-11 h-11 rounded-full border border-white/20 bg-gray-800 flex items-center justify-center text-sm font-bold shrink-0">
                                                             {initial}
                                                         </div>
-                                                        <div className="flex-grow">
-                                                            <div className="flex items-center space-x-2">
-                                                                <h4 className="font-bold text-white">{nickname}</h4>
-                                                            </div>
-                                                            <p className="text-xs text-gray-400">Solicitou entrada no grupo</p>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="font-bold text-white truncate">{nickname}</div>
+                                                            <p className="text-[11px] text-gray-400 leading-snug">Quer entrar no grupo.</p>
                                                         </div>
-                                                        <div className="flex items-center space-x-2">
-                                                            <button onClick={() => approveClanJoinRequest(request)} className="p-2 rounded-full bg-green-500/20 text-green-300 hover:bg-green-500/30">
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <button onClick={() => approveClanJoinRequest(request)} className="p-2 rounded-full bg-green-500/20 text-green-300 hover:bg-green-500/30" title="Aceitar">
                                                                 <CheckIcon className="w-4 h-4" />
                                                             </button>
-                                                            <button onClick={() => rejectClanJoinRequest(request)} className="p-2 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30">
+                                                            <button onClick={() => rejectClanJoinRequest(request)} className="p-2 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30" title="Recusar">
                                                                 <XIcon className="w-4 h-4" />
                                                             </button>
                                                         </div>
                                                     </div>
                                                 );
-                                            })}
+                                            }) : (
+                                                <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-5 text-center text-sm text-gray-400">
+                                                    Nenhum pedido pendente agora.
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {userClanRole === 'leader' && membersPanel === 'invite' && (
+                                        <div className="space-y-3">
+                                            <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-gray-300 leading-relaxed">
+                                                Convites avisam a pessoa e levam ela até o grupo. A entrada ainda passa por aprovação.
+                                            </div>
+                                            {sentClanInvites.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between px-2 text-xs text-gray-300">
+                                                        <span className="font-bold uppercase tracking-wider">Convites enviados</span>
+                                                        <span>{sentClanInvites.length}</span>
+                                                    </div>
+                                                    {sentClanInvites.map((invite) => (
+                                                        <div key={invite.id} className="bg-black/20 p-3 rounded-2xl flex items-center gap-3 border border-white/10">
+                                                            <div className="w-10 h-10 rounded-full border border-white/15 bg-white/5 flex items-center justify-center shrink-0">
+                                                                <SendIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="font-bold text-white truncate">{invite.metadata?.recipientNickname || invite.metadata?.email || 'Convite enviado'}</div>
+                                                                <p className="text-[11px] text-gray-400 leading-snug">Aguardando a pessoa abrir o grupo e pedir entrada.</p>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleCancelClanInvite(invite.id)}
+                                                                className="px-3 py-2 rounded-xl bg-red-500/12 text-red-300 text-[11px] font-black uppercase tracking-[0.12em] hover:bg-red-500/20 shrink-0"
+                                                            >
+                                                                Cancelar
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between px-2 text-xs text-gray-300">
+                                                    <span className="font-bold uppercase tracking-wider">Amizades fora do grupo</span>
+                                                    <span>{availableFriendsForInvite.length}</span>
+                                                </div>
+                                                {availableFriendsForInvite.length > 0 ? availableFriendsForInvite.map(friend => {
+                                                    const alreadySent = sentClanInvites.some(invite => invite.userId === friend.id);
+                                                    return (
+                                                        <div key={friend.id} className="bg-black/20 p-3 rounded-2xl flex items-center gap-3 border border-white/10">
+                                                            <img src={friend.avatarUrl} alt={friend.nickname} className="w-10 h-10 rounded-full shrink-0" />
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="font-bold text-white truncate">{friend.nickname}</div>
+                                                                <p className="text-[11px] text-gray-400">Nível {friend.level}</p>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleSendClanInvite(friend.id, friend.nickname)}
+                                                                disabled={inviteBusyId === friend.id || alreadySent}
+                                                                className="px-3 py-2 rounded-xl bg-white/10 text-white text-[11px] font-black uppercase tracking-[0.12em] hover:bg-white/20 disabled:opacity-50 shrink-0 inline-flex items-center gap-1.5"
+                                                            >
+                                                                <SendIcon className="w-3.5 h-3.5" />
+                                                                {alreadySent ? 'Enviado' : 'Convidar'}
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                }) : (
+                                                    <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-5 text-center text-sm text-gray-400">
+                                                        Nenhuma amizade disponível fora do grupo.
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
                                     <div className="flex items-center justify-between px-2 text-xs text-gray-300">
                                         <span className="font-bold uppercase tracking-wider">Pessoas</span>
                                         <span>{enrichedClanMembers.length} total</span>
                                     </div>
-                                    {enrichedClanMembers.map(member => (
+                                    {(userClanRole !== 'leader' || membersPanel === 'people') && enrichedClanMembers.map(member => (
                                         <ClanMemberCard
                                             key={member.id}
                                             member={member}
@@ -1832,7 +1976,6 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                     canClaim={!userProfile.completedSeasonMissions?.includes(selectedQuest.id) && getQuestProgress(selectedQuest) >= 100}
                 />
             )}
-            {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
             {subModal === 'manage' && <ClanManagementModal onClose={() => setSubModal(null)} />}
             {memberToKick && (
                 <ConfirmationModal

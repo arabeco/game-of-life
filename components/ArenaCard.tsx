@@ -213,6 +213,8 @@ interface ArenaCardProps {
     variant: 'overview' | 'dossier' | 'compact';
     highlightPhase?: 'populate' | 'celebrate' | null;
     relationshipBadgeType?: RelationshipLinkType | null;
+    progressPercent?: number;
+    disableAnimatedBackground?: boolean;
 }
 
 export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({ 
@@ -223,6 +225,8 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     variant, 
     highlightPhase = null,
     relationshipBadgeType = null,
+    progressPercent,
+    disableAnimatedBackground = false,
     tasks: propTasks
 }) => {
     const { appMode, tasks: contextTasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction, userCodexes } = useGame();
@@ -259,8 +263,12 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     }, []);
 
     useEffect(() => {
-        if (relationshipBadgeType) {
+        if (relationshipBadgeType !== undefined) {
             setLinkType(relationshipBadgeType);
+            return;
+        }
+        if (variant !== 'dossier') {
+            setLinkType(null);
             return;
         }
         // Fetch link type for icon
@@ -289,7 +297,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
              }
         };
         fetchLinkType();
-    }, [arena.id, relationshipBadgeType]);
+    }, [arena.id, relationshipBadgeType, variant]);
 
     const handleActionDragStart = (e: React.DragEvent, actionId: string) => {
         e.stopPropagation();
@@ -356,15 +364,19 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 
     const participants = clanQuests.reduce((acc, quest) => acc + (clanQuestParticipants[quest.id] || 0), 0);
 
-    const progress = calculateArenaProgress({
-        arena,
-        actions,
-        tasks: tasksForCounts,
-        clanQuests,
-        getClanQuestProgress,
-        getSharedActionPoolProgress,
-        forceSharedPool: linkType ? true : undefined,
-    }).progressPercent;
+    const progress = useMemo(() => {
+        if (typeof progressPercent === 'number') return progressPercent;
+
+        return calculateArenaProgress({
+            arena,
+            actions,
+            tasks: tasksForCounts,
+            clanQuests,
+            getClanQuestProgress,
+            getSharedActionPoolProgress,
+            forceSharedPool: linkType ? true : undefined,
+        }).progressPercent;
+    }, [actions, arena, clanQuests, getClanQuestProgress, getSharedActionPoolProgress, linkType, progressPercent, tasksForCounts]);
 
     const getIcon = () => {
         return <EmojiGlyph symbol={arena.icon || '\u{1F3DB}\uFE0F'} size="arena" className="text-white" />;
@@ -405,7 +417,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 
     const isOverview = variant === 'overview';
     const isCompactThumbnail = variant === 'overview' || variant === 'compact';
-    const plasmaEnabled = (oraclePreferences?.animationsEnabled ?? true) && !prefersReducedMotion;
+    const plasmaEnabled = (oraclePreferences?.animationsEnabled ?? true) && !prefersReducedMotion && !disableAnimatedBackground;
     const visibleMilestones = isCompactThumbnail ? milestoneActions.slice(0, 1) : milestoneActions;
     const visibleBronzeActions = isCompactThumbnail ? bronzeActions.slice(0, 3) : bronzeActions;
     const visualFamily = resolveArenaVisualFamily({

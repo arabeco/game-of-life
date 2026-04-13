@@ -149,7 +149,7 @@ export const ArenaDetailModal: React.FC<{
     collaborativeOwnerUserId = null,
     onLinkedArenaRefresh,
 }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, removeRelationshipArenaShare, tasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, removeRelationshipArenaShare, tasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, enrichedClanMembers, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
@@ -293,7 +293,7 @@ export const ArenaDetailModal: React.FC<{
     }, [clanQuests, getClanQuestProgress]);
 
     const isOfficeMode = clan?.clanType === 'Office';
-    const isLeader = clan?.leaderId === userProfile?.id;
+    const isLeader = enrichedClanMembers.some(member => member.id === userProfile?.id && member.role === 'leader');
     const forceSharedPool = effectiveRelationshipType ? true : (isOfficeMode ? true : undefined);
     const tasksForCounts = useMemo(() => {
         if (Array.isArray(tasksOverride)) return tasksOverride;

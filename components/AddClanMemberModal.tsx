@@ -25,7 +25,10 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
         )
     ), [friends, enrichedClanMembers]);
 
-    const canManage = clan?.leaderId === userProfile?.id;
+    const canManage = useMemo(
+        () => enrichedClanMembers.some(member => member.id === userProfile?.id && member.role === 'leader'),
+        [enrichedClanMembers, userProfile?.id]
+    );
 
     const handleSendInvite = async (friendId: string, nickname: string) => {
         if (!clan) return;
@@ -44,9 +47,11 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
             {
                 clanId: clan.id,
                 clanName: clan.name,
-                joinRequest: true,
-                requesterId: userProfile.id,
-                requesterNickname: userProfile.nickname || null,
+                joinRequest: false,
+                inviteNotification: true,
+                inviterId: userProfile.id,
+                senderId: userProfile.id,
+                senderNickname: userProfile.nickname || null,
                 url: '/?oracle=clan',
             },
         );

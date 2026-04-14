@@ -153,10 +153,17 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                                         setActiveDateField('start');
                                         setDatePickerOpen(true);
                                     }}
-                                    className="w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 flex items-center justify-between hover:bg-black/60 transition-colors"
+                                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white transition-colors hover:bg-black/45"
                                 >
-                                    <span className="text-gray-300">Inicia: {new Date(cycleStartDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                                    <CalendarIcon className="w-5 h-5 accent-text" />
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="text-left">
+                                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Inicio</p>
+                                            <p className="mt-1 text-sm font-semibold text-gray-200">{new Date(cycleStartDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                        </div>
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10">
+                                            <CalendarIcon className="h-5 w-5 accent-text" />
+                                        </div>
+                                    </div>
                                 </button>
                                 <button
                                     id="new-cycle-date-button"
@@ -165,10 +172,17 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                                         setActiveDateField('end');
                                         setDatePickerOpen(true);
                                     }}
-                                    className="w-full p-3 bg-black/40 text-white rounded-xl border border-white/10 flex items-center justify-between hover:bg-black/60 transition-colors"
+                                    className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white transition-colors hover:bg-black/45"
                                 >
-                                    <span className="text-gray-300">Termina: {new Date(cycleEndDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                                    <CalendarIcon className="w-5 h-5 accent-text" />
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="text-left">
+                                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Fim</p>
+                                            <p className="mt-1 text-sm font-semibold text-gray-200">{new Date(cycleEndDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                        </div>
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10">
+                                            <CalendarIcon className="h-5 w-5 accent-text" />
+                                        </div>
+                                    </div>
                                 </button>
                                 <p className="px-1 text-[11px] leading-relaxed text-gray-400">
                                     {cycleTiming.statusLabel}. Dia 1 = inicio do ciclo e o ultimo dia tambem conta.
@@ -196,7 +210,15 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
             </div>
             {editingArena && <ArenaDetailModal arena={editingArena} onClose={() => setEditingArena(null)} />}
             {showConfirm && <ConfirmationModal title="Iniciar Novo Ciclo?" message="Suas arenas serão atualizadas e o Planner será reiniciado. Esta ação não pode ser desfeita." onConfirm={() => { setShowConfirm(false); handleStartCycle(); }} onCancel={() => setShowConfirm(false)} />}
-            {isDatePickerOpen && <DatePickerModal initialDate={new Date(activeDateField === 'start' ? cycleStartDate : cycleEndDate)} onClose={() => setDatePickerOpen(false)} onSelect={handleDateSelect} />}
+            {isDatePickerOpen && (
+                <DatePickerModal
+                    selectedDate={new Date(activeDateField === 'start' ? cycleStartDate : cycleEndDate)}
+                    title={activeDateField === 'start' ? 'Escolher inicio do ciclo' : 'Escolher fim do ciclo'}
+                    minDate={new Date(activeDateField === 'start' ? today : cycleStartDate)}
+                    onClose={() => setDatePickerOpen(false)}
+                    onSelect={handleDateSelect}
+                />
+            )}
         </Portal>
     );
 };

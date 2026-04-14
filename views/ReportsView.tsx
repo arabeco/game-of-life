@@ -202,6 +202,46 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
         </div>
     );
 };
+
+const UpcomingCycleCard: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => void }> = ({ cycle, onEdit }) => {
+    const totalDays = Math.max(1, daysBetween(parseDate(cycle.startDate), parseDate(cycle.endDate)) + 1);
+
+    return (
+        <GlassCard variant="neutral" className="mb-4 px-4 py-3">
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Proximo ciclo</p>
+                    <h3 className="mt-1 text-sm font-black uppercase text-white">{cycle.name || 'Ciclo agendado'}</h3>
+                    <p className="mt-1 text-xs text-gray-400">
+                        Comeca em {formatDate(cycle.startDate)} e vai ate {formatDate(cycle.endDate)}.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => onEdit(cycle)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/75 transition hover:bg-white/10 hover:text-white"
+                    title="Editar ciclo agendado"
+                >
+                    <EditIcon className="h-4 w-4" />
+                </button>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                    <div className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">Inicio</div>
+                    <div className="mt-1 text-sm font-bold text-white">{formatDate(cycle.startDate)}</div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                    <div className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">Fim</div>
+                    <div className="mt-1 text-sm font-bold text-white">{formatDate(cycle.endDate)}</div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                    <div className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">Duracao</div>
+                    <div className="mt-1 text-sm font-bold text-white">{totalDays} dias</div>
+                </div>
+            </div>
+        </GlassCard>
+    );
+};
 const EditCycleEndDateModal: React.FC<{
     cycle: Cycle;
     onClose: () => void;
@@ -500,7 +540,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
 // --- Main View ---
 export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const {
-        reports, activeCycle, startCycle, updateCycle, endCycle, assets, actions,
+        reports, activeCycle, upcomingCycle, startCycle, updateCycle, endCycle, assets, actions,
         applyExp, addChest, addFeedEvent, seasons, userProfile,
         oraclePreferences, showToast, grantInventoryItem, grantUserUnlock, updateUserProfile,
         setAchievementUnlocked, deleteCycle, fetchNotifications, openChest // Added deleteCycle here
@@ -1732,8 +1772,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             backgroundSize: 'cover',
                         }}
                     />
-                    <div className="relative z-10 flex flex-col gap-3 px-4 py-4">
-                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-300">
+                    <button
+                        type="button"
+                        onClick={handleStartLegacyExport}
+                        className="relative z-10 flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-white/[0.03]"
+                    >
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-300">
                             <span className="text-[var(--skin-accent-color)]">Legado</span>
                             <span>{sortedReports.length} ciclos</span>
                             <span className="text-white/15">/</span>
@@ -1742,26 +1787,26 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <span>{Math.round(totalHistoricalHours)}h</span>
                             <span className="text-white/15">/</span>
                             <span>score {Math.round(historicalAverageScore)}</span>
+                            </div>
+                            <p className="mt-2 text-sm font-black tracking-[0.03em] text-white">
+                                Memória condensada da trajetória
+                            </p>
+                            <p className="mt-1 max-w-[32rem] text-xs leading-relaxed text-gray-400">
+                                Toque para abrir a projeção completa, navegar pelas eras e expandir a placa do legado se quiser.
+                            </p>
                         </div>
-                        <div className="rounded-[24px] border border-white/10 bg-black/38 px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
-                            <div className="mx-auto max-w-[248px]">
+                        <div className="w-[132px] shrink-0 rounded-[20px] border border-white/10 bg-black/32 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md">
+                            <div className="mx-auto max-w-[108px]">
                                 <LegacyPlaqueArtifact
                                     eras={eraSummaries}
                                     sovereignName={sovereignName}
                                     plaqueUnlocked={legacyPlaqueUnlocked}
                                     compact
+                                    subdued
                                 />
                             </div>
                         </div>
-                        <div className="flex justify-center">
-                            <button
-                                onClick={handleStartLegacyExport}
-                                className="w-full max-w-[260px] rounded-xl luxe-skin-button px-5 py-3.5 text-xs"
-                            >
-                                VER LEGADO
-                            </button>
-                        </div>
-                    </div>
+                    </button>
                 </div>
             </GlassCard>
         );
@@ -2202,9 +2247,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </GlassCard>
                         )}
 
+                        {!activeCycle && upcomingCycle && (
+                            <UpcomingCycleCard cycle={upcomingCycle} onEdit={setCycleBeingEdited} />
+                        )}
+
                         {renderLegacySummary()}
 
-                        {!activeCycle ? (
+                        {!activeCycle && !upcomingCycle ? (
                             <div className="relative z-20 space-y-2">
                                 <button id="start-new-cycle-button" onClick={() => setShowNewCycleSetup(true)} className="w-full py-3 rounded-xl luxe-skin-button mb-4 shadow-lg shadow-[var(--skin-accent-color)]/20">INICIAR NOVO CICLO</button>
                                 {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem legado fechado ainda. Inicie sua jornada.</div>}

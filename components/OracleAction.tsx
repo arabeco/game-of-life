@@ -83,14 +83,6 @@ interface RankedEntity<T> {
 
 const createMessageId = () => `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
-const EXAMPLE_PROMPTS = [
-  'criar ciclo Reconstrucao ate 12/04',
-  'marcar consulta medica amanha de manha',
-  'fiz academia as 9h',
-  'desmarcar relatorio',
-  'organizar meu dia no modo leve',
-] as const;
-
 const ACTION_INTRO = [
   'Aba operacional do GLYPH.',
   'Eu executo o core loop com perguntas curtas, rascunho e confirmacao antes de aplicar.',
@@ -427,7 +419,6 @@ export const OracleAction: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeechAvailable, setIsSpeechAvailable] = useState(false);
   const [pendingExecutor, setPendingExecutor] = useState<PendingExecutor | null>(null);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const speechRef = useRef<any>(null);
@@ -1607,7 +1598,6 @@ export const OracleAction: React.FC = () => {
     const nextInput = (overrideInput ?? input).trim();
     if (!nextInput || isWorking) return;
 
-    if (!hasUserInteracted) setHasUserInteracted(true);
     setMessages((previous) => [...previous, { id: createMessageId(), role: 'user', content: nextInput }]);
     setInput('');
 
@@ -1820,25 +1810,6 @@ export const OracleAction: React.FC = () => {
           direto
         </div>
       </div>
-
-      {!hasUserInteracted && (
-        <div className="flex-none border-b border-white/5 bg-black/15 px-4 py-3">
-          <div className="flex flex-wrap gap-2">
-            {EXAMPLE_PROMPTS.map((example) => (
-              <button
-                key={example}
-                onClick={() => {
-                  setInput(example);
-                  inputRef.current?.focus();
-                }}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-300 transition-colors hover:border-[var(--skin-accent-color)]/25 hover:text-white"
-              >
-                {example}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
         <div className="space-y-4">

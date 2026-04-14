@@ -1041,7 +1041,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     const task = tasks.find(t => t.id === payload);
                     const action = task ?getActionById(task.actionId) : undefined;
                     if (action && action.actionType !== 'Marco') {
-                        returnTaskToPool(payload);
+                        returnTaskToPool(payload, activeCycle ? undefined : selectedOperationalDateString);
                     } else if (task) {
                         deleteTask(payload);
                     }

@@ -21,7 +21,7 @@ export interface TaskDomainApi {
     scheduleAndCompleteNow: (actionId: string, taskId?: string) => Promise<void>;
     scheduleAndCompleteAt: (actionId: string, date: string, startTime: number, taskId?: string) => Promise<void>;
     scheduleAndCompleteMilestoneNow: (actionId: string) => Promise<void>;
-    returnTaskToPool: (taskId: string) => void;
+    returnTaskToPool: (taskId: string, targetOperationalDate?: string) => void;
     deleteTask: (taskId: string) => void;
     getTasksForDate: (date: Date) => ScheduledTask[];
     rescheduleTask: (taskId: string, newDate: string, newStartTime: number) => void;
@@ -888,25 +888,29 @@ export const createTaskDomain = ({
         });
     };
 
-    const returnTaskToPool = (taskId: string) => {
+    const returnTaskToPool = (taskId: string, targetOperationalDate?: string) => {
         const currentTask = tasks.find(task => task.id === taskId);
         if (currentTask && isTaskLockedByClosedDay(currentTask)) {
             showClosedDayMutationBlockedToast();
             return;
         }
 
-        const isCommitted = dailyCommitment.taskIds.includes(taskId);
-        if (isCommitted) {
-            setDailyCommitmentState(prev => (
-                prev.taskIds.includes(taskId)
-                    ? { ...prev, taskIds: prev.taskIds.filter(id => id !== taskId) }
-                    : prev
-            ));
-            updateTask(taskId, { startTime: -1, completed: false });
-            return;
-        }
+        setDailyCommitmentState(prev => (
+            prev.taskIds.includes(taskId)
+                ? { ...prev, taskIds: prev.taskIds.filter(id => id !== taskId) }
+                : prev
+        ));
 
-        deleteTask(taskId);
+        const normalizedDate =
+            !activeCycle && targetOperationalDate
+                ? targetOperationalDate
+                : currentTask?.date;
+
+        updateTask(taskId, {
+            ...(normalizedDate ? { date: normalizedDate } : {}),
+            startTime: -1,
+            completed: false,
+        });
     };
 
     const getTasksForDate = (date: Date) => {

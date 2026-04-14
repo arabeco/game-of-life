@@ -13,15 +13,6 @@ import { buildOracleOperationalContext } from '../utils/oracleOperationalContext
 import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQuizModal';
 
 type OracleTabTarget = 'chat' | 'action' | 'social' | 'notifications';
-type OracleQuickActionId = 'campaign_quiz' | 'manual_start' | 'adjust_existing';
-
-interface MessageQuickAction {
-  id: OracleQuickActionId;
-  label: string;
-  description: string;
-  variant?: 'primary' | 'secondary';
-}
-
 interface PendingClarification {
   type: 'campaign_route';
   originalInput: string;
@@ -37,7 +28,6 @@ interface Message {
   feedPresentation?: 'ambient_pulse' | 'info_card';
   feedSummary?: string;
   feedTrigger?: 'app_open' | 'cron' | 'manual';
-  quickActions?: MessageQuickAction[];
 }
 
 const normalizeOracleText = (value: string) =>
@@ -46,27 +36,6 @@ const normalizeOracleText = (value: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
-
-const ORACLE_ROUTE_ACTIONS: MessageQuickAction[] = [
-  {
-    id: 'campaign_quiz',
-    label: 'Fazer quiz',
-    description: 'Descobrir a campanha certa antes de montar a estrutura.',
-    variant: 'primary',
-  },
-  {
-    id: 'manual_start',
-    label: 'Montar manual',
-    description: 'Ir para Ação e construir o começo com perguntas curtas.',
-    variant: 'secondary',
-  },
-  {
-    id: 'adjust_existing',
-    label: 'Ajustar o que já existe',
-    description: 'Editar ciclo, arena, ação ou agenda sem recriar nada.',
-    variant: 'secondary',
-  },
-];
 
 const detectCampaignRouteIntent = (rawInput: string): PendingClarification | null => {
   const normalized = normalizeOracleText(rawInput);
@@ -604,18 +573,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   }, [currentMode, onNavigateTab, openActionTabWithGuidance]);
 
-  const handleQuickActionClick = useCallback((action: MessageQuickAction) => {
-    setMessages((previous) => [
-      ...previous,
-      {
-        role: 'user',
-        content: action.label,
-        timestamp: new Date(),
-      },
-    ]);
-    handleCampaignRouteSelection(action.id, pendingClarification);
-  }, [handleCampaignRouteSelection, pendingClarification]);
-
   const handleCommand = async (cmd: string): Promise<string | null> => {
     const lowerCmd = cmd.toLowerCase().trim();
     
@@ -743,7 +700,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           content: buildCampaignRouteMessage(nextInput),
           timestamp: new Date(),
           mode: currentMode,
-          quickActions: ORACLE_ROUTE_ACTIONS,
         },
       ]);
       setIsLoading(false);
@@ -1068,26 +1024,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                   {msg.content}
                 </div>
               )}
-              {msg.role === 'assistant' && msg.quickActions?.length ? (
-                <div className="mt-2 flex w-full max-w-[92%] flex-col gap-2">
-                  {msg.quickActions.map((action) => (
-                    <button
-                      key={`${idx}-${action.id}`}
-                      type="button"
-                      onClick={() => handleQuickActionClick(action)}
-                      disabled={isLoading}
-                      className={`w-full rounded-2xl border px-3 py-3 text-left transition-all ${
-                        action.variant === 'primary'
-                          ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/18'
-                          : 'border-white/10 bg-white/5 text-white/85 hover:bg-white/10'
-                      } ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}
-                    >
-                      <div className="text-[11px] font-black uppercase tracking-[0.16em]">{action.label}</div>
-                      <div className="mt-1 text-[11px] leading-relaxed text-white/55">{action.description}</div>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
             </div>
           )})}
           

@@ -555,6 +555,7 @@ export interface GameContextType {
     clanRanks: ClanRank[];
     enrichedClanMembers: EnrichedClanMember[];
     activeCycle: Cycle | null;
+    upcomingCycle: Cycle | null;
     dailyCommitment: DailyCommitment;
     updateOperationalScratch: (text: string) => void;
     unlockDailyCommitment: () => void;
@@ -613,7 +614,7 @@ export interface GameContextType {
     scheduleAndCompleteNow: (actionId: string, taskId?: string) => Promise<void>;
     scheduleAndCompleteAt: (actionId: string, date: string, startTime: number, taskId?: string) => Promise<void>;
     scheduleAndCompleteMilestoneNow: (actionId: string) => Promise<void>;
-    returnTaskToPool: (taskId: string) => void;
+    returnTaskToPool: (taskId: string, targetOperationalDate?: string) => void;
     deleteTask: (taskId: string) => void;
     getTasksForDate: (date: Date) => ScheduledTask[];
     rescheduleTask: (taskId: string, newDate: string, newStartTime: number) => void;
@@ -2492,6 +2493,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setChecklistItems([...defaultChecklistItems]);
             setFeed([]);
             setActiveCycle(null);
+            setUpcomingCycle(null);
             // SincronizaÃ§Ã£o inicial do Sitrep (Daily Commitment) - SerÃ¡ carregado via effect abaixo
             setDailyCommitmentState(createDefaultDailyCommitment());
             setCycleExpBonus(0);
@@ -2652,6 +2654,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     // State reset is now handled in the session change effect above.
 
     const [activeCycle, setActiveCycle] = useState<Cycle | null>(() => null);
+    const [upcomingCycle, setUpcomingCycle] = useState<Cycle | null>(() => null);
 
     const [clan, setClan] = useState<Clan | null>(() => null);
 
@@ -4127,9 +4130,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     .select('*')
                     .eq('user_id', userId)
                     .is('report_data', null)
-                    .order('start_date', { ascending: false })
+                    .order('start_date', { ascending: true })
                     .order('created_at', { ascending: false })
-                    .limit(1),
+                    .limit(50),
             ]) as any[];
 
             let loadedArenas: Arena[] = [];
@@ -4218,42 +4221,64 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             const { data: cyclesData, error: cyclesError } = cyclesResult;
             if (!cyclesError && cyclesData && cyclesData.length > 0) {
-                const currentCycle = mapToCamelCase(cyclesData[0]) as Cycle;
+                const today = getLocalDateString();
+                const openCycles = (mapToCamelCase(cyclesData) as Cycle[])
+                    .sort((left, right) => {
+                        return new Date(left.startDate).getTime() - new Date(right.startDate).getTime();
+                    });
+                const activeCandidates = openCycles
+                    .filter(cycle => cycle.startDate <= today)
+                    .sort((left, right) => {
+                        const startDelta = new Date(right.startDate).getTime() - new Date(left.startDate).getTime();
+                        if (startDelta !== 0) return startDelta;
+                        return 0;
+                    });
+                const currentCycle = activeCandidates[0] || null;
+                const nextCycle = openCycles.find(cycle => cycle.startDate > today) || null;
+
                 setActiveCycle(currentCycle);
-                void (async () => {
-                    try {
-                        const { data: sitreps } = await supabase
-                            .from('sitrep_reports')
-                            .select('score, completed_tasks_count, total_tasks_count')
-                            .eq('cycle_id', currentCycle.id);
+                setUpcomingCycle(nextCycle);
 
-                        if (!sitreps) return;
+                if (!currentCycle) {
+                    setCycleProgress(0);
+                    setCycleExpBonus(0);
+                } else {
+                    void (async () => {
+                        try {
+                            const { data: sitreps } = await supabase
+                                .from('sitrep_reports')
+                                .select('score, completed_tasks_count, total_tasks_count')
+                                .eq('cycle_id', currentCycle.id);
 
-                        const totalCompleted = sitreps.reduce((acc, r) => acc + (r.completed_tasks_count || 0), 0);
-                        const totalTasks = sitreps.reduce((acc, r) => acc + (r.total_tasks_count || 0), 0);
-                        const progress = totalTasks > 0 ?Math.round((totalCompleted / totalTasks) * 100) : 0;
-                        setCycleProgress(progress);
+                            if (!sitreps) return;
 
-                        const endDate = new Date(currentCycle.endDate);
-                        const now = new Date();
-                        if (now >= endDate && !currentCycle.isFinished) {
-                            console.log('Cycle end date reached. Auto-finishing cycle...');
-                            setTimeout(() => {
-                                void 0;
-                            }, 2000);
+                            const totalCompleted = sitreps.reduce((acc, r) => acc + (r.completed_tasks_count || 0), 0);
+                            const totalTasks = sitreps.reduce((acc, r) => acc + (r.total_tasks_count || 0), 0);
+                            const progress = totalTasks > 0 ?Math.round((totalCompleted / totalTasks) * 100) : 0;
+                            setCycleProgress(progress);
+
+                            const endDate = new Date(currentCycle.endDate);
+                            const now = new Date();
+                            if (now >= endDate && !currentCycle.isFinished) {
+                                console.log('Cycle end date reached. Auto-finishing cycle...');
+                                setTimeout(() => {
+                                    void 0;
+                                }, 2000);
+                            }
+
+                            const totalExpBonus = sitreps.reduce((sum, r) => {
+                                const bonus = r.score >= 95 ?120 : r.score >= 85 ?60 : 0;
+                                return sum + bonus;
+                            }, 0);
+                            setCycleExpBonus(totalExpBonus);
+                        } catch (error) {
+                            console.error('Failed to hydrate cycle sitrep summary:', error);
                         }
-
-                        const totalExpBonus = sitreps.reduce((sum, r) => {
-                            const bonus = r.score >= 95 ?120 : r.score >= 85 ?60 : 0;
-                            return sum + bonus;
-                        }, 0);
-                        setCycleExpBonus(totalExpBonus);
-                    } catch (error) {
-                        console.error('Failed to hydrate cycle sitrep summary:', error);
-                    }
-                })();
+                    })();
+                }
             } else if (!cyclesError) {
                 setActiveCycle(null);
+                setUpcomingCycle(null);
                 setCycleProgress(0);
                 setCycleExpBonus(0);
             }
@@ -7733,6 +7758,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return;
         const today = getLocalDateString();
+        if (activeCycle || upcomingCycle) {
+            showToast('Voce ja tem um ciclo ativo ou agendado. Encerre ou remova o atual antes de criar outro.', 'error');
+            return;
+        }
         const trimmedName = name.trim();
         const normalizedStartDate = (startDate || today).trim();
         const normalizedEndDate = endDate.trim();
@@ -7758,7 +7787,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             seasonId: activeRuntimeSeasonId
         };
         setCycleExpBonus(0);
-        setActiveCycle(newCycle);
+        if (normalizedStartDate > today) {
+            setActiveCycle(null);
+            setUpcomingCycle(newCycle);
+            showToast(`Ciclo agendado para ${normalizedStartDate}.`, 'success');
+        } else {
+            setUpcomingCycle(null);
+            setActiveCycle(newCycle);
+        }
 
         // Sync to Supabase
         const snakeCaseCycle = {
@@ -7777,7 +7813,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const updateCycle = async (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
-        const cycleToEdit = activeCycle?.id === cycleId ? activeCycle : null;
+        const cycleToEdit = activeCycle?.id === cycleId
+            ? activeCycle
+            : (upcomingCycle?.id === cycleId ? upcomingCycle : null);
         const historicalReportToEdit = !cycleToEdit
             ? reports.find((report) => report.cycleId === cycleId || report.id === cycleId) || null
             : null;
@@ -7809,9 +7847,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const previousCycleSnapshot = activeCycle?.id === cycleId ? activeCycle : null;
+        const previousUpcomingCycleSnapshot = upcomingCycle?.id === cycleId ? upcomingCycle : null;
         const previousHistoricalReportSnapshot = historicalReportToEdit ? { ...historicalReportToEdit } : null;
         if (previousCycleSnapshot) {
             setActiveCycle(prev => (prev?.id === cycleId ? { ...prev, ...sanitizedUpdates } : prev));
+        }
+        if (previousUpcomingCycleSnapshot) {
+            setUpcomingCycle(prev => (prev?.id === cycleId ? { ...prev, ...sanitizedUpdates } : prev));
         }
         if (!previousCycleSnapshot && previousHistoricalReportSnapshot && sanitizedUpdates.name) {
             setReports(prev => prev.map(report => (
@@ -7838,6 +7880,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             if (previousCycleSnapshot) {
                 setActiveCycle(prev => (prev?.id === cycleId ? previousCycleSnapshot : prev));
+            }
+            if (previousUpcomingCycleSnapshot) {
+                setUpcomingCycle(prev => (prev?.id === cycleId ? previousUpcomingCycleSnapshot : prev));
             }
             if (!previousCycleSnapshot && previousHistoricalReportSnapshot) {
                 setReports(prev => prev.map(report => (
@@ -8303,6 +8348,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return () => window.clearTimeout(timeoutId);
     }, [activeCycle, actions, assets, endCycle, hasHydratedFromSupabase, showToast]);
 
+    useEffect(() => {
+        if (!hasHydratedFromSupabase || activeCycle || !upcomingCycle?.id) return;
+
+        const today = getLocalDateString();
+        if (upcomingCycle.startDate > today) return;
+
+        setActiveCycle(upcomingCycle);
+        setUpcomingCycle(null);
+        setCycleProgress(0);
+        setCycleExpBonus(0);
+        showToast(`O ciclo "${upcomingCycle.name}" comecou hoje.`, 'success');
+    }, [activeCycle, hasHydratedFromSupabase, showToast, upcomingCycle]);
+
     const applyExp = (expGained: number) => {
         // This function is now mostly for immediate visual feedback or small grants.
         // Major cycle EXP is applied at endDailyBattle or endCycle.
@@ -8355,8 +8413,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return;
 
+        const wasActiveCycle = activeCycle?.id === cycleId;
+        const wasUpcomingCycle = upcomingCycle?.id === cycleId;
+
         if (activeCycle?.id === cycleId) {
             setActiveCycle(null);
+        }
+        if (upcomingCycle?.id === cycleId) {
+            setUpcomingCycle(null);
         }
 
         // 1. Delete from Supabase
@@ -8383,21 +8447,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         showToast('Ciclo excluido com sucesso.', 'success');
 
         // If it was the active cycle, try to fetch another one or just clear state
-        if (activeCycle?.id === cycleId) {
-            // Maybe fetch latest active cycle?
-            const { data: latest } = await supabase
+        if (wasActiveCycle || wasUpcomingCycle) {
+            const today = getLocalDateString();
+            const { data: remainingCycles } = await supabase
                 .from('cycles')
                 .select('*')
                 .eq('user_id', userId)
                 .is('report_data', null)
-                .order('start_date', { ascending: false })
+                .order('start_date', { ascending: true })
                 .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
+                .limit(50);
 
-            if (latest) {
-                setActiveCycle(mapToCamelCase(latest) as Cycle);
-            }
+            const openCycles = ((remainingCycles || []).map(row => mapToCamelCase(row) as Cycle))
+                .sort((left, right) => new Date(left.startDate).getTime() - new Date(right.startDate).getTime());
+            const nextActiveCycle = [...openCycles]
+                .filter(cycle => cycle.startDate <= today)
+                .sort((left, right) => new Date(right.startDate).getTime() - new Date(left.startDate).getTime())[0] || null;
+            const nextUpcomingCycle = openCycles.find(cycle => cycle.startDate > today) || null;
+
+            setActiveCycle(nextActiveCycle);
+            setUpcomingCycle(nextUpcomingCycle);
         }
     };
 
@@ -11666,7 +11735,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return (
         <GameContext.Provider value={{
             session,
-            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
+            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,

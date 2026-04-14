@@ -9,6 +9,7 @@ interface LegacyPlaqueArtifactProps {
     plaqueUnlocked: boolean;
     className?: string;
     compact?: boolean;
+    subdued?: boolean;
 }
 
 const ENGRAVED_LABEL_STYLE: React.CSSProperties = {
@@ -71,18 +72,24 @@ export const LegacyPlaqueArtifact: React.FC<LegacyPlaqueArtifactProps> = ({
     plaqueUnlocked,
     className = '',
     compact = false,
+    subdued = false,
 }) => {
     const { totalCycles, totalHours, totalSealedMetas, weightedAverageScore, averageGrade } = buildLegacyPlaqueSummary(eras);
-    const framePadding = compact ? 'p-5' : 'p-7';
-    const titleSize = compact ? 'text-3xl' : 'text-4xl';
-    const coinSize = compact ? 'h-24 w-24' : 'h-28 w-28';
-    const innerCoinSize = compact ? 'h-16 w-16' : 'h-20 w-20';
-    const metricsText = compact ? 'text-2xl' : 'text-[2rem]';
+    const isCompact = compact || subdued;
+    const framePadding = subdued ? 'p-4' : compact ? 'p-5' : 'p-7';
+    const coinSize = subdued ? 'h-16 w-16' : compact ? 'h-24 w-24' : 'h-28 w-28';
+    const innerCoinSize = subdued ? 'h-11 w-11' : compact ? 'h-16 w-16' : 'h-20 w-20';
+    const metricsText = subdued ? 'text-[1.2rem]' : compact ? 'text-2xl' : 'text-[2rem]';
+    const minorMetricText = subdued ? 'text-[1.15rem]' : compact ? 'text-2xl' : 'text-3xl';
+    const sectionGap = subdued ? 'gap-3' : 'gap-6';
+    const contentGap = subdued ? 'space-y-3' : 'space-y-5';
+    const metricCardPadding = subdued ? 'p-3' : 'p-4';
+    const metricGridGap = subdued ? 'gap-2.5' : 'gap-3';
 
     return (
         <section
             id={id}
-            className={`relative overflow-hidden rounded-[34px] border ${framePadding} ${className}`}
+            className={`relative overflow-hidden ${subdued ? 'rounded-[26px]' : 'rounded-[34px]'} border ${framePadding} ${className}`}
             style={{
                 borderColor: plaqueUnlocked ? 'rgba(216,195,160,0.34)' : 'rgba(152,145,132,0.28)',
                 background: 'linear-gradient(145deg, #8f8576 0%, #6d655b 22%, #948a7d 42%, #5b544b 64%, #3b352f 100%)',
@@ -92,7 +99,7 @@ export const LegacyPlaqueArtifact: React.FC<LegacyPlaqueArtifactProps> = ({
             }}
         >
             <div
-                className="pointer-events-none absolute inset-[10px] rounded-[26px] border"
+                className={`pointer-events-none absolute border ${subdued ? 'inset-[8px] rounded-[18px]' : 'inset-[10px] rounded-[26px]'}`}
                 style={{ borderColor: plaqueUnlocked ? 'rgba(241,225,188,0.18)' : 'rgba(255,255,255,0.08)' }}
             />
             <div
@@ -107,26 +114,29 @@ export const LegacyPlaqueArtifact: React.FC<LegacyPlaqueArtifactProps> = ({
                 <path d="M310 286 C286 304, 280 336, 270 380" stroke="rgba(40,34,29,0.34)" strokeWidth="2.1" fill="none" />
                 <path d="M70 372 C106 350, 122 322, 148 292" stroke="rgba(255,255,255,0.06)" strokeWidth="1.4" fill="none" />
             </svg>
-            <div className="pointer-events-none absolute left-5 top-5 h-8 w-8 rounded-full border" style={{ borderColor: 'rgba(58,50,44,0.22)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }} />
-            <div className="pointer-events-none absolute right-5 top-5 h-8 w-8 rounded-full border" style={{ borderColor: 'rgba(58,50,44,0.22)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }} />
-            <div className="pointer-events-none absolute bottom-5 left-5 h-8 w-8 rounded-full border" style={{ borderColor: 'rgba(58,50,44,0.22)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }} />
-            <div className="pointer-events-none absolute bottom-5 right-5 h-8 w-8 rounded-full border" style={{ borderColor: 'rgba(58,50,44,0.22)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }} />
+            {!subdued && (
+                <>
+                    <div className="pointer-events-none absolute left-5 top-5 h-8 w-8 rounded-full border" style={{ borderColor: 'rgba(58,50,44,0.22)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }} />
+                    <div className="pointer-events-none absolute right-5 top-5 h-8 w-8 rounded-full border" style={{ borderColor: 'rgba(58,50,44,0.22)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }} />
+                    <div className="pointer-events-none absolute bottom-5 left-5 h-8 w-8 rounded-full border" style={{ borderColor: 'rgba(58,50,44,0.22)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }} />
+                    <div className="pointer-events-none absolute bottom-5 right-5 h-8 w-8 rounded-full border" style={{ borderColor: 'rgba(58,50,44,0.22)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)' }} />
+                </>
+            )}
 
-            <div className="relative z-10 flex h-full flex-col justify-between gap-6">
-                <div className="space-y-5">
+            <div className={`relative z-10 flex h-full flex-col justify-between ${sectionGap}`}>
+                <div className={contentGap}>
                     <div className="text-center">
                         <p className="text-[10px] font-black uppercase tracking-[0.34em]" style={ENGRAVED_LABEL_STYLE}>Placa do Legado</p>
-                        <h4 className={`mt-3 font-black tracking-[0.08em] uppercase ${titleSize}`} style={ENGRAVED_VALUE_STYLE}>Registro Forjado</h4>
-                        <p className="mt-2 text-xs font-black uppercase tracking-[0.28em]" style={ENGRAVED_LABEL_STYLE}>{sovereignName}</p>
+                        <p className={`${subdued ? 'mt-1.5 text-[11px] tracking-[0.22em]' : 'mt-2 text-xs tracking-[0.28em]'} font-black uppercase`} style={ENGRAVED_LABEL_STYLE}>{sovereignName}</p>
                     </div>
 
                     <div className={`mx-auto flex items-center justify-center rounded-full border ${coinSize}`} style={{ borderColor: 'rgba(58,50,44,0.26)', boxShadow: 'inset 0 2px 6px rgba(255,255,255,0.14), inset 0 -6px 12px rgba(0,0,0,0.24)' }}>
                         <div className={`flex items-center justify-center rounded-full border ${innerCoinSize}`} style={{ borderColor: 'rgba(58,50,44,0.28)', background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.12), rgba(0,0,0,0.14))' }}>
-                            <span className="text-lg font-black uppercase tracking-[0.36em]" style={ENGRAVED_VALUE_STYLE}>GL</span>
+                            <span className={`${subdued ? 'text-[11px] tracking-[0.28em]' : 'text-lg tracking-[0.36em]'} font-black uppercase`} style={ENGRAVED_VALUE_STYLE}>GL</span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 rounded-[24px] border p-4" style={{ borderColor: 'rgba(58,50,44,0.22)', background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.05))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -4px 8px rgba(0,0,0,0.18)' }}>
+                    <div className={`grid grid-cols-2 ${metricGridGap} ${subdued ? 'rounded-[18px]' : 'rounded-[24px]'} border ${metricCardPadding}`} style={{ borderColor: 'rgba(58,50,44,0.22)', background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.05))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -4px 8px rgba(0,0,0,0.18)' }}>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.24em]" style={ENGRAVED_LABEL_STYLE}>Ciclos</p>
                             <p className={`mt-2 font-black ${metricsText}`} style={ENGRAVED_VALUE_STYLE}>{totalCycles}</p>
@@ -137,11 +147,11 @@ export const LegacyPlaqueArtifact: React.FC<LegacyPlaqueArtifactProps> = ({
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.24em]" style={ENGRAVED_LABEL_STYLE}>Metas</p>
-                            <p className={`mt-2 font-black ${compact ? 'text-2xl' : 'text-3xl'}`} style={ENGRAVED_VALUE_STYLE}>{totalSealedMetas}</p>
+                            <p className={`mt-2 font-black ${minorMetricText}`} style={ENGRAVED_VALUE_STYLE}>{totalSealedMetas}</p>
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.24em]" style={ENGRAVED_LABEL_STYLE}>Patamar</p>
-                            <p className={`mt-2 font-black ${compact ? 'text-2xl' : 'text-3xl'}`} style={ENGRAVED_VALUE_STYLE}>{averageGrade} | {weightedAverageScore}</p>
+                            <p className={`mt-2 font-black ${minorMetricText}`} style={ENGRAVED_VALUE_STYLE}>{averageGrade} | {weightedAverageScore}</p>
                         </div>
                     </div>
                 </div>

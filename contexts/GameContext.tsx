@@ -647,7 +647,7 @@ export interface GameContextType {
     applyExp: (expGained: number) => void;
     addChest: (chestType: ChestType) => Promise<void>;
     startNewCycle: (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => void;
-    deleteCycle: (cycleId: string) => Promise<void>; // Added deleteCycle to interface
+    deleteCycle: (cycleId: string) => Promise<boolean>; // Added deleteCycle to interface
     setDailyCommitment: (taskIds: string[]) => void;
     lockDailyCommitment: () => void;
     endDailyBattle: () => void;
@@ -2642,6 +2642,37 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     }, []);
 
+    const dedupeLoadedHistoryReports = useCallback((loadedReports: Report[]) => {
+        const sortedByPriority = [...loadedReports].sort((left, right) => {
+            const leftCapturedAt = new Date(left.identitySnapshot?.capturedAt || 0).getTime();
+            const rightCapturedAt = new Date(right.identitySnapshot?.capturedAt || 0).getTime();
+            if (rightCapturedAt !== leftCapturedAt) return rightCapturedAt - leftCapturedAt;
+
+            const performanceDelta = (right.performanceScore || 0) - (left.performanceScore || 0);
+            if (performanceDelta !== 0) return performanceDelta;
+
+            const plannedDelta = (right.metrics?.totalPlannedActions || 0) - (left.metrics?.totalPlannedActions || 0);
+            if (plannedDelta !== 0) return plannedDelta;
+
+            return String(right.cycleId || right.id).localeCompare(String(left.cycleId || left.id));
+        });
+
+        const seenKeys = new Set<string>();
+        return sortedByPriority.filter((report) => {
+            const normalizedCycleName = String(report.cycleName || 'ciclo')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, ' ');
+            const duplicateKey = `${report.startDate}::${report.endDate}::${normalizedCycleName}`;
+            if (seenKeys.has(duplicateKey)) {
+                return false;
+            }
+
+            seenKeys.add(duplicateKey);
+            return true;
+        });
+    }, []);
+
     const hydrateReportsWithFairScore = useCallback((loadedReports: Report[]) => {
         const normalizedReports = loadedReports.map((report) => ({
             ...report,
@@ -4344,13 +4375,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         .filter(Boolean) as Report[];
 
                     if (nextReports.length > 0) {
-                        const { reports: recalculatedReports, changedReportIds } = hydrateReportsWithFairScore(nextReports);
+                        const sanitizedReports = dedupeLoadedHistoryReports(nextReports);
+                        const { reports: recalculatedReports, changedReportIds } = hydrateReportsWithFairScore(sanitizedReports);
                         setReports(recalculatedReports);
                         if (changedReportIds.length > 0) {
                             void persistFairScoreReports(recalculatedReports.filter((report) => changedReportIds.includes(report.id)));
                         }
                     } else {
-                        setReports(prev => (prev.length > 0 ?prev : []));
+                        setReports([]);
                     }
                 }
 
@@ -8419,7 +8451,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) {
             showToast('Nao foi possivel identificar sua sessao para excluir o ciclo.', 'error');
-            return;
+            return false;
         }
 
         const wasActiveCycle = activeCycle?.id === cycleId;
@@ -8436,13 +8468,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             console.error("Error deleting cycle:", error);
             showToast("Erro ao excluir ciclo.");
-            return;
+            return false;
         }
 
 
         if (!deletedRows || deletedRows.length === 0) {
             showToast('Nao foi possivel encontrar esse ciclo para excluir.', 'error');
-            return;
+            return false;
         }
 
         if (wasActiveCycle) {
@@ -8477,6 +8509,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setActiveCycle(nextActiveCycle);
             setUpcomingCycle(nextUpcomingCycle);
         }
+
+        return true;
     };
 
     const startNewCycle = async (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => {

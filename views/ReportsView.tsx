@@ -102,6 +102,14 @@ type InlineEraEditorState = {
 
 const OFFICIAL_COMPACT_HISTORY_CARD_CLASS = 'mx-auto w-[14.15rem] max-w-full';
 
+const buildHistoryDuplicateKey = (report: Report) => {
+    const normalizedCycleName = String(report.cycleName || 'ciclo')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+    return `${report.startDate}::${report.endDate}::${normalizedCycleName}`;
+};
+
 const getReportMetaCounts = (report: Report) => {
     const sealedMetas = report.metrics.sealedMetas ?? report.metrics.goalsMet ?? 0;
     const plannedMetas = report.metrics.plannedMetas ?? Math.max(sealedMetas, 0);
@@ -119,9 +127,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
 
     const handleDelete = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (confirm("Tem certeza que deseja excluir este ciclo? Isso n\u00E3o pode ser desfeito.")) {
-            await deleteCycle(cycle.id);
-        }
+        await deleteCycle(cycle.id);
     };
     const totalDays = Math.max(1, daysBetween(parseDate(startDate), parseDate(endDate)) + 1);
     const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, startDate, endDate);
@@ -246,7 +252,7 @@ const EditCycleEndDateModal: React.FC<{
     cycle: Cycle;
     onClose: () => void;
     onSave: (updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => Promise<void>;
-    onDelete: () => Promise<void>;
+    onDelete: () => Promise<boolean>;
 }> = ({ cycle, onClose, onSave, onDelete }) => {
     const [name, setName] = useState(cycle.name || '');
     const [endDate, setEndDate] = useState(cycle.endDate);
@@ -275,12 +281,12 @@ const EditCycleEndDateModal: React.FC<{
 
     const handleDelete = async () => {
         if (isDeleting) return;
-        const confirmed = window.confirm('Tem certeza que deseja excluir este ciclo atual? Isso nao pode ser desfeito.');
-        if (!confirmed) return;
         setIsDeleting(true);
         try {
-            await onDelete();
-            onClose();
+            const deleted = await onDelete();
+            if (deleted) {
+                onClose();
+            }
         } finally {
             setIsDeleting(false);
         }
@@ -352,7 +358,7 @@ const EditHistoricalCycleModal: React.FC<{
     report: Report;
     onClose: () => void;
     onSave: (name: string) => Promise<void>;
-    onDelete: () => Promise<void>;
+    onDelete: () => Promise<boolean>;
 }> = ({ report, onClose, onSave, onDelete }) => {
     const [name, setName] = useState(report.cycleName || '');
     const [isSaving, setIsSaving] = useState(false);
@@ -375,12 +381,12 @@ const EditHistoricalCycleModal: React.FC<{
 
     const handleDelete = async () => {
         if (isDeleting) return;
-        const confirmed = window.confirm(`Excluir o ciclo "${report.cycleName || 'Ciclo'}"? Isso tambem remove o relatorio dele.`);
-        if (!confirmed) return;
         setIsDeleting(true);
         try {
-            await onDelete();
-            onClose();
+            const deleted = await onDelete();
+            if (deleted) {
+                onClose();
+            }
         } finally {
             setIsDeleting(false);
         }
@@ -601,12 +607,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         const seenDuplicateKeys = new Set<string>();
         return reportsChronological.filter((report) => {
-            const duplicateKey = [
-                report.cycleName?.trim().toLowerCase() || 'ciclo',
-                report.startDate,
-                report.endDate,
-            ].join('::');
-
+            const duplicateKey = buildHistoryDuplicateKey(report);
             if (seenDuplicateKeys.has(duplicateKey)) {
                 return false;
             }
@@ -956,18 +957,24 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const cycleId = report.cycleId || report.id;
         if (!cycleId) {
             showToast('Nao foi possivel identificar esse ciclo para excluir.', 'error');
-            return;
+            return false;
         }
 
         showToast('Excluindo ciclo...', 'info');
         try {
-            await deleteCycle(cycleId);
-            setSelectedReport((current) => (current?.cycleId === cycleId || current?.id === cycleId ? null : current));
-            setSelectedReportStartsAtEnd(false);
-            setView('hub');
+            const deleted = await deleteCycle(cycleId);
+            if (deleted) {
+                setSelectedReport((current) => (current?.cycleId === cycleId || current?.id === cycleId ? null : current));
+                setSelectedReportStartsAtEnd(false);
+                setHistoricalCycleBeingEdited((current) => (current?.cycleId === cycleId || current?.id === cycleId ? null : current));
+                setCycleBeingEdited((current) => (current?.id === cycleId ? null : current));
+                setView('hub');
+            }
+            return deleted;
         } catch (error) {
             console.error('Erro ao excluir ciclo pelo historico:', error);
             showToast('Nao foi possivel excluir esse ciclo.', 'error');
+            return false;
         }
     }, [deleteCycle, showToast]);
     const handleStartCompare = () => { if (reports.length >= 2) { setReportsToCompare([reports[0], reports[1]]); setView('comparing'); } };
@@ -2377,8 +2384,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                             eraSkinId={eraDisplay?.skinId}
                                                             isSelectedForEraEdit={!!eraDisplay?.isActive}
                                                             onDelete={isEditingHistoryCycles && !isEditingEras ? async () => {
-                                                                const confirmed = window.confirm(`Excluir o ciclo "${item.report.cycleName || 'Ciclo'}"? Isso tambem remove o relatorio dele.`);
-                                                                if (!confirmed) return;
                                                                 await handleDeleteReportCycle(item.report);
                                                             } : undefined}
                                                         />
@@ -2462,9 +2467,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onShare={() => handleShareReport(selectedReport)}
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onDelete={async () => {
-                            if (confirm("Tem certeza que deseja excluir este relat\u00F3rio?")) {
-                                await handleDeleteReportCycle(selectedReport);
-                            }
+                            await handleDeleteReportCycle(selectedReport);
                         }}
                         onStartNewCycle={handleStartNewCycleFromResults}
                         chest={isPostCycleFlow ?earnedChest : null}
@@ -2670,7 +2673,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         await updateCycle(cycleBeingEdited.id, updates);
                     }}
                     onDelete={async () => {
-                        await deleteCycle(cycleBeingEdited.id);
+                        return await deleteCycle(cycleBeingEdited.id);
                     }}
                 />
             )}
@@ -2682,7 +2685,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         await updateCycle(historicalCycleBeingEdited.cycleId || historicalCycleBeingEdited.id, { name });
                     }}
                     onDelete={async () => {
-                        await deleteCycle(historicalCycleBeingEdited.cycleId || historicalCycleBeingEdited.id);
+                        return await handleDeleteReportCycle(historicalCycleBeingEdited);
                     }}
                 />
             )}

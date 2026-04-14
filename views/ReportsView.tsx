@@ -2296,7 +2296,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </div>
                         ) : sortedReports.length > 0 && (
                             <div className="relative mt-6">
-                                <div className={`grid ${displayedEraBands.length > 1 || isEditingEras ? 'grid-cols-[16px_minmax(0,1fr)_18px]' : 'grid-cols-[16px_minmax(0,1fr)]'} gap-x-1`}>
+                                <div className={`grid ${isEditingEras ? 'grid-cols-[16px_minmax(0,1fr)_18px]' : 'grid-cols-[16px_minmax(0,1fr)]'} gap-x-1`}>
                                     {items.map((item, rowIndex) => {
                                         if (item.type === 'report') {
                                             const eraDisplay = displayedEraByReportIndex.get(item.reportIndex);
@@ -2331,14 +2331,14 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                             } : undefined}
                                                         />
                                                     </div>
-                                                    {(displayedEraBands.length > 1 || isEditingEras) && <div className="relative py-3"></div>}
+                                                    {isEditingEras && <div className="relative py-3"></div>}
                                                 </React.Fragment>
                                             );
                                         }
 
                                         return null;
                                     })}
-                                    {(displayedEraBands.length > 1 || isEditingEras) && displayedEraBands.map((band) => {
+                                    {isEditingEras && displayedEraBands.map((band) => {
                                         const rowStart = reportRowIndexMap.get(band.start);
                                         const rowEnd = reportRowIndexMap.get(band.end);
                                         if (rowStart == null || rowEnd == null) return null;

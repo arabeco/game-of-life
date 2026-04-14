@@ -8411,17 +8411,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const deleteCycle = async (cycleId: string) => {
         const userId = getSupabaseUserId();
-        if (!userId) return;
+        if (!userId) {
+            showToast('Nao foi possivel identificar sua sessao para excluir o ciclo.', 'error');
+            return;
+        }
 
         const wasActiveCycle = activeCycle?.id === cycleId;
         const wasUpcomingCycle = upcomingCycle?.id === cycleId;
-
-        if (activeCycle?.id === cycleId) {
-            setActiveCycle(null);
-        }
-        if (upcomingCycle?.id === cycleId) {
-            setUpcomingCycle(null);
-        }
 
         // 1. Delete from Supabase
         const { data: deletedRows, error } = await supabase
@@ -8441,6 +8437,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!deletedRows || deletedRows.length === 0) {
             showToast('Nao foi possivel encontrar esse ciclo para excluir.', 'error');
             return;
+        }
+
+        if (wasActiveCycle) {
+            setActiveCycle(null);
+        }
+        if (wasUpcomingCycle) {
+            setUpcomingCycle(null);
         }
 
         setReports(prev => prev.filter(report => report.cycleId !== cycleId && report.id !== cycleId));

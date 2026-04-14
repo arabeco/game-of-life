@@ -105,10 +105,8 @@ export const AssetsView: React.FC = () => {
     const [draftAssetArtUrl, setDraftAssetArtUrl] = useState<string | undefined>(undefined);
     const [draftAssetWidgetValue, setDraftAssetWidgetValue] = useState<SlotValue | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const cycleSummaryRef = useRef<HTMLButtonElement | null>(null);
     const lastSelectedAssetIdRef = useRef<string | null>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-    const [cycleSummaryHeight, setCycleSummaryHeight] = useState(56);
     const [hasSephirotRasterArt, setHasSephirotRasterArt] = useState(false);
     const overviewLayout = useAssetsOverviewLayoutConfig();
 
@@ -157,8 +155,9 @@ export const AssetsView: React.FC = () => {
     const stretchY = 1;
     const cycleSummaryTop = '14px';
     const cycleSummaryTopPx = 14;
+    const cycleSummaryHeight = 94;
     const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 8;
-    const assetsGridBottomPx = 70;
+    const assetsGridBottomPx = 64;
     const overviewCoords = useMemo(
         () => Object.entries(overviewLayout).map(([id, position]) => ({ id, ...position })),
         [overviewLayout],
@@ -267,29 +266,6 @@ export const AssetsView: React.FC = () => {
         window.addEventListener('resize', updateSize);
         return () => window.removeEventListener('resize', updateSize);
     }, [selectedAssetId]);
-
-    useLayoutEffect(() => {
-        const summaryCard = cycleSummaryRef.current;
-        if (!summaryCard) {
-            setCycleSummaryHeight(56);
-            return;
-        }
-
-        const updateSummaryHeight = () => {
-            setCycleSummaryHeight(Math.ceil(summaryCard.getBoundingClientRect().height));
-        };
-
-        updateSummaryHeight();
-
-        if (typeof ResizeObserver !== 'undefined') {
-            const observer = new ResizeObserver(() => updateSummaryHeight());
-            observer.observe(summaryCard);
-            return () => observer.disconnect();
-        }
-
-        window.addEventListener('resize', updateSummaryHeight);
-        return () => window.removeEventListener('resize', updateSummaryHeight);
-    }, [selectedAssetId, cycleSummary?.name, cycleSummary?.progress, cycleSummary?.totalCompleted, cycleSummary?.totalPlanned, cycleSummary?.activeArenaCount]);
 
     useEffect(() => {
         if (!selectedAsset) {
@@ -638,12 +614,15 @@ export const AssetsView: React.FC = () => {
     }
 
     return (
-        <div className="assets-view-root relative h-full overflow-hidden">
+        <div
+            className="assets-view-root relative h-full min-h-0 overflow-hidden"
+            style={{ overscrollBehavior: 'none', touchAction: 'manipulation' }}
+        >
             <div
-                className="assets-view-shell relative flex items-center justify-center overflow-hidden rounded-[30px]"
+                className="assets-view-shell relative flex h-full min-h-0 items-center justify-center overflow-hidden rounded-[30px]"
                 style={assetsShellStyle}
             >
-                <div ref={containerRef} className="relative h-full w-full">
+                <div ref={containerRef} className="relative h-full min-h-0 w-full overflow-hidden">
                     {!isBasicMode && (
                         <div className="assets-sephirot-backdrop absolute inset-0 z-0" />
                     )}
@@ -651,10 +630,9 @@ export const AssetsView: React.FC = () => {
                     <div className="relative z-10 h-full w-full">
                         <div className="absolute inset-x-0 z-20 flex justify-center px-3" style={{ top: cycleSummaryTop }}>
                             <button
-                                ref={cycleSummaryRef}
                                 type="button"
                                 onClick={handleOpenReports}
-                                className="group w-full max-w-[258px] overflow-hidden rounded-[16px] border border-white/10 px-3 py-1.5 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px]"
+                                className="group min-h-[94px] w-full max-w-[258px] overflow-hidden rounded-[16px] border border-white/10 px-3 py-1.5 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px]"
                                 style={{
                                     borderColor: rgbaString(cycleAccentRgb, 0.32),
                                     backgroundImage: `radial-gradient(circle at 18% 10%, ${rgbaString(cycleAccentRgb, 0.24)} 0%, transparent 34%), linear-gradient(180deg, rgba(31,38,48,0.94) 0%, rgba(13,17,22,0.98) 100%)`,

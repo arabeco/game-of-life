@@ -10,6 +10,7 @@ import {
     RelationshipCompetitionChallenge,
     Arena,
     Action,
+    Campaign,
     ScheduledTask,
     UserProfile,
     UserCodex,
@@ -30,7 +31,7 @@ import {
 } from './Icons';
 import { supabase } from '../supabaseClient';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
-import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/codexPreview';
+import { buildCodexCampaignPreview, buildCodexTemplateFromDraft, type CodexCampaignPreview } from '../utils/codexPreview';
 import { getGoldMechanicPrice } from '../constants/goldCatalog';
 import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 
@@ -71,6 +72,7 @@ type RelationshipArenaDetailState = {
 type RelationshipCampaignModalState = {
     codex: UserCodex;
     preview: CodexCampaignPreview;
+    editable: boolean;
 };
 
 const HUB_TABS: Array<{
@@ -1250,6 +1252,85 @@ export const RelationshipHubModal: React.FC<{
         }
     };
 
+    const handleUpdateMentorshipCodex = async (
+        codex: UserCodex,
+        payload: {
+            title: string;
+            description: string;
+            arenas: Arena[];
+            actions: Action[];
+            campaign: Campaign;
+        }
+    ) => {
+        setBusyKey(`update-codex:${codex.id}`);
+        try {
+            const nextTemplate = {
+                ...(codex.template || {}),
+                ...buildCodexTemplateFromDraft({
+                    name: payload.title,
+                    description: payload.description,
+                    arenas: payload.arenas,
+                    actions: payload.actions,
+                }),
+            };
+
+            const { data, error } = await supabase.rpc('update_relationship_mentor_codex', {
+                p_codex_id: codex.id,
+                p_name: payload.title,
+                p_description: payload.description,
+                p_template: nextTemplate,
+            });
+
+            if (error) throw error;
+            if ((data as any)?.success === false) {
+                throw new Error(String((data as any)?.error || 'UPDATE_RELATIONSHIP_MENTOR_CODEX_FAILED'));
+            }
+
+            await refreshHub();
+            const refreshedCodex = userCodexes.find((entry) => entry.id === codex.id) || codex;
+            const preview = buildCodexCampaignPreview(
+                refreshedCodex.id,
+                {
+                    ...nextTemplate,
+                    title: nextTemplate.title || payload.title || refreshedCodex.name || 'Campanha recebida',
+                    description: nextTemplate.description || payload.description || refreshedCodex.description || '',
+                },
+                `__relationship_codex_preview_${refreshedCodex.id}__`
+            );
+
+            setSelectedRelationshipCampaign((current) => (
+                current?.codex.id === codex.id
+                    ? {
+                        ...current,
+                        codex: {
+                            ...refreshedCodex,
+                            name: payload.title,
+                            description: payload.description,
+                            template: nextTemplate,
+                            raw_template: nextTemplate,
+                        },
+                        preview,
+                    }
+                    : current
+            ));
+            window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+            showToast('Campanha da mentoria atualizada.', 'success');
+            return true;
+        } catch (error: any) {
+            console.error('Error updating mentorship codex from relationship hub:', error);
+            const message = String(error?.message || '');
+            showToast(
+                message.includes('update_relationship_mentor_codex')
+                    ? 'Essa base ainda nao recebeu o SQL novo para editar campanhas da mentoria.'
+                    : 'Nao foi possivel atualizar essa campanha agora.',
+                'error'
+            );
+            return false;
+        } finally {
+            setBusyKey(null);
+        }
+    };
+
     const handleDeleteMentorshipArena = async (linkedArena: LinkedRelationshipArena) => {
         const arenaName = linkedArena.arena?.name || String(linkedArena.metadata?.name || 'Arena vinculada');
         const confirmed = window.confirm(`Remover a arena "${arenaName}" deste vinculo?`);
@@ -1826,7 +1907,7 @@ export const RelationshipHubModal: React.FC<{
                                                     codex={codex}
                                                     preview={preview}
                                                     installed={installed}
-                                                    onClick={() => setSelectedRelationshipCampaign({ codex, preview })}
+                                                    onClick={() => setSelectedRelationshipCampaign({ codex, preview, editable: isMentorSide })}
                                                 />
                                             );
                                         })}
@@ -2625,7 +2706,9 @@ export const RelationshipHubModal: React.FC<{
                     previewCampaign={selectedRelationshipCampaign.preview.campaign}
                     previewArenas={selectedRelationshipCampaign.preview.arenas}
                     previewActions={selectedRelationshipCampaign.preview.actions}
+                    previewEditable={selectedRelationshipCampaign.editable}
                     onDeletePreviewCampaign={() => handleDeleteMentorshipCodex(selectedRelationshipCampaign.codex)}
+                    onUpdatePreviewCampaign={(payload) => handleUpdateMentorshipCodex(selectedRelationshipCampaign.codex, payload)}
                 />
             )}
         </>

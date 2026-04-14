@@ -23,7 +23,15 @@ interface CampaignsCodexProps {
     previewCampaign?: Campaign | null;
     previewArenas?: Arena[];
     previewActions?: Action[];
+    previewEditable?: boolean;
     onDeletePreviewCampaign?: (() => void | Promise<void>) | null;
+    onUpdatePreviewCampaign?: ((payload: {
+        title: string;
+        description: string;
+        arenas: Arena[];
+        actions: Action[];
+        campaign: Campaign;
+    }) => Promise<boolean | void>) | null;
     previewMeta?: {
         coverImage?: string;
         badgeLabel?: string;
@@ -174,7 +182,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     previewCampaign,
     previewArenas = [],
     previewActions = [],
+    previewEditable = false,
     onDeletePreviewCampaign = null,
+    onUpdatePreviewCampaign = null,
     previewMeta,
 }) => {
     const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, userProfile, installCodex, showToast } = useGame();
@@ -197,6 +207,15 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
 
     // Expandable Description State
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+    const [localPreviewCampaign, setLocalPreviewCampaign] = useState<Campaign | null>(previewCampaign);
+    const [localPreviewArenas, setLocalPreviewArenas] = useState<Arena[]>(previewArenas);
+    const [localPreviewActions, setLocalPreviewActions] = useState<Action[]>(previewActions);
+
+    useEffect(() => {
+        setLocalPreviewCampaign(previewCampaign);
+        setLocalPreviewArenas(previewArenas);
+        setLocalPreviewActions(previewActions);
+    }, [previewActions, previewArenas, previewCampaign]);
 
     const handleOpenCampaignStore = () => {
         window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'codexes' } }));
@@ -287,11 +306,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         setLibraryPreviewCodex(codex);
         setLibraryPreview(buildCodexCampaignPreview(codex.id, codex.template));
     };
-    const effectivePreviewCampaign: Campaign | null = previewCampaign
+    const effectivePreviewCampaign: Campaign | null = localPreviewCampaign
         ? {
-            ...previewCampaign,
-            order: previewCampaign.order ?? -1,
-            priorityOrder: previewCampaign.priorityOrder ?? -1,
+            ...localPreviewCampaign,
+            order: localPreviewCampaign.order ?? -1,
+            priorityOrder: localPreviewCampaign.priorityOrder ?? -1,
         }
         : null;
     const validCampaigns = campaigns.filter(Boolean);
@@ -308,8 +327,8 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         : validCampaigns;
     const selectedCampaign = selectedCampaignId ? visibleCampaigns.find(c => c.id === selectedCampaignId) : null;
     const isPreviewCampaign = selectedCampaignId === effectivePreviewCampaign?.id;
-    const campaignArenasSource = isPreviewCampaign ? previewArenas : allArenas;
-    const campaignActionsSource = isPreviewCampaign ? previewActions : actions;
+    const campaignArenasSource = isPreviewCampaign ? localPreviewArenas : allArenas;
+    const campaignActionsSource = isPreviewCampaign ? localPreviewActions : actions;
     const cycleScopedTasks = useMemo(() => {
         if (isPreviewCampaign) return [] as typeof tasks;
         if (!activeCycle) return tasks;
@@ -360,8 +379,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         : null;
     const isReadOnlyCodexCampaign = campaignCodex?.source_type === 'gift_link' || campaignCodex?.source_type === 'gift_in_app';
     const canDeletePreviewCampaign = isPreviewCampaign && typeof onDeletePreviewCampaign === 'function';
-    const canEditCampaignMetadata = !isPreviewCampaign;
-    const canEditCampaignStructure = canEditCampaignMetadata && !isReadOnlyCodexCampaign;
+    const canEditPreviewCampaign = isPreviewCampaign && previewEditable && typeof onUpdatePreviewCampaign === 'function';
+    const canEditCampaignMetadata = isPreviewCampaign ? canEditPreviewCampaign : true;
+    const canEditCampaignStructure = isPreviewCampaign ? canEditPreviewCampaign : (canEditCampaignMetadata && !isReadOnlyCodexCampaign);
     const availableArenaIdsForNewCampaign = useMemo(
         () => allArenas
             .filter((arena) => !allCampaignArenaIdSet.has(arena.id))
@@ -381,7 +401,26 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     };
 
     const handleSaveCampaign = async () => {
-        if (!selectedCampaign || isPreviewCampaign) return;
+        if (!selectedCampaign) return;
+        if (isPreviewCampaign) {
+            if (!canEditPreviewCampaign) return;
+            const saved = await Promise.resolve(onUpdatePreviewCampaign?.({
+                title: editTitle,
+                description: editDescription,
+                arenas: localPreviewArenas,
+                actions: localPreviewActions,
+                campaign: {
+                    ...selectedCampaign,
+                    title: editTitle,
+                    description: editDescription,
+                },
+            }));
+            if (saved !== false) {
+                setLocalPreviewCampaign((prev) => prev ? { ...prev, title: editTitle, description: editDescription } : prev);
+                setIsEditing(false);
+            }
+            return;
+        }
         const saved = await updateCampaign(selectedCampaign.id, {
             title: editTitle,
             description: editDescription
@@ -503,10 +542,10 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     
     const handleRemoveArena = (arenaId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!selectedCampaign || isPreviewCampaign) return;
+        if (!selectedCampaign) return;
         
-        if (isReadOnlyCodexCampaign) {
-                            alert("Campanha recebida fica protegida e nao pode ser remodelada.");
+        if (!canEditCampaignStructure || (isReadOnlyCodexCampaign && !isPreviewCampaign)) {
+            alert("Campanha recebida fica protegida e nao pode ser remodelada.");
             return;
         }
 
@@ -525,17 +564,30 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                 }
             });
 
-            updateCampaign(selectedCampaign.id, {
-                arenaIds: newArenaIds,
-                arenaConfig: newConfig
-            });
+            if (isPreviewCampaign) {
+                setLocalPreviewCampaign((prev) => prev ? {
+                    ...prev,
+                    arenaIds: newArenaIds,
+                    arenaConfig: newConfig,
+                } : prev);
+                setLocalPreviewArenas((prev) => prev.filter((arena) => arena.id !== arenaId));
+                setLocalPreviewActions((prev) => prev.filter((action) => action.arenaId !== arenaId));
+                if (selectedArenaId === arenaId) {
+                    setSelectedArenaId(null);
+                }
+            } else {
+                updateCampaign(selectedCampaign.id, {
+                    arenaIds: newArenaIds,
+                    arenaConfig: newConfig
+                });
+            }
         }
     };
 
     const handleMoveArena = (arenaId: string, direction: 'left' | 'right', e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!selectedCampaign || isPreviewCampaign) return;
-        if (isReadOnlyCodexCampaign) return;
+        if (!selectedCampaign || !canEditCampaignStructure) return;
+        if (isReadOnlyCodexCampaign && !isPreviewCampaign) return;
         
         const currentIds = [...selectedCampaign.arenaIds];
         const currentIndex = currentIds.indexOf(arenaId);
@@ -545,7 +597,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         
         if (newIndex >= 0 && newIndex < currentIds.length) {
             [currentIds[currentIndex], currentIds[newIndex]] = [currentIds[newIndex], currentIds[currentIndex]];
-            updateCampaign(selectedCampaign.id, { arenaIds: currentIds });
+            if (isPreviewCampaign) {
+                setLocalPreviewCampaign((prev) => prev ? { ...prev, arenaIds: currentIds } : prev);
+            } else {
+                updateCampaign(selectedCampaign.id, { arenaIds: currentIds });
+            }
         }
     };
     
@@ -600,16 +656,20 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     };
 
     const handleAssignArenaToPhase = (arenaId: string, targetPhase: number) => {
-        if (!selectedCampaign || isPreviewCampaign || isReadOnlyCodexCampaign) return;
+        if (!selectedCampaign || !canEditCampaignStructure) return;
         const assignments = getPhaseAssignments();
         assignments[arenaId] = Math.max(0, Math.min(4, targetPhase));
         const config = buildArenaConfigFromPhases(assignments);
-        updateCampaign(selectedCampaign.id, { arenaConfig: config });
+        if (isPreviewCampaign) {
+            setLocalPreviewCampaign((prev) => prev ? { ...prev, arenaConfig: config } : prev);
+        } else {
+            updateCampaign(selectedCampaign.id, { arenaConfig: config });
+        }
         setVisiblePhaseCount((current) => Math.max(current, Math.min(5, targetPhase + 1)));
     };
 
     const handleArenaDragStart = (arenaId: string) => {
-        if (!isEditing || isPreviewCampaign || isReadOnlyCodexCampaign) return;
+        if (!isEditing || !canEditCampaignStructure) return;
         setDraggedArenaId(arenaId);
     };
 
@@ -626,7 +686,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     };
 
     const handleCreateFutureArena = () => {
-        if (isPreviewCampaign) return;
+        if (!canEditCampaignStructure) return;
         setIsCreatingArena(true);
     };
     const handleAttachExistingArenas = () => {
@@ -637,16 +697,31 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const onArenaCreated = (newArena: Arena) => {
         if (!selectedCampaign) return;
         
-        updateCampaign(selectedCampaign.id, {
-            arenaIds: [...selectedCampaign.arenaIds, newArena.id],
-            arenaConfig: {
-                ...(selectedCampaign.arenaConfig || {}),
-                [newArena.id]: {
-                    isLocked: false,
-                    isHidden: false
+        if (isPreviewCampaign) {
+            setLocalPreviewCampaign((prev) => prev ? {
+                ...prev,
+                arenaIds: [...prev.arenaIds, newArena.id],
+                arenaConfig: {
+                    ...(prev.arenaConfig || {}),
+                    [newArena.id]: {
+                        isLocked: false,
+                        isHidden: false
+                    }
                 }
-            }
-        });
+            } : prev);
+            setLocalPreviewArenas((prev) => [...prev, newArena]);
+        } else {
+            updateCampaign(selectedCampaign.id, {
+                arenaIds: [...selectedCampaign.arenaIds, newArena.id],
+                arenaConfig: {
+                    ...(selectedCampaign.arenaConfig || {}),
+                    [newArena.id]: {
+                        isLocked: false,
+                        isHidden: false
+                    }
+                }
+            });
+        }
         setIsCreatingArena(false);
     };
 
@@ -1312,7 +1387,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                             arena={selectedArena}
                             actionsOverride={selectedArenaActions}
                             tasksOverride={selectedArenaTasks}
-                            readOnly={isPreviewCampaign}
+                            readOnly={isPreviewCampaign || !canEditPreviewCampaign}
                             previewMode={isPreviewCampaign}
                             onClose={() => setSelectedArenaId(null)}
                         />

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, ActionType, Arena, DayOfWeek, ScheduledTask } from '../types';
-import { CalendarIcon, CheckCircleIcon, EditIcon, MicIcon, PlannerIcon, SendIcon, SparklesIcon, XIcon } from './Icons';
+import { CheckCircleIcon, EditIcon, MicIcon, SendIcon, XIcon } from './Icons';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import {
   formatDateLabel,
@@ -1780,20 +1780,6 @@ export const OracleAction: React.FC = () => {
     }
   };
 
-  const pendingSelectionOptions = pendingExecutor?.awaitingConfirmation
-    ? []
-    : pendingExecutor?.payload.candidateActionIds?.length
-      ? pendingExecutor.payload.candidateActionIds
-        .map((id) => actions.find((action) => action.id === id))
-        .filter((action): action is Action => !!action)
-        .map((action, index) => ({ key: `${action.id}_${index}`, label: action.name }))
-      : pendingExecutor?.payload.candidateArenaIds?.length
-        ? pendingExecutor.payload.candidateArenaIds
-          .map((id) => allArenas.find((arena) => arena.id === id))
-          .filter((arena): arena is Arena => !!arena)
-          .map((arena, index) => ({ key: `${arena.id}_${index}`, label: arena.name }))
-        : [];
-
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex flex-none items-center justify-between border-b border-white/5 bg-black/25 px-4 py-2">
@@ -1852,30 +1838,6 @@ export const OracleAction: React.FC = () => {
       </div>
 
       <div className="flex-none border-t border-white/10 bg-black/40 p-4">
-        <div className="mb-3 grid grid-cols-3 gap-2 text-[10px] uppercase tracking-[0.18em] text-gray-500">
-          <div className="rounded-2xl border border-white/8 bg-white/5 px-3 py-2">
-            <div className="mb-1 flex items-center gap-1.5 text-gray-400">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              <span>ciclo</span>
-            </div>
-            <div className="text-white/70">criar / editar prazo</div>
-          </div>
-          <div className="rounded-2xl border border-white/8 bg-white/5 px-3 py-2">
-            <div className="mb-1 flex items-center gap-1.5 text-gray-400">
-              <SparklesIcon className="h-3.5 w-3.5" />
-              <span>arena</span>
-            </div>
-            <div className="text-white/70">criar / editar</div>
-          </div>
-          <div className="rounded-2xl border border-white/8 bg-white/5 px-3 py-2">
-            <div className="mb-1 flex items-center gap-1.5 text-gray-400">
-              <PlannerIcon className="h-3.5 w-3.5" />
-              <span>dia</span>
-            </div>
-            <div className="text-white/70">planner + painel</div>
-          </div>
-        </div>
-
         <div className="relative flex items-center">
           <input
             ref={inputRef}
@@ -1905,20 +1867,6 @@ export const OracleAction: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {pendingSelectionOptions.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {pendingSelectionOptions.map((option) => (
-              <button
-                key={option.key}
-                onClick={() => void handleSendMessage(option.label)}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-300 transition-colors hover:border-[var(--skin-accent-color)]/25 hover:text-white"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        )}
 
       {pendingExecutor?.awaitingConfirmation && (
         <div className="mb-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/8 px-3 py-2 text-xs text-emerald-100">

@@ -153,10 +153,10 @@ export const AssetsView: React.FC = () => {
         ? containerSize.width / containerSize.height
         : baseAspect;
     const stretchY = 1;
-    const cycleSummaryTop = '14px';
-    const cycleSummaryTopPx = 14;
-    const cycleSummaryHeight = 94;
-    const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 8;
+    const cycleSummaryTop = '18px';
+    const cycleSummaryTopPx = 18;
+    const cycleSummaryHeight = 124;
+    const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 12;
     const assetsGridBottomPx = 64;
     const overviewCoords = useMemo(
         () => Object.entries(overviewLayout).map(([id, position]) => ({ id, ...position })),
@@ -632,7 +632,7 @@ export const AssetsView: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={handleOpenReports}
-                                className="group min-h-[94px] w-full max-w-[258px] overflow-hidden rounded-[16px] border border-white/10 px-3 py-1.5 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px]"
+                                className="group min-h-[124px] w-full max-w-[258px] overflow-hidden rounded-[16px] border border-white/10 px-3 py-2 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px]"
                                 style={{
                                     borderColor: rgbaString(cycleAccentRgb, 0.32),
                                     backgroundImage: `radial-gradient(circle at 18% 10%, ${rgbaString(cycleAccentRgb, 0.24)} 0%, transparent 34%), linear-gradient(180deg, rgba(31,38,48,0.94) 0%, rgba(13,17,22,0.98) 100%)`,

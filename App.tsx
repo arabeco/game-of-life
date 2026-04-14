@@ -468,7 +468,7 @@ const App: React.FC = () => {
             }
         };
 
-        const recoverSessionOnResume = async (trigger: 'visibilitychange' | 'focus' | 'pageshow') => {
+        const recoverSessionOnResume = async (trigger: 'visibilitychange' | 'focus' | 'pageshow' | 'appStateChange') => {
             if (document.visibilityState === 'hidden') return;
             if (sessionRecoveryInFlightRef.current) return;
             if (Date.now() - lastSessionRecoveryAttemptRef.current < 1200) return;
@@ -582,6 +582,20 @@ const App: React.FC = () => {
                     setSession(null);
                     setPendingGoogleInviteSession(null);
                 } else if (event === 'SIGNED_OUT') {
+                    if (isCapacitorNativeRuntime() || sessionRef.current) {
+                        const recoveredSession = await recoverSessionGracefully('signed-out-native-rescue', sessionRef.current);
+                        if (recoveredSession) {
+                            clearPendingGoogleAuthState();
+                            await applyResolvedSession(recoveredSession);
+                            return;
+                        }
+
+                        if (sessionRef.current) {
+                            console.warn('SIGNED_OUT received while a native/in-memory session still exists. Preserving session until recovery definitively fails.');
+                            return;
+                        }
+                    }
+
                     clearPendingGoogleAuthState();
                     authResolutionRef.current += 1;
                     setSession(null);
@@ -625,6 +639,17 @@ const App: React.FC = () => {
             void recoverSessionOnResume('pageshow');
         };
 
+        let nativeAppStateHandle: { remove: () => Promise<void> } | null = null;
+        if (isCapacitorNativeRuntime()) {
+            void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+                if (isActive) {
+                    void recoverSessionOnResume('appStateChange');
+                }
+            }).then((handle) => {
+                nativeAppStateHandle = handle;
+            });
+        }
+
         document.addEventListener('visibilitychange', handleVisibilityChange);
         window.addEventListener('focus', handleFocus, { passive: true });
         window.addEventListener('pageshow', handlePageShow, { passive: true });
@@ -636,6 +661,9 @@ const App: React.FC = () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('focus', handleFocus);
             window.removeEventListener('pageshow', handlePageShow);
+            if (nativeAppStateHandle) {
+                void nativeAppStateHandle.remove();
+            }
         };
     }, [captureBootError, isGoldenInviteGateEnabled]);
 

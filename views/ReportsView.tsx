@@ -589,7 +589,32 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [inlineEraEditor, setInlineEraEditor] = useState<InlineEraEditorState | null>(null);
     const [inlineEraName, setInlineEraName] = useState('');
     const [inlineEraSkinId, setInlineEraSkinId] = useState(FREE_ERA_RIBBON_SKIN_ID);
-    const sortedReports = useMemo(() => [...reports].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime()), [reports]);
+    const sortedReports = useMemo(() => {
+        const reportsChronological = [...reports].sort((a, b) => {
+            const endDelta = new Date(b.endDate).getTime() - new Date(a.endDate).getTime();
+            if (endDelta !== 0) return endDelta;
+            const capturedAtA = new Date(a.identitySnapshot?.capturedAt || 0).getTime();
+            const capturedAtB = new Date(b.identitySnapshot?.capturedAt || 0).getTime();
+            if (capturedAtB !== capturedAtA) return capturedAtB - capturedAtA;
+            return String(b.cycleId || b.id).localeCompare(String(a.cycleId || a.id));
+        });
+
+        const seenDuplicateKeys = new Set<string>();
+        return reportsChronological.filter((report) => {
+            const duplicateKey = [
+                report.cycleName?.trim().toLowerCase() || 'ciclo',
+                report.startDate,
+                report.endDate,
+            ].join('::');
+
+            if (seenDuplicateKeys.has(duplicateKey)) {
+                return false;
+            }
+
+            seenDuplicateKeys.add(duplicateKey);
+            return true;
+        });
+    }, [reports]);
     const historicalCycleIds = useMemo(() => new Set(sortedReports.map((report) => report.cycleId || report.id)), [sortedReports]);
     const visibleActiveCycle = useMemo(
         () => (activeCycle && !historicalCycleIds.has(activeCycle.id) ? activeCycle : null),
@@ -927,6 +952,24 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setView('results');
         }
     };
+    const handleDeleteReportCycle = useCallback(async (report: Report) => {
+        const cycleId = report.cycleId || report.id;
+        if (!cycleId) {
+            showToast('Nao foi possivel identificar esse ciclo para excluir.', 'error');
+            return;
+        }
+
+        showToast('Excluindo ciclo...', 'info');
+        try {
+            await deleteCycle(cycleId);
+            setSelectedReport((current) => (current?.cycleId === cycleId || current?.id === cycleId ? null : current));
+            setSelectedReportStartsAtEnd(false);
+            setView('hub');
+        } catch (error) {
+            console.error('Erro ao excluir ciclo pelo historico:', error);
+            showToast('Nao foi possivel excluir esse ciclo.', 'error');
+        }
+    }, [deleteCycle, showToast]);
     const handleStartCompare = () => { if (reports.length >= 2) { setReportsToCompare([reports[0], reports[1]]); setView('comparing'); } };
 
     const handlePostToFeed = (report: Report) => {
@@ -2336,7 +2379,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                             onDelete={isEditingHistoryCycles && !isEditingEras ? async () => {
                                                                 const confirmed = window.confirm(`Excluir o ciclo "${item.report.cycleName || 'Ciclo'}"? Isso tambem remove o relatorio dele.`);
                                                                 if (!confirmed) return;
-                                                                await deleteCycle(item.report.cycleId || item.report.id);
+                                                                await handleDeleteReportCycle(item.report);
                                                             } : undefined}
                                                         />
                                                     </div>
@@ -2420,9 +2463,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onPostToFeed={() => handlePostToFeed(selectedReport)}
                         onDelete={async () => {
                             if (confirm("Tem certeza que deseja excluir este relat\u00F3rio?")) {
-                                await deleteCycle(selectedReport.cycleId || selectedReport.id);
-                                setView('hub');
-                                setSelectedReport(null);
+                                await handleDeleteReportCycle(selectedReport);
                             }
                         }}
                         onStartNewCycle={handleStartNewCycleFromResults}

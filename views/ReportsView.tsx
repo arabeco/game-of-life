@@ -549,6 +549,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [isStartingCycle, setIsStartingCycle] = useState(false);
     const [showConfirmEndCycle, setShowConfirmEndCycle] = useState(false);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+    const [selectedReportStartsAtEnd, setSelectedReportStartsAtEnd] = useState(false);
     const [reportsToCompare, setReportsToCompare] = useState<[Report, Report] | null>(null);
     const [reportForComparison, setReportForComparison] = useState<Report | null>(null);
     const [showNewCycleSetup, setShowNewCycleSetup] = useState(false);
@@ -792,6 +793,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const primePostCycleResults = useCallback((report: Report, awardedExp: number): { ok: boolean; chest: ChestType | null } => {
         setSelectedReport(report);
+        setSelectedReportStartsAtEnd(false);
         setExpGained(awardedExp);
         setScanError(null);
         setShowNewCycleSetup(false);
@@ -912,6 +914,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setReportForComparison(null);
         } else {
             setSelectedReport(report);
+            setSelectedReportStartsAtEnd(true);
             setView('results');
         }
     };
@@ -1113,6 +1116,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         event?.stopPropagation?.();
         setView('hub');
         setSelectedReport(null);
+        setSelectedReportStartsAtEnd(false);
         setReportsToCompare(null);
         setReportForComparison(null);
         setShowConfirmEndCycle(false);
@@ -1134,6 +1138,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             case 'comparing':
                 setView('hub');
                 setSelectedReport(null);
+                setSelectedReportStartsAtEnd(false);
                 setReportsToCompare(null);
                 setReportForComparison(null);
                 break;
@@ -1409,7 +1414,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             }).filter(Boolean) as Array<{ key: string; label: string; skinId: string; start: number; end: number; eraIndex: number; isActive: boolean; slot: DraftEraSlot }>;
         }
 
-        if (eraSummaries.length === 0 && (activeCycle || sortedReports.length > 0)) {
+        if (eraSummaries.length === 0 && sortedReports.length > 0) {
             return [{
                 key: BOOTSTRAP_ERA_KEY,
                 label: eraMetadata[BOOTSTRAP_ERA_KEY]?.name?.trim() || 'ERA 1',
@@ -2232,11 +2237,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     </div>
                                 </div>
                                 <div
-                                    className={`mt-3 ${isEditingHistoryCycles ? 'cursor-pointer' : ''}`}
+                                    className="mt-3 cursor-pointer"
                                     onClick={() => {
-                                        if (isEditingHistoryCycles) {
-                                            setCycleBeingEdited(activeCycle);
-                                        }
+                                        setCycleBeingEdited(activeCycle);
                                     }}
                                 >
                                     <SimplifiedCycleHUD cycle={activeCycle} onEdit={setCycleBeingEdited} showTimelineMarker={false} showControls={false} />
@@ -2248,7 +2251,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         )}
 
                         {!activeCycle && upcomingCycle && (
-                            <UpcomingCycleCard cycle={upcomingCycle} onEdit={setCycleBeingEdited} />
+                            <div className="cursor-pointer" onClick={() => setCycleBeingEdited(upcomingCycle)}>
+                                <UpcomingCycleCard cycle={upcomingCycle} onEdit={setCycleBeingEdited} />
+                            </div>
                         )}
 
                         {renderLegacySummary()}
@@ -2418,6 +2423,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onOpenChest={isPostCycleFlow && earnedChest ?() => { void handleOpenPostCycleChest(); } : undefined}
                         chestOpened={postCycleChestOpened}
                         isOpeningChest={isOpeningPostCycleChest}
+                        startAtEnd={selectedReportStartsAtEnd}
                     />
                 ) : <p>Erro ao carregar relat\u00F3rio.</p>;
             case 'comparing':

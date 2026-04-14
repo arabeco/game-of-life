@@ -32,6 +32,7 @@ interface ReportResultCarouselProps {
     isOpeningChest?: boolean;
     onDelete?: () => void;        // Added for delete action
     autoPlay?: boolean;
+    startAtEnd?: boolean;
 }
 
 const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
@@ -84,7 +85,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     chestOpened = false,
     isOpeningChest = false,
     onDelete,
-    autoPlay = true
+    autoPlay = true,
+    startAtEnd = false,
 }) => {
     const REWARD_CARD_CAPTURE_ID = 'report-metal-card-capture';
     const preferNativeShare = shouldPreferNativeShare();
@@ -485,6 +487,10 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         renderRewardSlide
     ];
     const totalSlides = slides.length;
+
+    useEffect(() => {
+        setCurrentSlide(startAtEnd ? Math.max(0, totalSlides - 1) : 0);
+    }, [report.id, startAtEnd, totalSlides]);
 
     // If it's the reward slide, hide the standard footer and show the special action button
     const isRewardSlide = currentSlide === totalSlides - 1;

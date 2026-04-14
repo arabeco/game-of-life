@@ -4281,6 +4281,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 setUpcomingCycle(null);
                 setCycleProgress(0);
                 setCycleExpBonus(0);
+            } else {
+                console.error('Error fetching open cycles:', cyclesError);
+                setActiveCycle(null);
+                setUpcomingCycle(null);
+                setCycleProgress(0);
+                setCycleExpBonus(0);
             }
 
             void (async () => {

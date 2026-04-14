@@ -590,6 +590,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [inlineEraName, setInlineEraName] = useState('');
     const [inlineEraSkinId, setInlineEraSkinId] = useState(FREE_ERA_RIBBON_SKIN_ID);
     const sortedReports = useMemo(() => [...reports].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime()), [reports]);
+    const historicalCycleIds = useMemo(() => new Set(sortedReports.map((report) => report.cycleId || report.id)), [sortedReports]);
+    const visibleActiveCycle = useMemo(
+        () => (activeCycle && !historicalCycleIds.has(activeCycle.id) ? activeCycle : null),
+        [activeCycle, historicalCycleIds]
+    );
+    const visibleUpcomingCycle = useMemo(
+        () => (upcomingCycle && !historicalCycleIds.has(upcomingCycle.id) ? upcomingCycle : null),
+        [historicalCycleIds, upcomingCycle]
+    );
     const defaultEraBreaks = useMemo(() => {
         const breaks: number[] = [];
         for (let i = 0; i < sortedReports.length - 1; i += 1) {
@@ -1462,8 +1471,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         [sortedReports]
     );
     const effectiveEraCount = useMemo(
-        () => eraSummaries.length > 0 ?eraSummaries.length : ((sortedReports.length > 0 || !!activeCycle) ?1 : 0),
-        [activeCycle, eraSummaries.length, sortedReports.length]
+        () => eraSummaries.length > 0 ?eraSummaries.length : ((sortedReports.length > 0 || !!visibleActiveCycle) ?1 : 0),
+        [eraSummaries.length, sortedReports.length, visibleActiveCycle]
     );
     const totalHistoricalHours = useMemo(
         () => sortedReports.reduce((sum, report) => sum + (report.metrics.totalHours || 0), 0),
@@ -2229,7 +2238,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
 
-                        {activeCycle && (
+                        {visibleActiveCycle && (
                             <GlassCard variant="neutral" className="mb-4 px-4 py-3">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
@@ -2239,10 +2248,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 <div
                                     className="mt-3 cursor-pointer"
                                     onClick={() => {
-                                        setCycleBeingEdited(activeCycle);
+                                        setCycleBeingEdited(visibleActiveCycle);
                                     }}
                                 >
-                                    <SimplifiedCycleHUD cycle={activeCycle} onEdit={setCycleBeingEdited} showTimelineMarker={false} showControls={false} />
+                                    <SimplifiedCycleHUD cycle={visibleActiveCycle} onEdit={setCycleBeingEdited} showTimelineMarker={false} showControls={false} />
                                 </div>
                                 <div className="mt-3">
                                     <button id="end-cycle-button" onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20">ENCERRAR CICLO ATUAL</button>
@@ -2250,15 +2259,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </GlassCard>
                         )}
 
-                        {!activeCycle && upcomingCycle && (
-                            <div className="cursor-pointer" onClick={() => setCycleBeingEdited(upcomingCycle)}>
-                                <UpcomingCycleCard cycle={upcomingCycle} onEdit={setCycleBeingEdited} />
+                        {!visibleActiveCycle && visibleUpcomingCycle && (
+                            <div className="cursor-pointer" onClick={() => setCycleBeingEdited(visibleUpcomingCycle)}>
+                                <UpcomingCycleCard cycle={visibleUpcomingCycle} onEdit={setCycleBeingEdited} />
                             </div>
                         )}
 
                         {renderLegacySummary()}
 
-                        {!activeCycle && !upcomingCycle ? (
+                        {!visibleActiveCycle && !visibleUpcomingCycle ? (
                             <div className="relative z-20 space-y-2">
                                 <button id="start-new-cycle-button" onClick={() => setShowNewCycleSetup(true)} className="w-full py-3 rounded-xl luxe-skin-button mb-4 shadow-lg shadow-[var(--skin-accent-color)]/20">INICIAR NOVO CICLO</button>
                                 {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem legado fechado ainda. Inicie sua jornada.</div>}
@@ -2391,7 +2400,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         );
                                     })}
                                 </div>
-                                {reports.length >= 2 && !activeCycle && !reportForComparison && (
+                                {reports.length >= 2 && !visibleActiveCycle && !reportForComparison && (
                                     <div className="mt-4">
                                         <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÚLTIMOS 2 CICLOS</button>
                                     </div>

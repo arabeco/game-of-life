@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, MinusIcon, SquareCheckIcon, PanelIcon, FlameIcon } from '../components/Icons';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType } from '../types';
@@ -907,23 +907,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
                     if (dy !== 0) {
                         scrollContainerRef.current.style.scrollBehavior = 'auto';
-
-                        let handledByWindow = false;
-                        // Prioritize bringing the container into view
-                        if (dy < 0 && rect.top < 0) {
-                            // Container top is above viewport, scroll window up to show it
-                            window.scrollBy(0, dy);
-                            handledByWindow = true;
-                        } else if (dy > 0 && rect.bottom > window.innerHeight) {
-                            // Container bottom is below viewport, scroll window down to show it
-                            window.scrollBy(0, dy);
-                            handledByWindow = true;
-                        }
-
-                        if (!handledByWindow) {
-                            scrollContainerRef.current.scrollTop += dy;
-                            lastScrollTopRef.current = scrollContainerRef.current.scrollTop;
-                        }
+                        scrollContainerRef.current.scrollTop += dy;
+                        lastScrollTopRef.current = scrollContainerRef.current.scrollTop;
                     }
                 }
                 rafId = requestAnimationFrame(step);
@@ -1108,17 +1093,37 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return () => clearInterval(timerId);
     }, []);
 
+    useLayoutEffect(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+            lastScrollTopRef.current = 0;
+        }
+    }, []);
+
+    const scrollPlannerToIndicator = useCallback((indicatorEl: HTMLDivElement | null) => {
+        const scroller = scrollContainerRef.current;
+        if (!scroller || !indicatorEl) return;
+
+        const indicatorTop = indicatorEl.offsetTop;
+        const targetTop = Math.max(0, indicatorTop - (scroller.clientHeight * 0.42));
+        scroller.scrollTo({ top: targetTop, behavior: 'smooth' });
+    }, []);
+
     // Auto-scroll useEffects
     useEffect(() => {
         if (viewMode === 'day' && scrollContainerRef.current) {
             const isOperationalToday = formatLocalDateString(currentDate) === getOperationalDateString();
             if (isOperationalToday) {
                 setTimeout(() => {
-                    dailyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    scrollPlannerToIndicator(dailyTimeIndicatorRef.current);
                 }, 200);
             }
         }
-    }, [viewMode, currentDate, zoomLevel, currentTime]);
+    }, [currentDate, currentTime, scrollPlannerToIndicator, viewMode, zoomLevel]);
     useEffect(() => {
         if (viewMode === 'week' && scrollContainerRef.current) {
             const startOfWeek = new Date(currentDate);
@@ -1132,11 +1137,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             const operationalToday = buildLocalDateFromString(getOperationalDateString());
             if (operationalToday >= startOfWeek && operationalToday <= endOfWeek) {
                 setTimeout(() => {
-                    weeklyTimeIndicatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    scrollPlannerToIndicator(weeklyTimeIndicatorRef.current);
                 }, 200);
             }
         }
-    }, [viewMode, currentDate, zoomLevel, currentTime]);
+    }, [currentDate, currentTime, scrollPlannerToIndicator, viewMode, zoomLevel]);
 
     const selectedOperationalDateString = formatLocalDateString(currentDate);
     const plannerScopedTasks = useMemo(() => {
@@ -1247,14 +1252,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const bayGridRows = isSingleRow ?'grid-rows-1' : 'grid-rows-2';
 
     return (
-        <div id="planner-container" className="planner-root relative flex flex-col h-full min-h-0 bg-[#0d0d0e] overflow-visible">
+        <div id="planner-container" className="planner-root relative flex flex-col h-full min-h-0 overflow-hidden bg-[#0d0d0e]">
             {dragState.isDragging && (
                 <div style={{ position: 'fixed', top: dragState.currentPosition.y, left: dragState.currentPosition.x, transform: `translate(-${dragState.pointerOffset.x}px, -${dragState.pointerOffset.y}px)`, pointerEvents: 'none', zIndex: 1000 }}>
                     {dragState.ghostElement}
                 </div>
             )}
 
-            <div className="planner-top-shell sticky top-0 z-30 flex-shrink-0 px-2 pt-2 pb-1 transition-all duration-300 relative">
+            <div className="planner-top-shell relative z-30 flex-shrink-0 px-2 pt-1 pb-1 transition-all duration-300">
                 <div className="planner-header-plane relative overflow-hidden rounded-[30px] border border-white/10 shadow-[0_18px_38px_rgba(0,0,0,0.34)]">
                     <div className="planner-header-glow absolute inset-0 pointer-events-none" />
                     <div className="planner-header-noise absolute inset-0 pointer-events-none opacity-60" />
@@ -1323,7 +1328,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             <div
                 ref={scrollContainerRef}
                 className="planner-scroll-surface flex-grow min-h-0 overflow-y-auto overflow-x-hidden relative bg-[#111111]"
-                style={{ scrollBehavior: 'smooth' }}
+                style={{ scrollBehavior: 'smooth', overscrollBehaviorY: 'contain' }}
             >
                 <div className={dragState.isDragging ?'pointer-events-auto' : ''}>
                     {viewMode === 'day' ?(
@@ -1331,7 +1336,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             <DailyView tasks={scheduledTasks} actions={actions} scaleFactor={scaleFactor} operationalDate={formatLocalDateString(currentDate)} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
                         </div>
                     ) : (
-                        <WeeklyPlannerGrid currentDate={currentDate} tasks={tasks} actions={actions} onCustomDragStart={handleCustomDragStart} onTaskClick={handleTaskClick} scaleFactor={scaleFactor} stickyHeaderOffset={'0rem'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />
+                        <WeeklyPlannerGrid currentDate={currentDate} tasks={tasks} actions={actions} onCustomDragStart={handleCustomDragStart} onTaskClick={handleTaskClick} scaleFactor={scaleFactor} stickyHeaderOffset={'0px'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />
                     )}
                 </div>
             </div>

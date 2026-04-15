@@ -252,7 +252,11 @@
 }
 
 html, body, #root {
+  width: 100%;
   height: 100%;
+  min-height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 html, body {
@@ -282,7 +286,11 @@ html, body {
 }
 
 body {
+  position: fixed;
+  inset: 0;
+  margin: 0;
   overscroll-behavior-y: none;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   background-color: var(--bg-primary);
   background: var(--app-background) !important;
@@ -291,6 +299,11 @@ body {
   text-rendering: optimizeLegibility;
   font-synthesis-weight: none;
   transition: background-color 0.3s ease, color 0.3s ease, background 0.3s ease;
+}
+
+#root {
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .mode-game.theme-dark .arenas-view-root,

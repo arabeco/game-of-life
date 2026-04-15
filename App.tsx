@@ -17,9 +17,14 @@ import {
 } from './utils/closedBetaAuth';
 import { parseBooleanEnvFlag } from './utils/envFlags';
 import { startInstallPromptCapture } from './utils/installPrompt';
-import { signOutAndClearSupabaseSession } from './utils/authSession';
+import {
+    clearIntentionalSignOutPending,
+    isIntentionalSignOutPending,
+    signOutAndClearSupabaseSession,
+} from './utils/authSession';
 import { ensureClosedBetaUserProfile } from './utils/closedBetaProfile';
 import { isNativeAuthCallbackUrl, parseNativeAuthCallback } from './utils/nativeAuth';
+import { loadSessionBackup, saveSessionBackup } from './utils/sessionBackup';
 import { isCapacitorNativeRuntime } from './utils/runtimePlatform';
 import { resolveUiSkinId } from './utils/uiSkinTokens';
 
@@ -36,7 +41,7 @@ const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; t
     theme = 'DARK',
 }) => (
     <div
-        className={`relative flex min-h-screen items-center justify-center overflow-hidden text-white ${mode === 'BASIC' ? `mode-office theme-${(theme || 'DARK').toLowerCase()}` : ''}`}
+        className={`relative flex h-full min-h-0 items-center justify-center overflow-hidden text-white ${mode === 'BASIC' ? `mode-office theme-${(theme || 'DARK').toLowerCase()}` : ''}`}
         style={{
             ['--skin-accent-color' as string]: accentColor,
             background: 'radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 28%), linear-gradient(180deg, #050505 0%, #000000 100%)',
@@ -69,6 +74,7 @@ const App: React.FC = () => {
     const [pendingGoogleInviteSession, setPendingGoogleInviteSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [authGuardLoading, setAuthGuardLoading] = useState(false);
+    const [resumeRecoveryPending, setResumeRecoveryPending] = useState(false);
     const [googleAuthPending, setGoogleAuthPending] = useState(() => hasClosedBetaGoogleAuthPending());
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [isSplashComplete, setIsSplashComplete] = useState(false);
@@ -91,7 +97,7 @@ const App: React.FC = () => {
     const renderModeRef = useRef(renderMode);
     const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
     const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
-    const showFullScreenBoot = loading || googleAuthPending || (!session && authGuardLoading);
+    const showFullScreenBoot = loading || googleAuthPending || (!session && (authGuardLoading || resumeRecoveryPending));
 
     const handleSplashComplete = () => {
         setIsSplashComplete(true);
@@ -99,6 +105,10 @@ const App: React.FC = () => {
 
     useEffect(() => {
         sessionRef.current = session;
+        if (session) {
+            clearIntentionalSignOutPending();
+            void saveSessionBackup(session);
+        }
     }, [session]);
 
     useEffect(() => {
@@ -276,6 +286,26 @@ const App: React.FC = () => {
             return refreshData.session ?? null;
         };
 
+        const restoreSessionFromBackup = async (reason: string): Promise<Session | null> => {
+            const backupSession = await loadSessionBackup();
+            if (!backupSession?.refresh_token || !backupSession.access_token) return null;
+
+            const {
+                data: restoredData,
+                error: restoredError,
+            } = await supabase.auth.setSession({
+                access_token: backupSession.access_token,
+                refresh_token: backupSession.refresh_token,
+            });
+
+            if (restoredError) {
+                console.warn(`Backup session restore failed during ${reason}:`, restoredError.message);
+                return refreshSessionFromCandidate(backupSession, `${reason}:refresh-backup`);
+            }
+
+            return restoredData.session ?? backupSession;
+        };
+
         const recoverSessionGracefully = async (reason: string, preferredSession: Session | null = null): Promise<Session | null> => {
             if (sessionRecoveryInFlightRef.current) {
                 return sessionRecoveryInFlightRef.current;
@@ -290,6 +320,9 @@ const App: React.FC = () => {
                 const immediateRefreshedSession = await refreshSessionFromCandidate(seedSession, `${reason}:refresh`);
                 if (immediateRefreshedSession) return immediateRefreshedSession;
 
+                const immediateBackupSession = await restoreSessionFromBackup(`${reason}:backup`);
+                if (immediateBackupSession) return immediateBackupSession;
+
                 for (let attempt = 0; attempt < 3; attempt += 1) {
                     await waitForSessionRetry(300 * (attempt + 1));
 
@@ -298,6 +331,9 @@ const App: React.FC = () => {
 
                     const retriedRefreshedSession = await refreshSessionFromCandidate(sessionRef.current || seedSession, `${reason}:retry-refresh:${attempt + 1}`);
                     if (retriedRefreshedSession) return retriedRefreshedSession;
+
+                    const retriedBackupSession = await restoreSessionFromBackup(`${reason}:retry-backup:${attempt + 1}`);
+                    if (retriedBackupSession) return retriedBackupSession;
                 }
 
                 return null;
@@ -473,22 +509,33 @@ const App: React.FC = () => {
             if (sessionRecoveryInFlightRef.current) return;
             if (Date.now() - lastSessionRecoveryAttemptRef.current < 1200) return;
 
-            const recoveredSession = await recoverSessionGracefully(`resume:${trigger}`);
-            if (!recoveredSession) return;
+            const shouldHoldBoot = isCapacitorNativeRuntime() && !sessionRef.current;
+            if (shouldHoldBoot) {
+                setResumeRecoveryPending(true);
+            }
 
-            const currentSession = sessionRef.current;
-            const sessionChanged =
-                !currentSession ||
-                currentSession.user?.id !== recoveredSession.user?.id ||
-                currentSession.access_token !== recoveredSession.access_token ||
-                currentSession.refresh_token !== recoveredSession.refresh_token;
+            try {
+                const recoveredSession = await recoverSessionGracefully(`resume:${trigger}`);
+                if (!recoveredSession) return;
 
-            if (sessionChanged) {
-                bootStartedAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
-                bootMetricSentRef.current = false;
-                bootErrorSignatureRef.current = '';
-                bootEntryModeRef.current = 'resume_recovery';
-                await applyResolvedSession(recoveredSession);
+                const currentSession = sessionRef.current;
+                const sessionChanged =
+                    !currentSession ||
+                    currentSession.user?.id !== recoveredSession.user?.id ||
+                    currentSession.access_token !== recoveredSession.access_token ||
+                    currentSession.refresh_token !== recoveredSession.refresh_token;
+
+                if (sessionChanged) {
+                    bootStartedAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
+                    bootMetricSentRef.current = false;
+                    bootErrorSignatureRef.current = '';
+                    bootEntryModeRef.current = 'resume_recovery';
+                    await applyResolvedSession(recoveredSession);
+                }
+            } finally {
+                if (shouldHoldBoot) {
+                    setResumeRecoveryPending(false);
+                }
             }
         };
 
@@ -509,7 +556,10 @@ const App: React.FC = () => {
                     }
                     await applyResolvedSession(recoveredSession);
                 } else {
-                    const recoveredSession = restoredSession || await retryPendingGoogleAuthSession();
+                    const recoveredSession =
+                        restoredSession ||
+                        await recoverSessionGracefully('initial-check-empty') ||
+                        await retryPendingGoogleAuthSession();
                     if (restoredSession) {
                         bootEntryModeRef.current = 'session_restore';
                     } else if (recoveredSession) {
@@ -534,6 +584,12 @@ const App: React.FC = () => {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((event, nextSession) => {
             void (async () => {
+                if (nextSession) {
+                    clearIntentionalSignOutPending();
+                }
+
+                const intentionalSignOut = event === 'SIGNED_OUT' && isIntentionalSignOutPending();
+
                 if (event === 'SIGNED_IN' && nextSession && sessionRef.current?.user?.id !== nextSession.user?.id) {
                     bootStartedAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
                     bootMetricSentRef.current = false;
@@ -549,23 +605,28 @@ const App: React.FC = () => {
                 }
 
                 if ((event as string) === 'TOKEN_REFRESH_ERROR') {
-                    const recoveredSession = await recoverSessionGracefully('token-refresh-error', nextSession || sessionRef.current);
-                    if (recoveredSession) {
+                    setResumeRecoveryPending(true);
+                    try {
+                        const recoveredSession = await recoverSessionGracefully('token-refresh-error', nextSession || sessionRef.current);
+                        if (recoveredSession) {
+                            clearPendingGoogleAuthState();
+                            await applyResolvedSession(recoveredSession);
+                            return;
+                        }
+
+                        if (sessionRef.current) {
+                            console.warn('Token refresh failed, but an in-memory session still exists. Preserving current session and retrying on the next app resume.');
+                            return;
+                        }
+
                         clearPendingGoogleAuthState();
-                        await applyResolvedSession(recoveredSession);
-                        return;
+                        authResolutionRef.current += 1;
+                        setSession(null);
+                        setPendingGoogleInviteSession(null);
+                        console.warn('Token refresh failed on native runtime. Keeping persisted auth storage intact so the next resume/boot can restore the session.');
+                    } finally {
+                        setResumeRecoveryPending(false);
                     }
-
-                    if (sessionRef.current) {
-                        console.warn('Token refresh failed, but an in-memory session still exists. Preserving current session and retrying on the next app resume.');
-                        return;
-                    }
-
-                    clearPendingGoogleAuthState();
-                    authResolutionRef.current += 1;
-                    setSession(null);
-                    setPendingGoogleInviteSession(null);
-                    await signOutAndClearSupabaseSession('local');
                 } else if (event === 'SIGNED_OUT' && hasClosedBetaGoogleAuthPending()) {
                     const recoveredSession =
                         await recoverSessionGracefully('signed-out-during-google-oauth', sessionRef.current) ||
@@ -582,17 +643,31 @@ const App: React.FC = () => {
                     setSession(null);
                     setPendingGoogleInviteSession(null);
                 } else if (event === 'SIGNED_OUT') {
-                    if (isCapacitorNativeRuntime() || sessionRef.current) {
-                        const recoveredSession = await recoverSessionGracefully('signed-out-native-rescue', sessionRef.current);
-                        if (recoveredSession) {
-                            clearPendingGoogleAuthState();
-                            await applyResolvedSession(recoveredSession);
-                            return;
-                        }
+                    if (intentionalSignOut) {
+                        clearIntentionalSignOutPending();
+                        clearPendingGoogleAuthState();
+                        authResolutionRef.current += 1;
+                        setSession(null);
+                        setPendingGoogleInviteSession(null);
+                        return;
+                    }
 
-                        if (sessionRef.current) {
-                            console.warn('SIGNED_OUT received while a native/in-memory session still exists. Preserving session until recovery definitively fails.');
-                            return;
+                    if (isCapacitorNativeRuntime() || sessionRef.current) {
+                        setResumeRecoveryPending(true);
+                        try {
+                            const recoveredSession = await recoverSessionGracefully('signed-out-native-rescue', sessionRef.current);
+                            if (recoveredSession) {
+                                clearPendingGoogleAuthState();
+                                await applyResolvedSession(recoveredSession);
+                                return;
+                            }
+
+                            if (sessionRef.current) {
+                                console.warn('SIGNED_OUT received while a native/in-memory session still exists. Preserving session until recovery definitively fails.');
+                                return;
+                            }
+                        } finally {
+                            setResumeRecoveryPending(false);
                         }
                     }
 
@@ -751,7 +826,7 @@ const App: React.FC = () => {
                     <LegacyRenderView />
                 </Suspense>
             ) : (
-                <div className="relative flex min-h-screen flex-col overflow-hidden bg-transparent font-sans text-white">
+                <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-transparent font-sans text-white">
                     {showFullScreenBoot ? (
                         <AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />
                     ) : (

@@ -13,6 +13,7 @@ import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import type { LegacyEraSummary } from '../components/LegacyExportDocument';
 import { LegacyPlaqueArtifact } from '../components/LegacyPlaqueArtifact';
+import { LegacyGrandPlaque } from '../components/LegacyGrandPlaque';
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
 import { MetalReportCard } from '../components/MetalReportCard';
 import { Portal } from '../components/Portal';
@@ -1824,7 +1825,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }, [legacyProjectionSceneGoldCost, showToast, updateUserProfile, userProfile]);
 
     const renderLegacySummary = () => {
-        if (sortedReports.length === 0) return null;
+        const hasHistoricalLegacy = sortedReports.length > 0;
         return (
             <GlassCard variant="neutral" className="mb-4 overflow-hidden p-0">
                 <div className="relative">
@@ -1875,6 +1876,40 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </GlassCard>
         );
     }; 
+
+    const renderLegacySummaryCard = () => {
+        return (
+            <GlassCard variant="neutral" className="mb-4 overflow-hidden p-0">
+                <div className="relative">
+                    <div
+                        className="pointer-events-none absolute inset-0 opacity-90"
+                        style={{
+                            backgroundImage: `linear-gradient(180deg, rgba(4,4,6,0.18), rgba(4,4,6,0.82)), url(${LEGACY_HISTORY_PREVIEW_BACKDROP_URL})`,
+                            backgroundPosition: 'center top',
+                            backgroundSize: 'cover',
+                        }}
+                    />
+                    <button
+                        type="button"
+                        onClick={handleStartLegacyExport}
+                        className="relative z-10 flex w-full flex-col px-3 py-3 text-left transition-colors hover:bg-white/[0.03]"
+                    >
+                        <div className="mx-auto w-full max-w-[340px]">
+                            <LegacyGrandPlaque
+                                eras={eraSummaries}
+                                sovereignName={sovereignName}
+                                banner
+                                hideSovereignName
+                                compact
+                                className="w-full"
+                            />
+                        </div>
+                    </button>
+                </div>
+            </GlassCard>
+        );
+    };
+
     const handleExportLegacy = async () => {
         if (eraSummaries.length === 0) {
             showToast('Nao ha Eras concluidas para exportar.');
@@ -2315,7 +2350,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </div>
                         )}
 
-                        {renderLegacySummary()}
+                        {renderLegacySummaryCard()}
 
                         {!visibleActiveCycle && !visibleUpcomingCycle ? (
                             <div className="relative z-20 space-y-2">

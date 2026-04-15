@@ -19,8 +19,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 5rem;
-  height: 2.25rem;
+  width: 4.5rem;
+  height: 2rem;
   flex-shrink: 0;
   position: relative;
   z-index: 50;
@@ -53,8 +53,8 @@
 }
 
 .shell-float-button {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,8 +72,8 @@
 }
 
 .shell-level-badge {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.35rem;
+  height: 1.35rem;
   display: flex;
   align-items: center;
   justify-content: center;

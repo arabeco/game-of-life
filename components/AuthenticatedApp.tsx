@@ -456,6 +456,17 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         historyReady.current = true;
     }, []);
 
+    useLayoutEffect(() => {
+        if (!('scrollRestoration' in window.history)) return undefined;
+
+        const previousRestoration = window.history.scrollRestoration;
+        window.history.scrollRestoration = 'manual';
+
+        return () => {
+            window.history.scrollRestoration = previousRestoration;
+        };
+    }, []);
+
     useEffect(() => {
         if (!historyReady.current) return;
         const state = window.history.state as { view?: View } | null;
@@ -463,6 +474,26 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             window.history.pushState({ view: currentView }, '');
         }
     }, [currentView]);
+
+    useLayoutEffect(() => {
+        const resetShellScroll = () => {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+
+            const appRoot = document.getElementById('app-root');
+            const authRoot = document.querySelector('.auth-app-root') as HTMLElement | null;
+            const mainEl = document.querySelector('main') as HTMLElement | null;
+
+            appRoot?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            authRoot?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            mainEl?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        };
+
+        resetShellScroll();
+        const rafId = window.requestAnimationFrame(resetShellScroll);
+        return () => window.cancelAnimationFrame(rafId);
+    }, [currentView, isRestScreenVisible]);
 
     useEffect(() => {
         const handlePopState = (event: PopStateEvent) => {
@@ -576,7 +607,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         </button>
     );
 
-    const baseTopPadding = isBuilderMode ?124 : 76;
+    const baseTopPadding = isBuilderMode ?104 : 56;
     const baseBottomPadding = 64;
     const mainPaddingTop = `${baseTopPadding}px`;
     const mainPaddingBottom = currentView === 'assets'

@@ -105,8 +105,10 @@ export const AssetsView: React.FC = () => {
     const [draftAssetArtUrl, setDraftAssetArtUrl] = useState<string | undefined>(undefined);
     const [draftAssetWidgetValue, setDraftAssetWidgetValue] = useState<SlotValue | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const cycleSummaryRef = useRef<HTMLButtonElement | null>(null);
     const lastSelectedAssetIdRef = useRef<string | null>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+    const [cycleSummaryHeight, setCycleSummaryHeight] = useState(56);
     const [hasSephirotRasterArt, setHasSephirotRasterArt] = useState(false);
     const overviewLayout = useAssetsOverviewLayoutConfig();
 
@@ -153,10 +155,9 @@ export const AssetsView: React.FC = () => {
         ? containerSize.width / containerSize.height
         : baseAspect;
     const stretchY = 1;
-    const cycleSummaryTop = '18px';
-    const cycleSummaryTopPx = 18;
-    const cycleSummaryHeight = 124;
-    const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 12;
+    const cycleSummaryTop = '10px';
+    const cycleSummaryTopPx = 10;
+    const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 8;
     const assetsGridBottomPx = 64;
     const overviewCoords = useMemo(
         () => Object.entries(overviewLayout).map(([id, position]) => ({ id, ...position })),
@@ -238,6 +239,40 @@ export const AssetsView: React.FC = () => {
             totalPlanned,
         };
     }, [activeCycle, allArenas, cycleProgress, dailyCommitment?.date, actions, cycleScopedTasks]);
+
+    useLayoutEffect(() => {
+        const summaryCard = cycleSummaryRef.current;
+        const fallbackHeight = activeCycle ? 58 : 34;
+
+        if (!summaryCard) {
+            setCycleSummaryHeight(fallbackHeight);
+            return;
+        }
+
+        const updateSummaryHeight = () => {
+            const nextHeight = Math.ceil(summaryCard.getBoundingClientRect().height);
+            setCycleSummaryHeight(nextHeight > 0 ? nextHeight : fallbackHeight);
+        };
+
+        updateSummaryHeight();
+
+        if (typeof ResizeObserver !== 'undefined') {
+            const observer = new ResizeObserver(() => updateSummaryHeight());
+            observer.observe(summaryCard);
+            return () => observer.disconnect();
+        }
+
+        const rafId = requestAnimationFrame(updateSummaryHeight);
+        return () => cancelAnimationFrame(rafId);
+    }, [
+        activeCycle,
+        cycleSummary?.name,
+        cycleSummary?.progress,
+        cycleSummary?.timeProgress,
+        cycleSummary?.elapsedDays,
+        cycleSummary?.totalDays,
+        cycleSummary?.activeArenaCount,
+    ]);
 
     useLayoutEffect(() => {
         const target = containerRef.current ?? document.documentElement;
@@ -619,7 +654,7 @@ export const AssetsView: React.FC = () => {
             style={{ overscrollBehavior: 'none', touchAction: 'manipulation' }}
         >
             <div
-                className="assets-view-shell relative flex h-full min-h-0 items-center justify-center overflow-hidden rounded-[30px]"
+                className="assets-view-shell relative flex h-full min-h-0 items-stretch justify-start overflow-hidden rounded-[30px]"
                 style={assetsShellStyle}
             >
                 <div ref={containerRef} className="relative h-full min-h-0 w-full overflow-hidden">
@@ -630,82 +665,71 @@ export const AssetsView: React.FC = () => {
                     <div className="relative z-10 h-full w-full">
                         <div className="absolute inset-x-0 z-20 flex justify-center px-3" style={{ top: cycleSummaryTop }}>
                             <button
+                                ref={cycleSummaryRef}
                                 type="button"
                                 onClick={handleOpenReports}
-                                className="group min-h-[124px] w-full max-w-[258px] overflow-hidden rounded-[16px] border border-white/10 px-3 py-2 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px]"
+                                className={`group w-full overflow-hidden border border-white/10 px-3 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'max-w-[258px] rounded-[16px] py-1.5' : 'max-w-[214px] rounded-[12px] py-1.5'}`}
                                 style={{
                                     borderColor: rgbaString(cycleAccentRgb, 0.32),
                                     backgroundImage: `radial-gradient(circle at 18% 10%, ${rgbaString(cycleAccentRgb, 0.24)} 0%, transparent 34%), linear-gradient(180deg, rgba(31,38,48,0.94) 0%, rgba(13,17,22,0.98) 100%)`,
                                     boxShadow: `0 16px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${rgbaString(cycleAccentRgb, 0.12)}`,
+                                    minHeight: activeCycle ? '58px' : '34px',
                                 }}
                             >
-                                <div className="min-w-0 space-y-0.5">
-                                    <div className="min-w-0 flex-1 space-y-0.5">
+                                {cycleSummary ? (
+                                    <div className="space-y-1">
                                         <div className="flex items-center justify-between gap-2">
-                                            <h3 className="truncate text-[11px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
-                                                {cycleSummary ? cycleSummary.name : 'Sem ciclo ativo'}
+                                            <h3 className="truncate text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
+                                                {cycleSummary.name}
                                             </h3>
-                                            {cycleSummary ? (
-                                                <span className="shrink-0 text-[8px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
-                                                    {formatDate(activeCycle.endDate)}
-                                                </span>
-                                            ) : null}
+                                            <span className="shrink-0 text-[8px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
+                                                {formatDate(activeCycle.endDate)}
+                                            </span>
                                         </div>
-                                        {cycleSummary ? (
-                                            <p className="text-[9px] font-semibold uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.88) }}>
-                                                {`${cycleSummary.statusLabel} · ${cycleSummary.totalDays} dias`}
-                                            </p>
-                                        ) : null}
-                                        {cycleSummary ? (
-                                            <p className="text-[8px] font-semibold tracking-[0.03em]" style={{ color: rgbaString(cycleMetaColor, 0.76) }}>
-                                                Dia 1 = {formatDate(activeCycle.startDate)} · ultimo dia tambem conta.
-                                            </p>
-                                        ) : null}
-                                        {cycleSummary ? (
-                                            <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.08em]">
-                                                <span className="truncate" style={{ color: rgbaString(cycleMetaColor, 0.92) }}>
-                                                    {cycleSummary.activeArenaCount} arenas ativas
-                                                </span>
+                                        <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.88) }}>
+                                            <span className="truncate">{`${cycleSummary.statusLabel} · ${cycleSummary.activeArenaCount} arenas`}</span>
+                                            <span className="shrink-0">{cycleSummary.elapsedDays > 0 ? `Dia ${cycleSummary.elapsedDays}/${cycleSummary.totalDays}` : cycleSummary.statusLabel}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
+                                                    <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Progresso</span>
+                                                    <span style={{ color: rgbString(cycleTitleColor) }}>
+                                                        {`${cycleSummary.totalCompleted}/${cycleSummary.totalPlanned} · ${cycleSummary.progress}%`}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-0.5 h-[3px] w-full overflow-hidden rounded-full bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                                                    <div
+                                                        className="h-full rounded-full transition-all duration-500"
+                                                        style={{
+                                                            width: `${cycleSummary.progress}%`,
+                                                            background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)',
+                                                            boxShadow: '0 0 10px rgba(212,175,55,0.24)',
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
-                                        ) : null}
+                                            <div className="shrink-0 text-right text-[7px] font-black uppercase tracking-[0.08em]">
+                                                <span className="block" style={{ color: rgbaString(cycleMetaColor, 0.78) }}>Tempo</span>
+                                                <span className="block" style={{ color: rgbaString(cycleMetaColor, 0.96) }}>{`${cycleSummary.timeProgress}%`}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="mt-1.5">
-                                    <div className="flex items-center justify-between gap-2 text-[8px] font-black uppercase tracking-[0.08em]">
-                                        <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Progresso</span>
-                                        <span style={{ color: rgbString(cycleTitleColor) }}>
-                                            {cycleSummary ? `${cycleSummary.totalCompleted}/${cycleSummary.totalPlanned} · ${cycleSummary.progress}%` : '0/0 · 0%'}
+                                ) : (
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <h3 className="truncate text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
+                                                Sem ciclo ativo
+                                            </h3>
+                                            <p className="text-[7px] font-semibold uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.82) }}>
+                                                Historico
+                                            </p>
+                                        </div>
+                                        <span className="shrink-0 text-[8px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
+                                            Abrir
                                         </span>
                                     </div>
-                                    <div className="mt-0.5 h-[5px] w-full overflow-hidden rounded-full bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                                        <div
-                                            className="h-full rounded-full transition-all duration-500"
-                                            style={{
-                                                width: `${cycleSummary ? cycleSummary.progress : 0}%`,
-                                                background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)',
-                                                boxShadow: '0 0 12px rgba(212,175,55,0.28)',
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="mt-1 flex items-center justify-between gap-2 text-[8px] font-black uppercase tracking-[0.08em]">
-                                        <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Tempo</span>
-                                        <span style={{ color: rgbaString(cycleMetaColor, 0.94) }}>
-                                            {cycleSummary
-                                                ? (cycleSummary.elapsedDays > 0 ? `Dia ${cycleSummary.elapsedDays}/${cycleSummary.totalDays}` : cycleSummary.statusLabel)
-                                                : 'Dia 0/0'}
-                                        </span>
-                                    </div>
-                                    <div className="mt-0.5 h-[5px] w-full overflow-hidden rounded-full bg-black/28 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-                                        <div
-                                            className="h-full rounded-full transition-all duration-500"
-                                            style={{
-                                                width: `${cycleSummary ? cycleSummary.timeProgress : 0}%`,
-                                                background: 'linear-gradient(90deg, rgba(102,157,201,0.42) 0%, rgba(143,198,235,0.82) 52%, rgba(228,244,255,0.98) 100%)',
-                                                boxShadow: '0 0 10px rgba(120,184,229,0.2)',
-                                            }}
-                                        />
-                                    </div>
-                                </div>
+                                )}
                             </button>
                         </div>
 

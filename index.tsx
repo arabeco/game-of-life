@@ -17,12 +17,27 @@ root.render(
   </React.StrictMode>
 );
 
-if (shouldUseBrowserServiceWorker()) {
-  window.addEventListener('load', () => {
+const clearWebWorkerCaches = async () => {
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister().catch(() => false)));
+  }
+
+  if ('caches' in window) {
+    const cacheKeys = await caches.keys();
+    await Promise.all(cacheKeys.map((cacheKey) => caches.delete(cacheKey).catch(() => false)));
+  }
+};
+
+window.addEventListener('load', () => {
+  if (shouldUseBrowserServiceWorker()) {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => registration.update().catch(() => undefined))
       .catch(() => {
         return;
       });
-  });
-}
+    return;
+  }
+
+  void clearWebWorkerCaches().catch(() => undefined);
+});

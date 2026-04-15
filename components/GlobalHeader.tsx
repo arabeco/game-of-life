@@ -256,7 +256,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                 className="shell-header fixed left-0 right-0 z-40"
                 style={{ top: topOffsetPx }}
             >
-                <div className="max-w-7xl mx-auto relative flex items-center justify-between h-[76px] px-4 text-xs font-semibold text-gray-300">
+                <div className="max-w-7xl mx-auto relative flex items-center justify-between h-[64px] px-3 text-xs font-semibold text-gray-300">
                     {/* Date Chip */}
                     <div className={chipStyle}>
                         <span className="shell-chip-label text-[10px] font-semibold tracking-[0.12em] uppercase leading-none mb-0.5">{day}</span>
@@ -297,7 +297,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                 </button>
 
                                 <button onClick={onProfileClick} className="flex flex-col items-center relative group flex-shrink-0" id="nobility-badge">
-                                    <div className="relative w-16 h-16 group-hover:scale-105 transition-transform">
+                                    <div className="relative w-[58px] h-[58px] group-hover:scale-105 transition-transform">
                                         {/* Avatar Image */}
                                         <div className="w-full h-full flex items-center justify-center">
                                             {renderAvatarContent()}
@@ -323,7 +323,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         />
                                         )}
                                     </div>
-                                    <div className="shell-level-badge absolute top-[3.3rem] z-[60] group-hover:scale-110" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
+                                    <div className="shell-level-badge absolute top-[3rem] z-[60] group-hover:scale-110" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
                                         <span className="shell-level-text text-[11px] font-black">{userProfile.level}</span>
                                     </div>
                                 </button>

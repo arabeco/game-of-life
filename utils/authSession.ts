@@ -1,6 +1,20 @@
+import { Preferences } from '@capacitor/preferences';
 import { supabase } from '../supabaseClient';
+import { AUTH_SESSION_BACKUP_KEY, clearSessionBackup } from './sessionBackup';
+import { isCapacitorNativeRuntime } from './runtimePlatform';
 
 export const AUTH_STORAGE_KEY = 'gol-supabase-auth';
+let intentionalSignOutPending = false;
+
+export const markIntentionalSignOutPending = () => {
+  intentionalSignOutPending = true;
+};
+
+export const clearIntentionalSignOutPending = () => {
+  intentionalSignOutPending = false;
+};
+
+export const isIntentionalSignOutPending = () => intentionalSignOutPending;
 
 export const clearSupabaseSessionStorage = () => {
   try {
@@ -19,6 +33,7 @@ export const clearSupabaseSessionStorage = () => {
 };
 
 export const signOutAndClearSupabaseSession = async (scope: 'global' | 'local' = 'local') => {
+  markIntentionalSignOutPending();
   try {
     await supabase.auth.signOut({ scope });
   } catch (error) {
@@ -31,5 +46,11 @@ export const signOutAndClearSupabaseSession = async (scope: 'global' | 'local' =
     }
   } finally {
     clearSupabaseSessionStorage();
+    void clearSessionBackup();
+
+    if (isCapacitorNativeRuntime()) {
+      void Preferences.remove({ key: AUTH_STORAGE_KEY }).catch(() => undefined);
+      void Preferences.remove({ key: AUTH_SESSION_BACKUP_KEY }).catch(() => undefined);
+    }
   }
 };

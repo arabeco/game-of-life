@@ -9,6 +9,17 @@ export const NATIVE_AUTH_REDIRECT_URL = `${NATIVE_AUTH_SCHEME}://${NATIVE_AUTH_H
 export const getGoogleAuthRedirectUrl = (webAppOrigin: string): string =>
   isCapacitorNativeRuntime() ? NATIVE_AUTH_REDIRECT_URL : `${webAppOrigin.replace(/\/+$/, '')}/`;
 
+export const extractOAuthRedirectUrl = (value: string): string | null => {
+  if (!value) return null;
+
+  try {
+    const parsed = new URL(value);
+    return parsed.searchParams.get('redirect_to');
+  } catch (_error) {
+    return null;
+  }
+};
+
 export const isNativeAuthCallbackUrl = (value: string): boolean => {
   if (!value) return false;
 

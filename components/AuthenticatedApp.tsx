@@ -34,6 +34,15 @@ import {
 import { getActiveSubscriptionTier, getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess, isPremiumInLastDay } from '../utils/premiumAccess';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import { getGoldMembershipProductByTier, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
+import {
+    SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT,
+    areScreenIntroTipsEnabled,
+    hasScreenIntroTip,
+    hasSeenScreenIntroTip,
+    markScreenIntroTipSeen,
+    setScreenIntroTipsEnabled,
+    type ScreenIntroTipView,
+} from '../utils/screenIntroTips';
 import { ConfirmationModal } from './ConfirmationModal';
 import { DailyCompletionPromptModal } from './DailyCompletionPromptModal';
 import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../utils/dailyCompletionPrompt';
@@ -58,6 +67,7 @@ const CodexClaimModal = React.lazy(() => import('./CodexClaimModal').then((m) =>
 const RewardPackModal = React.lazy(() => import('./RewardPackModal').then((m) => ({ default: m.RewardPackModal })));
 const VanguardWelcomeModal = React.lazy(() => import('./VanguardWelcomeModal').then((m) => ({ default: m.VanguardWelcomeModal })));
 const SeasonTransitionModal = React.lazy(() => import('./SeasonDetailModal').then((m) => ({ default: m.SeasonTransitionModal })));
+const ScreenIntroTipOverlay = React.lazy(() => import('./ScreenIntroTipOverlay').then((m) => ({ default: m.ScreenIntroTipOverlay })));
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -148,7 +158,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     allowSeasonTransition = true,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, appMode, activeTheme, notifications } = useGame();
+    const { userProfile, appMode, activeTheme, notifications, showToast } = useGame();
     const historyReady = useRef(false);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
@@ -166,6 +176,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [isReportsVisible, setReportsVisible] = useState(false);
     const [dailyCompletionPrompt, setDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
     const [pendingSitrepOpen, setPendingSitrepOpen] = useState(false);
+    const [screenTipsEnabled, setScreenTipsEnabled] = useState(() => areScreenIntroTipsEnabled(userProfile.id));
+    const [activeScreenTipView, setActiveScreenTipView] = useState<ScreenIntroTipView | null>(null);
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
     const previousViewRef = useRef<View>(currentView);
     const previousRestVisibilityRef = useRef(isRestScreenVisible);
@@ -174,6 +186,25 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     useEffect(() => {
         void updateInstalledAppBadge(unreadNotificationsCount);
     }, [unreadNotificationsCount]);
+
+    useEffect(() => {
+        setScreenTipsEnabled(areScreenIntroTipsEnabled(userProfile.id));
+        setActiveScreenTipView(null);
+    }, [userProfile.id]);
+
+    useEffect(() => {
+        const handleSettingsChanged = (event: Event) => {
+            const nextEnabled = (event as CustomEvent<{ enabled?: boolean }>).detail?.enabled;
+            const resolvedEnabled = typeof nextEnabled === 'boolean'
+                ? nextEnabled
+                : areScreenIntroTipsEnabled(userProfile.id);
+            setScreenTipsEnabled(resolvedEnabled);
+            if (!resolvedEnabled) setActiveScreenTipView(null);
+        };
+
+        window.addEventListener(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, handleSettingsChanged as EventListener);
+        return () => window.removeEventListener(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, handleSettingsChanged as EventListener);
+    }, [userProfile.id]);
 
     useEffect(() => {
         const handleNavigateToStore = (event: Event) => {
@@ -394,6 +425,59 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
         return () => window.clearTimeout(timer);
     }, [currentView, pendingSitrepOpen]);
+
+    useEffect(() => {
+        if (!screenTipsEnabled) {
+            setActiveScreenTipView(null);
+            return;
+        }
+
+        if (
+            userProfile.id === 'placeholder_user'
+            || isRestScreenVisible
+            || isProfileVisible
+            || isReportsVisible
+            || !hasScreenIntroTip(currentView)
+        ) {
+            setActiveScreenTipView(null);
+            return;
+        }
+
+        if (hasSeenScreenIntroTip(userProfile.id, currentView)) {
+            setActiveScreenTipView(null);
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            setActiveScreenTipView(currentView);
+        }, 280);
+
+        return () => window.clearTimeout(timer);
+    }, [
+        currentView,
+        isProfileVisible,
+        isReportsVisible,
+        isRestScreenVisible,
+        screenTipsEnabled,
+        userProfile.id,
+    ]);
+
+    const handleCloseScreenIntroTip = useCallback((options?: { disableFuture?: boolean }) => {
+        if (!activeScreenTipView) return;
+
+        markScreenIntroTipSeen(userProfile.id, activeScreenTipView);
+
+        if (options?.disableFuture) {
+            setScreenIntroTipsEnabled(userProfile.id, false);
+            setScreenTipsEnabled(false);
+            showToast('Dicas iniciais ocultadas. Para religar: Config > Preferencias > Tutoriais.', 'info');
+            window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, {
+                detail: { enabled: false },
+            }));
+        }
+
+        setActiveScreenTipView(null);
+    }, [activeScreenTipView, showToast, userProfile.id]);
 
     useEffect(() => {
         const handleAutoFinishedCycle = () => {
@@ -727,6 +811,14 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                     onOpenSitrep={handleOpenSitrepFromPrompt}
                 />
             )}
+
+            <Suspense fallback={null}>
+                <ScreenIntroTipOverlay
+                    open={!!activeScreenTipView}
+                    view={activeScreenTipView}
+                    onClose={handleCloseScreenIntroTip}
+                />
+            </Suspense>
 
             <footer
                 className={`auth-footer safe-area-bottom ${activeUIMode === 'BASIC' ?'auth-footer--basic' : 'auth-footer--game'}`}

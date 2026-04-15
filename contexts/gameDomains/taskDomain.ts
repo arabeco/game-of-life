@@ -57,6 +57,12 @@ interface CreateTaskDomainParams {
     addProfileFlag: (flag: string) => void;
     tutorialActionId: string;
     tutorialCompletedFlag: string;
+    reconcileJudgedDayTaskMutation?: (args: {
+        taskBefore: ScheduledTask;
+        taskAfter: ScheduledTask;
+        previousTasks: ScheduledTask[];
+        nextTasks: ScheduledTask[];
+    }) => Promise<void>;
 }
 
 export const createTaskDomain = ({
@@ -86,6 +92,7 @@ export const createTaskDomain = ({
     addProfileFlag,
     tutorialActionId,
     tutorialCompletedFlag,
+    reconcileJudgedDayTaskMutation,
 }: CreateTaskDomainParams): TaskDomainApi => {
     const isOperationalDateJudged = (operationalDate: string) =>
         !!operationalDate && judgedOperationalDates.includes(operationalDate);
@@ -93,6 +100,15 @@ export const createTaskDomain = ({
     const isTaskLockedByClosedDay = (task: ScheduledTask) => {
         const taskOperationalDate = getTaskOperationalDateString(task);
         if (!taskOperationalDate) return false;
+
+        return (taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment')
+            || isOperationalDateJudged(taskOperationalDate);
+    };
+
+    const isTaskCompletionEditableWithinOpenCycle = (task: ScheduledTask) => {
+        const taskOperationalDate = getTaskOperationalDateString(task);
+        if (!taskOperationalDate || !activeCycle) return false;
+        if (taskOperationalDate < activeCycle.startDate || taskOperationalDate > activeCycle.endDate) return false;
 
         return (taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment')
             || isOperationalDateJudged(taskOperationalDate);
@@ -482,7 +498,9 @@ export const createTaskDomain = ({
     const toggleTaskCompletion = async (taskId: string) => {
         const taskToCheck = tasks.find(task => task.id === taskId);
         if (!taskToCheck) return;
-        if (isTaskLockedByClosedDay(taskToCheck)) {
+        const wasLockedByClosedDay = isTaskLockedByClosedDay(taskToCheck);
+        const canRetroactivelyToggle = isTaskCompletionEditableWithinOpenCycle(taskToCheck);
+        if (wasLockedByClosedDay && !canRetroactivelyToggle) {
             showClosedDayMutationBlockedToast();
             return;
         }
@@ -523,6 +541,20 @@ export const createTaskDomain = ({
             restoreTaskAfterPersistenceFailure(taskToCheck);
             showToast('Falha ao atualizar a tarefa no servidor.', 'error');
             return;
+        }
+
+        if (wasLockedByClosedDay && canRetroactivelyToggle && reconcileJudgedDayTaskMutation) {
+            try {
+                await reconcileJudgedDayTaskMutation({
+                    taskBefore: taskToCheck,
+                    taskAfter: updatedTask,
+                    previousTasks: tasks,
+                    nextTasks: optimisticTasks,
+                });
+            } catch (error: any) {
+                console.error('Retroactive judged day reconciliation error:', error?.message || error);
+                showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o dia fechado.', 'error');
+            }
         }
 
         const completionAttention = updatedTask.completed

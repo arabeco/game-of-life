@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, PlayCircle, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PlayCircle } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 
@@ -174,17 +174,9 @@ export const FirstUseOnboardingPrimerModal: React.FC<FirstUseOnboardingPrimerMod
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(234,179,8,0.16),transparent_58%)]" />
 
-          <button
-            onClick={onClose}
-            className="absolute right-3 top-3 z-20 rounded-full border border-white/10 bg-black/45 p-2 text-white/80 backdrop-blur-md transition-all hover:bg-black/60 hover:text-white"
-            aria-label="Fechar tutorial"
-          >
-            <X className="h-4 w-4" />
-          </button>
-
           <div className="relative flex max-h-[86svh] flex-col">
             <div className="border-b border-white/8 px-4 py-4">
-              <div className="flex items-center justify-between gap-3 pr-10">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-[9px] font-black uppercase tracking-[0.32em] text-yellow-400/80">
                     Como funciona
@@ -200,6 +192,33 @@ export const FirstUseOnboardingPrimerModal: React.FC<FirstUseOnboardingPrimerMod
               <p className="mt-2 text-[12px] leading-relaxed text-gray-300">
                 {headerSummary}
               </p>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  {PRIMER_STEPS.map((primerStep, index) => {
+                    const isActive = index === currentIndex;
+                    return (
+                      <button
+                        key={primerStep.id}
+                        type="button"
+                        onClick={() => setCurrentIndex(index)}
+                        aria-label={`Ir para passo ${index + 1}`}
+                        className={`h-2.5 rounded-full transition-all duration-200 ${
+                          isActive
+                            ? 'w-7 bg-[var(--skin-accent-color)] shadow-[0_0_14px_rgba(234,179,8,0.28)]'
+                            : 'w-2.5 bg-white/18 hover:bg-white/28'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="text-[10px] font-black uppercase tracking-[0.2em] text-white/68 transition-colors hover:text-white"
+                >
+                  Pular
+                </button>
+              </div>
             </div>
 
             <div className="custom-scrollbar flex-1 overflow-y-auto px-4 pb-4 pt-4">
@@ -226,15 +245,17 @@ export const FirstUseOnboardingPrimerModal: React.FC<FirstUseOnboardingPrimerMod
             <div className="border-t border-white/8 p-4">
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
                   disabled={isFirstStep}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-[10px] font-black uppercase tracking-[0.16em] text-gray-200 transition-all hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-35"
+                  className="luxe-skin-button flex h-11 min-w-[122px] items-center justify-center gap-2 rounded-xl px-4 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-35"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   Anterior
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => {
                     if (isLastStep) {
                       if (onStartGuidedOnboarding) {
@@ -246,7 +267,7 @@ export const FirstUseOnboardingPrimerModal: React.FC<FirstUseOnboardingPrimerMod
                     }
                     setCurrentIndex((prev) => Math.min(PRIMER_STEPS.length - 1, prev + 1));
                   }}
-                  className="luxe-skin-button flex-1 rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-[0.16em]"
+                  className="luxe-skin-button flex h-11 flex-1 items-center justify-center rounded-xl px-4 text-[11px] font-black uppercase tracking-[0.16em]"
                 >
                   <span className="inline-flex items-center justify-center gap-2">
                     {isLastStep ? finalPrimaryLabel : 'Proximo'}

@@ -24,6 +24,12 @@ import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
 import { getMoneyCheckoutSalesCopy } from '../utils/billingRuntime';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
+import {
+    SCREEN_INTRO_TIP_LIST,
+    SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT,
+    areScreenIntroTipsEnabled,
+    setScreenIntroTipsEnabled,
+} from '../utils/screenIntroTips';
 import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
 import './settings-ui.css';
 
@@ -645,6 +651,27 @@ const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () 
 };
 
 const TutorialSettingsModal: React.FC<{ onClose: () => void; onOpenPrimer?: () => void }> = ({ onClose, onOpenPrimer }) => {
+    const { userProfile, showToast } = useGame();
+    const [screenTipsEnabled, setScreenTipsEnabledState] = useState(() => areScreenIntroTipsEnabled(userProfile.id));
+
+    useEffect(() => {
+        setScreenTipsEnabledState(areScreenIntroTipsEnabled(userProfile.id));
+    }, [userProfile.id]);
+
+    const handleScreenTipsToggle = (enabled: boolean) => {
+        setScreenIntroTipsEnabled(userProfile.id, enabled);
+        setScreenTipsEnabledState(enabled);
+        window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, {
+            detail: { enabled },
+        }));
+        showToast(
+            enabled
+                ? 'Dicas iniciais ligadas para as proximas telas ainda nao vistas.'
+                : 'Dicas iniciais desligadas.',
+            'info',
+        );
+    };
+
     const handleRequestModeGame = () => {
         onClose();
         window.dispatchEvent(new CustomEvent('tutorialTabChange', { detail: { tab: 'Preferências' } }));
@@ -656,7 +683,11 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void; onOpenPrimer?: () =
     return (
         <Portal>
             <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
-                <GlassCard variant="neutral" className="w-full max-w-[19.75rem] m-4 space-y-2.5 rounded-3xl overflow-hidden relative pt-4" onClick={e => e.stopPropagation()}>
+                <GlassCard
+                    variant="neutral"
+                    className="relative m-4 flex max-h-[86svh] w-full max-w-[22.5rem] flex-col overflow-hidden rounded-3xl pt-4"
+                    onClick={e => e.stopPropagation()}
+                >
                     <button onClick={onClose} className="absolute top-4 right-4 inline-flex w-auto px-3.5 py-1.5 text-sm font-bold rounded-xl luxe-skin-button">OK</button>
                     <div className="px-4 pt-2">
                         <div className="mx-auto max-w-[15.75rem] text-center space-y-1">
@@ -667,7 +698,76 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void; onOpenPrimer?: () =
                             </p>
                         </div>
                     </div>
-                    <TutorialSettings onStart={onClose} onRequestModeGame={handleRequestModeGame} onOpenPrimer={onOpenPrimer} />
+                    <div className="custom-scrollbar flex-1 space-y-3 overflow-y-auto px-4 pb-4 pt-3">
+                        <div className="rounded-[18px] border border-white/10 bg-black/18 px-3.5 py-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <LightbulbIcon className="h-4 w-4 text-[var(--ui-text-accent)]" />
+                                        <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white">
+                                            Dicas iniciais por tela
+                                        </div>
+                                    </div>
+                                    <p className="mt-1 text-[10px] leading-snug text-white/58">
+                                        Mostra um balao curto na primeira entrada em cada aba principal. Se a tela ja foi vista, nao repete.
+                                    </p>
+                                </div>
+                                <div className={`shrink-0 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em] ${screenTipsEnabled ? 'bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)]' : 'bg-white/8 text-white/50'}`}>
+                                    {screenTipsEnabled ? 'Ligado' : 'Desligado'}
+                                </div>
+                            </div>
+                            <div className="mt-3 flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleScreenTipsToggle(true)}
+                                    className={`flex-1 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${screenTipsEnabled ? 'luxe-skin-button' : 'border border-white/10 bg-white/[0.03] text-white/72 hover:bg-white/[0.06]'}`}
+                                >
+                                    On
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleScreenTipsToggle(false)}
+                                    className={`flex-1 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${!screenTipsEnabled ? 'luxe-skin-button' : 'border border-white/10 bg-white/[0.03] text-white/72 hover:bg-white/[0.06]'}`}
+                                >
+                                    Off
+                                </button>
+                            </div>
+                            <p className="mt-2 text-[9px] leading-snug text-white/40">
+                                Se voce desligar no balao, religa por aqui.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="px-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/42">
+                                Cobertura por tela
+                            </div>
+                            {SCREEN_INTRO_TIP_LIST.map((entry) => (
+                                <div key={entry.view} className="rounded-[18px] border border-white/10 bg-black/16 px-3.5 py-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="text-[12px] font-black uppercase tracking-[0.12em] text-white">
+                                            {entry.label}
+                                        </div>
+                                        <div className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.16em] text-white/50">
+                                            Tela
+                                        </div>
+                                    </div>
+                                    <p className="mt-1 text-[10px] leading-snug text-white/52">
+                                        {entry.summary}
+                                    </p>
+                                    <div className="mt-2 space-y-1.5">
+                                        {entry.items.map((item) => (
+                                            <div key={item} className="flex items-start gap-2 text-[10px] leading-snug text-white/74">
+                                                <span className="mt-[4px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--skin-accent-color)]/88" />
+                                                <span>{item}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <TutorialSettings onStart={onClose} onRequestModeGame={handleRequestModeGame} onOpenPrimer={onOpenPrimer} />
+                    </div>
                 </GlassCard>
             </div>
         </Portal>

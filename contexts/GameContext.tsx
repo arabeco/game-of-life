@@ -24,7 +24,7 @@ import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscrib
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
 import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getExpBoostMultiplier, getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
-import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
+import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
@@ -3972,6 +3972,218 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [getSupabaseUserId, hasHydratedFromSupabase, isProfileLoaded, userProfile.id]);
 
+    const refreshOpenCycleDerivedState = useCallback(async (cycle: Cycle | null) => {
+        const userId = getSupabaseUserId();
+        if (!userId || !cycle) {
+            setCycleProgress(0);
+            setCycleExpBonus(0);
+            return;
+        }
+
+        try {
+            const [sitrepsResult, commitmentsResult] = await Promise.all([
+                supabase
+                    .from('sitrep_reports')
+                    .select('completed_tasks_count, total_tasks_count')
+                    .eq('cycle_id', cycle.id),
+                supabase
+                    .from('daily_commitments')
+                    .select('exp_deposited')
+                    .eq('user_id', userId)
+                    .eq('stage', 'judgment')
+                    .gte('date', cycle.startDate)
+                    .lte('date', cycle.endDate),
+            ]);
+
+            if (sitrepsResult.error) throw sitrepsResult.error;
+            if (commitmentsResult.error) throw commitmentsResult.error;
+
+            const sitreps = sitrepsResult.data || [];
+            const totalCompleted = sitreps.reduce((acc, row) => acc + Number(row.completed_tasks_count || 0), 0);
+            const totalTasks = sitreps.reduce((acc, row) => acc + Number(row.total_tasks_count || 0), 0);
+            setCycleProgress(totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0);
+
+            const judgedRows = commitmentsResult.data || [];
+            const totalExpDeposited = judgedRows.reduce((sum, row) => sum + Number(row.exp_deposited || 0), 0);
+            setCycleExpBonus(totalExpDeposited);
+        } catch (error) {
+            console.error('Failed to refresh open cycle derived state:', error);
+        }
+    }, [getSupabaseUserId]);
+
+    const reconcileJudgedDayTaskMutation = useCallback(async ({
+        taskBefore,
+        previousTasks,
+        nextTasks,
+    }: {
+        taskBefore: ScheduledTask;
+        taskAfter: ScheduledTask;
+        previousTasks: ScheduledTask[];
+        nextTasks: ScheduledTask[];
+    }) => {
+        const userId = getSupabaseUserId();
+        const operationalDate = getTaskOperationalDateString(taskBefore);
+
+        if (!userId || !activeCycle || !operationalDate) return;
+        if (operationalDate < activeCycle.startDate || operationalDate > activeCycle.endDate) return;
+
+        const { data: commitmentRowRaw, error: commitmentError } = await supabase
+            .from('daily_commitments')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('date', operationalDate)
+            .maybeSingle();
+
+        if (commitmentError) throw commitmentError;
+        if (!commitmentRowRaw) return;
+
+        const commitmentRow = mapToCamelCase(commitmentRowRaw) as Partial<DailyCommitment> & {
+            operationalScratch?: string | null;
+        };
+
+        if (commitmentRow.stage !== 'judgment') return;
+
+        const taskIds = Array.isArray(commitmentRow.taskIds)
+            ? commitmentRow.taskIds.filter((taskId): taskId is string => typeof taskId === 'string' && taskId.length > 0)
+            : [];
+
+        const getCommittedTasksForDate = (sourceTasks: ScheduledTask[]) =>
+            sourceTasks.filter((task) => taskIds.includes(task.id) && taskMatchesOperationalDate(task, operationalDate));
+
+        const summarizeDay = (sourceTasks: ScheduledTask[]) => {
+            const committedTasks = getCommittedTasksForDate(sourceTasks);
+            const completedTasks = committedTasks.filter((task) => task.completed);
+            const totalCount = committedTasks.length;
+            const completedCount = completedTasks.length;
+            const score = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
+            const baseExp = completedTasks.reduce((sum, task) => {
+                const action = actions.find((candidate) => candidate.id === task.actionId);
+                const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
+                return sum + Math.round(duration * getActionExpMultiplier(action));
+            }, 0);
+
+            return { totalCount, completedCount, score, baseExp };
+        };
+
+        const previousSummary = summarizeDay(previousTasks);
+        const nextSummary = summarizeDay(nextTasks);
+        const relationshipBonusXp = typeof commitmentRow.relationshipBonusXp === 'number'
+            ? commitmentRow.relationshipBonusXp
+            : Number(commitmentRow.relationshipBonusXp || 0);
+        const previousPerformanceBonus = previousSummary.score >= 95 ? SITREP_BONUS_S : previousSummary.score >= 85 ? SITREP_BONUS_A : 0;
+        const nextPerformanceBonus = nextSummary.score >= 95 ? SITREP_BONUS_S : nextSummary.score >= 85 ? SITREP_BONUS_A : 0;
+        const previousSitrepBonus = typeof commitmentRow.sitrepBonus === 'number'
+            ? commitmentRow.sitrepBonus
+            : previousPerformanceBonus + relationshipBonusXp;
+        const previousExpDeposited = typeof commitmentRow.expDeposited === 'number'
+            ? commitmentRow.expDeposited
+            : Number(commitmentRow.expDeposited || 0);
+        const previousVillageBonus = Math.max(0, previousExpDeposited - previousSummary.baseExp - previousSitrepBonus);
+        const previousVillageBasis = previousSummary.baseExp + previousSitrepBonus;
+        const preservedVillageFactor = previousVillageBasis > 0 ? previousVillageBonus / previousVillageBasis : 0;
+        const nextSitrepBonus = nextPerformanceBonus + relationshipBonusXp;
+        const nextVillageBasis = nextSummary.baseExp + nextSitrepBonus;
+        const nextVillageBonus = nextVillageBasis > 0 ? Math.max(0, Math.round(nextVillageBasis * preservedVillageFactor)) : 0;
+        const nextExpDeposited = nextSummary.baseExp + nextSitrepBonus + nextVillageBonus;
+
+        const nothingChanged =
+            previousSummary.totalCount === nextSummary.totalCount &&
+            previousSummary.completedCount === nextSummary.completedCount &&
+            previousSummary.score === nextSummary.score &&
+            previousExpDeposited === nextExpDeposited &&
+            previousSitrepBonus === nextSitrepBonus;
+
+        if (nothingChanged) return;
+
+        const commitmentPayload = {
+            user_id: userId,
+            date: operationalDate,
+            task_ids: taskIds,
+            stage: 'judgment' as DailyCommitmentStage,
+            score: nextSummary.score,
+            exp_deposited: nextExpDeposited,
+            sitrep_bonus: nextSitrepBonus,
+            relationship_bonus_xp: relationshipBonusXp,
+            operational_scratch: commitmentRow.operationalScratch ?? null,
+            updated_at: new Date().toISOString(),
+        };
+
+        const { error: updateCommitmentError } = await supabase
+            .from('daily_commitments')
+            .upsert(commitmentPayload, { onConflict: 'user_id,date' });
+
+        if (updateCommitmentError) throw updateCommitmentError;
+
+        const sitrepPayload = {
+            date: operationalDate,
+            score: nextSummary.score,
+            completed_tasks_count: nextSummary.completedCount,
+            total_tasks_count: nextSummary.totalCount,
+            task_ids: taskIds,
+            bonus_xp: nextSitrepBonus,
+            cycle_id: activeCycle.id,
+        };
+
+        const { data: existingSitreps, error: existingSitrepError } = await supabase
+            .from('sitrep_reports')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('date', operationalDate)
+            .eq('cycle_id', activeCycle.id)
+            .limit(1);
+
+        if (existingSitrepError) throw existingSitrepError;
+
+        const existingSitrepId = Array.isArray(existingSitreps) && existingSitreps.length > 0
+            ? String(existingSitreps[0].id)
+            : null;
+
+        if (existingSitrepId) {
+            const { error: updateSitrepError } = await supabase
+                .from('sitrep_reports')
+                .update(sitrepPayload)
+                .eq('id', existingSitrepId);
+
+            if (updateSitrepError) throw updateSitrepError;
+        } else {
+            const { error: insertSitrepError } = await supabase
+                .from('sitrep_reports')
+                .insert({
+                    id: crypto.randomUUID(),
+                    user_id: userId,
+                    ...sitrepPayload,
+                });
+
+            if (insertSitrepError) throw insertSitrepError;
+        }
+
+        if (dailyCommitment.date === operationalDate && dailyCommitment.stage === 'judgment') {
+            setDailyCommitmentState((prev) => (
+                prev.date !== operationalDate
+                    ? prev
+                    : {
+                        ...prev,
+                        stage: 'judgment',
+                        score: nextSummary.score,
+                        expDeposited: nextExpDeposited,
+                        sitrepBonus: nextSitrepBonus,
+                        relationshipBonusXp,
+                    }
+            ));
+        }
+
+        await refreshOpenCycleDerivedState(activeCycle);
+
+        const formattedDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date(`${operationalDate}T12:00:00`));
+        const delta = nextExpDeposited - previousExpDeposited;
+        showToast(
+            delta !== 0
+                ? `Dia ${formattedDate} recalculado. Delta no ciclo: ${delta > 0 ? `+${delta}` : delta} XP.`
+                : `Dia ${formattedDate} recalculado no ciclo.`,
+            'success'
+        );
+    }, [actions, activeCycle, dailyCommitment.date, dailyCommitment.stage, getSupabaseUserId, refreshOpenCycleDerivedState, showToast]);
+
     // --- Supabase Data Sync ---
     useEffect(() => {
         const today = getTodayString();
@@ -4276,17 +4488,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 } else {
                     void (async () => {
                         try {
-                            const { data: sitreps } = await supabase
-                                .from('sitrep_reports')
-                                .select('score, completed_tasks_count, total_tasks_count')
-                                .eq('cycle_id', currentCycle.id);
-
-                            if (!sitreps) return;
-
-                            const totalCompleted = sitreps.reduce((acc, r) => acc + (r.completed_tasks_count || 0), 0);
-                            const totalTasks = sitreps.reduce((acc, r) => acc + (r.total_tasks_count || 0), 0);
-                            const progress = totalTasks > 0 ?Math.round((totalCompleted / totalTasks) * 100) : 0;
-                            setCycleProgress(progress);
+                            await refreshOpenCycleDerivedState(currentCycle);
 
                             const endDate = new Date(currentCycle.endDate);
                             const now = new Date();
@@ -4296,12 +4498,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                     void 0;
                                 }, 2000);
                             }
-
-                            const totalExpBonus = sitreps.reduce((sum, r) => {
-                                const bonus = r.score >= 95 ?120 : r.score >= 85 ?60 : 0;
-                                return sum + bonus;
-                            }, 0);
-                            setCycleExpBonus(totalExpBonus);
                         } catch (error) {
                             console.error('Failed to hydrate cycle sitrep summary:', error);
                         }
@@ -4544,40 +4740,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (currentCycleData) {
                     const cycle = mapToCamelCase(currentCycleData) as Cycle;
                     setActiveCycle(cycle); // CRITICAL: Actually set the active cycle in state
+                    await refreshOpenCycleDerivedState(cycle);
 
-                    const { data: sitreps } = await supabase
-                        .from('sitrep_reports')
-                        .select('score, completed_tasks_count, total_tasks_count')
-                        .eq('cycle_id', cycle.id); // Melhor usar cycle_id do que data, mais seguro
-
-                    if (sitreps) {
-                        // Recalcula o score de fidelidade baseado em % de aÃ§Ãµes completas vs totais
-                        // O usuÃ¡rio pediu: "renomear pra progresso e mostrar as aÃ§Ãµes completas/ aÃ§Ãµes totais"
-                        const totalCompleted = sitreps.reduce((acc, r) => acc + (r.completed_tasks_count || 0), 0);
-                        const totalTasks = sitreps.reduce((acc, r) => acc + (r.total_tasks_count || 0), 0);
-
-                        // Progresso Ã© a mÃ©dia ponderada de execuÃ§Ã£o (aÃ§Ãµes completas / aÃ§Ãµes totais)
-                        const progress = totalTasks > 0 ?Math.round((totalCompleted / totalTasks) * 100) : 0;
-                        setCycleProgress(progress); // Set the calculated progress in state
-
-                        // --- AUTO FINISH CYCLE CHECK ---
-                        // Se a data de tÃ©rmino passou, finaliza automaticamente
-                        const endDate = new Date(cycle.endDate);
-                        const now = new Date();
-                        if (now >= endDate && !cycle.isFinished) {
-                            console.log('Cycle end date reached. Auto-finishing cycle...');
-                            setTimeout(() => {
-                                void 0;
-                            }, 2000);
-                        }
-
-                        // Vamos apenas calcular o bÃ´nus de EXP acumulado.
-                        const totalExpBonus = sitreps.reduce((sum, r) => {
-                            // LÃ³gica antiga de bÃ´nus por score diÃ¡rio
-                            const bonus = r.score >= 95 ?120 : r.score >= 85 ?60 : 0;
-                            return sum + bonus;
-                        }, 0);
-                        setCycleExpBonus(totalExpBonus);
+                    // --- AUTO FINISH CYCLE CHECK ---
+                    // Se a data de tÃ©rmino passou, finaliza automaticamente
+                    const endDate = new Date(cycle.endDate);
+                    const now = new Date();
+                    if (now >= endDate && !cycle.isFinished) {
+                        console.log('Cycle end date reached. Auto-finishing cycle...');
+                        setTimeout(() => {
+                            void 0;
+                        }, 2000);
                     }
                 } else {
                     setActiveCycle(null); // Ensure state is cleared if no active cycle found
@@ -10486,6 +10659,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         addProfileFlag,
         tutorialActionId: TUTORIAL_ACTION_ID,
         tutorialCompletedFlag: PROFILE_FLAG_TUTORIAL_COMPLETED,
+        reconcileJudgedDayTaskMutation,
     });
 
     const {

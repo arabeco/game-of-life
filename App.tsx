@@ -25,6 +25,7 @@ import {
 import { ensureClosedBetaUserProfile } from './utils/closedBetaProfile';
 import { isNativeAuthCallbackUrl, parseNativeAuthCallback } from './utils/nativeAuth';
 import { loadSessionBackup, saveSessionBackup } from './utils/sessionBackup';
+import { appendAuthTrace, snapshotAuthStorageState } from './utils/authTrace';
 import { isCapacitorNativeRuntime } from './utils/runtimePlatform';
 import { resolveUiSkinId } from './utils/uiSkinTokens';
 
@@ -207,6 +208,16 @@ const App: React.FC = () => {
                         email: '',
                         message: exchangeError.message || 'Falha ao trocar o codigo do Google pela sessao no app.',
                     });
+                    return;
+                }
+
+                const {
+                    data: { session: exchangedSession },
+                } = await supabase.auth.getSession();
+
+                if (exchangedSession) {
+                    await saveSessionBackup(exchangedSession);
+                    await snapshotAuthStorageState('native-auth-callback:save');
                 }
             });
         };
@@ -225,6 +236,26 @@ const App: React.FC = () => {
         startInstallPromptCapture();
         void import('./views/LoginView');
         void import('./components/AuthenticatedApp');
+        void appendAuthTrace('boot:init', { native: isCapacitorNativeRuntime() });
+
+        const syncNativeAutoRefresh = (isActive: boolean, reason: string) => {
+            if (!isCapacitorNativeRuntime()) return;
+
+            try {
+                if (isActive) {
+                    supabase.auth.startAutoRefresh();
+                    void appendAuthTrace('auto-refresh:start', { reason });
+                } else {
+                    supabase.auth.stopAutoRefresh();
+                    void appendAuthTrace('auto-refresh:stop', { reason });
+                }
+            } catch (error) {
+                void appendAuthTrace('auto-refresh:error', {
+                    reason,
+                    message: error instanceof Error ? error.message : String(error),
+                });
+            }
+        };
 
         const clearPendingGoogleAuthState = () => {
             clearClosedBetaGoogleAuthPending();
@@ -264,14 +295,24 @@ const App: React.FC = () => {
 
             if (sessionError) {
                 console.warn(`Session lookup failed during ${reason}:`, sessionError.message);
+                await appendAuthTrace('session:get:error', { reason, message: sessionError.message });
                 return null;
             }
+
+            await appendAuthTrace('session:get:result', {
+                reason,
+                found: !!storedSession,
+                userId: storedSession?.user?.id ?? null,
+            });
 
             return storedSession;
         };
 
         const refreshSessionFromCandidate = async (candidate: Session | null, reason: string): Promise<Session | null> => {
-            if (!candidate?.refresh_token) return null;
+            if (!candidate?.refresh_token) {
+                await appendAuthTrace('session:refresh:skip', { reason, hasCandidate: !!candidate });
+                return null;
+            }
 
             const {
                 data: refreshData,
@@ -280,15 +321,25 @@ const App: React.FC = () => {
 
             if (refreshError) {
                 console.warn(`Session refresh failed during ${reason}:`, refreshError.message);
+                await appendAuthTrace('session:refresh:error', { reason, message: refreshError.message });
                 return null;
             }
+
+            await appendAuthTrace('session:refresh:result', {
+                reason,
+                found: !!refreshData.session,
+                userId: refreshData.session?.user?.id ?? null,
+            });
 
             return refreshData.session ?? null;
         };
 
         const restoreSessionFromBackup = async (reason: string): Promise<Session | null> => {
             const backupSession = await loadSessionBackup();
-            if (!backupSession?.refresh_token || !backupSession.access_token) return null;
+            if (!backupSession?.refresh_token || !backupSession.access_token) {
+                await appendAuthTrace('session:backup:skip', { reason, hasBackup: !!backupSession });
+                return null;
+            }
 
             const {
                 data: restoredData,
@@ -300,19 +351,34 @@ const App: React.FC = () => {
 
             if (restoredError) {
                 console.warn(`Backup session restore failed during ${reason}:`, restoredError.message);
+                await appendAuthTrace('session:backup:error', { reason, message: restoredError.message });
                 return refreshSessionFromCandidate(backupSession, `${reason}:refresh-backup`);
             }
+
+            await appendAuthTrace('session:backup:result', {
+                reason,
+                found: !!(restoredData.session ?? backupSession),
+                userId: restoredData.session?.user?.id ?? backupSession.user?.id ?? null,
+            });
 
             return restoredData.session ?? backupSession;
         };
 
         const recoverSessionGracefully = async (reason: string, preferredSession: Session | null = null): Promise<Session | null> => {
             if (sessionRecoveryInFlightRef.current) {
+                await appendAuthTrace('session:recover:reuse', { reason });
                 return sessionRecoveryInFlightRef.current;
             }
 
             lastSessionRecoveryAttemptRef.current = Date.now();
             const recoveryPromise = (async () => {
+                await appendAuthTrace('session:recover:start', {
+                    reason,
+                    currentUserId: sessionRef.current?.user?.id ?? null,
+                    preferredUserId: preferredSession?.user?.id ?? null,
+                });
+                await snapshotAuthStorageState(`session:recover:storage:${reason}`);
+
                 const seedSession = preferredSession || sessionRef.current;
                 const immediateStoredSession = await getStoredSession(`${reason}:stored`);
                 if (immediateStoredSession) return immediateStoredSession;
@@ -324,6 +390,7 @@ const App: React.FC = () => {
                 if (immediateBackupSession) return immediateBackupSession;
 
                 for (let attempt = 0; attempt < 3; attempt += 1) {
+                    await appendAuthTrace('session:recover:retry', { reason, attempt: attempt + 1 });
                     await waitForSessionRetry(300 * (attempt + 1));
 
                     const retriedStoredSession = await getStoredSession(`${reason}:retry-stored:${attempt + 1}`);
@@ -336,6 +403,7 @@ const App: React.FC = () => {
                     if (retriedBackupSession) return retriedBackupSession;
                 }
 
+                await appendAuthTrace('session:recover:miss', { reason });
                 return null;
             })().finally(() => {
                 sessionRecoveryInFlightRef.current = null;
@@ -431,7 +499,7 @@ const App: React.FC = () => {
                 if (!cleanupResult.success) {
                     console.error('Failed to delete provisional Google reentry account after access status block:', cleanupResult.error);
                 }
-                await signOutAndClearSupabaseSession('local');
+                await signOutAndClearSupabaseSession('local', 'closed-beta-reentry-blocked');
                 return null;
             }
 
@@ -449,7 +517,7 @@ const App: React.FC = () => {
                     email: candidate.user.email || '',
                     message: repairResult.error || 'Seu acesso ja tinha Bilhete vinculado, mas nao consegui reconstruir o perfil agora.',
                 });
-                await signOutAndClearSupabaseSession('local');
+                await signOutAndClearSupabaseSession('local', 'closed-beta-profile-repair-failed');
                 return null;
             }
 
@@ -476,7 +544,7 @@ const App: React.FC = () => {
                 if (!cleanupResult.success) {
                     console.error('Failed to delete provisional Google reentry account:', cleanupResult.error);
                 }
-                await signOutAndClearSupabaseSession('local');
+                await signOutAndClearSupabaseSession('local', 'closed-beta-deleted-account-blocked');
                 return null;
             }
 
@@ -496,6 +564,10 @@ const App: React.FC = () => {
             setAuthGuardLoading(true);
             try {
                 const resolvedSession = await resolveClosedBetaSession(candidate, resolutionId);
+                if (resolvedSession) {
+                    await saveSessionBackup(resolvedSession);
+                    await snapshotAuthStorageState('apply-resolved-session:save');
+                }
                 setSessionIfCurrent(resolutionId, resolvedSession);
             } finally {
                 if (authResolutionRef.current === resolutionId) {
@@ -504,10 +576,35 @@ const App: React.FC = () => {
             }
         };
 
+        const persistCurrentSessionBackup = async (reason: string) => {
+            const currentSession = sessionRef.current || await getStoredSession(`${reason}:persist-current`);
+            if (!currentSession) {
+                await appendAuthTrace('backup:persist:skip', { reason });
+                return;
+            }
+
+            await saveSessionBackup(currentSession);
+            await snapshotAuthStorageState(`backup:persist:${reason}`);
+        };
+
         const recoverSessionOnResume = async (trigger: 'visibilitychange' | 'focus' | 'pageshow' | 'appStateChange') => {
-            if (document.visibilityState === 'hidden') return;
-            if (sessionRecoveryInFlightRef.current) return;
-            if (Date.now() - lastSessionRecoveryAttemptRef.current < 1200) return;
+            if (document.visibilityState === 'hidden') {
+                await appendAuthTrace('resume:skip:hidden', { trigger });
+                return;
+            }
+            if (sessionRecoveryInFlightRef.current) {
+                await appendAuthTrace('resume:skip:inflight', { trigger });
+                return;
+            }
+            if (Date.now() - lastSessionRecoveryAttemptRef.current < 1200) {
+                await appendAuthTrace('resume:skip:throttle', { trigger });
+                return;
+            }
+
+            await appendAuthTrace('resume:start', {
+                trigger,
+                currentUserId: sessionRef.current?.user?.id ?? null,
+            });
 
             const shouldHoldBoot = isCapacitorNativeRuntime() && !sessionRef.current;
             if (shouldHoldBoot) {
@@ -516,7 +613,10 @@ const App: React.FC = () => {
 
             try {
                 const recoveredSession = await recoverSessionGracefully(`resume:${trigger}`);
-                if (!recoveredSession) return;
+                if (!recoveredSession) {
+                    await appendAuthTrace('resume:miss', { trigger });
+                    return;
+                }
 
                 const currentSession = sessionRef.current;
                 const sessionChanged =
@@ -526,11 +626,20 @@ const App: React.FC = () => {
                     currentSession.refresh_token !== recoveredSession.refresh_token;
 
                 if (sessionChanged) {
+                    await appendAuthTrace('resume:apply', {
+                        trigger,
+                        userId: recoveredSession.user?.id ?? null,
+                    });
                     bootStartedAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
                     bootMetricSentRef.current = false;
                     bootErrorSignatureRef.current = '';
                     bootEntryModeRef.current = 'resume_recovery';
                     await applyResolvedSession(recoveredSession);
+                } else {
+                    await appendAuthTrace('resume:no-change', {
+                        trigger,
+                        userId: recoveredSession.user?.id ?? null,
+                    });
                 }
             } finally {
                 if (shouldHoldBoot) {
@@ -541,12 +650,17 @@ const App: React.FC = () => {
 
         const checkSession = async () => {
             try {
+                await appendAuthTrace('check-session:start', {
+                    native: isCapacitorNativeRuntime(),
+                });
+                await snapshotAuthStorageState('check-session:storage');
                 const {
                     data: { session: restoredSession },
                     error,
                 } = await supabase.auth.getSession();
                 if (error) {
                     console.warn('Session restore error (silent):', error.message);
+                    await appendAuthTrace('check-session:error', { message: error.message });
                     const recoveredSession =
                         await recoverSessionGracefully('initial-check-error') ||
                         await retryPendingGoogleAuthSession('initial-check-error');
@@ -556,6 +670,13 @@ const App: React.FC = () => {
                     }
                     await applyResolvedSession(recoveredSession);
                 } else {
+                    await appendAuthTrace('check-session:result', {
+                        restored: !!restoredSession,
+                        userId: restoredSession?.user?.id ?? null,
+                    });
+                    if (restoredSession) {
+                        await saveSessionBackup(restoredSession);
+                    }
                     const recoveredSession =
                         restoredSession ||
                         await recoverSessionGracefully('initial-check-empty') ||
@@ -586,9 +707,18 @@ const App: React.FC = () => {
             void (async () => {
                 if (nextSession) {
                     clearIntentionalSignOutPending();
+                    await saveSessionBackup(nextSession);
                 }
 
                 const intentionalSignOut = event === 'SIGNED_OUT' && isIntentionalSignOutPending();
+                await appendAuthTrace('auth:event', {
+                    event,
+                    hasNextSession: !!nextSession,
+                    nextUserId: nextSession?.user?.id ?? null,
+                    currentUserId: sessionRef.current?.user?.id ?? null,
+                    intentionalSignOut,
+                    googlePending: hasClosedBetaGoogleAuthPending(),
+                });
 
                 if (event === 'SIGNED_IN' && nextSession && sessionRef.current?.user?.id !== nextSession.user?.id) {
                     bootStartedAtRef.current = typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -605,6 +735,7 @@ const App: React.FC = () => {
                 }
 
                 if ((event as string) === 'TOKEN_REFRESH_ERROR') {
+                    await snapshotAuthStorageState('auth:token-refresh-error');
                     setResumeRecoveryPending(true);
                     try {
                         const recoveredSession = await recoverSessionGracefully('token-refresh-error', nextSession || sessionRef.current);
@@ -621,6 +752,7 @@ const App: React.FC = () => {
 
                         clearPendingGoogleAuthState();
                         authResolutionRef.current += 1;
+                        await appendAuthTrace('auth:session-cleared', { reason: 'token-refresh-error' });
                         setSession(null);
                         setPendingGoogleInviteSession(null);
                         console.warn('Token refresh failed on native runtime. Keeping persisted auth storage intact so the next resume/boot can restore the session.');
@@ -628,6 +760,7 @@ const App: React.FC = () => {
                         setResumeRecoveryPending(false);
                     }
                 } else if (event === 'SIGNED_OUT' && hasClosedBetaGoogleAuthPending()) {
+                    await snapshotAuthStorageState('auth:signed-out:google-pending');
                     const recoveredSession =
                         await recoverSessionGracefully('signed-out-during-google-oauth', sessionRef.current) ||
                         await retryPendingGoogleAuthSession('signed-out-during-google-oauth');
@@ -640,13 +773,16 @@ const App: React.FC = () => {
 
                     clearPendingGoogleAuthState();
                     authResolutionRef.current += 1;
+                    await appendAuthTrace('auth:session-cleared', { reason: 'signed-out-during-google-oauth' });
                     setSession(null);
                     setPendingGoogleInviteSession(null);
                 } else if (event === 'SIGNED_OUT') {
+                    await snapshotAuthStorageState('auth:signed-out');
                     if (intentionalSignOut) {
                         clearIntentionalSignOutPending();
                         clearPendingGoogleAuthState();
                         authResolutionRef.current += 1;
+                        await appendAuthTrace('auth:session-cleared', { reason: 'intentional-sign-out' });
                         setSession(null);
                         setPendingGoogleInviteSession(null);
                         return;
@@ -673,6 +809,7 @@ const App: React.FC = () => {
 
                     clearPendingGoogleAuthState();
                     authResolutionRef.current += 1;
+                    await appendAuthTrace('auth:session-cleared', { reason: 'signed-out-fallback' });
                     setSession(null);
                     setPendingGoogleInviteSession(null);
                 } else if (event === 'INITIAL_SESSION' && !nextSession && hasClosedBetaGoogleAuthPending()) {
@@ -701,7 +838,16 @@ const App: React.FC = () => {
         });
 
         const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                syncNativeAutoRefresh(false, 'visibility:hidden');
+                if (isCapacitorNativeRuntime()) {
+                    void persistCurrentSessionBackup('visibility:hidden');
+                }
+                return;
+            }
+
             if (document.visibilityState === 'visible') {
+                syncNativeAutoRefresh(true, 'visibility:visible');
                 void recoverSessionOnResume('visibilitychange');
             }
         };
@@ -716,9 +862,14 @@ const App: React.FC = () => {
 
         let nativeAppStateHandle: { remove: () => Promise<void> } | null = null;
         if (isCapacitorNativeRuntime()) {
+            syncNativeAutoRefresh(document.visibilityState !== 'hidden', 'effect:init');
             void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
                 if (isActive) {
+                    syncNativeAutoRefresh(true, 'appStateChange:active');
                     void recoverSessionOnResume('appStateChange');
+                } else {
+                    syncNativeAutoRefresh(false, 'appStateChange:inactive');
+                    void persistCurrentSessionBackup('appStateChange:inactive');
                 }
             }).then((handle) => {
                 nativeAppStateHandle = handle;
@@ -739,6 +890,7 @@ const App: React.FC = () => {
             if (nativeAppStateHandle) {
                 void nativeAppStateHandle.remove();
             }
+            syncNativeAutoRefresh(false, 'effect:cleanup');
         };
     }, [captureBootError, isGoldenInviteGateEnabled]);
 

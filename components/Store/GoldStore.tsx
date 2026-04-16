@@ -314,7 +314,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                     <button
                                         onClick={() => handleBuyPack(pack.id)}
                                         disabled={!!loading}
-                                        className="luxe-skin-button mt-auto w-full rounded-xl py-2 text-sm font-bold disabled:opacity-50"
+                                        className="luxe-skin-button mt-auto w-full whitespace-nowrap rounded-xl py-2 text-[13px] font-bold leading-none disabled:opacity-50 sm:text-sm"
                                     >
                                         {loading === pack.id ? '...' : `R$ ${pack.priceBrl.toFixed(2)}`}
                                     </button>

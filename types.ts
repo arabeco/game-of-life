@@ -845,6 +845,26 @@ export interface GoldenInvite {
   created_at: string;
 }
 
+export interface RewardCodeRedeemResult {
+  success: boolean;
+  code: string;
+  title?: string | null;
+  description?: string | null;
+  rewardSummary?: string | null;
+  wallet?: {
+    gold?: number;
+    fragments?: number;
+  } | null;
+  premiumDaysGranted?: number | null;
+  chestType?: string | null;
+  chestCount?: number | null;
+  legacySceneCreditsGranted?: number | null;
+  campaignQuizFreeCreditsGranted?: number | null;
+  campaignQuizMediumCreditsGranted?: number | null;
+  source?: 'reward_code' | 'golden_invite';
+  error?: string | null;
+}
+
 export interface Season {
   id: string;
   name: string;

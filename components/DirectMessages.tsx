@@ -160,7 +160,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
     }
 
     return (
-        <div className="flex h-full bg-black/20 overflow-hidden">
+        <div className="flex h-full min-h-0 bg-black/20 overflow-hidden">
             {/* SIDEBAR: Conversation List (Abinha Vertical) */}
             <div className="w-16 sm:w-24 flex-none border-r border-white/5 bg-black/40 flex flex-col overflow-y-auto no-scrollbar py-4 items-center gap-4 relative">
                 {/* Active Indicator Slide */}
@@ -260,7 +260,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
             </div>
 
             {/* MAIN CONTENT: Chat Area */}
-            <div className={`flex-1 flex flex-col bg-black/10 relative overflow-hidden transition-all duration-300 ${isChangingConversation ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}>
+            <div className={`relative flex flex-1 min-h-0 flex-col overflow-hidden bg-black/10 transition-all duration-300 ${isChangingConversation ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}>
                 {!selectedParticipantId ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-500 p-8 text-center animate-in fade-in duration-500">
                         <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
@@ -335,7 +335,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                         </div>
 
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)]">
+                        <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)] p-4 space-y-4">
                             {isSelectedUserBlocked ? (
                                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
                                     <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4">
@@ -399,7 +399,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-4 bg-black/40 border-t border-white/5 flex gap-3 items-end">
+                        <div className="flex items-end gap-3 border-t border-white/5 bg-black/40 px-4 pb-[calc(1rem+var(--safe-area-bottom))] pt-4">
                             <div className="flex-1 relative">
                                 <textarea
                                     value={inputValue}
@@ -407,7 +407,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                     onKeyDown={handleKeyDown}
                                     placeholder="Escreva sua mensagem..."
                                     rows={1}
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-[13px] text-white focus:outline-none focus:border-[var(--skin-accent-color)]/50 focus:bg-white/10 transition-all placeholder-gray-600 resize-none max-h-32 custom-scrollbar"
+                                    className="custom-scrollbar max-h-32 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-[13px] text-white transition-all placeholder-gray-600 focus:border-[var(--skin-accent-color)]/50 focus:bg-white/10 focus:outline-none"
                                     style={{ height: 'auto' }}
                                     onInput={(e) => {
                                         const target = e.target as HTMLTextAreaElement;

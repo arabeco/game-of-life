@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { UserProfile, GoldenInvite, SovereignConfig, Notification } from '../types';
+import { UserProfile, GoldenInvite, SovereignConfig, Notification, RewardCodeRedeemResult } from '../types';
 
 // Serviço simples para conectar com tabelas existentes
 export class SupabaseService {
@@ -459,6 +459,74 @@ export class SupabaseService {
   static async consumeGoldenInviteCode(code: string, userId: string): Promise<GoldenInvite | null> {
     const result = await this.consumeGoldenInviteCodeDetailed(code, userId);
     return result.success ? result.invite : null;
+  }
+
+  static async redeemRewardCode(code: string, userId: string): Promise<RewardCodeRedeemResult> {
+    const normalizedCode = code.trim();
+    if (!normalizedCode) {
+      return {
+        success: false,
+        code: '',
+        error: 'Digite um codigo para resgatar.',
+      };
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('redeem_reward_code', {
+        p_code: normalizedCode,
+        p_user_id: userId,
+      });
+
+      if (!error && data) {
+        const payload = data as any;
+        return {
+          success: !!payload.success,
+          code: String(payload.code || normalizedCode),
+          title: typeof payload.title === 'string' ? payload.title : null,
+          description: typeof payload.description === 'string' ? payload.description : null,
+          rewardSummary: typeof payload.reward_summary === 'string' ? payload.reward_summary : null,
+          wallet: payload.wallet && typeof payload.wallet === 'object'
+            ? {
+              gold: Number.isFinite(payload.wallet.gold) ? Number(payload.wallet.gold) : undefined,
+              fragments: Number.isFinite(payload.wallet.fragments) ? Number(payload.wallet.fragments) : undefined,
+            }
+            : null,
+          premiumDaysGranted: Number.isFinite(payload.premium_days_granted) ? Number(payload.premium_days_granted) : null,
+          chestType: typeof payload.chest_type === 'string' ? payload.chest_type : null,
+          chestCount: Number.isFinite(payload.chest_count) ? Number(payload.chest_count) : null,
+          legacySceneCreditsGranted: Number.isFinite(payload.legacy_scene_credits_granted) ? Number(payload.legacy_scene_credits_granted) : null,
+          campaignQuizFreeCreditsGranted: Number.isFinite(payload.campaign_quiz_free_credits_granted) ? Number(payload.campaign_quiz_free_credits_granted) : null,
+          campaignQuizMediumCreditsGranted: Number.isFinite(payload.campaign_quiz_medium_credits_granted) ? Number(payload.campaign_quiz_medium_credits_granted) : null,
+          source: 'reward_code',
+          error: typeof payload.error === 'string' ? payload.error : null,
+        };
+      }
+    } catch (rpcError: any) {
+      const message = String(rpcError?.message || '');
+      const functionMissing = /redeem_reward_code/i.test(message) && (message.includes('does not exist') || message.includes('not found'));
+      if (!functionMissing) {
+        console.error('Erro ao resgatar codigo via RPC:', rpcError);
+      }
+    }
+
+    const legacyInviteResult = await this.consumeGoldenInviteCodeDetailed(normalizedCode, userId);
+    if (legacyInviteResult.success) {
+      return {
+        success: true,
+        code: normalizedCode,
+        title: 'Codigo resgatado',
+        description: 'Codigo legado aceito com sucesso.',
+        rewardSummary: 'Seu codigo foi aceito.',
+        source: 'golden_invite',
+        error: null,
+      };
+    }
+
+    return {
+      success: false,
+      code: normalizedCode,
+      error: this.describeGoldenInviteConsumeError(legacyInviteResult.error) || 'Nao consegui resgatar esse codigo agora.',
+    };
   }
 
   static async getClosedBetaAccessStatus(): Promise<{ authorized: boolean; hasInvite: boolean; hasProfile: boolean; reentryBlocked?: boolean; blockedReason?: string | null } | null> {

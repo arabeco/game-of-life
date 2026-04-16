@@ -188,10 +188,10 @@ export const ClanChat: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-white/5 bg-black/20">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-white/5 bg-black/20">
       <div
         ref={containerRef}
-        className="custom-scrollbar flex-1 space-y-3 overflow-y-auto p-3"
+        className="custom-scrollbar flex-1 min-h-0 space-y-3 overflow-y-auto p-3"
         onScroll={handleScroll}
       >
         {messages.length === 0 && (
@@ -258,7 +258,7 @@ export const ClanChat: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="flex gap-2 border-t border-white/10 bg-black/40 p-2">
+      <div className="flex gap-2 border-t border-white/10 bg-black/40 px-2 pb-[calc(0.5rem+var(--safe-area-bottom))] pt-2">
         <input
           type="text"
           value={inputValue}

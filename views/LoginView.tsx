@@ -13,8 +13,6 @@ import {
     consumeClosedBetaGoogleRedirect,
     markClosedBetaGoogleAuthPending,
 } from '../utils/closedBetaAuth';
-import { parseBooleanEnvFlag } from '../utils/envFlags';
-import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { Browser } from '@capacitor/browser';
 import { signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getGoogleAuthRedirectUrl } from '../utils/nativeAuth';
@@ -67,15 +65,8 @@ export const LoginView: React.FC = () => {
     const [message, setMessage] = useState<string | null>(null);
     const [appleToastVisible, setAppleToastVisible] = useState(false);
     const [goldenInviteGuide, setGoldenInviteGuide] = useState<{ title: string; text: string } | null>(null);
-    const [installPromptAvailable, setInstallPromptAvailable] = useState(() => Boolean(getInstallPrompt()));
-    const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
-    const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
+    const isGoldenInviteGateEnabled = false;
     const canonicalAppOrigin = React.useMemo(() => getCanonicalAppOrigin(), []);
-
-    React.useEffect(() => {
-        startInstallPromptCapture();
-        return subscribeInstallPrompt((prompt) => setInstallPromptAvailable(Boolean(prompt)));
-    }, []);
 
     React.useEffect(() => {
         const redirectState = consumeClosedBetaGoogleRedirect();
@@ -96,12 +87,12 @@ export const LoginView: React.FC = () => {
         if (isSignupRedirect) {
             setGoldenInviteGuide({
                 title: 'Conta nova detectada',
-                text: 'Esse acesso ainda não tem conta no beta. Se vier pelo Google, o app vai pedir seu Bilhete Dourado logo depois da autenticação.',
+                text: 'Esse acesso ainda nao tem conta no app. Se quiser, voce pode criar agora com Google ou e-mail.',
             });
         } else if (redirectState.email) {
             setGoldenInviteGuide({
                 title: 'Acesso com Google',
-                text: 'Para entrar com Google no primeiro acesso, voce nao precisa preencher e-mail, nickname ou senha aqui. Ignore os campos abaixo, toque em Entrar com Google e valide o Bilhete Dourado no modal.',
+                text: 'Para entrar com Google no primeiro acesso, voce nao precisa preencher e-mail, nickname ou senha aqui. Ignore os campos abaixo e toque em Entrar com Google.',
             });
         }
     }, []);
@@ -163,10 +154,6 @@ export const LoginView: React.FC = () => {
             return 'Essa conta foi excluida e nao pode criar um novo acesso com este e-mail.';
         }
 
-        if (isGoldenInviteGateEnabled && !manualInviteCode.trim()) {
-            return 'Informe seu Bilhete Dourado.';
-        }
-
         const strength = getPasswordStrength(draft.password);
         if (strength.score < 3) {
             return 'A senha deve ter pelo menos 8 caracteres e incluir um numero ou caractere especial.';
@@ -181,10 +168,6 @@ export const LoginView: React.FC = () => {
     ) => {
         const normalizedInvite = inviteCode?.trim() || '';
         let inviteRecord: GoldenInvite | null = null;
-
-        if (isGoldenInviteGateEnabled && !normalizedInvite) {
-            return { success: false, error: 'Informe um Convite Dourado.' };
-        }
 
         if (isGoldenInviteGateEnabled) {
             inviteRecord = await SupabaseService.checkGoldenInvite(normalizedInvite);
@@ -372,7 +355,7 @@ export const LoginView: React.FC = () => {
                 const finalizeSuccess = () => {
                     setMessage(sessionReady
                         ? 'Conta criada. Seu acesso ao beta foi liberado.'
-                        : 'Conta criada. O bilhete foi aceito e o acesso ficou registrado.'
+                        : 'Conta criada. Seu acesso ficou registrado.'
                     );
                     setIsSigningUp(false);
                     setManualEntryExpanded(false);
@@ -605,14 +588,6 @@ export const LoginView: React.FC = () => {
         await handleLogin();
     };
 
-    const handleInstallApp = async () => {
-        try {
-            await promptForInstall();
-        } catch (installError: any) {
-            setError(installError?.message || 'Não foi possível abrir a instalação do app agora.');
-        }
-    };
-
     const clearForm = () => {
         setEmail('');
         setPassword('');
@@ -669,22 +644,6 @@ export const LoginView: React.FC = () => {
         <>
         <div className="login-shell animate-fade-in">
             <div className="login-card">
-                {installPromptAvailable && (
-                    <button
-                        id="login-install-button"
-                        onClick={handleInstallApp}
-                        disabled={loading}
-                        className="login-install-fab"
-                        aria-label="Instalar app"
-                        title="Instalar app"
-                    >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M12 4V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            <path d="M8 10L12 14L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M5 18H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                    </button>
-                )}
                 <div className="login-content">
                     <div className="login-hero">
                         <span className="login-kicker">Beta fechado</span>
@@ -707,7 +666,7 @@ export const LoginView: React.FC = () => {
                             GLYPH
                         </h1>
                         <p className="login-subtitle">
-                            Google e o caminho mais rapido. Se preferir, crie sua conta com e-mail e bilhete.
+                            Google e o caminho mais rapido. Se preferir, crie sua conta com e-mail.
                         </p>
                     </div>
 
@@ -895,7 +854,7 @@ export const LoginView: React.FC = () => {
 
                                     {isSigningUp && (
                                         <p className="login-manual-hint">
-                                            Cadastro manual do beta: e-mail, nickname, senha e bilhete agora; o acordo de Termos aparece logo depois do login.
+                                            Cadastro manual simples: e-mail, nickname e senha agora; o acordo de Termos aparece logo depois do login.
                                         </p>
                                     )}
                                 </div>

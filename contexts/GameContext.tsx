@@ -22,7 +22,6 @@ import { getOracleFeedMessagesForOperationalDay, getOracleFeedQuotaStatus, isMan
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
-import { parseBooleanEnvFlag } from '../utils/envFlags';
 import { getExpBoostMultiplier, getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
@@ -37,6 +36,7 @@ import { hasAppPushRemoteDeliveryReady, syncAppPushRegistration } from '../utils
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, shouldPushNotificationForProfile } from '../constants/oracleNotificationPolicy';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import { resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
+import { ECONOMY } from '../constants/economy';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -779,8 +779,7 @@ export interface GameContextType {
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode, session: Session | null }> = ({ children, session }) => {
-    const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
-    const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
+    const isGoldenInviteGateEnabled = false;
 
     const [userProfile, setUserProfile] = useState<UserProfile>(() => {
         const userId = session?.user.id;
@@ -6745,6 +6744,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (chestType === 'Skin Comum') {
             // Filtrar apenas skins
             const allSkins = getCatalogItemsByCategory('skin').filter(i => isChestEligibleItem(i));
+            const ownedSkinIds = new Set(
+                inventory
+                    .map((inventoryItem) => inventoryItem.id)
+                    .filter((itemId): itemId is string => typeof itemId === 'string')
+            );
 
             // Rarity weights for Skin Comum chest
             // 75% Common, 20% Uncommon, 5% Rare
@@ -6754,10 +6758,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             else if (rand > 75) targetRarity = 'uncommon';
 
             const possibleSkins = allSkins.filter(s => s.rarity === targetRarity);
-            // Fallback if no skins of that rarity found (shouldn't happen with current DB)
-            const selectedSkin = possibleSkins.length > 0
-                ?possibleSkins[Math.floor(Math.random() * possibleSkins.length)]
-                : allSkins[0];
+            const unseenSkins = possibleSkins.filter((skin) => !ownedSkinIds.has(skin.id));
+            const unseenFallbackSkins = allSkins.filter((skin) => !ownedSkinIds.has(skin.id));
+
+            // Preferir sempre uma skin inédita antes de aceitar repetição.
+            const skinPool = unseenSkins.length > 0
+                ? unseenSkins
+                : (possibleSkins.length > 0 ? possibleSkins : (unseenFallbackSkins.length > 0 ? unseenFallbackSkins : allSkins));
+            const selectedSkin = skinPool[Math.floor(Math.random() * skinPool.length)] || allSkins[0];
 
             // Call RPC to grant the specific item (mimics open_chest logic)
             const { data, error } = await supabase.rpc('open_chest_specific', {
@@ -6822,9 +6830,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
         if (!userId) return result;
 
-        // Show reward (item + fragments)
-        const rewardMsg = `\u{1F381} ${data.item_name} (Tier ${data.tier}) \u2022 +${data.fragments_gained} Fragmentos!`;
-        showToast(rewardMsg);
+        // Show reward clearly, especially when duplicate conversion happens.
+        const rewardMsg = data.is_duplicate
+            ? `\u{1F381} ${data.item_name} repetido. Convertido em +${data.fragments_gained} fragmentos.`
+            : `\u{1F381} ${data.item_name} recebido. +${data.fragments_gained} fragmentos do baú.`;
+        showToast(rewardMsg, data.is_duplicate ? 'info' : 'success');
 
         // Update local state
         const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
@@ -7739,17 +7749,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateUserProfile({ unlockedItems: nextUnlockedItems });
     };
 
+    const getDuplicateItemFragmentReward = (itemId: string): number => {
+        const itemDef = resolveItemDef(itemId);
+        const normalizedTier = Math.min(5, Math.max(1, Number(itemDef?.tier || 1)));
+        const recycleKey = `tier_${normalizedTier}` as keyof typeof ECONOMY.recycle_values;
+        return Number(ECONOMY.recycle_values[recycleKey] || ECONOMY.recycle_values.tier_1 || 0);
+    };
+
     const grantInventoryItem = async (itemId: string, silent: boolean = false) => {
         const itemDef = resolveItemDef(itemId);
         if (itemId !== 'none' && itemDef?.category !== 'insignia' && !isItemCatalogVisible(itemDef || itemId)) {
-            return { item: null, granted: false };
+            return { item: null, granted: false, duplicateConverted: false, fragmentsGranted: 0 };
         }
         const userId = getSupabaseUserId();
-        if (!userId) return { item: null, granted: false };
+        if (!userId) return { item: null, granted: false, duplicateConverted: false, fragmentsGranted: 0 };
 
         const localExisting = inventory.find((inventoryItem) => inventoryItem.id === itemId);
         if (localExisting) {
-            return { item: localExisting, granted: false };
+            const duplicateFragments = getDuplicateItemFragmentReward(itemId);
+            const nextFragments = (userProfile.wallet?.fragments || 0) + duplicateFragments;
+            updateUserProfile({ wallet: { ...userProfile.wallet, fragments: nextFragments } });
+            showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} fragmentos.`, 'info');
+            return { item: localExisting, granted: false, duplicateConverted: true, fragmentsGranted: duplicateFragments };
         }
 
         const { data: existingRows, error: existingLookupError } = await supabase
@@ -7771,7 +7792,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             };
 
             setInventory((prev) => prev.some((inventoryItem) => inventoryItem.instanceId === existingItem.instanceId) ? prev : [...prev, existingItem]);
-            return { item: existingItem, granted: false };
+            const duplicateFragments = getDuplicateItemFragmentReward(itemId);
+            const nextFragments = (userProfile.wallet?.fragments || 0) + duplicateFragments;
+            updateUserProfile({ wallet: { ...userProfile.wallet, fragments: nextFragments } });
+            showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} fragmentos.`, 'info');
+            return { item: existingItem, granted: false, duplicateConverted: true, fragmentsGranted: duplicateFragments };
         }
 
         const { data, error } = await supabase
@@ -7785,7 +7810,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error granting inventory item:", error);
-            return { item: null, granted: false };
+            return { item: null, granted: false, duplicateConverted: false, fragmentsGranted: 0 };
         }
 
         if (data) {
@@ -7816,10 +7841,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 showToast(toastMsg);
             }
 
-            return { item: newItem, granted: true };
+            return { item: newItem, granted: true, duplicateConverted: false, fragmentsGranted: 0 };
         }
 
-        return { item: null, granted: false };
+        return { item: null, granted: false, duplicateConverted: false, fragmentsGranted: 0 };
     };
 
     const formatMembershipChestLabel = (chestType: ChestType): string => {

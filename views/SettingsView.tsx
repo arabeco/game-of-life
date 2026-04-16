@@ -20,7 +20,6 @@ import { RelationshipHubModal } from '../components/RelationshipHubModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
-import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
 import { getMoneyCheckoutSalesCopy } from '../utils/billingRuntime';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
@@ -769,6 +768,97 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void; onOpenPrimer?: () =
                         </div>
 
                         <TutorialSettings onStart={onClose} onRequestModeGame={handleRequestModeGame} onOpenPrimer={onOpenPrimer} />
+                    </div>
+                </GlassCard>
+            </div>
+        </Portal>
+    );
+};
+
+const RedeemCodeModal: React.FC<{
+    open: boolean;
+    onClose: () => void;
+    onRedeem: (code: string) => Promise<void>;
+}> = ({ open, onClose, onRedeem }) => {
+    const [code, setCode] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!open) {
+            setCode('');
+            setSubmitting(false);
+            setError(null);
+        }
+    }, [open]);
+
+    if (!open) return null;
+
+    const handleConfirm = async () => {
+        const normalized = code.trim();
+        if (!normalized) {
+            setError('Digite um codigo.');
+            return;
+        }
+
+        setSubmitting(true);
+        setError(null);
+        try {
+            await onRedeem(normalized);
+            onClose();
+        } catch (redeemError: any) {
+            setError(redeemError?.message || 'Nao consegui resgatar esse codigo agora.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <Portal>
+            <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
+                <GlassCard
+                    variant="neutral"
+                    className="w-full max-w-sm m-4 space-y-4 rounded-3xl"
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <div className="space-y-1">
+                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">
+                            Resgatar codigo
+                        </div>
+                        <h2 className="text-lg font-black uppercase tracking-[0.08em] text-white">Tenho um codigo</h2>
+                        <p className="text-sm leading-relaxed text-white/62">
+                            Digite seu codigo para liberar recompensas, campanhas ou vantagens especiais.
+                        </p>
+                    </div>
+
+                    <input
+                        type="text"
+                        value={code}
+                        onChange={(event) => setCode(event.target.value.toUpperCase())}
+                        placeholder="Digite o codigo"
+                        disabled={submitting}
+                        className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-white placeholder:text-white/28 focus:outline-none focus:border-[var(--skin-accent-color)] disabled:opacity-60"
+                    />
+
+                    {error && <p className="text-sm text-red-400">{error}</p>}
+
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={submitting}
+                            className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-white/70 disabled:opacity-60"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void handleConfirm()}
+                            disabled={submitting}
+                            className="flex-1 rounded-2xl bg-[var(--skin-accent-color)] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-black shadow-[0_0_20px_rgba(212,175,55,0.25)] disabled:opacity-60"
+                        >
+                            {submitting ? 'OK...' : 'OK'}
+                        </button>
                     </div>
                 </GlassCard>
             </div>
@@ -1802,21 +1892,13 @@ const NobrezaHierarchyView: React.FC = () => {
 };
 
 const GeralTab: React.FC = () => {
-    const { userProfile, updateUserProfile, nobilityRanks, activeCycle, startCycle, assets, installPrompt, promptInstall, showToast } = useGame();
+    const { userProfile, updateUserProfile, nobilityRanks, assets, installPrompt, promptInstall, showToast } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
     const [isHierarchyVisible, setIsHierarchyVisible] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-    const [showStartCycle, setShowStartCycle] = useState(false);
     const [showMastery, setShowMastery] = useState(false);
-    const [cycleName, setCycleName] = useState('');
-    const [cycleStartDate, setCycleStartDate] = useState(() => getLocalDateString());
-    const [cycleEndDate, setCycleEndDate] = useState('');
-    const pendingCycleTiming = useMemo(() => {
-        if (!cycleStartDate || !cycleEndDate) return null;
-        return getCycleTimingSummary(cycleStartDate, cycleEndDate, getLocalDateString());
-    }, [cycleStartDate, cycleEndDate]);
 
     const handleSave = () => { updateUserProfile({ nickname }); alert("Perfil salvo!"); };
 
@@ -1881,17 +1963,6 @@ const GeralTab: React.FC = () => {
         .reduce((sum, a) => sum + (a.level === 0 ? 1 : (a.level || 1)), 0);
 
     useEffect(() => {
-        const today = new Date();
-        const defaultEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        const pad = (n: number) => String(n).padStart(2, '0');
-        const formatDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-        if (!cycleEndDate) setCycleEndDate(formatDate(defaultEnd));
-        if (!cycleName) {
-            const month = today.toLocaleString('pt-BR', { month: 'long' });
-            setCycleName(`Ciclo de ${month}`);
-        }
-
         // Listener for Tutorial Mastery Quiz Trigger (Step 11)
         const handleOpenMastery = () => {
             console.log('SettingsView: Received Mastery Quiz Trigger');
@@ -1905,7 +1976,7 @@ const GeralTab: React.FC = () => {
         }
 
         return () => window.removeEventListener('tutorialOpenMasteryQuiz', handleOpenMastery);
-    }, [cycleEndDate, cycleName, isTutorialActive, currentStep]);
+    }, [isTutorialActive, currentStep]);
 
     if (isHierarchyVisible) return (<div><button onClick={() => setIsHierarchyVisible(false)} className="mb-4 text-sm font-bold text-gray-400 hover:text-white">&larr; Voltar</button><NobrezaHierarchyView /></div>);
 
@@ -2028,34 +2099,6 @@ const GeralTab: React.FC = () => {
                 </GlassCard>
             </button>
 
-            <GlassCard variant="neutral" className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Ciclo atual</div>
-                        {activeCycle ? (
-                            <>
-                                <div className="text-lg font-bold text-white truncate">{activeCycle.name}</div>
-                                <div className="text-xs text-gray-500 mt-1 font-mono">{activeCycle.startDate} â†’ {activeCycle.endDate}</div>
-                                <div className="text-[11px] text-gray-500 mt-1">Dia 1 = inÃ­cio do ciclo. O Ãºltimo dia tambÃ©m conta.</div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="text-lg font-bold text-white">Sem ciclo ativo</div>
-                                <div className="text-xs text-gray-500 mt-1">Crie um ciclo para registrar sua histÃ³ria.</div>
-                            </>
-                        )}
-                    </div>
-                    {!activeCycle && (
-                        <button
-                            onClick={() => setShowStartCycle(true)}
-                            className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold"
-                        >
-                            Criar
-                        </button>
-                    )}
-                </div>
-            </GlassCard>
-
             {false && (<div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h2 className="text-lg font-bold tracking-wider">Maestria</h2>
@@ -2120,63 +2163,6 @@ const GeralTab: React.FC = () => {
                 />
             )}
 
-            {showStartCycle && (
-                <Portal>
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center animate-fade-in" onClick={() => setShowStartCycle(false)}>
-                        <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                            <h2 className="text-lg font-bold uppercase tracking-wider text-center">Criar Ciclo</h2>
-                            <div className="space-y-2">
-                                <input
-                                    type="text"
-                                    value={cycleName}
-                                    onChange={(e) => setCycleName(e.target.value)}
-                                    placeholder="Nome do ciclo"
-                                    className="w-full p-2 bg-black/30 rounded-lg border border-white/20"
-                                />
-                                <input
-                                    type="date"
-                                    value={cycleStartDate}
-                                    min={getLocalDateString()}
-                                    onChange={(e) => {
-                                        const nextStartDate = e.target.value;
-                                        setCycleStartDate(nextStartDate);
-                                        if (cycleEndDate && cycleEndDate < nextStartDate) {
-                                            setCycleEndDate(nextStartDate);
-                                        }
-                                    }}
-                                    className="w-full p-2 bg-black/30 rounded-lg border border-white/20"
-                                />
-                                <input
-                                    type="date"
-                                    value={cycleEndDate}
-                                    min={cycleStartDate || getLocalDateString()}
-                                    onChange={(e) => setCycleEndDate(e.target.value)}
-                                    className="w-full p-2 bg-black/30 rounded-lg border border-white/20"
-                                />
-                                {pendingCycleTiming ? (
-                                    <p className="text-[11px] leading-relaxed text-gray-400">
-                                        {pendingCycleTiming.statusLabel}. Dia 1 = inÃ­cio do ciclo e o Ãºltimo dia tambÃ©m conta.
-                                    </p>
-                                ) : null}
-                            </div>
-                            <div className="flex space-x-2">
-                                <button onClick={() => setShowStartCycle(false)} className="w-1/2 py-2 rounded-xl luxe-button-secondary">Cancelar</button>
-                                <button
-                                    onClick={() => {
-                                        if (!cycleName.trim() || !cycleEndDate) return;
-                                        startCycle(cycleName.trim(), cycleEndDate, cycleStartDate);
-                                        setShowStartCycle(false);
-                                    }}
-                                    className="w-1/2 py-2 rounded-xl luxe-skin-button"
-                                >
-                                    Criar
-                                </button>
-                            </div>
-                        </GlassCard>
-                    </div>
-                </Portal>
-            )}
-
             {showMastery && (
                 <Portal>
                     <div className="fixed inset-0 z-[10000] flex flex-col animate-fade-in overflow-hidden">
@@ -2191,8 +2177,8 @@ const GeralTab: React.FC = () => {
 };
 
 const PreferenciasTab: React.FC = () => {
-    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin } = useGame();
-    const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | 'primer' | null>(null);
+    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast } = useGame();
+    const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | 'primer' | 'redeem' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
     const [highlightModeGame, setHighlightModeGame] = useState(false);
     const modeGameRef = useRef<HTMLDivElement | null>(null);
@@ -2298,6 +2284,47 @@ const PreferenciasTab: React.FC = () => {
         updateUserProfile({ featsVisibility: value });
     };
 
+    const handleRedeemCode = async (code: string) => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user?.id;
+        if (!userId) {
+            throw new Error('Sua sessao nao foi encontrada para resgatar o codigo.');
+        }
+
+        const result = await SupabaseService.redeemRewardCode(code, userId);
+        if (!result.success) {
+            throw new Error(result.error || 'Nao consegui resgatar esse codigo agora.');
+        }
+
+        const { data: profileRow, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (!profileError && profileRow) {
+            const profile = mapDbProfileToUserProfile(profileRow);
+            updateUserProfile({
+                wallet: profile.wallet,
+                isPremium: profile.isPremium,
+                premiumExpiresAt: profile.premiumExpiresAt,
+                subscriptionTier: profile.subscriptionTier,
+                chests: profile.chests,
+                unlockedItems: profile.unlockedItems,
+                unlockedSkins: profile.unlockedSkins,
+                completedSeasonMissions: profile.completedSeasonMissions,
+                legacyProjectionSceneCredits: profile.legacyProjectionSceneCredits,
+                campaignQuizFreeCredits: profile.campaignQuizFreeCredits,
+                campaignQuizMediumCredits: profile.campaignQuizMediumCredits,
+                vanguardWelcomePending: profile.vanguardWelcomePending,
+                vanguardWelcomePayload: profile.vanguardWelcomePayload,
+                vanguardWelcomeShownAt: profile.vanguardWelcomeShownAt,
+            });
+        }
+
+        showToast(result.rewardSummary || `Codigo "${result.code}" resgatado.`, 'success');
+    };
+
     const handleUiSkinOptionClick = (skinId: string, unlocked: boolean, disabledByMode: boolean) => {
         if (disabledByMode) return;
         if (!unlocked) {
@@ -2361,6 +2388,7 @@ const PreferenciasTab: React.FC = () => {
             {/* Grupo Feedback */}
             <section className="space-y-4">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Suporte</h2>
+                <SettingSelector label="Resgatar codigo" value="Tenho um codigo" onClick={() => setModal('redeem')} />
                 <button
                     onClick={() => setFeedbackOpen(true)}
                     className="w-full py-4 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest accent-text flex items-center justify-center gap-2 transition-all"
@@ -2407,6 +2435,13 @@ const PreferenciasTab: React.FC = () => {
                     onMasteryVisibilityChange={handleMasteryVisibilityChange}
                     onFeatsVisibilityChange={handleFeatsVisibilityChange}
                     onClose={() => setModal(null)}
+                />
+            )}
+            {modal === 'redeem' && (
+                <RedeemCodeModal
+                    open
+                    onClose={() => setModal(null)}
+                    onRedeem={handleRedeemCode}
                 />
             )}
             {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}

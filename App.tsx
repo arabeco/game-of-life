@@ -15,7 +15,6 @@ import {
     rememberClosedBetaGoogleAccess,
     saveClosedBetaGoogleRedirect,
 } from './utils/closedBetaAuth';
-import { parseBooleanEnvFlag } from './utils/envFlags';
 import { startInstallPromptCapture } from './utils/installPrompt';
 import {
     clearIntentionalSignOutPending,
@@ -96,8 +95,7 @@ const App: React.FC = () => {
     const bootVisualsRef = useRef(bootVisuals);
     const renderMode = useMemo(() => new URLSearchParams(window.location.search).get('render'), []);
     const renderModeRef = useRef(renderMode);
-    const disableGoldInviteByEnv = parseBooleanEnvFlag(import.meta.env.VITE_DISABLE_GOLD_INVITE);
-    const isGoldenInviteGateEnabled = !import.meta.env.DEV && !disableGoldInviteByEnv;
+    const isGoldenInviteGateEnabled = false;
     const showFullScreenBoot = loading || googleAuthPending || (!session && (authGuardLoading || resumeRecoveryPending));
 
     const handleSplashComplete = () => {

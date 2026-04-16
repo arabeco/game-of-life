@@ -565,8 +565,8 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
 
     return (
         <div className="mundo-section-stack">
-            <div className="mundo-social-subnav rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.16))] p-2 shadow-[0_16px_36px_rgba(0,0,0,0.18)]">
-                <div className="grid grid-cols-3 gap-2">
+            <div className="mundo-social-subnav rounded-2xl bg-black/20 p-1 shadow-[0_16px_36px_rgba(0,0,0,0.18)]">
+                <div className="grid grid-cols-3 gap-1">
                     {[
                         { id: 'people', label: 'Pessoas', subtitle: `${requestCount} pendencias` },
                         { id: 'messages', label: 'Mensagens', subtitle: `${friends.length} contatos` },
@@ -576,21 +576,21 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                             key={section.id}
                             type="button"
                             onClick={() => setActiveSection(section.id as SocialSection)}
-                            className={`rounded-[20px] border px-3 py-3 text-left transition-all ${
+                            className={`w-full rounded-xl border px-2 py-2 text-center transition-colors ${
                                 activeSection === section.id
-                                    ? 'border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] shadow-[0_0_0_1px_rgba(255,255,255,0.04)]'
-                                    : 'border-white/8 bg-black/10 text-white/70 hover:border-white/16 hover:text-white'
+                                    ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)] shadow-[0_0_14px_var(--sephirot-glow-color-soft)]'
+                                    : 'border-transparent text-gray-400 hover:bg-white/5'
                             }`}
                         >
-                            <div className="text-[10px] font-black uppercase tracking-[0.2em]">{section.label}</div>
-                            <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/42">{section.subtitle}</div>
+                            <div className="text-[10px] font-semibold">{section.label}</div>
+                            <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.12em] text-white/42">{section.subtitle}</div>
                         </button>
                     ))}
                 </div>
             </div>
 
             {activeSection === 'messages' && (
-                <div className="h-[min(70vh,720px)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+                <div className="min-h-[24rem] max-h-[calc(100dvh-16rem)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
                     <DirectMessages initialParticipantId={initialParticipantId} />
                 </div>
             )}
@@ -601,7 +601,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                         <>
                             <ClanInfoBox onClick={() => setModal('sanctuary')} />
                             {modal === 'sanctuary' && <ClanDetailModal clanName={clan.name} onClose={() => setModal(null)} />}
-                            <div className="h-[min(70vh,720px)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+                            <div className="min-h-[24rem] max-h-[calc(100dvh-18rem)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
                                 <ClanChat />
                             </div>
                         </>
@@ -629,16 +629,16 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                 </div>
                 <SocialSearch friends={friends} onSearchResults={setSearchResults} onQueryChange={setSearchQuery} />
 
-                <div className="flex gap-2">
+                <div className="flex items-center justify-center gap-1 rounded-2xl bg-black/20 p-1">
                     <button
                         onClick={() => setActiveTab('aliados')}
-                        className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'aliados' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                        className={`w-full rounded-xl px-2 py-2 text-xs font-semibold transition-colors ${activeTab === 'aliados' ? 'border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)] shadow-[0_0_14px_var(--sephirot-glow-color-soft)]' : 'border border-transparent text-gray-400 hover:bg-white/5'}`}
                     >
                         Aliados
                     </button>
                     <button
                         onClick={() => setActiveTab('solicitacoes')}
-                        className={`w-full py-2 rounded-xl text-xs font-bold ${activeTab === 'solicitacoes' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                        className={`w-full rounded-xl px-2 py-2 text-xs font-semibold transition-colors ${activeTab === 'solicitacoes' ? 'border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)] shadow-[0_0_14px_var(--sephirot-glow-color-soft)]' : 'border border-transparent text-gray-400 hover:bg-white/5'}`}
                     >
                         Solicitações {requestCount > 0 ? `(${requestCount})` : ''}
                     </button>

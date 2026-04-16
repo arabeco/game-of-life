@@ -2,7 +2,7 @@
 import { useGame } from '../contexts/GameContext';
 import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon, MicIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
-import { OracleCategory, OracleContext, OracleMode } from '../types';
+import { Notification, OracleActionDraft, OracleCategory, OracleContext, OracleMode, OraclePremiumHint, OracleResponseKind, OracleResponsePayload, OracleStructuredContext } from '../types';
 import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
@@ -11,8 +11,12 @@ import { hasPremiumAccess } from '../utils/premiumAccess';
 import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQuizModal';
+import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsForProfile } from '../constants/oracleNotificationPolicy';
+import { buildOracleConversationMemory } from '../utils/oracleConversationMemory';
+import { isConfirmationText } from '../utils/oracleActionUtils';
 
-type OracleTabTarget = 'chat' | 'action' | 'social' | 'notifications';
+type OracleTabTarget = 'chat' | 'action' | 'requests';
+type OracleQuickActionId = 'campaign_quiz' | 'manual_start' | 'adjust_existing';
 interface PendingClarification {
   type: 'campaign_route';
   originalInput: string;
@@ -23,6 +27,12 @@ interface Message {
   content: string;
   timestamp: Date;
   mode?: OracleMode;
+  responseKind?: OracleResponseKind;
+  structuredContext?: OracleStructuredContext | null;
+  actionDraft?: OracleActionDraft | null;
+  premiumHint?: OraclePremiumHint | null;
+  actionPrompt?: string | null;
+  originalInput?: string | null;
   feedId?: string;
   feedCategory?: OracleCategory;
   feedPresentation?: 'ambient_pulse' | 'info_card';
@@ -262,8 +272,86 @@ const resolveFeedPresentation = (
     return 'ambient_pulse';
 };
 
+const buildNotificationSignalMessage = (notification: Notification, oracleMode: OracleMode): Message => {
+  const title = getNotificationTitle(notification);
+  const body = getNotificationBody(notification, oracleMode);
+  const content = title === body ? body : `${title}\n${body}`;
+
+  return {
+    role: 'assistant',
+    content,
+    timestamp: new Date(notification.createdAt),
+    mode: oracleMode,
+    feedId: `notification:${notification.id}`,
+    feedCategory: 'analise_padroes',
+    feedPresentation: 'info_card',
+    feedSummary: 'Sinal do Oraculo',
+    feedTrigger: 'app_open',
+  };
+};
+
+const formatDraftTime = (minutes: number | null | undefined) => {
+  if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes < 0) return '';
+  const hour = String(Math.floor(minutes / 60)).padStart(2, '0');
+  const minute = String(minutes % 60).padStart(2, '0');
+  return `${hour}:${minute}`;
+};
+
+const buildActionPromptFromDraft = (draft: OracleActionDraft): string => {
+  const parts: string[] = [];
+
+  switch (draft.kind) {
+    case 'create_cycle':
+      parts.push(`criar ciclo ${draft.cycleName || ''}`.trim());
+      break;
+    case 'edit_cycle_date':
+      parts.push(`editar ciclo ${draft.date ? `para ${draft.date}` : ''}`.trim());
+      break;
+    case 'create_arena':
+      parts.push(`criar arena ${draft.arenaName || ''}`.trim());
+      break;
+    case 'update_arena':
+      parts.push(`editar arena ${draft.arenaName || ''}`.trim());
+      break;
+    case 'create_action':
+      parts.push(`criar ação ${draft.actionName || ''}`.trim());
+      break;
+    case 'update_action':
+      parts.push(`editar ação ${draft.actionName || ''}`.trim());
+      break;
+    case 'schedule_action':
+      parts.push(`agendar ${draft.actionName || 'ação'}`.trim());
+      if (draft.date) parts.push(`para ${draft.date}`);
+      if (typeof draft.startTime === 'number') parts.push(`às ${formatDraftTime(draft.startTime)}`);
+      break;
+    case 'complete_action':
+      parts.push(`completei ${draft.actionName || 'a ação'}`.trim());
+      break;
+    case 'organize_day':
+      parts.push(`organizar meu dia ${draft.organizeMode || ''}`.trim());
+      break;
+    case 'status':
+      parts.push('status do app');
+      break;
+    default:
+      parts.push(draft.originalText);
+      break;
+  }
+
+  return parts.join(' ').replace(/\s+/g, ' ').trim();
+};
+
+const buildVoicePreview = (transcript: string) => {
+  const normalized = normalizeOracleText(transcript);
+  const soundsOperational = /\b(criar|cria|editar|edita|ajustar|ajusta|agendar|agenda|programar|organizar|organiza|completei|concluir|conclui|marcar|marca)\b/.test(normalized);
+  if (soundsOperational) {
+    return `Entendi isso: "${transcript}". Isso parece pedido de ação. Revise e envie que eu monto o preview antes de aplicar.`;
+  }
+  return `Entendi isso: "${transcript}". Isso parece conversa. Se estiver certo, envie e eu sigo daqui.`;
+};
+
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false, onNavigateTab }) => {
-  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, addArena, addAction, triggerOracle } = useGame();
+  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, addArena, addAction, triggerOracle } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -279,6 +367,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const inputRef = useRef<HTMLInputElement>(null);
   const speechRef = useRef<any>(null);
   const sendMessageRef = useRef<(overrideInput?: string) => void>(() => {});
+  const lastActionOfferRef = useRef<{ draft: OracleActionDraft; prompt: string; assistant: string } | null>(null);
 
   const [currentMode, setCurrentMode] = useState<OracleMode>(oraclePreferences?.activeMode || 'neutro');
   const isPremiumUser = useMemo(() => hasPremiumAccess(userProfile), [userProfile]);
@@ -290,6 +379,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       userProfile.appMode === 'BASIC' ? 'BASIC' : 'GAME',
     ),
     [oracleMessages, oraclePreferences, userProfile.appMode],
+  );
+  const oracleSignalNotifications = useMemo(
+    () => getOracleChatNotificationsForProfile(notifications, userProfile.appMode === 'BASIC' ? 'BASIC' : 'GAME', currentMode),
+    [currentMode, notifications, userProfile.appMode],
   );
 
   const availableTaskPool = useMemo(() => buildActionPoolByDate(actions, taskPool, tasks, null), [actions, taskPool, tasks]);
@@ -361,6 +454,28 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     isInitialLoadRef.current = false;
   }, [oracleMessages]);
 
+  useEffect(() => {
+    if (oracleSignalNotifications.length === 0) return;
+
+    const signalMessages = [...oracleSignalNotifications]
+      .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime())
+      .map((notification): Message => buildNotificationSignalMessage(notification, currentMode));
+
+    setMessages((previous) => {
+      const withoutOldSignals = previous.filter((message) => !(message.feedId && message.feedId.startsWith('notification:')));
+      const nextMessages = [...withoutOldSignals];
+
+      signalMessages.forEach((message) => {
+        if (!nextMessages.some((entry) => entry.feedId === message.feedId)) {
+          nextMessages.push(message);
+        }
+      });
+
+      nextMessages.sort((left, right) => left.timestamp.getTime() - right.timestamp.getTime());
+      return nextMessages;
+    });
+  }, [currentMode, oracleSignalNotifications]);
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -396,7 +511,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       const transcript = event?.results?.[0]?.[0]?.transcript?.trim();
       if (!transcript) return;
       setInput(transcript);
-      sendMessageRef.current(transcript);
+      setMessages((prev) => [...prev, {
+        role: 'assistant',
+        content: buildVoicePreview(transcript),
+        timestamp: new Date(),
+        mode: currentMode,
+      }]);
     };
 
     speechRef.current = recognition;
@@ -661,9 +781,27 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     return null;
   };
 
-  const handleSendMessage = async () => {
-    const nextInput = input.trim();
+  const handleSendMessage = async (overrideInput?: string) => {
+    const nextInput = (overrideInput ?? input).trim();
     if (!nextInput || isLoading) return;
+
+    if (lastActionOfferRef.current && isConfirmationText(nextInput)) {
+      const pendingOffer = lastActionOfferRef.current;
+      lastActionOfferRef.current = null;
+      setMessages((prev) => [...prev, { role: 'user', content: nextInput, timestamp: new Date() }]);
+      setInput('');
+      setMessages((prev) => [...prev, {
+        role: 'assistant',
+        content: 'Perfeito. Vou te levar para o modo ação com esse rascunho.',
+        timestamp: new Date(),
+        mode: currentMode,
+      }]);
+      openActionTabWithGuidance({
+        assistant: pendingOffer.assistant,
+        prompt: pendingOffer.prompt,
+      });
+      return;
+    }
 
     const userMessage: Message = { role: 'user', content: nextInput, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
@@ -727,13 +865,27 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         throw new Error('Sessao autenticada ausente para consultar o Oraculo.');
       }
 
+      const memory = buildOracleConversationMemory(
+        [...messages, userMessage].filter((message) => !message.feedId && message.content.trim().length > 0).map((message) => ({
+          role: message.role,
+          content: message.content,
+          timestamp: message.timestamp,
+        })),
+        {
+          lastActionOffer: lastActionOfferRef.current?.draft.summary || null,
+        },
+      );
+
       const { data, error } = await supabase.functions.invoke('oracle', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body: {
-          systemPrompt,
-          userPrompt: userMessage.content,
+          text: userMessage.content,
+          channel: 'chat',
+          isPremium: isPremiumUser,
+          mode: currentMode,
+          memory,
         }
       });
 
@@ -741,17 +893,44 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         throw error;
       }
 
-      const text = String(data?.text || '').trim();
-      if (!text) {
+      const payload = data as OracleResponsePayload | null;
+      const text = String(payload?.message || '').trim();
+      if (!payload || !text) {
         throw new Error('Oracle function returned empty content.');
       }
 
-      setMessages(prev => [...prev, {
+      const actionPrompt = payload.actionDraft ? buildActionPromptFromDraft(payload.actionDraft) : null;
+      const assistantMessage: Message = {
         role: 'assistant',
         content: text,
         timestamp: new Date(),
         mode: currentMode,
-      }]);
+        responseKind: payload.kind,
+        structuredContext: payload.structuredContext,
+        actionDraft: payload.actionDraft || null,
+        premiumHint: payload.premiumHint || null,
+        actionPrompt,
+        originalInput: userMessage.content,
+      };
+
+      if (payload.actionDraft && actionPrompt) {
+        lastActionOfferRef.current = {
+          draft: payload.actionDraft,
+          prompt: actionPrompt,
+          assistant: `Vou abrir o modo ação com este rascunho: ${payload.actionDraft.summary}. Revise e confirme lá se quiser ajustar algo.`,
+        };
+      } else {
+        lastActionOfferRef.current = null;
+      }
+
+      setMessages(prev => [...prev, assistantMessage]);
+
+      if (payload.kind === 'action_handoff' && payload.actionDraft && actionPrompt) {
+        openActionTabWithGuidance({
+          assistant: lastActionOfferRef.current?.assistant || assistantMessage.content,
+          prompt: actionPrompt,
+        });
+      }
     } catch (error) {
       const parsedError = await parseOracleFunctionError(error);
       console.error('Oracle Error:', parsedError, error);
@@ -1022,6 +1201,29 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                   `}
                 >
                   {msg.content}
+                  {msg.actionDraft && msg.actionPrompt && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-white/45">
+                        {msg.actionDraft.summary}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openActionTabWithGuidance({
+                          assistant: `Vou abrir o modo ação com este rascunho: ${msg.actionDraft?.summary || 'ajuste operacional'}.`,
+                          prompt: msg.actionPrompt || msg.originalInput || '',
+                        })}
+                        className="rounded-full border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/18"
+                      >
+                        Ir para ação
+                      </button>
+                    </div>
+                  )}
+                  {msg.premiumHint && !isPremiumUser && (
+                    <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] leading-relaxed text-white/72">
+                      <span className="font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">{msg.premiumHint.label}</span>
+                      <div className="mt-1">{msg.premiumHint.message}</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

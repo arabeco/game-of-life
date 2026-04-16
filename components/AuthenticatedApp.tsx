@@ -35,13 +35,14 @@ import { getActiveSubscriptionTier, getDiscountedPremiumPrice, getPremiumDaysRem
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import { getGoldMembershipProductByTier, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 import {
+    SCREEN_INTRO_TIP_CONTEXT_EVENT,
     SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT,
     areScreenIntroTipsEnabled,
     hasScreenIntroTip,
     hasSeenScreenIntroTip,
     markScreenIntroTipSeen,
     setScreenIntroTipsEnabled,
-    type ScreenIntroTipView,
+    type ScreenIntroTipId,
 } from '../utils/screenIntroTips';
 import { ConfirmationModal } from './ConfirmationModal';
 import { DailyCompletionPromptModal } from './DailyCompletionPromptModal';
@@ -177,7 +178,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [dailyCompletionPrompt, setDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
     const [pendingSitrepOpen, setPendingSitrepOpen] = useState(false);
     const [screenTipsEnabled, setScreenTipsEnabled] = useState(() => areScreenIntroTipsEnabled(userProfile.id));
-    const [activeScreenTipView, setActiveScreenTipView] = useState<ScreenIntroTipView | null>(null);
+    const [activeScreenTipId, setActiveScreenTipId] = useState<ScreenIntroTipId | null>(null);
+    const [screenIntroContextId, setScreenIntroContextId] = useState<ScreenIntroTipId | null>(null);
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
     const previousViewRef = useRef<View>(currentView);
     const previousRestVisibilityRef = useRef(isRestScreenVisible);
@@ -189,8 +191,13 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
     useEffect(() => {
         setScreenTipsEnabled(areScreenIntroTipsEnabled(userProfile.id));
-        setActiveScreenTipView(null);
+        setActiveScreenTipId(null);
+        setScreenIntroContextId(null);
     }, [userProfile.id]);
+
+    useEffect(() => {
+        setScreenIntroContextId(null);
+    }, [currentView]);
 
     useEffect(() => {
         const handleSettingsChanged = (event: Event) => {
@@ -199,12 +206,25 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 ? nextEnabled
                 : areScreenIntroTipsEnabled(userProfile.id);
             setScreenTipsEnabled(resolvedEnabled);
-            if (!resolvedEnabled) setActiveScreenTipView(null);
+            if (!resolvedEnabled) setActiveScreenTipId(null);
         };
 
         window.addEventListener(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, handleSettingsChanged as EventListener);
         return () => window.removeEventListener(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, handleSettingsChanged as EventListener);
     }, [userProfile.id]);
+
+    useEffect(() => {
+        const handleContextChanged = (event: Event) => {
+            const detail = (event as CustomEvent<{ tipId?: string | null }>).detail || {};
+            const nextTipId = typeof detail.tipId === 'string' && hasScreenIntroTip(detail.tipId)
+                ? detail.tipId
+                : null;
+            setScreenIntroContextId(nextTipId);
+        };
+
+        window.addEventListener(SCREEN_INTRO_TIP_CONTEXT_EVENT, handleContextChanged as EventListener);
+        return () => window.removeEventListener(SCREEN_INTRO_TIP_CONTEXT_EVENT, handleContextChanged as EventListener);
+    }, []);
 
     useEffect(() => {
         const handleNavigateToStore = (event: Event) => {
@@ -387,6 +407,39 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [handleSetView]);
 
     useEffect(() => {
+        const syncQueryNavigation = () => {
+            const params = new URLSearchParams(window.location.search);
+            const requestedView = params.get('view');
+            const requestedSocialSection = params.get('social');
+            const requestedParticipantId = params.get('participant');
+
+            if (requestedView !== 'social' && !requestedSocialSection) return;
+
+            handleSetView('social');
+            window.setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('mundo-tab-request', {
+                    detail: {
+                        tab: 'social',
+                        socialSection: requestedSocialSection === 'messages' || requestedSocialSection === 'clan' ? requestedSocialSection : 'people',
+                        participantId: requestedParticipantId || null,
+                    },
+                }));
+            }, 80);
+
+            params.delete('view');
+            params.delete('social');
+            params.delete('participant');
+            const nextSearch = params.toString();
+            const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+            window.history.replaceState(window.history.state, '', nextUrl);
+        };
+
+        syncQueryNavigation();
+        window.addEventListener('popstate', syncQueryNavigation);
+        return () => window.removeEventListener('popstate', syncQueryNavigation);
+    }, [handleSetView]);
+
+    useEffect(() => {
         const handleDailyCompletionPrompt = (event: Event) => {
             const customEvent = event as CustomEvent<DailyCompletionPromptPayload>;
             if (!customEvent.detail) return;
@@ -428,28 +481,33 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
     useEffect(() => {
         if (!screenTipsEnabled) {
-            setActiveScreenTipView(null);
+            setActiveScreenTipId(null);
             return;
         }
 
-        if (
-            userProfile.id === 'placeholder_user'
-            || isRestScreenVisible
-            || isProfileVisible
-            || isReportsVisible
-            || !hasScreenIntroTip(currentView)
-        ) {
-            setActiveScreenTipView(null);
+        if (userProfile.id === 'placeholder_user') {
+            setActiveScreenTipId(null);
             return;
         }
 
-        if (hasSeenScreenIntroTip(userProfile.id, currentView)) {
-            setActiveScreenTipView(null);
+        const resolvedTipId =
+            isProfileVisible ? 'profile'
+            : isReportsVisible ? 'reports'
+            : isRestScreenVisible ? 'rest'
+            : screenIntroContextId || currentView;
+
+        if (!hasScreenIntroTip(resolvedTipId)) {
+            setActiveScreenTipId(null);
+            return;
+        }
+
+        if (hasSeenScreenIntroTip(userProfile.id, resolvedTipId)) {
+            setActiveScreenTipId(null);
             return;
         }
 
         const timer = window.setTimeout(() => {
-            setActiveScreenTipView(currentView);
+            setActiveScreenTipId(resolvedTipId);
         }, 280);
 
         return () => window.clearTimeout(timer);
@@ -459,13 +517,14 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         isReportsVisible,
         isRestScreenVisible,
         screenTipsEnabled,
+        screenIntroContextId,
         userProfile.id,
     ]);
 
     const handleCloseScreenIntroTip = useCallback((options?: { disableFuture?: boolean }) => {
-        if (!activeScreenTipView) return;
+        if (!activeScreenTipId) return;
 
-        markScreenIntroTipSeen(userProfile.id, activeScreenTipView);
+        markScreenIntroTipSeen(userProfile.id, activeScreenTipId);
 
         if (options?.disableFuture) {
             setScreenIntroTipsEnabled(userProfile.id, false);
@@ -476,8 +535,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             }));
         }
 
-        setActiveScreenTipView(null);
-    }, [activeScreenTipView, showToast, userProfile.id]);
+        setActiveScreenTipId(null);
+    }, [activeScreenTipId, showToast, userProfile.id]);
 
     useEffect(() => {
         const handleAutoFinishedCycle = () => {
@@ -814,8 +873,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
             <Suspense fallback={null}>
                 <ScreenIntroTipOverlay
-                    open={!!activeScreenTipView}
-                    view={activeScreenTipView}
+                    open={!!activeScreenTipId}
+                    tipId={activeScreenTipId}
                     onClose={handleCloseScreenIntroTip}
                 />
             </Suspense>

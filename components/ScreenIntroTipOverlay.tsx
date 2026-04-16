@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { LightbulbIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
-import { SCREEN_INTRO_TIPS, type ScreenIntroTipView } from '../utils/screenIntroTips';
+import { SCREEN_INTRO_TIPS, type ScreenIntroTipId } from '../utils/screenIntroTips';
 
 interface ScreenIntroTipOverlayProps {
   open: boolean;
-  view: ScreenIntroTipView | null;
+  tipId: ScreenIntroTipId | null;
   onClose: (options?: { disableFuture?: boolean }) => void;
 }
 
 export const ScreenIntroTipOverlay: React.FC<ScreenIntroTipOverlayProps> = ({
   open,
-  view,
+  tipId,
   onClose,
 }) => {
   const [disableFuture, setDisableFuture] = useState(false);
@@ -20,11 +20,11 @@ export const ScreenIntroTipOverlay: React.FC<ScreenIntroTipOverlayProps> = ({
   useEffect(() => {
     if (!open) return;
     setDisableFuture(false);
-  }, [open, view]);
+  }, [open, tipId]);
 
-  if (!open || !view) return null;
+  if (!open || !tipId) return null;
 
-  const tip = SCREEN_INTRO_TIPS[view];
+  const tip = SCREEN_INTRO_TIPS[tipId];
   if (!tip) return null;
 
   return (

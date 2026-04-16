@@ -3,6 +3,7 @@ import { getOracleModeConfig, OracleAttentionProfile } from './oracle';
 
 export type NotificationLane = 'essential' | 'progress' | 'feed';
 export type NotificationPriority = 'critical' | 'actionable' | 'progress' | 'ambient';
+export type OracleNotificationSurface = 'chat' | 'requests';
 
 interface NotificationPolicy {
   lane: NotificationLane;
@@ -225,8 +226,15 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
 };
 
 const FALLBACK_POLICY: NotificationPolicy = POLICY.system;
+const ORACLE_CHAT_NOTIFICATION_TYPES: NotificationType[] = ['cycle_ending', 'oracle_prompt', 'action_reminder'];
 
 const getPolicy = (type: NotificationType): NotificationPolicy => POLICY[type] || FALLBACK_POLICY;
+
+export const getOracleNotificationSurface = (type: NotificationType): OracleNotificationSurface =>
+  ORACLE_CHAT_NOTIFICATION_TYPES.includes(type) ? 'chat' : 'requests';
+
+export const isOracleChatNotificationType = (type: NotificationType): boolean =>
+  getOracleNotificationSurface(type) === 'chat';
 
 export const isBadgeNotification = (notificationOrType: Notification | NotificationType): boolean => {
   const type = typeof notificationOrType === 'string' ? notificationOrType : notificationOrType.type;
@@ -498,6 +506,22 @@ export const getVisibleNotificationsForProfile = (
       return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
     });
 };
+
+export const getOracleChatNotificationsForProfile = (
+  notifications: Notification[],
+  appMode: AppMode,
+  oracleMode: OracleMode,
+): Notification[] =>
+  getVisibleNotificationsForProfile(notifications, appMode, oracleMode)
+    .filter((notification) => isOracleChatNotificationType(notification.type));
+
+export const getOracleRequestNotificationsForProfile = (
+  notifications: Notification[],
+  appMode: AppMode,
+  oracleMode: OracleMode,
+): Notification[] =>
+  getVisibleNotificationsForProfile(notifications, appMode, oracleMode)
+    .filter((notification) => !isOracleChatNotificationType(notification.type));
 
 export const getUnreadBadgeCount = (notifications: Notification[]): number =>
   notifications.filter((notification) => !notification.read && isBadgeNotification(notification)).length;

@@ -7,6 +7,7 @@ import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
+import { SCREEN_INTRO_TIP_CONTEXT_EVENT } from '../utils/screenIntroTips';
 
 interface NewArenaModalProps {
     assetId?: string;
@@ -59,6 +60,24 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     useEffect(() => {
         if (!isOpen) return;
         window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaModalOpened));
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        window.dispatchEvent(
+            new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
+                detail: { tipId: 'arena_modal' },
+            }),
+        );
+
+        return () => {
+            window.dispatchEvent(
+                new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
+                    detail: { tipId: null },
+                }),
+            );
+        };
     }, [isOpen]);
 
     if (!isOpen) return null;

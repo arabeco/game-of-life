@@ -7,7 +7,7 @@ import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ModerationReportModal } from './ModerationReportModal';
 
-export const DirectMessages: React.FC = () => {
+export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> = ({ initialParticipantId = null }) => {
     const { 
         dmConversations, 
         directMessages, 
@@ -48,6 +48,18 @@ export const DirectMessages: React.FC = () => {
     const selectedConversation = dmConversations.find(c => c.participantId === selectedParticipantId) || 
                                 (friendProfile ? { participantId: friendProfile.id, profile: friendProfile, unreadCount: 0 } : null);
     const isSelectedUserBlocked = selectedParticipantId ? blockedUserIds.includes(selectedParticipantId) : false;
+
+    useEffect(() => {
+        const normalizedParticipantId = typeof initialParticipantId === 'string' ? initialParticipantId.trim() : '';
+        if (!normalizedParticipantId) return;
+
+        const participantExists = dmConversations.some((conversation) => conversation.participantId === normalizedParticipantId)
+            || friends.some((friend) => friend.id === normalizedParticipantId);
+
+        if (participantExists) {
+            setSelectedParticipantId(normalizedParticipantId);
+        }
+    }, [dmConversations, friends, initialParticipantId]);
 
     // Scroll to bottom on new messages
     useEffect(() => {

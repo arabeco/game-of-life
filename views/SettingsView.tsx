@@ -25,10 +25,12 @@ import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, 
 import { getMoneyCheckoutSalesCopy } from '../utils/billingRuntime';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import {
+    SCREEN_INTRO_TIP_CONTEXT_EVENT,
     SCREEN_INTRO_TIP_LIST,
     SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT,
     areScreenIntroTipsEnabled,
     setScreenIntroTipsEnabled,
+    type ScreenIntroTipId,
 } from '../utils/screenIntroTips';
 import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
 import './settings-ui.css';
@@ -2966,6 +2968,21 @@ export const SettingsView: React.FC = () => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('Geral');
     const [isSovereignEditorOpen, setSovereignEditorOpen] = useState(false);
     const isStaff = ['admin', 'gm', 'admin_gm'].includes((userProfile?.role || '').toLowerCase());
+
+    useEffect(() => {
+        const tipId: ScreenIntroTipId =
+            activeTab === 'Preferências'
+                ? 'settings_preferences'
+                : activeTab === 'Premium'
+                    ? 'settings_premium'
+                    : activeTab === 'Temporada'
+                        ? 'settings_season'
+                        : 'settings_general';
+
+        window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
+            detail: { tipId },
+        }));
+    }, [activeTab]);
 
     useEffect(() => {
         const handleTabChange = (e: any) => {

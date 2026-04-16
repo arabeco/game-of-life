@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { parseOracleCommandDraft } from "../_shared/oracle-command-parser.ts";
+import { buildOracleCommandDraft } from "../_shared/oracle-vnext-shared.ts";
 
 const ALLOWED_ORIGINS = (
   Deno.env.get("ALLOWED_ORIGINS") ||
@@ -51,7 +51,7 @@ serve(async (request) => {
     }
 
     return new Response(JSON.stringify({
-      draft: parseOracleCommandDraft(text, today),
+      draft: buildOracleCommandDraft(text, today),
     }), { headers });
   } catch (error) {
     console.error("oracle-command error", error);

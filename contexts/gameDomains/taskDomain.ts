@@ -58,8 +58,7 @@ interface CreateTaskDomainParams {
     tutorialActionId: string;
     tutorialCompletedFlag: string;
     reconcileJudgedDayTaskMutation?: (args: {
-        taskBefore: ScheduledTask;
-        taskAfter: ScheduledTask;
+        operationalDate: string;
         previousTasks: ScheduledTask[];
         nextTasks: ScheduledTask[];
     }) => Promise<void>;
@@ -105,13 +104,41 @@ export const createTaskDomain = ({
             || isOperationalDateJudged(taskOperationalDate);
     };
 
-    const isTaskCompletionEditableWithinOpenCycle = (task: ScheduledTask) => {
-        const taskOperationalDate = getTaskOperationalDateString(task);
+    const getEditableLockedOperationalDate = (task: Pick<ScheduledTask, 'date' | 'startTime'>): string | false => {
+        const taskOperationalDate = getTaskOperationalDateString(task as ScheduledTask);
         if (!taskOperationalDate || !activeCycle) return false;
         if (taskOperationalDate < activeCycle.startDate || taskOperationalDate > activeCycle.endDate) return false;
 
-        return (taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment')
-            || isOperationalDateJudged(taskOperationalDate);
+        if (
+            (taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment')
+            || isOperationalDateJudged(taskOperationalDate)
+        ) {
+            return taskOperationalDate;
+        }
+
+        return false;
+    };
+
+    const isTaskCompletionEditableWithinOpenCycle = (task: ScheduledTask) => Boolean(getEditableLockedOperationalDate(task));
+
+    const canMutateClosedDayPlacement = (task: Pick<ScheduledTask, 'date' | 'startTime'>) =>
+        !isCommitmentDayClosedForTask(task) || Boolean(getEditableLockedOperationalDate(task));
+
+    const maybeReconcileRetroactiveMutations = async (
+        operationalDates: Array<string | false>,
+        previousTasks: ScheduledTask[],
+        nextTasks: ScheduledTask[],
+    ) => {
+        if (!reconcileJudgedDayTaskMutation) return;
+
+        const uniqueDates = [...new Set(operationalDates.filter((date): date is string => Boolean(date)))];
+        for (const operationalDate of uniqueDates) {
+            await reconcileJudgedDayTaskMutation({
+                operationalDate,
+                previousTasks,
+                nextTasks,
+            });
+        }
     };
 
     const showClosedDayMutationBlockedToast = () => {
@@ -297,7 +324,7 @@ export const createTaskDomain = ({
 
         if (newTasks.length === 0) return;
 
-        const allowedTasks = newTasks.filter(task => !isCommitmentDayClosedForTask(task));
+        const allowedTasks = newTasks.filter(task => canMutateClosedDayPlacement(task));
         if (allowedTasks.length !== newTasks.length) {
             showClosedDayMutationBlockedToast();
         }
@@ -324,6 +351,11 @@ export const createTaskDomain = ({
             const payload = allowedTasks.map(task => ({ ...mapToSnakeCase(task), user_id: userId }));
             const { error } = await supabase.from('scheduled_tasks').insert(payload);
             if (error) throw error;
+            await maybeReconcileRetroactiveMutations(
+                allowedTasks.map(task => getEditableLockedOperationalDate(task)),
+                tasks,
+                [...tasks, ...allowedTasks],
+            );
         } catch (error: any) {
             rollbackOptimisticTaskCreation(newTaskIds);
             console.error('Supabase schedule multiple tasks error:', error?.message || error);
@@ -346,7 +378,7 @@ export const createTaskDomain = ({
             completed: false,
         };
 
-        if (isCommitmentDayClosedForTask(newTask)) {
+        if (!canMutateClosedDayPlacement(newTask)) {
             showClosedDayMutationBlockedToast();
             return undefined;
         }
@@ -367,6 +399,11 @@ export const createTaskDomain = ({
                 const payload = { ...mapToSnakeCase(newTask), user_id: userId };
                 const { error } = await supabase.from('scheduled_tasks').insert(payload);
                 if (error) throw error;
+                await maybeReconcileRetroactiveMutations(
+                    [getEditableLockedOperationalDate(newTask)],
+                    tasks,
+                    [...tasks, newTask],
+                );
             } catch (error: any) {
                 rollbackOptimisticTaskCreation([newTask.id]);
                 console.error('Supabase schedule task error:', error?.message || error);
@@ -498,8 +535,9 @@ export const createTaskDomain = ({
     const toggleTaskCompletion = async (taskId: string) => {
         const taskToCheck = tasks.find(task => task.id === taskId);
         if (!taskToCheck) return;
+        const retroactiveOperationalDate = getEditableLockedOperationalDate(taskToCheck);
         const wasLockedByClosedDay = isTaskLockedByClosedDay(taskToCheck);
-        const canRetroactivelyToggle = isTaskCompletionEditableWithinOpenCycle(taskToCheck);
+        const canRetroactivelyToggle = Boolean(retroactiveOperationalDate);
         if (wasLockedByClosedDay && !canRetroactivelyToggle) {
             showClosedDayMutationBlockedToast();
             return;
@@ -531,7 +569,10 @@ export const createTaskDomain = ({
 
         setTasks(prevTasks => restoreTaskSnapshot(prevTasks, updatedTask));
         if (dailyCommitment.taskIds.includes(taskId)) {
-            setDailyCommitmentState(prev => ({ ...prev }));
+            setDailyCommitmentState(prev => ({
+                ...prev,
+                taskIds: reconcileTaskInCommitment(prev.taskIds, updatedTask.id, updatedTask, prev.date, isClanQuestActionId),
+            }));
         }
 
         try {
@@ -543,14 +584,9 @@ export const createTaskDomain = ({
             return;
         }
 
-        if (wasLockedByClosedDay && canRetroactivelyToggle && reconcileJudgedDayTaskMutation) {
+        if (wasLockedByClosedDay && canRetroactivelyToggle) {
             try {
-                await reconcileJudgedDayTaskMutation({
-                    taskBefore: taskToCheck,
-                    taskAfter: updatedTask,
-                    previousTasks: tasks,
-                    nextTasks: optimisticTasks,
-                });
+                await maybeReconcileRetroactiveMutations([retroactiveOperationalDate], tasks, optimisticTasks);
             } catch (error: any) {
                 console.error('Retroactive judged day reconciliation error:', error?.message || error);
                 showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o dia fechado.', 'error');
@@ -589,7 +625,7 @@ export const createTaskDomain = ({
             !task.completed
         );
 
-        if (!existingTaskForToday && isCommitmentDayClosedForTask({ date, startTime })) {
+        if (!existingTaskForToday && !canMutateClosedDayPlacement({ date, startTime })) {
             showClosedDayMutationBlockedToast();
             return;
         }
@@ -623,6 +659,11 @@ export const createTaskDomain = ({
                 const payload = { ...mapToSnakeCase(newTask), user_id: userId };
                 const { error } = await supabase.from('scheduled_tasks').insert(payload);
                 if (error) throw error;
+                await maybeReconcileRetroactiveMutations(
+                    [getEditableLockedOperationalDate(newTask)],
+                    tasks,
+                    [...tasks, newTask],
+                );
             } catch (error: any) {
                 rollbackOptimisticTaskCreation([newTask.id]);
                 console.error('Supabase schedule task now error:', error?.message || error);
@@ -663,7 +704,8 @@ export const createTaskDomain = ({
             : tasks.find(task => task.actionId === actionId && task.date === date);
 
         if (existingTask) {
-            if (isTaskLockedByClosedDay(existingTask)) {
+            const existingTaskRetroDate = getEditableLockedOperationalDate(existingTask);
+            if (isTaskLockedByClosedDay(existingTask) && !existingTaskRetroDate) {
                 showClosedDayMutationBlockedToast();
                 return;
             }
@@ -676,7 +718,8 @@ export const createTaskDomain = ({
                 completed: true,
             };
 
-            if (isCommitmentDayClosedForTask(updatedTask)) {
+            const nextRetroDate = getEditableLockedOperationalDate(updatedTask);
+            if (!canMutateClosedDayPlacement(updatedTask)) {
                 showClosedDayMutationBlockedToast();
                 return;
             }
@@ -690,6 +733,11 @@ export const createTaskDomain = ({
 
             try {
                 await persistTaskCompletionUpdate(updatedTask);
+                await maybeReconcileRetroactiveMutations(
+                    [existingTaskRetroDate, nextRetroDate],
+                    tasks,
+                    optimisticTasks,
+                );
             } catch (error: any) {
                 console.error('Supabase complete task at time error:', error?.message || error);
                 restoreTaskAfterPersistenceFailure(existingTask);
@@ -718,7 +766,7 @@ export const createTaskDomain = ({
             createdAt: new Date().toISOString(),
         };
 
-        if (isCommitmentDayClosedForTask(newTask)) {
+        if (!canMutateClosedDayPlacement(newTask)) {
             showClosedDayMutationBlockedToast();
             return;
         }
@@ -738,6 +786,11 @@ export const createTaskDomain = ({
                 const payload = { ...mapToSnakeCase(newTask), user_id: userId };
                 const { error } = await supabase.from('scheduled_tasks').insert(payload);
                 if (error) throw error;
+                await maybeReconcileRetroactiveMutations(
+                    [getEditableLockedOperationalDate(newTask)],
+                    tasks,
+                    optimisticTasks,
+                );
             } catch (error: any) {
                 rollbackOptimisticTaskCreation([newTask.id]);
                 console.error('Supabase schedule task at time error:', error?.message || error);
@@ -782,7 +835,7 @@ export const createTaskDomain = ({
             completed: true,
         };
 
-        if (isCommitmentDayClosedForTask(newTask)) {
+        if (!canMutateClosedDayPlacement(newTask)) {
             showClosedDayMutationBlockedToast();
             return;
         }
@@ -801,6 +854,11 @@ export const createTaskDomain = ({
                 const payload = { ...mapToSnakeCase(newTask), user_id: userId };
                 const { error } = await supabase.from('scheduled_tasks').insert(payload);
                 if (error) throw error;
+                await maybeReconcileRetroactiveMutations(
+                    [getEditableLockedOperationalDate(newTask)],
+                    tasks,
+                    [...tasks, newTask],
+                );
             } catch (error: any) {
                 rollbackOptimisticTaskCreation([newTask.id]);
                 console.error('Supabase schedule milestone now error:', error?.message || error);
@@ -833,12 +891,14 @@ export const createTaskDomain = ({
 
     const deleteTask = (taskId: string) => {
         const currentTask = tasks.find(task => task.id === taskId);
-        if (currentTask && isTaskLockedByClosedDay(currentTask)) {
+        const retroactiveOperationalDate = currentTask ? getEditableLockedOperationalDate(currentTask) : false;
+        if (currentTask && isTaskLockedByClosedDay(currentTask) && !retroactiveOperationalDate) {
             showClosedDayMutationBlockedToast();
             return;
         }
 
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+        const nextTasks = tasks.filter(task => task.id !== taskId);
+        setTasks(nextTasks);
         setDailyCommitmentState(prev => (
             prev.taskIds.includes(taskId)
                 ? { ...prev, taskIds: prev.taskIds.filter(id => id !== taskId) }
@@ -846,23 +906,44 @@ export const createTaskDomain = ({
         ));
 
         const userId = getSupabaseUserId();
-        if (!userId) return;
+        if (!userId) {
+            void maybeReconcileRetroactiveMutations(retroactiveOperationalDate ? [retroactiveOperationalDate] : [], tasks, nextTasks);
+            return;
+        }
 
-        supabase.from('scheduled_tasks').delete().eq('id', taskId).then(({ error }: { error?: { message?: string } }) => {
-            if (error) console.error('Supabase delete task error:', error.message);
+        supabase.from('scheduled_tasks').delete().eq('id', taskId).then(async ({ error }: { error?: { message?: string } }) => {
+            if (error) {
+                console.error('Supabase delete task error:', error.message);
+                restoreTaskAfterPersistenceFailure(currentTask as ScheduledTask);
+                showToast('Falha ao remover a tarefa no servidor.', 'error');
+                return;
+            }
+
+            try {
+                await maybeReconcileRetroactiveMutations(
+                    retroactiveOperationalDate ? [retroactiveOperationalDate] : [],
+                    tasks,
+                    nextTasks,
+                );
+            } catch (reconcileError: any) {
+                console.error('Retroactive judged day reconciliation error:', reconcileError?.message || reconcileError);
+                showToast('A tarefa foi removida, mas nao foi possivel recalcular o dia fechado.', 'error');
+            }
         });
     };
 
     const updateTask = (taskId: string, updates: Partial<ScheduledTask>) => {
         const currentTask = tasks.find(task => task.id === taskId);
         if (!currentTask) return;
-        if (isTaskLockedByClosedDay(currentTask)) {
+        const previousRetroactiveOperationalDate = getEditableLockedOperationalDate(currentTask);
+        if (isTaskLockedByClosedDay(currentTask) && !previousRetroactiveOperationalDate) {
             showClosedDayMutationBlockedToast();
             return;
         }
 
         const nextTask = { ...currentTask, ...updates };
-        if (isCommitmentDayClosedForTask({ date: nextTask.date, startTime: nextTask.startTime })) {
+        const nextRetroactiveOperationalDate = getEditableLockedOperationalDate(nextTask);
+        if (isCommitmentDayClosedForTask({ date: nextTask.date, startTime: nextTask.startTime }) && !nextRetroactiveOperationalDate) {
             showClosedDayMutationBlockedToast();
             return;
         }
@@ -894,11 +975,23 @@ export const createTaskDomain = ({
         supabase.from('scheduled_tasks')
             .update(payload)
             .eq('id', taskId)
-            .then(({ error }: { error?: { message?: string } }) => {
+            .then(async ({ error }: { error?: { message?: string } }) => {
                 if (error) {
                     console.error('Supabase update task error:', error.message);
                     restoreTaskAfterPersistenceFailure(currentTask);
                     showToast('Falha ao atualizar a tarefa no servidor.', 'error');
+                    return;
+                }
+
+                try {
+                    await maybeReconcileRetroactiveMutations(
+                        [previousRetroactiveOperationalDate, nextRetroactiveOperationalDate],
+                        tasks,
+                        restoreTaskSnapshot(tasks, nextTask),
+                    );
+                } catch (reconcileError: any) {
+                    console.error('Retroactive judged day reconciliation error:', reconcileError?.message || reconcileError);
+                    showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o dia fechado.', 'error');
                 }
             });
     };

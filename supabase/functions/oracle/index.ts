@@ -1,8 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import {
+  buildOraclePremiumHint,
+  normalizeOracleText,
+  parseOracleActionDraft,
+  routeOracleIntent,
+  type OracleConversationMemory,
+  type OracleResponseKind,
+} from "../_shared/oracle-vnext-shared.ts";
 
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
 const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") || "google/gemini-2.0-flash-001";
+const OPENROUTER_FALLBACK_MODEL = Deno.env.get("OPENROUTER_FALLBACK_MODEL") || "google/gemini-2.0-flash-lite-001";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -187,6 +196,15 @@ const SAO_PAULO_PARTS_FORMATTER = new Intl.DateTimeFormat("en-CA", {
 const MIN_ORACLE_AUTO_TARGET = 1;
 const MAX_ORACLE_DAILY_TARGET = 5;
 const DAY_MINUTES = 24 * 60;
+const ORACLE_CHAT_TIMEOUT_MS = 12000;
+const ORACLE_RATE_LIMIT_WINDOW_MS = 60_000;
+const ORACLE_RATE_LIMIT_MAX_REQUESTS = 24;
+const ORACLE_CACHE_WINDOW_MS = 45_000;
+const ORACLE_DEBOUNCE_WINDOW_MS = 2_500;
+
+const oracleRateLimitState = new Map<string, number[]>();
+const oracleDebounceState = new Map<string, { fingerprint: string; timestamp: number }>();
+const oracleResponseCache = new Map<string, { timestamp: number; payload: JsonRecord }>();
 
 const ORACLE_INTEL_CATEGORIES = new Set<OracleCategory>([
   "dicas_produtividade",
@@ -323,6 +341,39 @@ const jsonResponse = (origin: string | null, status: number, payload: JsonRecord
     },
   },
 );
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    const timeoutId = setTimeout(() => {
+      clearTimeout(timeoutId);
+      reject(new Error(`${label}: timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]);
+};
+
+const pruneTimestampBuckets = (bucket: number[], now: number, windowMs: number): number[] =>
+  bucket.filter((timestamp) => now - timestamp <= windowMs);
+
+const checkOracleRateLimit = (userId: string, now: number) => {
+  const current = pruneTimestampBuckets(oracleRateLimitState.get(userId) || [], now, ORACLE_RATE_LIMIT_WINDOW_MS);
+  if (current.length >= ORACLE_RATE_LIMIT_MAX_REQUESTS) {
+    oracleRateLimitState.set(userId, current);
+    return false;
+  }
+
+  current.push(now);
+  oracleRateLimitState.set(userId, current);
+  return true;
+};
+
+const normalizeCacheKey = (parts: Array<string | null | undefined>) =>
+  parts
+    .map((part) => typeof part === "string" ? part.trim() : "")
+    .filter(Boolean)
+    .join("::")
+    .toLowerCase();
 
 const isRecord = (value: unknown): value is JsonRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -840,60 +891,176 @@ const getSupabaseAdmin = () => createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
+const loadOracleRuntimeState = async (
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  userId: string,
+  now: Date,
+) => {
+  const [
+    preferencesResult,
+    profileResult,
+    cycleResult,
+    arenasResult,
+    actionsResult,
+    tasksResult,
+    dailyCommitmentResult,
+    assetLevelsResult,
+    oracleMessagesResult,
+  ] = await Promise.all([
+    supabaseAdmin
+      .from("oracle_preferences")
+      .select("user_id, ia_enabled, notifications_enabled, daily_focus_card_enabled, enabled_categories, active_mode, custom_mode_instructions, quiet_hours_start, quiet_hours_end")
+      .eq("user_id", userId)
+      .maybeSingle<OraclePreferencesRow>(),
+    supabaseAdmin
+      .from("user_profiles")
+      .select("id, nickname, level, chests, app_mode, is_premium, premium_expires_at, subscription_tier")
+      .eq("id", userId)
+      .maybeSingle<UserProfileRow & { is_premium?: boolean | null; premium_expires_at?: string | null; subscription_tier?: string | null }>(),
+    supabaseAdmin
+      .from("cycles")
+      .select("id, name, start_date, end_date, arena_ids, report_data")
+      .eq("user_id", userId)
+      .is("report_data", null)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle<CycleRow & { report_data?: unknown }>(),
+    supabaseAdmin
+      .from("arenas")
+      .select("id, asset_id, name, is_archived, action_ids")
+      .eq("user_id", userId)
+      .returns<ArenaRow[]>(),
+    supabaseAdmin
+      .from("actions")
+      .select("id, arena_id, name")
+      .eq("user_id", userId)
+      .returns<ActionRow[]>(),
+    supabaseAdmin
+      .from("scheduled_tasks")
+      .select("id, action_id, date, start_time, completed")
+      .eq("user_id", userId)
+      .returns<TaskRow[]>(),
+    supabaseAdmin
+      .from("daily_commitments")
+      .select("date, stage")
+      .eq("user_id", userId)
+      .eq("date", getOperationalDateString(now))
+      .maybeSingle<DailyCommitmentRow>(),
+    supabaseAdmin
+      .from("asset_levels")
+      .select("asset_id, level")
+      .eq("user_id", userId)
+      .returns<AssetLevelRow[]>(),
+    supabaseAdmin
+      .from("oracle_messages")
+      .select("id, category, content, mode, delivery_type, context_snapshot, read, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .returns<OracleMessageRow[]>(),
+  ]);
+
+  if (preferencesResult.error) {
+    throw new Error(preferencesResult.error.message);
+  }
+
+  const preferences = resolveRuntimeOraclePreferences(userId, preferencesResult.data ?? null);
+  const profile = profileResult.data ?? null;
+  const appMode: AppMode = asTrimmedString(profile?.app_mode) === "BASIC" ? "BASIC" : "GAME";
+  const contextData = buildOracleOperationalContext({
+    now,
+    profile,
+    preferences,
+    arenas: arenasResult.data ?? [],
+    actions: actionsResult.data ?? [],
+    tasks: tasksResult.data ?? [],
+    activeCycle: cycleResult.data ?? null,
+    dailyCommitment: dailyCommitmentResult.data ?? null,
+    assetLevels: assetLevelsResult.data ?? [],
+  });
+
+  const isPremium = asBoolean((profile as JsonRecord | null)?.is_premium, false)
+    || Boolean(asTrimmedString((profile as JsonRecord | null)?.premium_expires_at))
+    || ["premium", "platinum"].includes(asTrimmedString((profile as JsonRecord | null)?.subscription_tier));
+
+  return {
+    preferences,
+    profile,
+    appMode,
+    contextData,
+    oracleMessages: normalizeOracleMessages(oracleMessagesResult.data),
+    isPremium,
+  };
+};
+
 const callOpenRouter = async ({
   systemPrompt,
   userPrompt,
-  model,
+  models,
   referer,
 }: {
   systemPrompt: string;
   userPrompt: string;
-  model: string;
+  models: string[];
   referer: string;
-}): Promise<string> => {
-  const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": referer,
-      "X-Title": "GLYPH",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.7,
-    }),
-  });
+}): Promise<{ text: string; model: string; fallbackUsed: boolean }> => {
+  const uniqueModels = Array.from(new Set(models.filter(Boolean)));
+  let lastError = "unknown_error";
 
-  const upstreamData = await upstream.json();
-  if (!upstream.ok) {
-    throw new Error(`OpenRouter request failed: ${JSON.stringify(upstreamData)}`);
+  for (let index = 0; index < uniqueModels.length; index += 1) {
+    const model = uniqueModels[index];
+    try {
+      const upstream = await withTimeout(fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": referer,
+          "X-Title": "GLYPH",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.7,
+        }),
+      }), ORACLE_CHAT_TIMEOUT_MS, "openrouter");
+
+      const upstreamData = await upstream.json();
+      if (!upstream.ok) {
+        throw new Error(`OpenRouter request failed: ${JSON.stringify(upstreamData)}`);
+      }
+
+      const content = upstreamData?.choices?.[0]?.message?.content;
+      if (typeof content === "string" && content.trim()) {
+        return { text: content.trim(), model, fallbackUsed: index > 0 };
+      }
+
+      if (Array.isArray(content)) {
+        const flattened = content
+          .map((entry) => {
+            if (typeof entry === "string") return entry;
+            if (isRecord(entry)) return asTrimmedString(entry.text);
+            return "";
+          })
+          .filter(Boolean)
+          .join("\n")
+          .trim();
+
+        if (flattened) {
+          return { text: flattened, model, fallbackUsed: index > 0 };
+        }
+      }
+
+      throw new Error(`Invalid OpenRouter response format: ${JSON.stringify(upstreamData)}`);
+    } catch (error) {
+      lastError = String(error);
+    }
   }
 
-  const content = upstreamData?.choices?.[0]?.message?.content;
-  if (typeof content === "string" && content.trim()) {
-    return content.trim();
-  }
-
-  if (Array.isArray(content)) {
-    const flattened = content
-      .map((entry) => {
-        if (typeof entry === "string") return entry;
-        if (isRecord(entry)) return asTrimmedString(entry.text);
-        return "";
-      })
-      .filter(Boolean)
-      .join("\n")
-      .trim();
-
-    if (flattened) return flattened;
-  }
-
-  throw new Error(`Invalid OpenRouter response format: ${JSON.stringify(upstreamData)}`);
+  throw new Error(lastError);
 };
 
 const buildSystemPrompt = (mode: OracleMode, contextData: OracleContext): string => {
@@ -1099,10 +1266,10 @@ const createAutomaticOracleMessage = async (
   const presentation = resolveOraclePresentation(category, triggerType);
   const systemPrompt = buildSystemPrompt(preferences.activeMode, contextData);
   const userPrompt = buildAutomaticUserPrompt({ category, contextData, triggerType, presentation });
-  const text = await callOpenRouter({
+  const { text } = await callOpenRouter({
     systemPrompt,
     userPrompt,
-    model: OPENROUTER_MODEL,
+    models: [OPENROUTER_MODEL, OPENROUTER_FALLBACK_MODEL],
     referer: origin || SITE_URL,
   });
 
@@ -1131,6 +1298,111 @@ const createAutomaticOracleMessage = async (
   return { status: "generated", messageId };
 };
 
+const buildOracleChatSystemPrompt = ({
+  mode,
+  intent,
+  isPremium,
+}: {
+  mode: OracleMode;
+  intent: string;
+  isPremium: boolean;
+}) => [
+  BASE_UNIVERSAL,
+  "",
+  ORACLE_MODES[mode]?.promptBlock || ORACLE_MODES.neutro.promptBlock,
+  "",
+  "MODO CONVERSA UNIVERSAL + ACAO",
+  "- Responda com naturalidade e valor real.",
+  "- Fale sobre o app quando a pergunta for sobre o app.",
+  "- Fale sobre qualquer assunto quando o usuario quiser conversa geral.",
+  "- Nao force o GLYPH em assuntos gerais puros.",
+  "- Se houver intencao operacional, sugira ponte curta para o modo acao com linguagem natural.",
+  "- Nao diga que voce aplicou mudancas se nada foi confirmado.",
+  isPremium
+    ? "- Usuario premium: voce pode aprofundar mais quando fizer sentido, mantendo clareza."
+    : "- Usuario free: entregue valor curto e forte. Se ele pedir profundidade repetida, aponte premium com sutileza.",
+  `Intento reconhecido: ${intent}`,
+].join("\n");
+
+const buildOracleChatUserPrompt = ({
+  text,
+  structuredContext,
+  memory,
+  appContext,
+}: {
+  text: string;
+  structuredContext: ReturnType<typeof routeOracleIntent>;
+  memory: OracleConversationMemory | null;
+  appContext: OracleContext | null;
+}) => {
+  const parts = [
+    `MENSAGEM DO USUARIO: ${text}`,
+    `INTENT: ${structuredContext.recognizedIntent}`,
+    `TOPICOS: ${(structuredContext.topics || []).join(", ") || "nenhum"}`,
+    `OFERECER ACAO: ${structuredContext.shouldOfferAction ? "sim" : "nao"}`,
+    `PRECISA CLARIFICAR: ${structuredContext.needsClarification ? "sim" : "nao"}`,
+  ];
+
+  if (memory?.summary) {
+    parts.push(`MEMORIA CURTA: ${memory.summary}`);
+  }
+
+  if (appContext) {
+    parts.push(`CONTEXTO DO APP: ${JSON.stringify(appContext)}`);
+  }
+
+  parts.push([
+    "FORMATO DE RESPOSTA:",
+    "- frases curtas por padrao",
+    "- quando util, use blocos leves como 'o que entendi' e 'o que eu sugiro'",
+    "- se houver ponte para o modo acao, termine com convite natural",
+    "- nao use JSON",
+  ].join("\n"));
+
+  return parts.join("\n\n");
+};
+
+const buildOracleFallbackResponse = ({
+  text,
+  structuredContext,
+  appContext,
+  elapsedMs,
+}: {
+  text: string;
+  structuredContext: ReturnType<typeof routeOracleIntent>;
+  appContext: OracleContext | null;
+  elapsedMs: number;
+}) => {
+  const actionDraft = parseOracleActionDraft(text, getOperationalDateString(new Date()));
+  const responseKind: OracleResponseKind = structuredContext.shouldOfferAction ? "action_offer" : structuredContext.appContextUsed ? "app_answer" : "chat";
+  const message = structuredContext.shouldOfferAction
+    ? `Entendi isso como um pedido de ação. Posso te levar para o modo ação com este rascunho: ${actionDraft.summary}.`
+    : structuredContext.appContextUsed && appContext
+      ? `Agora eu não consegui aprofundar pela IA, mas olhando seu estado atual no app, o foco mais claro é ${appContext.nextMove || "organizar o próximo passo"}.`
+      : "Agora eu não consegui aprofundar pela IA, mas posso continuar em uma resposta mais curta ou te levar para uma ação concreta se você quiser.";
+
+  return {
+    kind: responseKind,
+    message,
+    structuredContext: {
+      ...structuredContext,
+      appContextUsed: Boolean(appContext),
+    },
+    actionDraft: structuredContext.shouldOfferAction ? actionDraft : null,
+    premiumHint: null,
+    telemetry: {
+      routeIntent: structuredContext.recognizedIntent,
+      responseKind,
+      latencyMs: elapsedMs,
+      cacheHit: false,
+      fallbackUsed: true,
+      model: null,
+      confidence: structuredContext.confidence,
+      channel: "chat",
+    },
+  };
+};
+
 const handleClientOracleRequest = async (req: Request, origin: string | null) => {
   if (!OPENROUTER_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return jsonResponse(origin, 500, { error: "Function misconfigured: missing secrets." });
@@ -1146,18 +1418,149 @@ const handleClientOracleRequest = async (req: Request, origin: string | null) =>
   if (!user) return jsonResponse(origin, 401, { error: "Unauthorized request." });
 
   try {
+    const startedAt = Date.now();
     const body = await req.json();
     const systemPrompt = asTrimmedString(body?.systemPrompt);
     const userPrompt = asTrimmedString(body?.userPrompt);
     const model = asTrimmedString(body?.model, OPENROUTER_MODEL) || OPENROUTER_MODEL;
-    if (!systemPrompt || !userPrompt) {
-      return jsonResponse(origin, 400, { error: "systemPrompt and userPrompt are required." });
+
+    if (!checkOracleRateLimit(user.id, startedAt)) {
+      return jsonResponse(origin, 429, { error: "Oracle rate limit reached." });
     }
 
-    const text = await callOpenRouter({
+    if (!systemPrompt || !userPrompt) {
+      const text = asTrimmedString(body?.text);
+      if (!text) {
+        return jsonResponse(origin, 400, { error: "systemPrompt and userPrompt are required." });
+      }
+
+      const channel = asTrimmedString(body?.channel, "chat") || "chat";
+      const suppliedMemory = isRecord(body?.memory) ? (body.memory as OracleConversationMemory) : null;
+      const cacheKey = normalizeCacheKey([
+        user.id,
+        channel,
+        text,
+        suppliedMemory?.summary || "",
+      ]);
+      const cached = oracleResponseCache.get(cacheKey);
+      if (cached && startedAt - cached.timestamp <= ORACLE_CACHE_WINDOW_MS) {
+        return jsonResponse(origin, 200, {
+          ...cached.payload,
+          telemetry: {
+            ...(isRecord(cached.payload.telemetry) ? cached.payload.telemetry : {}),
+            cacheHit: true,
+            latencyMs: Date.now() - startedAt,
+          },
+        });
+      }
+
+      const previousDebounce = oracleDebounceState.get(user.id);
+      const debounceFingerprint = normalizeCacheKey([channel, text]);
+      if (previousDebounce && previousDebounce.fingerprint === debounceFingerprint && startedAt - previousDebounce.timestamp <= ORACLE_DEBOUNCE_WINDOW_MS) {
+        const fallback = buildOracleFallbackResponse({
+          text,
+          structuredContext: routeOracleIntent(text, suppliedMemory),
+          appContext: null,
+          elapsedMs: Date.now() - startedAt,
+        });
+        return jsonResponse(origin, 200, {
+          ...fallback,
+          telemetry: { ...fallback.telemetry, cacheHit: false, fallbackUsed: true },
+        });
+      }
+      oracleDebounceState.set(user.id, { fingerprint: debounceFingerprint, timestamp: startedAt });
+
+      const supabaseAdmin = getSupabaseAdmin();
+      const runtime = await loadOracleRuntimeState(supabaseAdmin, user.id, new Date());
+      const effectiveIsPremium = asBoolean(body?.isPremium, runtime.isPremium);
+      const structuredContext = routeOracleIntent(text, suppliedMemory);
+      const actionDraft = structuredContext.shouldOfferAction
+        ? parseOracleActionDraft(text, getOperationalDateString(new Date()))
+        : null;
+      const normalizedText = normalizeOracleText(text);
+      const explicitHandoff = /\b(ja|já|leva|levar|abre|abrir|vai pro modo acao|modo acao|modo ação)\b/.test(normalizedText);
+      const responseKind: OracleResponseKind = structuredContext.needsClarification
+        ? "clarification"
+        : structuredContext.shouldOfferAction
+          ? (explicitHandoff ? "action_handoff" : "action_offer")
+          : structuredContext.appContextUsed
+            ? "app_answer"
+            : "chat";
+
+      const premiumHint = !effectiveIsPremium ? buildOraclePremiumHint(structuredContext) : null;
+      const appContext = structuredContext.appContextUsed ? runtime.contextData : null;
+      const promptSystem = buildOracleChatSystemPrompt({
+        mode: runtime.preferences.activeMode,
+        intent: structuredContext.recognizedIntent,
+        isPremium: effectiveIsPremium,
+      });
+      const promptUser = buildOracleChatUserPrompt({
+        text,
+        structuredContext,
+        memory: suppliedMemory,
+        appContext,
+      });
+
+      try {
+        const modelResult = await callOpenRouter({
+          systemPrompt: promptSystem,
+          userPrompt: promptUser,
+          models: [
+            OPENROUTER_MODEL,
+            OPENROUTER_FALLBACK_MODEL,
+          ],
+          referer: origin || SITE_URL,
+        });
+
+        const payload = {
+          kind: responseKind,
+          message: modelResult.text,
+          structuredContext: {
+            ...structuredContext,
+            appContextUsed: Boolean(appContext),
+          },
+          actionDraft,
+          premiumHint,
+          telemetry: {
+            routeIntent: structuredContext.recognizedIntent,
+            responseKind,
+            latencyMs: Date.now() - startedAt,
+            cacheHit: false,
+            fallbackUsed: modelResult.fallbackUsed,
+            model: modelResult.model,
+            confidence: structuredContext.confidence,
+            channel,
+          },
+        } satisfies JsonRecord;
+
+        oracleResponseCache.set(cacheKey, { timestamp: startedAt, payload });
+        console.log(JSON.stringify({
+          scope: "oracle_vnext",
+          userId: user.id,
+          routeIntent: structuredContext.recognizedIntent,
+          responseKind,
+          latencyMs: Date.now() - startedAt,
+          model: modelResult.model,
+          fallbackUsed: modelResult.fallbackUsed,
+          channel,
+        }));
+
+        return jsonResponse(origin, 200, payload);
+      } catch (_error) {
+        const fallback = buildOracleFallbackResponse({
+          text,
+          structuredContext,
+          appContext,
+          elapsedMs: Date.now() - startedAt,
+        });
+        return jsonResponse(origin, 200, fallback as unknown as JsonRecord);
+      }
+    }
+
+    const { text } = await callOpenRouter({
       systemPrompt,
       userPrompt,
-      model,
+      models: [model, OPENROUTER_FALLBACK_MODEL],
       referer: origin || SITE_URL,
     });
 

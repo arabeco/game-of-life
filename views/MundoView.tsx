@@ -15,6 +15,9 @@ import { SeasonView } from './SeasonView';
 import { UserAvatar } from '../components/UserAvatar';
 import { ProfileView } from './ProfileView';
 import { RelationshipHubModal } from '../components/RelationshipHubModal';
+import { DirectMessages } from '../components/DirectMessages';
+import { ClanChat } from '../components/ClanChat';
+import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/screenIntroTips';
 import './mundo-ui.css';
 
 const RELATION_LABELS: Record<'mentoria' | 'parceria' | 'competicao', string> = {
@@ -186,7 +189,12 @@ const RequestSection: React.FC<{
 
 // --- Tabs ---
 
-const SocialTab: React.FC = () => {
+type SocialSection = 'people' | 'messages' | 'clan';
+
+const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId?: string | null }> = ({
+    initialSection = 'people',
+    initialParticipantId = null,
+}) => {
     const {
         clan,
         clanRanks,
@@ -209,6 +217,7 @@ const SocialTab: React.FC = () => {
         respondToRelationshipInvite,
     } = useGame();
     const [modal, setModal] = useState<'create' | 'sanctuary' | null>(null);
+    const [activeSection, setActiveSection] = useState<SocialSection>(initialSection);
     const [activeTab, setActiveTab] = useState<'aliados' | 'solicitacoes'>('aliados');
     const [searchResults, setSearchResults] = useState<{ players: UserProfile[], clans: Clan[] }>({ players: [], clans: [] });
     const [searchQuery, setSearchQuery] = useState('');
@@ -219,6 +228,25 @@ const SocialTab: React.FC = () => {
     const [relationshipProfiles, setRelationshipProfiles] = useState<Record<string, UserProfile>>({});
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
     const [joiningClanId, setJoiningClanId] = useState<string | null>(null);
+
+    useEffect(() => {
+        setActiveSection(initialSection);
+    }, [initialSection]);
+
+    useEffect(() => {
+        const tipId: ScreenIntroTipId =
+            activeTab === 'solicitacoes'
+                ? 'social_requests'
+                : activeSection === 'messages'
+                    ? 'social_messages'
+                    : activeSection === 'clan'
+                        ? 'social_clan'
+                        : 'social_people';
+
+        window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
+            detail: { tipId },
+        }));
+    }, [activeSection, activeTab]);
 
     const requestCount = friendRequestsIncoming.length
         + friendRequestsOutgoing.length
@@ -537,15 +565,53 @@ const SocialTab: React.FC = () => {
 
     return (
         <div className="mundo-section-stack">
-            {clan ? (
-                <>
-                    <ClanInfoBox onClick={() => setModal('sanctuary')} />
-                    {modal === 'sanctuary' && <ClanDetailModal clanName={clan.name} onClose={() => setModal(null)} />}
-                </>
-            ) : (
-                <JoinClanBox onCreate={() => setModal('create')} />
+            <div className="mundo-social-subnav rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.16))] p-2 shadow-[0_16px_36px_rgba(0,0,0,0.18)]">
+                <div className="grid grid-cols-3 gap-2">
+                    {[
+                        { id: 'people', label: 'Pessoas', subtitle: `${requestCount} pendencias` },
+                        { id: 'messages', label: 'Mensagens', subtitle: `${friends.length} contatos` },
+                        { id: 'clan', label: 'Clã', subtitle: clan ? clan.name : 'Sem grupo' },
+                    ].map((section) => (
+                        <button
+                            key={section.id}
+                            type="button"
+                            onClick={() => setActiveSection(section.id as SocialSection)}
+                            className={`rounded-[20px] border px-3 py-3 text-left transition-all ${
+                                activeSection === section.id
+                                    ? 'border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] shadow-[0_0_0_1px_rgba(255,255,255,0.04)]'
+                                    : 'border-white/8 bg-black/10 text-white/70 hover:border-white/16 hover:text-white'
+                            }`}
+                        >
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em]">{section.label}</div>
+                            <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/42">{section.subtitle}</div>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {activeSection === 'messages' && (
+                <div className="h-[min(70vh,720px)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+                    <DirectMessages initialParticipantId={initialParticipantId} />
+                </div>
             )}
 
+            {activeSection === 'clan' && (
+                <div className="space-y-5">
+                    {clan ? (
+                        <>
+                            <ClanInfoBox onClick={() => setModal('sanctuary')} />
+                            {modal === 'sanctuary' && <ClanDetailModal clanName={clan.name} onClose={() => setModal(null)} />}
+                            <div className="h-[min(70vh,720px)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+                                <ClanChat />
+                            </div>
+                        </>
+                    ) : (
+                        <JoinClanBox onCreate={() => setModal('create')} />
+                    )}
+                </div>
+            )}
+
+            {activeSection === 'people' && (
             <div className="space-y-4">
                 <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Aliados e Grupos</h3>
@@ -820,6 +886,7 @@ const SocialTab: React.FC = () => {
                     </div>
                 )}
             </div>
+            )}
             {modal === 'create' && <CreateClanModal onClose={() => setModal(null)} />}
             {selectedProfile && <ProfileView profile={selectedProfile} onClose={() => setSelectedProfile(null)} />}
             {isRelationshipHubOpen && <RelationshipHubModal onClose={() => setRelationshipHubOpen(false)} />}
@@ -830,9 +897,11 @@ const SocialTab: React.FC = () => {
 // --- Main View ---
 
 const MundoView: React.FC = () => {
-    const { appMode, clan } = useGame();
+    const { appMode } = useGame();
     const { didForceGameMode } = useTutorial();
     const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>('social');
+    const [socialSection, setSocialSection] = useState<SocialSection>('people');
+    const [socialParticipantId, setSocialParticipantId] = useState<string | null>(null);
     const isBasicMode = appMode === 'BASIC' && !didForceGameMode;
 
     const tabs = useMemo(() => {
@@ -868,11 +937,38 @@ const MundoView: React.FC = () => {
     }, [tabs]);
 
     useEffect(() => {
+        const tipId: ScreenIntroTipId =
+            activeTab === 'hall'
+                ? 'hall'
+                : activeTab === 'temporada'
+                    ? 'season'
+                    : activeTab === 'arsenal'
+                        ? 'arsenal'
+                        : activeTab === 'social'
+                            ? 'social'
+                            : 'store';
+
+        window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
+            detail: { tipId },
+        }));
+    }, [activeTab]);
+
+    useEffect(() => {
         const handleMundoTabRequest = (event: Event) => {
-            const detail = (event as CustomEvent<{ tab?: 'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'; storeTab?: string; section?: string | null }>).detail || {};
+            const detail = (event as CustomEvent<{
+                tab?: 'social' | 'hall' | 'loja' | 'temporada' | 'arsenal';
+                storeTab?: string;
+                section?: string | null;
+                socialSection?: SocialSection;
+                participantId?: string | null;
+            }>).detail || {};
             if (!detail.tab || !tabs.some(tab => tab.id === detail.tab)) return;
 
             setActiveTab(detail.tab);
+            if (detail.tab === 'social') {
+                setSocialSection(detail.socialSection || 'people');
+                setSocialParticipantId(detail.participantId || null);
+            }
 
             if (detail.tab === 'loja') {
                 window.setTimeout(() => {
@@ -911,7 +1007,7 @@ const MundoView: React.FC = () => {
 
             {/* Content Area */}
             <div className="mundo-content-shell flex-1 overflow-y-auto p-4 custom-scrollbar">
-                {activeTab === 'social' && <SocialTab />}
+                {activeTab === 'social' && <SocialTab initialSection={socialSection} initialParticipantId={socialParticipantId} />}
                 {activeTab === 'hall' && <HallOfFameView />}
                 {activeTab === 'loja' && <StoreView />}
                 {activeTab === 'temporada' && <SeasonView />}

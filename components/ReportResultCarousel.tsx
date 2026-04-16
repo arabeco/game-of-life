@@ -26,6 +26,7 @@ interface ReportResultCarouselProps {
     onStartNewCycle?: () => void; // Added for reward slide
     chest?: ChestType | null;     // Added for reward slide
     expGained?: number;           // Added for reward slide
+    fragmentsGained?: number;
     insignias?: string[];         // Added for reward slide
     onOpenChest?: () => void;     // Trigger chest opening
     chestOpened?: boolean;
@@ -80,6 +81,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     onStartNewCycle,
     chest,
     expGained,
+    fragmentsGained,
     insignias = [],
     onOpenChest,
     chestOpened = false,
@@ -340,6 +342,11 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             <p className="text-5xl font-black text-white tracking-tighter">
                                 <span className="text-[var(--skin-accent-color)] opacity-50">+</span>{report.expGained || expGained || 0}<span className="text-xs ml-1 opacity-30 tracking-widest">XP</span>
                             </p>
+                            {(fragmentsGained || 0) > 0 && (
+                                <p className="mt-3 text-lg font-black tracking-[0.14em] text-cyan-300">
+                                    +{fragmentsGained} FRAG
+                                </p>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -437,6 +444,9 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             chest ? { label: 'Bau', value: chest } : null,
             ((report.expGained || expGained) && (report.expGained || expGained) > 0)
                 ? { label: 'XP', value: `+${report.expGained || expGained}` }
+                : null,
+            ((fragmentsGained || 0) > 0)
+                ? { label: 'Fragmentos', value: `+${fragmentsGained}` }
                 : null,
             ...(insignias || []).slice(0, 3).map((insigniaId) => ({
                 label: 'Insignia',

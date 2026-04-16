@@ -26,6 +26,7 @@ export interface CodexCatalogItem {
   description: string;
   price_brl: number;
   price_gold: number;
+  price_fragments?: number | null;
   is_premium: boolean;
   cover_image?: string;
   author_name: string;
@@ -1143,6 +1144,101 @@ export interface OracleContext {
   needsFirstAction: boolean;
   needsFirstTask: boolean;
   needsSitrepClosure: boolean;
+}
+
+export type OracleIntent =
+  | 'general_chat'
+  | 'app_question'
+  | 'app_action'
+  | 'hybrid'
+  | 'unsupported';
+
+export type OracleResponseKind =
+  | 'chat'
+  | 'app_answer'
+  | 'action_offer'
+  | 'action_handoff'
+  | 'clarification'
+  | 'premium_nudge';
+
+export type OracleActionDraftKind =
+  | 'create_cycle'
+  | 'edit_cycle_date'
+  | 'create_arena'
+  | 'update_arena'
+  | 'create_action'
+  | 'update_action'
+  | 'schedule_action'
+  | 'complete_action'
+  | 'organize_day'
+  | 'status'
+  | 'unknown';
+
+export interface OracleActionDraft {
+  kind: OracleActionDraftKind;
+  confidence: 'low' | 'medium' | 'high';
+  originalText: string;
+  summary: string;
+  needsConfirmation: boolean;
+  cycleName?: string | null;
+  arenaName?: string | null;
+  actionName?: string | null;
+  date?: string | null;
+  startTime?: number | null;
+  daysOfWeek?: DayOfWeek[] | null;
+  organizeMode?: 'leve' | 'padrao' | 'intenso' | null;
+  inferredFromGeneralIntent?: boolean;
+}
+
+export interface OracleConversationMemory {
+  summary: string;
+  currentTopic?: string | null;
+  currentObjective?: string | null;
+  mentionedEntities?: string[];
+  lastActionOffer?: string | null;
+  turnCount: number;
+}
+
+export interface OraclePremiumHint {
+  reason:
+    | 'depth'
+    | 'continuity'
+    | 'memory'
+    | 'voice'
+    | 'advanced_guidance';
+  label: string;
+  message: string;
+}
+
+export interface OracleTelemetryEvent {
+  routeIntent: OracleIntent;
+  responseKind: OracleResponseKind;
+  latencyMs: number;
+  cacheHit?: boolean;
+  fallbackUsed?: boolean;
+  model?: string | null;
+  confidence?: 'low' | 'medium' | 'high';
+  channel?: 'chat' | 'voice' | 'feed' | 'action_handoff';
+}
+
+export interface OracleStructuredContext {
+  recognizedIntent: OracleIntent;
+  confidence: 'low' | 'medium' | 'high';
+  topics: string[];
+  shouldOfferAction: boolean;
+  shouldUsePremiumDepth: boolean;
+  needsClarification: boolean;
+  appContextUsed: boolean;
+  memory?: OracleConversationMemory | null;
+}
+
+export interface OracleResponsePayload {
+  kind: OracleResponseKind;
+  message: string;
+  structuredContext: OracleStructuredContext;
+  actionDraft?: OracleActionDraft | null;
+  premiumHint?: OraclePremiumHint | null;
+  telemetry: OracleTelemetryEvent;
 }
 
 export type NotificationType =

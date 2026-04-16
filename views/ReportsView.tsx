@@ -70,6 +70,17 @@ const LEGACY_PROJECTION_SCENE_BASE_GOLD_COST = getGoldMechanicPrice('legacy_proj
 const BOOTSTRAP_ERA_KEY = 'bootstrap-era-1';
 const FREE_ERA_RIBBON_SKIN_ID = ERA_RIBBON_SKINS.find((skin) => skin.accessTier === 'base')?.id || ERA_RIBBON_SKINS[0].id;
 const PLATINUM_ERA_RIBBON_SKIN_IDS = ERA_RIBBON_SKINS.filter((skin) => skin.accessTier === 'platinum').map((skin) => skin.id);
+const getCycleFragmentReward = (report: Report) => {
+    const startDate = parseDate(report.startDate);
+    const endDate = parseDate(report.endDate);
+    const durationDays = Math.max(1, daysBetween(startDate, endDate) + 1);
+
+    if (durationDays >= 30) return 30;
+    if (durationDays >= 21) return 24;
+    if (durationDays >= 14) return 18;
+    if (durationDays >= 7) return 12;
+    return 6;
+};
 
 type EraMetadataEntry = {
     name?: string;
@@ -259,6 +270,7 @@ const EditCycleEndDateModal: React.FC<{
     const [endDate, setEndDate] = useState(cycle.endDate);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const today = getLocalDateString();
     const minDate = cycle.startDate && cycle.startDate > today ? cycle.startDate : today;
     const todayDate = minDate;
@@ -335,7 +347,7 @@ const EditCycleEndDateModal: React.FC<{
                     <div className="flex items-center justify-between gap-3">
                         <button
                             type="button"
-                            onClick={() => { void handleDelete(); }}
+                            onClick={() => setConfirmDeleteOpen(true)}
                             disabled={isDeleting || isSaving}
                             className="inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-xs font-bold text-red-300 disabled:opacity-50"
                         >
@@ -351,6 +363,22 @@ const EditCycleEndDateModal: React.FC<{
                     </div>
                 </GlassCard>
             </div>
+            {confirmDeleteOpen && (
+                <ConfirmationModal
+                    title="Excluir ciclo?"
+                    message="Isso vai remover o ciclo, o relatório dele, os sitreps ligados a ele e as ações agendadas desse período. Essa ação não pode ser desfeita."
+                    confirmLabel={isDeleting ? 'EXCLUINDO...' : 'EXCLUIR CICLO'}
+                    cancelLabel="VOLTAR"
+                    onCancel={() => {
+                        if (!isDeleting) setConfirmDeleteOpen(false);
+                    }}
+                    onConfirm={() => {
+                        if (isDeleting) return;
+                        setConfirmDeleteOpen(false);
+                        void handleDelete();
+                    }}
+                />
+            )}
         </Portal>
     );
 };
@@ -364,6 +392,7 @@ const EditHistoricalCycleModal: React.FC<{
     const [name, setName] = useState(report.cycleName || '');
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const normalizedName = name.trim();
     const hasChanges = normalizedName.length > 0 && normalizedName !== (report.cycleName || '');
 
@@ -416,7 +445,7 @@ const EditHistoricalCycleModal: React.FC<{
                     <div className="flex items-center justify-between gap-3">
                         <button
                             type="button"
-                            onClick={() => { void handleDelete(); }}
+                            onClick={() => setConfirmDeleteOpen(true)}
                             disabled={isDeleting || isSaving}
                             className="inline-flex items-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-xs font-bold text-red-300 disabled:opacity-50"
                         >
@@ -432,6 +461,22 @@ const EditHistoricalCycleModal: React.FC<{
                     </div>
                 </GlassCard>
             </div>
+            {confirmDeleteOpen && (
+                <ConfirmationModal
+                    title="Excluir ciclo?"
+                    message="Isso vai remover esse ciclo do histórico, apagar os sitreps ligados a ele e limpar as ações agendadas registradas nesse período."
+                    confirmLabel={isDeleting ? 'EXCLUINDO...' : 'EXCLUIR CICLO'}
+                    cancelLabel="VOLTAR"
+                    onCancel={() => {
+                        if (!isDeleting) setConfirmDeleteOpen(false);
+                    }}
+                    onConfirm={() => {
+                        if (isDeleting) return;
+                        setConfirmDeleteOpen(false);
+                        void handleDelete();
+                    }}
+                />
+            )}
         </Portal>
     );
 };
@@ -483,6 +528,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
 // --- Timeline Components ---
 
 const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () => void, seasonName?: string, isEditing?: boolean, eraLabel?: string, eraSkinId?: string, isSelectedForEraEdit?: boolean, showTimelineMarker?: boolean, onDelete?: () => void }> = ({ report, isLatest, onClick, seasonName, isEditing, eraLabel, eraSkinId, isSelectedForEraEdit, showTimelineMarker = true, onDelete }) => {
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const scoreInfo = getScoreGrade(report.performanceScore, report.metrics?.fairness);
     const startDate = formatDate(report.startDate);
     const endDate = formatDate(report.endDate);
@@ -509,7 +555,7 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                     type="button"
                     onClick={(event) => {
                         event.stopPropagation();
-                        onDelete();
+                        setConfirmDeleteOpen(true);
                     }}
                     className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-500/20 bg-black/60 text-red-300 opacity-85 transition hover:bg-red-500/18 hover:text-red-200"
                     title="Excluir ciclo"
@@ -540,6 +586,19 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                     className={OFFICIAL_COMPACT_HISTORY_CARD_CLASS}
                 />
             </button>
+            {confirmDeleteOpen && onDelete && (
+                <ConfirmationModal
+                    title="Excluir ciclo?"
+                    message="Isso remove o ciclo do histórico e limpa os registros operacionais ligados a ele. Essa ação não pode ser desfeita."
+                    confirmLabel="EXCLUIR CICLO"
+                    cancelLabel="VOLTAR"
+                    onCancel={() => setConfirmDeleteOpen(false)}
+                    onConfirm={() => {
+                        setConfirmDeleteOpen(false);
+                        onDelete();
+                    }}
+                />
+            )}
         </div>
     );
 };
@@ -564,6 +623,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [historicalCycleBeingEdited, setHistoricalCycleBeingEdited] = useState<Report | null>(null);
     const [isEditingHistoryCycles, setIsEditingHistoryCycles] = useState(false);
     const [expGained, setExpGained] = useState(0);
+    const [fragmentsGained, setFragmentsGained] = useState(0);
     const [grantedInsignias, setGrantedInsignias] = useState<string[]>([]);
     const [earnedChest, setEarnedChest] = useState<ChestType | null>(null);
     const [isPostCycleFlow, setIsPostCycleFlow] = useState(false);
@@ -831,6 +891,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setSelectedReport(report);
         setSelectedReportStartsAtEnd(false);
         setExpGained(awardedExp);
+        setFragmentsGained(getCycleFragmentReward(report));
         setScanError(null);
         setShowNewCycleSetup(false);
 
@@ -1028,10 +1089,28 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             : `✨ +${awardedExp} XP foram computados ao seu perfil`;
     }, []);
 
+    const buildPostCycleRewardToastV2 = useCallback((awardedExp: number, awardedFragments: number, awardedChest: ChestType | null, awardedInsignias: string[]) => {
+        const summaryParts = [`✨ +${awardedExp} XP computados`];
+        if (awardedFragments > 0) {
+            summaryParts.push(`💎 +${awardedFragments} Fragmentos pelo tempo do ciclo`);
+        }
+
+        if (awardedChest) {
+            return awardedInsignias.length > 0
+                ? `📦 Baú ${awardedChest} e ${awardedInsignias.length} insígnia(s) adicionados\n${summaryParts.join('\n')}`
+                : `📦 Baú ${awardedChest} adicionado ao inventário\n${summaryParts.join('\n')}`;
+        }
+
+        return awardedInsignias.length > 0
+            ? `🏅 ${awardedInsignias.length} insígnia(s) adicionada(s) ao inventário\n${summaryParts.join('\n')}`
+            : summaryParts.join('\n');
+    }, []);
+
     const ensurePostCycleRewardsGranted = useCallback(async (options?: { suppressToast?: boolean }) => {
         const awardedChest = earnedChest;
         const awardedInsignias = [...grantedInsignias];
         const awardedExp = expGained;
+        const awardedFragments = fragmentsGained;
 
         if (!isPostCycleFlow) {
             return {
@@ -1039,6 +1118,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 awardedChest,
                 awardedInsignias,
                 awardedExp,
+                awardedFragments,
                 chestReady: Boolean(awardedChest),
             };
         }
@@ -1049,11 +1129,20 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 awardedChest,
                 awardedInsignias,
                 awardedExp,
+                awardedFragments,
                 chestReady: Boolean(awardedChest),
             };
         }
 
         applyExp(awardedExp);
+        if (awardedFragments > 0) {
+            updateUserProfile({
+                wallet: {
+                    ...userProfile.wallet,
+                    fragments: Math.max(0, Number(userProfile.wallet?.fragments || 0)) + awardedFragments,
+                },
+            });
+        }
 
         if (awardedInsignias.length > 0) {
             awardedInsignias.forEach(insigniaId => {
@@ -1095,7 +1184,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setPostCycleRewardsGranted(true);
 
         if (!options?.suppressToast) {
-            showToast(buildPostCycleRewardToast(awardedExp, awardedChest, awardedInsignias));
+            showToast(buildPostCycleRewardToastV2(awardedExp, awardedFragments, awardedChest, awardedInsignias));
         }
 
         return {
@@ -1103,15 +1192,19 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             awardedChest,
             awardedInsignias,
             awardedExp,
+            awardedFragments,
             chestReady,
         };
     }, [
         earnedChest,
         grantedInsignias,
         expGained,
+        fragmentsGained,
         isPostCycleFlow,
         postCycleRewardsGranted,
         applyExp,
+        updateUserProfile,
+        userProfile.wallet,
         grantUserUnlock,
         grantInventoryItem,
         addChest,
@@ -1120,7 +1213,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         oraclePreferences?.notificationsEnabled,
         fetchNotifications,
         showToast,
-        buildPostCycleRewardToast,
+        buildPostCycleRewardToastV2,
         buildCycleFinalizedNotificationContent,
         setAchievementUnlocked,
     ]);
@@ -1168,6 +1261,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         setIsPostCycleFlow(false);
         setGrantedInsignias([]);
+        setFragmentsGained(0);
         setReportRewardPayload(null);
     };
 
@@ -1185,6 +1279,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setPostCycleRewardsGranted(false);
         setPostCycleChestOpened(false);
         setIsOpeningPostCycleChest(false);
+        setFragmentsGained(0);
         setReportRewardPayload(null);
         if (typeof window !== 'undefined') {
             (window as any).__glyphPendingCycleResults = null;
@@ -1221,6 +1316,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         await ensurePostCycleRewardsGranted({ suppressToast: true });
         setIsPostCycleFlow(false);
         setGrantedInsignias([]);
+        setFragmentsGained(0);
         setReportRewardPayload(null);
         setView('hub');
     };
@@ -2507,6 +2603,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         onStartNewCycle={handleStartNewCycleFromResults}
                         chest={isPostCycleFlow ?earnedChest : null}
                         expGained={isPostCycleFlow ?expGained : undefined}
+                        fragmentsGained={isPostCycleFlow ?fragmentsGained : undefined}
                         insignias={isPostCycleFlow ?grantedInsignias : []}
                         onOpenChest={isPostCycleFlow && earnedChest ?() => { void handleOpenPostCycleChest(); } : undefined}
                         chestOpened={postCycleChestOpened}

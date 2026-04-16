@@ -265,13 +265,13 @@ const tests = [
         run() {
             const base = ['task-1', 'task-2'];
 
-            const movedOut = reconcileTaskInCommitment(base, 'task-1', { actionId: 'action-focus', date: '2026-03-09' }, '2026-03-08', () => false);
+            const movedOut = reconcileTaskInCommitment(base, 'task-1', { actionId: 'action-focus', date: '2026-03-09', startTime: 540, completed: false }, '2026-03-08', () => false);
             assert.deepEqual(movedOut, ['task-2']);
 
-            const movedBack = reconcileTaskInCommitment(movedOut, 'task-1', { actionId: 'action-focus', date: '2026-03-08' }, '2026-03-08', () => false);
+            const movedBack = reconcileTaskInCommitment(movedOut, 'task-1', { actionId: 'action-focus', date: '2026-03-08', startTime: 540, completed: false }, '2026-03-08', () => false);
             assert.deepEqual(movedBack, ['task-2', 'task-1']);
 
-            const changedToQuest = reconcileTaskInCommitment(movedBack, 'task-1', { actionId: 'quest-action', date: '2026-03-08' }, '2026-03-08', actionId => actionId === 'quest-action');
+            const changedToQuest = reconcileTaskInCommitment(movedBack, 'task-1', { actionId: 'quest-action', date: '2026-03-08', startTime: 540, completed: false }, '2026-03-08', actionId => actionId === 'quest-action');
             assert.deepEqual(changedToQuest, ['task-2']);
         },
     },

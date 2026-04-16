@@ -5,6 +5,7 @@ import { TheForge } from '../components/Store/TheForge';
 import { CodexStore } from '../components/Store/CodexStore';
 import { ItemsStore } from '../components/Store/ItemsStore';
 import { useGame } from '../contexts/GameContext';
+import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/screenIntroTips';
 
 export const StoreView: React.FC = () => {
   const { appMode } = useGame();
@@ -27,6 +28,21 @@ export const StoreView: React.FC = () => {
       setActiveTab(safeTab);
     }
   }, [activeTab, sanitizeTab]);
+
+  React.useEffect(() => {
+    const tipId: ScreenIntroTipId =
+      activeTab === 'forge'
+        ? 'store_forge'
+        : activeTab === 'items'
+          ? 'store_items'
+          : activeTab === 'codexes'
+            ? 'store_codexes'
+            : 'store_gold';
+
+    window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
+      detail: { tipId },
+    }));
+  }, [activeTab]);
 
   React.useEffect(() => {
     const handleStoreViewRequest = (event: Event) => {

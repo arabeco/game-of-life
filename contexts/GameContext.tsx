@@ -15,7 +15,7 @@ import { useCodexBuilder } from './CodexBuilderContext';
 import { calculateArenaProgress, getCampaignArenaStates } from '../utils/progressUtils';
 import { createTaskDomain } from './gameDomains/taskDomain';
 import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
-import { buildCyclePaceMetrics, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds } from '../utils/coreLoopUtils.js';
+import { buildCyclePaceMetrics, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { getOracleFeedMessagesForOperationalDay, getOracleFeedQuotaStatus, isManualOracleFeedMessage } from '../utils/oracleFeedUtils';
@@ -343,6 +343,8 @@ export interface CodexCatalogItem {
     description: string;
     author_name: string;
     price_brl: number;
+    price_gold?: number;
+    price_fragments?: number | null;
     is_premium: boolean;
     cover_image?: string;
     duration_days: number;
@@ -729,6 +731,7 @@ export interface GameContextType {
     codexCatalog: CodexCatalogItem[];
     refreshCodexes: () => Promise<void>;
     buyCodex: (catalogId: string, options?: { silentSuccess?: boolean; useCampaignQuizFreeCredit?: boolean; useCampaignQuizMediumCredit?: boolean }) => Promise<UserCodex | null>;
+    buyCodexWithFragments: (catalogId: string, fragmentCost: number, options?: { silentSuccess?: boolean }) => Promise<UserCodex | null>;
     buyCodexCreationSlot: () => Promise<boolean>;
     getRelationshipCapacitySummary: () => Promise<RelationshipCapacitySummary | null>;
     fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; competitionChallenges: RelationshipCompetitionChallenge[]; summary: RelationshipCapacitySummary | null }>;
@@ -1776,7 +1779,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const unreadCount = unreadDirectMessages.length || directMessageNotifications.length;
                 const directMessageUrl = (typeof latestDirectMessage?.metadata?.url === 'string' && latestDirectMessage.metadata.url.trim().length > 0)
                     ? latestDirectMessage.metadata.url
-                    : '/?oracle=dms';
+                    : `/?view=social&social=messages${latestDirectMessage?.metadata?.senderId ? `&participant=${encodeURIComponent(String(latestDirectMessage.metadata.senderId))}` : ''}`;
                 const sameSender = uniqueSenderIds.length <= 1;
                 const title = unreadCount > 1
                     ? (sameSender ? senderNickname : 'Mensagens diretas')
@@ -3972,6 +3975,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [getSupabaseUserId, hasHydratedFromSupabase, isProfileLoaded, userProfile.id]);
 
+    const isQuestActionId = useCallback((actionId: string) => isQuestAction(actionId, actions, allArenas), [actions, allArenas]);
+
+    const isClanQuestActionId = useCallback((actionId: string) => isClanQuestAction(actionId, actions, allArenas), [actions, allArenas]);
+
     const refreshOpenCycleDerivedState = useCallback(async (cycle: Cycle | null) => {
         const userId = getSupabaseUserId();
         if (!userId || !cycle) {
@@ -4010,6 +4017,211 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             console.error('Failed to refresh open cycle derived state:', error);
         }
     }, [getSupabaseUserId]);
+
+    const summarizeOperationalDayCommitment = useCallback((
+        operationalDate: string,
+        sourceTasks: ScheduledTask[],
+        taskIds: string[],
+        relationshipBonusXp = 0,
+    ) => {
+        const committedTasks = sourceTasks.filter((task) =>
+            taskIds.includes(task.id) && taskMatchesOperationalDate(task, operationalDate)
+        );
+        const freeActionIds = new Set(actions.filter((action) => action.actionType === 'Livre').map((action) => action.id));
+        const scoredTasks = committedTasks.filter((task) => !freeActionIds.has(task.actionId));
+        const completedScoredCount = scoredTasks.filter((task) => task.completed).length;
+        const totalScoredCount = scoredTasks.length;
+        const score = totalScoredCount > 0 ? Math.round((completedScoredCount / totalScoredCount) * 100) : 100;
+        const baseExp = committedTasks.reduce((sum, task) => {
+            if (!task.completed) return sum;
+            const action = actions.find((candidate) => candidate.id === task.actionId);
+            const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
+            return sum + Math.round(duration * getActionExpMultiplier(action));
+        }, 0);
+        const performanceSitrepBonus =
+            totalScoredCount > 0
+                ? score >= 95
+                    ? SITREP_BONUS_S
+                    : score >= 85
+                        ? SITREP_BONUS_A
+                        : 0
+                : 0;
+        const sitrepBonus = performanceSitrepBonus + Math.max(0, Math.round(relationshipBonusXp || 0));
+
+        return {
+            taskIds,
+            committedTasks,
+            totalCount: totalScoredCount,
+            completedCount: completedScoredCount,
+            score,
+            sitrepBonus,
+            expDeposited: baseExp + sitrepBonus,
+        };
+    }, [actions]);
+
+    const settleSkippedCycleDays = useCallback(async () => {
+        const userId = getSupabaseUserId();
+        if (!userId || !activeCycle) return;
+
+        const yesterday = shiftLocalDateString(getTodayString(), -1);
+        const settlementEnd = activeCycle.endDate < yesterday ? activeCycle.endDate : yesterday;
+        if (settlementEnd < activeCycle.startDate) return;
+
+        const cycleHistoricalTasks = filterCycleTasksByScope(
+            tasks,
+            actions,
+            activeCycle,
+            activeCycle.startDate,
+            settlementEnd,
+        );
+        const historicalDates = Array.from(new Set(
+            cycleHistoricalTasks
+                .map((task) => getTaskOperationalDateString(task))
+                .filter((date): date is string => Boolean(date))
+                .filter((date) => date >= activeCycle.startDate && date <= settlementEnd)
+        )).sort();
+
+        if (historicalDates.length === 0) return;
+
+        const { data: existingCommitmentsRaw, error: commitmentsError } = await supabase
+            .from('daily_commitments')
+            .select('*')
+            .eq('user_id', userId)
+            .gte('date', activeCycle.startDate)
+            .lte('date', settlementEnd);
+
+        if (commitmentsError) {
+            console.error('Error settling skipped cycle days:', commitmentsError.message);
+            return;
+        }
+
+        const existingByDate = new Map(
+            (existingCommitmentsRaw || []).map((row: any) => {
+                const mapped = mapToCamelCase(row) as Partial<DailyCommitment> & { operationalScratch?: string | null };
+                return [String(mapped.date || ''), mapped] as const;
+            })
+        );
+
+        let settledCount = 0;
+        const newlyJudgedDates: string[] = [];
+
+        for (const operationalDate of historicalDates) {
+            const existingCommitment = existingByDate.get(operationalDate);
+            if (existingCommitment?.stage === 'judgment') continue;
+
+            const inferredTaskIds = getInitialDailyCommitmentTaskIds(cycleHistoricalTasks, operationalDate, isClanQuestActionId);
+            const cycleScopedTaskIds = new Set(
+                cycleHistoricalTasks
+                    .filter((task) => taskMatchesOperationalDate(task, operationalDate))
+                    .map((task) => task.id)
+            );
+            const existingTaskIds = Array.isArray(existingCommitment?.taskIds)
+                ? existingCommitment.taskIds.filter((taskId): taskId is string => typeof taskId === 'string' && taskId.length > 0 && cycleScopedTaskIds.has(taskId))
+                : [];
+            const inferredTasks = cycleHistoricalTasks.filter((task) => inferredTaskIds.includes(task.id) && taskMatchesOperationalDate(task, operationalDate));
+            const mergedTaskIds = mergeTasksIntoCommitment(existingTaskIds, inferredTasks, operationalDate, isClanQuestActionId);
+
+            if (mergedTaskIds.length === 0) continue;
+
+            const relationshipBonusXp = typeof existingCommitment?.relationshipBonusXp === 'number'
+                ? existingCommitment.relationshipBonusXp
+                : Number(existingCommitment?.relationshipBonusXp || 0);
+            const summary = summarizeOperationalDayCommitment(
+                operationalDate,
+                cycleHistoricalTasks,
+                mergedTaskIds,
+                relationshipBonusXp,
+            );
+
+            const commitmentPayload = {
+                user_id: userId,
+                date: operationalDate,
+                task_ids: mergedTaskIds,
+                stage: 'judgment' as DailyCommitmentStage,
+                score: summary.score,
+                exp_deposited: summary.expDeposited,
+                sitrep_bonus: summary.sitrepBonus,
+                relationship_bonus_xp: relationshipBonusXp,
+                operational_scratch: existingCommitment?.operationalScratch ?? null,
+                updated_at: new Date().toISOString(),
+            };
+
+            const { error: upsertCommitmentError } = await supabase
+                .from('daily_commitments')
+                .upsert(commitmentPayload, { onConflict: 'user_id,date' });
+
+            if (upsertCommitmentError) {
+                console.error('Error upserting skipped daily commitment:', upsertCommitmentError.message);
+                continue;
+            }
+
+            const sitrepPayload = {
+                date: operationalDate,
+                score: summary.score,
+                completed_tasks_count: summary.completedCount,
+                total_tasks_count: summary.totalCount,
+                task_ids: mergedTaskIds,
+                bonus_xp: summary.sitrepBonus,
+                cycle_id: activeCycle.id,
+            };
+
+            const { data: existingSitreps, error: existingSitrepError } = await supabase
+                .from('sitrep_reports')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('date', operationalDate)
+                .eq('cycle_id', activeCycle.id)
+                .limit(1);
+
+            if (existingSitrepError) {
+                console.error('Error loading skipped sitrep:', existingSitrepError.message);
+                continue;
+            }
+
+            const existingSitrepId = Array.isArray(existingSitreps) && existingSitreps.length > 0
+                ? String(existingSitreps[0].id)
+                : null;
+
+            if (existingSitrepId) {
+                const { error: updateSitrepError } = await supabase
+                    .from('sitrep_reports')
+                    .update(sitrepPayload)
+                    .eq('id', existingSitrepId);
+
+                if (updateSitrepError) {
+                    console.error('Error updating skipped sitrep:', updateSitrepError.message);
+                    continue;
+                }
+            } else {
+                const { error: insertSitrepError } = await supabase
+                    .from('sitrep_reports')
+                    .insert({
+                        id: crypto.randomUUID(),
+                        user_id: userId,
+                        ...sitrepPayload,
+                    });
+
+                if (insertSitrepError) {
+                    console.error('Error inserting skipped sitrep:', insertSitrepError.message);
+                    continue;
+                }
+            }
+
+            settledCount += 1;
+            newlyJudgedDates.push(operationalDate);
+        }
+
+        if (settledCount === 0) return;
+
+        setJudgedOperationalDates((prev) => Array.from(new Set([...prev, ...newlyJudgedDates])));
+        await refreshOpenCycleDerivedState(activeCycle);
+        showToast(
+            settledCount === 1
+                ? '1 dia pendente foi reconciliado pelo historico real.'
+                : `${settledCount} dias pendentes foram reconciliados pelo historico real.`,
+            'success'
+        );
+    }, [activeCycle, actions, getSupabaseUserId, isClanQuestActionId, refreshOpenCycleDerivedState, showToast, summarizeOperationalDayCommitment, tasks]);
 
     const reconcileJudgedDayTaskMutation = useCallback(async ({
         taskBefore,
@@ -5099,6 +5311,69 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'success',
             );
         }
+        return normalizedPurchasedCodex;
+    };
+
+    const buyCodexWithFragments = async (catalogId: string, fragmentCost: number, options?: { silentSuccess?: boolean }): Promise<UserCodex | null> => {
+        const userId = getSupabaseUserId();
+        if (!userId) return null;
+
+        const catalogItem = codexCatalog.find(c => c.id === catalogId);
+        if (!catalogItem) {
+            showToast('Campanha nao encontrada.', 'error');
+            return null;
+        }
+
+        const safeFragmentCost = Math.max(0, Math.round(Number(catalogItem.price_fragments ?? fragmentCost ?? 0)));
+        const currentFragments = Math.max(0, Number(userProfile.wallet?.fragments || 0));
+        if (currentFragments < safeFragmentCost) {
+            const missingFragments = Math.max(0, safeFragmentCost - currentFragments);
+            showToast(`Fragmentos insuficientes. Faltam ${missingFragments} para adquirir ${catalogItem.title}.`, 'warning');
+            return null;
+        }
+
+        const existingCodex = userCodexes.find(c => (c.catalog_id || c.origin_codex_id || c.id) === catalogId);
+        if (existingCodex) {
+            if (!options?.silentSuccess) {
+                showToast(`"${catalogItem.title}" ja esta na sua biblioteca.`, 'info');
+            }
+            return existingCodex;
+        }
+
+        const { data, error } = await supabase.rpc('buy_codex_catalog_item_with_fragments', {
+            p_catalog_id: catalogId,
+        });
+
+        if (error) {
+            console.error('Error buying codex with fragments:', error);
+            showToast(error.message || 'Erro ao adquirir campanha com fragmentos.', 'error');
+            return null;
+        }
+
+        if ((data as any)?.success === false) {
+            showToast(String((data as any)?.error || 'Erro ao adquirir campanha com fragmentos.'), 'error');
+            return null;
+        }
+
+        const purchasedCodex = (data as any)?.codex;
+        if (!purchasedCodex) {
+            showToast('A compra foi aceita, mas a campanha nao retornou da forja.', 'error');
+            return null;
+        }
+
+        const normalizedPurchasedCodex = normalizeUserCodexRow(purchasedCodex, codexCatalog);
+        setUserCodexes(prev => [normalizedPurchasedCodex, ...prev]);
+        updateUserProfile({
+            wallet: {
+                ...userProfile.wallet,
+                fragments: Math.max(0, Number((data as any)?.new_fragments ?? currentFragments - safeFragmentCost)),
+            },
+        });
+
+        if (!options?.silentSuccess) {
+            showToast(`Campanha "${catalogItem.title}" liberada por ${safeFragmentCost} fragmentos.`, 'success');
+        }
+
         return normalizedPurchasedCodex;
     };
 
@@ -6576,12 +6851,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return result;
     };
 
-
-
-    const isQuestActionId = useCallback((actionId: string) => isQuestAction(actionId, actions, allArenas), [actions, allArenas]);
-
-    const isClanQuestActionId = useCallback((actionId: string) => isClanQuestAction(actionId, actions, allArenas), [actions, allArenas]);
-
     const resetDailyCommitment = () => {
         const today = getTodayString();
         setDailyCommitmentState({
@@ -6760,6 +7029,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [getSupabaseUserId, isProfileLoaded, refreshJudgedOperationalDates]);
 
     useEffect(() => {
+        if (!isProfileLoaded || !activeCycle?.id) return;
+        void settleSkippedCycleDays();
+    }, [activeCycle?.id, isProfileLoaded, settleSkippedCycleDays, tasks]);
+
+    useEffect(() => {
         const checkDailyReset = () => {
             const today = getTodayString();
             if (dailyCommitment.date !== today) {
@@ -6770,83 +7044,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         checkDailyReset();
         const intervalId = window.setInterval(checkDailyReset, 60000);
-
-        // [NEW] Retroactive EXP Safeguard (Phase 4)
-        const checkRetroactiveExp = async () => {
-            const userId = getSupabaseUserId();
-            if (!userId) return;
-
-            const today = getTodayString();
-            const oldestOpenDate = shiftLocalDateString(today, -1);
-            const { data: pendingDays, error } = await supabase
-                .from('daily_commitments')
-                .select('*')
-                .lt('date', oldestOpenDate)
-                .neq('stage', 'judgment'); // Not yet closed
-
-            if (pendingDays && pendingDays.length > 0) {
-                console.log(`[RETROACTIVE] Found ${pendingDays.length} unclosed days. Processing...`);
-                const newlyJudgedDates: string[] = [];
-                // For each unclosed day, we'll try to find its tasks and close it
-                for (const day of pendingDays) {
-                    const trackedTaskIds = Array.isArray(day.task_ids) ? day.task_ids.filter((id): id is string => typeof id === 'string') : [];
-                    let dayTasks: { duration: number | null; completed: boolean | null; action_id: string | null }[] | null = null;
-
-                    if (trackedTaskIds.length > 0) {
-                        const result = await supabase
-                            .from('scheduled_tasks')
-                            .select('duration, completed, action_id')
-                            .eq('user_id', userId)
-                            .in('id', trackedTaskIds);
-                        dayTasks = result.data;
-                    } else {
-                        const result = await supabase
-                            .from('scheduled_tasks')
-                            .select('duration, completed, action_id')
-                            .eq('user_id', userId)
-                            .eq('date', day.date);
-                        dayTasks = result.data;
-                    }
-
-                    if (dayTasks && dayTasks.length > 0) {
-                        const completedTasks = dayTasks.filter(t => t.completed);
-                        if (completedTasks.length > 0) {
-                            // Calculate EXP similar to endDailyBattle
-                            const baseExp = completedTasks.reduce((acc, t) => {
-                                const action = actions.find(candidate => candidate.id === t.action_id);
-                                const weightedDuration = Math.round((t.duration || 0) * getActionExpMultiplier(action));
-                                return acc + weightedDuration;
-                            }, 0);
-                            const score = dayTasks.length > 0 ?Math.round((completedTasks.length / dayTasks.length) * 100) : 100;
-                            const bonus = score >= 95 ?SITREP_BONUS_S : score >= 85 ?SITREP_BONUS_A : 0;
-                            const totalRetroExp = baseExp + bonus;
-
-                            if (totalRetroExp > 0) {
-                                // Deposit into Active Cycle or Profile
-                                applyExp(totalRetroExp);
-                                showToast(`EXP de ${day.date} recuperada: +${totalRetroExp}!`, 'success');
-                            }
-                        }
-                    }
-
-                    // Mark day as closed to avoid duplicate processing
-                    await supabase
-                        .from('daily_commitments')
-                        .update({ stage: 'judgment', score: 0, exp_deposited: 0 })
-                        .eq('user_id', userId)
-                        .eq('date', day.date);
-
-                    if (typeof day.date === 'string' && day.date) {
-                        newlyJudgedDates.push(day.date);
-                    }
-                }
-
-                if (newlyJudgedDates.length > 0) {
-                    setJudgedOperationalDates(prev => Array.from(new Set([...prev, ...newlyJudgedDates])));
-                }
-            }
-        };
-        checkRetroactiveExp();
 
         return () => window.clearInterval(intervalId);
     }, [dailyCommitment.date, resetDailyCommitment, setChecklistItems]);
@@ -8282,8 +8479,28 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 ? 0
                 : Math.round((currentDayBaseExp + currentDaySitrepBonus) * cycleVillageBonusFactor);
         const unbankedOpenDayExp = currentDayBaseExp + currentDaySitrepBonus + currentDayVillageBonus;
+        const unbankedHistoricalExp = Array.from(new Set(
+            cycleTasks
+                .map((task) => getTaskOperationalDateString(task))
+                .filter((date): date is string => Boolean(date))
+                .filter((date) => date >= startDate && date <= endDate)
+                .filter((date) => date < dailyCommitment.date)
+                .filter((date) => !judgedOperationalDates.includes(date))
+        )).reduce((sum, operationalDate) => {
+            const inferredTaskIds = getInitialDailyCommitmentTaskIds(cycleTasks, operationalDate, isClanQuestActionId);
+            if (inferredTaskIds.length === 0) return sum;
+
+            const summary = summarizeOperationalDayCommitment(
+                operationalDate,
+                cycleTasks,
+                inferredTaskIds,
+                0,
+            );
+
+            return sum + summary.expDeposited;
+        }, 0);
         const isPremiumUser = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
-        const rawExp = cycleExpBonus + unbankedOpenDayExp;
+        const rawExp = cycleExpBonus + unbankedHistoricalExp + unbankedOpenDayExp;
         const boostMultiplier = getExpBoostMultiplier(userProfile);
         const boostedRawExp = Math.round(rawExp * boostMultiplier);
         const expBoostBonus = Math.max(0, boostedRawExp - rawExp);
@@ -8629,8 +8846,99 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const wasActiveCycle = activeCycle?.id === cycleId;
         const wasUpcomingCycle = upcomingCycle?.id === cycleId;
+        const { data: cycleRow, error: cycleLoadError } = await supabase
+            .from('cycles')
+            .select('id, user_id, start_date, end_date, arena_ids, report_data')
+            .eq('id', cycleId)
+            .eq('user_id', userId)
+            .maybeSingle();
 
-        // 1. Delete from Supabase
+        if (cycleLoadError) {
+            console.error('Error loading cycle for deletion:', cycleLoadError);
+            showToast('Nao foi possivel carregar esse ciclo para exclusao.', 'error');
+            return false;
+        }
+
+        if (!cycleRow) {
+            showToast('Nao foi possivel encontrar esse ciclo para excluir.', 'error');
+            return false;
+        }
+
+        const cycleArenaIds = Array.isArray(cycleRow.arena_ids)
+            ? cycleRow.arena_ids.map((value: unknown) => String(value)).filter(Boolean)
+            : [];
+        let cycleActionIds: string[] = [];
+        const cycleStartDate = String(cycleRow.start_date || '');
+        const cycleEndDate = String(cycleRow.end_date || cycleStartDate || '');
+        const scopedTaskIds = new Set<string>();
+
+        if (cycleArenaIds.length > 0) {
+            const { data: cycleActionsData, error: cycleActionsError } = await supabase
+                .from('actions')
+                .select('id')
+                .eq('user_id', userId)
+                .in('arena_id', cycleArenaIds);
+
+            if (cycleActionsError) {
+                console.error('Error loading actions for cycle deletion:', cycleActionsError);
+                showToast('Nao foi possivel preparar a exclusao das acoes do ciclo.', 'error');
+                return false;
+            }
+
+            cycleActionIds = (cycleActionsData || [])
+                .map((row: { id?: string | null }) => String(row?.id || ''))
+                .filter(Boolean);
+        }
+
+        if (cycleActionIds.length > 0 && cycleStartDate && cycleEndDate) {
+            const { data: scopedTasks, error: scopedTasksError } = await supabase
+                .from('scheduled_tasks')
+                .select('id')
+                .eq('user_id', userId)
+                .in('action_id', cycleActionIds)
+                .gte('date', cycleStartDate)
+                .lte('date', cycleEndDate);
+
+            if (scopedTasksError) {
+                console.error('Error loading scheduled tasks for cycle deletion:', scopedTasksError);
+                showToast('Nao foi possivel preparar a exclusao das acoes agendadas do ciclo.', 'error');
+                return false;
+            }
+
+            (scopedTasks || []).forEach((task: { id?: string | null }) => {
+                if (task?.id) scopedTaskIds.add(String(task.id));
+            });
+        }
+
+        const { error: sitrepDeleteError } = await supabase
+            .from('sitrep_reports')
+            .delete()
+            .eq('user_id', userId)
+            .eq('cycle_id', cycleId);
+
+        if (sitrepDeleteError) {
+            console.error('Error deleting sitrep reports for cycle:', sitrepDeleteError);
+            showToast('Nao foi possivel limpar os registros do ciclo antes da exclusao.', 'error');
+            return false;
+        }
+
+        if (scopedTaskIds.size > 0) {
+            const taskIdList = Array.from(scopedTaskIds);
+            for (let index = 0; index < taskIdList.length; index += 100) {
+                const batch = taskIdList.slice(index, index + 100);
+                const { error: taskDeleteError } = await supabase
+                    .from('scheduled_tasks')
+                    .delete()
+                    .in('id', batch);
+
+                if (taskDeleteError) {
+                    console.error('Error deleting scheduled tasks for cycle:', taskDeleteError);
+                    showToast('Nao foi possivel limpar as acoes agendadas desse ciclo.', 'error');
+                    return false;
+                }
+            }
+        }
+
         const { data: deletedRows, error } = await supabase
             .from('cycles')
             .delete()
@@ -8644,7 +8952,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return false;
         }
 
-
         if (!deletedRows || deletedRows.length === 0) {
             showToast('Nao foi possivel encontrar esse ciclo para excluir.', 'error');
             return false;
@@ -8652,11 +8959,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (wasActiveCycle) {
             setActiveCycle(null);
+            setCycleProgress(0);
+            setCycleExpBonus(0);
         }
         if (wasUpcomingCycle) {
             setUpcomingCycle(null);
         }
 
+        if (scopedTaskIds.size > 0) {
+            setTasks(prev => prev.filter(task => !scopedTaskIds.has(task.id)));
+        }
         setReports(prev => prev.filter(report => report.cycleId !== cycleId && report.id !== cycleId));
         showToast('Ciclo excluido com sucesso.', 'success');
 
@@ -11958,7 +12270,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

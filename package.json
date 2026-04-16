@@ -8,6 +8,7 @@
     "build": "vite build",
     "test": "npm run test:core-loop",
     "test:core-loop": "node tests/core-loop.regression.mjs",
+    "test:cycle-delete-smoke": "node tests/cycle-delete-smoke.cdp.mjs",
     "test:launch": "node tests/launch-readiness.mjs",
     "test:launch:full": "node tests/launch-readiness.mjs --suite=full",
     "check:encoding": "node scripts/check-encoding.mjs",

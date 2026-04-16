@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { resolveItemDef, getCatalogItems, isForgeEligibleItem, ItemCategory } from '../../constants/items';
+import { resolveItemDef, getCatalogItems, getCatalogItemsByCategory, isForgeEligibleItem, ItemCategory } from '../../constants/items';
 import { ECONOMY } from '../../constants/economy';
 import { RefreshCwIcon, Trash2Icon } from '../Icons';
 import { getTierVisual, withAlpha } from '../../constants/rarityVisuals';
@@ -26,13 +26,33 @@ const CATEGORY_LABELS: Record<ItemCategory, string> = {
     insignias: 'Insignia',
 };
 
+const FEATURED_FRAGMENT_CATEGORIES: ItemCategory[] = [
+    'skin',
+    'border',
+    'banner',
+    'glyph',
+    'aura',
+    'ui_skin',
+    'artifact',
+    'orb',
+    'plate',
+];
+
+const getCasualCampaignFragmentCost = (durationDays: number) => {
+    if (durationDays >= 21) return 42;
+    if (durationDays >= 14) return 34;
+    if (durationDays >= 10) return 28;
+    return 22;
+};
+
 export const TheForge: React.FC = () => {
-    const { userProfile, craftItem, recycleItem, inventory } = useGame();
+    const { userProfile, craftItem, recycleItem, inventory, codexCatalog, userCodexes, buyCodexWithFragments, installCodex } = useGame();
     const [activeTab, setActiveTab] = useState<ForgeTab>('craft');
     const [selectedTier, setSelectedTier] = useState<number>(1);
     const [processing, setProcessing] = useState<string | null>(null);
     const [confirmRecycleId, setConfirmRecycleId] = useState<string | null>(null);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+    const [campaignProcessingId, setCampaignProcessingId] = useState<string | null>(null);
 
     const craftableItems = useMemo(() => {
         return getCatalogItems((item) => item.tier === selectedTier && isForgeEligibleItem(item));
@@ -44,6 +64,38 @@ export const TheForge: React.FC = () => {
     }, [craftableItems, selectedTier]);
 
     const selectedItem = selectedItemId ? resolveItemDef(selectedItemId) : null;
+
+    const featuredItemsByCategory = useMemo(() => {
+        return FEATURED_FRAGMENT_CATEGORIES.map((category) => ({
+            category,
+            items: getCatalogItemsByCategory(category)
+                .filter((item) => isForgeEligibleItem(item))
+                .sort((left, right) => left.tier - right.tier || left.name.localeCompare(right.name))
+                .slice(0, 2),
+        })).filter((entry) => entry.items.length > 0);
+    }, []);
+
+    const featuredCampaigns = useMemo(() => {
+        return [...codexCatalog]
+            .filter((campaign) => !campaign.is_premium)
+            .sort((left, right) => {
+                const leftPrice = Number((left as any).price_gold ?? left.price_brl ?? 0);
+                const rightPrice = Number((right as any).price_gold ?? right.price_brl ?? 0);
+                return leftPrice - rightPrice || left.duration_days - right.duration_days;
+            })
+            .slice(0, 2);
+    }, [codexCatalog]);
+
+    const ownedFeaturedCampaigns = useMemo(() => {
+        const map = new Map<string, string>();
+        userCodexes.forEach((codex) => {
+            const key = codex.catalog_id || codex.origin_codex_id || codex.id;
+            if (!map.has(key)) {
+                map.set(key, codex.id);
+            }
+        });
+        return map;
+    }, [userCodexes]);
 
     const recyclables = useMemo(() => {
         return inventory
@@ -92,6 +144,36 @@ export const TheForge: React.FC = () => {
             console.error('Craft failed', error);
         } finally {
             setProcessing(null);
+        }
+    };
+
+    const handleCraftFeaturedItem = async (itemId: string) => {
+        const item = resolveItemDef(itemId);
+        if (!item || processing) return;
+        setProcessing(`craft-${itemId}`);
+        try {
+            await craftItem(item.tier, undefined, itemId);
+        } catch (error) {
+            console.error('Featured craft failed', error);
+        } finally {
+            setProcessing(null);
+        }
+    };
+
+    const handleCampaignAction = async (catalogId: string, fragmentCost: number) => {
+        if (campaignProcessingId) return;
+        setCampaignProcessingId(catalogId);
+        try {
+            const ownedCodexId = ownedFeaturedCampaigns.get(catalogId);
+            if (ownedCodexId) {
+                await installCodex(ownedCodexId);
+                return;
+            }
+            await buyCodexWithFragments(catalogId, fragmentCost);
+        } catch (error) {
+            console.error('Campaign action failed', error);
+        } finally {
+            setCampaignProcessingId(null);
         }
     };
 
@@ -159,6 +241,122 @@ export const TheForge: React.FC = () => {
 
             {activeTab === 'craft' && (
                 <div className="space-y-4">
+                    {featuredCampaigns.length > 0 && (
+                        <GlassCard variant="neutral" className="border-white/10 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-300">Campanhas casuais</div>
+                                    <div className="mt-1 text-sm font-bold text-white">Leves para abrir um ciclo sem virar grind.</div>
+                                </div>
+                                <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">
+                                    picks
+                                </div>
+                            </div>
+
+                            <div className="mt-3 grid gap-3 md:grid-cols-2">
+                                {featuredCampaigns.map((campaign) => {
+                                    const ownedCodexId = ownedFeaturedCampaigns.get(campaign.id);
+                                    const fragmentCost = Math.max(0, Number(campaign.price_fragments ?? getCasualCampaignFragmentCost(campaign.duration_days)));
+                                    return (
+                                        <div key={campaign.id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div>
+                                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Campanha casual</div>
+                                                    <div className="mt-1 text-sm font-black uppercase tracking-[0.12em] text-white">{campaign.title}</div>
+                                                </div>
+                                                <div className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/75">
+                                                    {campaign.duration_days} dias
+                                                </div>
+                                            </div>
+                                            <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-gray-400">
+                                                {campaign.description}
+                                            </p>
+                                            <div className="mt-4 flex items-center justify-between gap-3">
+                                                <div>
+                                                    <div className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">
+                                                        {ownedCodexId ? 'Na biblioteca' : 'Entrada leve'}
+                                                    </div>
+                                                    <div className="mt-1 text-sm font-black text-white">
+                                                        {ownedCodexId ? 'Pronta para instalar' : `${fragmentCost} fragmentos`}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => { void handleCampaignAction(campaign.id, fragmentCost); }}
+                                                    disabled={campaignProcessingId === campaign.id || (!ownedCodexId && (userProfile.wallet?.fragments || 0) < fragmentCost)}
+                                                    className="luxe-skin-button inline-flex h-10 items-center justify-center rounded-xl px-4 text-[10px] font-black uppercase tracking-[0.18em] disabled:opacity-50"
+                                                >
+                                                    {campaignProcessingId === campaign.id
+                                                        ? '...'
+                                                        : ownedCodexId
+                                                            ? 'Instalar'
+                                                            : 'Adquirir'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </GlassCard>
+                    )}
+
+                    {featuredItemsByCategory.length > 0 && (
+                        <GlassCard variant="neutral" className="border-white/10 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">Selecao da forja</div>
+                                    <div className="mt-1 text-sm font-bold text-white">2 itens por tipo para a pessoa sentir o valor dos fragmentos logo.</div>
+                                </div>
+                                <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/70">
+                                    curado
+                                </div>
+                            </div>
+
+                            <div className="mt-4 space-y-4">
+                                {featuredItemsByCategory.map(({ category, items }) => (
+                                    <div key={category} className="space-y-2">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">{CATEGORY_LABELS[category]}</div>
+                                        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+                                            {items.map((item) => {
+                                                const styles = getTierStyles(item.tier);
+                                                const craftCost = getCraftCost(item.tier);
+                                                return (
+                                                    <div key={item.id} className="space-y-2">
+                                                        <GlassCard
+                                                            onClick={() => setSelectedItemId(item.id)}
+                                                            className="relative aspect-square cursor-pointer border p-2 transition-all hover:border-white/50"
+                                                            style={{ borderColor: styles.borderColor }}
+                                                        >
+                                                            <div className="flex h-full w-full items-center justify-center pb-5">
+                                                                <ItemArt src={item.imageUrl} alt={item.name} icon={item.icon} category={item.category} className="flex h-3/4 w-3/4 items-center justify-center" imgClassName="h-full w-full object-contain" iconClassName="text-2xl" />
+                                                            </div>
+                                                            <div className="absolute left-2 top-2 rounded-full border border-white/10 bg-black/50 px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/75">
+                                                                {CATEGORY_LABELS[item.category]}
+                                                            </div>
+                                                            <div className="absolute right-2 top-2 rounded-full border border-white/10 bg-black/50 px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.14em]" style={{ color: styles.badgeColor }}>
+                                                                T{item.tier}
+                                                            </div>
+                                                            <div className="absolute bottom-2 left-1 right-1 text-center">
+                                                                <span className="block truncate text-[9px] font-bold uppercase tracking-wider text-white">{item.name}</span>
+                                                                <span className="mt-0.5 block text-[8px] font-bold uppercase tracking-[0.18em] text-cyan-300">{craftCost} frag</span>
+                                                            </div>
+                                                        </GlassCard>
+                                                        <button
+                                                            onClick={() => { void handleCraftFeaturedItem(item.id); }}
+                                                            disabled={!!processing || (userProfile.wallet?.fragments || 0) < craftCost}
+                                                            className="luxe-skin-button inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            <span>{processing === `craft-${item.id}` ? '...' : 'Forjar'}</span>
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </GlassCard>
+                    )}
+
                     <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                         {selectedTier <= 3 ? (
                             craftableItems.map((item) => {

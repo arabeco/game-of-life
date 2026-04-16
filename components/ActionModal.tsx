@@ -17,6 +17,7 @@ import { OPERATIONAL_DAY_START_MINUTE, getActualDateStringForOperationalMinutes,
 import { getArenaDomainFlags } from '../utils/taskDomain';
 import { supabase } from '../supabaseClient';
 import { requestLocalNotificationPermission } from '../utils/localNotification';
+import { SCREEN_INTRO_TIP_CONTEXT_EVENT } from '../utils/screenIntroTips';
 
 import { Portal } from './Portal';
 import { EmojiGlyph } from './EmojiGlyph';
@@ -297,6 +298,24 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     useEffect(() => {
         if (!isNew || isPreview || mode !== 'edit') return;
         dispatchFirstUseEvent(FIRST_USE_ONBOARDING_EVENTS.actionModalOpened);
+    }, [isNew, isPreview, mode]);
+
+    useEffect(() => {
+        if (isPreview || mode !== 'edit' || !isNew) return;
+
+        window.dispatchEvent(
+            new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
+                detail: { tipId: 'action_modal' },
+            }),
+        );
+
+        return () => {
+            window.dispatchEvent(
+                new CustomEvent(SCREEN_INTRO_TIP_CONTEXT_EVENT, {
+                    detail: { tipId: null },
+                }),
+            );
+        };
     }, [isNew, isPreview, mode]);
 
 

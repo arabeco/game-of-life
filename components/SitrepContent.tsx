@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon, ZapIcon } from './Icons';
 import { ScheduledTask, Action } from '../types';
 import { shareElementWithFeedback } from './Share';
+import { ShareChoiceSheet } from './ShareChoiceSheet';
 import { getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasScheduledTime } from '../utils/taskDomain.js';
 import { getExpBoostHoursRemaining, getExpBoostLabel, hasActiveExpBoost } from '../utils/expBoostAccess';
@@ -122,9 +123,10 @@ const BattleTaskItem: React.FC<{
 };
 
 export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
-    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, scheduleAndCompleteNow, toggleTaskCompletion, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, getArenas, checklistItems, showToast, appMode } = useGame();
+    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, scheduleAndCompleteNow, toggleTaskCompletion, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, getArenas, checklistItems, showToast, addFeedEvent, appMode } = useGame();
 
     const [isAdjusting, setIsAdjusting] = useState(false);
+    const [isShareChoiceOpen, setIsShareChoiceOpen] = useState(false);
     const isBasicMode = appMode === 'BASIC';
     const softPanelClass = 'sitrep-neutral-panel';
     const progressTrackClass = 'sitrep-neutral-track';
@@ -402,6 +404,9 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         const relationshipBonusXp = dailyCommitment.relationshipBonusXp ?? 0;
         const performanceBonusXp = Math.max(0, sitrepBonus - relationshipBonusXp);
         const nextOperationalDate = shiftLocalDateString(dailyCommitment.date, 1);
+        const sitrepLabel = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(
+            new Date(`${dailyCommitment.date}T12:00:00`)
+        );
 
         const getRankLetter = (s: number) => {
             if (s === 100) return 'S';
@@ -429,6 +434,26 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         else if (score < 50) verdict = "A Batalha foi dura. Recupere e avance.";
         const checklistDone = dailySnapshot.checklistCompleted;
         const checklistTotal = dailySnapshot.checklistTotal;
+        const handleShareImage = () => {
+            void shareElementWithFeedback(showToast, 'sitrep-capture-area', {
+                title: 'Meu Painel Diario - Life OS',
+                preparingMessage: 'Preparando compartilhamento do painel...',
+                sharedMessage: 'Painel diario compartilhado.',
+                cancelledMessage: 'Compartilhamento cancelado.',
+                errorMessage: 'Nao foi possivel preparar o painel para compartilhar.',
+            });
+        };
+        const handlePostSitrepToFeed = () => {
+            addFeedEvent({
+                type: 'REPORT_COMPLETED',
+                content: {
+                    title: `Painel diario ${sitrepLabel}`,
+                    icon: '📋',
+                    score,
+                },
+            });
+            showToast('Painel diario postado no feed.', 'success');
+        };
 
         return (
             <>
@@ -485,15 +510,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         Descansar
                     </button>
                     <button
-                        onClick={() => {
-                            void shareElementWithFeedback(showToast, 'sitrep-capture-area', {
-                                title: 'Meu Painel Diario - Life OS',
-                                preparingMessage: 'Preparando compartilhamento do painel...',
-                                sharedMessage: 'Painel diario compartilhado.',
-                                cancelledMessage: 'Compartilhamento cancelado.',
-                                errorMessage: 'Nao foi possivel preparar o painel para compartilhar.',
-                            });
-                        }}
+                        onClick={() => setIsShareChoiceOpen(true)}
                         className="p-3 rounded-xl luxe-button-secondary"
                     >
                         <ShareIcon className="w-5 h-5" />
@@ -515,6 +532,14 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         Planejar amanha
                     </button>
                 </div>
+                <ShareChoiceSheet
+                    isOpen={isShareChoiceOpen}
+                    title="Resultado do painel diario"
+                    subtitle="Escolha se quer compartilhar a imagem ou publicar esse resultado no feed."
+                    onShareImage={handleShareImage}
+                    onPostToFeed={handlePostSitrepToFeed}
+                    onClose={() => setIsShareChoiceOpen(false)}
+                />
             </>
         )
     }

@@ -1010,7 +1010,7 @@ export const OracleAction: React.FC = () => {
         return formatAssistantText([
           'Nao encontrei uma acao com esse nome.',
           '',
-          'Sugestoes da sua Bay Area:',
+          'Sugestoes do seu Estoque de Acoes:',
           ...suggestions.map((action, index) => `${index + 1}. ${action.name}`),
           '',
           'Responda com o numero, o nome ou diga "nova".',
@@ -1186,9 +1186,9 @@ export const OracleAction: React.FC = () => {
       return formatAssistantText([
         `Rascunho pronto: desmarcar "${action?.name || 'a acao'}" em ${formatDateLabel(targetDate)}.`,
         task?.completed
-          ? 'Ela esta concluida; vou desfazer a conclusao e devolver para a Bay Area.'
+          ? 'Ela esta concluida; vou desfazer a conclusao e devolver para o Estoque de Acoes.'
           : task
-            ? 'Vou tirar essa instancia do horario/planner e devolver para a Bay Area se ela estiver no painel.'
+            ? 'Vou tirar essa instancia do horario/planner e devolver para o Estoque de Acoes se ela estiver no painel.'
             : 'Nao achei uma instancia nesse dia ainda; vou checar de novo ao aplicar.',
         ...buildConfirmationFooter(kind),
       ]);
@@ -1447,14 +1447,14 @@ export const OracleAction: React.FC = () => {
       if (targetTask.completed) {
         await toggleTaskCompletion(targetTask.id);
         updateTask(targetTask.id, { startTime: -1, completed: false });
-        return 'Conclusao desfeita e tarefa devolvida para a Bay Area.';
+        return 'Conclusao desfeita e tarefa devolvida para o Estoque de Acoes.';
       }
 
       if (dailyCommitment.taskIds.includes(targetTask.id)) {
         setDailyCommitment(dailyCommitment.taskIds.filter((taskId) => taskId !== targetTask.id));
       }
       updateTask(targetTask.id, { startTime: -1, completed: false });
-      return 'Tarefa desmarcada e devolvida para a Bay Area.';
+      return 'Tarefa desmarcada e devolvida para o Estoque de Acoes.';
     }
 
     if (kind === 'status') {
@@ -1470,7 +1470,7 @@ export const OracleAction: React.FC = () => {
         'Status rapido do dia:',
         `Pendencias hoje: ${pendingToday.length}`,
         `Concluidas hoje: ${completedToday.length}`,
-        `Bay Area ativa: ${bayAreaCount} acoes`,
+        `Estoque de Acoes: ${bayAreaCount}`,
         focusArenaName ? `Arena foco do ciclo: ${focusArenaName}` : '',
       ]);
     }

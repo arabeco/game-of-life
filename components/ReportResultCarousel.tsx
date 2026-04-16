@@ -7,9 +7,10 @@ import { getScoreGrade } from '../utils/dateUtils';
 import { VideoPlayer } from './VideoPlayer';
 import { CycleAtlasPanel } from './CycleAtlasPanel';
 import { resolveItemDef } from '../constants/items';
-import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon, ImageIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon } from './Icons';
 import { MetalReportCard } from './MetalReportCard';
 import { exportElementAsImage, shouldPreferNativeShare } from './Share';
+import { ShareChoiceSheet } from './ShareChoiceSheet';
 import './report-ui.css';
 const ReportRadarChart = React.lazy(() => import('./ReportRadarChart').then((m) => ({ default: m.ReportRadarChart })));
 
@@ -102,9 +103,18 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const [rewardReveal, setRewardReveal] = useState(false);
     const [rewardFlashActive, setRewardFlashActive] = useState(false);
     const [isExportingRewardCard, setIsExportingRewardCard] = useState(false);
+    const [isShareChoiceOpen, setIsShareChoiceOpen] = useState(false);
 
     const nextSlide = () => setCurrentSlide(prev => Math.min(prev + 1, totalSlides - 1));
     const prevSlide = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
+    const openShareChoice = () => setIsShareChoiceOpen(true);
+    const handleShareImageChoice = () => {
+        if (isRewardSlide) {
+            void handleExportRewardCard(true);
+            return;
+        }
+        onShare();
+    };
 
     const { metrics, highlight, assetProgress } = report;
     const weeklyAtlas = metrics.weeklyAtlas || [];
@@ -598,7 +608,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
                                 <div className="flex items-center gap-4">
                                     <button
-                                        onClick={onShare}
+                                        onClick={openShareChoice}
                                         className="report-icon-button"
                                         title="Compartilhar"
                                     >
@@ -617,24 +627,11 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                         ) : (
                             <div className="w-full flex gap-3 items-center">
                                 <button
-                                    onClick={() => {
-                                        void handleExportRewardCard(true);
-                                    }}
+                                    onClick={openShareChoice}
                                     className="report-icon-button shrink-0"
                                     title="Compartilhar"
                                 >
                                     <ShareIcon className="w-5 h-5" />
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        void handleExportRewardCard(false);
-                                    }}
-                                    className="report-icon-button shrink-0"
-                                    title="Baixar card"
-                                    disabled={isExportingRewardCard}
-                                >
-                                    <ImageIcon className="w-5 h-5" />
                                 </button>
 
                                 {onDelete && (
@@ -671,6 +668,16 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                     </div>
                 </div>
             </div>
+            <ShareChoiceSheet
+                isOpen={isShareChoiceOpen}
+                title={isRewardSlide ? 'Compartilhar resultado do ciclo' : 'Compartilhar relatorio'}
+                subtitle={isRewardSlide
+                    ? 'Escolha se quer compartilhar a imagem do fechamento ou publicar esse resultado no feed.'
+                    : 'Escolha se quer compartilhar a imagem do relatorio ou publicar esse resultado no feed.'}
+                onShareImage={handleShareImageChoice}
+                onPostToFeed={onPostToFeed}
+                onClose={() => setIsShareChoiceOpen(false)}
+            />
         </Portal>
     );
 };

@@ -51,7 +51,7 @@ const PRIMER_STEPS: PrimerStep[] = [
   },
   {
     id: 'bay-area',
-    title: 'Complete pela Bay Area',
+    title: 'Complete pelo Estoque',
     text: 'Quando fizer, registre por ali. O fluxo do dia continua sem te obrigar a abrir mil telas.',
     videoSrc: '/videos/onboarding/completar-bay-area.mp4',
     accentLabel: 'Passo 5',
@@ -59,7 +59,7 @@ const PRIMER_STEPS: PrimerStep[] = [
   {
     id: 'undo',
     title: 'Segure para desfazer',
-    text: 'Se marcou sem querer, segure a tarefa concluida e devolva para a Bay Area sem baguncar o dia.',
+    text: 'Se marcou sem querer, segure a tarefa concluida e devolva para o Estoque sem baguncar o dia.',
     videoSrc: '/videos/onboarding/hold-descompletar.mp4',
     accentLabel: 'Passo 6',
   },

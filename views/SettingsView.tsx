@@ -576,7 +576,7 @@ const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () 
                             Como o app funciona
                         </h4>
                         <p className="text-[10px] text-white/72 mt-1">
-                            Relembre o fluxo base: ciclo, arena, acao, planner, bay area e descanso.
+                            Relembre o fluxo base: ciclo, arena, acao, planner, estoque de acoes e descanso.
                         </p>
                         <p className="text-[9px] font-bold uppercase tracking-[0.18em] mt-2 text-yellow-100/80">
                             7 cenas curtas

@@ -1045,11 +1045,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         addFeedEvent({
             type: 'CYCLE_COMPLETED',
             content: {
-                title: activeCycle?.name || "um ciclo",
+                title: report.cycleName || activeCycle?.name || 'um ciclo',
                 score: report.performanceScore,
             },
         });
-        alert('Postado no feed!');
+        showToast('Resultado do ciclo postado no feed.', 'success');
     };
 
     const buildCycleFinalizedNotificationContent = useCallback((report: Report) => {

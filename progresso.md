@@ -4,6 +4,10 @@ Fonte: itens [v] removidos do relatorio operacional
 
 Nota 01/04/2026: o relatorio operacional foi enxugado e reconciliado. Os itens `[v]` dessa rodada ja estavam consolidados abaixo e nao foram duplicados.
 
+## Fechamento 15/04/2026
+[v] Refinar a passagem pelo `Relatorio` sem inventar outro vazio: manter a placa do legado com os numerinhos como centro da tela, preservar o CTA luxe de `Novo Ciclo` e atualizar a dica inicial da pagina para explicar melhor o valor de abrir um ciclo. 
+[v] Amarrar dicas de primeira vez nos modais de `Criar Arena` e `Criar Acao`, guiando melhor a pessoa no momento em que a estrutura e a execucao realmente nascem.
+
 ## Fechamento 31/03/2026
 [v] Refino do fluxo de `Campanhas`: criar, comprar, instalar e anexar arenas sem gambiarra.
 [v] Entrega do mentor para o pupilo ficou mais direta, com painel de campanhas e vinculos mais claro.

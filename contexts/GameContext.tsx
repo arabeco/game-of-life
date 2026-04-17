@@ -66,6 +66,20 @@ const mapToSnakeCase = (obj: any): any => {
     return obj;
 };
 
+const ASSET_KEY_ALIASES: Record<string, string> = {
+    espacoMental: 'espaco-mental',
+    espaco_mental: 'espaco-mental',
+};
+
+const normalizeAssetKeyedRecord = <T,>(value?: Partial<Record<string, T>> | null): Partial<Record<string, T>> => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return Object.entries(value).reduce((result, [key, entryValue]) => {
+        const normalizedKey = ASSET_KEY_ALIASES[key] || key;
+        result[normalizedKey] = entryValue as T;
+        return result;
+    }, {} as Partial<Record<string, T>>);
+};
+
 const normalizeActionFromDbRow = (row: any): Action => {
     const action = mapToCamelCase(row) as Action;
     const schedule = (action.context && typeof action.context === 'object')
@@ -4516,8 +4530,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     } as UserProfile;
                     next.visibleWidgets = Array.isArray(next.visibleWidgets) ? next.visibleWidgets : [];
                     next.sequenceItems = effectiveSequenceItems;
-                    next.assetArtById = next.assetArtById || {};
-                    next.assetWidgetValues = next.assetWidgetValues || {};
+                    next.assetArtById = normalizeAssetKeyedRecord(next.assetArtById);
+                    next.assetWidgetValues = normalizeAssetKeyedRecord(next.assetWidgetValues);
                     next.assetsVisibility = normalizeAssetsVisibilityScope(next.assetsVisibility);
                     next.masteryVisibility = normalizeMasteryVisibilityScope(next.masteryVisibility);
                     next.featsVisibility = normalizeFeatsVisibilityScope(next.featsVisibility);
@@ -8935,51 +8949,70 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             });
         }
 
-        const { error: sitrepDeleteError } = await supabase
-            .from('sitrep_reports')
-            .delete()
-            .eq('user_id', userId)
-            .eq('cycle_id', cycleId);
+        let didDeleteWithRpc = false;
+        const { data: safeDeleteData, error: safeDeleteError } = await supabase.rpc('delete_cycle_safely', {
+            p_cycle_id: cycleId,
+        });
 
-        if (sitrepDeleteError) {
-            console.error('Error deleting sitrep reports for cycle:', sitrepDeleteError);
-            showToast('Nao foi possivel limpar os registros do ciclo antes da exclusao.', 'error');
+        if (!safeDeleteError && safeDeleteData?.success) {
+            didDeleteWithRpc = true;
+            const rpcTaskIds = Array.isArray(safeDeleteData.deleted_scheduled_task_ids)
+                ? safeDeleteData.deleted_scheduled_task_ids.map((value: unknown) => String(value)).filter(Boolean)
+                : [];
+            rpcTaskIds.forEach((taskId: string) => scopedTaskIds.add(taskId));
+        } else if (safeDeleteError && !String(safeDeleteError.message || '').toLowerCase().includes('function')) {
+            console.error('Safe cycle deletion RPC failed:', safeDeleteError);
+            showToast('Nao foi possivel excluir esse ciclo com seguranca.', 'error');
             return false;
         }
 
-        if (scopedTaskIds.size > 0) {
-            const taskIdList = Array.from(scopedTaskIds);
-            for (let index = 0; index < taskIdList.length; index += 100) {
-                const batch = taskIdList.slice(index, index + 100);
-                const { error: taskDeleteError } = await supabase
-                    .from('scheduled_tasks')
-                    .delete()
-                    .in('id', batch);
+        if (!didDeleteWithRpc) {
+            const { error: sitrepDeleteError } = await supabase
+                .from('sitrep_reports')
+                .delete()
+                .eq('user_id', userId)
+                .eq('cycle_id', cycleId);
 
-                if (taskDeleteError) {
-                    console.error('Error deleting scheduled tasks for cycle:', taskDeleteError);
-                    showToast('Nao foi possivel limpar as acoes agendadas desse ciclo.', 'error');
-                    return false;
+            if (sitrepDeleteError) {
+                console.error('Error deleting sitrep reports for cycle:', sitrepDeleteError);
+                showToast('Nao foi possivel limpar os registros do ciclo antes da exclusao.', 'error');
+                return false;
+            }
+
+            if (scopedTaskIds.size > 0) {
+                const taskIdList = Array.from(scopedTaskIds);
+                for (let index = 0; index < taskIdList.length; index += 100) {
+                    const batch = taskIdList.slice(index, index + 100);
+                    const { error: taskDeleteError } = await supabase
+                        .from('scheduled_tasks')
+                        .delete()
+                        .in('id', batch);
+
+                    if (taskDeleteError) {
+                        console.error('Error deleting scheduled tasks for cycle:', taskDeleteError);
+                        showToast('Nao foi possivel limpar as acoes agendadas desse ciclo.', 'error');
+                        return false;
+                    }
                 }
             }
-        }
 
-        const { data: deletedRows, error } = await supabase
-            .from('cycles')
-            .delete()
-            .eq('id', cycleId)
-            .eq('user_id', userId)
-            .select('id');
+            const { data: deletedRows, error } = await supabase
+                .from('cycles')
+                .delete()
+                .eq('id', cycleId)
+                .eq('user_id', userId)
+                .select('id');
 
-        if (error) {
-            console.error("Error deleting cycle:", error);
-            showToast("Erro ao excluir ciclo.");
-            return false;
-        }
+            if (error) {
+                console.error("Error deleting cycle:", error);
+                showToast("Erro ao excluir ciclo.");
+                return false;
+            }
 
-        if (!deletedRows || deletedRows.length === 0) {
-            showToast('Nao foi possivel encontrar esse ciclo para excluir.', 'error');
-            return false;
+            if (!deletedRows || deletedRows.length === 0) {
+                showToast('Nao foi possivel encontrar esse ciclo para excluir.', 'error');
+                return false;
+            }
         }
 
         if (wasActiveCycle) {
@@ -9117,8 +9150,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (profileRes.data) {
             publicProfile = mapToCamelCase(profileRes.data) as UserProfile;
             publicProfile.visibleWidgets = Array.isArray(publicProfile.visibleWidgets) ? publicProfile.visibleWidgets : [];
-            publicProfile.assetArtById = publicProfile.assetArtById || {};
-            publicProfile.assetWidgetValues = publicProfile.assetWidgetValues || {};
+            publicProfile.assetArtById = normalizeAssetKeyedRecord(publicProfile.assetArtById);
+            publicProfile.assetWidgetValues = normalizeAssetKeyedRecord(publicProfile.assetWidgetValues);
             publicProfile.assetsVisibility = normalizeAssetsVisibilityScope(publicProfile.assetsVisibility);
             publicProfile.masteryVisibility = normalizeMasteryVisibilityScope(publicProfile.masteryVisibility);
             publicProfile.featsVisibility = normalizeFeatsVisibilityScope(publicProfile.featsVisibility);

@@ -10,6 +10,7 @@ import { hasScheduledTime } from '../utils/taskDomain.js';
 import { getExpBoostHoursRemaining, getExpBoostLabel, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { buildCommitmentStatsSnapshot, buildDailyWidgetSnapshot } from '../utils/widgetSnapshots';
+import { safeVibrate } from '../utils/safeVibrate';
 import './core-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 
@@ -73,7 +74,7 @@ const BattleTaskItem: React.FC<{
         pressTimer.current = setTimeout(() => {
             onQuickComplete(action.id);
             setIsHolding(false);
-            if (navigator.vibrate) navigator.vibrate(50);
+            safeVibrate(50);
         }, 800);
     };
 

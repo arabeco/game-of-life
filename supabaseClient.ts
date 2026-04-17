@@ -4,6 +4,7 @@ import { isCapacitorNativeRuntime } from './utils/runtimePlatform';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const isRealtimeEnabled = import.meta.env.VITE_ENABLE_SUPABASE_REALTIME === 'true';
 
 if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY devem estar definidas nas variaveis de ambiente');
@@ -65,7 +66,23 @@ const authStorage = {
     },
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+const createNoopRealtimeChannel = () => {
+    const channel = {
+        on: () => channel,
+        subscribe: (callback?: (status: string) => void) => {
+            callback?.('CLOSED');
+            return channel;
+        },
+        unsubscribe: async () => 'ok',
+        track: async () => 'ok',
+        untrack: async () => 'ok',
+        send: async () => 'ok',
+    };
+
+    return channel;
+};
+
+const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -75,3 +92,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         storage: authStorage,
     }
 });
+
+export const supabase = isRealtimeEnabled
+    ? supabaseClient
+    : Object.assign(supabaseClient, {
+        channel: () => createNoopRealtimeChannel(),
+        removeChannel: async () => 'ok',
+    });

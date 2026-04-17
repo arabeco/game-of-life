@@ -16,6 +16,7 @@ import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { normalizeDomainLabel } from '../utils/taskDomain.js';
 import { ArenaCard } from './ArenaCard';
 import { SupabaseService } from '../services/SupabaseService';
+import { safeVibrate } from '../utils/safeVibrate';
 
 const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; emoji: string; x: number; y: number; note?: string }[] = [
     { id: 'fogueira', label: 'Fogueira', emoji: '🔥', x: 42, y: 51 },
@@ -394,7 +395,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
         longPressTimer.current = setTimeout(() => {
             isLongPressTriggered.current = true;
             // Visual feedback of completion happens here (maybe vibrate if possible)
-            if (navigator.vibrate) navigator.vibrate(200);
+            safeVibrate(200);
 
             setPressingSlot(null);
             setShowHoldVisual(false);

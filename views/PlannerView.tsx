@@ -20,6 +20,8 @@ import { PLANNER_OPEN_ACTION_MODAL_EVENT, RestScreenActionViewRequestDetail } fr
 import '../components/core-ui.css';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 
+type PlannerMode = 'horario' | 'execucao';
+
 const DayHeader: React.FC<{ currentDate: Date }> = ({ currentDate }) => {
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' });
     return (
@@ -247,6 +249,265 @@ const CurrentTimeIndicator = React.forwardRef<HTMLDivElement, { top: number }>((
 });
 CurrentTimeIndicator.displayName = 'CurrentTimeIndicator';
 
+const PlannerSegmentedToggle: React.FC<{
+    value: string;
+    options: Array<{ value: string; label: string; hint?: string }>;
+    onChange: (value: string) => void;
+    id?: string;
+}> = ({ value, options, onChange, id }) => (
+    <div className="planner-pill-switch flex items-center bg-white/[0.03] rounded-full p-0.5 text-[10px] border border-white/6" id={id}>
+        {options.map(option => (
+            <button
+                key={option.value}
+                type="button"
+                data-active={value === option.value}
+                onClick={() => onChange(option.value)}
+                title={option.hint}
+                className={`planner-view-btn px-2.5 py-1 rounded-full transition-all duration-200 ${value === option.value ?'bg-white/10 text-white shadow-[0_0_18px_rgba(255,255,255,0.06)]' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+                {option.label}
+            </button>
+        ))}
+    </div>
+);
+
+const UnscheduledTaskCard: React.FC<{
+    task: ScheduledTask;
+    action?: Action;
+    compact?: boolean;
+    draggable?: boolean;
+    onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
+    onTaskClick: (task: ScheduledTask) => void;
+    onComplete: (actionId: string, taskId?: string) => void;
+}> = ({ task, action, compact = false, draggable = true, onCustomDragStart, onTaskClick, onComplete }) => {
+    const { getActionBackgroundStyle } = useGame();
+    const cardRef = useRef<HTMLDivElement>(null);
+    const backgroundStyle = action ?getActionBackgroundStyle(action.id) : undefined;
+
+    const handleDragStart = (event: MouseEvent | TouchEvent) => {
+        if (!draggable || !action) return;
+        const ghost = (
+            <div className="rounded-2xl border border-white/12 bg-black/80 px-3 py-2 text-left opacity-90 shadow-2xl backdrop-blur-md">
+                <div className="flex items-center gap-2">
+                    <EmojiGlyph symbol={action.icon || '\u{1F4DD}'} size="action" className="text-white" />
+                    <span className="max-w-[160px] truncate text-xs font-black uppercase tracking-[0.08em] text-white">{action.name}</span>
+                </div>
+            </div>
+        );
+        const duration = action.actionType === 'Marco' ?Math.max(15, task.duration) : task.duration;
+        onCustomDragStart(event, { type: 'reschedule_task', payload: task.id, duration }, ghost, cardRef);
+    };
+
+    const longPressEvents = useLongPress({
+        onDragStart: draggable ?handleDragStart : undefined,
+        onClick: () => onTaskClick(task),
+        delay: 260,
+        dragThreshold: 18,
+    });
+
+    return (
+        <div
+            ref={cardRef}
+            {...longPressEvents}
+            className={`group relative select-none overflow-hidden rounded-[22px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.28))] shadow-[0_16px_35px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all duration-200 hover:border-white/18 hover:bg-white/[0.055] active:scale-[0.99] ${compact ?'px-3 py-2' : 'px-4 py-3'}`}
+            style={{ touchAction: draggable ?'none' : 'auto' }}
+        >
+            <div className="absolute inset-y-0 left-0 w-1 opacity-60" style={backgroundStyle || { background: 'var(--skin-accent-color)' }} />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,0.11),transparent_34%)] opacity-70" />
+            <div className="relative z-10 flex items-center gap-3">
+                <div className={`flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/35 ${compact ?'h-9 w-9' : 'h-11 w-11'}`}>
+                    <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-black uppercase tracking-[0.08em] text-white">{action?.name || 'Ação sem vínculo'}</div>
+                    <div className="mt-0.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white/42">
+                        <span>Execução livre</span>
+                        <span className="h-1 w-1 rounded-full bg-white/18" />
+                        <span>{task.duration || action?.duration || 30} min</span>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        if (action) onComplete(action.id, task.id);
+                    }}
+                    className="shrink-0 rounded-full border border-emerald-300/20 bg-emerald-300/8 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-emerald-200 transition-colors hover:bg-emerald-300/14"
+                >
+                    Fechar
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const VirtualExecutionCard: React.FC<{
+    action: Action;
+    count: number;
+    isUnlimited?: boolean;
+    taskId?: string;
+    onComplete: (actionId: string, taskId?: string) => void;
+    onActionClick: (action: Action) => void;
+}> = ({ action, count, isUnlimited, taskId, onComplete, onActionClick }) => {
+    const { getActionBackgroundStyle } = useGame();
+    const backgroundStyle = getActionBackgroundStyle(action.id);
+
+    return (
+        <div
+            onClick={() => onActionClick(action)}
+            className="group relative select-none overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.07),rgba(255,255,255,0.025)_45%,rgba(0,0,0,0.34))] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-white/18 active:scale-[0.99]"
+        >
+            <div className="absolute inset-x-0 top-0 h-px opacity-80" style={backgroundStyle} />
+            <div className="absolute -right-12 -top-16 h-32 w-32 rounded-full blur-3xl opacity-20" style={backgroundStyle} />
+            <div className="relative z-10 flex items-start gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/35">
+                    <EmojiGlyph symbol={action.icon || '\u{1F4DD}'} size="action" className="text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-black uppercase tracking-[0.08em] text-white">{action.name}</div>
+                    <div className="mt-1 text-[11px] leading-relaxed text-white/48">
+                        {action.description?.trim() || 'Ação pronta para execução livre. Volte ao Horário quando quiser transformar em agenda.'}
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-[0.14em]">
+                        <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-white/48">{action.duration || 30} min</span>
+                        <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-white/48">{isUnlimited ?'Livre' : `${Math.max(0, count)}x hoje`}</span>
+                    </div>
+                </div>
+            </div>
+            <div className="relative z-10 mt-4 flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onComplete(action.id, taskId);
+                    }}
+                    className="flex-1 rounded-full border border-emerald-300/20 bg-emerald-300/8 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200 transition-colors hover:bg-emerald-300/14"
+                >
+                    Concluir agora
+                </button>
+                <button
+                    type="button"
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onActionClick(action);
+                    }}
+                    className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/58 transition-colors hover:text-white"
+                >
+                    Abrir
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const UnscheduledTasksStack: React.FC<{
+    tasks: ScheduledTask[];
+    actions: Action[];
+    onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
+    onTaskClick: (task: ScheduledTask) => void;
+    onComplete: (actionId: string, taskId?: string) => void;
+}> = ({ tasks, actions, onCustomDragStart, onTaskClick, onComplete }) => {
+    if (tasks.length === 0) return null;
+    const getActionById = (id: string) => actions.find(action => action.id === id);
+
+    return (
+        <div className="px-3 pb-3 pt-2">
+            <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(0,0,0,0.2))] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.24)] backdrop-blur-md">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                    <div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/58">Execução livre</div>
+                        <div className="mt-0.5 text-[11px] text-white/36">Sem horário ainda. Arraste para o grid quando quiser agendar.</div>
+                    </div>
+                    <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[10px] font-black text-white/45">{tasks.length}</div>
+                </div>
+                <div className="space-y-2">
+                    {tasks.map(task => (
+                        <UnscheduledTaskCard
+                            key={task.id}
+                            task={task}
+                            action={getActionById(task.actionId)}
+                            compact
+                            onCustomDragStart={onCustomDragStart}
+                            onTaskClick={onTaskClick}
+                            onComplete={onComplete}
+                        />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const PlannerExecutionView: React.FC<{
+    entries: Array<[string, { count: number; isUnlimited: boolean; taskIds?: string[] }]>;
+    tasksById: Map<string, ScheduledTask>;
+    getActionById: (id: string) => Action | undefined;
+    selectedOperationalDateString: string;
+    onComplete: (actionId: string, taskId?: string) => void;
+    onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
+    onTaskClick: (task: ScheduledTask) => void;
+    onActionClick: (action: Action) => void;
+}> = ({ entries, tasksById, getActionById, selectedOperationalDateString, onComplete, onCustomDragStart, onTaskClick, onActionClick }) => (
+    <div className="min-h-full px-3 py-4">
+        <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.045),rgba(0,0,0,0.24))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_38%,rgba(255,255,255,0.025))]" />
+            <div className="relative z-10 mb-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--skin-accent-color)]/80">Modo Execução</div>
+                <h2 className="mt-1 text-xl font-black tracking-[0.02em] text-white">O que faz sentido fazer agora?</h2>
+                <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-white/48">
+                    Sem grade, sem relógio. Escolha uma ação, conclua daqui ou arraste para o modo Horário quando quiser marcar um bloco.
+                </p>
+            </div>
+
+            {entries.length > 0 ?(
+                <div className="relative z-10 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {entries.map(([actionId, payload]) => {
+                        const action = getActionById(actionId);
+                        if (!action) return null;
+                        const concreteTaskId = payload.taskIds?.find(taskId => {
+                            const task = tasksById.get(taskId);
+                            return Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
+                        });
+                        const concreteTask = concreteTaskId ?tasksById.get(concreteTaskId) : undefined;
+
+                        if (concreteTask) {
+                            return (
+                                <UnscheduledTaskCard
+                                    key={`${actionId}-${concreteTask.id}`}
+                                    task={concreteTask}
+                                    action={action}
+                                    draggable={false}
+                                    onCustomDragStart={onCustomDragStart}
+                                    onTaskClick={onTaskClick}
+                                    onComplete={onComplete}
+                                />
+                            );
+                        }
+
+                        return (
+                            <VirtualExecutionCard
+                                key={actionId}
+                                action={action}
+                                count={payload.count}
+                                isUnlimited={payload.isUnlimited}
+                                taskId={concreteTaskId}
+                                onComplete={onComplete}
+                                onActionClick={onActionClick}
+                            />
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="relative z-10 flex min-h-[320px] flex-col items-center justify-center rounded-[28px] border border-dashed border-white/10 bg-black/18 px-6 text-center">
+                    <div className="text-4xl opacity-70">{'\u{1F4DD}'}</div>
+                    <div className="mt-3 text-sm font-black uppercase tracking-[0.16em] text-white/72">Nada em execução</div>
+                    <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-white/42">Crie uma ação ou ative arenas do ciclo para montar seu plano livre.</p>
+                </div>
+            )}
+        </div>
+    </div>
+);
+
 const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFactor: number, operationalDate: string, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, dropIndicator: { top: number, height: number } | null, isToday: boolean, currentTime: Date, timeIndicatorRef: React.Ref<HTMLDivElement> }> = ({ tasks, actions, scaleFactor, operationalDate, onCustomDragStart, dropIndicator, isToday, currentTime, timeIndicatorRef }) => {
     const hours = Array.from({ length: (OPERATIONAL_DAY_END_HOUR - 4) + 1 }, (_, i) => i + 4);
     const getActionById = (id: string) => actions.find(a => a.id === id);
@@ -360,10 +621,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         activeCycle,
         userProfile,
         getActionBackgroundStyle,
+        showToast,
     } = useGame();
     const { isTutorialActive, currentStep, nextStep } = useTutorial();
     const [currentDate, setCurrentDate] = useState(() => buildLocalDateFromString(getOperationalDateString()));
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+    const [plannerMode, setPlannerMode] = useState<PlannerMode>('horario');
     const [isChecklistVisible, setChecklistVisible] = useState(false);
     const [isSitrepVisible, setIsSitrepVisible] = useState(false);
 
@@ -1115,7 +1378,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
     // Auto-scroll useEffects
     useEffect(() => {
-        if (viewMode === 'day' && scrollContainerRef.current) {
+        if (plannerMode === 'horario' && viewMode === 'day' && scrollContainerRef.current) {
             const isOperationalToday = formatLocalDateString(currentDate) === getOperationalDateString();
             if (isOperationalToday) {
                 setTimeout(() => {
@@ -1123,9 +1386,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 }, 200);
             }
         }
-    }, [currentDate, currentTime, scrollPlannerToIndicator, viewMode, zoomLevel]);
+    }, [currentDate, currentTime, plannerMode, scrollPlannerToIndicator, viewMode, zoomLevel]);
     useEffect(() => {
-        if (viewMode === 'week' && scrollContainerRef.current) {
+        if (plannerMode === 'horario' && viewMode === 'week' && scrollContainerRef.current) {
             const startOfWeek = new Date(currentDate);
             const day = startOfWeek.getDay();
             const diff = startOfWeek.getDate() - day + (day === 0 ?-6 : 1);
@@ -1141,7 +1404,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 }, 200);
             }
         }
-    }, [currentDate, currentTime, scrollPlannerToIndicator, viewMode, zoomLevel]);
+    }, [currentDate, currentTime, plannerMode, scrollPlannerToIndicator, viewMode, zoomLevel]);
 
     const selectedOperationalDateString = formatLocalDateString(currentDate);
     const plannerScopedTasks = useMemo(() => {
@@ -1174,9 +1437,22 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const dailyTasks = getTasksForDate(currentDate);
     const bayAreaTasks = plannerScopedTasks.filter(isTaskInPool); // Waiting bay scoped to the active cycle or visible operational day
     const scheduledTasks = dailyTasks.filter(hasScheduledTime); // For DailyView
+    const weeklyScheduledTasks = tasks.filter(hasScheduledTime);
     
     const allTasksCompleted = checklistItems.every(item => item.completed);
     const isToday = formatLocalDateString(currentDate) === getOperationalDateString();
+
+    useEffect(() => {
+        if (plannerMode !== 'horario' || bayAreaTasks.length === 0) return;
+        try {
+            const toastKey = 'planner_execution_free_stack_toast_v1';
+            if (localStorage.getItem(toastKey) === 'seen') return;
+            showToast('Ações da Execução ficam na pilha livre até você arrastar para um horário.', 'info');
+            localStorage.setItem(toastKey, 'seen');
+        } catch {
+            showToast('Ações da Execução ficam na pilha livre até você arrastar para um horário.', 'info');
+        }
+    }, [bayAreaTasks.length, plannerMode, showToast]);
 
     // UNIFY POOL AND BAY AREA TASKS FOR DISPLAY
     // "Estoque e Espera é a mesma coisa"
@@ -1287,9 +1563,25 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             <span className="planner-date-label tracking-[0.06em] text-[12px] font-semibold w-[5.75rem] text-center text-gray-200 capitalize truncate">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span>
                             <button onClick={() => changeDate(1)} className="planner-soft-control p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
                         </div>
-                        <div className="planner-pill-switch flex items-center justify-self-end bg-white/[0.03] rounded-full p-0.5 text-[10px] border border-white/6" id="view-mode-selector">
-                            <button data-active={viewMode === 'day'} onClick={() => setViewMode('day')} className={`planner-view-btn px-2.5 py-1 rounded-full transition-colors ${viewMode === 'day' ?'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Dia</button>
-                            <button data-active={viewMode === 'week'} id="eras-button" onClick={() => setViewMode('week')} className={`planner-view-btn px-2.5 py-1 rounded-full transition-colors ${viewMode === 'week' ?'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Semana</button>
+                        <div className="flex min-w-0 justify-self-end items-center gap-1.5">
+                            <PlannerSegmentedToggle
+                                id="view-mode-selector"
+                                value={viewMode}
+                                onChange={(value) => setViewMode(value as 'day' | 'week')}
+                                options={[
+                                    { value: 'day', label: 'Dia' },
+                                    { value: 'week', label: 'Semana' },
+                                ]}
+                            />
+                            <PlannerSegmentedToggle
+                                id="planner-mode-selector"
+                                value={plannerMode}
+                                onChange={(value) => setPlannerMode(value as PlannerMode)}
+                                options={[
+                                    { value: 'horario', label: 'Horário', hint: 'Quando vou fazer?' },
+                                    { value: 'execucao', label: 'Execução', hint: 'O que faz sentido fazer agora?' },
+                                ]}
+                            />
                         </div>
                     </div>
 
@@ -1331,12 +1623,39 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 style={{ scrollBehavior: 'smooth', overscrollBehaviorY: 'contain' }}
             >
                 <div className={dragState.isDragging ?'pointer-events-auto' : ''}>
-                    {viewMode === 'day' ?(
+                    {plannerMode === 'execucao' ?(
+                        <PlannerExecutionView
+                            entries={visibleBayAreaEntries}
+                            tasksById={tasksById}
+                            getActionById={getActionById}
+                            selectedOperationalDateString={selectedOperationalDateString}
+                            onComplete={(actionId, taskId) => scheduleAndCompleteNow(actionId, taskId)}
+                            onCustomDragStart={handleCustomDragStart}
+                            onTaskClick={handleTaskClick}
+                            onActionClick={(action) => setModalData({ action })}
+                        />
+                    ) : viewMode === 'day' ?(
                         <div>
+                            <UnscheduledTasksStack
+                                tasks={bayAreaTasks}
+                                actions={actions}
+                                onCustomDragStart={handleCustomDragStart}
+                                onTaskClick={handleTaskClick}
+                                onComplete={(actionId, taskId) => scheduleAndCompleteNow(actionId, taskId)}
+                            />
                             <DailyView tasks={scheduledTasks} actions={actions} scaleFactor={scaleFactor} operationalDate={formatLocalDateString(currentDate)} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
                         </div>
                     ) : (
-                        <WeeklyPlannerGrid currentDate={currentDate} tasks={tasks} actions={actions} onCustomDragStart={handleCustomDragStart} onTaskClick={handleTaskClick} scaleFactor={scaleFactor} stickyHeaderOffset={'0px'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />
+                        <div>
+                            <UnscheduledTasksStack
+                                tasks={bayAreaTasks}
+                                actions={actions}
+                                onCustomDragStart={handleCustomDragStart}
+                                onTaskClick={handleTaskClick}
+                                onComplete={(actionId, taskId) => scheduleAndCompleteNow(actionId, taskId)}
+                            />
+                            <WeeklyPlannerGrid currentDate={currentDate} tasks={weeklyScheduledTasks} actions={actions} onCustomDragStart={handleCustomDragStart} onTaskClick={handleTaskClick} scaleFactor={scaleFactor} stickyHeaderOffset={'0px'} currentTime={currentTime} timeIndicatorRef={weeklyTimeIndicatorRef} dropIndicator={weeklyDropIndicator} />
+                        </div>
                     )}
                 </div>
             </div>

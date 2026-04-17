@@ -5591,7 +5591,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const now = Date.now();
-        if (now - relationshipInviteExpiryCheckedAtRef.current > 15 * 60 * 1000) {
+        if (import.meta.env.VITE_ENABLE_RELATIONSHIP_INVITE_EXPIRY === 'true' && now - relationshipInviteExpiryCheckedAtRef.current > 15 * 60 * 1000) {
             relationshipInviteExpiryCheckedAtRef.current = now;
             try {
                 const { error } = await supabase.rpc('expire_stale_relationship_link_invites');

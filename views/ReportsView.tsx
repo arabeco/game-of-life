@@ -367,6 +367,9 @@ const EditCycleEndDateModal: React.FC<{
                 <ConfirmationModal
                     title="Excluir ciclo?"
                     message="Isso vai remover o ciclo, o relatório dele, os sitreps ligados a ele e as ações agendadas desse período. Essa ação não pode ser desfeita."
+                    eyebrow="ATO IRREVERSIVEL"
+                    variant="danger"
+                    icon={<Trash2Icon className="h-5 w-5" />}
                     confirmLabel={isDeleting ? 'EXCLUINDO...' : 'EXCLUIR CICLO'}
                     cancelLabel="VOLTAR"
                     onCancel={() => {
@@ -465,6 +468,9 @@ const EditHistoricalCycleModal: React.FC<{
                 <ConfirmationModal
                     title="Excluir ciclo?"
                     message="Isso vai remover esse ciclo do histórico, apagar os sitreps ligados a ele e limpar as ações agendadas registradas nesse período."
+                    eyebrow="ATO IRREVERSIVEL"
+                    variant="danger"
+                    icon={<Trash2Icon className="h-5 w-5" />}
                     confirmLabel={isDeleting ? 'EXCLUINDO...' : 'EXCLUIR CICLO'}
                     cancelLabel="VOLTAR"
                     onCancel={() => {
@@ -590,6 +596,9 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                 <ConfirmationModal
                     title="Excluir ciclo?"
                     message="Isso remove o ciclo do histórico e limpa os registros operacionais ligados a ele. Essa ação não pode ser desfeita."
+                    eyebrow="ATO IRREVERSIVEL"
+                    variant="danger"
+                    icon={<Trash2Icon className="h-5 w-5" />}
                     confirmLabel="EXCLUIR CICLO"
                     cancelLabel="VOLTAR"
                     onCancel={() => setConfirmDeleteOpen(false)}

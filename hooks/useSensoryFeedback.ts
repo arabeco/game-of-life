@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { safeVibrate } from '../utils/safeVibrate';
 
 type FeedbackType =
     | 'click'
@@ -113,44 +114,44 @@ export const useSensoryFeedback = () => {
     const trigger = useCallback((type: FeedbackType) => {
         const sensoryProfile: 'sovereign' | 'basic' = appMode === 'BASIC' ? 'basic' : 'sovereign';
 
-        if (getHapticsEnabled() && navigator.vibrate) {
+        if (getHapticsEnabled()) {
             if (sensoryProfile === 'basic') {
                 const basicPattern: number | number[] =
                     type === 'error' ? 16 :
                     type === 'warning' ? 10 :
                     type === 'level_up' || type === 'fanfare' ? [8, 24, 10] :
                     8;
-                navigator.vibrate(basicPattern);
+                safeVibrate(basicPattern);
             } else {
                 switch (type) {
                     case 'click':
                     case 'click_soft':
                     case 'click_crisp':
                     case 'click_metal':
-                        navigator.vibrate(8);
+                        safeVibrate(8);
                         break;
                     case 'success':
-                        navigator.vibrate([12, 24, 12]);
+                        safeVibrate([12, 24, 12]);
                         break;
                     case 'error':
-                        navigator.vibrate([50, 50, 50]);
+                        safeVibrate([50, 50, 50]);
                         break;
                     case 'warning':
-                        navigator.vibrate([24, 40]);
+                        safeVibrate([24, 40]);
                         break;
                     case 'impact':
-                        navigator.vibrate(18);
+                        safeVibrate(18);
                         break;
                     case 'whoosh':
-                        navigator.vibrate(12);
+                        safeVibrate(12);
                         break;
                     case 'notification':
-                        navigator.vibrate([25, 25]);
+                        safeVibrate([25, 25]);
                         break;
                     case 'fanfare':
                     case 'level_up':
                         // Soberano: pulso crescente para milestones.
-                        navigator.vibrate([120, 40, 180, 40, 240]);
+                        safeVibrate([120, 40, 180, 40, 240]);
                         break;
                 }
             }

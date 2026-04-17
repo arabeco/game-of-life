@@ -279,10 +279,16 @@ const UnscheduledTaskCard: React.FC<{
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
     onTaskClick: (task: ScheduledTask) => void;
     onComplete: (actionId: string, taskId?: string) => void;
-}> = ({ task, action, compact = false, draggable = true, onCustomDragStart, onTaskClick, onComplete }) => {
+    onToggleTask?: (taskId: string) => void;
+}> = ({ task, action, compact = false, draggable = true, onCustomDragStart, onTaskClick, onComplete, onToggleTask }) => {
     const { getActionBackgroundStyle } = useGame();
     const cardRef = useRef<HTMLDivElement>(null);
     const backgroundStyle = action ?getActionBackgroundStyle(action.id) : undefined;
+    const isScheduled = hasScheduledTime(task);
+    const stateLabel = task.completed ?'Concluída' : isScheduled ?'Com horário' : 'Execução livre';
+    const timeLabel = isScheduled
+        ? `${String(Math.floor(task.startTime / 60)).padStart(2, '0')}:${String(task.startTime % 60).padStart(2, '0')}`
+        : 'sem horário';
 
     const handleDragStart = (event: MouseEvent | TouchEvent) => {
         if (!draggable || !action) return;
@@ -309,11 +315,12 @@ const UnscheduledTaskCard: React.FC<{
         <div
             ref={cardRef}
             {...longPressEvents}
-            className={`group relative select-none overflow-hidden rounded-[22px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.28))] shadow-[0_16px_35px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all duration-200 hover:border-white/18 hover:bg-white/[0.055] active:scale-[0.99] ${compact ?'px-3 py-2' : 'px-4 py-3'}`}
+            className={`group relative select-none overflow-hidden rounded-[22px] border bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.28))] shadow-[0_16px_35px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all duration-200 hover:border-white/18 hover:bg-white/[0.055] active:scale-[0.99] ${task.completed ?'border-emerald-300/18 opacity-82' : 'border-white/10'} ${compact ?'px-3 py-2' : 'px-4 py-3'}`}
             style={{ touchAction: draggable ?'none' : 'auto' }}
         >
             <div className="absolute inset-y-0 left-0 w-1 opacity-60" style={backgroundStyle || { background: 'var(--skin-accent-color)' }} />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,0.11),transparent_34%)] opacity-70" />
+            {task.completed && <div className="absolute inset-0 bg-emerald-300/[0.035]" />}
             <div className="relative z-10 flex items-center gap-3">
                 <div className={`flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/35 ${compact ?'h-9 w-9' : 'h-11 w-11'}`}>
                     <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
@@ -321,20 +328,26 @@ const UnscheduledTaskCard: React.FC<{
                 <div className="min-w-0 flex-1">
                     <div className="truncate text-[13px] font-black uppercase tracking-[0.08em] text-white">{action?.name || 'Ação sem vínculo'}</div>
                     <div className="mt-0.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white/42">
-                        <span>Execução livre</span>
+                        <span className={task.completed ?'text-emerald-200/70' : ''}>{stateLabel}</span>
                         <span className="h-1 w-1 rounded-full bg-white/18" />
                         <span>{task.duration || action?.duration || 30} min</span>
+                        <span className="h-1 w-1 rounded-full bg-white/18" />
+                        <span>{timeLabel}</span>
                     </div>
                 </div>
                 <button
                     type="button"
                     onClick={(event) => {
                         event.stopPropagation();
-                        if (action) onComplete(action.id, task.id);
+                        if (onToggleTask) {
+                            onToggleTask(task.id);
+                        } else if (action) {
+                            onComplete(action.id, task.id);
+                        }
                     }}
-                    className="shrink-0 rounded-full border border-emerald-300/20 bg-emerald-300/8 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-emerald-200 transition-colors hover:bg-emerald-300/14"
+                    className={`shrink-0 rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] transition-colors ${task.completed ?'border-white/10 bg-white/[0.035] text-white/50 hover:text-white' : 'border-emerald-300/20 bg-emerald-300/8 text-emerald-200 hover:bg-emerald-300/14'}`}
                 >
-                    Fechar
+                    {task.completed ?'Reabrir' : 'Fechar'}
                 </button>
             </div>
         </div>
@@ -440,73 +453,100 @@ const UnscheduledTasksStack: React.FC<{
 
 const PlannerExecutionView: React.FC<{
     entries: Array<[string, { count: number; isUnlimited: boolean; taskIds?: string[] }]>;
+    dayTasks: ScheduledTask[];
     tasksById: Map<string, ScheduledTask>;
     getActionById: (id: string) => Action | undefined;
     selectedOperationalDateString: string;
     onComplete: (actionId: string, taskId?: string) => void;
+    onToggleTask: (taskId: string) => void;
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
     onTaskClick: (task: ScheduledTask) => void;
     onActionClick: (action: Action) => void;
-}> = ({ entries, tasksById, getActionById, selectedOperationalDateString, onComplete, onCustomDragStart, onTaskClick, onActionClick }) => (
-    <div className="min-h-full px-3 py-4">
-        <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.045),rgba(0,0,0,0.24))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_38%,rgba(255,255,255,0.025))]" />
-            <div className="relative z-10 mb-4">
-                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--skin-accent-color)]/80">Modo Execução</div>
-                <h2 className="mt-1 text-xl font-black tracking-[0.02em] text-white">O que faz sentido fazer agora?</h2>
-                <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-white/48">
-                    Sem grade, sem relógio. Escolha uma ação, conclua daqui ou arraste para o modo Horário quando quiser marcar um bloco.
-                </p>
+}> = ({ entries, dayTasks, tasksById, getActionById, selectedOperationalDateString, onComplete, onToggleTask, onCustomDragStart, onTaskClick, onActionClick }) => {
+    const visibleDayTasks = [...dayTasks]
+        .sort((left, right) => {
+            if (left.completed !== right.completed) return left.completed ?1 : -1;
+            const leftTime = hasScheduledTime(left) ? left.startTime : Number.MAX_SAFE_INTEGER - 1;
+            const rightTime = hasScheduledTime(right) ? right.startTime : Number.MAX_SAFE_INTEGER - 1;
+            if (leftTime !== rightTime) return leftTime - rightTime;
+            return left.createdAt?.localeCompare(right.createdAt || '') || 0;
+        });
+    const visibleDayTaskIds = new Set(visibleDayTasks.map(task => task.id));
+    const virtualEntries = entries.filter(([, payload]) => {
+        const concreteTaskId = payload.taskIds?.find(taskId => {
+            const task = tasksById.get(taskId);
+            return Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
+        });
+        return !concreteTaskId || !visibleDayTaskIds.has(concreteTaskId);
+    });
+    const hasContent = visibleDayTasks.length > 0 || virtualEntries.length > 0;
+
+    return (
+        <div className="min-h-full px-3 py-4">
+            <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.045),rgba(0,0,0,0.24))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_38%,rgba(255,255,255,0.025))]" />
+                <div className="relative z-10 mb-4">
+                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--skin-accent-color)]/80">Modo Execução</div>
+                    <h2 className="mt-1 text-xl font-black tracking-[0.02em] text-white">O que faz sentido fazer agora?</h2>
+                    <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-white/48">
+                        Sem grade, sem relógio. O dia aparece em pilha: pendentes primeiro, concluídas depois, mantendo a cor e o estado de cada bloco.
+                    </p>
+                </div>
+
+                {hasContent ?(
+                    <div className="relative z-10 space-y-3">
+                        {visibleDayTasks.length > 0 && (
+                            <div className="space-y-2">
+                                {visibleDayTasks.map(task => (
+                                    <UnscheduledTaskCard
+                                        key={task.id}
+                                        task={task}
+                                        action={getActionById(task.actionId)}
+                                        draggable={false}
+                                        onCustomDragStart={onCustomDragStart}
+                                        onTaskClick={onTaskClick}
+                                        onComplete={onComplete}
+                                        onToggleTask={onToggleTask}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {virtualEntries.length > 0 && (
+                            <div className="grid grid-cols-1 gap-3 pt-1 md:grid-cols-2 xl:grid-cols-3">
+                                {virtualEntries.map(([actionId, payload]) => {
+                                    const action = getActionById(actionId);
+                                    if (!action) return null;
+                                    const concreteTaskId = payload.taskIds?.find(taskId => {
+                                        const task = tasksById.get(taskId);
+                                        return Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
+                                    });
+                                    return (
+                                        <VirtualExecutionCard
+                                            key={actionId}
+                                            action={action}
+                                            count={payload.count}
+                                            isUnlimited={payload.isUnlimited}
+                                            taskId={concreteTaskId}
+                                            onComplete={onComplete}
+                                            onActionClick={onActionClick}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="relative z-10 flex min-h-[320px] flex-col items-center justify-center rounded-[28px] border border-dashed border-white/10 bg-black/18 px-6 text-center">
+                        <div className="text-4xl opacity-70">{'\u{1F4DD}'}</div>
+                        <div className="mt-3 text-sm font-black uppercase tracking-[0.16em] text-white/72">Nada em execução</div>
+                        <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-white/42">Crie uma ação ou ative arenas do ciclo para montar seu plano livre.</p>
+                    </div>
+                )}
             </div>
-
-            {entries.length > 0 ?(
-                <div className="relative z-10 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {entries.map(([actionId, payload]) => {
-                        const action = getActionById(actionId);
-                        if (!action) return null;
-                        const concreteTaskId = payload.taskIds?.find(taskId => {
-                            const task = tasksById.get(taskId);
-                            return Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
-                        });
-                        const concreteTask = concreteTaskId ?tasksById.get(concreteTaskId) : undefined;
-
-                        if (concreteTask) {
-                            return (
-                                <UnscheduledTaskCard
-                                    key={`${actionId}-${concreteTask.id}`}
-                                    task={concreteTask}
-                                    action={action}
-                                    draggable={false}
-                                    onCustomDragStart={onCustomDragStart}
-                                    onTaskClick={onTaskClick}
-                                    onComplete={onComplete}
-                                />
-                            );
-                        }
-
-                        return (
-                            <VirtualExecutionCard
-                                key={actionId}
-                                action={action}
-                                count={payload.count}
-                                isUnlimited={payload.isUnlimited}
-                                taskId={concreteTaskId}
-                                onComplete={onComplete}
-                                onActionClick={onActionClick}
-                            />
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="relative z-10 flex min-h-[320px] flex-col items-center justify-center rounded-[28px] border border-dashed border-white/10 bg-black/18 px-6 text-center">
-                    <div className="text-4xl opacity-70">{'\u{1F4DD}'}</div>
-                    <div className="mt-3 text-sm font-black uppercase tracking-[0.16em] text-white/72">Nada em execução</div>
-                    <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-white/42">Crie uma ação ou ative arenas do ciclo para montar seu plano livre.</p>
-                </div>
-            )}
         </div>
-    </div>
-);
+    );
+};
 
 const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFactor: number, operationalDate: string, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, dropIndicator: { top: number, height: number } | null, isToday: boolean, currentTime: Date, timeIndicatorRef: React.Ref<HTMLDivElement> }> = ({ tasks, actions, scaleFactor, operationalDate, onCustomDragStart, dropIndicator, isToday, currentTime, timeIndicatorRef }) => {
     const hours = Array.from({ length: (OPERATIONAL_DAY_END_HOUR - 4) + 1 }, (_, i) => i + 4);
@@ -613,6 +653,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         rescheduleTask,
         returnTaskToPool,
         deleteTask,
+        toggleTaskCompletion,
         scheduleAndCompleteNow,
         scheduleAndCompleteMilestoneNow,
         addAction,
@@ -1626,10 +1667,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     {plannerMode === 'execucao' ?(
                         <PlannerExecutionView
                             entries={visibleBayAreaEntries}
+                            dayTasks={dailyTasks}
                             tasksById={tasksById}
                             getActionById={getActionById}
                             selectedOperationalDateString={selectedOperationalDateString}
                             onComplete={(actionId, taskId) => scheduleAndCompleteNow(actionId, taskId)}
+                            onToggleTask={(taskId) => toggleTaskCompletion(taskId)}
                             onCustomDragStart={handleCustomDragStart}
                             onTaskClick={handleTaskClick}
                             onActionClick={(action) => setModalData({ action })}

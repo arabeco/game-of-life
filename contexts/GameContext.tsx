@@ -2734,9 +2734,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const { data, error } = await supabase
             .from('social_feed_events')
-            .select('*')
+            .select('id,user_id,event_type,author_nickname,author_avatar_url,author_clan_name,author_clan_icon,content,created_at')
             .order('created_at', { ascending: false })
-            .limit(120);
+            .limit(80);
 
         if (error) {
             const message = String(error.message || '');
@@ -2760,7 +2760,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         void fetchSocialFeed();
         const intervalId = window.setInterval(() => {
             void fetchSocialFeed();
-        }, 30000);
+        }, 120000);
 
         return () => window.clearInterval(intervalId);
     }, [session?.user.id, fetchSocialFeed]);
@@ -3152,7 +3152,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         uniqueIds = uniqueIds.filter(id => isUuid(id));
         if (uniqueIds.length === 0) return {} as Record<string, UserProfile>;
 
-        const { data: profilesData, error: profilesError } = await supabase.from('user_profiles').select('*, clan_members(clans(name, icon))').in('id', uniqueIds);
+        const { data: profilesData, error: profilesError } = await supabase
+            .from('user_profiles')
+            .select(`
+                id,
+                username,
+                nickname,
+                title,
+                avatar_url,
+                background_url,
+                banner_url,
+                border,
+                skin,
+                level,
+                role,
+                is_premium,
+                is_online,
+                visible_widgets,
+                assets_visibility,
+                mastery_visibility,
+                feats_visibility,
+                asset_art_by_id,
+                asset_widget_values,
+                nobility,
+                mood,
+                gold,
+                fragments,
+                clan_members(clans(name, icon))
+            `)
+            .in('id', uniqueIds);
         if (profilesError || !profilesData) {
             console.error('Error fetching profiles:', profilesError?.message);
             return {} as Record<string, UserProfile>;
@@ -11998,7 +12026,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         sender_profile:user_profiles!direct_messages_sender_id_fkey(id,nickname,avatar_url,level,is_premium,is_online,role)
       `)
             .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(200);
 
         if (error) {
             console.error('Error fetching DMs:', error);
@@ -12059,8 +12088,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             .from('direct_messages')
             .insert(newMessage)
             .select(`
-        *,
-        sender_profile:user_profiles!direct_messages_sender_id_fkey(*)
+        id,
+        sender_id,
+        recipient_id,
+        content,
+        read,
+        created_at,
+        sender_profile:user_profiles!direct_messages_sender_id_fkey(id,nickname,avatar_url,level,is_premium,is_online,role)
       `)
             .single();
 

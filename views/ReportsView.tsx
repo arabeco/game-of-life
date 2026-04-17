@@ -1015,6 +1015,33 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setView('results');
         }
     };
+
+    const deleteCycleFromReports = useCallback(async (cycleId: string) => {
+        if (typeof deleteCycle === 'function') {
+            return await deleteCycle(cycleId);
+        }
+
+        console.error('deleteCycle indisponivel no contexto. Usando RPC delete_cycle_safely como fallback.', { cycleId, deleteCycle });
+        const { data, error } = await supabase.rpc('delete_cycle_safely', {
+            p_cycle_id: cycleId,
+        });
+
+        if (error) {
+            console.error('Erro no fallback delete_cycle_safely:', error);
+            showToast('Nao foi possivel excluir esse ciclo.', 'error');
+            return false;
+        }
+
+        if (!data?.success) {
+            console.error('Fallback delete_cycle_safely retornou falha:', data);
+            showToast('Nao foi possivel excluir esse ciclo.', 'error');
+            return false;
+        }
+
+        showToast('Ciclo excluido com sucesso.', 'success');
+        return true;
+    }, [deleteCycle, showToast]);
+
     const handleDeleteReportCycle = useCallback(async (report: Report) => {
         const cycleId = report.cycleId || report.id;
         if (!cycleId) {
@@ -1024,7 +1051,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         showToast('Excluindo ciclo...', 'info');
         try {
-            const deleted = await deleteCycle(cycleId);
+            const deleted = await deleteCycleFromReports(cycleId);
             if (deleted) {
                 setSelectedReport((current) => (current?.cycleId === cycleId || current?.id === cycleId ? null : current));
                 setSelectedReportStartsAtEnd(false);
@@ -1038,7 +1065,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             showToast('Nao foi possivel excluir esse ciclo.', 'error');
             return false;
         }
-    }, [deleteCycle, showToast]);
+    }, [deleteCycleFromReports, showToast]);
     const handleStartCompare = () => { if (reports.length >= 2) { setReportsToCompare([reports[0], reports[1]]); setView('comparing'); } };
 
     const handlePostToFeed = (report: Report) => {
@@ -2805,7 +2832,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         await updateCycle(cycleBeingEdited.id, updates);
                     }}
                     onDelete={async () => {
-                        return await deleteCycle(cycleBeingEdited.id);
+                        return await deleteCycleFromReports(cycleBeingEdited.id);
                     }}
                 />
             )}

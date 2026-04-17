@@ -36,6 +36,16 @@ export interface AppPushSyncResult {
   token?: string | null;
 }
 
+export interface AppPushRemoteTestResult {
+  ok: boolean;
+  status: number;
+  sent: number;
+  skipped: number;
+  failed: number;
+  error?: string;
+  detail?: string;
+}
+
 export type NativePushPlatform = 'android' | 'ios';
 
 const NATIVE_PUSH_TOKEN_STORAGE_KEY = 'glyph_native_push_token';
@@ -443,5 +453,23 @@ export const disableAppPushRegistration = async (): Promise<AppPushSyncResult> =
     hasSubscription: false,
     isNative: true,
     remoteDeliveryReady: false,
+  };
+};
+
+export const sendAppPushRemoteTest = async (): Promise<AppPushRemoteTestResult> => {
+  const accessToken = await getCurrentAccessToken();
+  const response = await invokeAppPushFunction(accessToken, {
+    action: 'dispatch-test',
+  });
+
+  const data = response.data || {};
+  return {
+    ok: response.ok && !data.error,
+    status: response.status,
+    sent: Number(data.sent || 0),
+    skipped: Number(data.skipped || 0),
+    failed: Number(data.failed || 0),
+    error: response.error || data.error,
+    detail: data.detail || data.reason,
   };
 };

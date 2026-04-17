@@ -14,10 +14,12 @@ import {
     hasAppPushRemoteDeliveryReady,
     getAppPushSupport,
     requestAppPushPermission,
+    sendAppPushRemoteTest,
     syncAppPushRegistration,
     type AppPushPermission,
     type AppPushSyncResult,
 } from '../utils/pushRuntime';
+import { showLocalNotification } from '../utils/localNotification';
 import { buildOracleWidgetSnapshot } from '../utils/widgetSnapshots';
 
 interface OracleSettingsModalProps {
@@ -165,6 +167,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     const [activeTab, setActiveTab] = useState<SettingsTab>('modos');
     const [pushPermission, setPushPermission] = useState<AppPushPermission>('default');
     const [pushRemoteReady, setPushRemoteReady] = useState(false);
+    const [isTestingPush, setIsTestingPush] = useState(false);
 
     if (!oraclePreferences) return null;
 
@@ -242,6 +245,64 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         }
 
         showToast('Push no aparelho ativado.', 'success');
+    };
+
+    const handleLocalPushTest = async () => {
+        setIsTestingPush(true);
+        try {
+            const permission = await requestAppPushPermission();
+            setPushPermission(permission);
+
+            if (permission !== 'granted') {
+                showToast('Permissao de notificacao nao liberada neste aparelho.', 'warning');
+                return;
+            }
+
+            const delivered = await showLocalNotification({
+                title: 'Teste GLYPH',
+                body: 'Teste local: permissao e canal do aparelho funcionando.',
+                tag: 'glyph-local-push-test',
+                url: '/?oracle=notifications',
+            });
+
+            showToast(delivered ? 'Teste local enviado para o aparelho.' : 'Nao foi possivel disparar o teste local.', delivered ? 'success' : 'warning');
+        } finally {
+            setIsTestingPush(false);
+        }
+    };
+
+    const handleRemotePushTest = async () => {
+        setIsTestingPush(true);
+        try {
+            const permission = await requestAppPushPermission();
+            setPushPermission(permission);
+
+            if (permission !== 'granted') {
+                showToast('Permissao de push nao liberada neste aparelho.', 'warning');
+                return;
+            }
+
+            const remoteSync = await syncAppPushRegistration();
+            await updateOraclePreferences({ pushEnabled: true });
+            setPushRemoteReady(remoteSync.remoteDeliveryReady);
+
+            if (!remoteSync.ok) {
+                showToast(getRemotePushFailureMessage(remoteSync), 'warning');
+                return;
+            }
+
+            const testResult = await sendAppPushRemoteTest();
+            if (testResult.ok && testResult.sent > 0) {
+                setPushRemoteReady(true);
+                showToast('Teste remoto enviado. Se o app estiver em segundo plano, ele deve chegar pelo aparelho.', 'success');
+                return;
+            }
+
+            const detail = testResult.error || testResult.detail || `sent:${testResult.sent} failed:${testResult.failed} skipped:${testResult.skipped}`;
+            showToast(`Teste remoto nao confirmou entrega: ${detail}`, 'warning');
+        } finally {
+            setIsTestingPush(false);
+        }
     };
 
     const handleModeSelect = (mode: OracleMode) => {
@@ -501,6 +562,24 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     </div>
                                     <div className="ml-7 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[10px] leading-relaxed text-gray-400">
                                         {getAppPushSetupHint()}
+                                    </div>
+                                    <div className="ml-7 grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={isTestingPush}
+                                            onClick={handleLocalPushTest}
+                                            className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/62 transition-colors hover:border-white/20 hover:text-white disabled:cursor-wait disabled:opacity-50"
+                                        >
+                                            Teste local
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={isTestingPush}
+                                            onClick={handleRemotePushTest}
+                                            className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100 transition-colors hover:bg-emerald-400/[0.12] disabled:cursor-wait disabled:opacity-50"
+                                        >
+                                            Teste remoto
+                                        </button>
                                     </div>
                                 </div>
 

@@ -1060,6 +1060,112 @@ const unregisterNativeSubscription = async (req: Request, body: JsonRecord, orig
   return jsonResponse(origin, 200, { success: true });
 };
 
+const dispatchTestPush = async (req: Request, _body: JsonRecord, origin: string | null) => {
+  const user = await getAuthenticatedUser(req);
+  if (!user) {
+    return jsonResponse(origin, 401, { error: "Unauthorized request." });
+  }
+
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data: subscriptions, error: subscriptionsError } = await supabaseAdmin
+    .from("push_subscriptions")
+    .select("id, user_id, endpoint, subscription, device_label, failure_count")
+    .eq("user_id", user.id)
+    .is("disabled_at", null);
+
+  if (subscriptionsError) {
+    return jsonResponse(origin, 500, { error: subscriptionsError.message || "Could not load subscriptions." });
+  }
+
+  const activeSubscriptions = (subscriptions || []) as StoredPushSubscription[];
+  if (activeSubscriptions.length === 0) {
+    return jsonResponse(origin, 200, {
+      success: false,
+      sent: 0,
+      skipped: 0,
+      failed: 0,
+      reason: "no_active_subscriptions",
+    });
+  }
+
+  const hasWebSubscription = activeSubscriptions.some((subscriptionRow) => !isNativeTokenSubscription(subscriptionRow));
+  if (hasWebSubscription) {
+    configureVapid();
+  }
+
+  const payload: PushDispatchPayload = {
+    title: "Teste GLYPH",
+    body: "Se isso chegou no aparelho, a trilha de push esta viva.",
+    tag: `glyph-push-test-${user.id}`,
+    url: "/?oracle=notifications",
+    icon: "/logo-diamond.png",
+    badge: "/logo-diamond.png",
+    requireInteraction: false,
+    renotify: true,
+    type: "system",
+  };
+
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const subscriptionRow of activeSubscriptions) {
+    const isNativeSubscription = isNativeTokenSubscription(subscriptionRow);
+    const pushSubscription = isNativeSubscription ? {} : normalizeStoredSubscription(subscriptionRow);
+    const nativeToken = isNativeSubscription
+      ? asTrimmedString(isRecord(subscriptionRow.subscription) ? subscriptionRow.subscription.token : "")
+      : "";
+
+    if ((!isNativeSubscription && !pushSubscription) || (isNativeSubscription && !nativeToken)) {
+      skipped += 1;
+      await updateSubscriptionHealth(subscriptionRow.id, {
+        failure_count: Number(subscriptionRow.failure_count || 0) + 1,
+        last_error: isNativeSubscription ? "invalid_native_token_payload" : "invalid_subscription_payload",
+        disabled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      continue;
+    }
+
+    try {
+      await deliverPushToSubscription(subscriptionRow, payload);
+      sent += 1;
+      await updateSubscriptionHealth(subscriptionRow.id, {
+        last_success_at: new Date().toISOString(),
+        last_seen_at: new Date().toISOString(),
+        failure_count: 0,
+        last_error: null,
+        disabled_at: null,
+        updated_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      failed += 1;
+      const statusCode = Number((error as { statusCode?: number })?.statusCode || 0) || null;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      errors.push(errorMessage);
+      const disableSubscription = isNativeSubscription
+        ? shouldDisableFailedNativeSubscription(statusCode, errorMessage)
+        : shouldDisableFailedSubscription(statusCode, errorMessage);
+      await updateSubscriptionHealth(subscriptionRow.id, {
+        failure_count: Number(subscriptionRow.failure_count || 0) + 1,
+        last_error: errorMessage,
+        last_seen_at: new Date().toISOString(),
+        disabled_at: disableSubscription ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  return jsonResponse(origin, 200, {
+    success: sent > 0,
+    sent,
+    skipped,
+    failed,
+    detail: errors.slice(0, 2).join(" | "),
+  });
+};
+
 const dispatchNotification = async (req: Request, body: JsonRecord, origin: string | null) => {
   if (!WEB_PUSH_WEBHOOK_SECRET || req.headers.get("x-web-push-secret") !== WEB_PUSH_WEBHOOK_SECRET) {
     return jsonResponse(origin, 401, { error: "Invalid webhook secret." });
@@ -1400,6 +1506,10 @@ Deno.serve(async (req) => {
 
     if (action === "unregister_native") {
       return await unregisterNativeSubscription(req, body, origin);
+    }
+
+    if (action === "dispatch-test") {
+      return await dispatchTestPush(req, body, origin);
     }
 
     if (action === "dispatch-notification") {

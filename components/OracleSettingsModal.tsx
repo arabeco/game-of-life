@@ -19,7 +19,7 @@ import {
     type AppPushPermission,
     type AppPushSyncResult,
 } from '../utils/pushRuntime';
-import { showLocalNotification } from '../utils/localNotification';
+import { scheduleLocalNotification } from '../utils/localNotification';
 import { buildOracleWidgetSnapshot } from '../utils/widgetSnapshots';
 
 interface OracleSettingsModalProps {
@@ -258,14 +258,14 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                 return;
             }
 
-            const delivered = await showLocalNotification({
+            const delivered = await scheduleLocalNotification({
                 title: 'Teste GLYPH',
-                body: 'Teste local: permissao e canal do aparelho funcionando.',
+                body: 'Teste local com atraso de 15s: permissao e canal funcionando.',
                 tag: 'glyph-local-push-test',
                 url: '/?oracle=notifications',
-            });
+            }, 15000);
 
-            showToast(delivered ? 'Teste local enviado para o aparelho.' : 'Nao foi possivel disparar o teste local.', delivered ? 'success' : 'warning');
+            showToast(delivered ? 'Teste local agendado para daqui 15 segundos.' : 'Nao foi possivel agendar o teste local.', delivered ? 'success' : 'warning');
         } finally {
             setIsTestingPush(false);
         }
@@ -290,6 +290,9 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                 showToast(getRemotePushFailureMessage(remoteSync), 'warning');
                 return;
             }
+
+            showToast('Teste remoto armado. Vou disparar em 15 segundos.', 'info');
+            await new Promise(resolve => window.setTimeout(resolve, 15000));
 
             const testResult = await sendAppPushRemoteTest();
             if (testResult.ok && testResult.sent > 0) {

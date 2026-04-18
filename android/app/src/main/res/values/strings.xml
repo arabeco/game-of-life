@@ -4,4 +4,5 @@
     <string name="title_activity_main">Glyph</string>
     <string name="package_name">life.glyph.app</string>
     <string name="custom_url_scheme">life.glyph.app</string>
+    <string name="glyph_widget_description">Resumo diario do GLYPH</string>
 </resources>

@@ -37,6 +37,8 @@ import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForPr
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import { resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
 import { ECONOMY } from '../constants/economy';
+import { publishGlyphAndroidWidgetSnapshot } from '../utils/androidWidget';
+import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -12356,6 +12358,42 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         return buildTaskPoolEntries(actions, activeArenaIds, isClanQuestActionId);
     }, [actions, allArenas, activeCycle?.arenaIds, campaigns, cycleScopedTasks, getClanQuestProgress, getClanQuestsForArena, isClanQuestActionId]);
+
+    useEffect(() => {
+        if (!isProfileLoaded) return;
+
+        const timeoutId = window.setTimeout(() => {
+            const snapshot = buildOracleAwareDailyWidgetSnapshot({
+                activeCycle,
+                dailyCommitment,
+                tasks,
+                actions,
+                arenas: allArenas,
+                checklistItems,
+                taskPool,
+                oraclePreferences,
+                oracleMessages,
+            });
+
+            void publishGlyphAndroidWidgetSnapshot({
+                updatedAt: new Date().toISOString(),
+                ...snapshot,
+            });
+        }, 700);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [
+        activeCycle,
+        actions,
+        allArenas,
+        checklistItems,
+        dailyCommitment,
+        isProfileLoaded,
+        oracleMessages,
+        oraclePreferences,
+        taskPool,
+        tasks,
+    ]);
 
     return (
         <GameContext.Provider value={{

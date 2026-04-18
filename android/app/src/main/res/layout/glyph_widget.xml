@@ -3,12 +3,12 @@
     android:id="@+id/glyph_widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/glyph_widget_background"
+    android:background="@drawable/glyph_cycle_widget_background"
     android:orientation="vertical"
-    android:paddingLeft="16dp"
-    android:paddingTop="14dp"
-    android:paddingRight="16dp"
-    android:paddingBottom="14dp">
+    android:paddingLeft="15dp"
+    android:paddingTop="11dp"
+    android:paddingRight="15dp"
+    android:paddingBottom="10dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -28,7 +28,7 @@
             android:text="GLYPH"
             android:textAllCaps="true"
             android:textColor="#F2E7C4"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textStyle="bold" />
 
         <TextView
@@ -38,43 +38,49 @@
             android:includeFontPadding="false"
             android:text="ABRIR"
             android:textAllCaps="true"
-            android:textColor="#B8B0A0"
-            android:textSize="10sp"
+            android:textColor="#D9C87A"
+            android:textSize="9sp"
             android:textStyle="bold" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/glyph_widget_subtitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:ellipsize="end"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:text="Hoje no GLYPH"
-        android:textColor="#B8B0A0"
-        android:textSize="12sp" />
-
-    <TextView
-        android:id="@+id/glyph_widget_meta"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:ellipsize="end"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:text="Ciclo ativo"
-        android:textAllCaps="true"
-        android:textColor="#8D8574"
-        android:textSize="9sp"
-        android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="6dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/glyph_widget_subtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="Hoje no GLYPH"
+                android:textColor="#D7D0BE"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/glyph_widget_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="Ciclo ativo"
+                android:textAllCaps="true"
+                android:textColor="#8F8776"
+                android:textSize="8sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/glyph_widget_progress"
@@ -82,35 +88,33 @@
             android:layout_height="wrap_content"
             android:background="@drawable/glyph_widget_pill_gold"
             android:includeFontPadding="false"
-            android:minWidth="50dp"
+            android:minWidth="62dp"
             android:paddingLeft="10dp"
-            android:paddingTop="5dp"
+            android:paddingTop="4dp"
             android:paddingRight="10dp"
-            android:paddingBottom="5dp"
+            android:paddingBottom="4dp"
             android:text="0/0"
             android:textAlignment="center"
             android:textColor="#F6D65B"
-            android:textSize="13sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/glyph_widget_time"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="9dp"
-            android:layout_weight="1"
+            android:layout_marginLeft="7dp"
             android:background="@drawable/glyph_widget_pill_dark"
-            android:ellipsize="end"
             android:includeFontPadding="false"
-            android:maxLines="1"
+            android:minWidth="42dp"
             android:paddingLeft="10dp"
-            android:paddingTop="5dp"
+            android:paddingTop="4dp"
             android:paddingRight="10dp"
-            android:paddingBottom="5dp"
+            android:paddingBottom="4dp"
             android:text="0%"
             android:textAlignment="center"
             android:textColor="#D8D0BE"
-            android:textSize="12sp"
+            android:textSize="10sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -118,8 +122,8 @@
         android:id="@+id/glyph_widget_progress_bar"
         style="@android:style/Widget.ProgressBar.Horizontal"
         android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:layout_marginTop="11dp"
+        android:layout_height="4dp"
+        android:layout_marginTop="9dp"
         android:max="100"
         android:progress="0"
         android:progressDrawable="@drawable/glyph_widget_progress" />

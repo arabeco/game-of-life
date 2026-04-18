@@ -41,9 +41,11 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
 
         views.setTextViewText(R.id.glyph_widget_title, copy.title);
         views.setTextViewText(R.id.glyph_widget_subtitle, copy.subtitle);
+        views.setTextViewText(R.id.glyph_widget_end_date, copy.endDate);
+        views.setTextViewText(R.id.glyph_widget_meta, copy.meta);
         views.setTextViewText(R.id.glyph_widget_progress, copy.progress);
-        views.setTextViewText(R.id.glyph_widget_focus, copy.focus);
-        views.setTextViewText(R.id.glyph_widget_oracle, copy.oracle);
+        views.setTextViewText(R.id.glyph_widget_time, copy.time);
+        views.setProgressBar(R.id.glyph_widget_progress_bar, 100, copy.progressPercent, false);
 
         Intent openIntent = new Intent(context, MainActivity.class);
         openIntent.setAction(Intent.ACTION_MAIN);
@@ -63,45 +65,64 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             SharedPreferences prefs = context.getSharedPreferences(GlyphWidgetPlugin.PREFS_GROUP, Context.MODE_PRIVATE);
             String raw = prefs.getString(GlyphWidgetPlugin.SNAPSHOT_KEY, null);
             if (raw == null || raw.trim().isEmpty()) {
-                return new WidgetCopy(DEFAULT_TITLE, DEFAULT_SUBTITLE, "0/0", "Sem plano aberto", "Oraculo aguardando");
+                return WidgetCopy.loggedOut();
             }
 
             JSONObject root = new JSONObject(raw);
             JSONObject daily = root.optJSONObject("daily");
-            JSONObject oracle = root.optJSONObject("oracle");
             if (daily == null) {
-                return new WidgetCopy(DEFAULT_TITLE, DEFAULT_SUBTITLE, "0/0", "Sem plano aberto", "Oraculo aguardando");
+                return WidgetCopy.loggedOut();
             }
 
-            String cycleName = daily.optString("cycleName", "");
-            String title = cycleName == null || cycleName.trim().isEmpty() ? DEFAULT_TITLE : cycleName.trim();
-            String dayLabel = daily.optString("cycleDayLabel", "");
-            String subtitle = dayLabel == null || dayLabel.trim().isEmpty() ? "Hoje no GLYPH" : dayLabel.trim();
+            boolean hasCycle = daily.optBoolean("hasCycle", false);
+            if (!hasCycle) {
+                return WidgetCopy.noCycle();
+            }
+
+            String cycleName = safeString(daily, "cycleName");
+            String title = cycleName.isEmpty() ? DEFAULT_TITLE : cycleName;
+            String dayLabel = safeString(daily, "cycleDayLabel");
+            String subtitle = dayLabel.isEmpty() ? "Ciclo ativo" : dayLabel;
+            String endDate = formatDate(safeString(daily, "cycleEndDate"));
             int completed = daily.optInt("completedAllCount", daily.optInt("completedCount", 0));
             int total = daily.optInt("totalAllCount", daily.optInt("totalCount", 0));
-            String progress = completed + "/" + total;
+            int progressPercent = clamp((int) Math.round(daily.optDouble("progressPercent", 0)));
+            int timeProgress = clamp((int) Math.round(daily.optDouble("timeProgressPercent", 0)));
+            int elapsedDays = daily.optInt("cycleElapsedDays", 0);
+            int totalDays = daily.optInt("cycleTotalDays", 0);
+            int arenaCount = daily.optInt("activeArenaCount", 0);
+            String meta = subtitle + " - " + arenaCount + " arena" + (arenaCount == 1 ? "" : "s");
+            String day = elapsedDays > 0 && totalDays > 0 ? "Dia " + elapsedDays + "/" + totalDays : subtitle;
 
-            JSONObject focusArena = daily.optJSONObject("focusArena");
-            String focus = focusArena != null ? focusArena.optString("name", "") : "";
-            if (focus == null || focus.trim().isEmpty()) {
-                int available = daily.optInt("availableUnitCount", 0);
-                focus = available > 0 ? available + " acao(es) no estoque" : "Nenhuma prioridade definida";
-            }
-
-            String oracleCopy = "Oraculo em silencio";
-            if (oracle != null) {
-                String unread = oracle.optString("latestUnreadPreview", "");
-                String latest = oracle.optString("latestFeedPreview", "");
-                String preview = unread != null && !unread.trim().isEmpty() ? unread : latest;
-                if (preview != null && !preview.trim().isEmpty()) {
-                    oracleCopy = preview.trim();
-                }
-            }
-
-            return new WidgetCopy(title, subtitle, progress, focus, trim(oracleCopy, 86));
+            return new WidgetCopy(
+                trim(title.toUpperCase(), 28),
+                day,
+                endDate.isEmpty() ? "ABRIR" : endDate,
+                trim(meta, 42),
+                completed + "/" + total + " - " + progressPercent + "%",
+                timeProgress + "%",
+                progressPercent
+            );
         } catch (Exception _error) {
-            return new WidgetCopy(DEFAULT_TITLE, DEFAULT_SUBTITLE, "0/0", "Abra o app", "Widget sincronizando");
+            return new WidgetCopy(DEFAULT_TITLE, "Widget sincronizando", "ABRIR", "Abra o app para atualizar", "--", "--", 0);
         }
+    }
+
+    private static String safeString(JSONObject object, String key) {
+        if (object == null || object.isNull(key)) return "";
+        String value = object.optString(key, "");
+        if (value == null) return "";
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        return "null".equalsIgnoreCase(normalized) ? "" : normalized;
+    }
+
+    private static String formatDate(String isoDate) {
+        if (isoDate == null || isoDate.length() < 10) return "";
+        return isoDate.substring(8, 10) + "/" + isoDate.substring(5, 7);
+    }
+
+    private static int clamp(int value) {
+        return Math.max(0, Math.min(100, value));
     }
 
     private static String trim(String value, int maxLength) {
@@ -114,16 +135,28 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
     private static class WidgetCopy {
         final String title;
         final String subtitle;
+        final String endDate;
+        final String meta;
         final String progress;
-        final String focus;
-        final String oracle;
+        final String time;
+        final int progressPercent;
 
-        WidgetCopy(String title, String subtitle, String progress, String focus, String oracle) {
+        WidgetCopy(String title, String subtitle, String endDate, String meta, String progress, String time, int progressPercent) {
             this.title = title;
             this.subtitle = subtitle;
+            this.endDate = endDate;
+            this.meta = meta;
             this.progress = progress;
-            this.focus = focus;
-            this.oracle = oracle;
+            this.time = time;
+            this.progressPercent = progressPercent;
+        }
+
+        static WidgetCopy loggedOut() {
+            return new WidgetCopy("GLYPH", "Aguardando login", "ENTRAR", "Abra o app para sincronizar seu ciclo", "--", "--", 0);
+        }
+
+        static WidgetCopy noCycle() {
+            return new WidgetCopy("SEM CICLO ATIVO", "Historico pronto", "ABRIR", "Inicie um ciclo para ver seu progresso aqui", "0/0 - 0%", "0%", 0);
         }
     }
 }

@@ -65,10 +65,13 @@ export interface DailyWidgetSnapshot {
   date: string;
   stage: DailyCommitmentStage;
   cycleName: string | null;
+  cycleEndDate: string | null;
   cycleDayLabel: string | null;
   cycleElapsedDays: number | null;
   cycleTotalDays: number | null;
+  timeProgressPercent: number;
   progressPercent: number;
+  activeArenaCount: number;
   completedCount: number;
   totalCount: number;
   completedAllCount: number;
@@ -264,10 +267,13 @@ export const buildDailyWidgetSnapshot = ({
       date: commitmentDate,
       stage,
       cycleName: null,
+      cycleEndDate: null,
       cycleDayLabel: null,
       cycleElapsedDays: null,
       cycleTotalDays: null,
+      timeProgressPercent: 0,
       progressPercent: 0,
+      activeArenaCount: 0,
       completedCount: 0,
       totalCount: 0,
       completedAllCount: 0,
@@ -294,16 +300,22 @@ export const buildDailyWidgetSnapshot = ({
   }>;
   const availableUnitCount = availableGroups.reduce((sum, group) => sum + group.count, 0);
   const cycleTiming = getCycleTimingSummary(activeCycle.startDate, activeCycle.endDate, dailyCommitment.date);
+  const cycleArenaIds = new Set(activeCycle.arenaIds || []);
+  const scopedArenas = cycleArenaIds.size > 0 ? arenas.filter((arena) => cycleArenaIds.has(arena.id)) : arenas;
+  const activeArenaCount = scopedArenas.filter((arena) => !arena.isArchived).length;
 
   return {
     hasCycle: true,
     date: dailyCommitment.date,
     stage: dailyCommitment.stage,
     cycleName: activeCycle.name,
+    cycleEndDate: activeCycle.endDate,
     cycleDayLabel: cycleTiming.statusLabel,
     cycleElapsedDays: cycleTiming.elapsedDays,
     cycleTotalDays: cycleTiming.totalDays,
+    timeProgressPercent: cycleTiming.timeProgress,
     progressPercent: commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 100,
+    activeArenaCount,
     completedCount: commitmentStats.completedCount,
     totalCount: commitmentStats.totalCount,
     completedAllCount: commitmentStats.completedAllCount,

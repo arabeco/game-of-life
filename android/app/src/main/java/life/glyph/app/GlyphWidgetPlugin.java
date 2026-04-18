@@ -24,14 +24,19 @@ public class GlyphWidgetPlugin extends Plugin {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_GROUP, Context.MODE_PRIVATE);
         prefs.edit().putString(SNAPSHOT_KEY, snapshot).apply();
 
-        Intent intent = new Intent(context, GlyphWidgetProvider.class);
-        intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-        int[] ids = AppWidgetManager.getInstance(context).getAppWidgetIds(new ComponentName(context, GlyphWidgetProvider.class));
-        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
-        context.sendBroadcast(intent);
+        broadcastUpdate(context, GlyphWidgetProvider.class);
+        broadcastUpdate(context, GlyphDayWidgetProvider.class);
 
         JSObject result = new JSObject();
         result.put("updated", true);
         call.resolve(result);
+    }
+
+    private void broadcastUpdate(Context context, Class<?> providerClass) {
+        Intent intent = new Intent(context, providerClass);
+        intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+        int[] ids = AppWidgetManager.getInstance(context).getAppWidgetIds(new ComponentName(context, providerClass));
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+        context.sendBroadcast(intent);
     }
 }

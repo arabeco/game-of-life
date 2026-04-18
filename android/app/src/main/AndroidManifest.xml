@@ -48,13 +48,26 @@
 
         <receiver
             android:name=".GlyphWidgetProvider"
-            android:exported="false">
+            android:exported="false"
+            android:label="@string/glyph_cycle_widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/glyph_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".GlyphDayWidgetProvider"
+            android:exported="false"
+            android:label="@string/glyph_day_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/glyph_day_widget_info" />
         </receiver>
     </application>
 

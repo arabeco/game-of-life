@@ -14,6 +14,8 @@ import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQ
 import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { buildOracleConversationMemory } from '../utils/oracleConversationMemory';
 import { isConfirmationText } from '../utils/oracleActionUtils';
+import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
+import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
 
 type OracleTabTarget = 'chat' | 'action' | 'requests';
 type OracleQuickActionId = 'campaign_quiz' | 'manual_start' | 'adjust_existing';
@@ -38,7 +40,17 @@ interface Message {
   feedPresentation?: 'ambient_pulse' | 'info_card';
   feedSummary?: string;
   feedTrigger?: 'app_open' | 'cron' | 'manual';
+  systemId?: string;
+  quickActions?: ChatQuickAction[];
 }
+
+type ChatQuickAction =
+  | { id: string; label: string; kind: 'send_prompt'; prompt: string }
+  | { id: string; label: string; kind: 'open_action_tab'; assistant: string; prompt?: string }
+  | { id: string; label: string; kind: 'open_planner_create_action' }
+  | { id: string; label: string; kind: 'open_sitrep' }
+  | { id: string; label: string; kind: 'open_cycle' }
+  | { id: string; label: string; kind: 'open_arenas' };
 
 const normalizeOracleText = (value: string) =>
   value
@@ -142,6 +154,10 @@ const parseOracleFunctionError = async (error: unknown): Promise<{ status: numbe
     message,
     details,
   };
+};
+
+const dispatchAppView = (detail: AppNavigatePayload) => {
+  window.dispatchEvent(new CustomEvent<AppNavigatePayload>(APP_NAVIGATE_EVENT, { detail }));
 };
 const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>, color: string, bg: string, border: string }> = {
     neutro: { 
@@ -350,6 +366,24 @@ const buildVoicePreview = (transcript: string) => {
   return `Entendi isso: "${transcript}". Isso parece conversa. Se estiver certo, envie e eu sigo daqui.`;
 };
 
+const shouldAttachContextLink = (content: string, actionId: string, previousMessages: Message[]) => {
+  const normalized = normalizeOracleText(content);
+
+  const matchesTopic =
+    (actionId === 'starter-open-arenas' && /\barena/.test(normalized)) ||
+    (actionId === 'starter-open-cycle' && /\bciclo/.test(normalized)) ||
+    (actionId === 'starter-open-sitrep-live' && /(painel diario|painel do dia|sitrep|dia)/.test(normalized));
+
+  if (!matchesTopic) return false;
+
+  const previousAssistant = [...previousMessages].reverse().find((message) => message.role === 'assistant' && message.quickActions?.length);
+  if (!previousAssistant?.quickActions?.some((action) => action.id === actionId)) {
+    return true;
+  }
+
+  return false;
+};
+
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false, onNavigateTab }) => {
   const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, addArena, addAction, triggerOracle } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -404,6 +438,79 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     return Object.values(unified).filter((payload: any) => payload.count > 0 || ((payload.taskIds?.length || 0) > 0)).length;
   }, [availableTaskPool, bayAreaTasks]);
+  const starterMessageInjectedRef = useRef(false);
+
+  const openPlannerCreateAction = useCallback(() => {
+    dispatchAppView({ view: 'planner' });
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent(PLANNER_OPEN_ACTION_MODAL_EVENT, {
+        detail: { createNew: true },
+      }));
+    }, 220);
+  }, []);
+
+  const openPlannerSitrep = useCallback(() => {
+    dispatchAppView({ view: 'planner' });
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('openSitrep'));
+    }, 220);
+  }, []);
+
+  const openCycleReview = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('tutorialNavigate', {
+      detail: {
+        view: 'planner',
+        showReports: true,
+      },
+    }));
+  }, []);
+
+  const openArenasView = useCallback(() => {
+    dispatchAppView({ view: 'arenas' });
+  }, []);
+
+  const contextualStarter = useMemo(() => {
+    const arenasCount = assets.reduce((sum, asset) => sum + asset.arenas.length, 0);
+    const committedCount = dailyCommitment.taskIds.length;
+    const pendingToday = tasks.filter((task) => {
+      if (!task.date || task.completed) return false;
+      return task.date.split('T')[0] === getLocalDateString();
+    }).length;
+
+    const stageLabel = dailyCommitment.stage === 'battle'
+      ? 'travado para execução'
+      : dailyCommitment.stage === 'judgment'
+        ? 'em fechamento'
+        : 'aberto para planejamento';
+
+    if (arenasCount === 0) {
+      return {
+        content: 'Ainda nao vejo arenas ativas. Antes de falar de execução, quero entender qual frente da sua vida voce quer colocar de pe primeiro. O que voce quer fazer hoje?',
+        quickActions: [{ id: 'starter-open-arenas', label: 'Clique aqui para abrir arenas.', kind: 'open_arenas' as const }],
+      };
+    }
+
+    if (!activeCycle) {
+      return {
+        content: `Voce ja tem ${arenasCount} arena${arenasCount === 1 ? '' : 's'}, mas ainda esta sem ciclo ativo. Posso te ajudar a dar direção para este momento ou escolher a melhor frente de hoje.`,
+        quickActions: [{ id: 'starter-open-cycle', label: 'Clique aqui para ver seu ciclo.', kind: 'open_cycle' as const }],
+      };
+    }
+
+    const cycleLine = cycleProgress > 0
+      ? `Seu ciclo esta em ${cycleProgress}%.`
+      : 'Seu ciclo esta ativo.';
+    const dayLine = committedCount > 0
+      ? `Seu painel diario tem ${committedCount} compromisso${committedCount === 1 ? '' : 's'} e esta ${stageLabel}.`
+      : pendingToday > 0
+        ? `Seu painel diario ainda nao ganhou forma, e existem ${pendingToday} pendencia${pendingToday === 1 ? '' : 's'} no dia.`
+        : 'Seu painel diario ainda nao ganhou forma.';
+
+    return {
+      content: `${cycleLine} ${dayLine} Em vez de te explicar tela, vou direto ao ponto: o que voce quer fazer hoje?`,
+      quickActions: [{ id: 'starter-open-sitrep-live', label: 'Clique aqui para abrir o painel diario.', kind: 'open_sitrep' as const }],
+    };
+  }, [activeCycle, assets, cycleProgress, dailyCommitment.stage, dailyCommitment.taskIds.length, tasks]);
 
   // Update mode when preferences change
   useEffect(() => {
@@ -475,6 +582,38 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       return nextMessages;
     });
   }, [currentMode, oracleSignalNotifications]);
+
+  useEffect(() => {
+    if (isInitialLoadRef.current || starterMessageInjectedRef.current) return;
+
+    const hasStarter = messages.some((message) => message.systemId === 'oracle:starter');
+    const hasConversation = messages.some((message) => !message.feedId && message.role === 'user');
+    if (hasStarter || hasConversation) {
+      starterMessageInjectedRef.current = true;
+      return;
+    }
+
+    setMessages((previous) => {
+      if (previous.some((message) => message.systemId === 'oracle:starter')) {
+        return previous;
+      }
+      const quickActions = contextualStarter.quickActions.filter((action) =>
+        shouldAttachContextLink(contextualStarter.content, action.id, previous)
+      );
+      return [
+        ...previous,
+        {
+          role: 'assistant',
+          content: contextualStarter.content,
+          timestamp: new Date(),
+          mode: currentMode,
+          systemId: 'oracle:starter',
+          quickActions,
+        },
+      ];
+    });
+    starterMessageInjectedRef.current = true;
+  }, [contextualStarter, currentMode, messages]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -947,6 +1086,43 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   };
 
+  const runQuickAction = useCallback((action: ChatQuickAction) => {
+    switch (action.kind) {
+      case 'send_prompt':
+        handleSendMessage(action.prompt);
+        return;
+      case 'open_action_tab':
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: action.assistant,
+            timestamp: new Date(),
+            mode: currentMode,
+          },
+        ]);
+        openActionTabWithGuidance({
+          assistant: action.assistant,
+          prompt: action.prompt,
+        });
+        return;
+      case 'open_planner_create_action':
+        openPlannerCreateAction();
+        return;
+      case 'open_sitrep':
+        openPlannerSitrep();
+        return;
+      case 'open_cycle':
+        openCycleReview();
+        return;
+      case 'open_arenas':
+        openArenasView();
+        return;
+      default:
+        return;
+    }
+  }, [currentMode, openActionTabWithGuidance, openArenasView, openCycleReview, openPlannerCreateAction, openPlannerSitrep]);
+
   const formatCooldownLabel = (milliseconds: number): string => {
     if (milliseconds <= 0) return 'agora';
 
@@ -1201,6 +1377,22 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                   `}
                 >
                   {msg.content}
+                  {msg.quickActions && msg.quickActions.length > 0 && (
+                    <div className="mt-3 border-t border-white/10 pt-3 text-sm leading-relaxed text-white/80">
+                      {msg.quickActions.map((action, actionIndex) => (
+                        <React.Fragment key={action.id}>
+                          {actionIndex > 0 ? <span className="text-white/25"> · </span> : null}
+                          <button
+                            type="button"
+                            onClick={() => runQuickAction(action)}
+                            className="inline p-0 font-semibold text-[var(--skin-accent-color)] underline decoration-[var(--skin-accent-color)]/45 underline-offset-4 transition-colors hover:text-white"
+                          >
+                            {action.label}
+                          </button>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )}
                   {msg.actionDraft && msg.actionPrompt && (
                     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
                       <span className="text-[10px] uppercase tracking-[0.16em] text-white/45">

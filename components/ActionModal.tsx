@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { Action, DayOfWeek, ActionType } from '../types';
+import { Action, DayOfWeek, ActionType, PlannerMatrixQuadrant } from '../types';
 import { GlassCard } from './GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon, CheckCircleIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
@@ -187,13 +187,26 @@ const DayToggle: React.FC<{ day: DayOfWeek, selected: boolean, onClick: () => vo
     </button>
 );
 
-const ActionSectionCard: React.FC<{ title: string; subtitle?: string; children: React.ReactNode }> = ({ title, subtitle, children }) => (
-    <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.18))] px-4 py-4 shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
-        <div className="mb-3">
-            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]/90">{title}</div>
-            {subtitle && <p className="mt-1 text-[11px] leading-relaxed text-white/55">{subtitle}</p>}
-        </div>
-        <div className="space-y-3">{children}</div>
+const PLANNER_MATRIX_OPTIONS: Array<{
+    value: PlannerMatrixQuadrant;
+    label: string;
+    title: string;
+}> = [
+    { value: 'ui', label: 'UI', title: 'Urgente + Importante' },
+    { value: 'nui', label: 'NUI', title: 'Não urgente + Importante' },
+    { value: 'uni', label: 'UNI', title: 'Urgente + Não importante' },
+    { value: 'nuni', label: 'NUNI', title: 'Não urgente + Não importante' },
+];
+
+const ActionSectionCard: React.FC<{ title?: string; subtitle?: string; children: React.ReactNode; className?: string }> = ({ title, subtitle, children, className = '' }) => (
+    <div className={`rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.18))] px-3 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.16)] ${className}`}>
+        {(title || subtitle) && (
+            <div className="mb-2.5">
+                {title && <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]/90">{title}</div>}
+                {subtitle && <p className="mt-1 text-[11px] leading-relaxed text-white/55">{subtitle}</p>}
+            </div>
+        )}
+        <div className="space-y-2.5">{children}</div>
     </div>
 );
 
@@ -212,7 +225,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     collaborativeArenaTasks = [],
     onCollaborativeRefresh,
 }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, clearPendingTasksForAction, scheduleAndCompleteNow, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes, oraclePreferences, updateOraclePreferences } = useGame();
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, clearPendingTasksForAction, scheduleAndCompleteNow, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes, oraclePreferences, updateOraclePreferences, userProfile } = useGame();
 
     const isNew = !action;
     const isInstalledCodexAction = Boolean(action?.originCodexId && !action.originCodexId.startsWith('assign:'));
@@ -248,7 +261,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     // New View Mode State
     const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
-    const [advancedSubTab, setAdvancedSubTab] = useState<'media' | 'note' | 'checklist' | 'context'>('media');
+    const [advancedSubTab, setAdvancedSubTab] = useState<'schedule' | 'media' | 'note' | 'checklist' | 'context'>('schedule');
     const [isBriefingReaderOpen, setIsBriefingReaderOpen] = useState(false);
     const [briefingPageIndex, setBriefingPageIndex] = useState(0);
     const [briefingPageStage, setBriefingPageStage] = useState<'idle' | 'out-next' | 'out-prev' | 'in-next' | 'in-prev'>('idle');
@@ -346,6 +359,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const isLockedFromSource = isSeasonLockedAction;
     const canEditAuthorialContent = !disableAuthoring && !isInstalledCampaignAction && !isSeasonLockedAction;
     const canEditExecutionSettings = !isSeasonLockedAction;
+    const canUsePlannerMatrix = Boolean(userProfile?.isPremium || userProfile?.role === 'admin' || userProfile?.role === 'gm');
     const isDetachedCollaborativeArena = collaborativeLinkedArena;
     const collaborativePersistUserId = collaborativeOwnerUserId || null;
     const effectiveTaskPool = isDetachedCollaborativeArena ? collaborativeArenaTasks : tasks;
@@ -430,6 +444,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         } else {
             delete nextSchedule.startTime;
             delete nextSchedule.notifyBeforeMinutes;
+        }
+
+        if (!canUsePlannerMatrix && restContext.plannerQuadrant) {
+            delete restContext.plannerQuadrant;
+        }
+        if (!restContext.plannerQuadrant) {
+            delete restContext.plannerQuadrant;
         }
 
         const hasSchedulePayload = Object.keys(nextSchedule).length > 0;
@@ -1068,6 +1089,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         const previewPage = briefingPages[0] || displayAction?.briefing || '';
         return previewPage.replace(/\n\s*\[\[page\]\]\s*\n/gi, '\n\n').trim();
     }, [briefingPages, displayAction?.briefing]);
+    const mediaPreviewUrl = React.useMemo(() => {
+        const draftUrl = mode === 'edit' ? (newAssetUrl || mediaSlot.imageUrl || '') : '';
+        const storedUrl = displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url || '';
+        return (draftUrl || storedUrl).trim() || null;
+    }, [displayAction?.assets, mediaSlot.imageUrl, mode, newAssetUrl]);
 
     // Merge task duration if editing a specific task
     const effectiveDuration = hasTaskInstanceContext && (mode === 'view' || isEditingTaskInstance) ?currentTask.duration : (displayAction?.duration || 60);
@@ -1358,7 +1384,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                Essencial
+                                Básico
                             </button>
                             <button
                                 onClick={() => setActiveTab('advanced')}
@@ -1368,7 +1394,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     : isEditingTaskInstance ?'text-gray-600 opacity-40 cursor-not-allowed' : 'text-gray-500 hover:text-gray-300'
                                     }`}
                             >
-                                {isEditingTaskInstance ?'Conteúdo (Base)' : 'Conteúdo'}
+                                {isEditingTaskInstance ? 'Avançado (Base)' : 'Avançado'}
                             </button>
                         </div>
                     </div>
@@ -1378,7 +1404,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                         {/* BASIC TAB */}
                         {activeTab === 'basic' && (
-                            <div className="p-6 space-y-4 flex flex-col items-center animate-fade-in pb-20">
+                            <div className="p-4 space-y-3 flex flex-col items-center animate-fade-in pb-16">
                                 {mode === 'view' && displayAction ?(
                                     // VIEW MODE CONTENT
                                     <>
@@ -1441,7 +1467,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     </>
                                 ) : (
                                     // EDIT MODE CONTENT (Form)
-                                    <div className="w-full space-y-4">
+                                    <div className="w-full space-y-3">
                                         {hasTaskInstanceContext && (
                                             <div className="rounded-[22px] border border-[var(--skin-accent-color)]/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.18))] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
                                                 <div className="flex gap-2">
@@ -1543,62 +1569,48 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             </>
                                         ) : (
                                             <>
-                                        <ActionSectionCard title="Identidade" subtitle="Dê forma para a ação. Isso é o que a pessoa vai bater o olho primeiro.">
-                                            <div className="flex justify-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => canEditAuthorialContent && setIsIconPickerOpen(true)}
+                                                <div className="flex justify-center pb-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => canEditAuthorialContent && setIsIconPickerOpen(true)}
+                                                        disabled={!canEditAuthorialContent}
+                                                        className={`w-20 h-20 border rounded-[18px] transition-colors flex items-center justify-center relative group ${canEditAuthorialContent ?'bg-[#2a211c]/40 border-[var(--skin-accent-color)]/50 hover:bg-[#2a211c]' : 'bg-[#2a211c]/25 border-white/10 opacity-60 cursor-not-allowed'}`}
+                                                    >
+                                                        <EmojiGlyph symbol={editableAction.icon || '📝'} size="picker" className="scale-[1.45] text-white" />
+                                                        <div className={`absolute inset-0 bg-black/40 rounded-[18px] flex items-center justify-center transition-opacity ${canEditAuthorialContent ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+                                                            <EditIcon className="w-6 h-6 text-white" />
+                                                        </div>
+                                                    </button>
+                                                </div>
+
+                                                <input
+                                                    id="onboarding-action-name-input"
+                                                    ref={nameInputRef}
+                                                    type="text"
+                                                    placeholder="Nome da ação"
+                                                    value={editableAction.name || ''}
+                                                    onBlur={(event) => {
+                                                        if (!event.target.value.trim()) return;
+                                                        const relatedTarget = event.relatedTarget as HTMLElement | null;
+                                                        if (relatedTarget?.id === 'first-use-onboarding-next') return;
+                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionNameCompleted);
+                                                    }}
+                                                    onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
                                                     disabled={!canEditAuthorialContent}
-                                                    className={`w-24 h-24 border rounded-[20px] transition-colors flex items-center justify-center relative group ${canEditAuthorialContent ?'bg-[#2a211c]/50 border-[var(--skin-accent-color)] hover:bg-[#2a211c]' : 'bg-[#2a211c]/25 border-white/10 opacity-60 cursor-not-allowed'}`}
-                                                >
-                                                    <EmojiGlyph symbol={editableAction.icon || '📝'} size="picker" className="scale-[1.65] text-white" />
-                                                    <div className={`absolute inset-0 bg-black/50 rounded-[20px] flex items-center justify-center transition-opacity ${canEditAuthorialContent ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
-                                                        <EditIcon className="w-6 h-6 text-white" />
-                                                    </div>
-                                                </button>
-                                            </div>
+                                                    className={`w-full h-12 px-4 bg-black/28 border rounded-xl text-center text-base font-bold text-white placeholder:text-gray-600 ${canEditAuthorialContent ?'border-[var(--glass-border)] focus:outline-none focus:border-[var(--skin-accent-color)]' : 'border-white/8 bg-black/12 opacity-65 cursor-not-allowed'}`}
+                                                />
+                                                {!canEditAuthorialContent && (
+                                                    <p className="px-1 text-[11px] leading-relaxed text-white/52">
+                                                        Nome e ícone ficam protegidos na campanha. Aqui você só ajusta a execução local.
+                                                    </p>
+                                                )}
 
-                                            <input
-                                                id="onboarding-action-name-input"
-                                                ref={nameInputRef}
-                                                type="text"
-                                                placeholder="Nome da ação"
-                                                value={editableAction.name || ''}
-                                                onBlur={(event) => {
-                                                    if (!event.target.value.trim()) return;
-                                                    const relatedTarget = event.relatedTarget as HTMLElement | null;
-                                                    if (relatedTarget?.id === 'first-use-onboarding-next') return;
-                                                    handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionNameCompleted);
-                                                }}
-                                                onChange={e => setEditableAction(p => ({ ...p, name: e.target.value }))}
-                                                disabled={!canEditAuthorialContent}
-                                                className={`w-full rounded-[18px] border px-4 py-3 text-center text-lg font-bold text-white placeholder:text-gray-600 ${canEditAuthorialContent ?'border-white/10 bg-black/18 focus:outline-none focus:border-[var(--accent-bronze)]/50' : 'border-white/8 bg-black/12 opacity-65 cursor-not-allowed'}`}
-                                            />
-
-                                            <textarea
-                                                placeholder="Descrição (opcional)"
-                                                value={editableAction.description || ''}
-                                                onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
-                                                disabled={!canEditAuthorialContent}
-                                                rows={3}
-                                                className={`w-full rounded-[18px] px-4 py-3 text-sm text-white/90 border placeholder:text-gray-600 resize-none ${canEditAuthorialContent ?'bg-black/20 border-white/10 focus:outline-none focus:border-[var(--accent-bronze)]/50' : 'bg-black/12 border-white/8 opacity-65 cursor-not-allowed'}`}
-                                            />
-                                            {!canEditAuthorialContent && (
-                                                <p className="text-[11px] leading-relaxed text-white/52">
-                                                    Nome, ícone e descrição ficam protegidos na campanha. Aqui você só ajusta a execução local.
-                                                </p>
-                                            )}
-                                        </ActionSectionCard>
-
-                                        <ActionSectionCard title="Estrutura" subtitle="Defina onde essa ação vive e qual comportamento ela terá.">
-                                            <div>
-                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Arena</label>
                                                 <button
                                                     onClick={handleArenaButtonClick}
                                                     disabled={!currentArena && (lockArenaAssignment || !canEditExecutionSettings)}
-                                                    className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className={`w-full p-3 rounded-xl flex justify-between items-center text-left transition-colors border disabled:cursor-not-allowed disabled:opacity-60 ${currentArena ? 'bg-black/28 border-[var(--glass-border)] hover:bg-black/34' : 'bg-[var(--skin-accent-color)]/8 border-[var(--skin-accent-color)]/30 hover:bg-[var(--skin-accent-color)]/12'}`}
                                                 >
-                                                    <span className="text-sm">{currentArena?.icon} {currentArena?.name || 'Selecionar arena'}</span>
+                                                    <span className={`text-sm ${currentArena ? 'text-white' : 'text-[var(--skin-accent-color)]'}`}>{currentArena?.icon ? `${currentArena.icon} ` : ''}{currentArena?.name || 'Escolher arena'}</span>
                                                     <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                 </button>
                                                 {lockArenaAssignment && (
@@ -1606,152 +1618,58 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         Esta ação segue presa a esta arena guiada da mentoria.
                                                     </p>
                                                 )}
-                                                {isEditingTaskInstance && !lockArenaAssignment && (
-                                                    <p className="mt-1 px-1 text-[10px] leading-relaxed text-white/46">
-                                                        Esta ocorrencia nao troca de arena. Isso so muda na acao base.
-                                                    </p>
-                                                )}
-                                            </div>
 
-                                            <div>
-                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Tipo de ação</label>
-                                                <button id="onboarding-action-type-button" onClick={() => canEditAuthorialContent && setIsActionTypePickerOpen(true)} disabled={!canEditAuthorialContent} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5 disabled:cursor-not-allowed disabled:opacity-60">
+                                                <button
+                                                    id="onboarding-action-type-button"
+                                                    onClick={() => canEditAuthorialContent && setIsActionTypePickerOpen(true)}
+                                                    disabled={!canEditAuthorialContent}
+                                                    className="w-full p-3 bg-black/28 rounded-xl flex justify-between items-center text-left hover:bg-black/34 transition-colors border border-[var(--glass-border)] disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
                                                     <span className="text-sm">{(editableAction.actionType || 'Ação Recorrente') === 'Livre' ? 'Livre (sem alvo)' : (editableAction.actionType || 'Ação Recorrente')}</span>
                                                     <ChevronRightIcon className="w-4 h-4 text-gray-500" />
                                                 </button>
                                                 {editableAction.actionType === 'Livre' && (
-                                                    <p className="mt-2 px-1 text-[11px] leading-relaxed text-white/60">
-                                                        Acao Livre nao pede alvo numerico. Ela fica disponivel para voce registrar quando quiser, sem consumir estoque fixo no Planner.
+                                                    <p className="px-1 text-[11px] leading-relaxed text-white/60">
+                                                        Acao livre nao pede alvo numerico. Ela fica pronta para registrar quando quiser, sem cair em horario fixo.
                                                     </p>
                                                 )}
-                                            </div>
-                                        </ActionSectionCard>
 
-                                        <ActionSectionCard title="Ritmo" subtitle="Ajuste a carga da ação para ela ficar sustentável no fluxo real.">
-                                            <StyledRangeInput
-                                                containerId="onboarding-action-duration"
-                                                inputRef={durationInputRef}
-                                                label="Duração base"
-                                                value={editableAction.duration || 60}
-                                                min={15} max={480} step={1} unit="min"
-                                                snapValues={ACTION_DURATION_OPTIONS}
-                                                formatValue={formatDurationLabel}
-                                                onChange={val => {
-                                                    setEditableAction(p => ({ ...p, duration: val }));
-                                                    handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, { duration: val });
-                                                }}
-                                            />
-
-                                            {editableAction.actionType === 'Ação Recorrente' && (
                                                 <StyledRangeInput
-                                                    containerId="onboarding-action-repetitions"
-                                                    inputRef={repsInputRef}
-                                                    label="Repetições"
-                                                    value={editableAction.repetitions || 1}
-                                                    min={1}
-                                                    max={50}
-                                                    step={1}
-                                                    unit="x"
+                                                    containerId="onboarding-action-duration"
+                                                    inputRef={durationInputRef}
+                                                    label="Duração base"
+                                                    value={editableAction.duration || 60}
+                                                    min={15} max={480} step={1} unit="min"
+                                                    snapValues={ACTION_DURATION_OPTIONS}
+                                                    formatValue={formatDurationLabel}
                                                     onChange={val => {
-                                                        setEditableAction(p => ({ ...p, repetitions: val }));
-                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionRepetitionsAdjusted, { repetitions: val });
+                                                        setEditableAction(p => ({ ...p, duration: val }));
+                                                        handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionDurationAdjusted, { duration: val });
                                                     }}
                                                 />
-                                            )}
 
-                                            <StyledRangeInput
-                                                label="Dificuldade"
-                                                value={normalizeActionDifficulty(editableAction.difficulty)}
-                                                min={0}
-                                                max={3}
-                                                step={1}
-                                                unit={difficultyLabels[normalizeActionDifficulty(editableAction.difficulty)]}
-                                                onChange={val => setEditableAction(p => ({ ...p, difficulty: normalizeActionDifficulty(val) }))}
-                                            />
-                                            {normalizeActionDifficulty(editableAction.difficulty) === 0 && (
-                                                <p className="px-1 text-[11px] leading-relaxed text-white/60">
-                                                    Lazer registra essa acao, mas nao rende EXP. Serve para descanso, diversao e atividades que voce quer acompanhar sem gamificar.
-                                                </p>
-                                            )}
-                                        </ActionSectionCard>
-
-                                        {/* Scheduling */}
-                                        {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
-                                            <ActionSectionCard title="Agenda" subtitle="Se essa ação já tem cadência ou horário, deixe pronto aqui.">
                                                 {editableAction.actionType === 'Ação Recorrente' && (
-                                                    <div>
-                                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da semana</label>
-                                                        <div className="grid grid-cols-7 gap-1 mt-1">
-                                                            {week.map(day => <DayToggle key={day} day={day} selected={selectedDays.includes(day)} onClick={() => handleDayToggle(day)} />)}
-                                                        </div>
-                                                    </div>
+                                                    <StyledRangeInput
+                                                        containerId="onboarding-action-repetitions"
+                                                        inputRef={repsInputRef}
+                                                        label="Repetições"
+                                                        value={editableAction.repetitions || 1}
+                                                        min={1}
+                                                        max={50}
+                                                        step={1}
+                                                        unit="x"
+                                                        onChange={val => {
+                                                            setEditableAction(p => ({ ...p, repetitions: val }));
+                                                            handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionRepetitionsAdjusted, { repetitions: val });
+                                                        }}
+                                                    />
                                                 )}
 
-                                                {editableAction.actionType === 'Compromisso' && (
-                                                    <div>
-                                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data</label>
-                                                        <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
-                                                            <div className="flex items-center gap-2">
-                                                                <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
-                                                                <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
-                                                            </div>
-                                                            <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                <div>
-                                                    <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
-                                                    <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
-                                                        <span className="text-sm">{startTime || 'Sem horário'}</span>
-                                                        <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
-                                                    </button>
-                                                    {isTimePickerOpen && (
-                                                        <div className="relative mt-2 h-48">
-                                                            <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {canUseReminderToggle && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { void handleReminderToggle(); }}
-                                                        className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-left transition-colors hover:bg-black/30"
-                                                    >
-                                                        <div>
-                                                            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/52">Lembrete</div>
-                                                            <div className="mt-1 text-sm font-semibold text-white">Notificar 15 min antes</div>
-                                                        </div>
-                                                        <div className={`relative h-6 w-11 rounded-full border transition-colors ${editableAction.context?.schedule?.notifyBeforeMinutes === 15
-                                                            ? 'border-emerald-400/70 bg-emerald-400/30'
-                                                            : 'border-white/12 bg-white/5'
-                                                            }`}>
-                                                            <div className={`absolute top-0.5 h-[1.125rem] w-[1.125rem] rounded-full bg-white transition-all ${editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'left-[1.35rem]' : 'left-0.5'}`} />
-                                                        </div>
+                                                {!isNew && (
+                                                    <button onClick={handleDelete} className="w-full py-3 rounded-xl bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/30 text-xs font-bold uppercase tracking-wider transition-all mt-2">
+                                                        Excluir Ação
                                                     </button>
                                                 )}
-
-                                                {!isEditingTaskInstance && editableAction.actionType === 'Ação Recorrente' && startTime && startTime !== 'Sem Horário' && selectedDays.length === 0 && (
-                                                    <p className="px-1 text-[10px] leading-relaxed text-white/46">
-                                                        Escolha pelo menos um dia da semana para essa ação gerar tarefas e poder usar lembrete.
-                                                    </p>
-                                                )}
-
-                                                {isEditingTaskInstance && (
-                                                    <p className="px-1 text-[10px] leading-relaxed text-white/46">
-                                                        O lembrete segue a configuração da ação base.
-                                                    </p>
-                                                )}
-                                            </ActionSectionCard>
-                                        )}
-
-                                        {/* Delete Button */}
-                                        {!isNew && (
-                                            <button onClick={handleDelete} className="w-full py-3 rounded-xl bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/30 text-xs font-bold uppercase tracking-wider transition-all mt-4">
-                                                Excluir Ação
-                                            </button>
-                                        )}
                                             </>
                                         )}
                                     </div>
@@ -1762,10 +1680,39 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         {/* ADVANCED TAB */}
                         {activeTab === 'advanced' && (
                             <div className="flex flex-col h-full animate-fade-in pb-20">
+                                <ActionSectionCard title="Avançado" className="mx-4 mt-4 mb-2">
+                                    <StyledRangeInput
+                                        label="Dificuldade"
+                                        value={normalizeActionDifficulty(editableAction.difficulty)}
+                                        min={0}
+                                        max={3}
+                                        step={1}
+                                        unit={difficultyLabels[normalizeActionDifficulty(editableAction.difficulty)]}
+                                        onChange={val => setEditableAction(p => ({ ...p, difficulty: normalizeActionDifficulty(val) }))}
+                                    />
+                                    {normalizeActionDifficulty(editableAction.difficulty) === 0 && (
+                                        <p className="px-1 text-[11px] leading-relaxed text-white/60">
+                                            Lazer registra essa acao, mas nao rende EXP. Serve para descanso, diversao e coisas que voce quer acompanhar sem gamificar.
+                                        </p>
+                                    )}
+
+                                    <div>
+                                        <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Descrição curta</label>
+                                        <textarea
+                                            placeholder="Descrição opcional"
+                                            value={editableAction.description || ''}
+                                            onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
+                                            disabled={!canEditAuthorialContent}
+                                            rows={3}
+                                            className={`w-full rounded-[18px] px-4 py-3 mt-1 text-sm text-white/90 border placeholder:text-gray-600 resize-none ${canEditAuthorialContent ?'bg-black/20 border-white/10 focus:outline-none focus:border-[var(--accent-bronze)]/50' : 'bg-black/12 border-white/8 opacity-65 cursor-not-allowed'}`}
+                                        />
+                                    </div>
+                                </ActionSectionCard>
+
                                 {/* Sub-Tabs */}
-                                <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5 mx-4 mt-4 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
-                                    {(['MÍDIA', 'ANOTAÇÃO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
-                                        const tabKey = tab === 'MÍDIA' ?'media' : tab === 'ANOTAÇÃO' ?'note' : tab === 'CHECKLIST' ?'checklist' : 'context';
+                                <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5 mx-4 mt-0 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
+                                    {(['AGENDA', 'MÍDIA', 'ANOTAÇÃO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
+                                        const tabKey = tab === 'AGENDA' ? 'schedule' : tab === 'MÍDIA' ?'media' : tab === 'ANOTAÇÃO' ?'note' : tab === 'CHECKLIST' ?'checklist' : 'context';
                                         const isActive = advancedSubTab === tabKey;
                                         return (
                                             <button
@@ -1784,12 +1731,92 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                                 {/* Content */}
                                 <div className="flex-1 p-0">
+                                    {advancedSubTab === 'schedule' && (
+                                        <div className="p-4">
+                                            <ActionSectionCard title="Agenda">
+                                                {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') ? (
+                                                    <>
+                                                        {editableAction.actionType === 'Ação Recorrente' && (
+                                                            <div>
+                                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da semana</label>
+                                                                <div className="grid grid-cols-7 gap-1 mt-1">
+                                                                    {week.map(day => <DayToggle key={day} day={day} selected={selectedDays.includes(day)} onClick={() => handleDayToggle(day)} />)}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {editableAction.actionType === 'Compromisso' && (
+                                                            <div>
+                                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data</label>
+                                                                <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                                                                        <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
+                                                                    </div>
+                                                                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        <div>
+                                                            <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
+                                                            <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                                <span className="text-sm">{startTime || 'Sem horário'}</span>
+                                                                <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
+                                                            </button>
+                                                            {isTimePickerOpen && (
+                                                                <div className="relative mt-2 h-48">
+                                                                    <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {canUseReminderToggle && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { void handleReminderToggle(); }}
+                                                                className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-left transition-colors hover:bg-black/30"
+                                                            >
+                                                                <div>
+                                                                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/52">Lembrete</div>
+                                                                    <div className="mt-1 text-sm font-semibold text-white">Notificar 15 min antes</div>
+                                                                </div>
+                                                                <div className={`relative h-6 w-11 rounded-full border transition-colors ${editableAction.context?.schedule?.notifyBeforeMinutes === 15
+                                                                    ? 'border-emerald-400/70 bg-emerald-400/30'
+                                                                    : 'border-white/12 bg-white/5'
+                                                                    }`}>
+                                                                    <div className={`absolute top-0.5 h-[1.125rem] w-[1.125rem] rounded-full bg-white transition-all ${editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'left-[1.35rem]' : 'left-0.5'}`} />
+                                                                </div>
+                                                            </button>
+                                                        )}
+
+                                                        {!isEditingTaskInstance && editableAction.actionType === 'Ação Recorrente' && startTime && startTime !== 'Sem Horário' && selectedDays.length === 0 && (
+                                                            <p className="px-1 text-[10px] leading-relaxed text-white/46">
+                                                                Escolha pelo menos um dia da semana para essa ação gerar tarefas e poder usar lembrete.
+                                                            </p>
+                                                        )}
+
+                                                        {isEditingTaskInstance && (
+                                                            <p className="px-1 text-[10px] leading-relaxed text-white/46">
+                                                                O lembrete segue a configuração da ação base.
+                                                            </p>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <div className="rounded-[18px] border border-white/8 bg-black/20 px-4 py-4 text-sm text-white/62">
+                                                        Esta ação não usa agenda fixa.
+                                                    </div>
+                                                )}
+                                            </ActionSectionCard>
+                                        </div>
+                                    )}
+
                                     {advancedSubTab === 'media' && (
                                         <div className="h-full flex flex-col p-4">
-                                            {(displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video') || (mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl))) ?(
+                                            {mediaPreviewUrl ?(
                                                 <div className="w-full aspect-video bg-black/40 rounded-xl overflow-hidden border border-white/10 relative group mb-4">
                                                     <img
-                                                        src={mode === 'edit' && (newAssetUrl || mediaSlot.imageUrl) ?(newAssetUrl || mediaSlot.imageUrl) : displayAction?.assets?.find(a => a.type === 'image' || a.type === 'video')?.url}
+                                                        src={mediaPreviewUrl}
                                                         className="w-full h-full object-cover"
                                                         alt="Mídia"
                                                         onError={(e) => (e.currentTarget.style.display = 'none')}
@@ -2036,6 +2063,43 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     })}
                                                 </div>
                                             </div>
+
+                                            {canUsePlannerMatrix && (
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Matriz do Planner</label>
+                                                        <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">Bay Area</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {PLANNER_MATRIX_OPTIONS.map((option) => {
+                                                            const isSelected = displayAction?.context?.plannerQuadrant === option.value;
+                                                            const isEditable = mode === 'edit' && canEditAuthorialContent;
+                                                            return (
+                                                                <button
+                                                                    key={option.value}
+                                                                    type="button"
+                                                                    title={option.title}
+                                                                    disabled={!isEditable}
+                                                                    onClick={() => isEditable && setEditableAction((prev) => ({
+                                                                        ...prev,
+                                                                        context: {
+                                                                            ...prev.context,
+                                                                            plannerQuadrant: prev.context?.plannerQuadrant === option.value ? undefined : option.value,
+                                                                        },
+                                                                    }))}
+                                                                    className={`rounded-2xl border px-3 py-3 text-left transition-all ${isSelected
+                                                                        ? 'border-[var(--skin-accent-color)]/50 bg-[var(--skin-accent-color)]/16 text-[var(--skin-accent-color)] shadow-[0_0_16px_rgba(255,215,0,0.08)]'
+                                                                        : 'border-white/8 bg-black/20 text-white/56 ' + (isEditable ? 'hover:bg-white/[0.05] hover:text-white/82' : 'opacity-50')
+                                                                    }`}
+                                                                >
+                                                                    <div className="text-[11px] font-black uppercase tracking-[0.18em]">{option.label}</div>
+                                                                    <div className="mt-1 text-[10px] leading-relaxed text-current/80">{option.title}</div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -2152,7 +2216,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     onClick={handleSave}
                                     className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
                                 >
-                                    <span className="relative z-10">Salvar alterações</span>
+                                    <span className="relative z-10">{isNew ? 'Criar ação' : 'Salvar alterações'}</span>
                                 </button>
                             )}
                         </div>

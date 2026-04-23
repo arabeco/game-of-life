@@ -2,6 +2,13 @@ export const OPERATIONAL_DAY_CUTOFF_HOUR = 4;
 export const OPERATIONAL_DAY_START_MINUTE = OPERATIONAL_DAY_CUTOFF_HOUR * 60;
 export const OPERATIONAL_DAY_END_HOUR = OPERATIONAL_DAY_CUTOFF_HOUR + 24;
 export const OPERATIONAL_DAY_TOTAL_MINUTES = 24 * 60;
+export const OPERATIONAL_DAY_TOTAL_HOURS = OPERATIONAL_DAY_TOTAL_MINUTES / 60;
+
+export const getOperationalHourTicks = () =>
+    Array.from({ length: OPERATIONAL_DAY_TOTAL_HOURS }, (_, index) => OPERATIONAL_DAY_CUTOFF_HOUR + index);
+
+export const formatOperationalHourLabel = (hour) =>
+    `${String(((hour % 24) + 24) % 24).padStart(2, '0')}:00`;
 
 export const formatLocalDateString = (date = new Date()) => {
     const offset = date.getTimezoneOffset();

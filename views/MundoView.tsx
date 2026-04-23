@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GlassCard } from '../components/GlassCard';
@@ -91,28 +91,36 @@ const SocialSearch: React.FC<{
 }> = ({ friends, onSearchResults, onQueryChange }) => {
     const { searchClans, searchPlayers, sendFriendRequest } = useGame();
     const [query, setQuery] = useState('');
+    const searchRequestIdRef = useRef(0);
 
     const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const newQuery = e.target.value;
+        const trimmedQuery = newQuery.trim();
+        const requestId = searchRequestIdRef.current + 1;
+        searchRequestIdRef.current = requestId;
         setQuery(newQuery);
         onQueryChange(newQuery);
 
-        if (newQuery.trim() === '') {
+        if (trimmedQuery.length < 2) {
             onSearchResults({ players: [], clans: [] });
             return;
         }
 
-        const normalizedQuery = newQuery.trim().toLowerCase();
+        const normalizedQuery = trimmedQuery.toLocaleLowerCase('pt-BR');
         
         // Local filtering for quick response
         const localFilteredFriends = friends.filter((friend) => {
-            const nickname = String(friend.nickname || '').toLowerCase();
-            const profileEmail = String(friend.email || '').toLowerCase();
-            return nickname.includes(normalizedQuery) || profileEmail.includes(normalizedQuery);
+            const nickname = String(friend.nickname || '').toLocaleLowerCase('pt-BR');
+            const username = String(friend.username || '').toLocaleLowerCase('pt-BR');
+            return nickname.includes(normalizedQuery) || username.includes(normalizedQuery);
         });
 
-        // Global player search
-        const globalPlayers = await searchPlayers(newQuery);
+        const [globalPlayers, foundClans] = await Promise.all([
+            searchPlayers(trimmedQuery),
+            searchClans(trimmedQuery),
+        ]);
+
+        if (requestId !== searchRequestIdRef.current) return;
         
         // Merge results: exact friends already in list, plus new players found
         const mergedPlayers = [...localFilteredFriends];
@@ -122,7 +130,6 @@ const SocialSearch: React.FC<{
             }
         });
 
-        const foundClans = await searchClans(newQuery);
         onSearchResults({ players: mergedPlayers, clans: foundClans });
     };
 

@@ -4,6 +4,7 @@ interface VideoPlayerProps {
     src?: string;
     onEnd: () => void;
     className?: string;
+    videoClassName?: string;
     placeholderLabel?: string;
     duration?: number;
     playbackRate?: number;
@@ -18,6 +19,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     src,
     onEnd,
     className = '',
+    videoClassName = '',
     placeholderLabel = 'Playing Video...',
     duration = 4000,
     playbackRate = 1.0,
@@ -108,7 +110,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <video
                 ref={videoRef}
                 src={src}
-                className={`w-full h-full object-cover transition-opacity duration-300 ${isReady ? 'opacity-100' : 'opacity-0'}`}
+                className={`w-full h-full object-cover transition-opacity duration-300 ${videoClassName} ${isReady ? 'opacity-100' : 'opacity-0'}`}
                 autoPlay
                 playsInline
                 muted

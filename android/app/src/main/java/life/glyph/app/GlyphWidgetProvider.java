@@ -7,7 +7,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
+import android.view.View;
 import android.widget.RemoteViews;
 
 import org.json.JSONObject;
@@ -43,13 +45,20 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.glyph_widget_subtitle, copy.subtitle);
         views.setTextViewText(R.id.glyph_widget_end_date, copy.endDate);
         views.setTextViewText(R.id.glyph_widget_meta, copy.meta);
-        views.setTextViewText(R.id.glyph_widget_progress, copy.progress);
-        views.setTextViewText(R.id.glyph_widget_time, copy.time);
-        views.setProgressBar(R.id.glyph_widget_progress_bar, 100, copy.progressPercent, false);
+        views.setTextViewText(R.id.glyph_widget_actions_label, copy.actionsLabel);
+        views.setTextViewText(R.id.glyph_widget_actions_percent, copy.actionsPercent);
+        views.setTextViewText(R.id.glyph_widget_time_label, copy.timeLabel);
+        views.setTextViewText(R.id.glyph_widget_time_percent, copy.timePercent);
+        views.setProgressBar(R.id.glyph_widget_actions_bar, 100, copy.actionsProgressPercent, false);
+        views.setProgressBar(R.id.glyph_widget_time_bar, 100, copy.timeProgressPercent, false);
+        views.setViewVisibility(R.id.glyph_widget_subtitle, copy.showSubtitle ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.glyph_widget_meta, copy.showMeta ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.glyph_widget_actions_row, copy.showMetrics ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.glyph_widget_time_row, copy.showMetrics ? View.VISIBLE : View.GONE);
 
-        Intent openIntent = new Intent(context, MainActivity.class);
-        openIntent.setAction(Intent.ACTION_MAIN);
-        openIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        Intent openIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("life.glyph.app://widget/reports"));
+        openIntent.setClass(context, MainActivity.class);
+        openIntent.setPackage(context.getPackageName());
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flags |= PendingIntent.FLAG_IMMUTABLE;
@@ -91,7 +100,7 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             int elapsedDays = daily.optInt("cycleElapsedDays", 0);
             int totalDays = daily.optInt("cycleTotalDays", 0);
             int arenaCount = daily.optInt("activeArenaCount", 0);
-            String meta = subtitle + " - " + arenaCount + " arena" + (arenaCount == 1 ? "" : "s");
+            String meta = arenaCount > 0 ? arenaCount + " arena" + (arenaCount == 1 ? "" : "s") : "";
             String day = elapsedDays > 0 && totalDays > 0 ? "Dia " + elapsedDays + "/" + totalDays : subtitle;
 
             return new WidgetCopy(
@@ -99,12 +108,18 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
                 day,
                 endDate.isEmpty() ? "ABRIR" : endDate,
                 trim(meta, 42),
-                completed + "/" + total + " - " + progressPercent + "%",
+                completed + "/" + total,
+                progressPercent + "%",
+                "Tempo",
                 timeProgress + "%",
-                progressPercent
+                progressPercent,
+                timeProgress,
+                true,
+                !meta.isEmpty(),
+                true
             );
         } catch (Exception _error) {
-            return new WidgetCopy(DEFAULT_TITLE, "Widget sincronizando", "ABRIR", "Abra o app para atualizar", "--", "--", 0);
+            return new WidgetCopy(DEFAULT_TITLE, "Sincronizando", "ABRIR", "", "--", "--", "Tempo", "--", 0, 0, true, false, false);
         }
     }
 
@@ -137,26 +152,38 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
         final String subtitle;
         final String endDate;
         final String meta;
-        final String progress;
-        final String time;
-        final int progressPercent;
+        final String actionsLabel;
+        final String actionsPercent;
+        final String timeLabel;
+        final String timePercent;
+        final int actionsProgressPercent;
+        final int timeProgressPercent;
+        final boolean showSubtitle;
+        final boolean showMeta;
+        final boolean showMetrics;
 
-        WidgetCopy(String title, String subtitle, String endDate, String meta, String progress, String time, int progressPercent) {
+        WidgetCopy(String title, String subtitle, String endDate, String meta, String actionsLabel, String actionsPercent, String timeLabel, String timePercent, int actionsProgressPercent, int timeProgressPercent, boolean showSubtitle, boolean showMeta, boolean showMetrics) {
             this.title = title;
             this.subtitle = subtitle;
             this.endDate = endDate;
             this.meta = meta;
-            this.progress = progress;
-            this.time = time;
-            this.progressPercent = progressPercent;
+            this.actionsLabel = actionsLabel;
+            this.actionsPercent = actionsPercent;
+            this.timeLabel = timeLabel;
+            this.timePercent = timePercent;
+            this.actionsProgressPercent = actionsProgressPercent;
+            this.timeProgressPercent = timeProgressPercent;
+            this.showSubtitle = showSubtitle;
+            this.showMeta = showMeta;
+            this.showMetrics = showMetrics;
         }
 
         static WidgetCopy loggedOut() {
-            return new WidgetCopy("GLYPH", "Aguardando login", "ENTRAR", "Abra o app para sincronizar seu ciclo", "--", "--", 0);
+            return new WidgetCopy("GLYPH", "Entrar", "ABRIR", "", "--", "--", "Tempo", "--", 0, 0, true, false, false);
         }
 
         static WidgetCopy noCycle() {
-            return new WidgetCopy("SEM CICLO ATIVO", "Historico pronto", "ABRIR", "Inicie um ciclo para ver seu progresso aqui", "0/0 - 0%", "0%", 0);
+            return new WidgetCopy("SEM CICLO ATIVO", "Historico", "ABRIR", "", "0/0", "0%", "Tempo", "0%", 0, 0, true, false, false);
         }
     }
 }

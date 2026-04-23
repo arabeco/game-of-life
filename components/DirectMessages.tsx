@@ -28,6 +28,10 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
     const [reportTarget, setReportTarget] = useState<{ type: 'user' | 'message'; message?: DirectMessage } | null>(null);
     const [isModerationBusy, setIsModerationBusy] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const previousParticipantIdRef = useRef<string | null>(null);
+    const previousMessageCountRef = useRef(0);
+    const [isAtBottom, setIsAtBottom] = useState(true);
 
     // Sort conversations by last message date
     const sortedConversations = [...dmConversations].sort((a, b) => {
@@ -43,6 +47,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
             (m.senderId === userProfile.id && m.recipientId === selectedParticipantId)
           ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         : [];
+    const lastActiveMessage = activeMessages[activeMessages.length - 1];
 
     const friendProfile = friends.find(f => f.id === selectedParticipantId);
     const selectedConversation = dmConversations.find(c => c.participantId === selectedParticipantId) || 
@@ -61,13 +66,33 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
         }
     }, [dmConversations, friends, initialParticipantId]);
 
-    // Scroll to bottom on new messages
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+        messagesEndRef.current?.scrollIntoView({ behavior });
+    };
+
+    const handleMessagesScroll = () => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        setIsAtBottom(scrollHeight - scrollTop - clientHeight < 64);
+    };
+
+    // Keep the chat anchored only when entering a conversation, sending, or already reading the bottom.
     useEffect(() => {
-        if (selectedParticipantId) {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            markDMAsRead(selectedParticipantId);
+        if (!selectedParticipantId) return;
+
+        const participantChanged = previousParticipantIdRef.current !== selectedParticipantId;
+        const hasNewMessage = activeMessages.length > previousMessageCountRef.current;
+        const shouldFollow = participantChanged || isAtBottom || lastActiveMessage?.senderId === userProfile.id;
+
+        if ((participantChanged || hasNewMessage) && shouldFollow) {
+            setTimeout(() => scrollToBottom(participantChanged ? 'auto' : 'smooth'), 0);
         }
-    }, [activeMessages.length, selectedParticipantId, markDMAsRead]);
+
+        markDMAsRead(selectedParticipantId);
+        previousParticipantIdRef.current = selectedParticipantId;
+        previousMessageCountRef.current = activeMessages.length;
+    }, [activeMessages.length, isAtBottom, lastActiveMessage?.id, lastActiveMessage?.senderId, markDMAsRead, selectedParticipantId, userProfile.id]);
 
     // Animation state for switching conversations
     const [isChangingConversation, setIsChangingConversation] = useState(false);
@@ -85,6 +110,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
         trigger('click');
         const content = inputValue.trim();
         setInputValue('');
+        setIsAtBottom(true);
         await sendDirectMessage(selectedParticipantId, content);
     };
 
@@ -335,7 +361,11 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                         </div>
 
                         {/* Messages Area */}
-                        <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)] p-4 space-y-4">
+                        <div
+                            ref={messagesContainerRef}
+                            onScroll={handleMessagesScroll}
+                            className="custom-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)] p-4 space-y-4"
+                        >
                             {isSelectedUserBlocked ? (
                                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
                                     <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4">

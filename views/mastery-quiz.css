@@ -426,20 +426,27 @@
 }
 
 .mastery-quiz-confirm-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 70;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(5, 6, 10, 0.62);
-  backdrop-filter: blur(12px);
+  background: rgba(5, 6, 10, 0.82);
+  backdrop-filter: blur(18px);
 }
 
 .mastery-quiz-confirm-card {
   width: min(460px, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(14, 16, 22, 0.98), rgba(7, 8, 12, 0.99));
   padding: 24px;
   border-radius: 28px;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .mastery-quiz-confirm-title {

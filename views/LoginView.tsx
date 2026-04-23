@@ -2,7 +2,7 @@
 import { supabase } from '../supabaseClient';
 import { SupabaseService } from '../services/SupabaseService';
 import { GoldenToast } from '../components/GoldenToast';
-import { GoldenInvite, UserProfile } from '../types';
+import { UserProfile } from '../types';
 import {
     LEGAL_PRIVACY_URL_PLACEHOLDER,
     LEGAL_TERMS_URL_PLACEHOLDER,
@@ -59,13 +59,11 @@ export const LoginView: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [nickname, setNickname] = useState('');
-    const [manualInviteCode, setManualInviteCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [appleToastVisible, setAppleToastVisible] = useState(false);
-    const [goldenInviteGuide, setGoldenInviteGuide] = useState<{ title: string; text: string } | null>(null);
-    const isGoldenInviteGateEnabled = false;
+    const [accessGuide, setAccessGuide] = useState<{ title: string; text: string } | null>(null);
     const canonicalAppOrigin = React.useMemo(() => getCanonicalAppOrigin(), []);
 
     React.useEffect(() => {
@@ -81,16 +79,15 @@ export const LoginView: React.FC = () => {
         setEmail(isSignupRedirect ? (redirectState.email || '') : '');
         setPassword('');
         setNickname('');
-        setManualInviteCode('');
         setMessage(null);
         setError(redirectState.message);
         if (isSignupRedirect) {
-            setGoldenInviteGuide({
+            setAccessGuide({
                 title: 'Conta nova detectada',
                 text: 'Esse acesso ainda nao tem conta no app. Se quiser, voce pode criar agora com Google ou e-mail.',
             });
         } else if (redirectState.email) {
-            setGoldenInviteGuide({
+            setAccessGuide({
                 title: 'Acesso com Google',
                 text: 'Para entrar com Google no primeiro acesso, voce nao precisa preencher e-mail, nickname ou senha aqui. Ignore os campos abaixo e toque em Entrar com Google.',
             });
@@ -162,26 +159,11 @@ export const LoginView: React.FC = () => {
         return null;
     };
 
-    const handleSignUp = async (
-        draft: ManualSignupDraft,
-        inviteCode?: string,
-    ) => {
-        const normalizedInvite = inviteCode?.trim() || '';
-        let inviteRecord: GoldenInvite | null = null;
-
-        if (isGoldenInviteGateEnabled) {
-            inviteRecord = await SupabaseService.checkGoldenInvite(normalizedInvite);
-            if (!inviteRecord) {
-                return { success: false, error: `Convite Dourado "${normalizedInvite}" nao encontrado no banco de dados.` };
-            }
-            if (inviteRecord.is_used) {
-                return { success: false, error: 'Convite Dourado ja utilizado.' };
-            }
-        }
+    const handleSignUp = async (draft: ManualSignupDraft) => {
         setLoading(true);
         setError(null);
         setMessage(null);
-        setGoldenInviteGuide(null);
+        setAccessGuide(null);
 
         try {
             const { data, error } = await supabase.auth.signUp({
@@ -197,16 +179,6 @@ export const LoginView: React.FC = () => {
             if (error) throw error;
 
             if (data.user) {
-                if (isGoldenInviteGateEnabled && inviteRecord) {
-                    const consumeResult = await SupabaseService.consumeGoldenInviteCodeDetailed(normalizedInvite, data.user.id);
-                    if (!consumeResult.success) {
-                        const consumeError = SupabaseService.describeGoldenInviteConsumeError(consumeResult.error);
-                        setError(consumeError);
-                        await signOutAndClearSupabaseSession('local', 'manual-signup-invite-consume-failed');
-                        setLoading(false);
-                        return { success: false, error: consumeError };
-                    }
-                }
                 // Criar perfil do usuário
                 const newProfile: UserProfile = {
                     id: data.user.id,
@@ -268,7 +240,6 @@ export const LoginView: React.FC = () => {
                 newProfile.unlockedItems.hairStyles = {
                     'cachos': true,
                     'medio_reto': true,
-                    'grunge_longo': true,
                     'textured_crop': true
                 };
                 newProfile.unlockedItems.orbs = {
@@ -354,12 +325,11 @@ export const LoginView: React.FC = () => {
 
                 const finalizeSuccess = () => {
                     setMessage(sessionReady
-                        ? 'Conta criada. Seu acesso ao beta foi liberado.'
+                        ? 'Conta criada. Seu acesso foi liberado.'
                         : 'Conta criada. Seu acesso ficou registrado.'
                     );
                     setIsSigningUp(false);
                     setManualEntryExpanded(false);
-                    setManualInviteCode('');
                     setPassword('');
                 };
 
@@ -380,7 +350,7 @@ export const LoginView: React.FC = () => {
         setLoading(true);
         setError(null);
         setMessage(null);
-        setGoldenInviteGuide(null);
+        setAccessGuide(null);
 
         try {
             const identifier = email.trim();
@@ -505,7 +475,7 @@ export const LoginView: React.FC = () => {
         setLoading(true);
         setError(null);
         setMessage(null);
-        setGoldenInviteGuide(null);
+        setAccessGuide(null);
         try {
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
@@ -541,7 +511,7 @@ export const LoginView: React.FC = () => {
         setLoading(true);
         setError(null);
         setMessage(null);
-        setGoldenInviteGuide(null);
+        setAccessGuide(null);
 
         void (async () => {
             try {
@@ -581,7 +551,7 @@ export const LoginView: React.FC = () => {
                 return;
             }
 
-            await handleSignUp(draft, manualInviteCode.trim());
+            await handleSignUp(draft);
             return;
         }
 
@@ -594,11 +564,10 @@ export const LoginView: React.FC = () => {
         setNickname('');
         setError(null);
         setMessage(null);
-        setGoldenInviteGuide(null);
+        setAccessGuide(null);
         setGoogleResumeMode(false);
         setGoogleResumeEmail('');
         setManualEntryExpanded(false);
-        setManualInviteCode('');
     };
 
     const showManualFields = !googleResumeMode && manualEntryExpanded;
@@ -608,9 +577,8 @@ export const LoginView: React.FC = () => {
         setGoogleResumeEmail('');
         setError(null);
         setMessage(null);
-        setGoldenInviteGuide(null);
+        setAccessGuide(null);
         setManualEntryExpanded(true);
-        setManualInviteCode('');
         setIsSigningUp(nextMode === 'signup');
     };
 
@@ -635,10 +603,10 @@ export const LoginView: React.FC = () => {
         }
     };
 
-    const compactGuideTitle = googleResumeMode ? 'Google conectado' : goldenInviteGuide?.title;
+    const compactGuideTitle = googleResumeMode ? 'Google conectado' : accessGuide?.title;
     const compactGuideText = googleResumeMode
-        ? `Falta validar o Bilhete Dourado para ${googleResumeEmail || 'essa conta'}.`
-        : goldenInviteGuide?.text ?? null;
+        ? `Continue com Google para entrar em ${googleResumeEmail || 'essa conta'}.`
+        : accessGuide?.text ?? null;
 
     return (
         <>
@@ -646,7 +614,7 @@ export const LoginView: React.FC = () => {
             <div className="login-card">
                 <div className="login-content">
                     <div className="login-hero">
-                        <span className="login-kicker">Beta fechado</span>
+                        <span className="login-kicker">Acesso</span>
                         <div className="login-logo-stage">
                             <div className="login-logo-halo" />
                             <div className="login-logo-plasma" />
@@ -717,8 +685,15 @@ export const LoginView: React.FC = () => {
                                 title={isAppleSignInConfigured() ? 'Abrir Sign in with Apple' : 'Sign in with Apple preparado para configuracao posterior'}
                             >
                                 <span className="login-apple-button__icon" aria-hidden="true">
-                                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M16.365 1.43c0 1.14-.466 2.25-1.173 3.037-.765.85-2.02 1.506-3.098 1.422-.13-1.048.38-2.155 1.11-2.945.802-.87 2.154-1.495 3.16-1.514zM20.908 17.16c-.545 1.223-.805 1.77-1.507 2.853-.98 1.52-2.363 3.414-4.083 3.428-1.53.014-1.924-.998-4.001-.985-2.077.01-2.51 1.004-4.04.99-1.72-.016-3.03-1.726-4.012-3.244C.52 16.384-.748 9.36 2.036 5.063 3.391 2.972 5.535 1.75 7.55 1.75c2.056 0 3.352 1.009 5.052 1.009 1.65 0 2.654-1.01 5.036-1.01 1.794 0 3.695.977 5.046 2.66-4.44 2.435-3.72 8.8-.776 10.75z" />
+                                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" focusable="false">
+                                        <path
+                                            d="M17.04 13.02c-.03-2.23 1.82-3.3 1.9-3.35-1.04-1.52-2.65-1.73-3.22-1.75-1.37-.14-2.67.81-3.36.81-.7 0-1.77-.79-2.91-.77-1.5.02-2.88.87-3.65 2.22-1.56 2.7-.4 6.7 1.12 8.9.74 1.07 1.63 2.28 2.79 2.23 1.12-.04 1.54-.72 2.9-.72 1.35 0 1.74.72 2.93.7 1.21-.02 1.98-1.09 2.72-2.16.85-1.24 1.2-2.44 1.22-2.5-.03-.01-2.37-.91-2.44-3.61Z"
+                                            fill="currentColor"
+                                        />
+                                        <path
+                                            d="M14.82 6.45c.62-.75 1.04-1.79.92-2.83-.9.04-1.99.6-2.64 1.35-.58.67-1.09 1.74-.95 2.76 1 .08 2.03-.51 2.67-1.28Z"
+                                            fill="currentColor"
+                                        />
                                     </svg>
                                 </span>
                                 <span className="text-sm">Entrar com Apple</span>
@@ -829,18 +804,6 @@ export const LoginView: React.FC = () => {
                                                 <div className={`h-full transition-all duration-500 ${getPasswordStrength(password).score >= 3 ? getPasswordStrength(password).color : 'bg-transparent'}`} style={{ width: '33.33%' }} />
                                             </div>
                                         </div>
-                                    )}
-
-                                    {isSigningUp && isGoldenInviteGateEnabled && (
-                                        <input
-                                            id="login-invite-input"
-                                            type="text"
-                                            autoComplete="off"
-                                            placeholder="Bilhete Dourado"
-                                            value={manualInviteCode}
-                                            onChange={(e) => setManualInviteCode(e.target.value)}
-                                            className="login-field"
-                                        />
                                     )}
 
                                     {isSigningUp && (

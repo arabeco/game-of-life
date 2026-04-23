@@ -39,11 +39,12 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArc
     const isRestrainedMetal = appMode === 'BASIC' || userProfile.skin === 'BASIC' || userProfile.skin === 'default';
     const sectionStyle: React.CSSProperties = {
         backgroundImage: isRestrainedMetal
-            ? `radial-gradient(circle at 18% 0%, rgba(255,255,255,0.12), transparent 26%),
-               linear-gradient(145deg, rgba(226,192,98,0.12) 0%, rgba(255,255,255,0.03) 28%, rgba(0,0,0,0.22) 68%, ${rgbaString(assetAccentRgb, 0.14)} 100%)`
-            : `radial-gradient(circle at 18% 0%, rgba(255,255,255,0.16), transparent 24%),
-               linear-gradient(145deg, rgba(226,192,98,0.16) 0%, rgba(255,255,255,0.04) 28%, rgba(0,0,0,0.22) 68%, ${rgbaString(assetAccentRgb, 0.18)} 100%)`,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 0 18px rgba(226,192,98,0.06)',
+            ? `radial-gradient(circle at 18% 0%, rgba(255,255,255,0.1), transparent 28%),
+               linear-gradient(145deg, rgba(226,192,98,0.08) 0%, rgba(255,255,255,0.025) 30%, rgba(0,0,0,0.12) 70%, ${rgbaString(assetAccentRgb, 0.1)} 100%)`
+            : `radial-gradient(circle at 18% 0%, rgba(255,255,255,0.13), transparent 26%),
+               linear-gradient(145deg, rgba(226,192,98,0.1) 0%, rgba(255,255,255,0.03) 30%, rgba(0,0,0,0.12) 70%, ${rgbaString(assetAccentRgb, 0.13)} 100%)`,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.075), 0 0 18px rgba(226,192,98,0.045)',
+        backdropFilter: 'blur(12px) saturate(125%)',
     };
 
     const sortedArenas = useMemo(() => {
@@ -70,7 +71,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArc
         <>
             <div className="flex flex-col gap-2.5">
                 {showArchived && (
-                    <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3" style={sectionStyle}>
+                    <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.008))] px-4 py-3" style={sectionStyle}>
                         <p className={sectionTitleClass}>Arquivadas</p>
 
                         {archivedArenas.length > 0 ? (
@@ -105,7 +106,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArc
                     </section>
                 )}
 
-                <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-4 py-3" style={sectionStyle}>
+                <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.008))] px-4 py-3" style={sectionStyle}>
                     <p className={sectionTitleClass}>Ativas</p>
 
                     {activeArenas.length > 0 ? (

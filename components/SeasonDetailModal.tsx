@@ -77,8 +77,8 @@ export const QuestDetailModal: React.FC<{
             if (normalizedReward === 'incomum') return 'Incomum';
             if (normalizedReward === 'ciclo') return 'Ciclo';
             if (normalizedReward === 'raro') return 'Raro';
-            if (normalizedReward === 'epico') return 'Ã‰pico';
-            if (normalizedReward === 'lendario') return 'LendÃ¡rio';
+            if (normalizedReward === 'epico') return 'Épico';
+            if (normalizedReward === 'lendario') return 'Lendário';
             if (normalizedReward === 'skin comum') return 'Skin Comum';
         }
 
@@ -88,13 +88,13 @@ export const QuestDetailModal: React.FC<{
         if (normalizedDescription.includes('Bau Incomum')) return 'Incomum';
         if (normalizedDescription.includes('Bau Ciclo')) return 'Ciclo';
         if (normalizedDescription.includes('Bau Raro')) return 'Raro';
-        if (normalizedDescription.includes('Bau Epico')) return 'Ã‰pico';
-        if (normalizedDescription.includes('Bau Lendario')) return 'LendÃ¡rio';
+        if (normalizedDescription.includes('Bau Epico')) return 'Épico';
+        if (normalizedDescription.includes('Bau Lendario')) return 'Lendário';
         return null;
     };
 
     const rewardChest = getQuestRewardChest(quest);
-    const rewardLabel = rewardChest === 'Season' ? 'BaÃº Temporada' : rewardChest ? `BaÃº ${rewardChest}` : 'Sem baÃº';
+    const rewardLabel = rewardChest === 'Season' ? 'Baú Temporada' : rewardChest ? `Baú ${rewardChest}` : 'Sem baú';
     const requiredCount = quest.type === 'clan'
         ? (quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1)
         : (quest.requirements?.totalReps || quest.goal_value || quest.actionTemplate?.repetitions || 1);
@@ -159,21 +159,21 @@ export const QuestDetailModal: React.FC<{
                     <div className="flex items-center justify-between gap-3">
                         <div>
                             <div className="text-[11px] font-black uppercase tracking-[0.14em] text-white/88">{quest.title}</div>
-                            <div className="mt-1 text-[11px] leading-relaxed text-white/55">Ao aceitar, a jornada cria uma arena dedicada com a aÃ§Ã£o-base abaixo.</div>
+                            <div className="mt-1 text-[11px] leading-relaxed text-white/55">Ao aceitar, a jornada cria uma arena dedicada com a ação-base abaixo.</div>
                         </div>
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-white/10 bg-white/8 text-lg">
-                            {quest.actionTemplate?.icon || 'â—¦'}
+                                {quest.actionTemplate?.icon || '◦'}
                         </div>
                     </div>
                     <div className="mt-3 rounded-[14px] border border-white/8 bg-white/[0.04] p-3">
-                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/46">AÃ§Ã£o miniatura</div>
+                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/46">Ação miniatura</div>
                         <div className="mt-1 flex items-center justify-between gap-3">
                             <div className="min-w-0">
                                 <div className="truncate text-[11px] font-black uppercase tracking-[0.12em] text-white/82">{quest.actionTemplate?.name || quest.title}</div>
                                 <div className="mt-1 text-[11px] text-white/58">{quest.actionTemplate?.duration || 0} min • {requiredCount} {progressLabel}</div>
                             </div>
                             <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/68">
-                                PrÃ©via
+                                Prévia
                             </div>
                         </div>
                     </div>
@@ -187,7 +187,7 @@ export const QuestDetailModal: React.FC<{
                         <div className="mt-1 text-[11px] leading-relaxed text-white/65">A recompensa principal desta jornada entra no inventario no momento do resgate.</div>
                     </div>
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] border border-amber-300/30 bg-black/20 text-2xl shadow-[0_0_18px_rgba(251,191,36,0.16)]">
-                        ðŸ“¦
+                                📦
                     </div>
                 </div>
             </div>

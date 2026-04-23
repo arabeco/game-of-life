@@ -509,11 +509,11 @@ export const ArenaDetailModal: React.FC<{
         const { data: sessionData } = await supabase.auth.getSession();
         const uid = sessionData.session?.user.id;
         if (!uid || !isUuid(uid)) {
-            setLinkStatus('FaÃ§a login para enviar convites.');
+            setLinkStatus('Faça login para enviar convites.');
             return;
         }
         if (!isUuid(friend.id)) {
-            setLinkStatus('Este aliado nÃ£o possui ID vÃ¡lido.');
+            setLinkStatus('Este aliado não possui ID válido.');
             return;
         }
 
@@ -864,7 +864,7 @@ export const ArenaDetailModal: React.FC<{
                         )}
 
                         {availableFriends.length === 0 ?(
-                            <div className="text-center text-sm text-gray-500 py-6">Nenhum amigo com ID vÃ¡lido.</div>
+                            <div className="text-center text-sm text-gray-500 py-6">Nenhum amigo com ID válido.</div>
                         ) : (
                             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                 {availableFriends.map(friend => {
@@ -875,7 +875,7 @@ export const ArenaDetailModal: React.FC<{
                                         className="w-full p-3 rounded-xl text-left border flex items-center gap-3 bg-black/20 hover:bg-black/30 border-white/10"
                                     >
                                         <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
-                                            {friend.avatarUrl ?<img src={friend.avatarUrl} alt={friend.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">ðŸ‘¤</span>}
+                                                {friend.avatarUrl ?<img src={friend.avatarUrl} alt={friend.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">👤</span>}
                                         </div>
                                         <div className="flex-1">
                                             <div className="text-sm font-bold text-white">{friend.nickname}</div>

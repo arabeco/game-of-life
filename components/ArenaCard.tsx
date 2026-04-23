@@ -445,18 +445,28 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         : variant === 'dossier' ? 'h-full w-full' : 'h-[4.95rem]';
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
     const compactHeight = isOverview ? '4.75rem' : variant === 'compact' ? '4.95rem' : undefined;
+    const compactGlassBackground = [
+        'radial-gradient(circle at 14% 0%, rgba(255,255,255,0.16), transparent 32%)',
+        `radial-gradient(86% 66% at 96% 88%, ${rgbaString(accentColor, 0.18)} 0%, ${rgbaString(accentColor, 0.08)} 16%, transparent 34%)`,
+        `linear-gradient(45deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 64%, ${rgbaString(accentColor, 0.045)} 76%, ${rgbaString(accentColor, 0.11)} 84%, rgba(8,10,14,0) 94%)`,
+        `linear-gradient(118deg, rgba(255,255,255,0.13) 0%, rgba(216,224,235,0.075) 22%, rgba(84,94,112,0.14) 46%, rgba(13,17,25,0.42) 76%, rgba(5,7,12,0.56) 100%)`,
+    ].join(', ');
     const cardBackground = visualFamily === 'normal' && isCompactThumbnail
-        ? [
-            'radial-gradient(circle at 14% 0%, rgba(255,255,255,0.2), transparent 30%)',
-            `radial-gradient(86% 66% at 96% 88%, ${rgbaString(accentColor, 0.2)} 0%, ${rgbaString(accentColor, 0.1)} 14%, transparent 30%)`,
-            `linear-gradient(45deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 64%, ${rgbaString(accentColor, 0.06)} 76%, ${rgbaString(accentColor, 0.15)} 84%, rgba(8,10,14,0) 94%)`,
-            `linear-gradient(118deg, rgba(228,233,241,0.95) 0%, rgba(183,191,202,0.93) 18%, rgba(88,94,106,0.96) 44%, rgba(31,35,44,0.98) 70%, rgba(11,13,19,0.99) 100%)`,
-        ].join(', ')
+        ? compactGlassBackground
         : visualPalette.cardBackground;
+    const cardShadow = isCompactThumbnail
+        ? [
+            `0 16px 28px rgba(0,0,0,0.22)`,
+            `0 0 22px ${rgbaString(accentColor, 0.08)}`,
+            'inset 0 1px 0 rgba(255,255,255,0.12)',
+            'inset 0 -12px 26px rgba(0,0,0,0.18)',
+        ].join(', ')
+        : `0 14px 26px ${visualPalette.glow}`;
     const cardStyle: React.CSSProperties = {
-        borderColor: skinColor,
+        borderColor: isCompactThumbnail ? rgbaString(skinColor, 0.42) : skinColor,
         backgroundImage: cardBackground,
-        boxShadow: `0 14px 26px ${visualPalette.glow}`,
+        boxShadow: cardShadow,
+        ...(isCompactThumbnail ? { backdropFilter: 'blur(13px) saturate(135%)' } : {}),
         ...(compactHeight ? { height: compactHeight } : {}),
     };
     const tiltStyle: React.CSSProperties = {
@@ -510,7 +520,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                     {getIcon()}
                                 </span>
                             </span>
-                            <div className="ml-[0.38rem] flex h-[1.56rem] w-[calc(100%-0.38rem)] items-center justify-center overflow-hidden rounded-[0.58rem] bg-black/24 px-[0.16rem] py-[0.04rem]">
+                            <div className="ml-[0.38rem] flex h-[1.56rem] w-[calc(100%-0.38rem)] items-center justify-center overflow-hidden rounded-[0.58rem] border border-white/6 bg-black/12 px-[0.16rem] py-[0.04rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                                 <div className="flex h-full w-full items-center justify-center overflow-hidden py-[0.08rem]">
                                     <h3 className={`arena-title arena-title-text arena-title-readable arena-thumb-title arena-thumb-title--plain w-full break-normal [overflow-wrap:normal] text-white text-center leading-[0.98] tracking-[0.06em] line-clamp-2 ${arena.name.length > 18 ? 'text-[5.9px]' : arena.name.length > 14 ? 'text-[6.1px]' : arena.name.length > 10 ? 'text-[6.35px]' : arena.name.length > 8 ? 'text-[6.65px]' : 'text-[6.95px]'}`}>{arena.name}</h3>
                                 </div>
@@ -557,7 +567,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             
             <div className={`flex flex-col items-center flex-shrink-0 relative z-10 pointer-events-auto ${isCompactThumbnail ? 'w-full gap-[0.08rem] mt-auto' : 'space-y-2'}`}>
                 {isCompactThumbnail ? (
-                    <div className="w-full overflow-x-auto hide-scrollbar rounded-[0.48rem] bg-black/18 px-[0.08rem] py-[0.08rem]">
+                    <div className="w-full overflow-x-auto hide-scrollbar rounded-[0.48rem] border border-white/6 bg-black/10 px-[0.08rem] py-[0.08rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]">
                         <div className="flex min-w-max items-center gap-[0.18rem]">
                             {orderedCompactActions.map(action => {
                                 const backgroundStyle = getActionBackgroundStyle(action.id);

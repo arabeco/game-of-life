@@ -1,0 +1,35 @@
+
+> glyph-app@1.0.21 dev
+> vite --host 0.0.0.0 --port 3000 --strictPort
+
+
+  [32m[1mVITE[22m v6.4.1[39m  [2mready in [0m[1m633[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m3000[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.0.5:[1m3000[22m/[39m
+[2m18:22:24[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /components/AuthenticatedApp.tsx[22m
+[2m18:22:30[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx, /index.css[22m
+[2m18:22:32[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\GameContext.tsx[22m Could not Fast Refresh ("getLocalDateString" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m18:22:32[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /components/AuthenticatedApp.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\GlobalHeader.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ClanDetailModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\TutorialContext.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\RestScreen.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\MoodModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\FocusAudioPlayer.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\OracleFeed.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ChecklistModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\SitrepContent.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ClanMemberCard.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\TransferLeadershipModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ClanManagementModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\CodexClaimModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ArenaCard.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ArenaDetailModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ClanSlotModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\IconPickerModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\CampaignArenaStack.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\AddClanMemberModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\CampaignsCodex.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ActionModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\RelationshipHubModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\inputs\ImageUploadSlot.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\ArenaSelectionModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\NewArenaModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\CreateCampaignModal.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\Store\CampaignRecommendationQuizModal.tsx[22m
+[2m18:22:33[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\contexts\TutorialContext.tsx[22m Could not Fast Refresh ("useTutorial" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m18:22:33[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/index.css, /components/AuthenticatedApp.tsx, /@fs/C:\Users\Afonso\Downloads\GOL1.006\components\OracleTutorialOverlay.tsx[22m
+[2m18:25:34[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:25:41[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:26:14[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:26:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:26:45[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:27:12[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:27:31[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:27:54[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:31:03[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:31:08[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:31:40[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:31:47[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:32:03[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/@fs/C:\Users\Afonso\Downloads\GOL1.006\views\PlannerView.tsx, /index.css[22m
+[2m18:38:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/codex-quiz.html[22m
+[2m18:38:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/gmboard.html[22m
+[2m18:38:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/index.html[22m
+[2m18:38:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/offline.html[22m
+[2m18:38:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mandroid/app/capacitor.build.gradle[22m
+[2m18:38:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mandroid/capacitor.settings.gradle[22m
+[2m18:55:22[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mandroid/app/build/intermediates/assets/release/mergeReleaseAssets/public/index.html[22m

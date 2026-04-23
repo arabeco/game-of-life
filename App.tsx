@@ -27,6 +27,7 @@ import { loadSessionBackup, saveSessionBackup } from './utils/sessionBackup';
 import { appendAuthTrace, snapshotAuthStorageState } from './utils/authTrace';
 import { isCapacitorNativeRuntime } from './utils/runtimePlatform';
 import { resolveUiSkinId } from './utils/uiSkinTokens';
+import { getOrCreateRuntimeSessionId, markNativeBackgroundSplashHint } from './utils/appResumeSplashHint';
 
 const LoginView = React.lazy(() => import('./views/LoginView').then((m) => ({ default: m.LoginView })));
 const LegacyRenderView = React.lazy(() => import('./views/LegacyRenderView').then((m) => ({ default: m.LegacyRenderView })));
@@ -34,6 +35,25 @@ const AuthenticatedApp = React.lazy(() => import('./components/AuthenticatedApp'
 const ResetPasswordOverlay = React.lazy(() => import('./components/AppRuntimeOverlays').then((m) => ({ default: m.ResetPasswordOverlay })));
 const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
 const GOOGLE_OAUTH_RECOVERY_DELAYS_MS = [250, 350, 500, 700, 900, 1200, 1500, 1800, 2200, 2600] as const;
+
+const isNativeWidgetReportsUrl = (url: string) => {
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'life.glyph.app:' && parsed.hostname === 'widget' && parsed.pathname.startsWith('/reports');
+    } catch {
+        return false;
+    }
+};
+
+const routeNativeWidgetReportsUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('view', 'planner');
+    params.set('reports', '1');
+    params.set('rest', '0');
+    const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+    window.history.replaceState(window.history.state, '', nextUrl);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+};
 
 const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; theme?: 'LIGHT' | 'DARK' | null }> = ({
     accentColor = '#d4af37',
@@ -79,6 +99,10 @@ const App: React.FC = () => {
     const [showResetPassword, setShowResetPassword] = useState(false);
     const [isSplashComplete, setIsSplashComplete] = useState(false);
     const [isAppContentReady, setIsAppContentReady] = useState(false);
+
+    useEffect(() => {
+        getOrCreateRuntimeSessionId();
+    }, []);
     const authResolutionRef = useRef(0);
     const sessionRef = useRef<Session | null>(null);
     const sessionRecoveryInFlightRef = useRef<Promise<Session | null> | null>(null);
@@ -165,6 +189,11 @@ const App: React.FC = () => {
 
         const setupNativeAuthCallback = async () => {
             listenerHandle = await CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
+                if (!disposed && isNativeWidgetReportsUrl(url)) {
+                    routeNativeWidgetReportsUrl();
+                    return;
+                }
+
                 if (disposed || !isNativeAuthCallbackUrl(url)) return;
 
                 const { code, error, errorDescription } = parseNativeAuthCallback(url);
@@ -218,6 +247,15 @@ const App: React.FC = () => {
                     await snapshotAuthStorageState('native-auth-callback:save');
                 }
             });
+
+            try {
+                const launchUrl = await CapacitorApp.getLaunchUrl();
+                if (!disposed && launchUrl?.url && isNativeWidgetReportsUrl(launchUrl.url)) {
+                    routeNativeWidgetReportsUrl();
+                }
+            } catch (_launchUrlError) {
+                // Optional native entry hint; ignore if unavailable.
+            }
         };
 
         void setupNativeAuthCallback();
@@ -839,6 +877,7 @@ const App: React.FC = () => {
             if (document.visibilityState === 'hidden') {
                 syncNativeAutoRefresh(false, 'visibility:hidden');
                 if (isCapacitorNativeRuntime()) {
+                    markNativeBackgroundSplashHint();
                     void persistCurrentSessionBackup('visibility:hidden');
                 }
                 return;
@@ -867,6 +906,7 @@ const App: React.FC = () => {
                     void recoverSessionOnResume('appStateChange');
                 } else {
                     syncNativeAutoRefresh(false, 'appStateChange:inactive');
+                    markNativeBackgroundSplashHint();
                     void persistCurrentSessionBackup('appStateChange:inactive');
                 }
             }).then((handle) => {

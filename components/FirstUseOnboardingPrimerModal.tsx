@@ -63,13 +63,6 @@ const PRIMER_STEPS: PrimerStep[] = [
     videoSrc: '/videos/onboarding/hold-descompletar.mp4',
     accentLabel: 'Passo 6',
   },
-  {
-    id: 'rest',
-    title: 'Trave o dia para descansar',
-    text: 'Toque no cadeado para abrir a tela de descanso e ver o ciclo por cima da correria.',
-    videoSrc: '/videos/onboarding/cadeado-descanso.mp4',
-    accentLabel: 'Passo 7',
-  },
 ];
 
 const PrimerStepPreview: React.FC<{ step: PrimerStep; stepNumber: number }> = ({ step, stepNumber }) => {

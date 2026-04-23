@@ -1,5 +1,5 @@
 ﻿import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload, UserBlock, ModerationReportInput } from '../types';
+import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { getGoldBoostProduct, getGoldMechanicPrice, getGoldMembershipProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
@@ -82,17 +82,29 @@ const normalizeAssetKeyedRecord = <T,>(value?: Partial<Record<string, T>> | null
     }, {} as Partial<Record<string, T>>);
 };
 
+const isPlannerMatrixQuadrant = (value: unknown): value is PlannerMatrixQuadrant =>
+    value === 'ui' || value === 'nui' || value === 'uni' || value === 'nuni';
+
 const normalizeActionFromDbRow = (row: any): Action => {
-    const action = mapToCamelCase(row) as Action;
+    const action = mapToCamelCase(row) as Action & { plannerQuadrant?: PlannerMatrixQuadrant };
     const schedule = (action.context && typeof action.context === 'object')
         ? (action.context as Action['context'])?.schedule
         : undefined;
+    const contextQuadrant = action.context?.plannerQuadrant;
+    const dbQuadrant = isPlannerMatrixQuadrant(row?.planner_quadrant)
+        ? row.planner_quadrant
+        : (isPlannerMatrixQuadrant(action.plannerQuadrant) ? action.plannerQuadrant : undefined);
+    const plannerQuadrant = dbQuadrant || (isPlannerMatrixQuadrant(contextQuadrant) ? contextQuadrant : undefined);
 
     const rawDifficulty = Number.isFinite(action.difficulty) ? Number(action.difficulty) : 2;
     const normalizedDifficulty = Math.min(3, Math.max(0, Math.round(rawDifficulty)));
 
     return {
         ...action,
+        context: {
+            ...(action.context || {}),
+            ...(plannerQuadrant ? { plannerQuadrant } : {}),
+        },
         difficulty: normalizedDifficulty,
         scheduledDays: action.scheduledDays ?? schedule?.days,
         scheduledStartTime: action.scheduledStartTime ?? schedule?.startTime,
@@ -139,8 +151,8 @@ const ACTION_REMINDER_LATE_GRACE_MS = 15 * 60 * 1000;
 const TUTORIAL_ACTION: Action = {
     id: TUTORIAL_ACTION_ID,
     arenaId: 'arena_outros',
-    name: 'MissÃ£o: Concluir Tutorial de IniciaÃ§Ã£o',
-    icon: 'ðŸ“',
+    name: 'Missão: Concluir Tutorial de Iniciação',
+    icon: '📝',
     duration: 15,
     repetitions: 1,
     actionType: 'Marco',
@@ -151,12 +163,12 @@ const isNewUserCheck = () => true;
 
 const CLAN_RANKS: ClanRank[] = [
     { id: 'feudo', name: 'Feudo', expRequired: 0 },
-    { id: 'bastiao', name: 'BastiÃ£o', expRequired: 10000 },
-    { id: 'provincia', name: 'ProvÃ­ncia', expRequired: 50000 },
+    { id: 'bastiao', name: 'Bastião', expRequired: 10000 },
+    { id: 'provincia', name: 'Província', expRequired: 50000 },
     { id: 'principado', name: 'Principado', expRequired: 150000 },
     { id: 'reino', name: 'Reino', expRequired: 400000 },
     { id: 'dinastia', name: 'Dinastia', expRequired: 1000000 },
-    { id: 'imperio', name: 'ImpÃ©rio', expRequired: 2500000 },
+    { id: 'imperio', name: 'Império', expRequired: 2500000 },
 ];
 
 
@@ -214,6 +226,17 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     subscriptionTier: null,
     premiumRewardPending: false,
     premiumRewardPayload: null,
+    onboardingPushPromptedAt: null,
+    betaProgramCode: null,
+    betaProgramLabel: null,
+    betaProgramStartedAt: null,
+    betaProgramEndsAt: null,
+    betaProgramLastCheckInDate: null,
+    betaProgramCheckInCount: 0,
+    betaProgramDaysTarget: 0,
+    betaRewardPending: false,
+    betaRewardShownAt: null,
+    betaRewardPayload: null,
     legacyProjectionSceneCredits: 0,
     campaignQuizFreeCredits: 0,
     campaignQuizMediumCredits: 0,
@@ -902,6 +925,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [dmConversations, setDMConversations] = useState<DMConversation[]>([]);
     const [blockedUsers, setBlockedUsers] = useState<UserBlock[]>([]);
     const [remotePushRegistered, setRemotePushRegistered] = useState(false);
+    const betaProgramCheckInRunKeyRef = useRef<string | null>(null);
     const [toast, setToast] = useState<{ message: string; visible: boolean; type?: 'success' | 'error' | 'warning' | 'info' }>({ message: '', visible: false, type: 'info' });
     const blockedUserIds = useMemo(() => blockedUsers.map((entry) => entry.blockedUserId), [blockedUsers]);
 
@@ -1234,7 +1258,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const timeoutId = setTimeout(() => {
             if (!isComplete) {
-                showToast("Sincronizando operaÃ§Ã£o com o servidor...", "info");
+                showToast("Sincronizando operação com o servidor...", "info");
             }
         }, timeoutMs);
 
@@ -1748,7 +1772,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 .forEach((notification) => {
                     const clanName = String(notification.metadata?.clanName || '').trim();
                     showToast(
-                        clanName ? `VocÃª entrou em ${clanName}.` : 'Sua entrada no grupo foi aprovada.',
+                        clanName ? `Você entrou em ${clanName}.` : 'Sua entrada no grupo foi aprovada.',
                         'success',
                     );
                 });
@@ -2063,7 +2087,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     void SupabaseService.createNotification(
                         userId,
                         'system',
-                        'Bem-vindo ao OrÃ¡culo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para comeÃ§ar sua jornada.'
+                        'Bem-vindo ao Oráculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para começar sua jornada.'
                     ).then(() => fetchNotifications());
 
                     // Set initial rank and exp if needed (Vagante Level 1)
@@ -2157,13 +2181,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error buying gold pack:", error);
-            showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
+            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
             return;
         }
 
         if (data && data.success) {
             updateUserProfile({ wallet: { ...userProfile.wallet, gold: data.new_gold } });
-            showToast(`CrÃ©dito de ${pack.total} Ouro identificado.`, "success");
+            showToast(`Crédito de ${pack.total} Ouro identificado.`, "success");
         }
     };
 
@@ -2227,7 +2251,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if ((userProfile.wallet?.gold || 0) < cost) {
-            showToast("Saldo insuficiente para esta operaÃ§Ã£o.", "error");
+            showToast("Saldo insuficiente para esta operação.", "error");
             setTimeout(() => {
                 const mundoContainer = document.getElementById('social-container');
                 if (mundoContainer) {
@@ -2250,7 +2274,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error buying store item:", error);
-            showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
+            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
             return;
         }
 
@@ -2317,7 +2341,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        showToast(`DÃ©bito de ${cost} Ouro. Ativo adicionado ao Arsenal.`, "success");
+        showToast(`Débito de ${cost} Ouro. Ativo adicionado ao Arsenal.`, "success");
     };
 
     const recycleItem = async (instanceId: string) => {
@@ -2332,7 +2356,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error recycling:", error);
-            showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
+            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
             return;
         }
 
@@ -2341,7 +2365,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
             updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
 
-            showToast(`Item desconstruÃ­do. ${data.fragments_gained} Fragmentos adicionados ao inventÃ¡rio.`, "success");
+            showToast(`Item desconstruído. ${data.fragments_gained} fragmentos adicionados ao inventário.`, "success");
         }
     };
 
@@ -2359,7 +2383,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error crafting:", error);
-            showToast("Falha na sincronizaÃ§Ã£o de dados. Tente novamente ou verifique a conexÃ£o.", "error");
+            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
             return null;
         }
 
@@ -2434,7 +2458,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 updateUserProfile({ border: 'default' });
             } else if (itemDef.category === 'ui_skin') {
                 updateUserProfile({ skin: 'BASIC' }); // Default skin
-                showToast('ConfiguraÃ§Ã£o estÃ©tica alterada. Novo ativo equipado.', 'success');
+                showToast('Configuração estética alterada. Novo ativo equipado.', 'success');
             } else if (itemDef.category === 'banner') {
                 updateUserProfile({ bannerUrl: '' });
             } else {
@@ -2459,7 +2483,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 updateUserProfile({ border: itemDef.id });
             } else if (itemDef.category === 'ui_skin') {
                 updateUserProfile({ skin: itemDef.id });
-                showToast(`ConfiguraÃ§Ã£o estÃ©tica alterada. Novo ativo equipado.`, 'success');
+                showToast(`Configuração estética alterada. Novo ativo equipado.`, 'success');
             } else if (itemDef.category === 'banner') {
                 updateUserProfile({ bannerUrl: itemDef.imageUrl || '' });
             } else {
@@ -3156,32 +3180,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const { data: profilesData, error: profilesError } = await supabase
             .from('user_profiles')
-            .select(`
-                id,
-                username,
-                nickname,
-                title,
-                avatar_url,
-                background_url,
-                banner_url,
-                border,
-                skin,
-                level,
-                role,
-                is_premium,
-                is_online,
-                visible_widgets,
-                assets_visibility,
-                mastery_visibility,
-                feats_visibility,
-                asset_art_by_id,
-                asset_widget_values,
-                nobility,
-                mood,
-                gold,
-                fragments,
-                clan_members(clans(name, icon))
-            `)
+            .select('*, clan_members(clans(name, icon))')
             .in('id', uniqueIds);
         if (profilesError || !profilesData) {
             console.error('Error fetching profiles:', profilesError?.message);
@@ -3195,6 +3194,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             const profile = {
                 ...profileData,
+                username: profileData.nickname || profileData.email?.split('@')[0] || 'usuario',
                 clanName: clanInfo?.name,
                 clanIcon: clanInfo?.icon,
                 wallet: { gold: profileData.gold || 0, fragments: profileData.fragments || 0 },
@@ -4667,6 +4667,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             const { data: levelsData, error: levelsError } = levelsResult;
+            const hasPersistedAssetLevels = !levelsError && Array.isArray(levelsData) && levelsData.length > 0;
 
             const applyOperationalState = (
                 nextArenas: Arena[] | null,
@@ -4716,6 +4717,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             };
 
             applyOperationalState(camelArenas, loadedActions, loadedTasks);
+
+            if (!levelsError && !hasPersistedAssetLevels) {
+                setUserProfile((prev) => (
+                    prev.lastLevelUpdate
+                        ? { ...prev, lastLevelUpdate: null }
+                        : prev
+                ));
+
+                supabase
+                    .from('user_profiles')
+                    .update({ last_level_update: null })
+                    .eq('id', userId)
+                    .then(({ error }) => {
+                        if (error) {
+                            console.error('Failed to clear inconsistent last_level_update:', error.message, error.details, error.hint);
+                        }
+                    });
+            }
 
             const { data: cyclesData, error: cyclesError } = cyclesResult;
             if (!cyclesError && cyclesData && cyclesData.length > 0) {
@@ -7134,7 +7153,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const now = new Date();
         const todayString = getTodayString();
         if (dailyCommitment.date > todayString) {
-            showToast("AmanhÃ£ ainda nÃ£o pode ser julgado. Hoje vocÃª sÃ³ pode travar as metas.", "error");
+            showToast("Amanhã ainda não pode ser julgado. Hoje você só pode travar as metas.", "error");
             return;
         }
 
@@ -7167,13 +7186,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if (villageBonusExp > 0) {
-            showToast(`BÃ´nus de Ordem da Aldeia: +${villageBonusExp} EXP!`, 'success');
+            showToast(`Bônus de Ordem da Aldeia: +${villageBonusExp} EXP!`, 'success');
         }
 
         setAchievementUnlocked({
             type: 'REPORT_COMPLETED',
             data: {
-                title: `RelatÃ³rio DiÃ¡rio - ${score}%`,
+                title: `Relatório Diário - ${score}%`,
                 reward: {
                     exp: expDeposited
                 }
@@ -7585,6 +7604,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (newRank) {
                     // Determine rank insignia ID
                     const rankInsigniaId = `insignia_rank_${newRankIndex + 1}_${newRankId}`;
+                    const rankRewardDetails = RANK_REWARDS[newRankId] || [];
 
                     // NEW: Grant rare insignia for rank up
                     const rareInsigniaId = 'insignia_levelup_rara';
@@ -7595,7 +7615,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     grantUserUnlock('insignias', rankInsigniaId);
                     grantInventoryItem(rankInsigniaId, true);
 
-                    const allRankInsignias = [rareInsigniaId, rankInsigniaId];
+                    // Grant Rank Rewards (Escalada do Soberano 5.0)
+                    const rewardNames: string[] = [];
+                    rankRewardDetails.forEach(reward => {
+                        grantUserUnlock(reward.category, reward.itemId);
+                        if (reward.category !== 'ui_skins') {
+                            grantInventoryItem(reward.itemId);
+                        }
+                        if (reward.category !== 'insignias') {
+                            rewardNames.push(reward.name);
+                        }
+                    });
+
+                    const rankRewardItemIds = rankRewardDetails
+                        .filter(reward => reward.category !== 'ui_skins')
+                        .map(reward => reward.itemId);
+                    const allRankRewardItems = [...new Set([rareInsigniaId, rankInsigniaId, ...rankRewardItemIds])];
+                    const allRankRewardDetails = [
+                        { category: 'insignias', itemId: rareInsigniaId, name: 'Ouro: Patente Rara' },
+                        ...rankRewardDetails,
+                    ];
 
                     setAchievementUnlocked({
                         type: 'PLAYER_RANK_UP',
@@ -7603,29 +7642,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             ...newRank,
                             reward: {
                                 exp: 0, // Exp already added
-                                items: allRankInsignias
+                                items: allRankRewardItems,
+                                rewardDetails: allRankRewardDetails,
+                                uiSkins: rankRewardDetails
+                                    .filter(reward => reward.category === 'ui_skins')
+                                    .map(reward => reward.itemId),
                             }
                         }
                     });
 
-                    // Grant Rank Rewards (Escalada do Soberano 5.0)
-                    const rewards = RANK_REWARDS[newRankId];
-                    if (rewards) {
-                        const rewardNames: string[] = [];
-                        rewards.forEach(reward => {
-                            grantUserUnlock(reward.category, reward.itemId);
-                            if (reward.category !== 'ui_skins') {
-                                grantInventoryItem(reward.itemId);
-                            }
-                            if (reward.category !== 'insignias') {
-                                rewardNames.push(reward.name);
-                            }
-                        });
-                        if (appMode === 'BASIC') {
-                            showToast(`Patente ${newRank.name} alcanÃ§ada.`, 'success');
-                        } else if (rewardNames.length > 0) {
-                            showToast(`Patente ${newRank.name} alcanÃ§ada. Itens de Legado integrados ao Arsenal: ${rewardNames.join(', ')}.`, 'success');
-                        }
+                    if (appMode === 'BASIC') {
+                        showToast(`Patente ${newRank.name} alcançada.`, 'success');
+                    } else if (rewardNames.length > 0) {
+                        showToast(`Patente ${newRank.name} alcançada. Itens de legado integrados ao Arsenal: ${rewardNames.join(', ')}.`, 'success');
                     }
                 }
             }
@@ -7666,6 +7695,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'onboardingStartedAt',
                 'onboardingCompletedAt',
                 'onboardingDismissedAt',
+                'onboardingPushPromptedAt',
                 'codexCreationSlotsPurchased',
                 'partnershipSlotsPurchased',
                 'competitionSlotsPurchased',
@@ -7702,6 +7732,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'premiumRewardPending',
                 'premiumRewardShownAt',
                 'premiumRewardPayload',
+                'betaProgramCode',
+                'betaProgramLabel',
+                'betaProgramStartedAt',
+                'betaProgramEndsAt',
+                'betaProgramLastCheckInDate',
+                'betaProgramCheckInCount',
+                'betaProgramDaysTarget',
+                'betaRewardPending',
+                'betaRewardShownAt',
+                'betaRewardPayload',
                 'legacyProjectionSceneCredits',
                 'campaignQuizFreeCredits',
                 'campaignQuizMediumCredits',
@@ -7736,6 +7776,83 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
     };
+
+    useEffect(() => {
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId) || !isProfileLoaded || !hasHydratedFromSupabase) return;
+
+        const todayKey = `${userId}:${getOperationalDateString()}`;
+        if (betaProgramCheckInRunKeyRef.current === todayKey) return;
+        betaProgramCheckInRunKeyRef.current = todayKey;
+
+        let cancelled = false;
+
+        (async () => {
+            const result = await SupabaseService.processBetaProgramCheckIn(userId);
+            if (cancelled || !result.success || !result.programKey) return;
+
+            updateUserProfile({
+                betaProgramCode: result.programKey || null,
+                betaProgramLabel: result.programLabel || null,
+                betaProgramStartedAt: result.startedAt || null,
+                betaProgramEndsAt: result.endsAt || null,
+                betaProgramLastCheckInDate: result.checkInDate || null,
+                betaProgramCheckInCount: result.checkInCount ?? 0,
+                betaProgramDaysTarget: result.targetDays ?? 0,
+                betaRewardPending: Boolean(result.rewardPending),
+                betaRewardPayload: result.rewardPayload || null,
+            });
+
+            if (!result.newCheckIn) return;
+
+            const nextCount = Number(result.checkInCount || 0);
+            const targetDays = Number(result.targetDays || 14);
+            const ordinalDay = Number(result.ordinalDay || nextCount || 1);
+            const progressLabel = `${Math.max(1, nextCount)}/${Math.max(1, targetDays)}`;
+            const content = result.rewardGrantedNow
+                ? `Dia ${progressLabel} da vigilia ${result.programLabel || 'beta'}. Voce fechou os ${targetDays} dias completos e a recompensa final ja foi liberada.`
+                : `Dia ${progressLabel} da vigilia ${result.programLabel || 'beta'}. Entrada registrada no dia ${ordinalDay}. O que voce quer mover hoje?`;
+
+            const newMessage: OracleMessage = {
+                id: crypto.randomUUID(),
+                userId,
+                category: 'dicas_produtividade',
+                content,
+                mode: oraclePreferences?.activeMode || 'neutro',
+                deliveryType: 'chat',
+                contextSnapshot: {
+                    triggerType: 'app_open',
+                    presentation: 'info_card',
+                    categoryLabel: 'Vigilia beta',
+                    generatedFor: 'chat',
+                    summary: 'Check-in diario do beta',
+                    betaProgram: {
+                        programKey: result.programKey,
+                        progressLabel,
+                        ordinalDay,
+                        targetDays,
+                        checkInDate: result.checkInDate,
+                        rewardGrantedNow: Boolean(result.rewardGrantedNow),
+                    },
+                },
+                read: false,
+                createdAt: new Date().toISOString(),
+            };
+
+            setOracleMessages((prev) => [newMessage, ...prev]);
+            await supabase.from('oracle_messages').insert(mapToSnakeCase(newMessage));
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        getSupabaseUserId,
+        hasHydratedFromSupabase,
+        isProfileLoaded,
+        oraclePreferences?.activeMode,
+        userProfile.id,
+    ]);
 
     useEffect(() => {
         if (!hasHydratedFromSupabase) return;
@@ -7879,10 +7996,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (!silent) {
                 let toastMsg = '';
                 if (isInsignia) {
-                    toastMsg = `InsÃ­gnia ${itemDef?.name || itemId} foi adicionada ao seu inventÃ¡rio.`;
+                    toastMsg = `Insígnia ${itemDef?.name || itemId} foi adicionada ao seu inventário.`;
                 } else {
                     const prefix = itemDef?.category === 'skin' ?'Skin' : 'Item';
-                    const suffix = itemDef?.category === 'skin' ?'foi adicionada ao seu inventÃ¡rio.' : 'foi adicionado ao seu inventÃ¡rio.';
+                    const suffix = itemDef?.category === 'skin' ?'foi adicionada ao seu inventário.' : 'foi adicionado ao seu inventário.';
                     toastMsg = `${prefix} ${itemDef?.name || itemId} ${suffix}`;
                 }
 
@@ -8193,7 +8310,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             // Permite atualizaÃ§Ã£o imediata
         } else if (Date.now() - lastUpdate < threeDays) {
             const remainingHours = Math.ceil((threeDays - (Date.now() - lastUpdate)) / (60 * 60 * 1000));
-            showToast(`Maestria em lockdown. DisponÃ­vel em ${remainingHours}h.`);
+            showToast(`Maestria em lockdown. Disponível em ${remainingHours}h.`);
             return false;
         }
 
@@ -8225,12 +8342,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (levelsPayload.length > 0) {
                 supabase.from('asset_levels').upsert(levelsPayload, { onConflict: 'user_id,asset_id' })
                     .then(({ error }) => {
-                        if (error) console.error("Supabase update asset levels error:", error.message, error.details, error.hint);
+                        if (error) {
+                            console.error("Supabase update asset levels error:", error.message, error.details, error.hint);
+                            showToast('Nao consegui salvar a maestria no banco agora.', 'error');
+                            return;
+                        }
+                        updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
                     });
+            } else {
+                updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
             }
+        } else {
+            updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
         }
-
-        updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
         showToast('Maestria atualizada.', 'success');
         return true;
     };
@@ -8247,7 +8371,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const normalizedStartDate = (startDate || today).trim();
         const normalizedEndDate = endDate.trim();
         if (!trimmedName) {
-            showToast('DÃª um nome para o ciclo.', 'error');
+            showToast('Dê um nome para o ciclo.', 'error');
             return;
         }
         if (!normalizedStartDate || normalizedStartDate < today) {
@@ -8317,7 +8441,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const normalizedEndDate = updates.endDate.trim();
             if (normalizedEndDate < minimumAllowedEndDate) {
                 const error = new Error('INVALID_CYCLE_END_DATE');
-                showToast('A data final precisa ser hoje ou depois do inÃ­cio do ciclo.', 'error');
+                showToast('A data final precisa ser hoje ou depois do início do ciclo.', 'error');
                 throw error;
             }
             sanitizedUpdates.endDate = normalizedEndDate;
@@ -9126,20 +9250,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const searchPlayers = async (query: string): Promise<UserProfile[]> => {
         const normalized = query.trim();
-        if (!normalized) return [];
+        if (normalized.length < 2) return [];
 
         // Remove numbers from end of string (like #1234) if present, though we search by nickname mostly
         const baseQuery = normalized.replace(/\d+$/g, '').trim();
         const searchTerms = [normalized];
         if (baseQuery && baseQuery !== normalized) searchTerms.push(baseQuery);
 
-        // Parallel search by nickname and email
+        // Keep public search focused on display names. Email lookup is exact only.
+        const shouldSearchExactEmail = normalized.includes('@');
         const responses = await Promise.all(
-            searchTerms.flatMap(term => ([
+            searchTerms.flatMap(term => [
                 supabase.from('user_profiles').select('*').ilike('nickname', `%${term}%`).limit(20),
-                // Also search by email just in case
-                supabase.from('user_profiles').select('*').ilike('email', `%${term}%`).limit(20),
-            ]))
+                ...(shouldSearchExactEmail
+                    ? [supabase.from('user_profiles').select('*').eq('email', term.toLowerCase()).limit(1)]
+                    : []),
+            ])
         );
 
         const errors = responses.map(r => r.error).filter(Boolean);
@@ -9154,7 +9280,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const unique = Array.from(new Map(mapped.map(profile => [profile.id, profile])).values());
 
         // Filter out self and return top 20
-        return unique.filter(profile => profile.id !== userProfile.id).slice(0, 20);
+        return unique
+            .filter(profile => profile.id !== userProfile.id)
+            .filter(profile => Boolean(String(profile.nickname || '').trim()))
+            .slice(0, 20);
     };
 
     const getUserPublicData = useCallback(async (userId: string) => {
@@ -9332,7 +9461,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
         const existingRequest = friendRequestsOutgoing.find((request) => request.id === requestId);
         if (!existingRequest) {
-            showToast('Esse convite jÃ¡ nÃ£o estÃ¡ mais pendente.', 'info');
+            showToast('Esse convite já não está mais pendente.', 'info');
             return;
         }
 
@@ -9347,7 +9476,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             console.error('Error canceling friend request:', error.message);
             setFriendRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
-            showToast('NÃ£o foi possÃ­vel cancelar o convite de amizade.', 'error');
+            showToast('Não foi possível cancelar o convite de amizade.', 'error');
             return;
         }
         showToast('Convite de amizade cancelado.', 'success');
@@ -9359,7 +9488,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
         const existingRequest = friendRequestsOutgoing.find((request) => request.id === requestId);
         if (!existingRequest) {
-            showToast('Esse convite jÃ¡ nÃ£o estÃ¡ mais pendente.', 'info');
+            showToast('Esse convite já não está mais pendente.', 'info');
             await loadFriendsAndRequests(userId);
             return;
         }
@@ -9376,7 +9505,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             console.error('Error canceling friend request:', error.message);
             setFriendRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
-            showToast('NÃ£o foi possÃ­vel cancelar o convite de amizade.', 'error');
+            showToast('Não foi possível cancelar o convite de amizade.', 'error');
             await loadFriendsAndRequests(userId);
             return;
         }
@@ -10360,6 +10489,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 assets: newAction.assets || [],
                 pre_flight: newAction.preFlight || [],
                 context: contextPayload || {},
+                planner_quadrant: contextPayload?.plannerQuadrant || null,
                 origin_codex_id: originCodexId
             };
 
@@ -10385,7 +10515,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 await supabase.from('cycles').update({ arena_ids: previousCycleArenaIds }).eq('id', activeCycle.id);
             }
 
-            showToast("Erro ao salvar aÃ§Ã£o: " + (error?.message || 'falha desconhecida'), 'error');
+            showToast("Erro ao salvar ação: " + (error?.message || 'falha desconhecida'), 'error');
             throw error;
         }
     };
@@ -10446,7 +10576,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (actionData.assets !== undefined) updatePayload.assets = actionData.assets;
             if (actionData.preFlight !== undefined) updatePayload.pre_flight = actionData.preFlight;
             if (actionData.context !== undefined || actionData.scheduledDays !== undefined || actionData.scheduledStartTime !== undefined) {
-                updatePayload.context = mergeScheduleIntoContext(actionData.context, actionData.scheduledDays, actionData.scheduledStartTime);
+                const mergedContext = mergeScheduleIntoContext(actionData.context, actionData.scheduledDays, actionData.scheduledStartTime);
+                updatePayload.context = mergedContext;
+                updatePayload.planner_quadrant = mergedContext?.plannerQuadrant || null;
             }
 
             if (Object.keys(updatePayload).length > 0) {
@@ -10561,7 +10693,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     // Also cleanup empty Office arenas
                     if (isOfficeArena(arena)) {
                         updateArena(arenaId, { isArchived: true });
-                        showToast('Arena Office arquivada (sem aÃ§Ãµes).', 'info');
+                        showToast('Arena Office arquivada (sem ações).', 'info');
                     }
                     if (shouldDeleteEmptyArena) {
                         setTimeout(() => deleteArena(arenaId), 0);
@@ -10726,7 +10858,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if (userProfile.completedSeasonMissions?.includes(questId)) {
-            showToast("Recompensa jÃ¡ resgatada!");
+            showToast("Recompensa já resgatada!");
             return;
         }
 
@@ -10745,14 +10877,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             else if (normalizedReward === 'incomum') earnedChest = 'Incomum';
             else if (normalizedReward === 'ciclo') earnedChest = 'Ciclo';
             else if (normalizedReward === 'raro') earnedChest = 'Raro';
-            else if (normalizedReward === 'epico') earnedChest = 'Ã‰pico';
-            else if (normalizedReward === 'lendario') earnedChest = 'LendÃ¡rio';
+            else if (normalizedReward === 'epico') earnedChest = 'Épico';
+            else if (normalizedReward === 'lendario') earnedChest = 'Lendário';
             else if (normalizedReward === 'skin comum') earnedChest = 'Skin Comum';
         }
-        if (quest.description.includes("BaÃº Comum")) earnedChest = 'Comum';
-        else if (quest.description.includes("BaÃº Incomum")) earnedChest = 'Incomum';
-        else if (quest.description.includes("BaÃº Ciclo")) earnedChest = 'Ciclo';
-        else if (quest.description.includes("BaÃº Raro")) earnedChest = 'Raro';
+        if (quest.description.includes("Baú Comum")) earnedChest = 'Comum';
+        else if (quest.description.includes("Baú Incomum")) earnedChest = 'Incomum';
+        else if (quest.description.includes("Baú Ciclo")) earnedChest = 'Ciclo';
+        else if (quest.description.includes("Baú Raro")) earnedChest = 'Raro';
         else if (quest.description.includes("Ba\u00FA \u00C9pico")) earnedChest = '\u00C9pico';
         else if (quest.description.includes("Ba\u00FA Lend\u00E1rio")) earnedChest = 'Lend\u00E1rio';
 
@@ -10801,7 +10933,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         addFeedEvent({
             type: 'QUEST_COMPLETED', // Changed from MILESTONE_COMPLETED
-            content: { title: `Quest Completada: ${quest.title}`, icon: 'ðŸ“', score: addedExp }
+            content: { title: `Quest Completada: ${quest.title}`, icon: '📝', score: addedExp }
         });
 
         // Determine all insignias to show in modal
@@ -10810,6 +10942,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // If Ranked Up, show PLAYER_RANK_UP modal with all rewards
         if (nextRank) {
+            const rankRewards = RANK_REWARDS[nextRank.id] || [];
             setAchievementUnlocked({
                 type: 'PLAYER_RANK_UP',
                 data: {
@@ -10817,8 +10950,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     rank: nextRank,
                     rewards: {
                         exp: addedExp,
-                        items: allEarnedItems,
-                        chest: earnedChest
+                        items: [...new Set([...allEarnedItems, ...rankRewards.filter(reward => reward.category !== 'ui_skins').map(reward => reward.itemId)])],
+                        chest: earnedChest,
+                        rewardDetails: [
+                            ...allEarnedItems.map(itemId => ({ itemId })),
+                            ...rankRewards,
+                        ],
+                        uiSkins: rankRewards
+                            .filter(reward => reward.category === 'ui_skins')
+                            .map(reward => reward.itemId),
                     }
                 }
             });
@@ -10846,7 +10986,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if (userProfile.completedSeasonMissions?.includes(missionId)) {
-            showToast("Recompensa jÃ¡ resgatada!");
+            showToast("Recompensa já resgatada!");
             return;
         }
 
@@ -10856,20 +10996,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const nextExp = currentExp + addedExp;
 
         // Check for chest rewards in description
-        if (mission.description.includes("BaÃº Comum")) await addChest('Comum');
-        if (mission.description.includes("BaÃº Incomum")) await addChest('Incomum');
-        if (mission.description.includes("BaÃº Ciclo")) await addChest('Ciclo');
-        if (mission.description.includes("BaÃº Raro")) await addChest('Raro');
+        if (mission.description.includes("Baú Comum")) await addChest('Comum');
+        if (mission.description.includes("Baú Incomum")) await addChest('Incomum');
+        if (mission.description.includes("Baú Ciclo")) await addChest('Ciclo');
+        if (mission.description.includes("Baú Raro")) await addChest('Raro');
         if (mission.description.includes("Ba\u00FA \u00C9pico")) await addChest('\u00C9pico');
         if (mission.description.includes("Ba\u00FA Lend\u00E1rio")) await addChest('Lend\u00E1rio');
 
         // Grant items if it's an item reward
         const earnedItemIds: string[] = [];
         let earnedChest: ChestType | undefined =
-            mission.description.includes("BaÃƒÂº Comum") ? 'Comum'
-            : mission.description.includes("BaÃƒÂº Incomum") ? 'Incomum'
-            : mission.description.includes("BaÃƒÂº Ciclo") ? 'Ciclo'
-            : mission.description.includes("BaÃƒÂº Raro") ? 'Raro'
+            mission.description.includes("Baú Comum") ? 'Comum'
+            : mission.description.includes("Baú Incomum") ? 'Incomum'
+            : mission.description.includes("Baú Ciclo") ? 'Ciclo'
+            : mission.description.includes("Baú Raro") ? 'Raro'
             : mission.description.includes("Ba\u00FA \u00C9pico") ? '\u00C9pico'
             : mission.description.includes("Ba\u00FA Lend\u00E1rio") ? 'Lend\u00E1rio'
             : undefined;
@@ -10926,6 +11066,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // If Ranked Up, show PLAYER_RANK_UP modal with all rewards
         if (nextRank) {
+            const rankRewards = RANK_REWARDS[nextRank.id] || [];
             setAchievementUnlocked({
                 type: 'PLAYER_RANK_UP',
                 data: {
@@ -10933,8 +11074,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     rank: nextRank,
                     rewards: {
                         exp: addedExp,
-                        items: allEarnedItems,
-                        chest: earnedChest
+                        items: [...new Set([...allEarnedItems, ...rankRewards.filter(reward => reward.category !== 'ui_skins').map(reward => reward.itemId)])],
+                        chest: earnedChest,
+                        rewardDetails: [
+                            ...allEarnedItems.map(itemId => ({ itemId })),
+                            ...rankRewards,
+                        ],
+                        uiSkins: rankRewards
+                            .filter(reward => reward.category === 'ui_skins')
+                            .map(reward => reward.itemId),
                     }
                 }
             });
@@ -11298,11 +11446,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             .select('user_id');
         if (error) {
             console.error("Error leaving clan:", error.message);
-            showToast('NÃ£o foi possÃ­vel sair do grupo agora.', 'error');
+            showToast('Não foi possível sair do grupo agora.', 'error');
             return;
         }
         if (!deletedMembershipRows || deletedMembershipRows.length === 0) {
-            showToast('Sua saÃ­da do grupo nÃ£o foi confirmada.', 'warning');
+            showToast('Sua saída do grupo não foi confirmada.', 'warning');
             await refreshClanMembershipState(userId);
             return;
         }
@@ -11313,13 +11461,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         await refreshClanMembershipState(userId);
-        showToast('VocÃª saiu do grupo.', 'success');
+        showToast('Você saiu do grupo.', 'success');
     };
 
     const legacyTransferLeadershipAndLeave = async (newLeaderId: string) => {
         if (!clan || !session) return;
         if (getCurrentClanRole() !== 'leader') {
-            showToast('SÃ³ a lideranÃ§a pode transferir o grupo.', 'warning');
+            showToast('Só a liderança pode transferir o grupo.', 'warning');
             return;
         }
         if (!isUuid(newLeaderId)) {
@@ -11327,11 +11475,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
         if (newLeaderId === session.user.id) {
-            showToast('Escolha outra pessoa para assumir a lideranÃ§a.', 'warning');
+            showToast('Escolha outra pessoa para assumir a liderança.', 'warning');
             return;
         }
         const { error: promoteError } = await supabase.from('clan_members').update({ role: 'leader' }).eq('clan_id', clan.id).eq('user_id', newLeaderId);
-        if (promoteError) { console.error("Error transferring leadership:", promoteError.message); showToast('NÃ£o foi possÃ­vel transferir a lideranÃ§a.', 'error'); return; }
+        if (promoteError) { console.error("Error transferring leadership:", promoteError.message); showToast('Não foi possível transferir a liderança.', 'error'); return; }
         await leaveClan();
     };
 
@@ -11340,11 +11488,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const currentUserId = getSupabaseUserId();
         if (!currentUserId) return;
         if (getCurrentClanRole() !== 'leader') {
-            showToast('SÃ³ a lideranÃ§a pode apagar o grupo.', 'warning');
+            showToast('Só a liderança pode apagar o grupo.', 'warning');
             return;
         }
         if (enrichedClanMembers.length > 1) {
-            showToast('Para apagar o grupo, primeiro ele precisa ficar sÃ³ com vocÃª.', 'warning');
+            showToast('Para apagar o grupo, primeiro ele precisa ficar só com você.', 'warning');
             return;
         }
 
@@ -11368,7 +11516,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (deleteError) {
             console.error("Error deleting clan:", deleteError.message);
-            showToast('NÃ£o foi possÃ­vel apagar o grupo agora.', 'error');
+            showToast('Não foi possível apagar o grupo agora.', 'error');
             return;
         }
 
@@ -11389,7 +11537,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const transferLeadershipAndLeave = async (newLeaderId: string) => {
         if (!clan || !session) return;
         if (getCurrentClanRole() !== 'leader') {
-            showToast('SÃ³ a lideranÃ§a pode transferir o grupo.', 'warning');
+            showToast('Só a liderança pode transferir o grupo.', 'warning');
             return;
         }
         if (!isUuid(newLeaderId)) {
@@ -11397,7 +11545,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
         if (newLeaderId === session.user.id) {
-            showToast('Escolha outra pessoa para assumir a lideranÃ§a.', 'warning');
+            showToast('Escolha outra pessoa para assumir a liderança.', 'warning');
             return;
         }
 
@@ -11409,7 +11557,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (promoteError) {
             console.error("Error transferring leadership:", promoteError.message);
-            showToast('NÃ£o foi possÃ­vel transferir a lideranÃ§a.', 'error');
+            showToast('Não foi possível transferir a liderança.', 'error');
             return;
         }
 
@@ -11421,11 +11569,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const currentUserId = getSupabaseUserId();
         if (!currentUserId) return;
         if (getCurrentClanRole() !== 'leader') {
-            showToast('SÃ³ a lideranÃ§a pode apagar o grupo.', 'warning');
+            showToast('Só a liderança pode apagar o grupo.', 'warning');
             return;
         }
         if (enrichedClanMembers.length > 1) {
-            showToast('Para apagar o grupo, primeiro ele precisa ficar sÃ³ com vocÃª.', 'warning');
+            showToast('Para apagar o grupo, primeiro ele precisa ficar só com você.', 'warning');
             return;
         }
 
@@ -11457,13 +11605,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (deleteError) {
             console.error("Error deleting clan:", deleteError.message);
-            showToast('NÃ£o foi possÃ­vel apagar o grupo agora.', 'error');
+            showToast('Não foi possível apagar o grupo agora.', 'error');
             await refreshClanMembershipState(currentUserId);
             return;
         }
 
         if (!deletedClanRows || deletedClanRows.length === 0) {
-            showToast('A dissoluÃ§Ã£o do grupo nÃ£o foi confirmada.', 'warning');
+            showToast('A dissolução do grupo não foi confirmada.', 'warning');
             await refreshClanMembershipState(currentUserId);
             return;
         }
@@ -11482,7 +11630,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const currentUserId = getSupabaseUserId();
         if (!currentUserId) return;
         if (getCurrentClanRole() !== 'leader') {
-            showToast('SÃ³ a lideranÃ§a pode remover pessoas.', 'warning');
+            showToast('Só a liderança pode remover pessoas.', 'warning');
             return;
         }
         if (!isUuid(memberId)) {
@@ -11490,16 +11638,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
         if (memberId === currentUserId) {
-            showToast('Use a saÃ­da do grupo para vocÃª mesmo.', 'info');
+            showToast('Use a saída do grupo para você mesmo.', 'info');
             return;
         }
         const targetMember = enrichedClanMembers.find((member) => member.id === memberId);
         if (!targetMember) {
-            showToast('Essa pessoa jÃ¡ nÃ£o estÃ¡ mais no grupo.', 'info');
+            showToast('Essa pessoa já não está mais no grupo.', 'info');
             return;
         }
         if (targetMember.role === 'leader') {
-            showToast('A lideranÃ§a nÃ£o pode ser removida por esse atalho.', 'warning');
+            showToast('A liderança não pode ser removida por esse atalho.', 'warning');
             return;
         }
 
@@ -11522,7 +11670,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const { error } = await supabase.from('clan_members').delete().eq('user_id', memberId).eq('clan_id', clan.id);
-        if (error) { console.error("Error kicking member:", error.message); showToast('NÃ£o foi possÃ­vel remover essa pessoa.', 'error'); return; }
+        if (error) { console.error("Error kicking member:", error.message); showToast('Não foi possível remover essa pessoa.', 'error'); return; }
         setEnrichedClanMembers(prev => prev.filter(m => m.id !== memberId));
         if (participantRows?.length) {
             const affectedMissionIds = participantRows
@@ -11587,10 +11735,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const searchClans = async (query: string): Promise<Clan[]> => {
-        if (!query.trim()) return [];
-        const { data, error } = await supabase.from('clans').select('*').ilike('name', `%${query}%`).limit(10);
+        const normalized = query.trim();
+        if (normalized.length < 2) return [];
+        const { data, error } = await supabase
+            .from('clans')
+            .select('*, clan_members(user_id)')
+            .ilike('name', `%${normalized}%`)
+            .limit(20);
         if (error) { console.error('Error searching clans:', error.message); return []; }
-        return mapToCamelCase(data || []) as Clan[];
+        const clansWithMembers = (data || [])
+            .filter((row: any) => Array.isArray(row.clan_members) && row.clan_members.length > 0)
+            .map((row: any) => {
+                const { clan_members: _members, ...clanRow } = row;
+                return clanRow;
+            });
+        return (mapToCamelCase(clansWithMembers) as Clan[]).slice(0, 10);
     };
 
     const requestClanJoin = async (clanToJoin: Clan) => {
@@ -11828,7 +11987,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
         const existingRequest = clanJoinRequestsOutgoing.find((request) => request.id === requestId);
         if (!existingRequest) {
-            showToast('Essa solicitaÃ§Ã£o jÃ¡ nÃ£o estÃ¡ mais pendente.', 'info');
+            showToast('Essa solicitação já não está mais pendente.', 'info');
             return;
         }
 
@@ -11844,11 +12003,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             console.error("Error canceling clan join request:", error.message);
             setClanJoinRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
-            showToast('NÃ£o foi possÃ­vel cancelar a solicitaÃ§Ã£o ao grupo.', 'error');
+            showToast('Não foi possível cancelar a solicitação ao grupo.', 'error');
             return;
         }
 
-        showToast('SolicitaÃ§Ã£o ao grupo cancelada.', 'success');
+        showToast('Solicitação ao grupo cancelada.', 'success');
         await loadClanJoinRequestsOutgoing(userId);
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };
@@ -11858,7 +12017,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
         const existingRequest = clanJoinRequestsOutgoing.find((request) => request.id === requestId);
         if (!existingRequest) {
-            showToast('Essa solicitaÃ§Ã£o jÃ¡ nÃ£o estÃ¡ mais pendente.', 'info');
+            showToast('Essa solicitação já não está mais pendente.', 'info');
             await loadClanJoinRequestsOutgoing(userId);
             return;
         }
@@ -11875,12 +12034,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             console.error("Error canceling clan join request:", error.message);
             setClanJoinRequestsOutgoing(prev => prev.some(request => request.id === requestId) ? prev : [...prev, existingRequest]);
-            showToast('NÃ£o foi possÃ­vel cancelar a solicitaÃ§Ã£o ao grupo.', 'error');
+            showToast('Não foi possível cancelar a solicitação ao grupo.', 'error');
             await loadClanJoinRequestsOutgoing(userId);
             return;
         }
 
-        showToast('SolicitaÃ§Ã£o ao grupo cancelada.', 'success');
+        showToast('Solicitação ao grupo cancelada.', 'success');
         await loadClanJoinRequestsOutgoing(userId);
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
     };

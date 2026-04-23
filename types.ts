@@ -99,6 +99,7 @@ export interface Slot {
 
 export type DayOfWeek = 'DOM' | 'SEG' | 'TER' | 'QUA' | 'QUI' | 'SEX' | 'SAB';
 export type ActionType = 'Marco' | 'Compromisso' | 'A\u00e7\u00e3o Recorrente' | 'Livre';
+export type PlannerMatrixQuadrant = 'ui' | 'nui' | 'uni' | 'nuni';
 
 export interface Action {
   id: string;
@@ -125,6 +126,7 @@ export interface Action {
   context?: {
     energyLevel?: 'low' | 'medium' | 'high';
     timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+    plannerQuadrant?: PlannerMatrixQuadrant;
     schedule?: {
       days?: DayOfWeek[];
       startTime?: number;
@@ -391,6 +393,7 @@ export interface UserProfile {
   onboardingStartedAt?: string;
   onboardingCompletedAt?: string;
   onboardingDismissedAt?: string;
+  onboardingPushPromptedAt?: string;
   starterRewardsPending?: boolean;
   vanguardWelcomePending?: boolean;
   vanguardWelcomeShownAt?: string;
@@ -400,6 +403,16 @@ export interface UserProfile {
   premiumRewardPending?: boolean;
   premiumRewardShownAt?: string;
   premiumRewardPayload?: RewardModalPayload | null;
+  betaProgramCode?: string | null;
+  betaProgramLabel?: string | null;
+  betaProgramStartedAt?: string | null;
+  betaProgramEndsAt?: string | null;
+  betaProgramLastCheckInDate?: string | null;
+  betaProgramCheckInCount?: number;
+  betaProgramDaysTarget?: number;
+  betaRewardPending?: boolean;
+  betaRewardShownAt?: string;
+  betaRewardPayload?: RewardModalPayload | null;
   legacyProjectionSceneCredits?: number;
   campaignQuizFreeCredits?: number;
   campaignQuizMediumCredits?: number;
@@ -862,6 +875,23 @@ export interface RewardCodeRedeemResult {
   campaignQuizFreeCreditsGranted?: number | null;
   campaignQuizMediumCreditsGranted?: number | null;
   source?: 'reward_code' | 'golden_invite';
+  error?: string | null;
+}
+
+export interface BetaProgramCheckInResult {
+  success: boolean;
+  programKey?: string | null;
+  programLabel?: string | null;
+  checkInDate?: string | null;
+  startedAt?: string | null;
+  endsAt?: string | null;
+  checkInCount?: number | null;
+  targetDays?: number | null;
+  ordinalDay?: number | null;
+  newCheckIn?: boolean;
+  rewardGrantedNow?: boolean;
+  rewardPending?: boolean;
+  rewardPayload?: RewardModalPayload | null;
   error?: string | null;
 }
 

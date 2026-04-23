@@ -2029,7 +2029,7 @@ export const ArenasView: React.FC = () => {
                     <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
                     <button
                         onClick={handleCreateCampaignClick}
-                        title={isSelectionMode ? 'OrganizaÃ§Ã£o ativa' : 'Gerenciar campanhas'}
+                        title={isSelectionMode ? 'Organização ativa' : 'Gerenciar campanhas'}
                         className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${
                             isSelectionMode
                                 ? 'bg-[var(--skin-accent-color)]/18 text-[var(--ui-text-accent)] animate-pulse'

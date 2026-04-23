@@ -34,12 +34,16 @@ const CHEST_VIDEOS: Record<string, string> = {
     epico: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
     lendario: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
     season: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    ciclo: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    ['skin comum']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
     Comum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
     Incomum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_uncommon.mp4`,
     Raro: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_rare.mp4`,
     ['\u00C9pico']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
     ['Lend\u00E1rio']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
     Season: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    Ciclo: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    ['Skin Comum']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
 };
 
 const buildRewardFromResult = (result: ChestOpenResult | null, chestType: ChestType): Reward => {
@@ -139,6 +143,7 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                             src={CHEST_VIDEOS[chestType]}
                             onEnd={triggerReveal}
                             className="h-full w-full object-cover"
+                            videoClassName="scale-[1.08]"
                             placeholderLabel={`Opening ${chestType} Chest...`}
                             duration={4000}
                             preload="auto"

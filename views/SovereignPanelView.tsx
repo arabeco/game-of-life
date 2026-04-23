@@ -445,7 +445,7 @@ const GmSkinPaletteSection: React.FC = () => {
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-400">Painel de Skins UI</p>
               <h2 className="text-lg font-black text-white">Mesa indicativa das 7 skins</h2>
               <p className="text-xs text-zinc-400">
-                Leitura rÃ¡pida de botÃ£o, fundo de cards, planner, texto e bordas para lapidar a linguagem visual sem abrir uma por uma.
+                Leitura rápida de botão, fundo de cards, planner, texto e bordas para lapidar a linguagem visual sem abrir uma por uma.
               </p>
             </div>
             <div className="inline-flex rounded-full border border-white/10 bg-black/25 p-1">
@@ -2370,21 +2370,17 @@ export const SovereignPanelView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
-      <div className="space-y-3 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/15 bg-emerald-950/30 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-300">
-          Trimestre 1 . Fundacao
+      <div className="space-y-3">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-zinc-300">
+          Beta Test . T1
         </div>
-        <h1 className="luxe-title-shadow text-2xl font-black uppercase tracking-[0.18em] text-white md:text-3xl">
+        <h1 className="text-2xl font-black uppercase tracking-[0.14em] text-white md:text-3xl">
           Dashboard de Metricas
         </h1>
-        <p className="mx-auto max-w-2xl text-sm text-zinc-400">
-          Leitura de campo dos jogadores reais do beta. Ouro, prata e bronze entram aqui; GM e admin continuam fora.
+        <p className="max-w-2xl text-sm text-zinc-400">
+          Leitura objetiva dos jogadores reais do beta. Ouro, prata e bronze entram aqui; GM e admin continuam fora.
         </p>
       </div>
-
-      <GmShowcaseSection />
-
-      <GmSkinPaletteSection />
 
       <section className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {loading ? (
@@ -2576,67 +2572,71 @@ export const SovereignPanelView: React.FC = () => {
         </GlassCard>
       </section>
 
-      <section>
-        <GlassCard variant="neutral" className="p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-500">Laboratório de Legado</p>
-              <h2 className="text-lg font-black text-white">Visualização de Amostra</h2>
-              <p className="text-xs text-zinc-400">Abra uma projeÃ§Ã£o premium de legado com 3 eras e 9 ciclos curados, ou um relatÃ³rio de ciclo nota S pronto para print.</p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <LegacyPreviewButton />
-              <CycleReportPreviewButton />
-            </div>
-          </div>
-        </GlassCard>
-      </section>
+      {false && (
+        <>
+          <section>
+            <GlassCard variant="neutral" className="p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-500">Laborat??rio de Legado</p>
+                  <h2 className="text-lg font-black text-white">Visualiza????o de Amostra</h2>
+                  <p className="text-xs text-zinc-400">Abra uma proje????o premium de legado com 3 eras e 9 ciclos curados, ou um relat??rio de ciclo nota S pronto para print.</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <LegacyPreviewButton />
+                  <CycleReportPreviewButton />
+                </div>
+              </div>
+            </GlassCard>
+          </section>
 
-      <section>
-        <GlassCard variant="neutral" className="p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-400">Laboratório de Assinatura</p>
-              <h2 className="text-lg font-black text-white">Preview do modal de renovação</h2>
-              <p className="text-xs text-zinc-400">Abra o mesmo modal usado no app para validar Premium e Platinum sem depender de compra real.</p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <MembershipRewardPreviewButton tier="premium" />
-              <MembershipRewardPreviewButton tier="platinum" />
-            </div>
-          </div>
-        </GlassCard>
-      </section>
+          <section>
+            <GlassCard variant="neutral" className="p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-400">Laborat??rio de Assinatura</p>
+                  <h2 className="text-lg font-black text-white">Preview do modal de renova????o</h2>
+                  <p className="text-xs text-zinc-400">Abra o mesmo modal usado no app para validar Premium e Platinum sem depender de compra real.</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <MembershipRewardPreviewButton tier="premium" />
+                  <MembershipRewardPreviewButton tier="platinum" />
+                </div>
+              </div>
+            </GlassCard>
+          </section>
 
-      <section>
-        <GlassCard variant="neutral" className="p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500">Laboratorio de Notificacoes</p>
-              <h2 className="text-lg font-black text-white">Fabrica de Eventos</h2>
-              <p className="text-xs text-zinc-400">Tres testes objetivos: sistema, card do Oraculo e sistema com push local em 15 segundos.</p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <NotificationTypeButton type="system" label="Sistema Agora" color="blue" />
-              <NotificationTypeButton type="oracle_card" label="Card do Oraculo" color="purple" />
-              <NotificationTestButton />
-            </div>
-          </div>
-        </GlassCard>
-      </section>
+          <section>
+            <GlassCard variant="neutral" className="p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500">Laboratorio de Notificacoes</p>
+                  <h2 className="text-lg font-black text-white">Fabrica de Eventos</h2>
+                  <p className="text-xs text-zinc-400">Tres testes objetivos: sistema, card do Oraculo e sistema com push local em 15 segundos.</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <NotificationTypeButton type="system" label="Sistema Agora" color="blue" />
+                  <NotificationTypeButton type="oracle_card" label="Card do Oraculo" color="purple" />
+                  <NotificationTestButton />
+                </div>
+              </div>
+            </GlassCard>
+          </section>
 
-      <section>
-        <GlassCard variant="neutral" className="p-6">
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-500">Laboratorio de Email</p>
-              <h2 className="text-lg font-black text-white">Disparo Direto pelo GM</h2>
-              <p className="text-xs text-zinc-400">Teste isolado dos emails de mentoria e amizade usando a edge function `resend`.</p>
-            </div>
-            <NotificationEmailLab />
-          </div>
-        </GlassCard>
-      </section>
+          <section>
+            <GlassCard variant="neutral" className="p-6">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-500">Laboratorio de Email</p>
+                  <h2 className="text-lg font-black text-white">Disparo Direto pelo GM</h2>
+                  <p className="text-xs text-zinc-400">Teste isolado dos emails de mentoria e amizade usando a edge function `resend`.</p>
+                </div>
+                <NotificationEmailLab />
+              </div>
+            </GlassCard>
+          </section>
+        </>
+      )}
 
       {selectedRow && <PlayerInsightModal row={selectedRow} onClose={() => setSelectedRow(null)} />}
     </div>

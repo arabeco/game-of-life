@@ -19,9 +19,10 @@ export interface RestScreenActionSessionDetail {
 }
 
 export interface RestScreenActionViewRequestDetail {
-  actionId: string;
+  actionId?: string;
   taskId?: string;
-  source?: 'session_timeout' | 'session_return' | 'session_complete';
+  source?: 'session_timeout' | 'session_return' | 'session_complete' | 'oracle';
+  createNew?: boolean;
 }
 
 export const createRestScreenActionSession = (

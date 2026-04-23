@@ -14,6 +14,12 @@ interface AchievementModalProps {
     onClose: () => void;
 }
 
+type AchievementRewardDetail = {
+    category?: string;
+    itemId?: string;
+    name?: string;
+};
+
 const BASIC_VISIBLE_ACHIEVEMENTS: FeedEventType[] = [
     'MILESTONE_COMPLETED',
     'QUEST_COMPLETED',
@@ -72,11 +78,33 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     });
 
     const rawRewards = achievement.data.rewards || achievement.data.reward || {};
+    const rewardDetails: AchievementRewardDetail[] = Array.isArray(rawRewards.rewardDetails)
+        ? rawRewards.rewardDetails
+        : [];
     const normalizedRewards = {
         exp: rawRewards.exp,
         chest: rawRewards.chest,
         ornament: rawRewards.ornament,
         items: rawRewards.items || (rawRewards.item ?[rawRewards.item] : []),
+        rewardDetails,
+        uiSkins: rawRewards.uiSkins || [],
+    };
+    const visibleRewardDetails: AchievementRewardDetail[] = normalizedRewards.rewardDetails.length > 0
+        ? normalizedRewards.rewardDetails
+        : normalizedRewards.items.map((itemId: string) => ({ itemId }));
+
+    const getRewardDetailLabel = (detail: AchievementRewardDetail) => {
+        const category = String(detail.category || '').toLowerCase();
+        if (category === 'ui_skins') return 'Tema';
+        if (category === 'insignias') return 'Insignia';
+        if (category === 'borders') return 'Borda';
+        if (category === 'banners') return 'Banner';
+        if (category === 'glyphs') return 'Glyph';
+        if (category === 'skins') return 'Skin';
+        if (category === 'orbs') return 'Orbe';
+        if (category === 'artifacts') return 'Artefato';
+        if (category === 'auras') return 'Aura';
+        return 'Item';
     };
     const headingClass = isBasicMode
         ? 'text-[1.35rem] font-bold leading-tight tracking-[0.14em] text-white'
@@ -139,6 +167,13 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                 }
             }
 
+            if (Array.isArray(rewards.rewardDetails) && rewards.rewardDetails.length > 0) {
+                const detailLines = rewards.rewardDetails
+                    .filter((detail: AchievementRewardDetail) => detail?.category === 'ui_skins')
+                    .map((detail: AchievementRewardDetail) => `Tema ${detail.name || detail.itemId} liberado`);
+                messages.push(...detailLines);
+            }
+
             if (rewards.chest) {
                 messages.push(`\u{1F4E6} Baú ${rewards.chest} adicionado`);
             }
@@ -186,6 +221,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                         : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/quest.mp4`}
                                 onEnd={triggerReveal}
                                 className="h-full w-full object-cover"
+                                videoClassName="scale-[1.08]"
                                 placeholderLabel={isRankUp ? 'Level Up!' : isReportComplete ? 'Relatório!' : 'Missão!'}
                                 duration={4000}
                                 playbackRate={1.0}
@@ -239,7 +275,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                     </p>
                                 </div>
 
-                                {(normalizedRewards.exp || normalizedRewards.chest || normalizedRewards.ornament || normalizedRewards.items.length > 0) && (
+                                {(normalizedRewards.exp || normalizedRewards.chest || normalizedRewards.ornament || visibleRewardDetails.length > 0) && (
                                     <div className="mb-4 flex w-full justify-center gap-2">
                                         {normalizedRewards.exp && (
                                             <div className="min-w-0 flex-1 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
@@ -257,22 +293,23 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                             </div>
                                         )}
 
-                                        {(normalizedRewards.chest || normalizedRewards.ornament || normalizedRewards.items.length > 0) && (
+                                        {(normalizedRewards.chest || normalizedRewards.ornament || visibleRewardDetails.length > 0) && (
                                             <div className="flex flex-[2] flex-col gap-2">
-                                                {normalizedRewards.items.map((itemId: string, index: number) => {
-                                                    const itemDef = resolveItemDef(itemId);
+                                                {visibleRewardDetails.map((detail, index: number) => {
+                                                    const itemId = detail.itemId || '';
+                                                    const itemDef = itemId ? resolveItemDef(itemId) : undefined;
                                                     return (
                                                         <div key={`${itemId}-${index}`} className="min-w-0 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
                                                             <div className="flex items-center gap-2.5">
                                                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--skin-accent-color)]/20 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent">
-                                                                    <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">{itemDef?.icon || '📝'}</span>
+                                                                    <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">{itemDef?.icon || (detail.category === 'ui_skins' ? 'T' : 'I')}</span>
                                                                 </div>
                                                                 <div className="min-w-0 overflow-hidden text-left">
                                                                     <p className="truncate text-[6px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                                                        {itemDef?.category === 'insignia' ?'Insignia' : 'Item'}
+                                                                        {itemDef?.category === 'insignia' ?'Insignia' : getRewardDetailLabel(detail)}
                                                                     </p>
                                                                     <p className="truncate whitespace-nowrap text-[9px] font-black tracking-tight text-white">
-                                                                        {itemDef?.name || itemId.replace(/_/g, ' ')}
+                                                                        {itemDef?.name || detail.name || itemId.replace(/_/g, ' ')}
                                                                     </p>
                                                                 </div>
                                                             </div>

@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { UserProfile, GoldenInvite, SovereignConfig, Notification, RewardCodeRedeemResult } from '../types';
+import { UserProfile, GoldenInvite, SovereignConfig, Notification, RewardCodeRedeemResult, BetaProgramCheckInResult } from '../types';
 
 // Serviço simples para conectar com tabelas existentes
 export class SupabaseService {
@@ -306,10 +306,21 @@ export class SupabaseService {
           onboarding_started_at: profile.onboardingStartedAt || null,
           onboarding_completed_at: profile.onboardingCompletedAt || null,
           onboarding_dismissed_at: profile.onboardingDismissedAt || null,
+          onboarding_push_prompted_at: profile.onboardingPushPromptedAt || null,
           starter_rewards_pending: profile.starterRewardsPending ?? false,
           vanguard_welcome_pending: profile.vanguardWelcomePending ?? false,
           vanguard_welcome_shown_at: profile.vanguardWelcomeShownAt || null,
           vanguard_welcome_payload: profile.vanguardWelcomePayload ?? {},
+          beta_program_code: profile.betaProgramCode || null,
+          beta_program_label: profile.betaProgramLabel || null,
+          beta_program_started_at: profile.betaProgramStartedAt || null,
+          beta_program_ends_at: profile.betaProgramEndsAt || null,
+          beta_program_last_check_in_date: profile.betaProgramLastCheckInDate || null,
+          beta_program_check_in_count: profile.betaProgramCheckInCount ?? 0,
+          beta_program_days_target: profile.betaProgramDaysTarget ?? 0,
+          beta_reward_pending: profile.betaRewardPending ?? false,
+          beta_reward_shown_at: profile.betaRewardShownAt || null,
+          beta_reward_payload: profile.betaRewardPayload ?? {},
           gold: profile.wallet?.gold ?? 0,
           fragments: profile.wallet?.fragments ?? 0,
           sovereign: profile.sovereign,
@@ -477,7 +488,16 @@ export class SupabaseService {
         p_user_id: userId,
       });
 
-      if (!error && data) {
+      if (error) {
+        console.error('Erro ao resgatar codigo via RPC:', error);
+        return {
+          success: false,
+          code: normalizedCode,
+          error: error.message || 'Nao consegui resgatar esse codigo agora.',
+        };
+      }
+
+      if (data) {
         const payload = data as any;
         return {
           success: !!payload.success,
@@ -501,32 +521,69 @@ export class SupabaseService {
           error: typeof payload.error === 'string' ? payload.error : null,
         };
       }
-    } catch (rpcError: any) {
-      const message = String(rpcError?.message || '');
-      const functionMissing = /redeem_reward_code/i.test(message) && (message.includes('does not exist') || message.includes('not found'));
-      if (!functionMissing) {
-        console.error('Erro ao resgatar codigo via RPC:', rpcError);
-      }
-    }
 
-    const legacyInviteResult = await this.consumeGoldenInviteCodeDetailed(normalizedCode, userId);
-    if (legacyInviteResult.success) {
       return {
-        success: true,
+        success: false,
         code: normalizedCode,
-        title: 'Codigo resgatado',
-        description: 'Codigo legado aceito com sucesso.',
-        rewardSummary: 'Seu codigo foi aceito.',
-        source: 'golden_invite',
-        error: null,
+        error: 'Nao consegui resgatar esse codigo agora.',
+      };
+    } catch (rpcError: any) {
+      console.error('Erro ao resgatar codigo via RPC:', rpcError);
+      return {
+        success: false,
+        code: normalizedCode,
+        error: rpcError?.message || 'Nao consegui resgatar esse codigo agora.',
+      };
+    }
+  }
+
+  static async processBetaProgramCheckIn(userId: string): Promise<BetaProgramCheckInResult> {
+    if (!userId) {
+      return {
+        success: false,
+        error: 'Usuario ausente para registrar o check-in do beta.',
       };
     }
 
-    return {
-      success: false,
-      code: normalizedCode,
-      error: this.describeGoldenInviteConsumeError(legacyInviteResult.error) || 'Nao consegui resgatar esse codigo agora.',
-    };
+    try {
+      const { data, error } = await supabase.rpc('process_beta_program_checkin', {
+        p_user_id: userId,
+      });
+
+      if (error) {
+        console.error('Erro ao processar check-in do beta via RPC:', error);
+        return {
+          success: false,
+          error: error.message || 'Nao consegui registrar o check-in do beta agora.',
+        };
+      }
+
+      const payload = (data || {}) as any;
+      return {
+        success: Boolean(payload.success),
+        programKey: typeof payload.program_key === 'string' ? payload.program_key : null,
+        programLabel: typeof payload.program_label === 'string' ? payload.program_label : null,
+        checkInDate: typeof payload.check_in_date === 'string' ? payload.check_in_date : null,
+        startedAt: typeof payload.started_at === 'string' ? payload.started_at : null,
+        endsAt: typeof payload.ends_at === 'string' ? payload.ends_at : null,
+        checkInCount: Number.isFinite(payload.check_in_count) ? Number(payload.check_in_count) : null,
+        targetDays: Number.isFinite(payload.target_days) ? Number(payload.target_days) : null,
+        ordinalDay: Number.isFinite(payload.ordinal_day) ? Number(payload.ordinal_day) : null,
+        newCheckIn: Boolean(payload.new_check_in),
+        rewardGrantedNow: Boolean(payload.reward_granted_now),
+        rewardPending: Boolean(payload.reward_pending),
+        rewardPayload: payload.reward_payload && typeof payload.reward_payload === 'object'
+          ? payload.reward_payload
+          : null,
+        error: typeof payload.error === 'string' ? payload.error : null,
+      };
+    } catch (rpcError: any) {
+      console.error('Erro ao processar check-in do beta via RPC:', rpcError);
+      return {
+        success: false,
+        error: rpcError?.message || 'Nao consegui registrar o check-in do beta agora.',
+      };
+    }
   }
 
   static async getClosedBetaAccessStatus(): Promise<{ authorized: boolean; hasInvite: boolean; hasProfile: boolean; reentryBlocked?: boolean; blockedReason?: string | null } | null> {

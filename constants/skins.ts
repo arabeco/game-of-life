@@ -7,7 +7,7 @@ export interface SkinItem {
     tier: string; // 't1', 't2', etc. (Used for filename construction)
     rarity: Rarity;
     filename?: string; // Optional manual filename override
-    filenameId?: string; // Optional override for the ID part in filename (e.g. 'GRUNGE_LONG')
+    filenameId?: string; // Optional override for the ID part in filename.
     availableColors?: string[]; // List of available color suffixes (e.g. ['cast', 'preto'])
 }
 
@@ -35,7 +35,6 @@ export const HAIR_DB: SkinItem[] = [
     { id: 'medio_reto', name: 'Médio Reto', tier: 'T1', rarity: 'common', availableColors: ['bran', 'cast', 'pre'] },
     
     // TIER 2 - Uncommon
-    { id: 'grunge_longo', name: 'Grunge Longo', tier: 'T2', rarity: 'uncommon', filenameId: 'GRUNGE_LONG', availableColors: ['bran', 'pre', 'ver'] },
     { id: 'textured_crop', name: 'Texturizado', tier: 'T2', rarity: 'uncommon', availableColors: ['bran', 'pre', 'ver'] },
     
     // TIER 3 - Rare

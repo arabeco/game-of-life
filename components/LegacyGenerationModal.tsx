@@ -80,6 +80,7 @@ export const LegacyGenerationModal: React.FC<LegacyGenerationModalProps> = ({ on
                         src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/legado.mp4`}
                         onEnd={() => {}}
                         className="h-full w-full object-cover"
+                        videoClassName="scale-[1.08]"
                         placeholderLabel="Projetando legado..."
                         duration={6500}
                         playbackRate={0.9}

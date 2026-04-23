@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useMemo, useRef } from 'react';
 import { ReportAtlasTaskItem, ReportAtlasWeek } from '../types';
+import { formatOperationalHourLabel, getOperationalHourTicks } from '../utils/operationalDay.js';
 
 interface CycleAtlasPanelProps {
     weeks: ReportAtlasWeek[];
@@ -7,7 +8,7 @@ interface CycleAtlasPanelProps {
 
 const PALETTE = ['#EAB308', '#22C55E', '#3B82F6', '#F97316', '#EC4899', '#14B8A6', '#A855F7', '#F43F5E'];
 const DAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-const HOURS = Array.from({ length: 21 }, (_, i) => i + 4);
+const HOURS = getOperationalHourTicks();
 const HOUR_SCALE = 0.55;
 const DAY_COLUMN_WIDTH = 92;
 
@@ -138,7 +139,7 @@ export const CycleAtlasPanel: React.FC<CycleAtlasPanelProps> = ({ weeks }) => {
                         <div className="sticky left-0 z-30 w-12 flex-shrink-0 pt-[4.85rem] bg-[#090909] border-r border-white/[0.05]">
                             {HOURS.map((hour) => (
                                 <div key={hour} className="text-right pr-2" style={{ height: `${60 * HOUR_SCALE}px` }}>
-                                    <span className="text-[10px] font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span>
+                                    <span className="text-[10px] font-mono text-gray-500">{formatOperationalHourLabel(hour)}</span>
                                 </div>
                             ))}
                         </div>

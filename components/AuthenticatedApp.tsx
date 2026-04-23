@@ -24,6 +24,7 @@ import {
     buildOnboardingStartPatch,
     shouldAutoStartOnboarding,
 } from '../utils/firstUseOnboarding';
+import { getAppPushPermission, requestAppPushPermission } from '../utils/pushRuntime';
 import { APP_NAVIGATE_EVENT, AppNavigatePayload } from '../utils/arenaAttention';
 import {
     getSeasonLaunchToastStorageKey,
@@ -63,12 +64,12 @@ const GoldenToast = React.lazy(() => import('./GoldenToast').then((m) => ({ defa
 const TermsOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.TermsOverlay })));
 const OfflineOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.OfflineOverlay })));
 const FirstUseOnboardingOverlay = React.lazy(() => import('./FirstUseOnboardingOverlay').then((m) => ({ default: m.FirstUseOnboardingOverlay })));
-const FirstUseOnboardingPrimerModal = React.lazy(() => import('./FirstUseOnboardingPrimerModal').then((m) => ({ default: m.FirstUseOnboardingPrimerModal })));
 const CodexClaimModal = React.lazy(() => import('./CodexClaimModal').then((m) => ({ default: m.CodexClaimModal })));
 const RewardPackModal = React.lazy(() => import('./RewardPackModal').then((m) => ({ default: m.RewardPackModal })));
 const VanguardWelcomeModal = React.lazy(() => import('./VanguardWelcomeModal').then((m) => ({ default: m.VanguardWelcomeModal })));
 const SeasonTransitionModal = React.lazy(() => import('./SeasonDetailModal').then((m) => ({ default: m.SeasonTransitionModal })));
 const ScreenIntroTipOverlay = React.lazy(() => import('./ScreenIntroTipOverlay').then((m) => ({ default: m.ScreenIntroTipOverlay })));
+const RewardVideoPreviewModal = React.lazy(() => import('./RewardVideoPreviewModal').then((m) => ({ default: m.RewardVideoPreviewModal })));
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -154,9 +155,10 @@ const GlobalSeasonTransitionGate: React.FC<{ enabled: boolean }> = ({ enabled })
     );
 };
 
-const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTransition?: boolean }> = ({
+const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTransition?: boolean; suppressScreenIntroTips?: boolean }> = ({
     defaultRestScreenOpen = true,
     allowSeasonTransition = true,
+    suppressScreenIntroTips = false,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
     const { userProfile, appMode, activeTheme, notifications, showToast } = useGame();
@@ -410,8 +412,36 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         const syncQueryNavigation = () => {
             const params = new URLSearchParams(window.location.search);
             const requestedView = params.get('view');
+            const requestedReports = params.get('reports') === '1' || requestedView === 'reports';
+            const requestedRest = params.get('rest');
             const requestedSocialSection = params.get('social');
             const requestedParticipantId = params.get('participant');
+
+            if (requestedReports) {
+                setProfileVisible(false);
+                setRestScreenVisible(false);
+                window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
+                setReportsVisible(true);
+                handleSetView('planner');
+
+                params.delete('view');
+                params.delete('reports');
+                params.delete('rest');
+                const nextSearch = params.toString();
+                const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+                window.history.replaceState(window.history.state, '', nextUrl);
+                return;
+            }
+
+            if (requestedRest === '0') {
+                setRestScreenVisible(false);
+                window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
+                params.delete('rest');
+                const nextSearch = params.toString();
+                const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+                window.history.replaceState(window.history.state, '', nextUrl);
+                return;
+            }
 
             if (requestedView !== 'social' && !requestedSocialSection) return;
 
@@ -480,6 +510,11 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [currentView, pendingSitrepOpen]);
 
     useEffect(() => {
+        if (suppressScreenIntroTips) {
+            setActiveScreenTipId(null);
+            return;
+        }
+
         if (!screenTipsEnabled) {
             setActiveScreenTipId(null);
             return;
@@ -518,6 +553,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         isRestScreenVisible,
         screenTipsEnabled,
         screenIntroContextId,
+        suppressScreenIntroTips,
         userProfile.id,
     ]);
 
@@ -873,7 +909,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
             <Suspense fallback={null}>
                 <ScreenIntroTipOverlay
-                    open={!!activeScreenTipId}
+                    open={!suppressScreenIntroTips && !!activeScreenTipId}
                     tipId={activeScreenTipId}
                     onClose={handleCloseScreenIntroTip}
                 />
@@ -919,6 +955,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         userProfile,
         appMode,
         updateUserProfile,
+        updateOraclePreferences,
         addProfileFlag,
         buyStoreItem,
         toast,
@@ -939,6 +976,12 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     } | null>(null);
     const [premiumRenewalOfferSeen, setPremiumRenewalOfferSeen] = useState(false);
     const [premiumRenewalBusy, setPremiumRenewalBusy] = useState(false);
+    const [showOnboardingPushPrompt, setShowOnboardingPushPrompt] = useState(false);
+    const [isOnboardingPushBusy, setOnboardingPushBusy] = useState(false);
+    const [showRewardVideoPreview, setShowRewardVideoPreview] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return new URLSearchParams(window.location.search).get('video_preview') === '1';
+    });
     const lastToastSignatureRef = useRef('');
     const toastSensorySuppressedUntilRef = useRef(0);
     const effectiveUiSkin = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
@@ -964,6 +1007,12 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         const handleOpenTerms = () => setForceShowTerms(true);
         window.addEventListener('openTermsOverlay', handleOpenTerms);
         return () => window.removeEventListener('openTermsOverlay', handleOpenTerms);
+    }, []);
+
+    useEffect(() => {
+        const handleOpenRewardVideoPreview = () => setShowRewardVideoPreview(true);
+        window.addEventListener('openRewardVideoPreview', handleOpenRewardVideoPreview);
+        return () => window.removeEventListener('openRewardVideoPreview', handleOpenRewardVideoPreview);
     }, []);
 
     useEffect(() => {
@@ -1026,7 +1075,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const showTerms = forceShowTerms || requiresTermsAcceptance;
     const needsFirstUseOnboarding = shouldAutoStartOnboarding(userProfile);
     const [isFirstUseOnboardingActive, setFirstUseOnboardingActive] = useState(false);
-    const [showFirstUseOnboardingPrimer, setShowFirstUseOnboardingPrimer] = useState(false);
     const [onboardingShownInSession, setOnboardingShownInSession] = useState(false);
     const [claimToken, setClaimToken] = useState<string | null>(null);
     const shouldHoldVanguardWelcome =
@@ -1041,7 +1089,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
 
         updateUserProfile(buildOnboardingStartPatch(userProfile));
         setFirstUseOnboardingActive(true);
-        setShowFirstUseOnboardingPrimer(true);
         setOnboardingShownInSession(true);
     }, [
         userProfile,
@@ -1076,17 +1123,11 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
 
     const handleDismissOnboarding = useCallback(() => {
         updateUserProfile(buildOnboardingDismissPatch(userProfile));
-        setShowFirstUseOnboardingPrimer(false);
         setFirstUseOnboardingActive(false);
     }, [updateUserProfile, userProfile]);
 
-    const handleStartGuidedOnboarding = useCallback(() => {
-        setShowFirstUseOnboardingPrimer(false);
-    }, []);
-
     const handleCompleteOnboarding = useCallback(() => {
         updateUserProfile(buildOnboardingCompletePatch(userProfile));
-        setShowFirstUseOnboardingPrimer(false);
         setFirstUseOnboardingActive(false);
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialNavigate', {
@@ -1099,6 +1140,38 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             }));
         }, 120);
     }, [updateUserProfile, userProfile]);
+
+    useEffect(() => {
+        if (!isProfileLoaded || showTerms) return;
+        if (userProfile.id === 'placeholder_user') return;
+        if (!onboardingShownInSession) return;
+        if (userProfile.onboardingPushPromptedAt) return;
+        if (isFirstUseOnboardingActive) return;
+        if (shouldHoldVanguardWelcome) return;
+
+        let cancelled = false;
+
+        (async () => {
+            const permission = await getAppPushPermission();
+            if (cancelled || permission !== 'prompt') return;
+
+            updateUserProfile({ onboardingPushPromptedAt: new Date().toISOString() });
+            setShowOnboardingPushPrompt(true);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        isFirstUseOnboardingActive,
+        isProfileLoaded,
+        onboardingShownInSession,
+        shouldHoldVanguardWelcome,
+        showTerms,
+        updateUserProfile,
+        userProfile.id,
+        userProfile.onboardingPushPromptedAt,
+    ]);
 
     const handleCloseVanguardWelcome = useCallback(() => {
         showToast(buildVanguardRewardsToast(userProfile.vanguardWelcomePayload), 'success');
@@ -1115,6 +1188,36 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             premiumRewardShownAt: new Date().toISOString(),
         });
     }, [showToast, updateUserProfile, userProfile.premiumRewardPayload]);
+
+    const handleCloseBetaReward = useCallback(() => {
+        showToast('Ciclo beta 14/14 concluido. Seus 50 de ouro ja foram integrados.', 'success');
+        updateUserProfile({
+            betaRewardPending: false,
+            betaRewardShownAt: new Date().toISOString(),
+        });
+    }, [showToast, updateUserProfile]);
+
+    const handleDismissOnboardingPushPrompt = useCallback(() => {
+        setShowOnboardingPushPrompt(false);
+    }, []);
+
+    const handleConfirmOnboardingPushPrompt = useCallback(async () => {
+        setOnboardingPushBusy(true);
+        try {
+            const permission = await requestAppPushPermission();
+            if (permission === 'granted') {
+                await updateOraclePreferences({ pushEnabled: true });
+                showToast('Push ativado. O Oraculo ja pode te acompanhar fora da tela.', 'success');
+            } else if (permission === 'denied') {
+                showToast('Tudo bem. O push ficou bloqueado neste aparelho por enquanto.', 'warning');
+            } else {
+                showToast('Nao consegui ativar o push neste aparelho agora.', 'warning');
+            }
+        } finally {
+            setOnboardingPushBusy(false);
+            setShowOnboardingPushPrompt(false);
+        }
+    }, [showToast, updateOraclePreferences]);
 
     const hasVanguardPayload =
         !!userProfile.vanguardWelcomePayload &&
@@ -1139,6 +1242,19 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         !!userProfile.premiumRewardPending &&
         hasPremiumRewardPayload;
 
+    const hasBetaRewardPayload =
+        !!userProfile.betaRewardPayload &&
+        Object.keys(userProfile.betaRewardPayload).length > 0;
+
+    const shouldShowBetaReward =
+        !showTerms &&
+        !isFirstUseOnboardingActive &&
+        !shouldHoldVanguardWelcome &&
+        !shouldShowVanguardWelcome &&
+        !shouldShowPremiumReward &&
+        !!userProfile.betaRewardPending &&
+        hasBetaRewardPayload;
+
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
     const activeMembershipTier = getActiveSubscriptionTier(userProfile);
     const activeMembershipProduct = getGoldMembershipProductByTier(activeMembershipTier) || GOLD_PREMIUM_PRODUCT;
@@ -1152,6 +1268,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         !shouldHoldVanguardWelcome &&
         !shouldShowVanguardWelcome &&
         !shouldShowPremiumReward &&
+        !shouldShowBetaReward &&
         !claimToken &&
         hasPremiumAccess(userProfile) &&
         isPremiumInLastDay(userProfile) &&
@@ -1228,7 +1345,9 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         !showTerms &&
         !claimToken &&
         !needsFirstUseOnboarding &&
-        !isFirstUseOnboardingActive;
+        !isFirstUseOnboardingActive &&
+        new URLSearchParams(window.location.search).get('rest') !== '0' &&
+        new URLSearchParams(window.location.search).get('reports') !== '1';
     const shouldAllowSeasonTransition =
         !showTerms &&
         !needsFirstUseOnboarding &&
@@ -1290,18 +1409,14 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 <AppWithTutorial
                     defaultRestScreenOpen={shouldOpenRestByDefault}
                     allowSeasonTransition={shouldAllowSeasonTransition}
+                    suppressScreenIntroTips={isFirstUseOnboardingActive}
                 />
             )}
             <Suspense fallback={null}>
                 <TermsOverlay open={showTerms} onAccept={handleAcceptTerms} />
                 <OfflineOverlay open={!isOnline} />
-                <FirstUseOnboardingPrimerModal
-                    open={isFirstUseOnboardingActive && showFirstUseOnboardingPrimer}
-                    onClose={handleDismissOnboarding}
-                    onStartGuidedOnboarding={handleStartGuidedOnboarding}
-                />
                 <FirstUseOnboardingOverlay
-                    active={isFirstUseOnboardingActive && !showFirstUseOnboardingPrimer}
+                    active={isFirstUseOnboardingActive}
                     onDismiss={handleDismissOnboarding}
                     onComplete={handleCompleteOnboarding}
                 />
@@ -1334,6 +1449,20 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         fallbackEmptyMessage="A renovação foi concluída e nenhum cosmético novo precisava ser entregue agora."
                     />
                 )}
+                {shouldShowBetaReward && (
+                    <RewardPackModal
+                        open={shouldShowBetaReward}
+                        mode={userProfile.appMode}
+                        payload={userProfile.betaRewardPayload}
+                        onClose={handleCloseBetaReward}
+                        fallbackEyebrow="Beta 14 de 14"
+                        fallbackTitle="Recompensa da vigilia"
+                        fallbackSummary="Voce atravessou os 14 dias completos do beta e a recompensa final ja foi entregue."
+                        fallbackButtonLabel="Receber"
+                        fallbackItemSectionTitle="Entregue no fim do beta"
+                        fallbackEmptyMessage="Seu bonus final ja entrou no perfil."
+                    />
+                )}
                 {shouldShowPremiumRenewalOffer && (
                     <ConfirmationModal
                         title={`Último dia do ${activeMembershipProduct.tier}`}
@@ -1353,6 +1482,19 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         onConfirm={handleOpenGoldStoreFromPrompt}
                         onCancel={() => setGoldShortagePrompt(null)}
                     />
+                )}
+                {showOnboardingPushPrompt && (
+                    <ConfirmationModal
+                        title="Ativar push do Oraculo"
+                        message="Quer liberar push neste aparelho para o Oraculo te lembrar do dia, dos sinais e do seu ciclo sem depender de abrir o app?"
+                        confirmLabel={isOnboardingPushBusy ? 'ATIVANDO...' : 'ATIVAR PUSH'}
+                        cancelLabel="AGORA NAO"
+                        onConfirm={() => { void handleConfirmOnboardingPushPrompt(); }}
+                        onCancel={handleDismissOnboardingPushPrompt}
+                    />
+                )}
+                {showRewardVideoPreview && (
+                    <RewardVideoPreviewModal onClose={() => setShowRewardVideoPreview(false)} />
                 )}
             </Suspense>
             <Suspense fallback={null}>

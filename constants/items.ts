@@ -190,7 +190,6 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'medio_reto', name: 'Médio Reto', category: 'hair', tier: 1, rarity: 'common', icon: '�x!', isRankExclusive: true },
 
     // TIER 2 - Uncommon
-    { id: 'grunge_longo', name: 'Grunge Longo', category: 'hair', tier: 2, rarity: 'uncommon', icon: '�x}�', isRankExclusive: true },
     { id: 'textured_crop', name: 'Texturizado', category: 'hair', tier: 2, rarity: 'uncommon', icon: '�S️', isRankExclusive: true },
 
     // TIER 3 - Rare
@@ -269,19 +268,19 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- GLIFOS ---
     // T1
-    { id: 'item_glyph_1_001', name: 'Tábua Aprendiz', category: 'glyph', tier: 1, rarity: 'common', icon: '�x��', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_TABUA_APRENDIZ.png`, isRankExclusive: true },
-    { id: 'item_glyph_1_002', name: 'Manuscrito', category: 'glyph', tier: 1, rarity: 'common', icon: '�xS', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_MANUSCRITO_HOD.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_1_002 },
-    { id: 'item_glyph_1_003', name: 'Lajota', category: 'glyph', tier: 1, rarity: 'common', icon: '�x��', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_LAJOTA_CALCARIO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_1_003 },
+    { id: 'item_glyph_1_001', name: 'Tábua Aprendiz', category: 'glyph', tier: 1, rarity: 'common', icon: '🪵', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_TABUA_APRENDIZ.png`, isRankExclusive: true },
+    { id: 'item_glyph_1_002', name: 'Manuscrito', category: 'glyph', tier: 1, rarity: 'common', icon: '📜', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_MANUSCRITO_HOD.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_1_002 },
+    { id: 'item_glyph_1_003', name: 'Lajota', category: 'glyph', tier: 1, rarity: 'common', icon: '🧱', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T1_LAJOTA_CALCARIO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_1_003 },
     // T2
-    { id: 'item_glyph_2_002', name: 'Granito Rúnico', category: 'glyph', tier: 2, rarity: 'uncommon', icon: '�x��', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T2_GRANITO_RUNICO.png`, isRankExclusive: true },
+    { id: 'item_glyph_2_002', name: 'Granito Rúnico', category: 'glyph', tier: 2, rarity: 'uncommon', icon: '🪨', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T2_GRANITO_RUNICO.png`, isRankExclusive: true },
     // T3
-    { id: 'item_glyph_3_002', name: 'Mecanismo Bronze', category: 'glyph', tier: 3, rarity: 'rare', icon: '�a"️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_BRONZE.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_3_002 },
-    { id: 'item_glyph_3_003', name: 'Mecanismo Rúnico', category: 'glyph', tier: 3, rarity: 'rare', icon: '�a"️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_RUNICO.png`, isRankExclusive: true },
+    { id: 'item_glyph_3_002', name: 'Mecanismo Bronze', category: 'glyph', tier: 3, rarity: 'rare', icon: '⚙️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_BRONZE.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_3_002 },
+    { id: 'item_glyph_3_003', name: 'Mecanismo Rúnico', category: 'glyph', tier: 3, rarity: 'rare', icon: '⚙️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T3_MECANISMO_RUNICO.png`, isRankExclusive: true },
     // T5
-    { id: 'item_glyph_4_001', name: 'Crisol Geomântico', category: 'glyph', tier: 4, rarity: 'epic', icon: '�x�', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISOL_GEOMANTICO.png`, isRankExclusive: true },
-    { id: 'item_glyph_4_002', name: 'Cristal Branco', category: 'glyph', tier: 4, rarity: 'epic', icon: '�x}', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISTAL_BRANCO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_4_002 },
-    { id: 'item_glyph_5_001', name: 'A FORJA - Losango 3D', category: 'glyph', tier: 5, rarity: 'legendary', icon: '�x�', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_A_FORJA.png`, isRankExclusive: true },
-    { id: 'item_glyph_5_002', name: 'Artefato Sombrio', category: 'glyph', tier: 5, rarity: 'legendary', icon: '�x"�️', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_ARTEFATO_SOMBRIO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_5_002 },
+    { id: 'item_glyph_4_001', name: 'Crisol Geomântico', category: 'glyph', tier: 4, rarity: 'epic', icon: '🔶', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISOL_GEOMANTICO.png`, isRankExclusive: true },
+    { id: 'item_glyph_4_002', name: 'Cristal Branco', category: 'glyph', tier: 4, rarity: 'epic', icon: '💎', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T4_CRISTAL_BRANCO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_4_002 },
+    { id: 'item_glyph_5_001', name: 'A FORJA - Losango 3D', category: 'glyph', tier: 5, rarity: 'legendary', icon: '🔷', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_A_FORJA.png`, isRankExclusive: true },
+    { id: 'item_glyph_5_002', name: 'Artefato Sombrio', category: 'glyph', tier: 5, rarity: 'legendary', icon: '🖤', imageUrl: `${GLYPHS_BASE_URL}/MOLDE_T5_ARTEFATO_SOMBRIO.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_5_002 },
 
     // --- AURAS ---
     // T1
@@ -342,7 +341,7 @@ export const ITEMS_DB: ItemDef[] = [
     // NOBREZA (Ouro)
     { id: 'insignia_rank_1_vagante', name: 'Ouro: Vagante', category: 'insignia', tier: 1, rarity: 'common', icon: '�x�', description: "Patente de Ouro: Reconhecimento inicial para aqueles que começam sua jornada.", isRankExclusive: true },
     { id: 'insignia_rank_2_escudeiro', name: 'Ouro: Escudeiro', category: 'insignia', tier: 1, rarity: 'common', icon: '�x:�️', description: "Patente de Ouro: Concedida aos que demonstraram compromisso inicial com a ordem.", isRankExclusive: true },
-    { id: 'insignia_rank_3_cavaleiro', name: 'Ouro: Cavaleiro', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '�a️', description: "Patente de Ouro: Dada aos guerreiros que provaram sua constância em batalha.", isRankExclusive: true },
+    { id: 'insignia_rank_3_cavaleiro', name: 'Ouro: Cavaleiro', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🛡️', description: "Patente de Ouro: Dada aos guerreiros que provaram sua constância em batalha.", isRankExclusive: true },
     { id: 'insignia_rank_4_lorde', name: 'Ouro: Lorde', category: 'insignia', tier: 3, rarity: 'rare', icon: '�x��', description: "Patente de Ouro: Um título de nobreza para quem lidera pelo exemplo.", isRankExclusive: true },
     { id: 'insignia_rank_5_barao', name: 'Ouro: Barão', category: 'insignia', tier: 4, rarity: 'epic', icon: '�x', description: "Patente de Ouro: Elite da nobreza, reservada aos mestres da disciplina.", isRankExclusive: true },
     { id: 'insignia_rank_6_conde', name: 'Ouro: Conde', category: 'insignia', tier: 4, rarity: 'epic', icon: '�x}️', description: "Patente de Ouro: Reconhecimento por serviços notáveis prestados ao reino.", isRankExclusive: true },

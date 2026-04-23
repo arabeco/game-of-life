@@ -7,7 +7,7 @@ import { useGame } from '../contexts/GameContext';
 import { DropIndicator } from './DropIndicator';
 import { useLongPress } from '../hooks/useLongPress';
 import { CheckCircleIcon } from './Icons';
-import { OPERATIONAL_DAY_END_HOUR, OPERATIONAL_DAY_START_MINUTE, formatLocalDateString, getOperationalDateString, getOperationalDisplayMinutes, getTaskDisplayStartTime, taskMatchesOperationalDate } from '../utils/operationalDay.js';
+import { OPERATIONAL_DAY_START_MINUTE, formatLocalDateString, formatOperationalHourLabel, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 
 interface WeeklyPlannerGridProps {
     currentDate: Date;
@@ -22,7 +22,7 @@ interface WeeklyPlannerGridProps {
     dropIndicator: { dayIndex: number, top: number, height: number } | null;
 }
 
-const hours = Array.from({ length: (OPERATIONAL_DAY_END_HOUR - 4) + 1 }, (_, i) => i + 4);
+const hours = getOperationalHourTicks();
 
 const Sparkles: React.FC = () => (
     <div className="absolute inset-0 pointer-events-none">
@@ -207,7 +207,7 @@ export const WeeklyPlannerGrid: React.FC<WeeklyPlannerGridProps> = ({ currentDat
             <div className="w-12 flex-shrink-0 pt-8">
                 {hours.map(hour => (
                     <div key={hour} style={{ height: `${60 * scaleFactor}px` }} className="text-right pr-2">
-                        <span className="weekly-hour-label text-xs font-mono text-gray-500">{`${hour.toString().padStart(2, '0')}:00`}</span>
+                        <span className="weekly-hour-label text-xs font-mono text-gray-500">{formatOperationalHourLabel(hour)}</span>
                     </div>
                 ))}
             </div>

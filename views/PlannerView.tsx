@@ -61,9 +61,9 @@ const compareExecutionTasks = (left: ScheduledTask, right: ScheduledTask) => {
 
 const PLANNER_MATRIX_LAYOUT: Array<{ key: PlannerMatrixQuadrant; label: string; title: string }> = [
     { key: 'ui', label: 'UI', title: 'Urgente + Importante' },
-    { key: 'nui', label: 'NUI', title: 'NÃƒÆ’Ã‚Â£o urgente + Importante' },
-    { key: 'uni', label: 'UNI', title: 'Urgente + NÃƒÆ’Ã‚Â£o importante' },
-    { key: 'nuni', label: 'NUNI', title: 'NÃƒÆ’Ã‚Â£o urgente + NÃƒÆ’Ã‚Â£o importante' },
+    { key: 'nui', label: 'NUI', title: 'Nao urgente + Importante' },
+    { key: 'uni', label: 'UNI', title: 'Urgente + Nao importante' },
+    { key: 'nuni', label: 'NUNI', title: 'Nao urgente + Nao importante' },
 ];
 
 const DayHeader: React.FC<{
@@ -264,7 +264,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                     <div className={`absolute inset-0 border-2 ${task.completed ?'border-white/30 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`} style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
                     {task.completed && <div className="absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3 w-3 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div>}
                     <div className={`relative z-10 w-full h-full flex flex-col items-center justify-center text-center p-1 ${task.completed ?'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.08)]' : ''}`}>
-                        <EmojiGlyph symbol={action?.icon || "ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬Â "} size="milestone" className="text-white" />
+                        <EmojiGlyph symbol={action?.icon || "🏁"} size="milestone" className="text-white" />
                         <div className="text-xs font-semibold truncate max-w-full px-1">{action?.name}</div>
                     </div>
                     {isHolding && (<div className="absolute inset-0 bg-black/50 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
@@ -376,10 +376,10 @@ const UnscheduledTaskCard: React.FC<{
     const backgroundStyle = action ?getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isScheduled = hasScheduledTime(task);
     const isFreeAction = action?.actionType === 'Livre';
-    const stateLabel = task.completed ?'ConcluÃƒÆ’Ã‚Â­da' : isScheduled ?'Com horÃƒÆ’Ã‚Â¡rio' : 'ExecuÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o livre';
+    const stateLabel = task.completed ?'Concluida' : isScheduled ?'Com horario' : 'Execucao livre';
     const timeLabel = isScheduled
         ? `${String(Math.floor(task.startTime / 60)).padStart(2, '0')}:${String(task.startTime % 60).padStart(2, '0')}`
-        : 'sem horÃƒÆ’Ã‚Â¡rio';
+        : 'sem horario';
 
     const shouldUseActionSkin = executionCard && action && !isFreeAction;
     const cardStyle = {
@@ -501,7 +501,7 @@ const UnscheduledTaskCard: React.FC<{
                     <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]">{action?.name || 'AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o sem vÃƒÆ’Ã‚Â­nculo'}</div>
+                    <div className="truncate text-[13px] font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]">{action?.name || 'Acao sem vinculo'}</div>
                     <div className="mt-0.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white/52">
                         <span className={task.completed ?'text-emerald-200/70' : ''}>{stateLabel}</span>
                         <span className="h-1 w-1 rounded-full bg-white/18" />
@@ -818,7 +818,7 @@ const TacticalHUD: React.FC = () => {
 
             <div className="flex items-center space-x-2">
                 <div className="flex flex-col items-center">
-                    <span className="text-white font-black text-xs">{/* Streak placeholder */ (userProfile as any).streak || 0} ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥</span>
+                    <span className="text-white font-black text-xs">{/* Streak placeholder */ (userProfile as any).streak || 0} 🔥</span>
                     <span className="text-[8px]">DIAS</span>
                 </div>
             </div>
@@ -1211,8 +1211,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 } else if (geralAsset) {
                     const newArena = await addArena(geralAsset.id, {
                         name: arenaName,
-                        icon: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ…Â¸ÃƒÂ¯Ã‚Â¸Ã‚Â',
-                        description: 'Arena criada pelo OrÃƒÆ’Ã‚Â¡culo'
+                        icon: '🏟️',
+                        description: 'Arena criada pelo Oraculo'
                     });
                     targetArenaId = newArena.id;
                 }
@@ -1225,8 +1225,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 } else if (geralAsset) {
                     const newArena = await addArena(geralAsset.id, {
                         name: 'Outros',
-                        icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦',
-                        description: 'Arena criada pelo OrÃƒÆ’Ã‚Â¡culo'
+                        icon: '📦',
+                        description: 'Arena criada pelo Oraculo'
                     });
                     targetArenaId = newArena.id;
                 }
@@ -1235,17 +1235,17 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             // 4. Create Action
             if (!targetArenaId || !actionName) return;
 
-            const actionType: ActionType = startTimeInMinutes !== null && selectedDays.length === 0 ?'Compromisso' : 'AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o Recorrente';
+            const actionType: ActionType = startTimeInMinutes !== null && selectedDays.length === 0 ?'Compromisso' : 'Ação Recorrente';
 
             const created = await addAction({
                 name: actionName,
                 description: actionDescription || undefined,
                 arenaId: targetArenaId,
-                icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â',
+                icon: '📝',
                 duration,
                 difficulty: 1,
                 actionType,
-                repetitions: actionType === 'AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o Recorrente' ?Math.max(1, repetitions) : 1,
+                repetitions: actionType === 'Ação Recorrente' ?Math.max(1, repetitions) : 1,
             });
 
             if (actionType === 'Compromisso' && startTimeInMinutes !== null) {
@@ -1258,7 +1258,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 await scheduleTask(created, dateString, actualStartTime);
             }
 
-            if (actionType === 'AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o Recorrente' && selectedDays.length > 0 && startTimeInMinutes !== null) {
+            if (actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTimeInMinutes !== null) {
                 await scheduleMultipleTasks(created, selectedDays, startTimeInMinutes);
             }
 
@@ -1318,7 +1318,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const [executionQueueByDate, setExecutionQueueByDate] = useState<Record<string, string[]>>(() => {
         try {
             const stored = localStorage.getItem('planner_execution_queue_v1');
-            return stored ?JSON.parse(stored) : {};
+            return stored ? JSON.parse(stored) as Record<string, string[]> : {};
         } catch {
             return {};
         }
@@ -1422,7 +1422,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const placeExecutionTask = useCallback((taskId: string, targetDate: string, targetIndex: number) => {
         setExecutionQueueByDate(previous => {
             const next: Record<string, string[]> = {};
-            Object.entries(previous).forEach(([date, ids]) => {
+            (Object.entries(previous) as [string, string[]][]).forEach(([date, ids]) => {
                 const filtered = ids.filter(id => id !== taskId);
                 if (filtered.length > 0) next[date] = filtered;
             });
@@ -1438,7 +1438,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         setExecutionQueueByDate(previous => {
             let changed = false;
             const next: Record<string, string[]> = {};
-            Object.entries(previous).forEach(([date, ids]) => {
+            (Object.entries(previous) as [string, string[]][]).forEach(([date, ids]) => {
                 const filtered = ids.filter(id => id !== taskId);
                 if (filtered.length !== ids.length) changed = true;
                 if (filtered.length > 0) next[date] = filtered;
@@ -1838,7 +1838,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         const next: Record<string, string[]> = {};
         const usedTaskIds = new Set<string>();
 
-        Object.entries(executionQueueByDate).forEach(([date, ids]) => {
+        (Object.entries(executionQueueByDate) as [string, string[]][]).forEach(([date, ids]) => {
             const orderedIds: string[] = [];
             ids.forEach(id => {
                 const task = tasksById.get(id);
@@ -2041,7 +2041,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <div className="relative z-10">
                     <div className="relative flex h-11 items-center justify-center px-3 pt-2 text-lg font-bold">
                         <div className="absolute left-3 flex min-w-0 items-center space-x-1" id="planner-tools">
-                            <button onClick={() => setChecklistVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors" title="Checklist diÃƒÆ’Ã‚Â¡rio">
+                            <button onClick={() => setChecklistVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 relative text-gray-400 hover:text-white transition-colors" title="Checklist diario">
                                 <SquareCheckIcon className={`h-3.5 w-3.5 ${allTasksCompleted ? 'text-[var(--skin-accent-color)]' : ''}`} />
                                 {sequenceItems.length > 0 && (
                                     <span className="absolute -right-1 -top-1 flex min-w-[1rem] items-center justify-center gap-0.5 rounded-full border border-black/30 bg-[var(--skin-accent-color)] px-1 py-[1px] text-[9px] font-black leading-none text-black shadow-[0_4px_10px_rgba(0,0,0,0.25)]">
@@ -2078,8 +2078,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                 value={plannerMode}
                                 onChange={(value) => setPlannerMode(value as PlannerMode)}
                                 options={[
-                                    { value: 'horario', label: 'HorÃƒÆ’Ã‚Â¡rio', hint: 'Quando vou fazer?', icon: <ClockIcon className="h-3.5 w-3.5" /> },
-                                    { value: 'execucao', label: 'ExecuÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', hint: 'O que faz sentido fazer agora?', icon: <PlayIcon className="h-3.5 w-3.5" /> },
+                                    { value: 'horario', label: 'Horario', hint: 'Quando vou fazer?', icon: <ClockIcon className="h-3.5 w-3.5" /> },
+                                    { value: 'execucao', label: 'Execucao', hint: 'O que faz sentido fazer agora?', icon: <PlayIcon className="h-3.5 w-3.5" /> },
                                 ]}
                                 iconOnly
                             />
@@ -2200,7 +2200,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         <div className="flex min-h-[48vh] items-center justify-center px-6">
                             <div className="max-w-[18rem] rounded-[24px] border border-white/8 bg-black/20 px-5 py-5 text-center shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
                                 <div className="text-sm font-semibold text-white">Nada aqui ainda.</div>
-                                <div className="mt-1 text-[12px] leading-relaxed text-white/54">Adicione uma arena para comeÃƒÆ’Ã‚Â§ar a criar aÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes e organizar o dia.</div>
+                        <div className="mt-1 text-[12px] leading-relaxed text-white/54">Adicione uma arena para comecar a criar acoes e organizar o dia.</div>
                             </div>
                         </div>
                     ) : plannerMode === 'execucao' ?(

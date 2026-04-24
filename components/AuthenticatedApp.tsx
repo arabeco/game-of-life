@@ -401,6 +401,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         const handleAppNavigate = (event: Event) => {
             const customEvent = event as CustomEvent<AppNavigatePayload>;
             if (!customEvent.detail?.view) return;
+            if (customEvent.detail.openSitrep) {
+                setDailyCompletionPrompt(null);
+                setPendingSitrepOpen(true);
+                setRestScreenVisible(false);
+                window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
+            }
             handleSetView(customEvent.detail.view);
         };
 
@@ -730,6 +736,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const handleOpenSitrepFromPrompt = useCallback(() => {
         setDailyCompletionPrompt(null);
         setPendingSitrepOpen(true);
+        setRestScreenVisible(false);
+        window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
         handleSetView('planner');
     }, [handleSetView]);
 

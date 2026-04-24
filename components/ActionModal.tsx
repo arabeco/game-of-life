@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { Action, DayOfWeek, ActionType, PlannerMatrixQuadrant } from '../types';
+import { Action, DayOfWeek, ActionType, PlannerMatrixQuadrant, ScheduledTask } from '../types';
 import { GlassCard } from './GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon, CheckCircleIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';

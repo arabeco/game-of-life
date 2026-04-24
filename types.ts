@@ -480,6 +480,8 @@ export interface ScheduledTask {
   startTime: number; // minutes from midnight
   duration: number; // minutes
   completed?: boolean;
+  completedAt?: string | null;
+  userId?: string | null;
   createdAt?: string;
 }
 

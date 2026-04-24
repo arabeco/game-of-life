@@ -1,7 +1,7 @@
 ﻿import React, { useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { getCatalogItems, ItemDef } from '../../constants/items';
+import { getCatalogItems, ItemDef, ItemCategory } from '../../constants/items';
 import { ACTIVE_GOLD_STORE_ITEM_IDS } from '../../constants/goldCatalog';
 import { ItemArt } from '../ItemArt';
 import { ItemDetailModal } from '../ItemDetailModal';
@@ -59,7 +59,7 @@ export const ItemsStore: React.FC = () => {
         return ids;
     }, [inventory, userProfile.unlockedItems]);
     const availableCategories = useMemo(() => {
-        const ids = Array.from(new Set(items.map((item) => item.category)));
+        const ids = Array.from(new Set<ItemCategory>(items.map((item) => item.category)));
         return ids.map((category) => ({
             id: category,
             label: STORE_CATEGORY_LABELS[category] || category,

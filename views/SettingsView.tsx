@@ -746,7 +746,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void; onOpenPrimer?: () =
                                 Cobertura por tela
                             </div>
                             {SCREEN_INTRO_TIP_LIST.map((entry) => (
-                                <div key={entry.view} className="rounded-[18px] border border-white/10 bg-black/16 px-3.5 py-3">
+                                <div key={entry.id} className="rounded-[18px] border border-white/10 bg-black/16 px-3.5 py-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="text-[12px] font-black uppercase tracking-[0.12em] text-white">
                                             {entry.label}

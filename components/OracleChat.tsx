@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useGame } from '../contexts/GameContext';
+import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon, MicIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
 import { Notification, OracleActionDraft, OracleCategory, OracleContext, OracleMode, OraclePremiumHint, OracleResponseKind, OracleResponsePayload, OracleStructuredContext } from '../types';
@@ -450,10 +450,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   }, []);
 
   const openPlannerSitrep = useCallback(() => {
-    dispatchAppView({ view: 'planner' });
-    window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('openSitrep'));
-    }, 220);
+    dispatchAppView({ view: 'planner', openSitrep: true });
   }, []);
 
   const openCycleReview = useCallback(() => {

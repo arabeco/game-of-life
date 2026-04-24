@@ -505,10 +505,11 @@ export const ArenasView: React.FC = () => {
                             actionId: String(row.action_id),
                             date: String(row.date),
                             startTime: Number(row.start_time || 0),
+                            duration: Number(row.duration || 0),
                             completed: Boolean(row.completed),
                             completedAt: row.completed_at ?? null,
                             userId: row.user_id ?? undefined,
-                        } as ScheduledTask;
+                        };
 
                         const nextTasks = tasksByArenaId.get(String(actionArenaId)) || [];
                         nextTasks.push(mappedTask);
@@ -1196,8 +1197,8 @@ export const ArenasView: React.FC = () => {
         () => Object.fromEntries(getArenas().map((arena) => [arena.id, arena])),
         [getArenas]
     );
-    const actionsByArenaRecord = useMemo(
-        () => Object.fromEntries(Array.from(actionsByArenaId.entries())),
+    const actionsByArenaRecord = useMemo<Record<string, Action[]>>(
+        () => Object.fromEntries(Array.from(actionsByArenaId.entries()) as [string, Action[]][]),
         [actionsByArenaId]
     );
     const getOrderedActionsForArena = (arena: Arena, sourceActions?: Action[]) => {

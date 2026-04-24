@@ -41,3 +41,4 @@ export interface CampaignArenaState extends ArenaProgressResult {
 export function calculateArenaProgress(options: ArenaProgressOptions): ArenaProgressResult;
 export function getCampaignArenaStates(options: CampaignArenaStatesOptions): Record<string, CampaignArenaState>;
 export function calculateCampaignProgress(options: CampaignArenaStatesOptions): number;
+export function calculateCampaignProgressSummary(options: CampaignArenaStatesOptions): CampaignProgressSummary;

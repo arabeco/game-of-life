@@ -11,6 +11,7 @@ export interface ArenaAttentionPayload {
 
 export interface AppNavigatePayload {
     view: 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
+    openSitrep?: boolean;
 }
 
 export const ARENA_ATTENTION_EVENT = 'glyph:arena-attention';

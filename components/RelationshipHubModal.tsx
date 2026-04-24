@@ -28,6 +28,7 @@ import {
     SparklesIcon,
     XIcon,
     SendIcon,
+    ChevronRightIcon,
 } from './Icons';
 import { supabase } from '../supabaseClient';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';

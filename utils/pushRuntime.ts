@@ -17,6 +17,13 @@ import { supabase } from '../supabaseClient';
 
 export type AppPushPermission = 'granted' | 'denied' | 'prompt' | 'unsupported';
 
+const mapLocalPermission = (permission: Awaited<ReturnType<typeof getLocalNotificationPermission>>): AppPushPermission => {
+  if (permission === 'granted') return 'granted';
+  if (permission === 'denied') return 'denied';
+  if (permission === 'default') return 'prompt';
+  return 'unsupported';
+};
+
 export type AppPushSyncStatus =
   | WebPushSyncResult['status']
   | 'native_ok'
@@ -218,13 +225,13 @@ const waitForNativePushRegistration = async (): Promise<CapacitorPushToken> => {
 
     const cleanup = async () => {
       try {
-        await registrationHandle.remove();
+        (await registrationHandle).remove();
       } catch (_error) {
         // noop
       }
 
       try {
-        await registrationErrorHandle.remove();
+        (await registrationErrorHandle).remove();
       } catch (_error) {
         // noop
       }
@@ -281,7 +288,7 @@ export const getAppPushSupport = () => {
 
 export const getAppPushPermission = async (): Promise<AppPushPermission> => {
   if (!isCapacitorNativeRuntime()) {
-    return await getLocalNotificationPermission();
+    return mapLocalPermission(await getLocalNotificationPermission());
   }
 
   try {
@@ -294,7 +301,7 @@ export const getAppPushPermission = async (): Promise<AppPushPermission> => {
 
 export const requestAppPushPermission = async (): Promise<AppPushPermission> => {
   if (!isCapacitorNativeRuntime()) {
-    return requestLocalNotificationPermission();
+    return mapLocalPermission(await requestLocalNotificationPermission());
   }
 
   try {

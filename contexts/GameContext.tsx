@@ -1937,8 +1937,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (isCancelled) return;
 
             const now = Date.now();
-            const arenaById = new Map(allArenas.map((arena) => [arena.id, arena] as const));
-            const actionById = new Map(actions.map((action) => [action.id, action] as const));
+            const arenaById = new Map<string, Arena>(allArenas.map((arena) => [arena.id, arena]));
+            const actionById = new Map<string, Action>(actions.map((action) => [action.id, action]));
             let nextCheckDelay = ACTION_REMINDER_RECHECK_MS;
 
             for (const task of tasks) {
@@ -2634,8 +2634,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const fallbackDate = getLocalDateString();
         const startDate = String(rawReport.startDate || row.start_date || row.end_date || fallbackDate);
         const endDate = String(rawReport.endDate || row.end_date || row.start_date || startDate);
-        const rawMetrics = rawReport.metrics && typeof rawReport.metrics === 'object' ? rawReport.metrics : {};
-        const rawHighlight = rawReport.highlight && typeof rawReport.highlight === 'object' ? rawReport.highlight : {};
+        const rawMetrics = rawReport.metrics && typeof rawReport.metrics === 'object'
+            ? rawReport.metrics as Partial<Report['metrics']>
+            : {};
+        const rawHighlight = rawReport.highlight && typeof rawReport.highlight === 'object'
+            ? rawReport.highlight as Partial<Report['highlight']>
+            : {};
 
         return {
             id: String(rawReport.id || row.id),

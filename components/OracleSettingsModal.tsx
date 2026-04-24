@@ -32,7 +32,7 @@ type SettingsTab = 'modos' | 'categorias';
 type ToggleKey = 'iaEnabled' | 'notificationsEnabled' | 'dailyFocusCardEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
 
 const PUSH_PERMISSION_LABEL: Record<AppPushPermission, string> = {
-    default: 'Aguardando permissao',
+    prompt: 'Aguardando permissao',
     granted: 'Permitido no aparelho',
     denied: 'Bloqueado no aparelho',
     unsupported: 'Sem suporte neste aparelho',

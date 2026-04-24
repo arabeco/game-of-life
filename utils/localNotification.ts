@@ -118,9 +118,12 @@ const showBrowserLocalNotification = async ({
     badge: APP_NOTIFICATION_ICON,
     tag,
     requireInteraction,
-    renotify,
     data: { url },
   };
+
+  if (renotify) {
+    (options as NotificationOptions & { renotify?: boolean }).renotify = true;
+  }
 
   try {
     if ('serviceWorker' in navigator) {

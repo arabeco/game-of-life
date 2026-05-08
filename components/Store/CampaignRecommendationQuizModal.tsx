@@ -2,6 +2,7 @@
 import { useGame } from '../../contexts/GameContext';
 import { CodexCatalogItem, UserCodex } from '../../types';
 import { Portal } from '../Portal';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { CATEGORY_LABELS, resolveTemplateCampaignMeta, type CampaignThemeId, type CampaignTypeId } from '../../utils/campaignCatalogMeta';
 import { hasCompletedFreeCampaignQuiz, markFreeCampaignQuizCompleted } from '../../utils/campaignQuiz';
 import './CampaignRecommendationQuiz.css';
@@ -348,13 +349,14 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         });
     }, [ensureCampaignInLibrary, result, shouldConsumeFreeQuizCredit]);
 
-    useEffect(() => {
-        setSelectedOption(answers[currentQuestion.id] ?? null);
-    }, [answers, currentQuestion.id]);
-
     const handleContinue = (optionKey = selectedOption) => {
         if (!optionKey) return;
         const nextAnswers = { ...answers, [currentQuestion.id]: optionKey } as QuizAnswers;
+        if (answers[currentQuestion.id] && answers[currentQuestion.id] !== optionKey) {
+            questions.slice(questionIndex + 1).forEach((question) => {
+                delete nextAnswers[question.id];
+            });
+        }
         setAnswers(nextAnswers);
         if (questionIndex === TOTAL_QUESTIONS - 1) {
             if (quizMode === 'free' && hasStarterFreeQuiz) markFreeCampaignQuizCompleted();
@@ -490,8 +492,25 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                     </div>
                                 </div>
                                 <div className="campaign-quiz-footer">
-                                    <button type="button" onClick={handlePrevious} disabled={questionIndex === 0} className="campaign-quiz-secondary min-w-[10rem] px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-35">Anterior</button>
-                                    <button type="button" onClick={() => handleContinue()} disabled={!selectedOption} className="luxe-skin-button min-w-[12rem] px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40">Continuar</button>
+                                    <button
+                                        type="button"
+                                        onClick={handlePrevious}
+                                        disabled={questionIndex === 0}
+                                        className="campaign-quiz-nav-button campaign-quiz-secondary"
+                                        aria-label="Voltar para pergunta anterior"
+                                        title="Voltar"
+                                    >
+                                        <ArrowLeft aria-hidden="true" size={18} strokeWidth={2.4} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleContinue()}
+                                        disabled={!selectedOption}
+                                        className="campaign-quiz-continue luxe-skin-button"
+                                    >
+                                        <span>Continuar</span>
+                                        <ArrowRight aria-hidden="true" size={16} strokeWidth={2.4} />
+                                    </button>
                                 </div>
                             </section>
                         ) : (

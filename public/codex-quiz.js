@@ -203,6 +203,7 @@ const quizFrame = document.getElementById("quizFrame");
 const progressFill = document.getElementById("progressFill");
 const headerIndex = document.getElementById("headerIndex");
 const headerProgress = document.getElementById("headerProgress");
+const quizClose = document.getElementById("quizClose");
 const catalogModal = document.getElementById("catalogModal");
 const catalogGrid = document.getElementById("catalogGrid");
 const catalogClose = document.getElementById("catalogClose");
@@ -232,6 +233,14 @@ function closeCatalog() {
   catalogModal.setAttribute("aria-hidden", "true");
 }
 
+function closeQuiz() {
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+  window.location.href = "/";
+}
+
 function getQuestion(questionIndex) {
   return questions[questionIndex];
 }
@@ -243,6 +252,11 @@ function getQuestionOptions(question, answers) {
   return question.options || [];
 }
 
+function getValidSavedSelection(question, options) {
+  const saved = state.answers[question.id] || null;
+  return saved && options.some((option) => option.key === saved) ? saved : null;
+}
+
 function updateHeader() {
   const current = Math.min(state.index + 1, TOTAL_QUESTIONS);
   progressFill.style.width = `${(current / TOTAL_QUESTIONS) * 100}%`;
@@ -252,7 +266,8 @@ function updateHeader() {
 
 function buildQuestionScreen(question, answers) {
   const options = getQuestionOptions(question, answers);
-  const selected = state.answers[question.id] || state.currentSelection;
+  const selected = getValidSavedSelection(question, options);
+  state.currentSelection = selected;
   const screen = document.createElement("section");
   screen.className = "screen";
 
@@ -280,11 +295,13 @@ function buildQuestionScreen(question, answers) {
     </div>
 
     <div class="screen-footer">
+      <button class="previous-button" type="button" ${state.index === 0 ? "disabled" : ""} aria-label="Voltar para pergunta anterior" title="Voltar">&larr;</button>
       <button class="continue-button" type="button" ${selected ? "" : "hidden"}>Continuar</button>
     </div>
   `;
 
   const optionButtons = Array.from(screen.querySelectorAll("[data-option-key]"));
+  const previousButton = screen.querySelector(".previous-button");
   const continueButton = screen.querySelector(".continue-button");
 
   optionButtons.forEach((button) => {
@@ -296,7 +313,20 @@ function buildQuestionScreen(question, answers) {
     });
   });
 
+  previousButton.addEventListener("click", () => {
+    if (state.index === 0) return;
+    state.index -= 1;
+    state.currentSelection = null;
+    transitionTo(buildQuestionScreen(getQuestion(state.index), state.answers));
+  });
+
   continueButton.addEventListener("click", () => {
+    if (!state.currentSelection) return;
+    if (state.answers[question.id] && state.answers[question.id] !== state.currentSelection) {
+      questions.slice(state.index + 1).forEach((nextQuestion) => {
+        delete state.answers[nextQuestion.id];
+      });
+    }
     state.answers[question.id] = state.currentSelection;
     state.currentSelection = null;
 
@@ -368,6 +398,8 @@ function transitionTo(nextScreen) {
   quizFrame.appendChild(nextScreen);
 
   requestAnimationFrame(() => {
+    currentScreen.setAttribute("aria-hidden", "true");
+    currentScreen.inert = true;
     currentScreen.classList.add("is-leaving");
     nextScreen.classList.remove("is-entering");
   });
@@ -426,6 +458,7 @@ function startQuiz() {
   transitionTo(buildQuestionScreen(getQuestion(state.index), state.answers));
 }
 
+quizClose.addEventListener("click", closeQuiz);
 catalogClose.addEventListener("click", closeCatalog);
 catalogModal.addEventListener("click", (event) => {
   if (event.target === catalogModal) {

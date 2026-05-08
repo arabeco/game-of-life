@@ -80,12 +80,43 @@ button {
   font-size: 11px;
 }
 
+.header-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.quiz-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 244, 222, 0.92);
+  cursor: pointer;
+  font-size: 1.18rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.quiz-close:hover {
+  border-color: rgba(201, 168, 76, 0.42);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
 .progress-shell {
   position: relative;
   height: 8px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(201, 168, 76, 0.18);
+  border-radius: 999px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -113,6 +144,7 @@ button {
   min-height: min(760px, calc(100vh - 132px));
   overflow: hidden;
   border: 1px solid var(--line);
+  border-radius: 30px;
   background: linear-gradient(145deg, rgba(20, 20, 20, 0.98), rgba(8, 8, 8, 0.92));
   box-shadow: var(--shadow);
 }
@@ -228,6 +260,7 @@ button {
   width: 100%;
   padding: 20px 22px 22px;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr);
@@ -261,6 +294,7 @@ button {
   position: absolute;
   inset: 0;
   border: 1px solid rgba(201, 168, 76, 0.16);
+  border-radius: inherit;
   pointer-events: none;
 }
 
@@ -271,6 +305,7 @@ button {
   width: 52px;
   height: 52px;
   border: 1px solid rgba(201, 168, 76, 0.24);
+  border-radius: 16px;
   color: var(--gold-soft);
   font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   font-size: 1.25rem;
@@ -298,9 +333,11 @@ button {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 12px;
   min-height: 62px;
 }
 
+.previous-button,
 .continue-button,
 .result-primary,
 .result-secondary,
@@ -311,10 +348,23 @@ button {
   transition: transform 180ms ease, background 180ms ease;
 }
 
+.previous-button {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 244, 222, 0.9);
+  font-size: 1.28rem;
+  line-height: 1;
+}
+
 .continue-button,
 .result-primary {
   min-width: 220px;
   padding: 16px 26px;
+  border-radius: 999px;
   background: linear-gradient(135deg, #a37c22 0%, #d9bf70 100%);
   color: #0d0900;
   font-weight: 700;
@@ -324,10 +374,17 @@ button {
 }
 
 .continue-button:hover,
+.previous-button:hover,
 .result-primary:hover,
 .result-secondary:hover,
 .catalog-close:hover {
   transform: translateY(-1px);
+}
+
+.previous-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+  transform: none;
 }
 
 .continue-button[hidden] {
@@ -350,6 +407,7 @@ button {
 
 .result-pill {
   border: 1px solid rgba(201, 168, 76, 0.24);
+  border-radius: 999px;
   padding: 9px 14px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -379,6 +437,7 @@ button {
   margin: 0 auto;
   padding: 16px 18px;
   border: 1px solid rgba(201, 168, 76, 0.18);
+  border-radius: 18px;
   background: rgba(201, 168, 76, 0.06);
   color: var(--muted-strong);
   line-height: 1.6;
@@ -432,6 +491,7 @@ button {
   max-height: min(760px, calc(100vh - 64px));
   overflow: auto;
   border: 1px solid var(--line);
+  border-radius: 30px;
   background: var(--panel-strong);
   padding: 26px;
   box-shadow: var(--shadow);
@@ -464,6 +524,7 @@ button {
   background: rgba(255, 255, 255, 0.04);
   color: var(--muted-strong);
   border: 1px solid rgba(201, 168, 76, 0.18);
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 11px;
@@ -477,6 +538,7 @@ button {
 
 .catalog-card {
   border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
   background: rgba(255, 255, 255, 0.02);
   padding: 18px;
 }
@@ -504,6 +566,7 @@ button {
 .catalog-tag {
   padding: 7px 10px;
   border: 1px solid rgba(201, 168, 76, 0.18);
+  border-radius: 999px;
   color: var(--gold-soft);
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -521,8 +584,13 @@ button {
   }
 
   .quiz-header {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto 1fr;
     gap: 10px;
+  }
+
+  .progress-shell {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 
   .quiz-frame {
@@ -552,15 +620,28 @@ button {
     padding: 16px;
     grid-template-columns: 44px minmax(0, 1fr);
     gap: 14px;
+    border-radius: 18px;
   }
 
   .option-letter {
     width: 44px;
     height: 44px;
+    border-radius: 14px;
   }
 
   .continue-button,
   .result-primary {
     width: 100%;
+  }
+
+  .previous-button {
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+  }
+
+  .continue-button {
+    flex: 1;
+    min-width: 0;
   }
 }

@@ -130,6 +130,7 @@ export const CodexStore: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAssetId, setSelectedAssetId] = useState<string>('all');
     const [selectedCategory, setSelectedCategory] = useState<'all' | CampaignCategoryId>('all');
+    const [areFiltersOpen, setFiltersOpen] = useState(false);
 
     const handleQuizTeaser = () => {
         setRecommendationQuizOpen(true);
@@ -253,6 +254,13 @@ export const CodexStore: React.FC = () => {
             label: assets.find((asset) => asset.id === assetId)?.name || ASSET_FALLBACK_LABELS[assetId],
         }))
     ), [assets]);
+    const activeFilterCount = (selectedAssetId !== 'all' ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0);
+    const activeFilterLabel = [
+        selectedAssetId !== 'all'
+            ? availableAssetFilters.find((asset) => asset.id === selectedAssetId)?.label
+            : null,
+        selectedCategory !== 'all' ? CATEGORY_LABELS[selectedCategory] : null,
+    ].filter(Boolean).join(' / ');
 
     const filteredEntries = useMemo(() => {
         const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -333,15 +341,23 @@ export const CodexStore: React.FC = () => {
                             <div className="rounded-full border border-white/10 bg-black/25 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/75">
                                 {filteredEntries.length}
                             </div>
+                            <button
+                                type="button"
+                                onClick={() => setFiltersOpen((current) => !current)}
+                                className={`inline-flex min-h-[42px] shrink-0 items-center justify-center rounded-xl border px-3 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${areFiltersOpen || activeFilterCount > 0 ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)]' : 'border-white/10 bg-white/5 text-white/78 hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white'}`}
+                                aria-expanded={areFiltersOpen}
+                            >
+                                Filtros{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+                            </button>
                         </div>
 
                         <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
                             <div className="min-w-0 flex-1">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Catálogo premium</div>
-                                <div className="mt-1 text-[11px] leading-relaxed text-white/62">
-                                    {hasMediumQuizCredit
-                                        ? 'Você ainda pode usar sua ficha no quiz ou comprar direto por aqui.'
-                                        : 'Campanhas grátis entram pelo quiz. Aqui ficam as campanhas para compra direta.'}
+                                <div className="mt-1 truncate text-[11px] leading-relaxed text-white/62">
+                                    {activeFilterLabel || (hasMediumQuizCredit
+                                        ? 'Ficha disponível no quiz ou compra direta por ouro.'
+                                        : 'Campanhas grátis entram pelo quiz. Compra direta fica aqui.')}
                                 </div>
                             </div>
                             <button
@@ -358,65 +374,69 @@ export const CodexStore: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="space-y-2">
-                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Ativo principal</div>
-                            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedAssetId('all')}
-                                    className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                >
-                                    Todos
-                                </button>
-                                {availableAssetFilters.map((asset) => (
-                                    <button
-                                        key={asset.id}
-                                        type="button"
-                                        onClick={() => setSelectedAssetId(asset.id)}
-                                        className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === asset.id ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                    >
-                                        {asset.label}
-                                    </button>
-                                ))}
+                        {areFiltersOpen && (
+                            <div className="space-y-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                                <div className="space-y-2">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Ativo principal</div>
+                                    <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedAssetId('all')}
+                                            className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                        >
+                                            Todos
+                                        </button>
+                                        {availableAssetFilters.map((asset) => (
+                                            <button
+                                                key={asset.id}
+                                                type="button"
+                                                onClick={() => setSelectedAssetId(asset.id)}
+                                                className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedAssetId === asset.id ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                            >
+                                                {asset.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Tipo e tema</div>
+                                    <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedCategory('all')}
+                                            className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                        >
+                                            Todas
+                                        </button>
+
+                                        {TYPE_CATEGORY_ORDER.map((categoryId) => (
+                                            <button
+                                                key={categoryId}
+                                                type="button"
+                                                onClick={() => setSelectedCategory(categoryId)}
+                                                className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                            >
+                                                {CATEGORY_LABELS[categoryId]}
+                                            </button>
+                                        ))}
+
+                                        <span className="my-1 w-px shrink-0 rounded-full bg-white/10" aria-hidden="true" />
+
+                                        {THEME_CATEGORY_ORDER.map((categoryId) => (
+                                            <button
+                                                key={categoryId}
+                                                type="button"
+                                                onClick={() => setSelectedCategory(categoryId)}
+                                                className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
+                                            >
+                                                {CATEGORY_LABELS[categoryId]}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Tipo e tema</div>
-                            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedCategory('all')}
-                                    className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === 'all' ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                >
-                                    Todas
-                                </button>
-
-                                {TYPE_CATEGORY_ORDER.map((categoryId) => (
-                                    <button
-                                        key={categoryId}
-                                        type="button"
-                                        onClick={() => setSelectedCategory(categoryId)}
-                                        className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                    >
-                                        {CATEGORY_LABELS[categoryId]}
-                                    </button>
-                                ))}
-
-                                <span className="my-1 w-px shrink-0 rounded-full bg-white/10" aria-hidden="true" />
-
-                                {THEME_CATEGORY_ORDER.map((categoryId) => (
-                                    <button
-                                        key={categoryId}
-                                        type="button"
-                                        onClick={() => setSelectedCategory(categoryId)}
-                                        className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] whitespace-nowrap transition-all ${selectedCategory === categoryId ? 'luxe-skin-button' : 'luxe-button-secondary'}`}
-                                    >
-                                        {CATEGORY_LABELS[categoryId]}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </GlassCard>
 

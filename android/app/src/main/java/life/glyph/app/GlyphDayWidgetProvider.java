@@ -86,13 +86,13 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
 
             if (!hasCycle) {
                 return new DayCopy(
-                    "RESUMO DO DIA",
+                    "PAINEL DIARIO",
                     "Sem ciclo ativo",
                     "0 feitas",
                     "0 programadas",
                     "0 estoque",
                     checklistDone + "/" + checklistTotal + " checklist",
-                    "Crie um ciclo para ativar seu SITREP",
+                    "Crie um ciclo para ativar o painel diario",
                     0
                 );
             }
@@ -102,7 +102,7 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
             }
 
             return new DayCopy(
-                "RESUMO DO DIA",
+                "PAINEL DIARIO",
                 trim(cycleName.isEmpty() ? stage : cycleName + " - " + stage, 38),
                 completed + " feitas",
                 total + " programadas",
@@ -112,7 +112,7 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
                 progress
             );
         } catch (Exception _error) {
-            return new DayCopy("RESUMO DO DIA", "Widget sincronizando", "--", "--", "--", "--", "Abra o GLYPH para atualizar", 0);
+            return new DayCopy("PAINEL DIARIO", "Widget sincronizando", "--", "--", "--", "--", "Abra o GLYPH para atualizar", 0);
         }
     }
 
@@ -164,7 +164,7 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
         }
 
         static DayCopy loggedOut() {
-            return new DayCopy("RESUMO DO DIA", "Aguardando login", "--", "--", "--", "--", "Abra o app para sincronizar", 0);
+            return new DayCopy("PAINEL DIARIO", "Aguardando login", "--", "--", "--", "--", "Abra o app para sincronizar", 0);
         }
     }
 }

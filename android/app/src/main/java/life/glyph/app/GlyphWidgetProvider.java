@@ -78,28 +78,36 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             }
 
             JSONObject root = new JSONObject(raw);
+            JSONObject cycle = root.optJSONObject("cycle");
             JSONObject daily = root.optJSONObject("daily");
-            if (daily == null) {
+            if (daily == null && cycle == null) {
                 return WidgetCopy.loggedOut();
             }
 
-            boolean hasCycle = daily.optBoolean("hasCycle", false);
+            boolean hasCycle = cycle != null || daily.optBoolean("hasCycle", false);
             if (!hasCycle) {
                 return WidgetCopy.noCycle();
             }
 
-            String cycleName = safeString(daily, "cycleName");
+            JSONObject source = cycle != null ? cycle : daily;
+            String cycleName = cycle != null ? safeString(source, "name") : safeString(source, "cycleName");
             String title = cycleName.isEmpty() ? DEFAULT_TITLE : cycleName;
-            String dayLabel = safeString(daily, "cycleDayLabel");
+            String dayLabel = cycle != null ? safeString(source, "timingLabel") : safeString(source, "cycleDayLabel");
             String subtitle = dayLabel.isEmpty() ? "Ciclo ativo" : dayLabel;
-            String startDate = formatDate(safeString(daily, "cycleStartDate"));
-            String endDate = formatDate(safeString(daily, "cycleEndDate"));
-            int completed = daily.optInt("completedAllCount", daily.optInt("completedCount", 0));
-            int total = daily.optInt("totalAllCount", daily.optInt("totalCount", 0));
-            int progressPercent = clamp((int) Math.round(daily.optDouble("progressPercent", 0)));
-            int timeProgress = clamp((int) Math.round(daily.optDouble("timeProgressPercent", 0)));
-            int elapsedDays = daily.optInt("cycleElapsedDays", 0);
-            int totalDays = daily.optInt("cycleTotalDays", 0);
+            String startDate = formatDate(cycle != null ? safeString(source, "startDate") : safeString(source, "cycleStartDate"));
+            String endDate = formatDate(cycle != null ? safeString(source, "endDate") : safeString(source, "cycleEndDate"));
+            int completed = cycle != null
+                ? source.optInt("completedTaskCount", 0)
+                : source.optInt("completedAllCount", source.optInt("completedCount", 0));
+            int total = cycle != null
+                ? source.optInt("totalTaskCount", 0)
+                : source.optInt("totalAllCount", source.optInt("totalCount", 0));
+            int progressPercent = total > 0
+                ? clamp((int) Math.round(source.optDouble(cycle != null ? "taskProgressPercent" : "progressPercent", 0)))
+                : 0;
+            int timeProgress = clamp((int) Math.round(source.optDouble("timeProgressPercent", 0)));
+            int elapsedDays = cycle != null ? source.optInt("elapsedDays", 0) : source.optInt("cycleElapsedDays", 0);
+            int totalDays = cycle != null ? source.optInt("totalDays", 0) : source.optInt("cycleTotalDays", 0);
             String period = !startDate.isEmpty() && !endDate.isEmpty() && totalDays > 0
                 ? startDate + "-" + endDate + " (" + totalDays + " dias)"
                 : endDate;

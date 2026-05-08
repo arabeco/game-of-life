@@ -442,6 +442,13 @@ export const buildOracleAwareDailyWidgetSnapshot = ({
   oracleMessages: OracleMessage[];
   nowDate?: Date;
 }) => ({
+  cycle: buildCycleWidgetSnapshot({
+    cycle: activeCycle,
+    tasks,
+    actions,
+    arenas,
+    todayDate: nowDate ? getOperationalDateString(nowDate) : undefined,
+  }),
   daily: buildDailyWidgetSnapshot({
     activeCycle,
     dailyCommitment,

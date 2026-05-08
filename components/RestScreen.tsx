@@ -16,6 +16,7 @@ import { FocusAudioPlayer } from './FocusAudioPlayer';
 import { REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
 import { showLocalNotification } from '../utils/localNotification';
 import { buildActionSessionWidgetSnapshot } from '../utils/widgetSnapshots';
+import { buildLocalDateFromString } from '../utils/operationalDay';
 import { EmojiGlyph } from './EmojiGlyph';
 import { SKINS_DATA, BORDERS_DATA } from '../constants';
 
@@ -412,6 +413,24 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
     const checklistDoneCount = checklistItems.filter(item => item.completed).length;
     const checklistTotalCount = checklistItems.length;
+    const dailyCommittedTasks = React.useMemo(() => {
+        const committedIds = new Set(dailyCommitment?.taskIds || []);
+        return tasks.filter((task) => committedIds.has(task.id));
+    }, [dailyCommitment?.taskIds, tasks]);
+    const dailyDoneCount = dailyCommittedTasks.filter((task) => task.completed).length;
+    const dailyOpenCount = Math.max(0, dailyCommittedTasks.length - dailyDoneCount);
+    const dailyCommandLabel = currentTime
+        .toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })
+        .replace('.', '')
+        .replace(/^\w/, (letter) => letter.toUpperCase());
+    const dailyOpenLabel = `${dailyOpenCount} ${dailyOpenCount === 1 ? 'ação disponível' : 'ações disponíveis'}`;
+    const dailyDoneLabel = `${dailyDoneCount} ${dailyDoneCount === 1 ? 'feita' : 'feitas'}`;
+    const dailyPanelSummary = `HOJE · ${dailyCommandLabel} · ${dailyOpenLabel} · ${dailyDoneLabel}`;
+    const handleDailyPanelOpen = () => {
+        if (isSitrepLocked) {
+            setIsSitrepLocked(false);
+        }
+    };
 
     const [showCancelButton, setShowCancelButton] = useState(false);
     const cancelAnimationFrameRef = useRef<number | null>(null);
@@ -729,8 +748,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     // Calculate Cycle Progress
     const getCycleProgress = () => {
         if (!activeCycle) return 0;
-        const start = new Date(activeCycle.startDate).getTime();
-        const end = new Date(activeCycle.endDate).getTime();
+        const start = buildLocalDateFromString(activeCycle.startDate, 0).getTime();
+        const end = buildLocalDateFromString(activeCycle.endDate, 23, 59).getTime();
         const now = new Date().getTime();
         const total = end - start;
         const current = now - start;
@@ -738,7 +757,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     };
 
     const cycleProgress = getCycleProgress();
-    const daysLeft = activeCycle ? Math.ceil((new Date(activeCycle.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+    const daysLeft = activeCycle ? Math.ceil((buildLocalDateFromString(activeCycle.endDate, 23, 59).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
     const actionSessionProgressPercent = actionSessionSnapshot?.progressPercent ?? 0;
 
     if (actionSession) {
@@ -977,11 +996,12 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 style={{ touchAction: 'none', background: 'var(--app-background)' }} // Prevent scrolling
             >
                 {/* Sephirot Fog Background */}
-                <div className="absolute inset-0 z-0 pointer-events-none" style={{ opacity: isBasicMode ? (isLightTheme ? 0.12 : 0.22) : 0.6 }}>
+                <div className="absolute inset-0 z-0 pointer-events-none" style={{ opacity: isBasicMode ? (isLightTheme ? 0.1 : 0.18) : 0.42 }}>
                     <SephirotFog
-                        points={[{ x: 50, y: 50, level: 10 }]}
+                        points={[{ x: 50, y: 52, level: 8 }]}
                         color={isBasicMode ? (isLightTheme ? 'rgba(108, 125, 146, 0.55)' : 'rgba(176, 194, 214, 0.36)') : (currentMood?.color || 'var(--skin-accent-color)')}
                         mode="arena"
+                        alphaMaxOverride={isBasicMode ? 0.12 : 0.2}
                     />
                 </div>
 
@@ -1009,8 +1029,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     />
 
                     {/* Floating Blur Layers */}
-                    <div className={`absolute top-1/4 -left-20 rounded-full blur-[100px] animate-float ${isBasicMode ? 'w-56 h-56' : 'w-64 h-64 bg-[var(--skin-accent-color)]/10'}`} style={isBasicMode ? { background: isLightTheme ? 'rgba(145, 161, 181, 0.12)' : 'rgba(173, 189, 208, 0.08)' } : undefined} />
-                    <div className={`absolute bottom-1/4 -right-20 rounded-full blur-[120px] animate-float-delayed ${isBasicMode ? 'w-72 h-72' : 'w-80 h-80 bg-[var(--skin-accent-color)]/10'}`} style={isBasicMode ? { background: isLightTheme ? 'rgba(130, 146, 166, 0.10)' : 'rgba(160, 177, 198, 0.08)' } : undefined} />
+                    <div className={`absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[96px] animate-float ${isBasicMode ? 'w-56 h-56' : 'w-64 h-64 bg-[var(--skin-accent-color)]/8'}`} style={isBasicMode ? { background: isLightTheme ? 'rgba(145, 161, 181, 0.10)' : 'rgba(173, 189, 208, 0.07)' } : undefined} />
+                    <div className={`absolute left-1/2 top-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px] animate-float-delayed ${isBasicMode ? 'w-64 h-64' : 'w-72 h-72 bg-[var(--skin-accent-color)]/7'}`} style={isBasicMode ? { background: isLightTheme ? 'rgba(130, 146, 166, 0.08)' : 'rgba(160, 177, 198, 0.06)' } : undefined} />
 
                     {/* Texture Overlay */}
                     <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]" />
@@ -1108,48 +1128,65 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
 
                 {/* Center Section: Painel Diário (Main Focus) */}
-                <div className="flex-1 flex flex-col items-center justify-start w-full max-w-md px-4 z-10 animate-fade-in overflow-hidden h-full min-h-0 mb-2">
-                    <div className="relative w-full h-full flex flex-col group">
+                <div className="flex-1 flex min-h-0 w-full items-center justify-center px-4 pb-2 z-10 animate-fade-in overflow-hidden">
+                    <div className={`relative flex w-full flex-col group transition-[max-width,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-w-[21rem] translate-y-1' : 'max-w-md translate-y-0'}`}>
                         {/* Decorative background glow */}
-                        <div className="absolute inset-0 rounded-3xl -z-10 bg-black/20 blur-2xl transition-all duration-500" />
+                        <div className={`absolute rounded-3xl -z-10 bg-black/20 blur-2xl transition-all duration-500 ${isSitrepLocked ? 'inset-x-6 inset-y-0 opacity-60' : 'inset-0 opacity-90'}`} />
 
                         <GlassCard
                             id="sitrep-embedded-card"
                             variant="neutral"
-                            className="restscreen-neutral-shell rounded-[2rem] p-4 flex flex-col gap-2 shadow-2xl relative overflow-hidden h-full"
+                            className={`restscreen-neutral-shell rounded-[2rem] flex flex-col gap-2 shadow-2xl relative overflow-hidden transition-[max-height,padding,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'p-3 max-h-[5.2rem]' : 'p-4 max-h-[min(76vh,42rem)]'}`}
                         >
                             {/* Header / Lock Control */}
-                            <div className="flex items-center justify-between border-b border-white/8 pb-2 shrink-0">
-                                <div className="flex items-center gap-2">
-                                    <div className="restscreen-neutral-pill w-8 h-8 rounded-xl flex items-center justify-center">
-                                        <CheckCircleIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                            {isSitrepLocked ? (
+                                <button
+                                    type="button"
+                                    onClick={handleDailyPanelOpen}
+                                    className="group/daily relative w-full overflow-hidden rounded-[1.35rem] border border-white/10 bg-black/28 px-3.5 py-3 text-left transition-all duration-300 ease-out hover:border-[var(--skin-accent-color)]/34 hover:bg-black/40 active:scale-[0.99]"
+                                >
+                                    <div className="absolute inset-x-0 bottom-0 h-[2px] bg-[linear-gradient(90deg,transparent,rgba(212,175,55,0.72),transparent)] opacity-70 transition-opacity group-hover/daily:opacity-100" />
+                                    <div className="flex min-w-0 items-center gap-2">
+                                        <LockIcon className="h-3.5 w-3.5 shrink-0 text-[var(--skin-accent-color)]/85" />
+                                        <span className="min-w-0 truncate text-[10px] font-black uppercase tracking-[0.12em] text-white/82">
+                                            {dailyPanelSummary}
+                                        </span>
+                                        <ArrowRightIcon className="ml-auto h-3.5 w-3.5 shrink-0 text-white/42 transition-transform group-hover/daily:translate-x-0.5" />
                                     </div>
-                                    <div>
-                                        <h2 className="restscreen-neutral-label text-[10px] font-black uppercase tracking-[0.2em]">PAINEL DIÁRIO</h2>
-                                        <div className="restscreen-neutral-title text-xs font-bold uppercase tracking-wider">
-                                            {dailyCommitment.stage === 'planning' ? 'Planejamento' : dailyCommitment.stage === 'battle' ? 'Combate' : 'Julgamento'}
+                                </button>
+                            ) : (
+                                <div className="flex items-center justify-between border-b border-white/8 pb-2 shrink-0 transition-all duration-300 ease-out animate-fade-in">
+                                    <div className="flex items-center gap-2">
+                                        <div className="restscreen-neutral-pill w-8 h-8 rounded-xl flex items-center justify-center">
+                                            <CheckCircleIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                                        </div>
+                                        <div>
+                                            <h2 className="restscreen-neutral-label text-[10px] font-black uppercase tracking-[0.2em]">PAINEL DIÁRIO</h2>
+                                            <div className="restscreen-neutral-title text-xs font-bold uppercase tracking-wider">
+                                                {dailyCommitment.stage === 'planning' ? 'Planejamento' : dailyCommitment.stage === 'battle' ? 'Combate' : 'Julgamento'}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center gap-3">
-                                    <div className={`restscreen-neutral-pill hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] sm:flex ${isSitrepLocked ? 'text-gray-300' : 'text-[var(--skin-accent-color)]'}`}>
-                                        {isSitrepLocked ? <EyeIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
-                                        <span>{sitrepStatusLabel}</span>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`restscreen-neutral-pill hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] sm:flex ${isSitrepLocked ? 'text-gray-300' : 'text-[var(--skin-accent-color)]'}`}>
+                                            {isSitrepLocked ? <EyeIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
+                                            <span>{sitrepStatusLabel}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => setIsSitrepLocked(!isSitrepLocked)}
+                                            className={`restscreen-neutral-pill inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all hover:bg-black/70 ${isSitrepLocked ? 'text-white' : 'text-[var(--skin-accent-color)]'}`}
+                                        >
+                                            {isSitrepLocked ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
+                                            <span className="text-[9px] font-black uppercase tracking-[0.18em]">{sitrepStatusLabel}</span>
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => setIsSitrepLocked(!isSitrepLocked)}
-                                        className={`restscreen-neutral-pill inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all hover:bg-black/70 ${isSitrepLocked ? 'text-white' : 'text-[var(--skin-accent-color)]'}`}
-                                    >
-                                        {isSitrepLocked ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
-                                        <span className="text-[9px] font-black uppercase tracking-[0.18em]">{sitrepStatusLabel}</span>
-                                    </button>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Content Area */}
-                            <div className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-300 ${isSitrepLocked ? 'opacity-65 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
-                                <SitrepContent />
+                            <div className={`overflow-y-auto custom-scrollbar transition-[max-height,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-h-0 scale-y-95 translate-y-[-8px] opacity-0 pointer-events-none' : 'flex-1 max-h-[calc(min(76vh,42rem)-5.5rem)] scale-y-100 translate-y-0 opacity-100 pointer-events-auto'}`}>
+                                {!isSitrepLocked && <SitrepContent />}
                             </div>
                         </GlassCard>
                     </div>

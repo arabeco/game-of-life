@@ -92,6 +92,7 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             String title = cycleName.isEmpty() ? DEFAULT_TITLE : cycleName;
             String dayLabel = safeString(daily, "cycleDayLabel");
             String subtitle = dayLabel.isEmpty() ? "Ciclo ativo" : dayLabel;
+            String startDate = formatDate(safeString(daily, "cycleStartDate"));
             String endDate = formatDate(safeString(daily, "cycleEndDate"));
             int completed = daily.optInt("completedAllCount", daily.optInt("completedCount", 0));
             int total = daily.optInt("totalAllCount", daily.optInt("totalCount", 0));
@@ -99,23 +100,24 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             int timeProgress = clamp((int) Math.round(daily.optDouble("timeProgressPercent", 0)));
             int elapsedDays = daily.optInt("cycleElapsedDays", 0);
             int totalDays = daily.optInt("cycleTotalDays", 0);
-            int arenaCount = daily.optInt("activeArenaCount", 0);
-            String meta = arenaCount > 0 ? arenaCount + " arena" + (arenaCount == 1 ? "" : "s") : "";
+            String period = !startDate.isEmpty() && !endDate.isEmpty() && totalDays > 0
+                ? startDate + "-" + endDate + " (" + totalDays + " dias)"
+                : endDate;
             String day = elapsedDays > 0 && totalDays > 0 ? "Dia " + elapsedDays + "/" + totalDays : subtitle;
 
             return new WidgetCopy(
                 trim(title.toUpperCase(), 28),
                 day,
-                endDate.isEmpty() ? "ABRIR" : endDate,
-                trim(meta, 42),
-                completed + "/" + total,
-                progressPercent + "%",
+                period.isEmpty() ? "ABRIR" : period,
+                "",
+                "Progresso",
+                completed + "/" + total + " (" + progressPercent + "%)",
                 "Tempo",
-                timeProgress + "%",
+                elapsedDays + "/" + totalDays + " (" + timeProgress + "%)",
                 progressPercent,
                 timeProgress,
-                true,
-                !meta.isEmpty(),
+                false,
+                false,
                 true
             );
         } catch (Exception _error) {

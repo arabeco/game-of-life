@@ -47,6 +47,37 @@ const sortTasksByUrgency = (tasks: ScheduledTask[]) => {
   });
 };
 
+const parseLocalDate = (dateString: string): Date | null => {
+  const [year, month, day] = String(dateString || '').split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
+const diffLocalDays = (fromDateString: string, toDateString: string): number | null => {
+  const from = parseLocalDate(fromDateString);
+  const to = parseLocalDate(toDateString);
+  if (!from || !to) return null;
+  return Math.round((to.getTime() - from.getTime()) / 86400000);
+};
+
+const getActionCycleWeight = (action: Action): number => {
+  if (action.actionType === 'Marco') return 1;
+  if (action.actionType === 'Livre') return 1;
+  return Math.max(1, Math.floor(Number(action.repetitions || 1)));
+};
+
+const resolveCyclePace = (
+  completionPercent: number | null,
+  expectedPercent: number | null,
+): OracleContext['cyclePace'] => {
+  if (completionPercent === null || expectedPercent === null) return null;
+  const delta = completionPercent - expectedPercent;
+  if (delta >= 10) return 'adiantado';
+  if (delta >= -10) return 'no_ritmo';
+  if (delta >= -25) return 'atrasado';
+  return 'critico';
+};
+
 const buildNextMove = ({
   hasCycle,
   needsFirstArena,
@@ -136,28 +167,45 @@ export const buildOracleOperationalContext = ({
     ? filterCycleTasksByScope(tasks, actions, activeCycle, activeCycle.startDate, effectiveCycleEnd)
     : [];
   const completedCycleTasks = cycleTasks.filter((task) => task.completed);
-  const completedActionsInCycle = new Set(completedCycleTasks.map((task) => task.actionId)).size;
+  const completedActionsInCycle = completedCycleTasks.length;
+
+  const cycleArenaIds = new Set(activeCycle?.arenaIds || []);
+  const cycleActions = activeCycle
+    ? actions.filter((action) => cycleArenaIds.has(action.arenaId))
+    : [];
+  const cycleTotalActions = cycleActions.reduce((sum, action) => sum + getActionCycleWeight(action), 0);
+  const cycleCompletedActions = Math.min(cycleTotalActions || completedCycleTasks.length, completedCycleTasks.length);
+  const cyclePendingActions = Math.max(0, cycleTotalActions - cycleCompletedActions);
 
   const cycleTotalDays = activeCycle
-    ? Math.max(1, Math.round((new Date(activeCycle.endDate).getTime() - new Date(activeCycle.startDate).getTime()) / 86400000) + 1)
+    ? Math.max(1, (diffLocalDays(activeCycle.startDate, activeCycle.endDate) ?? 0) + 1)
     : null;
   const cycleDayNumber = activeCycle
     ? Math.min(
         cycleTotalDays || 1,
-        Math.max(1, Math.round((new Date(operationalDate).getTime() - new Date(activeCycle.startDate).getTime()) / 86400000) + 1),
+        Math.max(1, (diffLocalDays(activeCycle.startDate, operationalDate) ?? 0) + 1),
       )
+    : null;
+  const cycleDaysRemaining = activeCycle && cycleDayNumber && cycleTotalDays
+    ? Math.max(0, cycleTotalDays - cycleDayNumber)
     : null;
 
   const expectedCycleProgress = activeCycle && cycleDayNumber && cycleTotalDays
     ? Math.round((cycleDayNumber / cycleTotalDays) * 100)
     : null;
+  const effectiveCycleProgress = typeof cycleProgress === 'number' ? cycleProgress : null;
+  const cycleCompletionDelta = expectedCycleProgress !== null && effectiveCycleProgress !== null
+    ? effectiveCycleProgress - expectedCycleProgress
+    : null;
+  const cyclePace = resolveCyclePace(effectiveCycleProgress, expectedCycleProgress);
 
   let cycleRisk: OracleContext['cycleRisk'] = 'baixo';
-  if (!activeCycle || pendingTodayTasks.length >= 5 || overdueTasks.length >= 3) {
+  if (!activeCycle || cyclePace === 'critico' || pendingTodayTasks.length >= 5 || overdueTasks.length >= 3) {
     cycleRisk = 'alto';
   } else if (
     overdueTasks.length > 0 ||
-    (expectedCycleProgress !== null && cycleProgress !== null && cycleProgress < expectedCycleProgress - 15)
+    cyclePace === 'atrasado' ||
+    (expectedCycleProgress !== null && effectiveCycleProgress !== null && effectiveCycleProgress < expectedCycleProgress - 15)
   ) {
     cycleRisk = 'medio';
   }
@@ -201,9 +249,19 @@ export const buildOracleOperationalContext = ({
     currentTime: now.toISOString(),
     timeOfDay: getTimeOfDay(now),
     hasCycle: !!activeCycle,
+    cycleName: activeCycle?.name || null,
+    cycleStartDate: activeCycle?.startDate || null,
+    cycleEndDate: activeCycle?.endDate || null,
     cycleDayNumber,
     cycleTotalDays,
-    cycleCompletionPercent: typeof cycleProgress === 'number' ? cycleProgress : null,
+    cycleDaysRemaining,
+    cycleCompletionPercent: effectiveCycleProgress,
+    expectedCycleCompletionPercent: expectedCycleProgress,
+    cycleCompletionDelta,
+    cyclePace,
+    cycleTotalActions,
+    cycleCompletedActions,
+    cyclePendingActions,
     hasArenas: activeArenas.length > 0,
     totalArenas: activeArenas.length,
     arenaNames: activeArenas.map((arena) => arena.name),

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BORDERS_DATA, SKINS_DATA } from '../constants';
 
 interface UserAvatarProps {
@@ -25,6 +25,9 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     imgProps
 }) => {
     const selectedBorder = borderId ? [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === borderId) : null;
+    const normalizedAvatarUrl = avatarUrl?.trim();
+    const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
+    const canRenderAvatar = Boolean(normalizedAvatarUrl && failedAvatarUrl !== normalizedAvatarUrl);
 
     return (
         <div className={`relative ${className} flex-shrink-0 animate-fade-in`}>
@@ -33,8 +36,18 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
                 className={`absolute inset-[10%] rounded-full bg-gray-800 overflow-hidden ${!selectedBorder && showBorder ? 'border-4' : ''}`}
                 style={{ borderColor: borderColor || 'var(--skin-accent-color)' }}
             >
-                {avatarUrl ? (
-                    <img src={avatarUrl} alt={nickname} className="w-full h-full object-cover" {...imgProps} />
+                {canRenderAvatar && normalizedAvatarUrl ? (
+                    <img
+                        src={normalizedAvatarUrl}
+                        alt={nickname}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        {...imgProps}
+                        onError={(event) => {
+                            setFailedAvatarUrl(normalizedAvatarUrl);
+                            imgProps?.onError?.(event);
+                        }}
+                    />
                 ) : (
                     <div className="w-full h-full bg-gray-700 flex items-center justify-center font-bold text-gray-400 select-none text-sm">
                         {nickname ? nickname.substring(0, 2).toUpperCase() : '??'}

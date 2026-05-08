@@ -67,8 +67,9 @@ export function buildActionPoolByDate(
     actions: Action[],
     taskPool: TaskPoolItemLike[],
     tasks: ScheduledTask[],
-    date: string,
+    date: string | null,
     trackedTaskIds?: string[],
+    consumePoolTasks?: boolean,
 ): ActionPoolByDate;
 
 export function buildSitrepStockOptions(

@@ -6,7 +6,6 @@ import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash
 import { IconPickerModal } from './IconPickerModal';
 import { WheelPicker } from './inputs/WheelPicker';
 import { ImageUploadSlot } from './inputs/ImageUploadSlot';
-import { SelectionModal } from './SelectionModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
@@ -198,6 +197,38 @@ const PLANNER_MATRIX_OPTIONS: Array<{
     { value: 'nuni', label: 'NUNI', title: 'Não urgente + Não importante' },
 ];
 
+const ACTION_TYPE_CHOICES: Array<{
+    value: ActionType;
+    title: string;
+    subtitle: string;
+    glyph: string;
+}> = [
+    {
+        value: 'Ação Recorrente',
+        title: 'Recorrente',
+        subtitle: 'Com contador',
+        glyph: '↻',
+    },
+    {
+        value: 'Compromisso',
+        title: 'Compromisso',
+        subtitle: 'Data e hora',
+        glyph: '⌚',
+    },
+    {
+        value: 'Marco',
+        title: 'Marco',
+        subtitle: 'Objetivo único',
+        glyph: '◆',
+    },
+    {
+        value: 'Livre',
+        title: 'Livre',
+        subtitle: 'Sem contador',
+        glyph: '+',
+    },
+];
+
 const ActionSectionCard: React.FC<{ title?: string; subtitle?: string; children: React.ReactNode; className?: string }> = ({ title, subtitle, children, className = '' }) => (
     <div className={`rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.18))] px-3 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.16)] ${className}`}>
         {(title || subtitle) && (
@@ -333,7 +364,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
 
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
-    const [isActionTypePickerOpen, setIsActionTypePickerOpen] = useState(false);
     const [isArenaPickerOpen, setIsArenaPickerOpen] = useState(false);
     const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -359,6 +389,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const isLockedFromSource = isSeasonLockedAction;
     const canEditAuthorialContent = !disableAuthoring && !isInstalledCampaignAction && !isSeasonLockedAction;
     const canEditExecutionSettings = !isSeasonLockedAction;
+    const canEditActionType = !disableAuthoring && canEditExecutionSettings;
     const canUsePlannerMatrix = Boolean(userProfile?.isPremium || userProfile?.role === 'admin' || userProfile?.role === 'gm');
     const isDetachedCollaborativeArena = collaborativeLinkedArena;
     const collaborativePersistUserId = collaborativeOwnerUserId || null;
@@ -927,7 +958,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             setStartTime(null);
             setSelectedDate(null);
         }
-        setIsActionTypePickerOpen(false);
+        if (type === 'Compromisso' && !selectedDate) {
+            setSelectedDate(new Date());
+        }
         handleTutorialNextFormStep(FIRST_USE_ONBOARDING_EVENTS.actionTypeSelected, { actionType: type });
     }
     const handleArenaSelect = (id: string) => {
@@ -1101,8 +1134,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const difficultyLabels = ['LAZER', 'LEVE', 'MÉDIA', 'ALTA'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
-    const actionTypeOptions: ActionType[] = ['Ação Recorrente', 'Compromisso', 'Marco', 'Livre'];
-
     useEffect(() => {
         if (advancedSubTab !== 'note' || mode !== 'view') {
             setIsBriefingReaderOpen(false);
@@ -1527,6 +1558,25 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    {!isLockedFromSource && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={requestActionBaseEdit}
+                                                            className="w-full rounded-[18px] border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/8 px-4 py-3 text-left transition-colors hover:bg-[var(--skin-accent-color)]/12"
+                                                        >
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <div>
+                                                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]/90">
+                                                                        Mudar tipo da acao
+                                                                    </div>
+                                                                    <div className="mt-1 text-[12px] leading-relaxed text-white/68">
+                                                                        Abra a acao base para trocar recorrente, compromisso, marco ou livre.
+                                                                    </div>
+                                                                </div>
+                                                                <ChevronRightIcon className="h-4 w-4 shrink-0 text-white/44" />
+                                                            </div>
+                                                        </button>
+                                                    )}
 
                                                     <StyledRangeInput
                                                         label="Duração desta ocorrência"
@@ -1619,19 +1669,123 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     </p>
                                                 )}
 
-                                                <button
-                                                    id="onboarding-action-type-button"
-                                                    onClick={() => canEditAuthorialContent && setIsActionTypePickerOpen(true)}
-                                                    disabled={!canEditAuthorialContent}
-                                                    className="w-full p-3 bg-black/28 rounded-xl flex justify-between items-center text-left hover:bg-black/34 transition-colors border border-[var(--glass-border)] disabled:cursor-not-allowed disabled:opacity-60"
-                                                >
-                                                    <span className="text-sm">{(editableAction.actionType || 'Ação Recorrente') === 'Livre' ? 'Livre (sem alvo)' : (editableAction.actionType || 'Ação Recorrente')}</span>
-                                                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-                                                </button>
+                                                <div id="onboarding-action-type-button" className="space-y-2">
+                                                    <div className="flex items-center justify-between px-1">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/42">Tipo da ação</span>
+                                                        <span className="text-[10px] font-semibold text-white/36">Livre = sem contador</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {ACTION_TYPE_CHOICES.map(choice => {
+                                                            const selected = (editableAction.actionType || 'Ação Recorrente') === choice.value;
+                                                            return (
+                                                                <button
+                                                                    key={choice.value}
+                                                                    type="button"
+                                                                    onClick={() => canEditActionType && handleActionTypeChange(choice.value)}
+                                                                    disabled={!canEditActionType}
+                                                                    className={`min-h-[58px] rounded-xl border px-2.5 py-2 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selected
+                                                                        ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/16 shadow-[0_0_18px_rgba(240,200,67,0.12)]'
+                                                                        : 'border-[var(--glass-border)] bg-black/24 hover:border-white/20 hover:bg-black/32'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-sm font-black ${selected ? 'border-[var(--skin-accent-color)]/70 bg-black/30 text-[var(--skin-accent-color)]' : 'border-white/10 bg-white/[0.03] text-white/50'}`}>
+                                                                            {choice.glyph}
+                                                                        </span>
+                                                                        <div className="min-w-0">
+                                                                            <div className={`truncate text-[12px] font-black ${selected ? 'text-white' : 'text-white/78'}`}>{choice.title}</div>
+                                                                            <div className={`truncate text-[10px] font-semibold ${selected ? 'text-[var(--skin-accent-color)]/85' : 'text-white/38'}`}>{choice.subtitle}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
                                                 {editableAction.actionType === 'Livre' && (
                                                     <p className="px-1 text-[11px] leading-relaxed text-white/60">
-                                                        Acao livre nao pede alvo numerico. Ela fica pronta para registrar quando quiser, sem cair em horario fixo.
+                                                        Ação livre não usa repetições. Ela fica pronta para registrar quando quiser, sem cair em horário fixo.
                                                     </p>
+                                                )}
+
+                                                {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
+                                                    <div className="rounded-[18px] border border-white/10 bg-black/18 px-3 py-3 space-y-3">
+                                                        <div className="flex items-center justify-between px-1">
+                                                            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/42">
+                                                                {editableAction.actionType === 'Compromisso' ? 'Quando acontece' : 'Ritmo da ação'}
+                                                            </span>
+                                                            <span className="text-[10px] font-semibold text-white/36">
+                                                                {editableAction.actionType === 'Compromisso' ? 'cria 1 ocorrência' : 'opcional'}
+                                                            </span>
+                                                        </div>
+
+                                                        {editableAction.actionType === 'Ação Recorrente' && (
+                                                            <div>
+                                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da semana</label>
+                                                                <div className="grid grid-cols-7 gap-1 mt-1">
+                                                                    {week.map(day => (
+                                                                        <DayToggle
+                                                                            key={day}
+                                                                            day={day}
+                                                                            selected={selectedDays.includes(day)}
+                                                                            onClick={() => handleDayToggle(day)}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {editableAction.actionType === 'Compromisso' && (
+                                                            <div>
+                                                                <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data</label>
+                                                                <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
+                                                                        <span className="text-sm">{selectedDate ? selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
+                                                                    </div>
+                                                                    <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        <div>
+                                                            <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
+                                                            <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                                <span className="text-sm">{startTime || 'Sem horário'}</span>
+                                                                <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ? 'rotate-90' : ''}`} />
+                                                            </button>
+                                                            {isTimePickerOpen && (
+                                                                <div className="relative mt-2 h-48">
+                                                                    <WheelPicker options={timeOptions} value={startTime || 'Sem Horário'} onSelect={handleTimeSelect} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {canUseReminderToggle && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { void handleReminderToggle(); }}
+                                                                className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-left transition-colors hover:bg-black/30"
+                                                            >
+                                                                <div>
+                                                                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/52">Lembrete</div>
+                                                                    <div className="mt-1 text-sm font-semibold text-white">Notificar 15 min antes</div>
+                                                                </div>
+                                                                <div className={`relative h-6 w-11 rounded-full border transition-colors ${editableAction.context?.schedule?.notifyBeforeMinutes === 15
+                                                                    ? 'border-emerald-400/70 bg-emerald-400/30'
+                                                                    : 'border-white/12 bg-white/5'
+                                                                    }`}>
+                                                                    <div className={`absolute top-0.5 h-[1.125rem] w-[1.125rem] rounded-full bg-white transition-all ${editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'left-[1.35rem]' : 'left-0.5'}`} />
+                                                                </div>
+                                                            </button>
+                                                        )}
+
+                                                        {editableAction.actionType === 'Ação Recorrente' && startTime && startTime !== 'Sem Horário' && selectedDays.length === 0 && (
+                                                            <p className="px-1 text-[10px] leading-relaxed text-white/46">
+                                                                Escolha pelo menos um dia da semana para essa ação gerar tarefas e poder usar lembrete.
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 )}
 
                                                 <StyledRangeInput
@@ -1692,7 +1846,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     />
                                     {normalizeActionDifficulty(editableAction.difficulty) === 0 && (
                                         <p className="px-1 text-[11px] leading-relaxed text-white/60">
-                                            Lazer registra essa acao, mas nao rende EXP. Serve para descanso, diversao e coisas que voce quer acompanhar sem gamificar.
+                                            Lazer registra essa ação, mas não rende EXP. Ele não muda o tipo da ação: para tirar contador, selecione Livre no básico.
                                         </p>
                                     )}
 
@@ -2228,15 +2382,6 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
             {/* Pickers */}
             {isIconPickerOpen && <IconPickerModal onSelect={handleIconSelect} onClose={() => setIsIconPickerOpen(false)} />}
-            {isActionTypePickerOpen && (
-                <SelectionModal<ActionType>
-                    title="Tipo de Ação"
-                    options={actionTypeOptions}
-                    currentValue={editableAction.actionType || 'Ação Recorrente'}
-                    onSelect={handleActionTypeChange}
-                    onClose={() => setIsActionTypePickerOpen(false)}
-                />
-            )}
             {isArenaPickerOpen && (
                 <ArenaSelectionModal
                     currentArenaId={editableAction.arenaId || ''}

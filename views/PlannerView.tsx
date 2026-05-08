@@ -1876,7 +1876,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     // Old tasks from previous cycles must not consume stock in a new cycle.
     // Without an active cycle, keep stock scoped to the operational day currently on screen.
     const availableTaskPool = useMemo(
-        () => buildActionPoolByDate(actions, taskPool, plannerScopedTasks, activeCycle ? null : selectedOperationalDateString, Array.from(executionQueuedTaskIds)),
+        () => buildActionPoolByDate(
+            actions,
+            taskPool,
+            plannerScopedTasks,
+            activeCycle ? null : selectedOperationalDateString,
+            Array.from(executionQueuedTaskIds),
+            Boolean(activeCycle)
+        ),
         [actions, taskPool, plannerScopedTasks, activeCycle, selectedOperationalDateString, executionQueuedTaskIds]
     );
 
@@ -2134,7 +2141,10 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                     })}
                                 </div>
                             ) : (
-                                <div className={`grid ${bayGridRows} grid-flow-col auto-cols-max gap-0.5 h-full overflow-x-auto overflow-y-hidden pr-2 scrollbar-hide items-center`}>
+                                <div
+                                    className={`grid ${bayGridRows} grid-flow-col auto-cols-max gap-0.5 h-full overflow-x-auto overflow-y-hidden overscroll-x-contain pr-2 scrollbar-hide items-center`}
+                                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}
+                                >
                                     {visibleBayAreaEntries.length > 0 ?
                                          visibleBayAreaEntries.map(([actionId, payload]) => {
                                              const action = getActionById(actionId);
@@ -2153,7 +2163,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         </div>
                         <div className={`relative flex-shrink-0 ${bayAreaHeight} transition-all duration-300`}>
                             <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="planner-bay-surface w-10 h-full rounded-2xl flex items-center justify-center hover:bg-white/[0.05] transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" /></svg></button>
-                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 w-52 core-surface-strong rounded-xl p-2 space-y-1 z-50 animate-fade-in"><h4 className="core-label text-center pb-1 border-b border-white/6">Marcos</h4>{milestoneActions.length > 0 ?milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
+                            {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 max-h-[42vh] w-56 overflow-y-auto core-surface-strong rounded-xl p-2 space-y-1 z-[80] animate-fade-in shadow-[0_18px_44px_rgba(0,0,0,0.42)]"><h4 className="core-label text-center pb-1 border-b border-white/6">Marcos</h4>{milestoneActions.length > 0 ?milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
                         </div>
                     </div>
                     <DayHeader
@@ -2234,7 +2244,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             )}
 
             {/* Floating Action Button */}
-            <div className="fixed bottom-20 right-4 z-20 flex flex-col items-center space-y-2">
+            <div className="fixed bottom-[calc(4.25rem+var(--safe-area-bottom))] right-4 z-20 flex flex-col items-center space-y-2">
 
                 {/* Oracle Input Panel */}
                 {showOracleInput && (

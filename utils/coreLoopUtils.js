@@ -119,7 +119,7 @@ export const buildDailyArenaFocus = (taskStatuses, actions, arenas) => {
  * @param {string[]} [trackedTaskIds=[]]
  * @returns {Record<string, { count: number, isUnlimited: boolean, taskIds: string[] }>}
  */
-export const buildActionPoolByDate = (actions, taskPool, tasks, date, trackedTaskIds = []) => {
+export const buildActionPoolByDate = (actions, taskPool, tasks, date, trackedTaskIds = [], consumePoolTasks = false) => {
     const actionById = new Map(actions.map(action => [action.id, action]));
     const grouped = {};
 
@@ -133,7 +133,9 @@ export const buildActionPoolByDate = (actions, taskPool, tasks, date, trackedTas
             task.actionId === action.id &&
             (!date || taskMatchesOperationalDate(task, date))
         );
-        const consumedCount = tasksForAction.filter(task => doesTaskConsumePoolCapacity(task, trackedTaskIds)).length;
+        const consumedCount = tasksForAction.filter(task =>
+            doesTaskConsumePoolCapacity(task, trackedTaskIds) || (consumePoolTasks && task.startTime < 0 && !task.completed)
+        ).length;
         const remaining = isUnlimited ? 99 : Math.max(0, maxRepetitions - consumedCount);
 
         grouped[action.id] = { count: remaining, isUnlimited, taskIds: [] };

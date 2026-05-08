@@ -1407,7 +1407,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             userProfile.appMode === 'BASIC' ? 'BASIC' : 'GAME',
         );
         const isPremiumUser = hasPremiumAccess(userProfile);
-        const selectedMode = oraclePreferences.activeMode || 'neutro';
+        const selectedMode = isPremiumUser ? (oraclePreferences.activeMode || 'neutro') : 'neutro';
 
         if (triggerType === 'app_open') {
             maybeNotifyVillageDuty(userId);
@@ -1474,7 +1474,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             tasks,
             activeCycle,
             cycleProgress,
-            activeMode: oraclePreferences.activeMode,
+            activeMode: selectedMode,
             customModeInstructions: oraclePreferences.customModeInstructions || null,
             enabledCategories: oraclePreferences.enabledCategories || [],
             username: userProfile.nickname || 'Soberano',
@@ -9254,18 +9254,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const searchPlayers = async (query: string): Promise<UserProfile[]> => {
         const normalized = query.trim();
-        if (normalized.length < 2) return [];
+        if (normalized.length < 3) return [];
 
         // Remove numbers from end of string (like #1234) if present, though we search by nickname mostly
         const baseQuery = normalized.replace(/\d+$/g, '').trim();
         const searchTerms = [normalized];
-        if (baseQuery && baseQuery !== normalized) searchTerms.push(baseQuery);
+        if (baseQuery.length >= 3 && baseQuery !== normalized) searchTerms.push(baseQuery);
 
         // Keep public search focused on display names. Email lookup is exact only.
         const shouldSearchExactEmail = normalized.includes('@');
         const responses = await Promise.all(
             searchTerms.flatMap(term => [
-                supabase.from('user_profiles').select('*').ilike('nickname', `%${term}%`).limit(20),
+                supabase.from('user_profiles').select('*').ilike('nickname', `${term}%`).limit(10),
                 ...(shouldSearchExactEmail
                     ? [supabase.from('user_profiles').select('*').eq('email', term.toLowerCase()).limit(1)]
                     : []),
@@ -9287,7 +9287,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return unique
             .filter(profile => profile.id !== userProfile.id)
             .filter(profile => Boolean(String(profile.nickname || '').trim()))
-            .slice(0, 20);
+            .slice(0, 10);
     };
 
     const getUserPublicData = useCallback(async (userId: string) => {

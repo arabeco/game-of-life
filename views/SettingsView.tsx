@@ -1895,7 +1895,7 @@ const NobrezaHierarchyView: React.FC = () => {
 };
 
 const GeralTab: React.FC = () => {
-    const { userProfile, updateUserProfile, nobilityRanks, assets, installPrompt, promptInstall, showToast } = useGame();
+    const { userProfile, updateUserProfile, nobilityRanks, assets, showToast } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
     const [nickname, setNickname] = useState(() => userProfile.nickname);
     const [isHierarchyVisible, setIsHierarchyVisible] = useState(false);
@@ -2042,6 +2042,48 @@ const GeralTab: React.FC = () => {
             </GlassCard>
             */}
 
+            <button
+                type="button"
+                id="mastery-sliders-button"
+                onClick={() => setShowMastery(true)}
+                className="block w-full text-left"
+            >
+                <GlassCard variant="neutral" className="relative overflow-hidden border-[var(--skin-accent-color)]/18 p-4 transition-all duration-300 hover:border-[var(--skin-accent-color)]/38 hover:bg-white/[0.03] hover:shadow-[0_0_24px_var(--sephirot-glow-color-soft)]">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,168,76,0.18),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.05),transparent_48%)] pointer-events-none" />
+                    <div className="relative grid grid-cols-[minmax(0,1fr)_8.75rem] items-center gap-3">
+                        <div className="min-w-0 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--ui-text-accent)]">
+                                    Maestria
+                                </span>
+                                <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/55">
+                                    Editar nivel
+                                </span>
+                            </div>
+                            <div>
+                                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Seu nivel geral</div>
+                                <div className="mt-1 flex items-end gap-2">
+                                    <span className="text-4xl font-black leading-none text-white">{masteryTotalLevel}</span>
+                                    <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">Legado</span>
+                                </div>
+                            </div>
+                            <p className="max-w-[18rem] text-[11px] leading-relaxed text-gray-400">
+                                Toque aqui para ajustar seu nivel por area e atualizar o mapa de maestria.
+                            </p>
+                        </div>
+                        <div className="flex justify-end">
+                            <div className="flex h-[8.75rem] w-[8.75rem] items-center justify-center rounded-[1.6rem] border border-[var(--skin-accent-color)]/16 bg-black/28 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_24px_rgba(0,0,0,0.22)]">
+                                <div className="h-[7.5rem] w-[7.5rem]">
+                                    <Suspense fallback={<div className="h-full w-full rounded-full bg-white/5" />}>
+                                        <AssetDecagon assets={assets} size="100%" />
+                                    </Suspense>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </GlassCard>
+            </button>
+
             <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group shadow-[0_0_20px_var(--sephirot-glow-color-soft)]" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color,rgba(0,0,0,0))] to-black/60 pointer-events-none" />
                 <div className="relative z-10 p-2">
@@ -2059,48 +2101,6 @@ const GeralTab: React.FC = () => {
                     </div>
                 </div>
             </GlassCard>
-
-            <button
-                type="button"
-                id="mastery-sliders-button"
-                onClick={() => setShowMastery(true)}
-                className="block w-full text-left"
-            >
-                <GlassCard variant="neutral" className="relative overflow-hidden border-[var(--skin-accent-color)]/18 p-4 transition-all duration-300 hover:border-[var(--skin-accent-color)]/38 hover:bg-white/[0.03] hover:shadow-[0_0_24px_var(--sephirot-glow-color-soft)]">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,168,76,0.18),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.05),transparent_48%)] pointer-events-none" />
-                    <div className="relative grid grid-cols-[minmax(0,1fr)_8.75rem] items-center gap-3">
-                        <div className="min-w-0 space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--ui-text-accent)]">
-                                    Maestria
-                                </span>
-                                <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/55">
-                                    Abrir quiz
-                                </span>
-                            </div>
-                            <div>
-                                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Seu nivel geral</div>
-                                <div className="mt-1 flex items-end gap-2">
-                                    <span className="text-4xl font-black leading-none text-white">{masteryTotalLevel}</span>
-                                    <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">Legado</span>
-                                </div>
-                            </div>
-                            <p className="max-w-[18rem] text-[11px] leading-relaxed text-gray-400">
-                                Revise suas areas, ajuste o nivel por ativo e atualize seu mapa no decagono.
-                            </p>
-                        </div>
-                        <div className="flex justify-end">
-                            <div className="flex h-[8.75rem] w-[8.75rem] items-center justify-center rounded-[1.6rem] border border-[var(--skin-accent-color)]/16 bg-black/28 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_24px_rgba(0,0,0,0.22)]">
-                                <div className="h-[7.5rem] w-[7.5rem]">
-                                    <Suspense fallback={<div className="h-full w-full rounded-full bg-white/5" />}>
-                                        <AssetDecagon assets={assets} size="100%" />
-                                    </Suspense>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </GlassCard>
-            </button>
 
             {false && (<div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -2129,20 +2129,6 @@ const GeralTab: React.FC = () => {
             </div>)}
 
             <div className="space-y-4">
-                {installPrompt ? (
-                    <button onClick={promptInstall} className="w-full py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2">
-                        <span>📱</span> Instalar App na Tela Inicial
-                    </button>
-                ) : (
-                    <div className="space-y-1">
-                        <button disabled className="w-full py-3 rounded-xl bg-white/5 text-gray-500 font-bold flex items-center justify-center gap-2 border border-white/5 cursor-not-allowed">
-                            <span>📱</span> App Instalado / Indisponível
-                        </button>
-                        <p className="text-[10px] text-center text-gray-600 px-4">
-                            Se não aparecer: no PC, clique no ícone de instalar na barra de endereço. No iOS, use Compartilhar {'>'} Adicionar à Tela de Início.
-                        </p>
-                    </div>
-                )}
                 <div className="flex items-center justify-between p-3 bg-black/20 rounded-xl">
                     <label className="text-sm font-semibold">Nickname</label>
                     <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="px-3 py-1 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:border-[var(--skin-accent-color)] transition-colors w-40 text-right" />

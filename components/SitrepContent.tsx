@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon, ZapIcon } from './Icons';
+import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon, ZapIcon, SquareCheckIcon } from './Icons';
 import { ScheduledTask, Action } from '../types';
 import { shareElementWithFeedback } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
@@ -123,8 +123,81 @@ const BattleTaskItem: React.FC<{
     );
 };
 
+const PlannerLikeSitrepTaskItem: React.FC<{
+    task: ScheduledTask;
+    action: Action | undefined;
+    onQuickComplete: (actionId: string) => void;
+    isCompleted: boolean;
+}> = ({ task, action, onQuickComplete, isCompleted }) => {
+    const { getActionBackgroundStyle } = useGame();
+    const [isHolding, setIsHolding] = useState(false);
+    const pressTimer = React.useRef<NodeJS.Timeout | null>(null);
+
+    if (!action) return null;
+
+    const backgroundStyle = getActionBackgroundStyle(action.id);
+    const isFreeAction = action.actionType === 'Livre';
+
+    const handlePressStart = () => {
+        setIsHolding(true);
+        pressTimer.current = setTimeout(() => {
+            onQuickComplete(action.id);
+            setIsHolding(false);
+            safeVibrate(50);
+        }, 800);
+    };
+
+    const handlePressEnd = () => {
+        if (pressTimer.current) {
+            clearTimeout(pressTimer.current);
+            pressTimer.current = null;
+        }
+        setIsHolding(false);
+    };
+
+    return (
+        <div
+            className={`relative overflow-hidden rounded-[22px] border px-3 py-2 text-left shadow-[0_14px_30px_rgba(0,0,0,0.22)] backdrop-blur-md transition-all text-white select-none active:scale-[0.99] ${isFreeAction ? 'free-action-shell free-action-outline' : 'border-white/15'} ${isHolding ? 'scale-95 brightness-125' : ''} ${isCompleted ? 'opacity-85' : ''}`}
+            style={isFreeAction ? undefined : backgroundStyle}
+            onMouseDown={handlePressStart}
+            onMouseUp={handlePressEnd}
+            onMouseLeave={handlePressEnd}
+            onTouchStart={handlePressStart}
+            onTouchEnd={handlePressEnd}
+        >
+            {!isFreeAction && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.10),rgba(2,6,23,0.30)_74%)]" />}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,0.13),transparent_34%)] opacity-70" />
+            <div className={`absolute inset-0 rounded-[22px] border-2 transition-all ${isFreeAction ? `free-action-outline ${isCompleted ? 'opacity-95 border-white/25 shadow-[0_0_12px_rgba(255,255,255,0.08)]' : 'opacity-80'}` : isCompleted ? 'border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600/70'}`} />
+            {isCompleted && <div className="absolute inset-0 bg-emerald-300/[0.035]" />}
+
+            <div className="relative z-10 flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/28">
+                    <EmojiGlyph symbol={action.icon || '\u{1F4DD}'} size="action" className="text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className={`truncate text-[13px] font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)] ${isFreeAction && !isCompleted ? 'text-slate-100' : ''}`}>{action.name}</div>
+                </div>
+                {isCompleted ? (
+                    <div className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]">
+                        {isFreeAction ? <div className="free-action-complete-dot scale-[0.82]" /> : <SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" />}
+                    </div>
+                ) : isFreeAction ? (
+                    <div className="shrink-0 opacity-45 saturate-50">
+                        <div className="free-action-complete-dot scale-[0.82]" />
+                    </div>
+                ) : null}
+            </div>
+            {isHolding && (
+                <div className={`absolute inset-0 animate-pulse ${isFreeAction ? 'bg-black/40 rounded-[22px]' : 'bg-black/50 rounded-[22px]'}`}>
+                    <div className={`h-full w-full ${isCompleted ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ? 'bg-slate-200/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} />
+                </div>
+            )}
+        </div>
+    );
+};
+
 export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
-    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, scheduleAndCompleteNow, toggleTaskCompletion, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, getArenas, checklistItems, showToast, addFeedEvent, appMode } = useGame();
+    const { activeCycle, dailyCommitment, taskPool, actions, tasks, scheduleTask, scheduleAndCompleteNow, toggleTaskCompletion, setDailyCommitment, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, getArenas, checklistItems, showToast, addFeedEvent, appMode, getActionBackgroundStyle } = useGame();
 
     const [isAdjusting, setIsAdjusting] = useState(false);
     const [isShareChoiceOpen, setIsShareChoiceOpen] = useState(false);
@@ -250,12 +323,23 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                                 key={group.ids[0]}
                                 onClick={() => handleGroupClick(group)}
                                 disabled={isStockOut}
-                                className={`w-full flex items-center justify-between text-left p-2 rounded-lg transition-colors border ${isFreeAction ? 'free-action-shell free-action-outline' : ''} ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : isFreeAction ? 'hover:border-white/35 hover:bg-white/[0.02]' : `${softPanelClass} hover:bg-white/[0.04]`}`}
+                                className={`group relative w-full overflow-hidden rounded-[18px] border px-3 py-2 text-left transition-all ${isFreeAction ? 'free-action-shell free-action-outline' : 'border-white/10 bg-black/18'} ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'hover:border-white/20 active:scale-[0.99]'}`}
+                                style={!isFreeAction && !isStockOut ? getActionBackgroundStyle(group.action.id) : undefined}
                             >
-                                <span className={`text-sm ${isStockOut ? 'text-gray-500' : isFreeAction ? 'text-slate-100' : ''}`}><PlusIcon className="w-4 h-4 inline-block mr-2" />{group.action.name}</span>
-                                {!isFreeAction && (
-                                    <span className={`text-xs font-mono px-1.5 rounded ${isStockOut ? 'bg-gray-800 text-gray-600' : 'bg-gray-700 text-white'}`}>x{group.count}</span>
-                                )}
+                                {!isFreeAction && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.12),rgba(2,6,23,0.34)_76%)]" />}
+                                <div className="relative z-10 flex items-center gap-2">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/28">
+                                        <EmojiGlyph symbol={group.action.icon || '\u{1F4DD}'} size="action" className="text-white" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className={`truncate text-xs font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)] ${isStockOut ? 'text-gray-500' : isFreeAction ? 'text-slate-100' : ''}`}>{group.action.name}</div>
+                                    </div>
+                                    {!isFreeAction ? (
+                                        <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-black ${isStockOut ? 'border-gray-700 bg-gray-800 text-gray-600' : 'border-white/10 bg-black/30 text-white'}`}>x{group.count}</span>
+                                    ) : (
+                                        <PlusIcon className="h-4 w-4 shrink-0 text-white/55" />
+                                    )}
+                                </div>
                             </button>
                         );
                     })}
@@ -270,9 +354,21 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         const action = getActionById(task.actionId);
                         const isFreeAction = action?.actionType === 'Livre';
                         return (
-                            <div key={task.id} className={`w-full flex items-center justify-between text-left p-2 border rounded-lg ${isFreeAction ? 'free-action-shell free-action-outline' : softPanelClass}`}>
-                                <span className={`text-sm ${isFreeAction ? 'text-slate-100' : ''}`}>{action?.icon} {action?.name}</span>
-                                <button onClick={() => handleUncommitTask(task.id)}><XIcon className="w-4 h-4 text-red-400" /></button>
+                            <div
+                                key={task.id}
+                                className={`relative w-full overflow-hidden rounded-[18px] border px-3 py-2 text-left ${isFreeAction ? 'free-action-shell free-action-outline' : 'border-white/10 bg-black/18'}`}
+                                style={action && !isFreeAction ? getActionBackgroundStyle(action.id) : undefined}
+                            >
+                                {action && !isFreeAction && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.12),rgba(2,6,23,0.34)_76%)]" />}
+                                <div className="relative z-10 flex items-center gap-2">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/28">
+                                        <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className={`truncate text-xs font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)] ${isFreeAction ? 'text-slate-100' : ''}`}>{action?.name}</div>
+                                    </div>
+                                    <button onClick={() => handleUncommitTask(task.id)} className="shrink-0 rounded-full border border-red-400/20 bg-red-500/10 p-1.5"><XIcon className="w-3.5 h-3.5 text-red-300" /></button>
+                                </div>
                             </div>
                         );
                     })}
@@ -357,13 +453,11 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                     {commitmentStats.tasksWithStatus.map(({ task, isCompleted }) => {
                         const action = getActionById(task.actionId);
                         return (
-                            <BattleTaskItem
+                            <PlannerLikeSitrepTaskItem
                                 key={task.id}
                                 task={task}
                                 action={action}
-                                onUncommit={handleUncommitTask}
                                 onQuickComplete={handleQuickComplete}
-                                isAdjusting={isAdjusting}
                                 isCompleted={isCompleted}
                             />
                         );

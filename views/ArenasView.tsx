@@ -136,6 +136,8 @@ export const ArenasView: React.FC = () => {
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
     const [isCampaignHubOpen, setCampaignHubOpen] = useState(false);
+    const [autoOpenCampaignQuiz, setAutoOpenCampaignQuiz] = useState(false);
+    const [campaignHubOpenNonce, setCampaignHubOpenNonce] = useState(0);
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
@@ -148,6 +150,7 @@ export const ArenasView: React.FC = () => {
     const [dragOverId, setDragOverId] = useState<string | null>(null);
     const [dragOverSide, setDragOverSide] = useState<'left' | 'right' | null>(null);
     const [draggedId, setDraggedId] = useState<string | null>(null);
+    const draggedIdRef = useRef<string | null>(null);
     const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
     const [arenaAttention, setArenaAttention] = useState<ArenaAttentionState | null>(null);
     const arenaAttentionTimeoutRef = useRef<number | null>(null);
@@ -277,7 +280,8 @@ export const ArenasView: React.FC = () => {
     const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
     const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
     const shouldSpotlightCampaignFolder = installableCampaignLibraryCount > 0 || hasPendingFreeCampaignQuiz || totalQuizCredits > 0 || (campaigns.length === 0 && ownedArenaIds.size <= 2);
-    const campaignFolderBadgeCount = campaigns.length + installableCampaignLibraryCount;
+    const campaignFolderQuizBadgeCount = hasPendingFreeCampaignQuiz || totalQuizCredits > 0 ? 1 : 0;
+    const campaignFolderBadgeCount = campaigns.length + installableCampaignLibraryCount + campaignFolderQuizBadgeCount;
     const campaignFolderBadgeLabel = String(campaignFolderBadgeCount);
     const campaignFolderButtonClassName = `group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] ${
         shouldSpotlightCampaignFolder
@@ -701,18 +705,12 @@ export const ArenasView: React.FC = () => {
         
         // Handle Grouping Logic even in Priority View if in Selection Mode
         if (isSelectionMode) {
-            const idFromState = draggedId;
-            const draggedIdFromData = e.dataTransfer.getData('id');
-            const finalDraggedId = idFromState || draggedIdFromData;
-            
-            // Delegate to main handleDrop for grouping logic
-            await handleDrop(e, targetId || '', 'arena'); 
             return;
         }
 
         setDragOverId(null);
         
-        const finalDraggedId = draggedId || e.dataTransfer.getData('id');
+        const finalDraggedId = draggedIdRef.current || interactionRef.current?.id || draggedId || e.dataTransfer.getData('id');
         const draggedType = (e.dataTransfer.getData('type') || 'arena') as 'arena' | 'campaign';
         
         if (finalDraggedId) {
@@ -748,6 +746,18 @@ export const ArenasView: React.FC = () => {
         setShowCreateCampaignModal(true);
     };
 
+    const handleOpenCampaignHub = (event?: React.MouseEvent) => {
+        event?.preventDefault();
+        event?.stopPropagation();
+        setSelectedFolderId(null);
+        setSelectedCampaignId(null);
+        setSelectedReceivedCampaignPreview(null);
+        setShowCreateCampaignModal(false);
+        setAutoOpenCampaignQuiz(hasPendingFreeCampaignQuiz || totalQuizCredits > 0);
+        setCampaignHubOpenNonce((current) => current + 1);
+        setCampaignHubOpen(true);
+    };
+
     const handleCreateCampaignClick = () => {
         setIsSelectionMode((current) => {
             if (current) {
@@ -763,6 +773,7 @@ export const ArenasView: React.FC = () => {
         setDragOverId(null);
         setDragOverSide(null);
         setDraggedId(null);
+        draggedIdRef.current = null;
         dragPositionRef.current = null;
         dragOverRef.current = { id: null, side: null };
         if (dragRafRef.current !== null) {
@@ -798,6 +809,10 @@ export const ArenasView: React.FC = () => {
     useEffect(() => {
         dragOverSideRef.current = dragOverSide;
     }, [dragOverSide]);
+
+    useEffect(() => {
+        draggedIdRef.current = draggedId;
+    }, [draggedId]);
 
     const scheduleDragRender = () => {
         if (dragRafRef.current !== null) return;
@@ -850,6 +865,7 @@ export const ArenasView: React.FC = () => {
                     ...current,
                     touchDragReady: true,
                 };
+                draggedIdRef.current = id;
                 setDraggedId(id);
                 setDragPosition({ x: current.startX, y: current.startY });
             }, 260);
@@ -882,6 +898,7 @@ export const ArenasView: React.FC = () => {
 
         if (!currentDraggedId && interactionRef.current.input === 'mouse' && (deltaX > 10 || deltaY > 10)) {
             currentDraggedId = interactionRef.current.id;
+            draggedIdRef.current = currentDraggedId;
             setDraggedId(currentDraggedId);
         }
 
@@ -922,10 +939,11 @@ export const ArenasView: React.FC = () => {
             touchHoldTimeoutRef.current = null;
         }
 
-        const activeDraggedId = draggedId || (interactionRef.current?.touchDragReady ? interactionRef.current.id : null);
+        const activeDraggedId = draggedIdRef.current || draggedId || (dragPositionRef.current ? interactionRef.current?.id : null);
 
         if (!activeDraggedId || !interactionRef.current) {
             interactionRef.current = null;
+            draggedIdRef.current = null;
             dragPositionRef.current = null;
             dragOverRef.current = { id: null, side: null };
             scheduleDragRender();
@@ -933,48 +951,54 @@ export const ArenasView: React.FC = () => {
         }
 
         const draggedType = interactionRef.current.type;
+        const activeDrop = dragOverRef.current.id || dragOverId;
+        const activeDropSide = dragOverRef.current.side || dragOverSide || 'left';
 
         // Logic similar to Drop
-        if (dragOverId) {
-             const isFolder = arenaFolders.some(f => f.id === dragOverId);
-             const isCampaign = campaigns.some(c => c.id === dragOverId);
+        if (activeDrop) {
+             const isFolder = arenaFolders.some(f => f.id === activeDrop);
+             const isCampaign = campaigns.some(c => c.id === activeDrop);
              const targetType = isFolder ? 'folder' : isCampaign ? 'campaign' : 'arena';
+             const mockDropEvent = {
+                 preventDefault: () => {},
+                 stopPropagation: () => {},
+                 dataTransfer: {
+                     getData: (key: string) => {
+                         if (key === 'id' || key === 'text/plain') return activeDraggedId;
+                         if (key === 'type') return draggedType;
+                         return '';
+                     },
+                 },
+             } as React.DragEvent;
              
              // Check if target is a Priority section (only for Priority View)
              if (arenasViewMode === 'priorities') {
-                 if (['alta', 'media', 'baixa'].includes(dragOverId)) {
+                 if (['alta', 'media', 'baixa'].includes(activeDrop)) {
                      // Dropped directly on the priority header/zone
-                     await handlePriorityDrop({
-                         preventDefault: () => {},
-                         stopPropagation: () => {},
-                         dataTransfer: { getData: (key: string) => key === 'type' ? draggedType : '' } // Mock with type
-                     } as any, dragOverId as any, activeDraggedId);
+                     await handlePriorityDrop(mockDropEvent, activeDrop as 'alta' | 'media' | 'baixa');
                  } else {
                      // Dropped on an item (Arena or Campaign) within a priority list
                      // Find the priority of the target to know where we are dropping
-                     const targetArena = allArenas.find(a => a.id === dragOverId);
-                     const targetCampaign = campaigns.find(c => c.id === dragOverId);
+                     const targetArena = allArenas.find(a => a.id === activeDrop);
+                     const targetCampaign = campaigns.find(c => c.id === activeDrop);
                      
                      // Default to media if not found, though it should be found
                      const targetPriority = targetArena?.priority || targetCampaign?.priority || 'media';
                      
-                     await handlePriorityDrop({
-                         preventDefault: () => {},
-                         stopPropagation: () => {},
-                         dataTransfer: { getData: (key: string) => key === 'type' ? draggedType : '' } // Mock with type
-                     } as any, targetPriority as any, dragOverId);
+                     dragOverSideRef.current = activeDropSide;
+                     setDragOverSide(activeDropSide);
+                     await handlePriorityDrop(mockDropEvent, targetPriority as 'alta' | 'media' | 'baixa', activeDrop);
                  }
              } else {
                  // Standard drop (Arena swap/Campaign)
-                 await handleDrop({
-                     preventDefault: () => {},
-                     stopPropagation: () => {},
-                     dataTransfer: { getData: (key: string) => key === 'type' ? draggedType : '' } // Mock with type
-                 } as any, dragOverId, targetType);
+                 dragOverSideRef.current = activeDropSide;
+                 setDragOverSide(activeDropSide);
+                 await handleDrop(mockDropEvent, activeDrop, targetType);
              }
         }
 
         setDraggedId(null);
+        draggedIdRef.current = null;
         setDragOverId(null);
         setDragPosition(null);
         dragPositionRef.current = null;
@@ -1025,6 +1049,7 @@ export const ArenasView: React.FC = () => {
         e.dataTransfer.setData('id', id);
         e.dataTransfer.setData('type', type);
         e.dataTransfer.setData('text/plain', id); // Required for some browsers
+        draggedIdRef.current = id;
         setDraggedId(id);
     };
 
@@ -1054,11 +1079,11 @@ export const ArenasView: React.FC = () => {
         console.log('DROP TRIGGERED on:', targetId, targetType, 'SelectionMode:', isSelectionMode);
 
         // Use the ID from state if available, fallback to dataTransfer
-        const idFromState = draggedId;
+        const idFromState = draggedIdRef.current || draggedId;
         const draggedIdFromData = e.dataTransfer.getData('id');
         const finalDraggedId = idFromState || draggedIdFromData;
-        const draggedType = (e.dataTransfer.getData('type') || 'arena') as 'arena' | 'campaign';
-        const side = dragOverSide || 'left';
+        const draggedType = (e.dataTransfer.getData('type') || interactionRef.current?.type || 'arena') as 'arena' | 'campaign';
+        const side = dragOverRef.current.side || dragOverSide || 'left';
         
         console.log('DROP DETAILS:', { finalDraggedId, draggedType, side });
 
@@ -1066,6 +1091,7 @@ export const ArenasView: React.FC = () => {
         setDragOverId(null);
         setDragOverSide(null);
         setDraggedId(null);
+        draggedIdRef.current = null;
 
         if (!finalDraggedId) {
             console.log('DROP CANCELLED: No dragged ID');
@@ -1102,7 +1128,6 @@ export const ArenasView: React.FC = () => {
             } else if (targetType === 'arena') {
                 if (draggedType !== 'arena') return;
                 
-                // Create new Campaign from two arenas
                 const targetArena = allArenas.find(a => a.id === targetId);
                 const draggedArena = allArenas.find(a => a.id === finalDraggedId);
                 
@@ -1112,22 +1137,9 @@ export const ArenasView: React.FC = () => {
                     return; 
                 }
 
-                console.log('CREATING NEW CAMPAIGN');
-                // Create new campaign without confirmation (Edit Mode)
-                await addCampaign({
-                    title: "Nova Campanha",
-                    description: "",
-                    arenaIds: [targetId, finalDraggedId],
-                    arenaConfig: {
-                        [targetId]: { isLocked: false, isHidden: false },
-                        [finalDraggedId]: { isLocked: false, isHidden: false }
-                    },
-                    type: 'parallel',
-                    status: 'active',
-                    order: 0,
-                    priority: 'media',
-                    priorityOrder: 0
-                });
+                console.log('OPENING CAMPAIGN CREATION MODAL');
+                setSelectedForCampaign(Array.from(new Set([targetId, finalDraggedId])));
+                setShowCreateCampaignModal(true);
             }
             return;
         }
@@ -2003,8 +2015,9 @@ export const ArenasView: React.FC = () => {
                 <div className="mb-4 flex items-center gap-1.5 z-[60]" id="campaigns-section-top">
                     <div className="flex items-center bg-black/40 rounded-full px-1 border border-white/5">
                     <button
+                        type="button"
                         id="campaigns-button-top"
-                        onClick={() => setCampaignHubOpen(true)}
+                        onClick={handleOpenCampaignHub}
                         className={campaignFolderButtonClassName}
                         style={premiumHeaderButtonStyle}
                         title={shouldSpotlightCampaignFolder ? 'Abrir suas campanhas e recomendacoes' : 'Abrir suas campanhas'}
@@ -2351,8 +2364,9 @@ export const ArenasView: React.FC = () => {
                 <div className="mb-4 flex items-center gap-1.5 z-[60]" id="campaigns-section">
                     <div className="flex items-center bg-black/40 rounded-full px-1 border border-white/5">
                     <button
+                        type="button"
                         id="campaigns-button"
-                        onClick={() => setCampaignHubOpen(true)}
+                        onClick={handleOpenCampaignHub}
                         className="group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--ui-border-accent-soft)] text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--ui-border-accent)]"
                         style={premiumHeaderButtonStyle}
                         title="Abrir campanhas"
@@ -2672,7 +2686,7 @@ export const ArenasView: React.FC = () => {
                     id="new-action-button"
                     data-onboarding-id="new-arena-button"
                     onClick={handleOpenCreateArena}
-                    className={`fixed bottom-20 right-4 w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
+                    className={`fixed bottom-[calc(4.25rem+var(--safe-area-bottom))] right-4 w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
                 >
                     <PlusIcon className="w-6 h-6 text-black" />
                 </button>
@@ -2708,7 +2722,14 @@ export const ArenasView: React.FC = () => {
                 />
             )}
             {isCampaignHubOpen && (
-                <CampaignsCodex onClose={() => setCampaignHubOpen(false)} />
+                <CampaignsCodex
+                    key={`campaign-hub-${campaignHubOpenNonce}`}
+                    autoOpenRecommendationQuiz={autoOpenCampaignQuiz}
+                    onClose={() => {
+                        setCampaignHubOpen(false);
+                        setAutoOpenCampaignQuiz(false);
+                    }}
+                />
             )}
             {isRelationshipHubOpen && (
                 <RelationshipHubModal onClose={() => setRelationshipHubOpen(false)} />

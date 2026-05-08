@@ -471,18 +471,19 @@ export const LoginView: React.FC = () => {
 
     const handleGoogleLogin = async () => {
         clearClosedBetaGoogleRedirect();
-        markClosedBetaGoogleAuthPending();
         setLoading(true);
         setError(null);
         setMessage(null);
         setAccessGuide(null);
         try {
+            await signOutAndClearSupabaseSession('local', 'google-login-account-switch');
+            markClosedBetaGoogleAuthPending();
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
                     queryParams: {
                         access_type: 'offline',
-                        prompt: 'consent',
+                        prompt: 'select_account consent',
                     },
                     redirectTo: getGoogleAuthRedirectUrl(canonicalAppOrigin),
                     skipBrowserRedirect: isCapacitorNativeRuntime(),

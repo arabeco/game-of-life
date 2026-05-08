@@ -6,10 +6,10 @@
     android:background="@drawable/glyph_cycle_widget_background"
     android:gravity="center_vertical"
     android:orientation="vertical"
-    android:paddingLeft="14dp"
-    android:paddingTop="8dp"
-    android:paddingRight="14dp"
-    android:paddingBottom="8dp">
+    android:paddingLeft="12dp"
+    android:paddingTop="5dp"
+    android:paddingRight="12dp"
+    android:paddingBottom="5dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -29,7 +29,7 @@
             android:text="GLYPH"
             android:textAllCaps="true"
             android:textColor="#F7F3E9"
-            android:textSize="11sp"
+            android:textSize="10sp"
             android:textStyle="bold" />
 
         <TextView
@@ -40,7 +40,7 @@
             android:text="ABRIR"
             android:textAllCaps="true"
             android:textColor="#CFC6AD"
-            android:textSize="8sp"
+            android:textSize="7sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -48,19 +48,19 @@
         android:id="@+id/glyph_widget_subtitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
         android:ellipsize="end"
         android:includeFontPadding="false"
         android:maxLines="1"
         android:text="Dia 1/30"
         android:textColor="#C7D1DF"
-        android:textSize="10sp" />
+        android:textSize="8sp" />
 
     <TextView
         android:id="@+id/glyph_widget_meta"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="1dp"
         android:ellipsize="end"
         android:includeFontPadding="false"
         android:maxLines="1"
@@ -74,7 +74,7 @@
         android:id="@+id/glyph_widget_actions_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="7dp"
+        android:layout_marginTop="3dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -87,7 +87,7 @@
             android:maxLines="1"
             android:text="0/0"
             android:textColor="#C7D1DF"
-            android:textSize="9sp"
+            android:textSize="8sp"
             android:textStyle="bold" />
 
         <ProgressBar
@@ -97,19 +97,19 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:max="100"
-            android:minHeight="4dp"
+            android:minHeight="2dp"
             android:progress="0"
             android:progressDrawable="@drawable/glyph_widget_progress" />
 
         <TextView
             android:id="@+id/glyph_widget_actions_percent"
-            android:layout_width="42dp"
+            android:layout_width="70dp"
             android:layout_height="wrap_content"
             android:gravity="right"
             android:includeFontPadding="false"
             android:text="0%"
             android:textColor="#F7F3E9"
-            android:textSize="9sp"
+            android:textSize="8sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -117,7 +117,7 @@
         android:id="@+id/glyph_widget_time_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
+        android:layout_marginTop="3dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -129,7 +129,7 @@
             android:maxLines="1"
             android:text="Tempo"
             android:textColor="#A8B6C9"
-            android:textSize="9sp"
+            android:textSize="8sp"
             android:textStyle="bold" />
 
         <ProgressBar
@@ -139,19 +139,19 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:max="100"
-            android:minHeight="4dp"
+            android:minHeight="2dp"
             android:progress="0"
             android:progressDrawable="@drawable/glyph_widget_progress_soft" />
 
         <TextView
             android:id="@+id/glyph_widget_time_percent"
-            android:layout_width="42dp"
+            android:layout_width="70dp"
             android:layout_height="wrap_content"
             android:gravity="right"
             android:includeFontPadding="false"
             android:text="0%"
             android:textColor="#E8E3D6"
-            android:textSize="9sp"
+            android:textSize="8sp"
             android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

@@ -47,6 +47,7 @@ import {
 } from '../utils/screenIntroTips';
 import { ConfirmationModal } from './ConfirmationModal';
 import { DailyCompletionPromptModal } from './DailyCompletionPromptModal';
+import type { AppBroadcast } from './AppBroadcastModal';
 import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../utils/dailyCompletionPrompt';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
 import './auth-shell.css';
@@ -70,10 +71,72 @@ const VanguardWelcomeModal = React.lazy(() => import('./VanguardWelcomeModal').t
 const SeasonTransitionModal = React.lazy(() => import('./SeasonDetailModal').then((m) => ({ default: m.SeasonTransitionModal })));
 const ScreenIntroTipOverlay = React.lazy(() => import('./ScreenIntroTipOverlay').then((m) => ({ default: m.ScreenIntroTipOverlay })));
 const RewardVideoPreviewModal = React.lazy(() => import('./RewardVideoPreviewModal').then((m) => ({ default: m.RewardVideoPreviewModal })));
+const AppBroadcastModal = React.lazy(() => import('./AppBroadcastModal').then((m) => ({ default: m.AppBroadcastModal })));
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
+
+const APP_VERSION = '1.0.29';
+const APP_BROADCAST_SEEN_FLAG_PREFIX = 'app_broadcast_seen:';
+
+type AppBroadcastRow = {
+    id: string;
+    audience: 'all' | 'game' | 'basic' | 'beta';
+    priority: number;
+    eyebrow: string | null;
+    title: string;
+    summary: string;
+    body: string | null;
+    image_url: string | null;
+    button_label: string | null;
+    secondary_label: string | null;
+    cta_type: 'none' | 'view' | 'url';
+    cta_target: string | null;
+    min_app_version: string | null;
+    max_app_version: string | null;
+    show_once: boolean;
+    dismissible: boolean;
+};
+
+const compareVersions = (a: string, b: string) => {
+    const left = a.split('.').map((part) => Number(part) || 0);
+    const right = b.split('.').map((part) => Number(part) || 0);
+    const length = Math.max(left.length, right.length);
+    for (let index = 0; index < length; index += 1) {
+        const delta = (left[index] || 0) - (right[index] || 0);
+        if (delta !== 0) return delta;
+    }
+    return 0;
+};
+
+const isBroadcastCompatibleWithVersion = (row: AppBroadcastRow) => {
+    if (row.min_app_version && compareVersions(APP_VERSION, row.min_app_version) < 0) return false;
+    if (row.max_app_version && compareVersions(APP_VERSION, row.max_app_version) > 0) return false;
+    return true;
+};
+
+const isBroadcastCompatibleWithMode = (row: AppBroadcastRow, appMode: string) => {
+    if (row.audience === 'all' || row.audience === 'beta') return true;
+    if (row.audience === 'basic') return appMode === 'BASIC';
+    if (row.audience === 'game') return appMode !== 'BASIC';
+    return false;
+};
+
+const mapBroadcastRow = (row: AppBroadcastRow): AppBroadcast => ({
+    id: row.id,
+    eyebrow: row.eyebrow,
+    title: row.title,
+    summary: row.summary,
+    body: row.body,
+    imageUrl: row.image_url,
+    buttonLabel: row.button_label,
+    secondaryLabel: row.secondary_label,
+    ctaType: row.cta_type,
+    ctaTarget: row.cta_target,
+    dismissible: row.dismissible,
+    showOnce: row.show_once,
+});
 type ViewTransitionKind = 'forward' | 'backward' | 'rest';
 
 const CORE_NAV_VIEWS: View[] = ['assets', 'arenas', 'planner', 'social', 'settings'];
@@ -990,6 +1053,8 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         if (typeof window === 'undefined') return false;
         return new URLSearchParams(window.location.search).get('video_preview') === '1';
     });
+    const [pendingAppBroadcast, setPendingAppBroadcast] = useState<AppBroadcast | null>(null);
+    const [sessionDismissedBroadcastIds, setSessionDismissedBroadcastIds] = useState<string[]>([]);
     const lastToastSignatureRef = useRef('');
     const toastSensorySuppressedUntilRef = useRef(0);
     const effectiveUiSkin = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
@@ -1022,6 +1087,55 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         window.addEventListener('openRewardVideoPreview', handleOpenRewardVideoPreview);
         return () => window.removeEventListener('openRewardVideoPreview', handleOpenRewardVideoPreview);
     }, []);
+
+    useEffect(() => {
+        if (!isProfileLoaded) return;
+        if (!userProfile.id || userProfile.id === 'placeholder_user') return;
+        if (pendingAppBroadcast) return;
+
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('app_broadcasts')
+                    .select('id,audience,priority,eyebrow,title,summary,body,image_url,button_label,secondary_label,cta_type,cta_target,min_app_version,max_app_version,show_once,dismissible')
+                    .eq('status', 'published')
+                    .order('priority', { ascending: false })
+                    .order('starts_at', { ascending: false })
+                    .limit(8);
+
+                if (cancelled || error || !data?.length) return;
+
+                const completedFlags = userProfile.completedSeasonMissions || [];
+                const nextBroadcast = (data as AppBroadcastRow[]).find((row) => {
+                    if (!isBroadcastCompatibleWithMode(row, appMode)) return false;
+                    if (!isBroadcastCompatibleWithVersion(row)) return false;
+                    if (sessionDismissedBroadcastIds.includes(row.id)) return false;
+                    const seenFlag = `${APP_BROADCAST_SEEN_FLAG_PREFIX}${row.id}`;
+                    if (row.show_once && completedFlags.includes(seenFlag)) return false;
+                    return true;
+                });
+
+                if (nextBroadcast) {
+                    setPendingAppBroadcast(mapBroadcastRow(nextBroadcast));
+                }
+            } catch (error) {
+                console.warn('App broadcast fetch skipped:', error);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        appMode,
+        isProfileLoaded,
+        pendingAppBroadcast,
+        sessionDismissedBroadcastIds,
+        userProfile.completedSeasonMissions,
+        userProfile.id,
+    ]);
 
     useEffect(() => {
         const handleAppSensoryCue = (event: Event) => {
@@ -1205,6 +1319,33 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         });
     }, [showToast, updateUserProfile]);
 
+    const handleCloseAppBroadcast = useCallback((broadcast = pendingAppBroadcast) => {
+        if (!broadcast) return;
+        setSessionDismissedBroadcastIds((previous) => (
+            previous.includes(broadcast.id) ?previous : [...previous, broadcast.id]
+        ));
+        if (broadcast.showOnce !== false) {
+            addProfileFlag(`${APP_BROADCAST_SEEN_FLAG_PREFIX}${broadcast.id}`);
+        }
+        setPendingAppBroadcast(null);
+    }, [addProfileFlag, pendingAppBroadcast]);
+
+    const handleAppBroadcastCta = useCallback((broadcast: AppBroadcast) => {
+        handleCloseAppBroadcast(broadcast);
+
+        if (broadcast.ctaType === 'url' && broadcast.ctaTarget) {
+            window.open(broadcast.ctaTarget, '_blank', 'noopener,noreferrer');
+            return;
+        }
+
+        const targetView = broadcast.ctaTarget as View | null;
+        if (broadcast.ctaType === 'view' && targetView && ['assets', 'arenas', 'planner', 'social', 'settings', 'reports'].includes(targetView)) {
+            window.dispatchEvent(new CustomEvent(APP_NAVIGATE_EVENT, {
+                detail: { view: targetView } satisfies AppNavigatePayload,
+            }));
+        }
+    }, [handleCloseAppBroadcast]);
+
     const handleDismissOnboardingPushPrompt = useCallback(() => {
         setShowOnboardingPushPrompt(false);
     }, []);
@@ -1281,6 +1422,19 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         hasPremiumAccess(userProfile) &&
         isPremiumInLastDay(userProfile) &&
         !premiumRenewalOfferSeen;
+
+    const shouldShowAppBroadcast =
+        !showTerms &&
+        !isFirstUseOnboardingActive &&
+        !shouldHoldVanguardWelcome &&
+        !shouldShowVanguardWelcome &&
+        !shouldShowPremiumReward &&
+        !shouldShowBetaReward &&
+        !shouldShowPremiumRenewalOffer &&
+        !goldShortagePrompt &&
+        !showOnboardingPushPrompt &&
+        !claimToken &&
+        !!pendingAppBroadcast;
 
     useEffect(() => {
         if (!premiumRenewalOfferStorageKey || typeof window === 'undefined') {
@@ -1479,6 +1633,14 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         cancelLabel="AGORA NÃO"
                         onConfirm={() => { void handleConfirmPremiumRenewalOffer(); }}
                         onCancel={handleDismissPremiumRenewalOffer}
+                    />
+                )}
+                {shouldShowAppBroadcast && pendingAppBroadcast && (
+                    <AppBroadcastModal
+                        broadcast={pendingAppBroadcast}
+                        mode={userProfile.appMode}
+                        onClose={() => handleCloseAppBroadcast(pendingAppBroadcast)}
+                        onCta={handleAppBroadcastCta}
                     />
                 )}
                 {goldShortagePrompt && (

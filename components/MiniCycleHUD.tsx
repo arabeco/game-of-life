@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Cycle } from '../types';
 import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
+import { formatDate } from '../utils/dateUtils';
 
 interface MiniCycleHUDProps {
     cycle: Cycle;
@@ -20,40 +21,44 @@ export const MiniCycleHUD: React.FC<MiniCycleHUDProps> = ({ cycle }) => {
     if (!snapshot) return null;
     
     return (
-        <div className="px-4 py-2 bg-black/40 border-y border-white/5 backdrop-blur-md">
-            <div className="max-w-[420px] mx-auto flex items-center justify-between gap-4">
-                <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Ciclo Ativo</span>
-                    <span className="text-xs font-bold text-white truncate max-w-[120px]">{snapshot.name}</span>
+        <div className="px-4 py-1 bg-black/35 border-y border-white/5 backdrop-blur-md">
+            <div className="mx-auto max-w-[300px] rounded-[14px] border border-white/10 bg-black/35 px-3 py-1 shadow-[0_12px_22px_rgba(0,0,0,0.2)]">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[10px] font-black uppercase tracking-[0.09em] text-white">{snapshot.name}</span>
+                    <span className="shrink-0 text-[8px] font-black tracking-[0.02em] text-white/62">
+                        {`${formatDate(snapshot.startDate)}-${formatDate(snapshot.endDate)} (${snapshot.totalDays} dias)`}
+                    </span>
                 </div>
-                
-                <div className="flex-1 flex flex-col gap-1">
-                    <div className="flex justify-between text-[9px] font-bold">
-                        <span className="text-gray-400 uppercase">Progresso</span>
-                        <span className="accent-text">{snapshot.taskProgressPercent.toFixed(0)}%</span>
+                <div className="mt-1 space-y-0.5">
+                    <div>
+                        <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
+                            <span className="text-white/58">Progresso</span>
+                            <span className="shrink-0 text-[var(--skin-accent-color)]">{`${snapshot.completedTaskCount}/${snapshot.totalTaskCount} (${snapshot.taskProgressPercent.toFixed(0)}%)`}</span>
+                        </div>
+                        <div className="mt-0.5 h-[2px] w-full overflow-hidden rounded-full bg-black/45">
+                            <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                    width: `${snapshot.taskProgressPercent}%`,
+                                    background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)',
+                                }}
+                            />
+                        </div>
                     </div>
-                    <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden border border-white/5">
-                        <div 
-                            className="bg-[var(--skin-accent-color)] h-full transition-all duration-500" 
-                            style={{ width: `${snapshot.taskProgressPercent}%` }}
-                        />
-                    </div>
-                    <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden border border-white/5 mt-0.5">
-                        <div 
-                            className="bg-blue-500 h-full transition-all duration-500 opacity-50" 
-                            style={{ width: `${snapshot.timeProgressPercent}%` }}
-                        />
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Grau</span>
-                        <span className={`text-xs font-black ${snapshot.gradeColorClass}`}>{snapshot.grade}</span>
-                    </div>
-                    <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Score</span>
-                        <span className="text-xs font-black accent-text">{snapshot.currentScore}</span>
+                    <div>
+                        <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
+                            <span className="text-white/58">Tempo</span>
+                            <span className="shrink-0 text-white/72">{`${snapshot.elapsedDays}/${snapshot.totalDays} (${snapshot.timeProgressPercent.toFixed(0)}%)`}</span>
+                        </div>
+                        <div className="mt-0.5 h-[2px] w-full overflow-hidden rounded-full bg-black/45">
+                            <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                    width: `${snapshot.timeProgressPercent}%`,
+                                    background: 'linear-gradient(90deg, rgba(118,128,145,0.7) 0%, rgba(209,216,226,0.92) 54%, rgba(255,255,255,0.98) 100%)',
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

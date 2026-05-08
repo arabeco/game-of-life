@@ -348,9 +348,13 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         });
     }, [ensureCampaignInLibrary, result, shouldConsumeFreeQuizCredit]);
 
-    const handleContinue = () => {
-        if (!selectedOption) return;
-        const nextAnswers = { ...answers, [currentQuestion.id]: selectedOption } as QuizAnswers;
+    useEffect(() => {
+        setSelectedOption(answers[currentQuestion.id] ?? null);
+    }, [answers, currentQuestion.id]);
+
+    const handleContinue = (optionKey = selectedOption) => {
+        if (!optionKey) return;
+        const nextAnswers = { ...answers, [currentQuestion.id]: optionKey } as QuizAnswers;
         setAnswers(nextAnswers);
         if (questionIndex === TOTAL_QUESTIONS - 1) {
             if (quizMode === 'free' && hasStarterFreeQuiz) markFreeCampaignQuizCompleted();
@@ -487,7 +491,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                 </div>
                                 <div className="campaign-quiz-footer">
                                     <button type="button" onClick={handlePrevious} disabled={questionIndex === 0} className="campaign-quiz-secondary min-w-[10rem] px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-35">Anterior</button>
-                                    {selectedOption && <button type="button" onClick={handleContinue} className="luxe-skin-button min-w-[12rem] px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em]">Continuar</button>}
+                                    <button type="button" onClick={() => handleContinue()} disabled={!selectedOption} className="luxe-skin-button min-w-[12rem] px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40">Continuar</button>
                                 </div>
                             </section>
                         ) : (

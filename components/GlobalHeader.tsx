@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { getUnreadBadgeCount, getVisibleNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { SparklesIcon, LockIcon } from './Icons';
+import { GlassCard } from './GlassCard';
 import './global-header.css';
 import {
     REST_SCREEN_ACTION_SESSION_EVENT,
@@ -19,6 +20,16 @@ const MoodModal = React.lazy(() => import('./MoodModal').then(m => ({ default: m
 const OracleFeed = React.lazy(() => import('./OracleFeed').then(m => ({ default: m.OracleFeed })));
 const ClanDetailModal = React.lazy(() => import('./ClanDetailModal').then(m => ({ default: m.ClanDetailModal })));
 const RestScreen = React.lazy(() => import('./RestScreen').then(m => ({ default: m.RestScreen })));
+
+const HeaderOverlayFallback: React.FC = () => (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+        <GlassCard variant="neutral" className="w-full max-w-sm rounded-3xl border border-white/10 p-5 text-center shadow-2xl">
+            <div className="mx-auto h-8 w-8 animate-pulse rounded-full border border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12" />
+            <div className="mt-3 text-[11px] font-black uppercase tracking-[0.18em] text-white/70">Abrindo...</div>
+        </GlassCard>
+    </div>
+);
+
 export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: number; defaultRestScreenOpen?: boolean; onRestScreenVisibilityChange?: (isOpen: boolean) => void }> = ({
     onProfileClick,
     topOffsetPx = 0,
@@ -35,6 +46,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const [isDeepWorkOpen, setDeepWorkOpen] = useState(false);
     const [isRestScreenOpen, setRestScreenOpen] = useState(defaultRestScreenOpen);
     const [restScreenActionSession, setRestScreenActionSession] = useState<RestScreenActionSessionDetail | null>(null);
+    const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
     const hiddenAtRef = useRef<number | null>(null);
     const isBasicMode = appMode === 'BASIC';
     
@@ -211,17 +223,20 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const timeStr = currentDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     
     const avatarUrl = userProfile.avatarUrl?.trim();
+    const canRenderAvatar = Boolean(avatarUrl && failedAvatarUrl !== avatarUrl);
 
     const currentMood = MOODS_DATA.find(m => userProfile.mood >= m.min && userProfile.mood < m.max) || MOODS_DATA[MOODS_DATA.length - 1];
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
 
     const renderAvatarContent = () => {
-        if (avatarUrl) {
+        if (canRenderAvatar && avatarUrl) {
             return (
                 <img 
                     src={avatarUrl} 
                     alt="Profile" 
                     className="w-full h-full object-cover rounded-full"
+                    referrerPolicy="no-referrer"
+                    onError={() => setFailedAvatarUrl(avatarUrl)}
                     style={{
                         width: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
                         height: selectedBorder?.imageUrl ? '75%' : 'calc(100% - 6px)',
@@ -358,7 +373,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                     </div>
                 </div>
             </header>
-            <Suspense fallback={null}>
+            <Suspense fallback={<HeaderOverlayFallback />}>
                 {isMoodModalOpen && <MoodModal onClose={() => setMoodModalOpen(false)} />}
                 {isOracleOpen && (
                     <OracleFeed

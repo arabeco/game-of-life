@@ -12,6 +12,7 @@ interface LongPressOptions {
     delay?: number;
     dragThreshold?: number;
     preventDefaultOnTouch?: boolean;
+    touchDragRequiresLongPress?: boolean;
 }
 
 const isTouchEvent = (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent): e is TouchEvent | React.TouchEvent => 'touches' in e;
@@ -55,7 +56,7 @@ export const useLongPress = (options: LongPressOptions) => {
         // Allow move handler to run in 'longpress' state to detect a drag-after-longpress-trigger.
         if (state.current !== 'pending' && state.current !== 'longpress') return;
 
-        const { dragThreshold = 10, onDragStart, onLongPressCancel } = optionsRef.current;
+        const { dragThreshold = 10, onDragStart, onLongPressCancel, touchDragRequiresLongPress } = optionsRef.current;
         if (shouldPreventTouchDefault() && isTouchEvent(e) && e.cancelable) {
             e.preventDefault();
         }
@@ -64,6 +65,12 @@ export const useLongPress = (options: LongPressOptions) => {
         const dy = currentPos.y - startPos.current.y;
 
         if (Math.sqrt(dx * dx + dy * dy) > dragThreshold) {
+            if (touchDragRequiresLongPress && isTouchEvent(e) && state.current === 'pending') {
+                state.current = 'idle';
+                cleanup();
+                onLongPressCancel?.();
+                return;
+            }
             // If a drag is detected, cancel any long-press that might have just started.
             if (state.current === 'longpress') {
                 onLongPressCancel?.();

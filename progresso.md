@@ -4,6 +4,17 @@ Fonte: itens [v] removidos do relatorio operacional
 
 Nota 01/04/2026: o relatorio operacional foi enxugado e reconciliado. Os itens `[v]` dessa rodada ja estavam consolidados abaixo e nao foram duplicados.
 
+## Fechamento 23/04/2026
+[v] Google Play aceitou a trilha de closed test; o app esta em beta fechado real, com usuarios instalando pela Play Store.
+[v] Reclassificar maturidade operacional do GLYPH como `Nivel 9 - Ataque`, porque ja existe closed beta em andamento.
+[v] Confirmar que a trilha Android atual esta aceita pela Play Console e alinhada com `targetSdkVersion 36`.
+[v] Confirmar release atual em `versionCode 26`.
+[v] Definir regra para update durante os 14 dias: manter mesmo closed testing track, aumentar `versionCode`, subir AAB novo e deixar testers atualizarem pela Play.
+[v] Deixar `npm run type-check` verde com correcoes pequenas de tipagem/imports, sem mexer em SQL, billing, onboarding, precos ou regra de acesso.
+[v] Validar `npm run test` com 24 cenarios do core loop.
+[v] Registrar que Node 22 LTS pode ser considerado depois, em momento calmo de preparacao de nova versao/AAB.
+[v] Registrar principio de beta: nao mexer em Gradle, SDK, Capacitor, billing, SQL, onboarding ou rotas criticas sem bug real comprovado.
+
 ## Fechamento 15/04/2026
 [v] Refinar a passagem pelo `Relatorio` sem inventar outro vazio: manter a placa do legado com os numerinhos como centro da tela, preservar o CTA luxe de `Novo Ciclo` e atualizar a dica inicial da pagina para explicar melhor o valor de abrir um ciclo. 
 [v] Amarrar dicas de primeira vez nos modais de `Criar Arena` e `Criar Acao`, guiando melhor a pessoa no momento em que a estrutura e a execucao realmente nascem.

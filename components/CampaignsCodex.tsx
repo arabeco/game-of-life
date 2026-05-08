@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useRef } from 'react';
 import { Action, Arena, Campaign } from '../types';
 import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, LightbulbIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
@@ -24,6 +25,7 @@ interface CampaignsCodexProps {
     previewArenas?: Arena[];
     previewActions?: Action[];
     previewEditable?: boolean;
+    autoOpenRecommendationQuiz?: boolean;
     onDeletePreviewCampaign?: (() => void | Promise<void>) | null;
     onUpdatePreviewCampaign?: ((payload: {
         title: string;
@@ -183,6 +185,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     previewArenas = [],
     previewActions = [],
     previewEditable = false,
+    autoOpenRecommendationQuiz = false,
     onDeletePreviewCampaign = null,
     onUpdatePreviewCampaign = null,
     previewMeta,
@@ -204,6 +207,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const [libraryPreview, setLibraryPreview] = useState<CodexCampaignPreview | null>(null);
     const [libraryPreviewCodex, setLibraryPreviewCodex] = useState<UserCodex | null>(null);
     const [isRecommendationQuizOpen, setRecommendationQuizOpen] = useState(false);
+    const autoOpenedRecommendationQuizRef = useRef(false);
 
     // Expandable Description State
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -216,6 +220,12 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         setLocalPreviewArenas(previewArenas);
         setLocalPreviewActions(previewActions);
     }, [previewActions, previewArenas, previewCampaign]);
+
+    useEffect(() => {
+        if (!autoOpenRecommendationQuiz || autoOpenedRecommendationQuizRef.current) return;
+        autoOpenedRecommendationQuizRef.current = true;
+        setRecommendationQuizOpen(true);
+    }, [autoOpenRecommendationQuiz]);
 
     const handleOpenCampaignStore = () => {
         window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'codexes' } }));
@@ -893,6 +903,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 setIsCreateCampaignModalOpen(false);
                             }}
                         />
+                    )}
+                    {isRecommendationQuizOpen && (
+                        <CampaignRecommendationQuizModal onClose={() => setRecommendationQuizOpen(false)} />
                     )}
                 </div>
             </Portal>

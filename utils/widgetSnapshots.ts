@@ -65,6 +65,7 @@ export interface DailyWidgetSnapshot {
   date: string;
   stage: DailyCommitmentStage;
   cycleName: string | null;
+  cycleStartDate: string | null;
   cycleEndDate: string | null;
   cycleDayLabel: string | null;
   cycleElapsedDays: number | null;
@@ -132,6 +133,17 @@ const trimPreview = (content?: string | null, maxLength = 140) => {
   return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
 };
 
+const buildCycleActionTotal = (cycleActions: Action[], scheduledTaskCount: number): number => {
+  const plannedFromActions = cycleActions.reduce((sum, action) => {
+    if (action.actionType === 'Marco') return sum;
+    if (action.actionType === 'Livre') return sum + 1;
+    const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
+    return sum + repetitions;
+  }, 0);
+
+  return Math.max(plannedFromActions, scheduledTaskCount);
+};
+
 export const buildCommitmentStatsSnapshot = (
   tasks: ScheduledTask[],
   dailyCommitment: DailyCommitment,
@@ -182,10 +194,18 @@ export const buildCycleWidgetSnapshot = ({
   const isQuestActionId = (actionId: string) => normalizeArenaName(actionArenaNameById.get(actionId)).includes('quests');
 
   const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, cycle.startDate, cycle.endDate);
-  const completedTasks = cycleTasks.filter((task) => task.completed);
+  const cycleArenaIds = new Set(cycle.arenaIds || []);
+  const scopedActions = actions.filter((action) => (
+    (cycleArenaIds.size === 0 || cycleArenaIds.has(action.arenaId)) && action.actionType !== 'Marco'
+  ));
+  const scopedActionIds = new Set(scopedActions.map((action) => action.id));
+  const cycleActionTasks = cycleTasks.filter((task) => scopedActionIds.has(task.actionId));
+  const completedTasks = cycleActionTasks.filter((task) => task.completed);
   const questTasks = cycleTasks.filter((task) => isQuestActionId(task.actionId));
   const completedQuests = questTasks.filter((task) => task.completed);
-  const taskProgressPercent = cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 100;
+  const totalTaskCount = buildCycleActionTotal(scopedActions, cycleActionTasks.length);
+  const safeCompletedTaskCount = Math.min(completedTasks.length, totalTaskCount);
+  const taskProgressPercent = totalTaskCount > 0 ? (safeCompletedTaskCount / totalTaskCount) * 100 : 0;
 
   const milestonesCompleted = completedTasks.filter((task) => {
     const action = actions.find((candidate) => candidate.id === task.actionId);
@@ -196,7 +216,7 @@ export const buildCycleWidgetSnapshot = ({
   const questBonus = completedQuests.length * 5;
   const consistencyDays = new Set(completedTasks.map((task) => task.date)).size;
   const consistencyBonus = consistencyDays >= 4 ? 5 : 0;
-  const totalFidelityBonus = cycleTasks.length > 0 && completedTasks.length === cycleTasks.length ? 5 : 0;
+  const totalFidelityBonus = totalTaskCount > 0 && safeCompletedTaskCount === totalTaskCount ? 5 : 0;
   const currentScore = Math.round(taskProgressPercent + milestoneBonus + questBonus + consistencyBonus + totalFidelityBonus);
   const scoreInfo = getScoreGrade(currentScore);
 
@@ -210,8 +230,8 @@ export const buildCycleWidgetSnapshot = ({
     remainingDays: Math.max(0, timing.totalDays - timing.elapsedDays),
     timeProgressPercent: timing.timeProgress,
     taskProgressPercent,
-    completedTaskCount: completedTasks.length,
-    totalTaskCount: cycleTasks.length,
+    completedTaskCount: safeCompletedTaskCount,
+    totalTaskCount,
     completedQuestCount: completedQuests.length,
     milestonesCompleted,
     questBonus,
@@ -267,6 +287,7 @@ export const buildDailyWidgetSnapshot = ({
       date: commitmentDate,
       stage,
       cycleName: null,
+      cycleStartDate: null,
       cycleEndDate: null,
       cycleDayLabel: null,
       cycleElapsedDays: null,
@@ -309,6 +330,7 @@ export const buildDailyWidgetSnapshot = ({
     date: dailyCommitment.date,
     stage: dailyCommitment.stage,
     cycleName: activeCycle.name,
+    cycleStartDate: activeCycle.startDate,
     cycleEndDate: activeCycle.endDate,
     cycleDayLabel: cycleTiming.statusLabel,
     cycleElapsedDays: cycleTiming.elapsedDays,

@@ -1,111 +1,104 @@
 ============================================================
-           GLYPH: MASTER SYSTEM STATE (15/04/26)
+           GLYPH: MASTER SYSTEM STATE (23/04/26)
 ============================================================
-STATUS: [X] ALPHA  |  [ ] BETA  |  [ ] LIVE
+STATUS: [ ] ALPHA  |  [X] BETA FECHADO  |  [ ] LIVE
 FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
 ------------------------------------------------------------
 
 ## 1. FASE ATUAL: FUNDACAO (T1)
-- Status: ALPHA operacional com trilha real de publicacao Android iniciada.
-- Missao: sair do "app web forte" para "app Android publicavel" sem quebrar o produto vivo, fechando a v16 com loop principal mais legivel e mais vendavel.
+- Status: Beta fechado ativo na Google Play, com usuarios reais instalando pela Play Store.
+- Missao: atravessar os 14 dias de closed test sem quebrar quem esta usando, coletar feedback real e preparar um pedido de producao forte.
 - Trilha oficial: `T1 Fundacao -> T2 O Cerco -> T3 A Ascensao`.
+- Regra desta fase: patch pequeno, testavel e reversivel. Nada de refatoracao grande durante o beta sem bug real comprovado.
 
 ## 2. SCORECARD DE AUDITORIA
-- **EXECUCAO REAL: 9.9** (`build` ok, shell Android validado em aparelho real, `AAB` assinado gerado e trilha v16 pronta para sync/bundle).
-- **ID VISUAL: 9.8** (`Mundo`, `Forja`, `Relatorios`, overlays de primeira vez e modais centrais ficaram mais coerentes com o padrao luxe atual).
-- **FLUXO USUARIO: 9.9** (`Oraculo`, `Social`, `Fragmentos`, `Ciclo` e `Relatorio` estao mais legiveis; o produto parece menos bagunca e mais sistema).
-- **RETENCAO: --** (Aguardando Beta)
-- **AQUISICAO: --** (Dominio quase pronto; faltam `3 reels` para destravar a fila de `~75 posts`.)
+- **EXECUCAO REAL: 8.6** (`type-check` verde, core loop verde e app aceito em closed test; foco agora e proteger a versao em uso real).
+- **ID VISUAL: 8.2** (identidade forte ja existe: skins, luxe, BASIC/GAME, Oraculo, Mundo, Planner e Relatorio; ainda ha mojibake residual e telas densas).
+- **FLUXO USUARIO: 8.0** (login, beta gate, onboarding, ciclo, arena, acao, planner, rest screen e relatorio existem; agora o foco e blindar o trilho real dos testers).
+- **RETENCAO: 8.4** (motor de retorno forte: ciclos, Sitrep, Oraculo, push, relatorio, legado, recompensas, social e campanhas; falta medir retencao real no closed test).
+- **AQUISICAO: 8.0** (formularios do Google respondidos, prints reais ja existem e a narrativa publica esta pronta para sustentar o pedido de producao).
 
 ## 3. ESTADO REAL HOJE
 ### FECHADO [x]
-[x] `Capacitor/Android`: shell Android criado, sincronizado e rodando em aparelho real. - Responsavel: SENTINELA
-[x] `Play Console`: app `Glyph` criado e secao `Conteudo do app` preenchida (`Privacidade`, `Data Safety`, `Classificacao`, `Ads`, `Acesso`, `Exclusao`, etc.). - Responsavel: PROTOCOLO
-[x] `Release Android`: `AAB` assinado de `release` gerado e uploadado no `Teste interno`. - Responsavel: SENTINELA
-[x] `Teste interno`: trilha de publicacao Android saiu do "teorico" e ja entrou no Play Console de verdade. - Responsavel: SENTINELA + TRONO
+[x] `Google Play`: closed test ativo e aceito pela Play Console. - Responsavel: TRONO + DOMINIO
+[x] `Android SDK`: projeto alinhado com `targetSdkVersion 36`. - Responsavel: SENTINELA
+[x] `Release atual`: `versionCode 26`, `versionName 1.0.26`. - Responsavel: SENTINELA
+[x] `Vercel/web`: app publicado e funcional fora do Android. - Responsavel: SENTINELA
+[x] `Type-check`: `npm run type-check` verde apos limpeza conservadora de tipagem. - Responsavel: SENTINELA
+[x] `Core loop`: `npm run test` passou com 24 cenarios. - Responsavel: SENTINELA
+[x] `Capacitor/Android`: shell Android criado, sincronizado e validado em aparelho real em rodadas anteriores. - Responsavel: SENTINELA
+[x] `Play Console`: conteudo do app preenchido (`Privacidade`, `Data Safety`, `Classificacao`, `Ads`, `Acesso`, `Exclusao`, etc.). - Responsavel: PROTOCOLO
+[x] `Questionarios Google`: formularios respondidos com material real do app. - Responsavel: TRONO
+[x] `Provas visuais`: prints reais ja existem para sustentar a revisao e o pedido de producao. - Responsavel: DOMINIO
+[x] `Login real`: fluxo real cai no destino correto. - Responsavel: PROTOCOLO
+[x] `marco1_beta_tracking`: planilha/painel ja e a fonte operacional para acompanhar testers e sinais do beta. - Responsavel: TRONO
 [x] `Push Android`: camada nativa/local funcionando e trilha `FCM` preparada no backend. - Responsavel: PROTOCOLO
-[x] `Billing Android`: plugin nativo, gate por plataforma e fluxo Google Play preparados no app. - Responsavel: TESOURO
-[x] `Widgets futuros`: calculos de `Ciclo`, `Painel Diario`, `Oraculo` e `Acao ativa` extraidos para builders puros fora do JSX. - Responsavel: SENTINELA
-[x] `Oraculo vNext (base)`: conversa, fazer e solicitacoes ficaram mais separados; sinais do Oraculo voltaram para o chat e o social saiu da casa errada. - Responsavel: PROTOCOLO
-[x] `Mundo/Social`: DMs, cla, pessoas e solicitacoes foram reorganizados na camada social certa, com o Oraculo virando triagem e ponte. - Responsavel: PROTOCOLO
-[x] `Fragmentos`: recompensa de ciclo agora entrega fragmentos junto do resto, e a `Forja` ganhou campanhas casuais e itens curados compraveis por fragmentos. - Responsavel: TESOURO
-[x] `Onboarding contextual`: dicas de primeira vez foram expandidas para telas importantes, incluindo `Reports`, `Criar Arena` e `Criar Acao`. - Responsavel: SENTINELA
+[x] `Oraculo -> Planner`: CTA do painel diario abre o Planner/Sitrep pelo fluxo `APP_NAVIGATE_EVENT` com `openSitrep`. - Responsavel: PROTOCOLO
+[x] `Mundo/Social`: DMs, cla, pessoas e solicitacoes estao na superficie social certa, com Oraculo como triagem. - Responsavel: PROTOCOLO
 
 ### TRAVAS ATUAIS [!]
-[!] `Billing real` ainda nao fecha ponta a ponta porque falta reconciliacao do token de compra no backend. - Responsavel: TESOURO
-[!] `Closed test`: a fase critica agora e montar e sustentar o teste fechado com `20 usuarios` por `12 dias`, com build estavel e resposta ao questionario do Google depois. - Responsavel: TRONO + DOMINIO
-[!] `Apple/iOS`: a trilha inteira ainda esta por abrir (`Apple Developer`, `Xcode`, `StoreKit`, `APNs`, `Sign in with Apple`, `TestFlight`). - Responsavel: SENTINELA + PROTOCOLO
+[!] `Closed test`: manter testers optados e ativos durante 14 dias continuos. Estamos no dia 2. - Responsavel: TRONO + DOMINIO
+[!] `Encoding`: `check:encoding` ainda acusa mojibake em fontes e assets Android antigos; limpar por prioridade visual, nao em massa. - Responsavel: SENTINELA
+[!] `Billing real`: ainda precisa validacao ponta a ponta com reconciliacao segura antes de virar promessa publica. - Responsavel: TESOURO
+[!] `Apple/iOS`: trilha inteira ainda por abrir (`Apple Developer`, `Xcode`, `StoreKit`, `APNs`, `Sign in with Apple`, `TestFlight`). - Responsavel: SENTINELA + PROTOCOLO
 
 ### OBSERVACOES [~]
-[~] `Web publicado`: aparentemente saudavel apos o ultimo push; a rodada local grande da v16 esta pronta para sync, bundle e passada manual. - Responsavel: SENTINELA
-[~] `localhost OAuth`: o login local pode cair em `app.glyph.life` se a URL de dev nao estiver na allowlist de redirect do Supabase; isso nao bloqueia a publicacao. - Responsavel: PROTOCOLO
-[~] `Delete cycle`: a correcao voltou com confirmacao e limpeza mais completa, mas a validacao manual final ainda depende de teste real do usuario. - Responsavel: SENTINELA
+[~] `Node 22`: considerar depois, quando for preparar uma nova versao/AAB com calma. Nao e pauta para mexer agora. - Responsavel: SENTINELA
 
-## 4. ORDEM OPERACIONAL PARA PUBLICAR NO ANDROID
-1. **Fechar produtos da loja no Play Console**
-   - criar SKUs de ouro
-   - criar `premium_30d`
-   - criar `platinum_30d`
-   - alinhar nomes, precos e tipo de produto
-2. **Implementar reconciliacao backend do billing**
-   - verificar compra Google Play no backend
-   - tornar creditos idempotentes
-   - creditar ouro / ativar premium so apos verificacao real
-3. **Rodar compra Android de verdade**
-   - testar ouro
-   - testar premium
-   - testar renovacao / expiracao / restauracao do estado
-4. **Fechar a passada manual final no app real**
-   - `Oraculo vNext`
-   - `Mundo / Social`
-   - `Forja / fragmentos`
-   - `Campanhas`
-   - `Mentoria`
-   - `Parceria`
-   - `Competicao`
-   - `Planner`
-   - `Ciclo`
-   - `Relatorio`
-   - push / e-mail do `GM Panel`
-5. **Abrir e sustentar o closed test**
-   - publicar versao na faixa fechada
-   - colocar `20 usuarios` reais no teste
-   - sustentar por `12 dias`
-   - garantir feedback, estabilidade e retorno minimo durante a janela
-6. **Solicitar acesso a producao**
-   - responder o questionario do teste fechado
-   - pedir liberacao de `Production`
-   - so depois apertar a publicacao aberta
-7. **Abrir a trilha Apple inteira**
-   - pagar `Apple Developer Program`
-   - criar app no `App Store Connect`
-   - subir `Capacitor iOS` e abrir no `Xcode`
-   - plugar `StoreKit`, `APNs`, `Sign in with Apple` e `TestFlight`
+## 4. ORDEM OPERACIONAL PARA ATRAVESSAR O CLOSED TEST
+1. **Operar pelo `marco1_beta_tracking`**
+   - usar a planilha/painel como fonte central
+   - acompanhar quem entrou, instalou, abriu e voltou
+   - registrar feedback real sem inventar processo paralelo
+2. **Proteger a versao atual**
+   - se esta instalando, abrindo e logando certo, manter
+   - nao subir versao nova por ansiedade tecnica
+   - qualquer nova versao precisa aumentar `versionCode`, senao a Play nem aceita
+3. **Registrar sinais do beta**
+   - prints reais
+   - formulario Google ja respondido
+   - problemas reportados por tester
+   - sinais de ativacao e retorno
+4. **Corrigir so o que aparecer no uso real**
+   - bug que impede login/entrada
+   - bug que trava ciclo/arena/acao/planner
+   - bug visivel que prejudica a revisao
+5. **Preparar producao**
+   - consolidar evidencias no fim da janela
+   - usar o historico do `marco1_beta_tracking`
+   - pedir `Production` com base no teste real, nao em checklist artificial
 
 ## 5. MATRIZ DE EXECUCAO
-### BLOQUEIA PUBLICACAO ANDROID
-[ ] Cadastro dos produtos reais no Play Console (`ouro`, `premium_30d`, `platinum_30d`). - Responsavel: TESOURO
-[ ] `store-reconcile`: backend validar compra Google Play e creditar ouro/premium de forma idempotente. - Responsavel: TESOURO + PROTOCOLO
-[ ] Validar compra Android ponta a ponta em aparelho real. - Responsavel: TESOURO
-[ ] Fechar teste real de notificacao e e-mail do `GM Panel`. - Responsavel: PROTOCOLO
-[ ] Fechar passada final de `Oraculo vNext`, `Mundo/Social`, `Forja`, `Campanhas`, `Mentoria`, `Parceria`, `Competicao`, `Planner`, `Ciclo` e `Relatorio` no app real. - Responsavel: SENTINELA + PROTOCOLO
-[ ] Fechar `closed test` com `20 usuarios` por `12 dias` e build estavel na Play. - Responsavel: TRONO + DOMINIO
-[ ] Responder o formulario do Google e pedir aprovacao de `Production`. - Responsavel: TRONO
+### BLOQUEIA PRODUCAO ANDROID
+[ ] Fechar os 14 dias de closed test com testers optados e uso real. - Responsavel: TRONO + DOMINIO
+[ ] Manter `marco1_beta_tracking` atualizado com instalacao, abertura, retorno e feedback. - Responsavel: TRONO
+[ ] Se houver update, gerar v27+ com `versionCode` maior e subir no mesmo closed testing track. - Responsavel: SENTINELA
+[ ] Confirmar billing real ou deixar paywall/compra fora da promessa publica ate estar reconciliado. - Responsavel: TESOURO
+[ ] Pedir aprovacao de `Production` com formularios ja respondidos, prints reais e dados do beta. - Responsavel: TRONO
 
 ### FORA DO HOT PATH IMEDIATO
-[ ] `localhost` OAuth: adicionar todas as URLs de dev na allowlist do Supabase para o login local nao cair no host publico. - Responsavel: PROTOCOLO
-[ ] pt-BR residual, parsing e robustez final do `Oraculo`. - Responsavel: PROTOCOLO
-[ ] Fechar os `3 reels` restantes e alinhar landing/site antes de empurrar trafego. - Responsavel: DOMINIO
-[ ] Widgets nativos: persistir snapshots em storage compartilhado e criar leitura nativa depois da loja. - Responsavel: SENTINELA
-[ ] Apple/iOS: abrir a trilha inteira `Apple Developer + App Store Connect + Capacitor iOS + Xcode + StoreKit + APNs + Sign in with Apple + TestFlight`. - Responsavel: SENTINELA + PROTOCOLO
+[ ] Limpeza ampla de encoding fora do fluxo principal. - Responsavel: SENTINELA
+[ ] Refatoracao grande de navegacao/eventos. - Responsavel: SENTINELA + PROTOCOLO
+[ ] Atualizacao grande de Capacitor/Gradle/dependencias. - Responsavel: SENTINELA
+[ ] Trocar/baixar para Node 22 em momento calmo de preparacao de nova versao. - Responsavel: SENTINELA
+[ ] Apple/iOS: abrir trilha inteira `Apple Developer + App Store Connect + Capacitor iOS + Xcode + StoreKit + APNs + Sign in with Apple + TestFlight`. - Responsavel: SENTINELA + PROTOCOLO
+[ ] Fechar reels/landing/funil antes de empurrar trafego aberto. - Responsavel: DOMINIO
 
 ## 6. CORTE BETA 25
-[ ] Android publicavel em closed test com `20` usuarios e versao instalada pela Play.
-[ ] Billing Android reconciliado no backend para ouro e premium.
-[ ] Push Android remoto real validado fora do app.
-[ ] Passada final de `Oraculo`, `Mundo/Social`, `Forja`, `Campanhas`, `Mentoria`, `Parceria`, `Competicao`, `Planner`, `Ciclo` e `Relatorio`.
-[ ] `GM Panel` com notificacao/e-mail testados de verdade.
-[ ] Ultimo pacote de mobile/skins/responsividade fechado.
+[x] Android em closed test pela Play Store.
+[x] App instalavel por usuarios reais.
+[x] `targetSdkVersion 36`.
+[x] `type-check` verde.
+[x] Core loop verde.
+[x] Formularios Google respondidos.
+[x] Prints reais existentes.
+[x] Login real cai no destino correto.
+[x] `marco1_beta_tracking` existe como base de acompanhamento.
+[ ] 14 dias completos de closed test.
+[ ] Feedback real consolidado no tracking.
+[ ] Proximo AAB gerado apenas se for necessario update real.
+[ ] Billing Android reconciliado ou claramente fora do caminho publico.
+[ ] Pedido de producao enviado e aprovado.
 
 ## 7. DEPOIS DO ANDROID (APPLE)
 [ ] Pagar `Apple Developer Program`.
@@ -133,22 +126,23 @@ FASE:   [X] FUNDACAO (T1) | [ ] CERCO | [ ] ASCENSAO
   - `20%+` fecham `1 ciclo`
 
 ## 9. STATS PRA FICAR DE OLHO
-[ ] Ativacao onboarding: 0/60%
-[ ] Retorno D2: 0/30%
-[ ] Fechamento 1 ciclo: 0/20%
-[ ] Usuarios ativos T1: 0/50
-[ ] Usuarios ativos Beta inicial: 0/25
-[ ] Cobertura `marco1_beta_tracking`: 0/100%
-[ ] Friccao mobile critica (P0/P1): 0/0
+[ ] Testers optados no closed test: acompanhar no `marco1_beta_tracking`
+[ ] Dias de closed test: 2/14
+[ ] Instalaram pela Play: acompanhar no `marco1_beta_tracking`
+[ ] Abriram o app apos instalar: acompanhar no `marco1_beta_tracking`
+[ ] Ativacao onboarding: acompanhar no `marco1_beta_tracking`
+[ ] Retorno D2: acompanhar no `marco1_beta_tracking`
+[ ] Fechamento 1 ciclo: acompanhar no `marco1_beta_tracking`
+[ ] Bugs P0/P1 abertos: 0/0
+[x] Cobertura `marco1_beta_tracking`: fonte operacional definida
 
 ## 10. RESUMO ATUALIZADO
-- Data: 15/04/2026
-- Atualizado por: GPT-5 Codex
-- Resumo: o GLYPH continua em ALPHA na Fundacao (T1), mas o foco imediato agora e Google Play de verdade. O teste interno ja existe, a v16 esta pronta para sync/bundle e a superficie do produto ficou mais coerente (`Oraculo`, `Mundo`, `Forja`, `Relatorio`, onboarding contextual). O gargalo principal deixou de ser "empacotar" e virou "atravessar publicacao Android": fechar SKUs e billing reconciliado, rodar compra real, sustentar o `closed test` com `20 usuarios` por `12 dias` e pedir aprovacao de producao. Depois disso, a trilha Apple segue inteira por fazer.
+- Data: 23/04/2026
+- Atualizado por: ChatGPT 5.5 / Codex
+- Resumo: o GLYPH esta em beta fechado real na Google Play. Formularios do Google ja foram respondidos, prints reais existem e o login real cai no destino correto. O foco agora e operar pelo `marco1_beta_tracking`, proteger a versao atual, registrar uso real e pedir producao com evidencia do teste. Node 22 fica como ajuste tecnico posterior para uma nova versao, nao como bloqueio atual.
 
 ## 11. MODO DE USO DO RELATORIO
 1. Ler `relatorio.md`, `status.md`, `roadmap-soberania.md` e `progresso.md` antes de mexer no estado do projeto.
-2. O item `3` mostra o estado real atual; o item `4` mostra a ordem pratica para publicar.
-3. O item `5` e a leitura operacional de bloqueios; o item `6` e o corte minimo para abrir beta/publicacao Android.
+2. O item `3` mostra o estado real atual; o item `4` mostra a ordem pratica para atravessar o closed test.
+3. O item `5` e a leitura operacional de bloqueios; o item `6` e o corte minimo para producao Android.
 4. O que entrar como fechado e estavel deve migrar depois para `progresso.md`.
-

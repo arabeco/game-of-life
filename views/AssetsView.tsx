@@ -11,7 +11,7 @@ import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutC
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
-import type { Asset, Slot, SlotValue } from '../types';
+import type { Action, Asset, Slot, SlotValue } from '../types';
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
     const normalized = String(hex || '').trim();
@@ -97,8 +97,19 @@ const isSlotValueEmpty = (value: SlotValue | undefined): boolean => {
     return !value.imageUrl?.trim();
 };
 
+const buildCycleActionTotal = (cycleActions: Action[], scheduledTaskCount: number): number => {
+    const plannedFromActions = cycleActions.reduce((sum, action) => {
+        if (action.actionType === 'Marco') return sum;
+        if (action.actionType === 'Livre') return sum + 1;
+        const repetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
+        return sum + repetitions;
+    }, 0);
+
+    return Math.max(plannedFromActions, scheduledTaskCount);
+};
+
 export const AssetsView: React.FC = () => {
-    const { assets, userProfile, updateUserProfile, showToast, appMode, activeCycle, dailyCommitment, cycleProgress, getArenas, actions, tasks } = useGame();
+    const { assets, userProfile, updateUserProfile, showToast, appMode, activeCycle, dailyCommitment, getArenas, actions, tasks } = useGame();
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
     const [isEditingAssetDetail, setIsEditingAssetDetail] = useState(false);
     const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
@@ -108,7 +119,7 @@ export const AssetsView: React.FC = () => {
     const cycleSummaryRef = useRef<HTMLButtonElement | null>(null);
     const lastSelectedAssetIdRef = useRef<string | null>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-    const [cycleSummaryHeight, setCycleSummaryHeight] = useState(56);
+    const [cycleSummaryHeight, setCycleSummaryHeight] = useState(48);
     const [hasSephirotRasterArt, setHasSephirotRasterArt] = useState(false);
     const overviewLayout = useAssetsOverviewLayoutConfig();
 
@@ -207,42 +218,35 @@ export const AssetsView: React.FC = () => {
         const scopedArenas = cycleArenaIds.size > 0 ? allArenas.filter((arena) => cycleArenaIds.has(arena.id)) : allArenas;
         const activeArenaCount = scopedArenas.filter((arena) => !arena.isArchived).length;
         const archivedArenaCount = scopedArenas.filter((arena) => arena.isArchived).length;
-        let totalCompleted = 0;
-        let totalPlanned = 0;
-
-        for (const arena of scopedArenas) {
-            const arenaActions = actions.filter((action) => action.arenaId === arena.id);
-            const actionIds = new Set(arenaActions.map((action) => action.id));
-            const arenaTasks = cycleScopedTasks.filter((task) => actionIds.has(task.actionId));
-            const arenaProgress = calculateArenaProgress({
-                arena,
-                actions: arenaActions,
-                tasks: arenaTasks,
-            });
-            totalCompleted += arenaProgress.totalCompleted;
-            totalPlanned += arenaProgress.totalPlanned;
-        }
-
-        const computedProgress = totalPlanned > 0 ? Math.round((totalCompleted / totalPlanned) * 100) : Math.max(0, Math.min(100, Math.round(cycleProgress || 0)));
+        const scopedArenaIds = new Set(scopedArenas.map((arena) => arena.id));
+        const scopedActions = actions.filter((action) => scopedArenaIds.has(action.arenaId) && action.actionType !== 'Marco');
+        const scopedActionIds = new Set(scopedActions.map((action) => action.id));
+        const scopedTasks = cycleScopedTasks.filter((task) => scopedActionIds.has(task.actionId));
+        const totalCompleted = scopedTasks.filter((task) => task.completed).length;
+        const totalPlanned = buildCycleActionTotal(scopedActions, scopedTasks.length);
+        const safeCompleted = Math.min(totalCompleted, totalPlanned);
+        const computedProgress = totalPlanned > 0 ? Math.round((safeCompleted / totalPlanned) * 100) : 0;
 
         return {
             name: activeCycle.name,
             progress: computedProgress,
-            timeProgress: cycleTiming.timeProgress,
+            timeProgress: Math.max(0, Math.min(100, Math.round(cycleTiming.timeProgress || 0))),
             elapsedDays: cycleTiming.elapsedDays,
             totalDays: cycleTiming.totalDays,
             statusLabel: cycleTiming.statusLabel,
             inclusiveLabel: cycleTiming.inclusiveLabel,
             activeArenaCount,
             archivedArenaCount,
-            totalCompleted,
+            totalCompleted: safeCompleted,
             totalPlanned,
+            startDate: activeCycle.startDate,
+            endDate: activeCycle.endDate,
         };
-    }, [activeCycle, allArenas, cycleProgress, dailyCommitment?.date, actions, cycleScopedTasks]);
+    }, [activeCycle, allArenas, dailyCommitment?.date, actions, cycleScopedTasks]);
 
     useLayoutEffect(() => {
         const summaryCard = cycleSummaryRef.current;
-        const fallbackHeight = activeCycle ? 58 : 34;
+        const fallbackHeight = activeCycle ? 48 : 34;
 
         if (!summaryCard) {
             setCycleSummaryHeight(fallbackHeight);
@@ -668,7 +672,7 @@ export const AssetsView: React.FC = () => {
                                 ref={cycleSummaryRef}
                                 type="button"
                                 onClick={handleOpenReports}
-                                className={`group w-full overflow-hidden border border-white/10 px-3 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'max-w-[258px] rounded-[16px] py-1.5' : 'max-w-[214px] rounded-[12px] py-1.5'}`}
+                                className={`group w-full overflow-hidden border border-white/10 px-3 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'max-w-[300px] rounded-[14px] py-1' : 'max-w-[214px] rounded-[12px] py-1.5'}`}
                                 style={{
                                     borderColor: rgbaString(cycleAccentRgb, 0.32),
                                     backgroundImage: `radial-gradient(circle at 18% 10%, ${rgbaString(cycleAccentRgb, 0.24)} 0%, transparent 34%), linear-gradient(180deg, rgba(31,38,48,0.94) 0%, rgba(13,17,22,0.98) 100%)`,
@@ -682,23 +686,17 @@ export const AssetsView: React.FC = () => {
                                             <h3 className="truncate text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
                                                 {cycleSummary.name}
                                             </h3>
-                                            <span className="shrink-0 text-[8px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
-                                                {formatDate(activeCycle.endDate)}
+                                            <span className="shrink-0 text-[8px] font-black tracking-[0.02em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
+                                                {`${formatDate(cycleSummary.startDate)}-${formatDate(cycleSummary.endDate)} (${cycleSummary.totalDays} dias)`}
                                             </span>
                                         </div>
-                                        <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.88) }}>
-                                            <span className="truncate">{`${cycleSummary.statusLabel} · ${cycleSummary.activeArenaCount} arenas`}</span>
-                                            <span className="shrink-0">{cycleSummary.elapsedDays > 0 ? `Dia ${cycleSummary.elapsedDays}/${cycleSummary.totalDays}` : cycleSummary.statusLabel}</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="min-w-0 flex-1">
+                                        <div className="space-y-0.5">
+                                            <div>
                                                 <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
                                                     <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Progresso</span>
-                                                    <span style={{ color: rgbString(cycleTitleColor) }}>
-                                                        {`${cycleSummary.totalCompleted}/${cycleSummary.totalPlanned} · ${cycleSummary.progress}%`}
-                                                    </span>
+                                                    <span className="shrink-0" style={{ color: rgbString(cycleTitleColor) }}>{`${cycleSummary.totalCompleted}/${cycleSummary.totalPlanned} (${cycleSummary.progress}%)`}</span>
                                                 </div>
-                                                <div className="mt-0.5 h-[3px] w-full overflow-hidden rounded-full bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                                                <div className="mt-0.5 h-[2px] w-full overflow-hidden rounded-full bg-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                                                     <div
                                                         className="h-full rounded-full transition-all duration-500"
                                                         style={{
@@ -709,9 +707,21 @@ export const AssetsView: React.FC = () => {
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="shrink-0 text-right text-[7px] font-black uppercase tracking-[0.08em]">
-                                                <span className="block" style={{ color: rgbaString(cycleMetaColor, 0.78) }}>Tempo</span>
-                                                <span className="block" style={{ color: rgbaString(cycleMetaColor, 0.96) }}>{`${cycleSummary.timeProgress}%`}</span>
+                                            <div>
+                                                <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
+                                                    <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Tempo</span>
+                                                    <span className="shrink-0" style={{ color: rgbaString(cycleMetaColor, 0.96) }}>{`${cycleSummary.elapsedDays}/${cycleSummary.totalDays} (${cycleSummary.timeProgress}%)`}</span>
+                                                </div>
+                                                <div className="mt-0.5 h-[2px] w-full overflow-hidden rounded-full bg-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                                                    <div
+                                                        className="h-full rounded-full transition-all duration-500"
+                                                        style={{
+                                                            width: `${cycleSummary.timeProgress}%`,
+                                                            background: 'linear-gradient(90deg, rgba(118,128,145,0.7) 0%, rgba(209,216,226,0.92) 54%, rgba(255,255,255,0.98) 100%)',
+                                                            boxShadow: '0 0 10px rgba(210,220,235,0.16)',
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

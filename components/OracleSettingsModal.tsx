@@ -87,6 +87,39 @@ const MANUAL_LIBRARY_CATEGORIES: { id: OracleCategory; label: string; icon: stri
     { id: 'sussurros_maestria', label: 'Sussurros da Maestria', icon: '👁️' },
 ];
 
+const ORACLE_MESSAGE_RULES = [
+    {
+        title: 'Push real',
+        body: 'So para horario, risco forte, DM, convite ou aviso importante.',
+        tone: 'border-emerald-400/20 bg-emerald-400/[0.08] text-emerald-100',
+    },
+    {
+        title: 'Automatico opcional',
+        body: 'Cards de foco, resumo de ciclo e provocacoes do modo escolhido.',
+        tone: 'border-amber-400/20 bg-amber-400/[0.08] text-amber-100',
+    },
+    {
+        title: 'No chat do Oraculo',
+        body: 'Frases, reflexoes, analises longas e cards por tema.',
+        tone: 'border-white/10 bg-white/[0.04] text-gray-300',
+    },
+];
+
+const ORACLE_USE_STEPS = [
+    {
+        title: '1. Escolha o tom',
+        body: 'Neutro no gratis. Premium libera coach, tatico, calmo, reflexivo e personalizado.',
+    },
+    {
+        title: '2. Marque os temas',
+        body: 'Os temas dizem que tipo de card o Oraculo pode puxar quando voce pedir ou liberar automatico.',
+    },
+    {
+        title: '3. Ligue push se quiser',
+        body: 'Push e so para tirar voce do mundo real quando existe algo acionavel.',
+    },
+];
+
 const getRemotePushFailureMessage = (result: AppPushSyncResult): string => {
     const nativePlatform = getNativePushPlatform();
     const providerLabel = getNativePushProviderLabel();
@@ -371,6 +404,31 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         </div>
     );
 
+    const renderMessagePolicyCards = () => (
+        <div className="grid grid-cols-1 gap-2">
+            {ORACLE_MESSAGE_RULES.map((rule) => (
+                <div key={rule.title} className={`rounded-xl border px-3 py-2 ${rule.tone}`}>
+                    <div className="text-[10px] font-black uppercase tracking-[0.18em]">{rule.title}</div>
+                    <p className="mt-1 text-[11px] leading-relaxed opacity-80">{rule.body}</p>
+                </div>
+            ))}
+        </div>
+    );
+
+    const renderUseGuide = () => (
+        <div className="rounded-2xl border border-white/10 bg-black/24 p-3">
+            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Como usar</div>
+            <div className="mt-2 grid grid-cols-1 gap-2">
+                {ORACLE_USE_STEPS.map((step) => (
+                    <div key={step.title} className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
+                        <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--ui-text-accent)]">{step.title}</div>
+                        <p className="mt-1 text-[11px] leading-relaxed text-gray-400">{step.body}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
     const renderModes = () => (
         <div className="space-y-3.5">
             {renderModeSummaryCard()}
@@ -504,46 +562,58 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                     <div className="custom-scrollbar flex-1 overflow-y-auto p-4">
                         {variant === 'preferences' ? (
                             <div className="space-y-4">
+                                {renderUseGuide()}
+
                                 <div className="space-y-2">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Modo do Oráculo</h3>
                                     {renderModes()}
                                 </div>
 
+                                <div className="space-y-2 pt-1">
+                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Temas dos cards</h3>
+                                    {renderManualLibraryCategories()}
+                                </div>
+
+                                <div className="space-y-2 pt-1">
+                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Regra de mensagens</h3>
+                                    {renderMessagePolicyCards()}
+                                </div>
+
                                 <div className="space-y-1 pt-1">
-                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Alertas</h3>
+                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Controles</h3>
                                     {renderSwitchRow({
-                                        icon: '✨',
-                                        label: 'Oraculo IA',
-                                        description: `Mensagens personalizadas no modo ${activeModeConfig.name}.`,
+                                        icon: 'IA',
+                                        label: 'IA do Oraculo',
+                                        description: `Permite chat e cards usando o modo ${activeModeConfig.name}.`,
                                         enabled: Boolean(oraclePreferences.iaEnabled),
                                         onToggle: () => handleToggle('iaEnabled'),
                                     })}
                                     {renderSwitchRow({
-                                        icon: '🔔',
-                                        label: 'Avisos do Oraculo',
-                                        description: 'Avisos internos do sistema e sinais do Oraculo dentro do app.',
+                                        icon: 'IN',
+                                        label: 'Avisos internos',
+                                        description: 'Sinais do sistema e do Oraculo dentro do app.',
                                         enabled: Boolean(oraclePreferences.notificationsEnabled),
                                         onToggle: () => handleToggle('notificationsEnabled'),
                                     })}
                                     {renderSwitchRow({
-                                        icon: '🎯',
-                                        label: 'Card de foco diario',
-                                        description: 'Opt-in do automatico: ate 1 card por dia, respeitando seu horario de silencio.',
+                                        icon: 'CD',
+                                        label: 'Cards automaticos',
+                                        description: 'Opt-in: cards de foco e temas marcados, respeitando silencio.',
                                         enabled: Boolean(oraclePreferences.dailyFocusCardEnabled),
                                         onToggle: () => handleToggle('dailyFocusCardEnabled'),
                                         accentClass: 'bg-amber-500/70',
                                     })}
                                     {renderSwitchRow({
-                                        icon: '💬',
-                                        label: 'Mensagens diretas',
-                                        description: 'Aviso e push quando alguém te chama no DM.',
+                                        icon: 'DM',
+                                        label: 'DMs e convites',
+                                        description: 'Aviso e push para mensagens diretas e interacoes humanas.',
                                         enabled: Boolean(oraclePreferences.dmNotificationsEnabled),
                                         onToggle: () => handleToggle('dmNotificationsEnabled'),
                                         accentClass: 'bg-sky-500/70',
                                     })}
                                     {renderSwitchRow({
-                                        icon: '📲',
-                                        label: 'Push no aparelho',
+                                        icon: 'P',
+                                        label: 'Push real no aparelho',
                                         description: PUSH_PERMISSION_LABEL[pushPermission],
                                         enabled: Boolean(oraclePreferences.pushEnabled),
                                         onToggle: handlePushToggle,
@@ -566,24 +636,27 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     <div className="ml-7 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[10px] leading-relaxed text-gray-400">
                                         {getAppPushSetupHint()}
                                     </div>
-                                    <div className="ml-7 grid grid-cols-2 gap-2">
-                                        <button
-                                            type="button"
-                                            disabled={isTestingPush}
-                                            onClick={handleLocalPushTest}
-                                            className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/62 transition-colors hover:border-white/20 hover:text-white disabled:cursor-wait disabled:opacity-50"
-                                        >
-                                            Teste local
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={isTestingPush}
-                                            onClick={handleRemotePushTest}
-                                            className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100 transition-colors hover:bg-emerald-400/[0.12] disabled:cursor-wait disabled:opacity-50"
-                                        >
-                                            Teste remoto
-                                        </button>
-                                    </div>
+                                    <details className="ml-7 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                                        <summary className="cursor-pointer text-[10px] font-black uppercase tracking-[0.16em] text-white/62">Testes de push</summary>
+                                        <div className="mt-2 grid grid-cols-2 gap-2">
+                                            <button
+                                                type="button"
+                                                disabled={isTestingPush}
+                                                onClick={handleLocalPushTest}
+                                                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/62 transition-colors hover:border-white/20 hover:text-white disabled:cursor-wait disabled:opacity-50"
+                                            >
+                                                Local
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={isTestingPush}
+                                                onClick={handleRemotePushTest}
+                                                className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100 transition-colors hover:bg-emerald-400/[0.12] disabled:cursor-wait disabled:opacity-50"
+                                            >
+                                                Remoto
+                                            </button>
+                                        </div>
+                                    </details>
                                 </div>
 
                                 {false && <div className="space-y-2">

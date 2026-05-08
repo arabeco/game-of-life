@@ -420,7 +420,6 @@ export const ShareableProfileCard: React.FC<{
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
     const { userProfile, assets, friends, updateUserProfile, clan, clanRanks, getUserPublicData, appMode, cycleProgress, showToast } = useGame();
     type ProfileTab = 'widgets' | 'summary' | 'mastery';
-    const getDefaultProfileTab = (): ProfileTab => 'summary';
 
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
@@ -436,7 +435,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isSovereignModalOpen, setIsSovereignModalOpen] = useState(false);
     const [isAssetsPreviewOpen, setIsAssetsPreviewOpen] = useState(false);
-    const [activeWidgetTab, setActiveWidgetTab] = useState<ProfileTab>(() => getDefaultProfileTab());
+    const [activeWidgetTab, setActiveWidgetTab] = useState<ProfileTab>('summary');
 
     const [viewedClan, setViewedClan] = useState<Clan | null>(null);
     const [viewedClanRank, setViewedClanRank] = useState<ClanRank | undefined>(undefined);
@@ -455,10 +454,6 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
             });
         }
     }, [isOwnProfile, profile?.id, getUserPublicData]);
-
-    useEffect(() => {
-        setActiveWidgetTab(getDefaultProfileTab());
-    }, [isOwnProfile, profile?.id]);
 
     // Distinguish between Profile Photo (avatarUrl) and Sovereign Avatar (sovereign config)
     // The user explicitly requested to avoid confusion between the two.
@@ -592,6 +587,10 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
 
     const activeAssetCount = profileAssets.filter((asset) => asset.id !== 'geral').length;
     const totalArenaCount = profileAssets.reduce((sum, asset) => sum + asset.arenas.length, 0);
+    const totalActionCount = profileAssets.reduce(
+        (sum, asset) => sum + asset.arenas.reduce((arenaSum, arena) => arenaSum + (arena.actionIds?.length || 0), 0),
+        0
+    );
     const masteryLevels = profileAssets.map((asset) => Math.max(1, asset.level || 1));
     const masteryAverageLevel = masteryLevels.length > 0
         ? masteryLevels.reduce((sum, level) => sum + level, 0) / masteryLevels.length
@@ -604,6 +603,18 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
         .filter((asset): asset is Asset => !!asset)
         .map((asset) => getPrimaryAssetSlot(asset, displayProfile))
         .filter((slot): slot is Slot => !!slot && !isWidgetValueEmpty(slot.value));
+    const hasVisibleAssetWidgets = !isBasicMode && canViewAssetsPreview && visibleProfileSlots.length > 0;
+    const hasMeaningfulMastery = !isBasicMode && canViewMastery && masteryLevels.some((level) => level > 1 && level < 10);
+    const defaultProfileTab: ProfileTab = hasVisibleAssetWidgets
+        ? 'widgets'
+        : hasMeaningfulMastery
+            ? 'mastery'
+            : 'summary';
+
+    useEffect(() => {
+        setActiveWidgetTab(defaultProfileTab);
+    }, [defaultProfileTab, isOwnProfile, profile?.id]);
+
     const getSlotById = (slotId: string): Slot | null => {
         for (const asset of profileAssets) {
             const baseSlot = asset.slots.find((slot) => slot.id === slotId);
@@ -820,7 +831,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
 
                                     {!isBasicMode && activeWidgetTab === 'widgets' && (
                                         <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full space-y-2">
-                                            {canViewAssetsPreview && visibleProfileSlots.length > 0 ? (
+                                            {hasVisibleAssetWidgets ? (
                                                 <div className="grid grid-cols-2 gap-1.5">
                                                     {visibleProfileSlots.map((slot) => (
                                                         <ProfileSlotWidget key={slot.id} slot={slot} />
@@ -883,6 +894,16 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                     <div className="text-2xl font-bold text-white">{totalArenaCount}</div>
                                                 </div>
                                             </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Acoes</div>
+                                                    <div className="text-2xl font-bold text-white">{totalActionCount}</div>
+                                                </div>
+                                                <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Maestria</div>
+                                                    <div className="text-2xl font-bold text-white">{masteryAverageLevel.toFixed(1).replace('.', ',')}</div>
+                                                </div>
+                                            </div>
                                             <div className="bg-black/20 p-2 rounded-xl border border-white/5 space-y-1.5">
                                                 <div className="flex items-center justify-between gap-3">
                                                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
@@ -902,7 +923,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     )}
 
                                     {activeWidgetTab === 'mastery' && (
-                                        canViewMastery ? (
+                                        canViewMastery && hasMeaningfulMastery ? (
                                             <div className="bg-black/30 backdrop-blur-sm p-1 rounded-2xl border border-white/5 w-full flex items-center justify-center">
                                                 <Suspense fallback={<div className="w-[220px] h-[220px]" />}>
                                                     <AssetDecagon
@@ -911,6 +932,23 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                         size={220}
                                                     />
                                                 </Suspense>
+                                            </div>
+                                        ) : canViewMastery ? (
+                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                        <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Ativos</div>
+                                                        <div className="text-2xl font-bold text-white">{activeAssetCount}</div>
+                                                    </div>
+                                                    <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                        <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Arenas</div>
+                                                        <div className="text-2xl font-bold text-white">{totalArenaCount}</div>
+                                                    </div>
+                                                    <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
+                                                        <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Acoes</div>
+                                                        <div className="text-2xl font-bold text-white">{totalActionCount}</div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         ) : (
                                             <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">

@@ -10,6 +10,7 @@ import { Portal } from '../components/Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { resolveRuntimeActiveSeason } from '../utils/seasonPresentation';
 import { getCycleTimingSummary } from '../utils/dateUtils';
+import { buildLocalDateFromString } from '../utils/operationalDay';
 
 type ArenaStatus = 'renew' | 'archive' | 'delete';
 
@@ -72,6 +73,9 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     const [isDatePickerOpen, setDatePickerOpen] = useState(false);
     const [activeDateField, setActiveDateField] = useState<'start' | 'end'>('end');
     const cycleTiming = getCycleTimingSummary(cycleStartDate, cycleEndDate, today);
+    const cycleStartLocalDate = buildLocalDateFromString(cycleStartDate);
+    const cycleEndLocalDate = buildLocalDateFromString(cycleEndDate);
+    const todayLocalDate = buildLocalDateFromString(today, 0);
 
     useEffect(() => {
         window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.cycleSetupOpened));
@@ -124,7 +128,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[10px] text-gray-400 uppercase">Termina em</p>
-                                        <p className="text-sm font-bold text-[var(--skin-accent-color)] opacity-80">{new Date(activeSeason.end_date).toLocaleDateString('pt-BR')}</p>
+                                        <p className="text-sm font-bold text-[var(--skin-accent-color)] opacity-80">{buildLocalDateFromString(activeSeason.end_date).toLocaleDateString('pt-BR')}</p>
                                     </div>
                                 </div>
                             </GlassCard>
@@ -158,7 +162,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="text-left">
                                             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Inicio</p>
-                                            <p className="mt-1 text-sm font-semibold text-gray-200">{new Date(cycleStartDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                            <p className="mt-1 text-sm font-semibold text-gray-200">{cycleStartLocalDate.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                                         </div>
                                         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10">
                                             <CalendarIcon className="h-5 w-5 accent-text" />
@@ -177,7 +181,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="text-left">
                                             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Fim</p>
-                                            <p className="mt-1 text-sm font-semibold text-gray-200">{new Date(cycleEndDate).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                            <p className="mt-1 text-sm font-semibold text-gray-200">{cycleEndLocalDate.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                                         </div>
                                         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10">
                                             <CalendarIcon className="h-5 w-5 accent-text" />
@@ -212,9 +216,9 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
             {showConfirm && <ConfirmationModal title="Iniciar Novo Ciclo?" message="Suas arenas serão atualizadas e o Planner será reiniciado. Esta ação não pode ser desfeita." onConfirm={() => { setShowConfirm(false); handleStartCycle(); }} onCancel={() => setShowConfirm(false)} />}
             {isDatePickerOpen && (
                 <DatePickerModal
-                    selectedDate={new Date(activeDateField === 'start' ? cycleStartDate : cycleEndDate)}
+                    selectedDate={activeDateField === 'start' ? cycleStartLocalDate : cycleEndLocalDate}
                     title={activeDateField === 'start' ? 'Escolher inicio do ciclo' : 'Escolher fim do ciclo'}
-                    minDate={new Date(activeDateField === 'start' ? today : cycleStartDate)}
+                    minDate={activeDateField === 'start' ? todayLocalDate : cycleStartLocalDate}
                     onClose={() => setDatePickerOpen(false)}
                     onSelect={handleDateSelect}
                 />

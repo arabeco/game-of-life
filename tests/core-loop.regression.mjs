@@ -227,6 +227,24 @@ const tests = [
         },
     },
     {
+        name: 'pool do ciclo consome acoes paradas na bay em qualquer dia',
+        run() {
+            const actions = [
+                { id: 'action-focus', arenaId: 'arena-1', name: 'Deep work', icon: 'A', duration: 60, repetitions: 5, actionType: 'Compromisso' },
+            ];
+            const taskPool = buildTaskPoolEntries(actions, new Set(['arena-1']), () => false);
+            const tasks = [
+                { id: 'task-yesterday-bay', actionId: 'action-focus', date: '2026-03-08', startTime: -1, duration: 60, completed: false },
+            ];
+
+            const cyclePool = buildActionPoolByDate(actions, taskPool, tasks, null, [], true);
+            assert.equal(cyclePool['action-focus'].count, 4);
+
+            const dailyPool = buildActionPoolByDate(actions, taskPool, tasks, '2026-03-09');
+            assert.equal(dailyPool['action-focus'].count, 5);
+        },
+    },
+    {
         name: 'classificacao de arena centraliza quest shared office e fallback legado',
         run() {
             const clanQuestArena = { id: 'arena-quest', assetId: 'asset', name: 'Quests - Cla', description: '', icon: 'Q', actionIds: [] };

@@ -44,6 +44,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
         [allArenas, availableArenaIdSet],
     );
     const [title, setTitle] = useState(() => `Nova Campanha ${campaigns.length + 1}`);
+    const [titleTouched, setTitleTouched] = useState(false);
     const [description, setDescription] = useState('');
     const [deadline, setDeadline] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -52,10 +53,14 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
         () => availableArenas.filter((arena) => selectedArenaIdSet.has(arena.id)),
         [availableArenas, selectedArenaIdSet],
     );
+    const selectedArenaNames = useMemo(
+        () => selectedArenas.map((arena) => arena.name).filter(Boolean),
+        [selectedArenas],
+    );
     const primaryButtonLabel = isAttachMode
         ? `Adicionar ${selectedIds.length || ''}`.trim()
         : selectedIds.length > 0
-            ? 'Criar campanha'
+            ? `Criar com ${selectedIds.length}`
             : 'Criar vazia';
     const targetCampaignArenaIdSet = useMemo(
         () => new Set(targetCampaign?.arenaIds || []),
@@ -70,12 +75,19 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
     useEffect(() => {
         if (!isAttachMode) {
             setTitle(`Nova Campanha ${campaigns.length + 1}`);
+            setTitleTouched(false);
             return;
         }
         setTitle(targetCampaign?.title || '');
+        setTitleTouched(true);
         setDescription(targetCampaign?.description || '');
         setDeadline(targetCampaign?.deadline || '');
     }, [campaigns.length, isAttachMode, targetCampaign?.deadline, targetCampaign?.description, targetCampaign?.title]);
+
+    useEffect(() => {
+        if (isAttachMode || titleTouched || selectedArenaNames.length < 2) return;
+        setTitle(`${selectedArenaNames[0]} + ${selectedArenaNames[1]}`);
+    }, [isAttachMode, selectedArenaNames, titleTouched]);
 
     const toggleArena = (arenaId: string) => {
         setSelectedIds((current) => (
@@ -179,7 +191,10 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                                     <input
                                         type="text"
                                         value={title}
-                                        onChange={(event) => setTitle(event.target.value)}
+                                        onChange={(event) => {
+                                            setTitleTouched(true);
+                                            setTitle(event.target.value);
+                                        }}
                                         placeholder="Nome da campanha"
                                         className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/30 focus:border-[var(--skin-accent-color)]/35"
                                         autoFocus
@@ -215,6 +230,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                                     </div>
                                     <div className="mt-1 text-sm text-white/72">
                                         {selectedIds.length} selecionada{selectedIds.length === 1 ? '' : 's'}
+                                        {!isAttachMode && selectedIds.length >= 2 ? ' para formar a campanha' : ''}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -299,7 +315,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                             {isAttachMode
                                 ? 'Escolha arenas livres para entrar nessa campanha.'
                                 : selectedIds.length > 0
-                                    ? 'A campanha ja nasce montada com as arenas escolhidas.'
+                                    ? 'Revise o nome e confirme. Nada e criado antes deste botao.'
                                     : 'Se quiser, crie agora e anexe as arenas depois.'}
                         </div>
                         <div className="flex items-center gap-2">

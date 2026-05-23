@@ -2568,7 +2568,7 @@ export const ArenasView: React.FC = () => {
                                                             });
                                                         })}
                                                     </>
-                                                ) : items.length <= 6 ? (
+                                                ) : items.length <= 9 ? (
                                                     <div className="grid grid-cols-3 gap-2.5 px-2 pt-1">
                                                         {items.map(item => {
                                                             if (item.itemType === 'campaign') {
@@ -2585,7 +2585,7 @@ export const ArenasView: React.FC = () => {
                                                 ) : (
                                                     <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y pinch-zoom', overscrollBehaviorX: 'contain' }}>
                                                         <div className="flex min-w-max gap-3 px-2 pt-1">
-                                                            {chunkPriorityItems(items, 6).map((pageItems, pageIndex) => (
+                                                            {chunkPriorityItems(items, 9).map((pageItems, pageIndex) => (
                                                                 <div key={`${priority}-page-${pageIndex}`} className="grid w-[21.8rem] shrink-0 grid-cols-3 gap-2.5">
                                                                     {pageItems.map(item => {
                                                                         if (item.itemType === 'campaign') {
@@ -2686,7 +2686,7 @@ export const ArenasView: React.FC = () => {
                     id="new-action-button"
                     data-onboarding-id="new-arena-button"
                     onClick={handleOpenCreateArena}
-                    className={`fixed bottom-[calc(4.25rem+var(--safe-area-bottom))] right-4 w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
+                    className={`fixed bottom-[calc(3.85rem+var(--safe-area-bottom))] right-4 z-[90] w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
                 >
                     <PlusIcon className="w-6 h-6 text-black" />
                 </button>

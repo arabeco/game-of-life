@@ -89,16 +89,15 @@ const AnimatedExpCounter: React.FC<{ snapshot: PlannerExpSnapshot }> = ({ snapsh
     }, [snapshot.value]);
 
     return (
-        <div className="min-w-0 flex-1" aria-live="polite">
-            <div className="mb-1 flex items-center gap-1.5 px-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/40">
-                <ZapIcon className={`h-2.5 w-2.5 shrink-0 ${isPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_6px_var(--skin-accent-color)]' : 'text-white/28'}`} />
-                <span>{snapshot.isDeposited ? 'EXP depositada' : 'EXP hoje'}</span>
-            </div>
-            <div
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] shadow-[0_6px_16px_rgba(0,0,0,0.18)] backdrop-blur-md transition-all duration-300 ${isPulsing ? 'scale-[1.02] border-[var(--skin-accent-color)]/32 bg-[var(--skin-accent-color)]/10 text-white/75 shadow-[0_0_18px_rgba(212,175,55,0.18)]' : 'border-white/8 bg-black/28 text-white/48'}`}
-            >
-                <span className={`tabular-nums text-[var(--skin-accent-color)] transition-all duration-300 ${isPulsing ? 'drop-shadow-[0_0_8px_var(--skin-accent-color)]' : ''}`}>+{displayValue}</span>
-                <span className="ml-auto text-[9px] text-white/24">{snapshot.completedCount}/{snapshot.totalCount}</span>
+        <div className={`planner-vital-orb min-w-0 transition-transform duration-300 ${isPulsing ? 'scale-[1.04]' : ''}`} aria-live="polite">
+            <div className="planner-vital-orb__glow" />
+            <div className="relative z-10 flex h-full flex-col items-center justify-center gap-0.5">
+                <div className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/42">
+                    <ZapIcon className={`h-2.5 w-2.5 shrink-0 ${isPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_8px_var(--skin-accent-color)]' : 'text-white/35'}`} />
+                    <span>EXP</span>
+                </div>
+                <div className={`tabular-nums text-[18px] font-black leading-none text-[var(--skin-accent-color)] transition-all duration-300 ${isPulsing ? 'drop-shadow-[0_0_10px_var(--skin-accent-color)]' : ''}`}>+{displayValue}</div>
+                <div className="text-[8px] font-black tabular-nums uppercase tracking-[0.12em] text-white/30">{snapshot.completedCount}/{snapshot.totalCount}</div>
             </div>
         </div>
     );
@@ -854,7 +853,7 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
     );
 };
 
-const PlannerBottomScorebar: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ expSnapshot }) => {
+const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ expSnapshot }) => {
     const { userProfile } = useGame();
     const [isStreakPulsing, setIsStreakPulsing] = useState(false);
 
@@ -871,22 +870,24 @@ const PlannerBottomScorebar: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ 
     }, []);
 
     return (
-        <div className="planner-bottom-scorebar relative z-30 flex-shrink-0 border-t border-white/8 bg-black/70 px-3 pb-[calc(0.45rem+var(--safe-area-bottom))] pt-2 shadow-[0_-12px_30px_rgba(0,0,0,0.32)] backdrop-blur-md">
-            <div className="mx-auto flex w-full max-w-xl items-center gap-2">
+        <div className="planner-floating-vitals pointer-events-none absolute bottom-[calc(0.9rem+var(--safe-area-bottom))] left-1/2 z-40 w-[min(13.25rem,calc(100%-6rem))] -translate-x-1/2">
+            <div className="planner-floating-vitals__shell">
+            <div className="grid grid-cols-2 items-center gap-2">
                 <AnimatedExpCounter snapshot={expSnapshot} />
-                <div className="min-w-[6.4rem] flex-1" aria-live="polite">
-                    <div className="mb-1 flex items-center justify-end gap-1.5 px-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/40">
-                        <FlameIcon className={`h-2.5 w-2.5 shrink-0 ${isStreakPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_6px_var(--skin-accent-color)]' : 'text-white/28'}`} />
-                        <span>Sequencia</span>
-                    </div>
-                    <div
-                        className={`flex items-center justify-end rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] shadow-[0_6px_16px_rgba(0,0,0,0.18)] backdrop-blur-md transition-all duration-300 ${isStreakPulsing ? 'scale-[1.04] border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 text-white shadow-[0_0_18px_var(--sephirot-glow-color-soft)]' : 'border-white/8 bg-black/28 text-white/48'}`}
-                    >
-                        <span className={`tabular-nums text-[var(--skin-accent-color)] transition-all duration-300 ${isStreakPulsing ? 'drop-shadow-[0_0_8px_var(--skin-accent-color)]' : ''}`}>
+                <div className={`planner-vital-orb min-w-0 transition-transform duration-300 ${isStreakPulsing ? 'scale-[1.06]' : ''}`} aria-live="polite">
+                    <div className="planner-vital-orb__glow" />
+                    <div className="relative z-10 flex h-full flex-col items-center justify-center gap-0.5">
+                        <div className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/42">
+                            <FlameIcon className={`h-2.5 w-2.5 shrink-0 ${isStreakPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_8px_var(--skin-accent-color)]' : 'text-white/35'}`} />
+                            <span>Linha</span>
+                        </div>
+                        <div className={`tabular-nums text-[18px] font-black leading-none text-[var(--skin-accent-color)] transition-all duration-300 ${isStreakPulsing ? 'drop-shadow-[0_0_10px_var(--skin-accent-color)]' : ''}`}>
                             {userProfile.dailyProofStreak?.current || 0}
-                        </span>
+                        </div>
+                        <div className="text-[8px] font-black uppercase tracking-[0.12em] text-white/30">dias</div>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     );
@@ -2349,7 +2350,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 </div>
             </div>
 
-            <PlannerBottomScorebar expSnapshot={plannerExpSnapshot} />
+            <PlannerFloatingVitals expSnapshot={plannerExpSnapshot} />
 
             {modalData && (
                 <ActionModal

@@ -108,8 +108,8 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
             int timeProgress = clamp((int) Math.round(source.optDouble("timeProgressPercent", 0)));
             int elapsedDays = cycle != null ? source.optInt("elapsedDays", 0) : source.optInt("cycleElapsedDays", 0);
             int totalDays = cycle != null ? source.optInt("totalDays", 0) : source.optInt("cycleTotalDays", 0);
-            String period = !startDate.isEmpty() && !endDate.isEmpty() && totalDays > 0
-                ? startDate + "-" + endDate + " (" + totalDays + " dias)"
+            String period = !startDate.isEmpty() && !endDate.isEmpty()
+                ? startDate + "-" + endDate
                 : endDate;
             String day = elapsedDays > 0 && totalDays > 0 ? "Dia " + elapsedDays + "/" + totalDays : subtitle;
 
@@ -129,7 +129,7 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
                 true
             );
         } catch (Exception _error) {
-            return new WidgetCopy(DEFAULT_TITLE, "Sincronizando", "ABRIR", "", "--", "--", "Tempo", "--", 0, 0, true, false, false);
+            return new WidgetCopy(DEFAULT_TITLE, "Sincronizando", "ABRIR", "", "Progresso", "0/0 (0%)", "Tempo", "0/0 (0%)", 0, 0, true, false, false);
         }
     }
 
@@ -189,11 +189,11 @@ public class GlyphWidgetProvider extends AppWidgetProvider {
         }
 
         static WidgetCopy loggedOut() {
-            return new WidgetCopy("GLYPH", "Entrar", "ABRIR", "", "--", "--", "Tempo", "--", 0, 0, true, false, false);
+            return new WidgetCopy("GLYPH", "Entrar", "ABRIR", "", "Progresso", "0/0 (0%)", "Tempo", "0/0 (0%)", 0, 0, true, false, false);
         }
 
         static WidgetCopy noCycle() {
-            return new WidgetCopy("SEM CICLO ATIVO", "Historico", "ABRIR", "", "0/0", "0%", "Tempo", "0%", 0, 0, true, false, false);
+            return new WidgetCopy("SEM CICLO ATIVO", "Historico", "ABRIR", "", "Progresso", "0/0 (0%)", "Tempo", "0/0 (0%)", 0, 0, true, false, false);
         }
     }
 }

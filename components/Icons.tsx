@@ -23,6 +23,11 @@ export const ClockIcon: React.FC<{ className?: string }> = ({ className }) => (<
 export const FolderIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></IconWrapper>);
 export const CrownIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></IconWrapper>);
 export const TrophyIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17"></path><path d="M14 14.66V17"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></IconWrapper>);
+export const StarIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <IconWrapper className={className}>
+        <path d="m12 2 3.09 6.26 6.91 1-5 4.87 1.18 6.87L12 17.77 5.82 21 7 14.13l-5-4.87 6.91-1L12 2Z"></path>
+    </IconWrapper>
+);
 export const ZapIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></IconWrapper>);
 export const UploadIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></IconWrapper>);
 export const XIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></IconWrapper>);
@@ -31,6 +36,16 @@ export const MinusIcon: React.FC<{ className?: string }> = ({ className }) => (<
 export const LightbulbIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 1 5 12.25V17a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-2.75A7 7 0 0 1 12 2z" /></IconWrapper>);
 export const ShareIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></IconWrapper>);
 export const EyeIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></IconWrapper>);
+export const FocusIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <IconWrapper className={className}>
+        <circle cx="12" cy="12" r="8"></circle>
+        <circle cx="12" cy="12" r="3"></circle>
+        <line x1="12" y1="2" x2="12" y2="5"></line>
+        <line x1="12" y1="19" x2="12" y2="22"></line>
+        <line x1="2" y1="12" x2="5" y2="12"></line>
+        <line x1="19" y1="12" x2="22" y2="12"></line>
+    </IconWrapper>
+);
 export const ArchiveBoxIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></IconWrapper>);
 export const ListRowsIcon: React.FC<{ className?: string }> = ({ className }) => (
     <IconWrapper className={className}>

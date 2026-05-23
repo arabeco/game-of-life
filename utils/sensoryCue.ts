@@ -1,5 +1,6 @@
 export type AppSensoryCue =
     | 'task_complete'
+    | 'daily_streak'
     | 'daily_panel_closed'
     | 'arena_complete'
     | 'campaign_complete'

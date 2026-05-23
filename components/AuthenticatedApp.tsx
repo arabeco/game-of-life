@@ -1150,6 +1150,9 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 case 'task_complete':
                     trigger('impact');
                     break;
+                case 'daily_streak':
+                    trigger('success');
+                    break;
                 case 'daily_panel_closed':
                 case 'arena_complete':
                     trigger('success');
@@ -1571,7 +1574,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 <AppWithTutorial
                     defaultRestScreenOpen={shouldOpenRestByDefault}
                     allowSeasonTransition={shouldAllowSeasonTransition}
-                    suppressScreenIntroTips={isFirstUseOnboardingActive}
+                    suppressScreenIntroTips={isFirstUseOnboardingActive || onboardingShownInSession || showOnboardingPushPrompt}
                 />
             )}
             <Suspense fallback={null}>

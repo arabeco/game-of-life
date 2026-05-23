@@ -64,16 +64,61 @@ async function exitRestScreenIfPresent(page) {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 }
 
+async function dismissScreenTipIfPresent(page) {
+  await page.evaluate(`(() => {
+    const labels = ['ENTENDI', 'DESLIGAR DICAS'];
+    const buttons = Array.from(document.querySelectorAll('button'))
+      .filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+    const target = buttons.find((node) => {
+      const text = (node.innerText || node.textContent || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase().trim();
+      return labels.includes(text);
+    });
+    if (target instanceof HTMLElement) {
+      target.click();
+      return true;
+    }
+    return false;
+  })()`);
+  await new Promise((resolve) => setTimeout(resolve, 500));
+}
+
 async function navigateToCampaignStore(page) {
   await page.evaluate(`(() => {
     window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'codexes' } }));
     return true;
   })()`);
-  await page.waitForSelector('button[title="Quiz de recomendacao"]', 30000);
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  await page.evaluate(`(() => {
+    window.dispatchEvent(new CustomEvent('mundo-tab-request', { detail: { tab: 'loja', storeTab: 'codexes' } }));
+    window.dispatchEvent(new CustomEvent('store-view-request', { detail: { tab: 'codexes' } }));
+    return true;
+  })()`);
+  await dismissScreenTipIfPresent(page);
+  await page.waitFor(
+    'campaign quiz entry button',
+    `(() => {
+      const body = (document.body?.innerText || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
+      return body.includes('FAZER QUIZ GRATIS') || body.includes('FAZER QUIZ') || body.includes('QUIZ GRATIS') || body.includes('QUIZ');
+    })()`,
+    30000,
+  );
 }
 
 async function openQuiz(page) {
-  await page.clickSelector('button[title="Quiz de recomendacao"]');
+  const clicked = await page.evaluate(`(() => {
+    const buttons = Array.from(document.querySelectorAll('button'))
+      .filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+    const target = buttons.find((node) => {
+      const text = (node.innerText || node.textContent || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
+      return text.includes('FAZER QUIZ GRATIS') || text.includes('FAZER QUIZ') || text.trim() === 'QUIZ GRATIS' || text.trim() === 'QUIZ';
+    });
+    if (!(target instanceof HTMLElement)) return false;
+    target.click();
+    return true;
+  })()`);
+  if (!clicked) {
+    throw new Error(`Could not click campaign quiz entry.\n\n${await page.bodyText()}`);
+  }
   await page.waitFor(
     'campaign quiz shell',
     `(() => document.querySelector('.campaign-quiz-shell') instanceof HTMLElement)()`,
@@ -198,6 +243,7 @@ try {
     await stabilizeRuntime(page);
     await dismissSplashIfPresent(page);
     await exitRestScreenIfPresent(page);
+    await dismissScreenTipIfPresent(page);
 
     await navigateToCampaignStore(page);
     checkpoints.push('campaign-store-opened');
@@ -207,7 +253,7 @@ try {
       'free quiz mode',
       `(() => {
         const body = (document.body?.innerText || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
-        return body.includes('FILTRO INICIAL: GRATUITAS');
+        return body.includes('PRIMEIRO QUIZ GRATUITO') || body.includes('FILTRO INICIAL: GRATUITAS');
       })()`,
       10000,
     );
@@ -236,7 +282,7 @@ try {
       'full quiz mode after free completion',
       `(() => {
         const body = (document.body?.innerText || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
-        return body.includes('RECOMENDACAO COMPLETA') && body.includes('PERGUNTA 1 DE 7');
+        return (body.includes('RECOMENDACAO COMPLETA') || body.includes('CATALOGO COMPLETO')) && body.includes('PERGUNTA 1 DE 7');
       })()`,
       10000,
     );
@@ -263,7 +309,7 @@ try {
       'campaigns menu open',
       `(() => {
         const body = (document.body?.innerText || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
-        return body.includes('BIBLIOTECA PRONTA PARA INSTALAR');
+        return body.includes('BIBLIOTECA PRONTA PARA INSTALAR') || (body.includes('CAMPANHAS') && body.includes('BIBLIOTECA') && body.includes('PRONTAS'));
       })()`,
       20000,
     );

@@ -6,6 +6,9 @@ const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const SITE_URL = Deno.env.get("SITE_URL") || "https://glyph-app-arabecos-projects.vercel.app";
+const FUNCTION_BASE_URL = `${SUPABASE_URL.replace(/\/+$/, "")}/functions/v1/mercadopago`;
+const MERCADO_PAGO_WEBHOOK_URL = Deno.env.get("MERCADO_PAGO_WEBHOOK_URL") || `${FUNCTION_BASE_URL}/webhook`;
+const APP_RETURN_URL = SITE_URL.replace(/\/+$/, "");
 const DEFAULT_ALLOWED_ORIGINS = [
   SITE_URL,
   "https://glyph.life",
@@ -204,12 +207,12 @@ serve(async (req) => {
             gold_amount: goldAmount,
             amount_paid: amount
           },
-          notification_url: `https://klmsdcncmhtgnlcejzdi.supabase.co/functions/v1/mercadopago/webhook`,
+          notification_url: MERCADO_PAGO_WEBHOOK_URL,
           auto_return: "approved",
           back_urls: {
-            success: `${VERCEL_URL}&payment=success`,
-            failure: `${VERCEL_URL}&payment=failure`,
-            pending: `${VERCEL_URL}&payment=pending`,
+            success: `${APP_RETURN_URL}?payment=success`,
+            failure: `${APP_RETURN_URL}?payment=failure`,
+            pending: `${APP_RETURN_URL}?payment=pending`,
           },
         }),
       });
@@ -289,7 +292,7 @@ serve(async (req) => {
             gold_amount: goldAmount,
             amount_paid: amount
           },
-          notification_url: "https://klmsdcncmhtgnlcejzdi.supabase.co/functions/v1/mercadopago/webhook",
+          notification_url: MERCADO_PAGO_WEBHOOK_URL,
         }),
       });
 

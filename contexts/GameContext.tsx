@@ -1,5 +1,5 @@
 ﻿import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
+import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { getGoldBoostProduct, getGoldMechanicPrice, getGoldMembershipProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
@@ -35,6 +35,7 @@ import { showLocalNotification } from '../utils/localNotification';
 import { hasAppPushRemoteDeliveryReady, syncAppPushRegistration } from '../utils/pushRuntime';
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, shouldPushNotificationForProfile } from '../constants/oracleNotificationPolicy';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
+import { buildOracleVoiceDirective, deriveOracleOperationalState } from '../utils/oracleVoice';
 import { resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
 import { ECONOMY } from '../constants/economy';
 import { publishGlyphAndroidWidgetSnapshot } from '../utils/androidWidget';
@@ -187,6 +188,11 @@ const normalizeFeatsVisibilityScope = (value: unknown): ProfileVisibilityScope =
     return 'friends';
 };
 
+const normalizeGardenVisibilityScope = (value: unknown): ProfileVisibilityScope => {
+    if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+    return 'friends';
+};
+
 const normalizeSequenceItems = (value: unknown): SequenceItem[] => {
     if (!Array.isArray(value)) return [];
     return value
@@ -201,6 +207,132 @@ const normalizeSequenceItems = (value: unknown): SequenceItem[] => {
         .filter((item) => item.title.length > 0);
 };
 
+const createDefaultDailyProofStreak = (): DailyProofStreak => ({
+    current: 0,
+    best: 0,
+    totalClosedDays: 0,
+    lastClosedDate: null,
+    lastClosedAt: null,
+    totalProofDays: 0,
+    lastProofDate: null,
+    lastProofAt: null,
+    lastProofActionId: null,
+    lastProofArenaId: null,
+    lastProofCycleId: null,
+    lastScore: null,
+    lastExpDeposited: null,
+    lastCompletedTasksCount: null,
+    lastTotalTasksCount: null,
+});
+
+const normalizeDailyProofStreak = (value: unknown): DailyProofStreak => {
+    const base = createDefaultDailyProofStreak();
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return base;
+    const entry = value as Partial<DailyProofStreak>;
+    return {
+        current: Math.max(0, Math.round(Number(entry.current || 0))),
+        best: Math.max(0, Math.round(Number(entry.best || 0))),
+        totalClosedDays: Math.max(0, Math.round(Number(entry.totalClosedDays || 0))),
+        lastClosedDate: typeof entry.lastClosedDate === 'string' ? entry.lastClosedDate : null,
+        lastClosedAt: typeof entry.lastClosedAt === 'string' ? entry.lastClosedAt : null,
+        totalProofDays: Math.max(0, Math.round(Number(entry.totalProofDays ?? entry.totalClosedDays ?? 0))),
+        lastProofDate: typeof entry.lastProofDate === 'string'
+            ? entry.lastProofDate
+            : (typeof entry.lastClosedDate === 'string' ? entry.lastClosedDate : null),
+        lastProofAt: typeof entry.lastProofAt === 'string'
+            ? entry.lastProofAt
+            : (typeof entry.lastClosedAt === 'string' ? entry.lastClosedAt : null),
+        lastProofActionId: typeof entry.lastProofActionId === 'string' ? entry.lastProofActionId : null,
+        lastProofArenaId: typeof entry.lastProofArenaId === 'string' ? entry.lastProofArenaId : null,
+        lastProofCycleId: typeof entry.lastProofCycleId === 'string' ? entry.lastProofCycleId : null,
+        lastScore: Number.isFinite(entry.lastScore) ? Math.round(Number(entry.lastScore)) : null,
+        lastExpDeposited: Number.isFinite(entry.lastExpDeposited) ? Math.round(Number(entry.lastExpDeposited)) : null,
+        lastCompletedTasksCount: Number.isFinite(entry.lastCompletedTasksCount) ? Math.round(Number(entry.lastCompletedTasksCount)) : null,
+        lastTotalTasksCount: Number.isFinite(entry.lastTotalTasksCount) ? Math.round(Number(entry.lastTotalTasksCount)) : null,
+    };
+};
+
+const advanceDailyProofStreak = (
+    currentValue: unknown,
+    proofDate: string,
+    proofAt: string,
+    stats: {
+        score?: number | null;
+        expDeposited?: number | null;
+        completedTasksCount?: number | null;
+        totalTasksCount?: number | null;
+        actionId?: string | null;
+        arenaId?: string | null;
+        cycleId?: string | null;
+    },
+): { next: DailyProofStreak; isNewDate: boolean; isNewRecord: boolean } => {
+    const current = normalizeDailyProofStreak(currentValue);
+    const lastProofDate = current.lastProofDate || current.lastClosedDate;
+    const isSameDate = lastProofDate === proofDate;
+    const previousBest = Math.max(current.best, current.current);
+    const previousDay = shiftLocalDateString(proofDate, -1);
+    const nextCurrent = isSameDate
+        ? Math.max(1, current.current)
+        : lastProofDate === previousDay
+            ? current.current + 1
+            : 1;
+    const nextBest = Math.max(previousBest, nextCurrent);
+    const totalProofDays = current.totalProofDays ?? current.totalClosedDays;
+
+    return {
+        next: {
+            current: nextCurrent,
+            best: nextBest,
+            totalClosedDays: isSameDate ? current.totalClosedDays : current.totalClosedDays + 1,
+            lastClosedDate: proofDate,
+            lastClosedAt: proofAt,
+            totalProofDays: isSameDate ? totalProofDays : totalProofDays + 1,
+            lastProofDate: proofDate,
+            lastProofAt: proofAt,
+            lastProofActionId: stats.actionId || null,
+            lastProofArenaId: stats.arenaId || null,
+            lastProofCycleId: stats.cycleId || null,
+            lastScore: typeof stats.score === 'number' ? stats.score : current.lastScore ?? null,
+            lastExpDeposited: typeof stats.expDeposited === 'number' ? stats.expDeposited : current.lastExpDeposited ?? null,
+            lastCompletedTasksCount: typeof stats.completedTasksCount === 'number' ? stats.completedTasksCount : current.lastCompletedTasksCount ?? null,
+            lastTotalTasksCount: typeof stats.totalTasksCount === 'number' ? stats.totalTasksCount : current.lastTotalTasksCount ?? null,
+        },
+        isNewDate: !isSameDate,
+        isNewRecord: !isSameDate && nextBest > previousBest && nextCurrent > 1,
+    };
+};
+
+const rollbackDailyProofStreakDate = (
+    currentValue: unknown,
+    proofDate: string,
+): DailyProofStreak => {
+    const current = normalizeDailyProofStreak(currentValue);
+    const lastProofDate = current.lastProofDate || current.lastClosedDate;
+    if (lastProofDate !== proofDate) return current;
+
+    const previousProofDate = current.current > 1 ? shiftLocalDateString(proofDate, -1) : null;
+    const nextCurrent = previousProofDate ? Math.max(0, current.current - 1) : 0;
+    const nextTotalProofDays = Math.max(0, (current.totalProofDays ?? current.totalClosedDays) - 1);
+    const nextTotalClosedDays = Math.max(0, current.totalClosedDays - 1);
+
+    return {
+        ...current,
+        current: nextCurrent,
+        best: Math.max(current.best, current.current),
+        totalClosedDays: nextTotalClosedDays,
+        lastClosedDate: previousProofDate,
+        lastClosedAt: null,
+        totalProofDays: nextTotalProofDays,
+        lastProofDate: previousProofDate,
+        lastProofAt: null,
+        lastProofActionId: null,
+        lastProofArenaId: null,
+        lastProofCycleId: null,
+        lastCompletedTasksCount: null,
+        lastTotalTasksCount: null,
+    };
+};
+
 const DEFAULT_USER_PROFILE: UserProfile = {
     id: 'placeholder_user',
     nickname: 'Soberano',
@@ -212,11 +344,14 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     isOnline: false,
     visibleWidgets: [],
     sequenceItems: [],
+    dailyProofStreak: createDefaultDailyProofStreak(),
     assetArtById: {},
     assetWidgetValues: {},
     assetsVisibility: 'nobody',
     masteryVisibility: 'friends',
     featsVisibility: 'friends',
+    gardenVisibility: 'friends',
+    gardenState: { sandColor: 'classic', strokes: [], items: [] },
     sovereign: DEFAULT_SOVEREIGN_CONFIG,
     nobility: { exp: 0, rankId: 'vagante' },
     mood: 50,
@@ -550,12 +685,17 @@ const shouldPushOracleFeedMessage = (
     message: OracleMessage,
     appMode: AppMode = 'GAME',
     dailyFocusCardEnabled = false,
+    presenceLevel = 1,
 ): boolean => {
     const modeConfig = getOracleModeConfig(message.mode);
     const presentation = message.contextSnapshot?.presentation;
     const triggerType = message.contextSnapshot?.triggerType;
 
     if (triggerType === 'manual') {
+        return false;
+    }
+
+    if (presenceLevel < 3) {
         return false;
     }
 
@@ -1203,9 +1343,60 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, []);
     const getSentinelStorageKey = (userId: string) => `glyph_sentinel_mode_${userId}`;
     const getPushStorageKey = (userId: string) => `glyph_oracle_push_${userId}`;
+    const getOraclePresenceStorageKey = (userId: string) => `glyph_oracle_presence_${userId}`;
     const getSequenceStorageKey = (userId: string) => `glyph_sequences_${userId}`;
+    const getChecklistStorageKey = (userId: string) => `glyph_daily_checklist_${userId}`;
     const getActionReminderStorageKey = (userId: string, taskId: string, date: string, startTime: number) =>
         `glyph_action_reminder_${userId}_${taskId}_${date}_${startTime}`;
+    const getOraclePresenceLevel = (userId: string): 0 | 1 | 2 | 3 => {
+        try {
+            const stored = Number(localStorage.getItem(getOraclePresenceStorageKey(userId)));
+            if (stored === 0 || stored === 1 || stored === 2 || stored === 3) return stored;
+        } catch {
+            // noop
+        }
+        return 1;
+    };
+    const normalizeChecklistItems = (value: unknown): ChecklistItem[] => {
+        if (!Array.isArray(value)) return [];
+        return value
+            .map((item) => {
+                if (!item || typeof item !== 'object') return null;
+                const candidate = item as Partial<ChecklistItem>;
+                const text = typeof candidate.text === 'string' ? candidate.text.trim() : '';
+                if (!text) return null;
+                return {
+                    id: typeof candidate.id === 'string' && candidate.id ? candidate.id : crypto.randomUUID(),
+                    text,
+                    completed: Boolean(candidate.completed),
+                };
+            })
+            .filter((item): item is ChecklistItem => Boolean(item));
+    };
+    const normalizeStoredChecklistItems = (value: unknown, operationalDate = getTodayString()): ChecklistItem[] => {
+        if (Array.isArray(value)) {
+            return normalizeChecklistItems(value);
+        }
+        if (!value || typeof value !== 'object') {
+            return [];
+        }
+
+        const stored = value as { date?: unknown; items?: unknown };
+        const items = normalizeChecklistItems(stored.items);
+        return stored.date === operationalDate
+            ? items
+            : items.map(item => ({ ...item, completed: false }));
+    };
+    const readChecklistItemsFromStorage = (userId: string, operationalDate = getTodayString()): ChecklistItem[] => {
+        try {
+            const saved = localStorage.getItem(getChecklistStorageKey(userId));
+            if (!saved) return [...defaultChecklistItems];
+            return normalizeStoredChecklistItems(JSON.parse(saved), operationalDate);
+        } catch (error) {
+            console.error('Failed to read checklist items from local storage:', error);
+            return [...defaultChecklistItems];
+        }
+    };
     const readLegacySequenceItemsFromStorage = (userId: string): SequenceItem[] => {
         try {
             const saved = localStorage.getItem(getSequenceStorageKey(userId));
@@ -1297,6 +1488,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 enabledCategories: normalizeOracleManualCategories(mapped.enabledCategories || []),
                 sentinelMode: deriveLegacySentinelMode(nextMode, nextIaEnabled),
                 pushEnabled: getPushEnabled(userId),
+                presenceLevel: mapped.presenceLevel ?? getOraclePresenceLevel(userId),
             });
         } else {
             // Default preferences
@@ -1307,6 +1499,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 dailyFocusCardEnabled: false,
                 dmNotificationsEnabled: true,
                 pushEnabled: getPushEnabled(userId),
+                presenceLevel: getOraclePresenceLevel(userId),
                 animationsEnabled: true,
                 soundsEnabled: true,
                 hapticsEnabled: true,
@@ -1335,8 +1528,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const nextIaEnabled = Boolean(prefs.iaEnabled ?? oraclePreferences?.iaEnabled ?? true);
         const nextSentinelMode = deriveLegacySentinelMode(nextMode, nextIaEnabled);
         const nextPushEnabled = Boolean(prefs.pushEnabled ?? oraclePreferences?.pushEnabled ?? false);
+        const nextPresenceLevel = prefs.presenceLevel ?? oraclePreferences?.presenceLevel ?? getOraclePresenceLevel(userId);
         localStorage.setItem(getSentinelStorageKey(userId), nextSentinelMode || 'soberano_ativo');
         localStorage.setItem(getPushStorageKey(userId), nextPushEnabled ?'true' : 'false');
+        localStorage.setItem(getOraclePresenceStorageKey(userId), String(nextPresenceLevel));
 
         const normalizedEnabledCategories = prefs.enabledCategories
             ? normalizeOracleManualCategories(prefs.enabledCategories)
@@ -1347,6 +1542,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             enabledCategories: normalizedEnabledCategories,
             sentinelMode: nextSentinelMode,
             pushEnabled: nextPushEnabled,
+            presenceLevel: nextPresenceLevel,
             updatedAt: new Date().toISOString()
         };
         // Optimistic update
@@ -1426,6 +1622,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return { status: 'disabled', ...quota };
         }
 
+        if (triggerType !== 'manual' && (oraclePreferences.presenceLevel ?? 1) <= 1) {
+            return { status: 'disabled', ...quota };
+        }
+
         if (!oraclePreferences.iaEnabled) {
             if (triggerType === 'manual') {
                 showToast('Ative a IA do Oraculo para gerar cards.', 'info');
@@ -1483,6 +1683,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             seasonName: null,
             pendingChests: totalChests,
             dailyCommitment,
+            dailyProofStreak: userProfile.dailyProofStreak || null,
         });
         const isCriticalTrigger = isOracleCriticalTrigger(userId);
 
@@ -1504,8 +1705,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // 6. Generate Prompt
         // The selected assistant mode should stay stable across feed/chat.
         const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
-        const systemPrompt = modeConfig.systemPromptTemplate(contextData);
         const presentation = resolveOraclePresentation(category, triggerType);
+        const operationalState = deriveOracleOperationalState(contextData);
+        const recentOracleLines = oracleMessages
+            .filter((message) => message.content?.trim())
+            .slice(0, 5)
+            .map((message) => message.content.trim());
+        const voiceDirective = buildOracleVoiceDirective(
+            contextData,
+            presentation === 'info_card' ? 'card' : 'push',
+            selectedMode,
+            recentOracleLines,
+        );
+        const systemPrompt = [
+            modeConfig.systemPromptTemplate(contextData),
+            '',
+            voiceDirective,
+        ].join('\n');
         const isManualLibraryCard = triggerType === 'manual' && ORACLE_MANUAL_LIBRARY_CATEGORIES.includes(category);
         const userPrompt = isManualLibraryCard
             ? `Gere um card curto para o chat do usuario.
@@ -1610,6 +1826,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     presentation,
                     categoryLabel: ORACLE_CATEGORY_LABELS[category],
                     generatedFor: triggerType === 'manual' ? 'chat' : 'feed',
+                    operationalState,
                     summary: triggerType === 'manual'
                         ? 'Card operacional do chat'
                         : presentation === 'info_card'
@@ -1891,6 +2108,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             latestMessage,
             appMode === 'BASIC' ? 'BASIC' : 'GAME',
             Boolean(oraclePreferences?.dailyFocusCardEnabled),
+            oraclePreferences?.presenceLevel ?? 1,
         )) {
             return;
         }
@@ -1902,7 +2120,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             tag: `glyph-oracle-${latestMessage.id}`,
             url: '/?oracle=chat',
         });
-    }, [appMode, oracleMessages, oraclePreferences?.dailyFocusCardEnabled, oraclePreferences?.notificationsEnabled, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id]);
+    }, [appMode, oracleMessages, oraclePreferences?.dailyFocusCardEnabled, oraclePreferences?.notificationsEnabled, oraclePreferences?.presenceLevel, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id]);
 
     useEffect(() => {
         const userId = session?.user.id;
@@ -2532,7 +2750,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setReports([]);
             setClan(null);
             setEnrichedClanMembers([]);
-            setChecklistItems([...defaultChecklistItems]);
+            setChecklistItems(readChecklistItemsFromStorage(currentUserId));
             setFeed([]);
             setActiveCycle(null);
             setUpcomingCycle(null);
@@ -2746,6 +2964,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(() => [...defaultChecklistItems]);
     const [sequenceItems, setSequenceItems] = useState<SequenceItem[]>(() => [...defaultSequenceItems]);
+    const checklistItemsHydratedRef = useRef(false);
     const sequenceItemsHydratedRef = useRef(false);
 
     const [achievementUnlocked, setAchievementUnlocked] = useState<{ type: FeedEventType; data: any; } | null>(null);
@@ -3973,9 +4192,50 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     useEffect(() => {
         const userId = session?.user.id;
+        if (!userId || suspendPersistenceRef.current) return;
+
+        try {
+            localStorage.setItem(
+                getChecklistStorageKey(userId),
+                JSON.stringify({
+                    date: dailyCommitment.date || getTodayString(),
+                    items: normalizeChecklistItems(checklistItems),
+                })
+            );
+        } catch (error) {
+            console.error('Failed to save checklist items to local storage:', error);
+        }
+    }, [checklistItems, dailyCommitment.date, session?.user.id]);
+
+    useEffect(() => {
+        const userId = session?.user.id;
+        checklistItemsHydratedRef.current = false;
         sequenceItemsHydratedRef.current = false;
         setSequenceItems([...defaultSequenceItems]);
     }, [session?.user.id]);
+
+    useEffect(() => {
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId) || !hasHydratedFromSupabase || !checklistItemsHydratedRef.current || suspendPersistenceRef.current) {
+            return;
+        }
+
+        const normalized = normalizeChecklistItems(checklistItems);
+        const payload = {
+            date: dailyCommitment.date || getTodayString(),
+            items: normalized,
+        };
+
+        supabase
+            .from('user_profiles')
+            .update({ checklist_items: payload })
+            .eq('id', userId)
+            .then(({ error }) => {
+                if (error) {
+                    console.error('Failed to persist checklist items:', error);
+                }
+            });
+    }, [checklistItems, dailyCommitment.date, getSupabaseUserId, hasHydratedFromSupabase]);
 
     useEffect(() => {
         const userId = getSupabaseUserId();
@@ -4150,6 +4410,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         );
 
         let settledCount = 0;
+        let settledExpTotal = 0;
         const newlyJudgedDates: string[] = [];
 
         for (const operationalDate of historicalDates) {
@@ -4255,6 +4516,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
 
             settledCount += 1;
+            settledExpTotal += summary.expDeposited;
             newlyJudgedDates.push(operationalDate);
         }
 
@@ -4262,10 +4524,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         setJudgedOperationalDates((prev) => Array.from(new Set([...prev, ...newlyJudgedDates])));
         await refreshOpenCycleDerivedState(activeCycle);
+        const expLabel = settledExpTotal > 0 ? ` +${settledExpTotal} XP no ciclo.` : '';
         showToast(
             settledCount === 1
-                ? '1 dia pendente foi reconciliado pelo historico real.'
-                : `${settledCount} dias pendentes foram reconciliados pelo historico real.`,
+                ? `1 dia pendente foi reconciliado pelo historico real.${expLabel}`
+                : `${settledCount} dias pendentes foram reconciliados pelo historico real.${expLabel}`,
             'success'
         );
     }, [activeCycle, actions, getSupabaseUserId, isClanQuestActionId, refreshOpenCycleDerivedState, showToast, summarizeOperationalDayCommitment, tasks]);
@@ -4450,7 +4713,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Check for daily reset
         if (dailyCommitment.date !== today) {
             resetDailyCommitment();
-            setChecklistItems([...defaultChecklistItems]);
+            setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
         }
 
         const userId = getSupabaseUserId();
@@ -4545,6 +4808,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     ...(camelProfile.unlockedSkins || {}),
                     BASIC: true,
                 };
+                const storedChecklistItems = normalizeStoredChecklistItems(camelProfile.checklistItems, getTodayString());
+                const legacyChecklistItems = storedChecklistItems.length === 0 ? readChecklistItemsFromStorage(userId) : [];
+                const effectiveChecklistItems = storedChecklistItems.length > 0 ? storedChecklistItems : legacyChecklistItems;
                 const storedSequenceItems = normalizeSequenceItems(camelProfile.sequenceItems);
                 const legacySequenceItems = storedSequenceItems.length === 0 ? readLegacySequenceItemsFromStorage(userId) : [];
                 const effectiveSequenceItems = storedSequenceItems.length > 0 ? storedSequenceItems : legacySequenceItems;
@@ -4560,15 +4826,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         campaignQuizMediumCredits: Math.max(0, Number(camelProfile.campaignQuizMediumCredits || 0)),
                         skin: normalizedSkin,
                         unlockedSkins: normalizedUnlockedSkins,
+                        checklistItems: {
+                            date: getTodayString(),
+                            items: effectiveChecklistItems,
+                        },
                         sequenceItems: effectiveSequenceItems,
                     } as UserProfile;
                     next.visibleWidgets = Array.isArray(next.visibleWidgets) ? next.visibleWidgets : [];
                     next.sequenceItems = effectiveSequenceItems;
+                    next.dailyProofStreak = normalizeDailyProofStreak(next.dailyProofStreak);
                     next.assetArtById = normalizeAssetKeyedRecord(next.assetArtById);
                     next.assetWidgetValues = normalizeAssetKeyedRecord(next.assetWidgetValues);
                     next.assetsVisibility = normalizeAssetsVisibilityScope(next.assetsVisibility);
                     next.masteryVisibility = normalizeMasteryVisibilityScope(next.masteryVisibility);
                     next.featsVisibility = normalizeFeatsVisibilityScope(next.featsVisibility);
+                    next.gardenVisibility = normalizeGardenVisibilityScope(next.gardenVisibility);
+                    next.gardenState = next.gardenState || DEFAULT_USER_PROFILE.gardenState;
                     const normalizedUnlockedItems = next.unlockedItems || DEFAULT_USER_PROFILE.unlockedItems;
                     next.unlockedItems = {
                         ...normalizedUnlockedItems,
@@ -4591,8 +4864,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     }
                     return next;
                 });
+                setChecklistItems(effectiveChecklistItems);
+                checklistItemsHydratedRef.current = true;
                 setSequenceItems(effectiveSequenceItems);
                 sequenceItemsHydratedRef.current = true;
+                if (legacyChecklistItems.length > 0) {
+                    supabase
+                        .from('user_profiles')
+                        .update({
+                            checklist_items: {
+                                date: getTodayString(),
+                                items: legacyChecklistItems,
+                            },
+                        })
+                        .eq('id', userId)
+                        .then(({ error }) => {
+                            if (error) {
+                                console.error('Failed to migrate legacy checklist items to Supabase:', error);
+                            }
+                        });
+                }
                 if (legacySequenceItems.length > 0) {
                     supabase
                         .from('user_profiles')
@@ -6944,7 +7235,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             relationshipBonusXp: null,
             operationalScratch: null,
         });
-        setChecklistItems([...defaultChecklistItems]);
+        setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
     };
     const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds: [...new Set(taskIds)] }));
     const updateOperationalScratch = (text: string) => setDailyCommitmentState(prev => ({ ...prev, operationalScratch: text }));
@@ -7119,7 +7410,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const today = getTodayString();
             if (dailyCommitment.date !== today) {
                 resetDailyCommitment();
-                setChecklistItems([...defaultChecklistItems]);
+                setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
             }
         };
 
@@ -7716,11 +8007,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'isOnline',
                 'visibleWidgets',
                 'sequenceItems',
+                'dailyProofStreak',
                 'assetArtById',
                 'assetWidgetValues',
                 'assetsVisibility',
                 'masteryVisibility',
                 'featsVisibility',
+                'gardenVisibility',
+                'gardenState',
                 'skin',
                 'lastLevelUpdate',
                 'nobility',
@@ -9322,6 +9616,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             publicProfile.assetsVisibility = normalizeAssetsVisibilityScope(publicProfile.assetsVisibility);
             publicProfile.masteryVisibility = normalizeMasteryVisibilityScope(publicProfile.masteryVisibility);
             publicProfile.featsVisibility = normalizeFeatsVisibilityScope(publicProfile.featsVisibility);
+            publicProfile.gardenVisibility = normalizeGardenVisibilityScope(publicProfile.gardenVisibility);
         }
 
         const isOwner = userProfile.id === userId;
@@ -11188,6 +11483,58 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateCustomClanMissionProgress,
     } = questSharedDomain;
 
+    const registerDailyProofAction = ({
+        task,
+        action,
+        tasksAfterChange,
+    }: {
+        task: ScheduledTask;
+        action?: Action;
+        tasksAfterChange: ScheduledTask[];
+    }) => {
+        if (!action) return;
+
+        const proofDate = getTaskOperationalDateString(task);
+        const operationalToday = getOperationalDateString();
+        if (!proofDate || proofDate !== operationalToday) return;
+
+        const normalizedStreak = normalizeDailyProofStreak(userProfile.dailyProofStreak);
+        const completedProofTasksToday = tasksAfterChange.filter((candidate) => {
+            if (!candidate.completed) return false;
+            if (getTaskOperationalDateString(candidate) !== proofDate) return false;
+            return Boolean(getActionById(candidate.actionId));
+        });
+
+        if (completedProofTasksToday.length === 0) {
+            if ((normalizedStreak.lastProofDate || normalizedStreak.lastClosedDate) !== proofDate) return;
+            updateUserProfile({ dailyProofStreak: rollbackDailyProofStreakDate(normalizedStreak, proofDate) });
+            showToast('Sequencia em risco: complete uma acao hoje para manter.', 'info');
+            return;
+        }
+
+        if ((normalizedStreak.lastProofDate || normalizedStreak.lastClosedDate) === proofDate) return;
+
+        const cycleArenaIds = new Set(activeCycle?.arenaIds || []);
+        const proofCycleId = activeCycle
+            && proofDate >= activeCycle.startDate
+            && proofDate <= activeCycle.endDate
+            && (cycleArenaIds.size === 0 || cycleArenaIds.has(action.arenaId))
+            ? activeCycle.id
+            : null;
+
+        const streakResult = advanceDailyProofStreak(normalizedStreak, proofDate, new Date().toISOString(), {
+            actionId: action.id,
+            arenaId: action.arenaId || null,
+            cycleId: proofCycleId,
+        });
+
+        updateUserProfile({ dailyProofStreak: streakResult.next });
+        if (streakResult.isNewDate) {
+            window.setTimeout(() => emitAppSensoryCue('daily_streak'), 120);
+            showToast(`Linha viva: ${streakResult.next.current} dia${streakResult.next.current === 1 ? '' : 's'} com prova real.`, 'success');
+        }
+    };
+
     const taskDomain = createTaskDomain({
         tasks,
         activeCycle,
@@ -11208,6 +11555,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateClanMissionProgress,
         updateCustomClanMissionProgress,
         handleCompetitionArenaCompletion: resolveCompetitionChallengeOutcome,
+        onDailyProofActionCompleted: registerDailyProofAction,
         setAchievementUnlocked,
         addFeedEvent,
         getLocalDateString,

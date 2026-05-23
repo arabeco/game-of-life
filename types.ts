@@ -258,6 +258,37 @@ export interface InventoryItem {
   isEquipped?: boolean;
 }
 
+export type GardenSandColor = 'classic' | 'white' | 'basalt';
+export type GardenTool = 'rake' | 'eraser';
+export type GardenRakeStyle = 'three' | 'wide' | 'soft';
+
+export interface GardenStrokePoint {
+  x: number;
+  y: number;
+}
+
+export interface GardenStroke {
+  id: string;
+  tool: GardenTool;
+  rakeStyle?: GardenRakeStyle;
+  points: GardenStrokePoint[];
+}
+
+export interface GardenPlacedItem {
+  id: string;
+  itemId: string;
+  x: number;
+  y: number;
+  scale?: number;
+}
+
+export interface GardenState {
+  sandColor?: GardenSandColor;
+  strokes?: GardenStroke[];
+  items?: GardenPlacedItem[];
+  updatedAt?: string;
+}
+
 export interface UserWallet {
   gold: number;
   fragments: number;
@@ -438,12 +469,16 @@ export interface UserProfile {
   bannerUrl?: string; // Flamula-style banner
   isOnline: boolean;
   visibleWidgets: string[];
+  checklistItems?: { date?: string; items?: ChecklistItem[] } | ChecklistItem[];
   sequenceItems?: SequenceItem[];
+  dailyProofStreak?: DailyProofStreak;
   assetArtById?: Partial<Record<string, string>>;
   assetWidgetValues?: Partial<Record<string, SlotValue>>;
   assetsVisibility?: ProfileVisibilityScope;
   masteryVisibility?: ProfileVisibilityScope;
   featsVisibility?: ProfileVisibilityScope;
+  gardenVisibility?: ProfileVisibilityScope;
+  gardenState?: GardenState;
   skin: string; // ID of the current skin
   lastLevelUpdate?: number; // Timestamp of the last level update
   nobility: Nobility;
@@ -497,6 +532,24 @@ export interface SequenceItem {
   days: number;
   lastMarkedDate?: string | null;
   updatedAt?: string;
+}
+
+export interface DailyProofStreak {
+  current: number;
+  best: number;
+  totalClosedDays: number;
+  lastClosedDate: string | null;
+  lastClosedAt?: string | null;
+  totalProofDays?: number;
+  lastProofDate?: string | null;
+  lastProofAt?: string | null;
+  lastProofActionId?: string | null;
+  lastProofArenaId?: string | null;
+  lastProofCycleId?: string | null;
+  lastScore?: number | null;
+  lastExpDeposited?: number | null;
+  lastCompletedTasksCount?: number | null;
+  lastTotalTasksCount?: number | null;
 }
 
 export interface ReportAtlasDayArenaBucket {
@@ -1114,6 +1167,7 @@ export interface LinkNotificationLog {
 // --- Oracle System ---
 
 export type OracleMode = 'calmo' | 'reflexivo' | 'tatico' | 'estrategico' | 'coach' | 'personalizado' | 'neutro';
+export type OraclePresenceLevel = 0 | 1 | 2 | 3;
 
 export type OracleCategory =
   | 'frases_inspiradoras'
@@ -1136,6 +1190,8 @@ export interface OraclePreferences {
   animationsEnabled: boolean;
   soundsEnabled: boolean;
   hapticsEnabled: boolean;
+  // Local/device policy for how proactive the Oracle feels in the app.
+  presenceLevel?: OraclePresenceLevel;
   // Local-only policy for proactive oracle notifications (not persisted in Supabase schema).
   sentinelMode?: 'soberano_ativo' | 'apenas_necessarias' | 'nao_ia';
   enabledCategories: OracleCategory[];
@@ -1189,6 +1245,17 @@ export interface OracleContext {
   completedActionsInCycle: number;
   pendingActionsToday: number;
   overdueActions: number;
+  dailyProofStreakCurrent: number;
+  dailyProofStreakBest: number;
+  dailyProofTotalClosedDays: number;
+  dailyProofLastClosedDate: string | null;
+  dailyProofLastProofActionId: string | null;
+  dailyProofLastProofArenaId: string | null;
+  dailyProofLastProofCycleId: string | null;
+  dailyProofLastScore: number | null;
+  dailyProofLastExpDeposited: number | null;
+  dailyProofLastCompletedTasksCount: number | null;
+  dailyProofLastTotalTasksCount: number | null;
   activeMode: OracleMode;
   customModeInstructions: string | null;
   enabledCategories: OracleCategory[];

@@ -3,6 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { useEffect } from 'react';
 import { AssetArenaBoard } from '../components/AssetArenaBoard';
 import { AssetArtButton } from '../components/AssetArtButton';
+import { GardenZenModal } from '../components/GardenZenModal';
 import { InputModal } from '../components/inputs/InputModal';
 import { Sephirot } from '../components/Sephirot';
 import { EditIcon, XIcon } from '../components/Icons';
@@ -115,6 +116,7 @@ export const AssetsView: React.FC = () => {
     const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
     const [draftAssetArtUrl, setDraftAssetArtUrl] = useState<string | undefined>(undefined);
     const [draftAssetWidgetValue, setDraftAssetWidgetValue] = useState<SlotValue | undefined>(undefined);
+    const [isGardenOpen, setGardenOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const cycleSummaryRef = useRef<HTMLButtonElement | null>(null);
     const lastSelectedAssetIdRef = useRef<string | null>(null);
@@ -672,7 +674,7 @@ export const AssetsView: React.FC = () => {
                                 ref={cycleSummaryRef}
                                 type="button"
                                 onClick={handleOpenReports}
-                                className={`group w-full overflow-hidden border border-white/10 px-3 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'max-w-[300px] rounded-[14px] py-1' : 'max-w-[214px] rounded-[12px] py-1.5'}`}
+                                className={`group w-full overflow-hidden border border-white/10 px-3 text-left backdrop-blur-[10px] transition-all duration-300 hover:-translate-y-[1px] ${activeCycle ? 'max-w-[300px] rounded-[14px] pb-1.5 pt-0.5' : 'max-w-[214px] rounded-[12px] py-1.5'}`}
                                 style={{
                                     borderColor: rgbaString(cycleAccentRgb, 0.32),
                                     backgroundImage: `radial-gradient(circle at 18% 10%, ${rgbaString(cycleAccentRgb, 0.24)} 0%, transparent 34%), linear-gradient(180deg, rgba(31,38,48,0.94) 0%, rgba(13,17,22,0.98) 100%)`,
@@ -681,28 +683,28 @@ export const AssetsView: React.FC = () => {
                                 }}
                             >
                                 {cycleSummary ? (
-                                    <div className="space-y-1">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <h3 className="truncate text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
+                                    <div className="space-y-0.5">
+                                        <div className="relative min-h-[11px]">
+                                            <h3 className="mx-auto max-w-[176px] truncate text-center text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
                                                 {cycleSummary.name}
                                             </h3>
-                                            <span className="shrink-0 text-[8px] font-black tracking-[0.02em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
-                                                {`${formatDate(cycleSummary.startDate)}-${formatDate(cycleSummary.endDate)} (${cycleSummary.totalDays} dias)`}
+                                            <span className="absolute left-0 top-1/2 max-w-[86px] -translate-y-1/2 truncate text-left text-[8px] font-black tracking-[0.02em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
+                                                {`${formatDate(cycleSummary.startDate)}-${formatDate(cycleSummary.endDate)}`}
                                             </span>
                                         </div>
-                                        <div className="space-y-0.5">
+                                        <div className="space-y-[1px]">
                                             <div>
                                                 <div className="flex items-center justify-between gap-2 text-[7px] font-black uppercase tracking-[0.08em]">
                                                     <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Progresso</span>
                                                     <span className="shrink-0" style={{ color: rgbString(cycleTitleColor) }}>{`${cycleSummary.totalCompleted}/${cycleSummary.totalPlanned} (${cycleSummary.progress}%)`}</span>
                                                 </div>
-                                                <div className="mt-0.5 h-[2px] w-full overflow-hidden rounded-full bg-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                                                <div className="mt-0.5 h-[3px] w-full overflow-hidden rounded-full bg-black/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
                                                     <div
                                                         className="h-full rounded-full transition-all duration-500"
                                                         style={{
                                                             width: `${cycleSummary.progress}%`,
-                                                            background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)',
-                                                            boxShadow: '0 0 10px rgba(212,175,55,0.24)',
+                                                            background: 'linear-gradient(90deg, #b47a18 0%, #ffd462 48%, #fff1b8 100%)',
+                                                            boxShadow: '0 0 12px rgba(255,212,98,0.46), 0 0 2px rgba(255,255,255,0.72)',
                                                         }}
                                                     />
                                                 </div>
@@ -712,13 +714,13 @@ export const AssetsView: React.FC = () => {
                                                     <span style={{ color: rgbaString(cycleMetaColor, 0.84) }}>Tempo</span>
                                                     <span className="shrink-0" style={{ color: rgbaString(cycleMetaColor, 0.96) }}>{`${cycleSummary.elapsedDays}/${cycleSummary.totalDays} (${cycleSummary.timeProgress}%)`}</span>
                                                 </div>
-                                                <div className="mt-0.5 h-[2px] w-full overflow-hidden rounded-full bg-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                                                <div className="mt-0.5 h-[3px] w-full overflow-hidden rounded-full bg-black/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
                                                     <div
                                                         className="h-full rounded-full transition-all duration-500"
                                                         style={{
                                                             width: `${cycleSummary.timeProgress}%`,
-                                                            background: 'linear-gradient(90deg, rgba(118,128,145,0.7) 0%, rgba(209,216,226,0.92) 54%, rgba(255,255,255,0.98) 100%)',
-                                                            boxShadow: '0 0 10px rgba(210,220,235,0.16)',
+                                                            background: 'linear-gradient(90deg, rgba(168,178,196,0.95) 0%, rgba(236,242,255,0.98) 54%, rgba(255,255,255,1) 100%)',
+                                                            boxShadow: '0 0 12px rgba(226,237,255,0.34), 0 0 2px rgba(255,255,255,0.68)',
                                                         }}
                                                     />
                                                 </div>
@@ -726,8 +728,8 @@ export const AssetsView: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="min-w-0">
+                                    <div className="relative min-h-[24px]">
+                                        <div className="mx-auto min-w-0 max-w-[150px] text-center">
                                             <h3 className="truncate text-[10px] font-black uppercase tracking-[0.09em]" style={{ color: rgbString(cycleTitleColor) }}>
                                                 Sem ciclo ativo
                                             </h3>
@@ -735,7 +737,7 @@ export const AssetsView: React.FC = () => {
                                                 Historico
                                             </p>
                                         </div>
-                                        <span className="shrink-0 text-[8px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
+                                        <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[8px] font-black uppercase tracking-[0.08em]" style={{ color: rgbaString(cycleMetaColor, 0.86) }}>
                                             Abrir
                                         </span>
                                     </div>
@@ -839,13 +841,13 @@ export const AssetsView: React.FC = () => {
                                                         </span>
                                                     </div>
                                                 <div className="mt-0.5">
-                                                    <div className="h-[3px] w-full overflow-hidden rounded-full bg-black/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                                                    <div className="h-[3px] w-full overflow-hidden rounded-full bg-black/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                                                         <div
                                                             className="h-full rounded-full transition-all duration-500"
                                                             style={{
                                                                 width: `${stats.progressPercent}%`,
-                                                                background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)',
-                                                                boxShadow: '0 0 10px rgba(212,175,55,0.24)',
+                                                                background: 'linear-gradient(90deg, #b47a18 0%, #ffd462 48%, #fff1b8 100%)',
+                                                                boxShadow: '0 0 12px rgba(255,212,98,0.42), 0 0 2px rgba(255,255,255,0.68)',
                                                             }}
                                                         />
                                                     </div>
@@ -856,9 +858,20 @@ export const AssetsView: React.FC = () => {
                                 );
                             })}
                         </div>
+                        {!isBasicMode && (
+                            <button
+                                type="button"
+                                onClick={() => setGardenOpen(true)}
+                                className="absolute bottom-4 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full border border-amber-200/35 bg-black/58 text-2xl shadow-[0_14px_34px_rgba(0,0,0,0.42),0_0_20px_rgba(244,205,130,0.18)] backdrop-blur-md transition-transform hover:scale-105"
+                                title="Meu jardim"
+                            >
+                                <span className="translate-y-[-1px]">{'\u{1FAA8}'}</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
+            {isGardenOpen && <GardenZenModal onClose={() => setGardenOpen(false)} />}
         </div>
     );
 };

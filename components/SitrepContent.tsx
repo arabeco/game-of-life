@@ -14,6 +14,14 @@ import { safeVibrate } from '../utils/safeVibrate';
 import './core-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 
+const getFreeActionColorStyle = (
+    backgroundStyle: React.CSSProperties,
+    extra: React.CSSProperties = {},
+): React.CSSProperties => ({
+    ...extra,
+    ['--free-action-bg' as string]: String(backgroundStyle.background || 'var(--asset-grad-default)'),
+});
+
 const CycleHeader: React.FC = () => {
     const { activeCycle, dailyCommitment } = useGame();
     if (!activeCycle) return null;
@@ -93,7 +101,7 @@ const BattleTaskItem: React.FC<{
     return (
         <div
             className={`relative p-2 flex items-center space-x-3 rounded-xl text-left overflow-hidden transition-all text-white select-none ${isMilestone ? 'border-2 border-[var(--accent-bronze)] shadow-[0_0_10px_var(--accent-bronze-soft)]' : isFreeAction ? 'free-action-shell free-action-outline' : ''} ${isHolding ? 'scale-95 brightness-125' : ''}`}
-            style={isFreeAction ? undefined : backgroundStyle}
+            style={isFreeAction ? getFreeActionColorStyle(backgroundStyle) : backgroundStyle}
             onMouseDown={handlePressStart}
             onMouseUp={handlePressEnd}
             onMouseLeave={handlePressEnd}
@@ -158,7 +166,7 @@ const PlannerLikeSitrepTaskItem: React.FC<{
     return (
         <div
             className={`relative overflow-hidden rounded-[22px] border px-3 py-2 text-left shadow-[0_14px_30px_rgba(0,0,0,0.22)] backdrop-blur-md transition-all text-white select-none active:scale-[0.99] ${isFreeAction ? 'free-action-shell free-action-outline' : 'border-white/15'} ${isHolding ? 'scale-95 brightness-125' : ''} ${isCompleted ? 'opacity-85' : ''}`}
-            style={isFreeAction ? undefined : backgroundStyle}
+            style={isFreeAction ? getFreeActionColorStyle(backgroundStyle) : backgroundStyle}
             onMouseDown={handlePressStart}
             onMouseUp={handlePressEnd}
             onMouseLeave={handlePressEnd}
@@ -189,7 +197,7 @@ const PlannerLikeSitrepTaskItem: React.FC<{
             </div>
             {isHolding && (
                 <div className={`absolute inset-0 animate-pulse ${isFreeAction ? 'bg-black/40 rounded-[22px]' : 'bg-black/50 rounded-[22px]'}`}>
-                    <div className={`h-full w-full ${isCompleted ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ? 'bg-slate-200/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} />
+                    <div className={`h-full w-full ${isCompleted ? 'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ? 'bg-white/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`} />
                 </div>
             )}
         </div>
@@ -313,7 +321,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
             <SitrepBoostStatus />
 
             <div className="sitrep-neutral-panel p-3 rounded-xl">
-                <h3 className="core-label text-center mb-2">Tarefas disponíveis</h3>
+                <h3 className="core-label text-center mb-2">Ações disponíveis</h3>
                 <div className="max-h-24 overflow-y-auto pr-1 space-y-1">
                     {groupedAvailableOptions.map((group) => {
                         const isStockOut = group.count <= 0;
@@ -324,7 +332,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                                 onClick={() => handleGroupClick(group)}
                                 disabled={isStockOut}
                                 className={`group relative w-full overflow-hidden rounded-[18px] border px-3 py-2 text-left transition-all ${isFreeAction ? 'free-action-shell free-action-outline' : 'border-white/10 bg-black/18'} ${isStockOut ? 'opacity-30 cursor-not-allowed bg-black/10 border-white/5' : 'hover:border-white/20 active:scale-[0.99]'}`}
-                                style={!isFreeAction && !isStockOut ? getActionBackgroundStyle(group.action.id) : undefined}
+                                style={isFreeAction && !isStockOut ? getFreeActionColorStyle(getActionBackgroundStyle(group.action.id)) : !isStockOut ? getActionBackgroundStyle(group.action.id) : undefined}
                             >
                                 {!isFreeAction && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.12),rgba(2,6,23,0.34)_76%)]" />}
                                 <div className="relative z-10 flex items-center gap-2">
@@ -343,7 +351,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                             </button>
                         );
                     })}
-                    {groupedAvailableOptions.length === 0 && <p className="text-xs text-center text-gray-500 py-2">Nada disponível para hoje.</p>}
+                    {groupedAvailableOptions.length === 0 && <p className="text-xs text-center text-gray-500 py-2">Nenhuma ação disponível para hoje.</p>}
                 </div>
             </div>
 
@@ -357,7 +365,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                             <div
                                 key={task.id}
                                 className={`relative w-full overflow-hidden rounded-[18px] border px-3 py-2 text-left ${isFreeAction ? 'free-action-shell free-action-outline' : 'border-white/10 bg-black/18'}`}
-                                style={action && !isFreeAction ? getActionBackgroundStyle(action.id) : undefined}
+                                style={action ? (isFreeAction ? getFreeActionColorStyle(getActionBackgroundStyle(action.id)) : getActionBackgroundStyle(action.id)) : undefined}
                             >
                                 {action && !isFreeAction && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.12),rgba(2,6,23,0.34)_76%)]" />}
                                 <div className="relative z-10 flex items-center gap-2">

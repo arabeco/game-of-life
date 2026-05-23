@@ -446,10 +446,10 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const archivedClasses = arena.isArchived ? 'opacity-50 saturate-50' : '';
     const compactHeight = isOverview ? '4.75rem' : variant === 'compact' ? '4.95rem' : undefined;
     const compactGlassBackground = [
-        'radial-gradient(circle at 14% 0%, rgba(255,255,255,0.16), transparent 32%)',
-        `radial-gradient(86% 66% at 96% 88%, ${rgbaString(accentColor, 0.18)} 0%, ${rgbaString(accentColor, 0.08)} 16%, transparent 34%)`,
-        `linear-gradient(45deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 64%, ${rgbaString(accentColor, 0.045)} 76%, ${rgbaString(accentColor, 0.11)} 84%, rgba(8,10,14,0) 94%)`,
-        `linear-gradient(118deg, rgba(255,255,255,0.13) 0%, rgba(216,224,235,0.075) 22%, rgba(84,94,112,0.14) 46%, rgba(13,17,25,0.42) 76%, rgba(5,7,12,0.56) 100%)`,
+        'radial-gradient(circle at 14% 0%, rgba(255,255,255,0.2), transparent 34%)',
+        `radial-gradient(86% 66% at 96% 88%, ${rgbaString(accentColor, 0.24)} 0%, ${rgbaString(accentColor, 0.12)} 16%, transparent 36%)`,
+        `linear-gradient(45deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 62%, ${rgbaString(accentColor, 0.065)} 75%, ${rgbaString(accentColor, 0.16)} 84%, rgba(8,10,14,0) 95%)`,
+        `linear-gradient(118deg, rgba(255,255,255,0.17) 0%, rgba(216,224,235,0.11) 22%, rgba(84,94,112,0.18) 46%, rgba(13,17,25,0.66) 76%, rgba(5,7,12,0.78) 100%)`,
     ].join(', ');
     const cardBackground = visualFamily === 'normal' && isCompactThumbnail
         ? compactGlassBackground
@@ -465,8 +465,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const cardStyle: React.CSSProperties = {
         borderColor: isCompactThumbnail ? rgbaString(skinColor, 0.42) : skinColor,
         backgroundImage: cardBackground,
+        backgroundColor: isCompactThumbnail ? 'rgba(9, 12, 18, 0.9)' : undefined,
         boxShadow: cardShadow,
-        ...(isCompactThumbnail ? { backdropFilter: 'blur(13px) saturate(135%)' } : {}),
+        ...(isCompactThumbnail ? { backdropFilter: 'blur(10px) saturate(150%) brightness(1.06)' } : {}),
         ...(compactHeight ? { height: compactHeight } : {}),
     };
     const tiltStyle: React.CSSProperties = {

@@ -1,4 +1,4 @@
-import { Action, Asset, Cycle, DailyCommitment, OracleCategory, OracleContext, OracleMode, ScheduledTask } from '../types';
+import { Action, Asset, Cycle, DailyCommitment, DailyProofStreak, OracleCategory, OracleContext, OracleMode, ScheduledTask } from '../types';
 import { filterCycleTasksByScope } from './coreLoopUtils.js';
 import { getOperationalDateString, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 
@@ -18,6 +18,7 @@ type OracleOperationalContextInput = {
   seasonName?: string | null;
   pendingChests?: number;
   dailyCommitment?: DailyCommitment | null;
+  dailyProofStreak?: DailyProofStreak | null;
 };
 
 const getTimeOfDay = (date: Date): OracleContext['timeOfDay'] => {
@@ -150,11 +151,16 @@ export const buildOracleOperationalContext = ({
   seasonName = null,
   pendingChests = 0,
   dailyCommitment = null,
+  dailyProofStreak = null,
 }: OracleOperationalContextInput): OracleContext => {
   const operationalDate = getOperationalDateString(now);
   const activeArenas = assets.flatMap((asset) => asset.arenas).filter((arena) => !arena.isArchived);
   const actionById = new Map(actions.map((action) => [action.id, action]));
   const arenaById = new Map(activeArenas.map((arena) => [arena.id, arena]));
+  const inferredArenaIds = new Set<string>();
+  actions.forEach((action) => {
+    if (action.arenaId) inferredArenaIds.add(action.arenaId);
+  });
 
   const todayTasks = tasks.filter((task) => taskMatchesOperationalDate(task, operationalDate));
   const pendingTodayTasks = todayTasks.filter((task) => !task.completed);
@@ -171,7 +177,7 @@ export const buildOracleOperationalContext = ({
 
   const cycleArenaIds = new Set(activeCycle?.arenaIds || []);
   const cycleActions = activeCycle
-    ? actions.filter((action) => cycleArenaIds.has(action.arenaId))
+    ? actions.filter((action) => cycleArenaIds.size === 0 || cycleArenaIds.has(action.arenaId))
     : [];
   const cycleTotalActions = cycleActions.reduce((sum, action) => sum + getActionCycleWeight(action), 0);
   const cycleCompletedActions = Math.min(cycleTotalActions || completedCycleTasks.length, completedCycleTasks.length);
@@ -229,7 +235,8 @@ export const buildOracleOperationalContext = ({
     })
     .map((arena) => arena.name);
 
-  const needsFirstArena = activeArenas.length === 0;
+  const hasArenaEvidence = activeArenas.length > 0 || cycleArenaIds.size > 0 || inferredArenaIds.size > 0;
+  const needsFirstArena = !hasArenaEvidence;
   const needsFirstAction = !needsFirstArena && actions.length === 0;
   const needsFirstTask = !needsFirstArena && !needsFirstAction && tasks.length === 0;
   const needsSitrepClosure = dailyCommitment?.date === operationalDate && dailyCommitment?.stage === 'battle';
@@ -262,13 +269,24 @@ export const buildOracleOperationalContext = ({
     cycleTotalActions,
     cycleCompletedActions,
     cyclePendingActions,
-    hasArenas: activeArenas.length > 0,
-    totalArenas: activeArenas.length,
+    hasArenas: hasArenaEvidence,
+    totalArenas: Math.max(activeArenas.length, cycleArenaIds.size, inferredArenaIds.size),
     arenaNames: activeArenas.map((arena) => arena.name),
     staleArenas,
     completedActionsInCycle,
     pendingActionsToday: pendingTodayTasks.length,
     overdueActions: overdueTasks.length,
+    dailyProofStreakCurrent: Math.max(0, Math.round(dailyProofStreak?.current || 0)),
+    dailyProofStreakBest: Math.max(0, Math.round(dailyProofStreak?.best || 0)),
+    dailyProofTotalClosedDays: Math.max(0, Math.round(dailyProofStreak?.totalClosedDays || 0)),
+    dailyProofLastClosedDate: dailyProofStreak?.lastProofDate || dailyProofStreak?.lastClosedDate || null,
+    dailyProofLastProofActionId: dailyProofStreak?.lastProofActionId || null,
+    dailyProofLastProofArenaId: dailyProofStreak?.lastProofArenaId || null,
+    dailyProofLastProofCycleId: dailyProofStreak?.lastProofCycleId || null,
+    dailyProofLastScore: typeof dailyProofStreak?.lastScore === 'number' ? dailyProofStreak.lastScore : null,
+    dailyProofLastExpDeposited: typeof dailyProofStreak?.lastExpDeposited === 'number' ? dailyProofStreak.lastExpDeposited : null,
+    dailyProofLastCompletedTasksCount: typeof dailyProofStreak?.lastCompletedTasksCount === 'number' ? dailyProofStreak.lastCompletedTasksCount : null,
+    dailyProofLastTotalTasksCount: typeof dailyProofStreak?.lastTotalTasksCount === 'number' ? dailyProofStreak.lastTotalTasksCount : null,
     activeMode,
     customModeInstructions,
     enabledCategories,

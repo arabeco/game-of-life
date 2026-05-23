@@ -288,6 +288,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
   const uTintStrengthLoc = useRef<WebGLUniformLocation | null>(null);
   const uModeLoc = useRef<WebGLUniformLocation | null>(null); // NEW
   const startTimeRef = useRef<number | null>(null);
+  const isVisibleRef = useRef(typeof document === 'undefined' ? true : document.visibilityState !== 'hidden');
 
   // Helper to hex to rgb
   const hexToRgb = (hex: string | undefined | null) => {
@@ -393,6 +394,10 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
     // Animation Loop
     const render = (time: number) => {
       if (!gl || !program) return;
+      if (!isVisibleRef.current) {
+        animationRef.current = 0;
+        return;
+      }
       
       if (startTimeRef.current === null) {
         startTimeRef.current = time;
@@ -412,10 +417,37 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
       animationRef.current = requestAnimationFrame(render);
     };
 
-    animationRef.current = requestAnimationFrame(render);
+    const startLoop = () => {
+      if (animationRef.current || !isVisibleRef.current) return;
+      animationRef.current = requestAnimationFrame(render);
+    };
+
+    const stopLoop = () => {
+      if (!animationRef.current) return;
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = 0;
+    };
+
+    const handleVisibilityChange = () => {
+      isVisibleRef.current = document.visibilityState !== 'hidden';
+      if (isVisibleRef.current) {
+        startTimeRef.current = null;
+        startLoop();
+      } else {
+        stopLoop();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', stopLoop, { passive: true });
+    window.addEventListener('pageshow', handleVisibilityChange, { passive: true });
+    startLoop();
 
     return () => {
-      cancelAnimationFrame(animationRef.current);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', stopLoop);
+      window.removeEventListener('pageshow', handleVisibilityChange);
+      stopLoop();
       if (program) gl.deleteProgram(program);
     };
   }, []); // Run once on mount
@@ -520,7 +552,7 @@ export const SephirotFog: React.FC<SephirotFogProps> = ({
         if (!canvas || !gl || !program) return;
 
         const rect = canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
         const width = Math.max(1, Math.floor(rect.width * dpr));
         const height = Math.max(1, Math.floor(rect.height * dpr));
 

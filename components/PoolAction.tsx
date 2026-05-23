@@ -17,6 +17,14 @@ interface PoolActionProps {
     onActionClick?: (action: Action) => void;
 }
 
+const getFreeActionColorStyle = (
+    backgroundStyle: React.CSSProperties,
+    extra: React.CSSProperties = {},
+): React.CSSProperties => ({
+    ...extra,
+    ['--free-action-bg' as string]: String(backgroundStyle.background || 'var(--asset-grad-default)'),
+});
+
 export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimited, taskId, onComplete, onCustomDragStart, onActionClick }) => {
     const { getActionBackgroundStyle, getClanQuestProgress, getClanQuestForActionName } = useGame();
     const [isHolding, setIsHolding] = useState(false);
@@ -78,7 +86,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
         const ghost = (
             <div
-                style={isFreeAction ?{ width: '48px', height: '48px' } : { ...backgroundStyle, width: '48px', height: '48px' }}
+                style={isFreeAction ?getFreeActionColorStyle(backgroundStyle, { width: '48px', height: '48px' }) : { ...backgroundStyle, width: '48px', height: '48px' }}
                 className={`aspect-square flex items-center justify-center p-1 opacity-80 ${isFreeAction ?'free-action-shell free-action-outline rounded-2xl' : 'border border-[var(--accent-bronze)] rounded-xl'}`}
             >
                 <EmojiGlyph symbol={action.icon || '\u{1F4DD}'} size="picker" className="text-white" />
@@ -112,7 +120,7 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
             ref={poolActionRef}
             data-action-id={action.id}
             {...longPressEvents}
-            style={isFreeAction ?undefined : backgroundStyle}
+            style={isFreeAction ?getFreeActionColorStyle(backgroundStyle) : backgroundStyle}
             className={`
                 h-full aspect-square flex items-center justify-center p-1 flex-shrink-0 relative transition-all duration-300 select-none
                 ${isFreeAction ?'free-action-shell free-action-outline rounded-2xl' : 'border border-[var(--accent-bronze)]/50 rounded-xl'}
@@ -136,8 +144,8 @@ export const PoolAction: React.FC<PoolActionProps> = ({ action, count, isUnlimit
 
             {/* Progress bar logic if holding */}
             {isTransitioning && (
-                <div className={`absolute inset-0 overflow-hidden pointer-events-none ${isFreeAction ?'rounded-2xl bg-slate-200/10' : 'bg-green-500/20 rounded-xl'}`}>
-                    <div className={`h-full animate-progress-fill origin-left ${isFreeAction ?'bg-slate-200/18' : 'bg-green-500/40'}`} />
+                <div className={`absolute inset-0 overflow-hidden pointer-events-none ${isFreeAction ?'rounded-2xl bg-white/10' : 'bg-green-500/20 rounded-xl'}`}>
+                    <div className={`h-full animate-progress-fill origin-left ${isFreeAction ?'bg-white/20' : 'bg-green-500/40'}`} />
                 </div>
             )}
 

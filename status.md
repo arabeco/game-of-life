@@ -1,85 +1,128 @@
-# GLYPH STATUS: 1.004b (ESTADO DE SOBERANIA)
-**Data:** 01/04/2026 | **Fase:** FUNDACAO (T1 | MARCO 1: PROVA) | **Soberano:** Zee
+# GLYPH STATUS: 1.0.37 (FINAL HARDENING)
+**Data:** 20/05/2026 | **Fase:** FUNDACAO -> PEDIDO DE PRODUCAO | **Soberano:** Zee
 
-## 1. ESTRUTURA (O CONSELHO)
-| Pilar | Peso | Agente | Estado |
-| --- | ---: | --- | --- |
-| **TRONO** | 80% | Zee | ATIVO |
-| **PROTOCOLO** | 05% | IA Arquit. | ATIVO |
-| **TESOURO** | 05% | IA Escudo | STANDBY |
-| **DOMINIO** | 05% | IA Clamor | ATIVO |
-| **SENTINELA** | 05% | IA Alicer. | OPERACIONAL |
+## 1. ESTADO REAL
+- **Closed test Google Play:** aceito. O gargalo deixou de ser "passar no teste" e virou fechar a versao final com confianca.
+- **Release local atual:** `versionCode 37`, `versionName 1.0.37`.
+- **Postura de agora:** patch pequeno, verificavel, sem refatoracao ampla por ansiedade.
 
 ## 2. SCORECARD DE AUDITORIA
-- **EXECUCAO REAL: 9.9** (Build ok, SQL validado em teste real e push remoto funcionando em producao).
-- **ID VISUAL: 9.8** (Campanhas, miniaturas, Vinculos e leitura das notificacoes mais coerentes no trilho atual).
-- **FLUXO USUARIO: 9.9** (Campanhas, Mentoria, Parceria, Competicao e DM push muito mais claros; falta a passada manual final em aparelho real).
+- **EXECUCAO REAL: 8.9** - loop central esta vivo, beta aceito, Android sincronizado em rodadas recentes; ainda precisa passada final em localhost/aparelho para os pontos abaixo.
+- **ID VISUAL: 8.6** - Planner, widget, Assets e barras de ciclo melhoraram; miniaturas de arena receberam reforco visual por parecerem transparentes demais.
+- **FLUXO USUARIO: 8.5** - ciclo, Planner, Painel Diario, campanhas e social existem; medo atual esta concentrado em bordas de Clan/Premium/Campanhas e notificacao duplicada.
+- **RETENCAO: 8.7** - Oraculo, checklist noturno, EXP diaria, ciclos e relatorio sustentam retorno; Oraculo recebeu ajuste de voz para soar menos robotico.
 
-## 2.1 PULSO OPERACIONAL (01/04/2026)
-- Push remoto fora do app ja foi selado em producao: notificacao normal, card do Oraculo, lembrete de acao e DM.
-- Campanhas + Vinculos + Parceria + Competicao ja passaram da fase confusa e viraram o pacote premium central do app.
-- Loja no `Modo Basico` ja respeita o corte essencial, sem `Itens` e sem `Forja`.
-- Persistencia critica, mobile final e leitor paginado entraram na fase de fechamento operacional.
-- Restam `PIX/Ouro`, `Premium remoto` em `2 aparelhos`, teste real de notificacao/e-mail do `GM Panel` e a passada final no aparelho real.
-- Dominio continua com `3 reels` restantes para liberar a fila de `~75 posts`.
+## 3. FECHADO AGORA
+[x] Teste fechado aceito pela Google Play.
+[x] Projeto Android em `targetSdkVersion 36`.
+[x] Versao local em `1.0.37 / 37`.
+[x] Widget/cabecalho do ciclo aprovado visualmente no localhost.
+[x] Historico de ciclo no Planner isolado na direita; ferramentas do dia ficam na esquerda.
+[x] Checklist so ganha relevo depois das 20:00 quando ainda ha pendencias.
+[x] Confirmacao generica subiu para camada `z-[21000]` para nao aparecer atras de modais de ciclo.
+[x] Miniaturas compactas de arena ficaram mais opacas, saturadas e legiveis.
+[x] Placar discreto de EXP entrou no Planner: antes do fechamento mostra estimativa do dia; depois mostra EXP depositada.
+[x] Oraculo recebeu regra de voz mais humana e menos template no prompt backend.
 
-## 3. ESPINHA DE MANIFESTACAO (O FLUXO CENTRAL)
-1. **Entrada de intencao:** `23. Campanhas` + `24. Codex e Mentoria` alimentam `01. Arenas`.
-2. **Manifestacao operacional:** `01. Arenas` geram `02. Acoes`, que vivem em `03. Planner` e `04. Painel Diario (SITREP)`.
-3. **Execucao assistida:** `19. Deep Focus` e `18. Descanso` modulam a sustentacao da execucao.
-4. **Leitura de fase:** a execucao fecha em `05. Ciclos`, produz `06. Relatorios` e consolida em `07. Historico`.
-5. **Consagracao:** `07. Historico` alimenta `08. Eras`, que desembocam em `09. Legado`.
+## 4. ATENCAO ANTES DE PRODUCAO
+[!] **EXP diaria:** completar acao nao deposita direto na nobreza. A acao marca tarefa e atualiza estimativa; a EXP entra no ciclo quando o Painel Diario fecha. Dias passados sem julgamento sao reconciliados automaticamente quando o app hidrata o ciclo.
+[!] **Notificacao duplicada:** se o mesmo usuario habilitou push no navegador e no app, pode receber nos dois destinos. Precisa validar preferencia por dispositivo antes de tratar como bug de todos.
+[!] **Clan/Premium/Campanhas:** nao ha novo bug comprovado neste passe, mas seguem como trilha de smoke final por risco de lancamento.
+[!] **Billing/Premium real:** manter como promessa controlada ate validar reconciliacao ponta a ponta.
+[!] **Encoding/mojibake:** ainda existe residuo historico; limpar so onde aparecer para usuario.
 
-## 4. INVENTARIO FUNCIONAL (EQUITY TOTAL: 25 MODULOS)
-Leitura correta: o GLYPH nao e uma lista solta de features. Ele e uma espinha principal cercada por camadas de inteligencia, identidade, economia e escala.
+## 5. ORDEM DE FECHAMENTO
+1. Rodar `npm run build`.
+2. Conferir localhost focando: deletar ciclo, miniaturas de arena, Planner EXP, Clan, Premium e Campanhas.
+3. Se aprovado visualmente, decidir se esta rodada merece `cap sync android` e novo envio.
+4. Antes de producao, fazer smoke manual curto em aparelho real: login, criar/fechar dia, historico, campanha instalada, premium/paywall, cla e notificacao.
 
-### I. ESPINHA DE MANIFESTACAO (13 MODULOS)
-- **23. Campanhas:** Projetos longos, Loja, Instalacao, Sequencia de Arenas, Desbloqueios.
-- **24. Codex e Mentoria:** Metodologias, Mentorias, Forja para Pupilo, Instalacao no Fluxo.
-- **01. Arenas:** Meta, Registro, Acompanhamento (Ativas/Concluidas/Arquivadas).
-- **02. Acoes:** Rapida, Recorrente, Parsing, Compromisso, Marco, Compartilhada, Leitura, Anotacoes.
-- **03. Planner:** Dia, Semana, Estoque, Quick Add, Horario, Ocorrencias.
-- **04. Painel Diario (SITREP):** Abertura, Trava de Compromisso, Acompanhamento, Fechamento, Bay Area.
-- **19. Deep Focus:** Foco Profundo, Ambiente, Sessao.
-- **18. Descanso:** Energia, Retomada Rapida.
-- **05. Ciclos:** Abrir, Encerrar, Score, Metas do Periodo, Progresso x Tempo.
-- **06. Relatorios:** Fechamento de Ciclo, Card Metalico, Resumo Compartilhavel, Oraculo.
-- **07. Historico:** Timeline Vertical, Cards de Ciclo, Fases.
-- **08. Eras:** Cortes, Nome, Skin, Consagracao.
-- **09. Legado:** Preview, Cena Full-screen, Kit PNG, Registro Completo, Placa Final.
+## 6. NOTA DE CONFIANCA
+O medo de lancar e esperado: o produto e grande e voce esta segurando varias superficies sozinho. O estado correto nao e "sem medo"; e "P0/P1 conhecidos fechados, riscos nomeados e smoke final curto".
 
-### II. INTELIGENCIA E CALIBRAGEM (3 MODULOS)
-- **17. Oraculo:** Feed, Modos, Notificacoes, Prompts, Conselhos, Analise, Push remoto.
-- **11. Maestria:** Ativos, Leitura da Area, Progressao.
-- **12. Quiz de Maestria:** Calibragem, Recalibragem, Leitura de Maturidade.
+## 7. BLUEPRINT DE MATURIDADE BECO'S LAB / GLYPH
 
-### III. ECONOMIA, IDENTIDADE E CUSTOMIZACAO (5 MODULOS)
-- **15. Loja e Forja:** Ouro, Pepitas, Barras, Compra, Craft, Reciclagem, Corte no Modo Basico.
-- **14. Arsenal:** Inventario, Skins, Artefatos, Glyphs, Orbes, Bordas, Baus.
-- **13. Perfil Soberano:** Avatar, Nickname, Cla, Titulo, Vitrine.
-- **10. Patentes:** Nivel, Rank, Progressao, Insignias.
-- **16. Preferencias:** Sons, Animacoes, Modo Basico/Game, IA, Notificacoes, Skins UI, Privacidade.
+### Nivel 1: Ideia
+- [x] Manifesto do projeto e definicao do "Superpoder" escrito
+- [x] Fluxograma logico de decisoes e caminhos do usuario desenhado
+- [x] Stack tecnica definida e validada
+- [x] GATE: Blueprint completo e visao de escopo travada sem furos
 
-### IV. SOCIAL, COOPERACAO E ESCALA (4 MODULOS)
-- **20. Social e Vinculos:** Amigos, Busca, Convites, Mentoria, Parceria, Competicao.
-- **21. Clas:** Entrar, Criar, Membros, Missao Coletiva.
-- **22. Quests de Temporada:** Quests, Missoes, Recompensas, Insignias de Quest.
-- **25. GM Panel e Operacao:** Tracking, Snapshot, Avisos, Staff, Governanca interna.
+### Nivel 2: Infraestrutura
+- [x] 1o Commit, Projeto criado, Tailwind/Design System e Repo configurados
+- [x] Instancia do Supabase ativa com Tabelas, RLS e Auth configurados
+- [x] Deploy na Vercel ativo com URL de teste respondendo
+- [x] GATE: Ambiente de desenvolvimento e nuvem em harmonia total
 
-## 5. DIRECAO DE PRODUTO
-**Diferencial:** O Glyph nao e "so" um app. E uma arquitetura de manifestacao da vida:
-- **Campanhas e Codex** dao direcao.
-- **Arenas e Acoes** transformam direcao em unidade concreta.
-- **Planner e Painel Diario** sustentam a execucao no presente.
-- **Ciclos, Relatorios e Historico** interpretam a fase.
-- **Eras e Legado** transformam repeticao em identidade.
-- **Loja, Vinculos, Perfil e Maestria** orbitam essa espinha e ampliam valor, retencao e status.
+### Nivel 3: Design
+- [x] Paleta Beco's Lab e tipografia implementadas no codigo
+- [x] Componentes base (Glassmorphism, Botoes, Cards) criados
+- [x] Estrutura de menus (Sidebar e Bottom Tabs) funcional e padronizada
+- [x] GATE: Interface soberana e estetica de produto premium consolidada
 
-## 6. MAPA DE MARCOS
-- **Fase 0 - O Pre-Jogo (agora -> mar/2026):** preparar a base estrutural antes da prova de mercado.
-- **Marco 1 - Prova (mar -> dez/2026):** sair de projeto para produto validado com `1.000 usuarios`.
-- **T1 - Fundacao (mar -> mai/2026):** `5 -> 20 -> 50 usuarios` com meta `60/30/20`.
-- **T2 - O Cerco (jun -> ago/2026):** publicar nas stores e atrair `300 usuarios externos`.
-- **T3 - A Ascensao (set -> dez/2026):** escalar e cravar `1.000 usuarios ativos`.
-- **Marco 2 - Coroa (jan -> jun/2027):** `5.000 -> 10.000 usuarios` e maquina de tracao.
-- **Marco 3 - Soberania (jul -> dez/2027):** `50.000+ usuarios`, dominancia de categoria e ecossistema.
+### Nivel 4: Fluxo
+- [x] Roteamento completo entre todas as telas do app funcionando
+- [x] Fluxo de Onboarding e transicoes de tela implementados
+- [x] GATE: Caminho do jogador mapeado e navegavel
+
+### Nivel 5: Engine
+- [x] Arquivo global de tipos TypeScript estruturado e sem erros
+- [x] Algoritmos de calculo, score ou decisoes core implementados
+- [x] Validacao das regras de negocio e limites de sistema testados
+- [x] GATE: Cerebro do app estavel, inteligente e a prova de falhas logicas
+
+### Nivel 6: Persistencia
+- [x] Gerenciamento de estado global integrado
+- [x] Persistencia em LocalStorage/Supabase configurada
+- [x] Logica de Hydration funcionando sem resetar o app no fluxo normal
+- [x] GATE: Memoria local indestrutivel e retencao inicial engatilhada
+
+### Nivel 7: Conexao
+- [x] Login Real Social/Email funcionando
+- [x] Sincronizacao entre Local e Banco de Dados Supabase funcional
+- [x] Backup de progresso e perfil multi-dispositivo validados
+- [x] Teste humano validando o fluxo completo no localhost/app
+- [x] GATE: App conectado, seguro e pronto para receber usuarios na nuvem
+
+### Nivel 8: Refino
+- [x] Sistema global de Toasts e feedbacks visuais de erro/sucesso
+- [x] Otimizacao de performance suficiente para beta fechado
+- [x] Build Mobile Capacitor gerado e testado em dispositivo fisico
+- [x] Implementacao da logica de Paywall e Area Premium
+- [x] GATE: Produto de prateleira pronto para beta, com correcoes rapidas em andamento
+
+### Nivel 9: Marketing & Testes
+- [x] Setup completo na Google Play Console
+- [x] Redes sociais criadas e Instagram com seguidores/posts agendados
+- [x] Inicio do Closed Beta com 20 testers / 14 dias
+- [x] Producao de material visual com prints reais e uso real do app
+- [ ] GATE: Validacao externa concluida e tracao inicial de comunidade
+
+**Marco:** Glyph aceito para producao. Proximo passo e rodar ultimos testes e fechar a versao final.
+
+### Nivel 10: Produto Vivo
+- [ ] Lancamento oficial para o publico geral
+- [ ] Supabase Pro ativado ou Free validado com margem segura para uso publico
+- [ ] Custom domain Supabase configurado para Auth, Edge Functions e Storage
+- [ ] Webhooks de pagamento apontando para dominio/projeto definitivo
+- [ ] URLs antigas de Storage/Supabase removidas do app antes de escala
+- [ ] Ativacao final de gateways de pagamento e planos Plus/Pro com receita real
+- [ ] Configuracao final de ASO com keywords e screenshots profissionais
+- [ ] Monitoramento de metricas e inicio do trafego pago
+- [ ] GATE: Soberania digital atingida com geracao de receita e escala ativa
+
+**Nivel atual:** Nivel 9 iniciado.
+
+### Depois do Produto Vivo: Operacao Continua
+- [ ] Monitorar egress, storage, database, Edge Functions e custos semanalmente no primeiro mes
+- [ ] Revisar logs de erro, crash reports e feedbacks reais dos usuarios
+- [ ] Continuar cuidando da pagina do Instagram com posts, stories, prints reais e prova social
+- [ ] Atualizar ASO, screenshots e descricao da loja conforme feedback dos primeiros usuarios
+- [ ] Criar uma nova season a cada 3 meses com tema, recompensas, campanhas/skins e comunicacao propria
+- [ ] Planejar ciclos de melhoria sem reabrir escopo infinito: Oraculo, achievements, streaks, campanhas e Jardim Zen
+
+### Nota sobre plano do banco / Supabase
+- O alerta de grace period/quota nao deve ser interpretado sozinho como risco normal para 20 usuarios: houve um dia atipico de smoke test pesado que inflou uso.
+- Para o lancamento, a decisao correta e monitorar `egress`, `database size`, `storage` e `disk IO` nos primeiros dias de uso real.
+- O Jardim Zen salva `garden_state` manualmente por botao e em JSON leve; nao deve ser o vetor principal de egress.
+- Se o uso real de usuarios comuns mantiver crescimento baixo, o plano atual pode aguentar a validacao inicial. Se o egress voltar a subir sem smoke test, revisar cache de imagens/storage e considerar upgrade de plano antes de trafego pago.

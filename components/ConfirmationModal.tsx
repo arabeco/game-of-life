@@ -29,7 +29,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
     return (
         <Portal>
-            <div className="ui-modal-backdrop" onClick={onCancel}>
+            <div className="ui-modal-backdrop z-[21000]" onClick={onCancel}>
                 <GlassCard
                     variant="neutral"
                     className={`ui-modal-panel max-w-sm overflow-hidden p-0 ${isDanger ? 'border-red-500/25 shadow-[0_0_42px_rgba(127,29,29,0.22)]' : ''}`}

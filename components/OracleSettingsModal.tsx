@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { OracleCategory, OracleMode, OraclePreferences } from '../types';
+import { OracleCategory, OracleMode, OraclePreferences, OraclePresenceLevel } from '../types';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, CheckIcon } from './Icons';
@@ -30,6 +30,17 @@ interface OracleSettingsModalProps {
 
 type SettingsTab = 'modos' | 'categorias';
 type ToggleKey = 'iaEnabled' | 'notificationsEnabled' | 'dailyFocusCardEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
+
+const ORACLE_PRESENCE_LEVELS: Array<{
+    value: OraclePresenceLevel;
+    label: string;
+    caption: string;
+}> = [
+    { value: 0, label: 'Silencioso', caption: 'So avisos humanos, convites, mensagens e alertas criticos.' },
+    { value: 1, label: 'Leve', caption: 'Poucos sinais. Sem cards automaticos de rotina.' },
+    { value: 2, label: 'Equilibrado', caption: 'Padrao recomendado. Pulso de foco quando fizer sentido.' },
+    { value: 3, label: 'Presente', caption: 'Mais companion, ainda com limite e sem spam.' },
+];
 
 const PUSH_PERMISSION_LABEL: Record<AppPushPermission, string> = {
     prompt: 'Aguardando permissao',
@@ -229,6 +240,17 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     }, [oraclePreferences.pushEnabled]);
 
     const handleToggle = (key: ToggleKey) => {
+        if (key === 'dailyFocusCardEnabled') {
+            const nextEnabled = !Boolean(oraclePreferences.dailyFocusCardEnabled);
+            updateOraclePreferences({
+                dailyFocusCardEnabled: nextEnabled,
+                presenceLevel: nextEnabled
+                    ? (Math.max(2, oraclePreferences.presenceLevel ?? 1) as OraclePresenceLevel)
+                    : oraclePreferences.presenceLevel,
+            });
+            return;
+        }
+
         updateOraclePreferences({ [key]: !Boolean(oraclePreferences[key]) } as Partial<OraclePreferences>);
     };
 
@@ -345,6 +367,15 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         updateOraclePreferences({ activeMode: mode });
     };
 
+    const handlePresenceChange = (level: OraclePresenceLevel) => {
+        updateOraclePreferences({
+            presenceLevel: level,
+            notificationsEnabled: true,
+            dailyFocusCardEnabled: level >= 2,
+            dmNotificationsEnabled: true,
+        });
+    };
+
     const handleCategoryToggle = (category: OracleCategory) => {
         const current = oraclePreferences.enabledCategories || [];
         const next = current.includes(category)
@@ -414,6 +445,52 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
             ))}
         </div>
     );
+
+    const renderPresenceSlider = () => {
+        const currentLevel = oraclePreferences.presenceLevel ?? (oraclePreferences.dailyFocusCardEnabled ? 2 : 1);
+        const current = ORACLE_PRESENCE_LEVELS.find((level) => level.value === currentLevel) || ORACLE_PRESENCE_LEVELS[1];
+
+        return (
+            <div className="rounded-2xl border border-white/10 bg-black/24 p-3">
+                <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Presenca</div>
+                        <div className="mt-1 text-sm font-black text-white">{current.label}</div>
+                    </div>
+                    <span className="rounded-full border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">
+                        {currentLevel}/3
+                    </span>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-gray-400">{current.caption}</p>
+                <input
+                    type="range"
+                    min={0}
+                    max={3}
+                    step={1}
+                    value={currentLevel}
+                    onChange={(event) => handlePresenceChange(Number(event.target.value) as OraclePresenceLevel)}
+                    className="mt-3 h-2 w-full appearance-none rounded-full bg-gradient-to-r from-gray-700 via-[var(--skin-accent-color)]/55 to-emerald-300/70 outline-none"
+                    aria-label="Nivel de presenca do Oraculo"
+                />
+                <div className="mt-2 grid grid-cols-4 gap-1 text-center">
+                    {ORACLE_PRESENCE_LEVELS.map((level) => (
+                        <button
+                            key={level.value}
+                            type="button"
+                            onClick={() => handlePresenceChange(level.value)}
+                            className={`rounded-lg px-1 py-1 text-[9px] font-black uppercase tracking-[0.08em] transition-colors ${
+                                currentLevel === level.value
+                                    ? 'bg-[var(--skin-accent-color)]/16 text-white'
+                                    : 'bg-white/[0.035] text-white/38 hover:text-white/70'
+                            }`}
+                        >
+                            {level.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     const renderUseGuide = () => (
         <div className="rounded-2xl border border-white/10 bg-black/24 p-3">
@@ -563,6 +640,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         {variant === 'preferences' ? (
                             <div className="space-y-4">
                                 {renderUseGuide()}
+                                {renderPresenceSlider()}
 
                                 <div className="space-y-2">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Modo do Oráculo</h3>

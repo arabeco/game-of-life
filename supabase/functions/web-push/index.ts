@@ -140,6 +140,13 @@ const asBoolean = (value: unknown): boolean => {
   return false;
 };
 
+const asNumber = (value: unknown, fallback = 0): number => {
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+};
+
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
 type FcmServiceAccount = {
   projectId: string;
   clientEmail: string;
@@ -675,6 +682,7 @@ const shouldPushOracleMessage = (
   message: NormalizedOracleMessage,
   appMode: AppMode,
   dailyFocusCardEnabled: boolean,
+  presenceLevel: number,
 ): boolean => {
   if (message.read || message.deliveryType !== "feed") {
     return false;
@@ -682,6 +690,10 @@ const shouldPushOracleMessage = (
 
   const triggerType = asTrimmedString(message.contextSnapshot.triggerType);
   if (triggerType === "manual") {
+    return false;
+  }
+
+  if (presenceLevel < 3) {
     return false;
   }
 
@@ -823,6 +835,11 @@ const normalizeStoredSubscription = (row: StoredPushSubscription): JsonRecord | 
 const isNativeTokenSubscription = (row: StoredPushSubscription): boolean => {
   if (!isRecord(row.subscription)) return false;
   return asTrimmedString(row.subscription.kind) === "native_token";
+};
+
+const getDeliverySubscriptions = (subscriptions: StoredPushSubscription[]): StoredPushSubscription[] => {
+  const nativeSubscriptions = subscriptions.filter(isNativeTokenSubscription);
+  return nativeSubscriptions.length > 0 ? nativeSubscriptions : subscriptions;
 };
 
 const deliverPushToSubscription = async (
@@ -1077,7 +1094,7 @@ const dispatchTestPush = async (req: Request, _body: JsonRecord, origin: string 
     return jsonResponse(origin, 500, { error: subscriptionsError.message || "Could not load subscriptions." });
   }
 
-  const activeSubscriptions = (subscriptions || []) as StoredPushSubscription[];
+  const activeSubscriptions = getDeliverySubscriptions((subscriptions || []) as StoredPushSubscription[]);
   if (activeSubscriptions.length === 0) {
     return jsonResponse(origin, 200, {
       success: false,
@@ -1215,7 +1232,7 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
     return jsonResponse(origin, 200, { skipped: true, reason: "policy_filtered" });
   }
 
-  const activeSubscriptions = (subscriptions || []) as StoredPushSubscription[];
+  const activeSubscriptions = getDeliverySubscriptions((subscriptions || []) as StoredPushSubscription[]);
   if (activeSubscriptions.length === 0) {
     return jsonResponse(origin, 200, { skipped: true, reason: "no_active_subscriptions" });
   }
@@ -1337,7 +1354,7 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
       .is("disabled_at", null),
     supabaseAdmin
       .from("oracle_preferences")
-      .select("notifications_enabled, daily_focus_card_enabled")
+      .select("notifications_enabled, daily_focus_card_enabled, presence_level")
       .eq("user_id", message.userId)
       .maybeSingle(),
     supabaseAdmin
@@ -1357,12 +1374,13 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
 
   const appMode: AppMode = asTrimmedString(profileRow?.app_mode) === "BASIC" ? "BASIC" : "GAME";
   const dailyFocusCardEnabled = preferenceRow?.daily_focus_card_enabled === true;
+  const presenceLevel = clamp(Math.round(asNumber(preferenceRow?.presence_level, 1)), 0, 3);
 
-  if (!shouldPushOracleMessage(message, appMode, dailyFocusCardEnabled)) {
+  if (!shouldPushOracleMessage(message, appMode, dailyFocusCardEnabled, presenceLevel)) {
     return jsonResponse(origin, 200, { skipped: true, reason: "policy_filtered" });
   }
 
-  const activeSubscriptions = (subscriptions || []) as StoredPushSubscription[];
+  const activeSubscriptions = getDeliverySubscriptions((subscriptions || []) as StoredPushSubscription[]);
   if (activeSubscriptions.length === 0) {
     return jsonResponse(origin, 200, { skipped: true, reason: "no_active_subscriptions" });
   }

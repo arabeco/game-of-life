@@ -101,19 +101,11 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                             </button>
 
                             <button
-                                onClick={() => setActiveTab('action')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all ${activeTab === 'action' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                <EditIcon className="w-4 h-4" />
-                                <span className="text-[10px] font-bold tracking-wider hidden sm:inline">FAZER</span>
-                            </button>
-
-                            <button
                                 onClick={() => setActiveTab('requests')}
                                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'requests' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                             >
                                 <MessageIcon className="w-4 h-4" />
-                                <span className="text-[10px] font-bold tracking-wider hidden sm:inline">SOLICITAÇÕES</span>
+                                <span className="text-[10px] font-bold tracking-wider hidden sm:inline">ALERTAS</span>
                                 {unreadRequests > 0 && (
                                     <span className="absolute top-1 right-1 flex h-2 w-2">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -141,6 +133,21 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
 
                         {activeTab === 'action' && (
                             <div className="absolute inset-0 animate-in slide-in-from-right-4 duration-200 bg-black/20 p-2">
+                                <div className="mb-2 flex items-center justify-between rounded-2xl border border-[var(--skin-accent-color)]/16 bg-[var(--skin-accent-color)]/8 px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                        <EditIcon className="h-4 w-4 text-[var(--skin-accent-color)]" />
+                                        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
+                                            Revisao de execucao
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('chat')}
+                                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                                    >
+                                        Voltar
+                                    </button>
+                                </div>
                                 <Suspense fallback={<div className="absolute inset-0 bg-black/30 animate-pulse" />}>
                                     <OracleAction />
                                 </Suspense>
@@ -189,7 +196,7 @@ const NotificationsList: React.FC<NotificationsListProps> = ({ notifications, on
         return (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 p-8 text-center">
                 <MessageIcon className="w-12 h-12 mb-4 opacity-20" />
-                <p className="text-sm">Nenhuma solicitação no momento.</p>
+                <p className="text-sm">Nenhum alerta ou pedido no momento.</p>
             </div>
         );
     }

@@ -516,44 +516,47 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   }, [oraclePreferences?.activeMode]);
 
-  // Load initial messages from history without overriding the chosen preference mode
+  // Load recent Oracle pulses without overriding the chosen preference mode.
   useEffect(() => {
-    const latestFeedMessage = (oracleMessages || [])
+    const recentFeedCards = (oracleMessages || [])
       .filter((message) => message.deliveryType === 'feed')
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      .at(-1);
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-    if (!latestFeedMessage) {
+    if (recentFeedCards.length === 0) {
       if (isInitialLoadRef.current) {
         isInitialLoadRef.current = false;
       }
       return;
     }
 
-    const latestFeedCard: Message = {
+    const feedCards: Message[] = recentFeedCards.slice(-4).map((feedMessage) => ({
       role: 'assistant',
-      content: latestFeedMessage.content,
-      timestamp: new Date(latestFeedMessage.createdAt),
-      mode: latestFeedMessage.mode,
-      feedId: latestFeedMessage.id,
-      feedCategory: latestFeedMessage.category,
-      feedPresentation: resolveFeedPresentation(latestFeedMessage.category, latestFeedMessage.contextSnapshot),
-      feedSummary: latestFeedMessage.contextSnapshot?.summary || latestFeedMessage.contextSnapshot?.categoryLabel || undefined,
-      feedTrigger: latestFeedMessage.contextSnapshot?.triggerType,
-    };
+      content: feedMessage.content,
+      timestamp: new Date(feedMessage.createdAt),
+      mode: feedMessage.mode,
+      feedId: feedMessage.id,
+      feedCategory: feedMessage.category,
+      feedPresentation: resolveFeedPresentation(feedMessage.category, feedMessage.contextSnapshot),
+      feedSummary: feedMessage.contextSnapshot?.summary || feedMessage.contextSnapshot?.categoryLabel || undefined,
+      feedTrigger: feedMessage.contextSnapshot?.triggerType,
+    }));
 
     setMessages((previous) => {
       if (isInitialLoadRef.current) {
-        // Keep the chat clean: open with only the freshest Oracle pulse instead of stacking old feed cards.
-        return [latestFeedCard];
+        return feedCards;
       }
 
-      if (previous.some((message) => message.feedId === latestFeedCard.feedId)) {
-        return previous;
-      }
+      const preservedMessages = previous.filter((message) => !(message.feedId && !message.feedId.startsWith('notification:')));
+      const mergedMessages = [...preservedMessages];
 
-      const preservedMessages = previous.filter((message) => !(message.feedId && message.feedTrigger !== 'manual'));
-      return [...preservedMessages, latestFeedCard];
+      feedCards.forEach((feedCard) => {
+        if (!mergedMessages.some((message) => message.feedId === feedCard.feedId)) {
+          mergedMessages.push(feedCard);
+        }
+      });
+
+      mergedMessages.sort((left, right) => left.timestamp.getTime() - right.timestamp.getTime());
+      return mergedMessages;
     });
     isInitialLoadRef.current = false;
   }, [oracleMessages]);
@@ -678,6 +681,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       tasks,
       activeCycle,
       dailyCommitment,
+      dailyProofStreak: userProfile.dailyProofStreak || null,
       cycleProgress,
       activeMode: currentMode,
       customModeInstructions: oraclePreferences?.customModeInstructions || null,
@@ -1053,20 +1057,13 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         lastActionOfferRef.current = {
           draft: payload.actionDraft,
           prompt: actionPrompt,
-          assistant: `Vou abrir o modo ação com este rascunho: ${payload.actionDraft.summary}. Revise e confirme lá se quiser ajustar algo.`,
+          assistant: `Rascunho pronto: ${payload.actionDraft.summary}. Revise e confirme antes de aplicar.`,
         };
       } else {
         lastActionOfferRef.current = null;
       }
 
       setMessages(prev => [...prev, assistantMessage]);
-
-      if (payload.kind === 'action_handoff' && payload.actionDraft && actionPrompt) {
-        openActionTabWithGuidance({
-          assistant: lastActionOfferRef.current?.assistant || assistantMessage.content,
-          prompt: actionPrompt,
-        });
-      }
     } catch (error) {
       const parsedError = await parseOracleFunctionError(error);
       console.error('Oracle Error:', parsedError, error);
@@ -1391,20 +1388,28 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                     </div>
                   )}
                   {msg.actionDraft && msg.actionPrompt && (
-                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-white/45">
-                        {msg.actionDraft.summary}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => openActionTabWithGuidance({
-                          assistant: `Vou abrir o modo ação com este rascunho: ${msg.actionDraft?.summary || 'ajuste operacional'}.`,
-                          prompt: msg.actionPrompt || msg.originalInput || '',
-                        })}
-                        className="rounded-full border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/18"
-                      >
-                        Ir para ação
-                      </button>
+                    <div className="mt-3 rounded-2xl border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/8 px-3 py-3">
+                      <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
+                        Rascunho de execução
+                      </div>
+                      <div className="mt-1 text-xs leading-relaxed text-white/74">
+                        {msg.actionDraft.summary}. Nada foi aplicado ainda.
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openActionTabWithGuidance({
+                            assistant: `Rascunho pronto: ${msg.actionDraft?.summary || 'ajuste operacional'}. Revise e confirme antes de aplicar.`,
+                            prompt: msg.actionPrompt || msg.originalInput || '',
+                          })}
+                          className="rounded-full border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/14 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/22"
+                        >
+                          Revisar/aplicar
+                        </button>
+                        <span className="text-[10px] leading-snug text-white/42">
+                          ou responda "pode" para abrir a revisão.
+                        </span>
+                      </div>
                     </div>
                   )}
                   {msg.premiumHint && !isPremiumUser && (

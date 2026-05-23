@@ -50,6 +50,7 @@ interface CreateTaskDomainParams {
     updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
     updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
     handleCompetitionArenaCompletion?: (arenaId: string) => Promise<void>;
+    onDailyProofActionCompleted?: (payload: { task: ScheduledTask; action?: Action; tasksAfterChange: ScheduledTask[] }) => void;
     setAchievementUnlocked: (achievement: AchievementState) => void;
     addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
     getLocalDateString: (date?: Date) => string;
@@ -84,6 +85,7 @@ export const createTaskDomain = ({
     updateClanMissionProgress,
     updateCustomClanMissionProgress,
     handleCompetitionArenaCompletion,
+    onDailyProofActionCompleted,
     setAchievementUnlocked,
     addFeedEvent,
     getLocalDateString,
@@ -498,6 +500,7 @@ export const createTaskDomain = ({
 
     const runTaskCompletionSideEffects = (updatedTask: ScheduledTask, action: Action | undefined, optimisticTasks: ScheduledTask[]) => {
         if (!action) return;
+        onDailyProofActionCompleted?.({ task: updatedTask, action, tasksAfterChange: optimisticTasks });
 
         if (updatedTask.completed && action.actionType === 'Marco') {
             setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
@@ -568,12 +571,10 @@ export const createTaskDomain = ({
         const optimisticTasks = restoreTaskSnapshot(tasks, updatedTask);
 
         setTasks(prevTasks => restoreTaskSnapshot(prevTasks, updatedTask));
-        if (dailyCommitment.taskIds.includes(taskId)) {
-            setDailyCommitmentState(prev => ({
-                ...prev,
-                taskIds: reconcileTaskInCommitment(prev.taskIds, updatedTask.id, updatedTask, prev.date, isClanQuestActionId),
-            }));
-        }
+        setDailyCommitmentState(prev => ({
+            ...prev,
+            taskIds: reconcileTaskInCommitment(prev.taskIds, updatedTask.id, updatedTask, prev.date, isClanQuestActionId),
+        }));
 
         try {
             await persistTaskCompletionUpdate(updatedTask);
@@ -693,6 +694,7 @@ export const createTaskDomain = ({
             emitAppSensoryCue('task_complete');
         }
         maybePromptSitrepFollowUp(newTask, action);
+        onDailyProofActionCompleted?.({ task: newTask, action, tasksAfterChange: [...tasks, newTask] });
     };
 
     const scheduleAndCompleteAt = async (actionId: string, date: string, startTime: number, taskId?: string) => {
@@ -882,6 +884,7 @@ export const createTaskDomain = ({
             emitAppSensoryCue('task_complete');
         }
         maybePromptSitrepFollowUp(newTask, action);
+        onDailyProofActionCompleted?.({ task: newTask, action, tasksAfterChange: [...tasks, newTask] });
         setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
         addFeedEvent({
             type: 'MILESTONE_COMPLETED',

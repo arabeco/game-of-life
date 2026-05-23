@@ -36,22 +36,29 @@ const getQuietWindowMinutes = (preferences: Pick<OraclePreferences, 'quietHoursS
 };
 
 export const resolveOracleAutoDailyTarget = (
-  preferences: Pick<OraclePreferences, 'enabledCategories'> | null | undefined,
+  preferences: Pick<OraclePreferences, 'enabledCategories' | 'presenceLevel'> | null | undefined,
   appMode: AppMode = 'GAME',
 ): number => {
+  const presenceLevel = preferences?.presenceLevel ?? 1;
+  if (presenceLevel <= 1) return 0;
+
   if (appMode === 'BASIC') {
     return 1;
   }
+
+  if (presenceLevel === 2) return 1;
+  if (presenceLevel === 3) return 2;
 
   const enabledCount = preferences?.enabledCategories?.length ?? 0;
   return clamp(enabledCount || MAX_ORACLE_DAILY_TARGET, MIN_ORACLE_AUTO_TARGET, MAX_ORACLE_DAILY_TARGET);
 };
 
 export const getOracleAutoGapMs = (
-  preferences: Pick<OraclePreferences, 'enabledCategories' | 'quietHoursStart' | 'quietHoursEnd'> | null | undefined,
+  preferences: Pick<OraclePreferences, 'enabledCategories' | 'presenceLevel' | 'quietHoursStart' | 'quietHoursEnd'> | null | undefined,
   appMode: AppMode = 'GAME',
 ): number => {
   const target = resolveOracleAutoDailyTarget(preferences, appMode);
+  if (target <= 0) return DAY_MINUTES * 60 * 1000;
   const activeWindowMinutes = Math.max(4 * 60, DAY_MINUTES - getQuietWindowMinutes(preferences));
   const gapMinutes = Math.max(60, Math.round(activeWindowMinutes / target));
   return gapMinutes * 60 * 1000;
@@ -97,7 +104,7 @@ export type OracleFeedQuotaStatus = {
 
 export const getOracleFeedQuotaStatus = (
   messages: OracleMessage[],
-  preferences: Pick<OraclePreferences, 'enabledCategories' | 'quietHoursStart' | 'quietHoursEnd'> | null | undefined,
+  preferences: Pick<OraclePreferences, 'enabledCategories' | 'presenceLevel' | 'quietHoursStart' | 'quietHoursEnd'> | null | undefined,
   now: Date = new Date(),
   appMode: AppMode = 'GAME',
 ): OracleFeedQuotaStatus => {

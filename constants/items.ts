@@ -164,10 +164,15 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_artifact_1_003', name: 'Gato Laranja', category: 'artifact', tier: 1, rarity: 'common', icon: '�x��', imageUrl: avatarPngAsset('artefato_t1_gatolaranja') },
     { id: 'item_artifact_1_004', name: 'Halteres', category: 'artifact', tier: 1, rarity: 'common', icon: '�x�9️', imageUrl: avatarPngAsset('artefato_t1_halterespar') },
     { id: 'item_artifact_1_005', name: 'Trio Café', category: 'artifact', tier: 1, rarity: 'common', icon: '��"', imageUrl: avatarPngAsset('artefato_t1_triocafe'), isRankExclusive: true },
+    { id: 'item_garden_stone_1', name: 'Pedra Serena', category: 'artifact', tier: 1, rarity: 'common', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_SERENA'), description: 'Pedra decorativa para o Jardim Zen.', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_garden_stone_1 },
+    { id: 'item_garden_plant_1', name: 'Musgo Vivo', category: 'artifact', tier: 1, rarity: 'common', icon: '\u{1FAB4}', imageUrl: avatarPngAsset('JARDIM_MUSGO_VIVO'), description: 'Vegetacao baixa para o Jardim Zen.', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_garden_plant_1 },
     // T2
     { id: 'item_artifact_2_001', name: 'Cachorro Husky', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '�x��', imageUrl: avatarPngAsset('artefato_t2_cachorrohusky') },
     { id: 'item_artifact_2_002', name: 'Gato Siamês', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '�x��', imageUrl: avatarPngAsset('artefato_t2_gatosiames') },
     { id: 'item_artifact_2_003', name: 'Setup', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '�x�', imageUrl: avatarPngAsset('artefato_t2_setup'), isRankExclusive: true },
+    { id: 'item_garden_stone_2', name: 'Pedra Lunar', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_LUNAR'), description: 'Pedra clara para composicoes de areia.', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_garden_stone_2 },
+    { id: 'item_garden_plant_2', name: 'Bambu Jovem', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '\u{1F38D}', imageUrl: avatarPngAsset('JARDIM_BAMBU_JOVEM'), description: 'Vegetacao vertical para o Jardim Zen.', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_garden_plant_2 },
+    { id: 'item_garden_stone_3', name: 'Pedra Obsidiana', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_OBSIDIANA'), description: 'Pedra escura para contraste no Jardim Zen.', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_garden_stone_3 },
     // T3
     { id: 'item_artifact_3_001', name: 'Cachorro Jack', category: 'artifact', tier: 3, rarity: 'rare', icon: '�x��', imageUrl: avatarPngAsset('artefato_t3_cachorrojack') },
     { id: 'item_artifact_3_002', name: 'Caixa Mágica', category: 'artifact', tier: 3, rarity: 'rare', icon: '�x�', imageUrl: avatarPngAsset('ARTEFATO_T3_caixamagica') },

@@ -1,7 +1,7 @@
 import React, { Suspense, useMemo, useState, useRef, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
-import { EditIcon, CheckIcon, PlusIcon, XIcon, ShareIcon, CrownIcon, ImageIcon } from '../components/Icons';
+import { EditIcon, CheckIcon, PlusIcon, XIcon, ShareIcon, CrownIcon, ImageIcon, StarIcon } from '../components/Icons';
 import { Slot, UserProfile, Clan, ClanRank, Asset } from '../types';
 import { BorderSelectionModal } from '../components/BorderSelectionModal';
 import { BackgroundImageSelectionModal } from '../components/BackgroundImageSelectionModal';
@@ -16,7 +16,9 @@ import { shareElementWithFeedback } from '../components/Share';
 import { Portal } from '../components/Portal';
 import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface';
 import { ProfileAssetsPreview } from '../components/ProfileAssetsPreview';
+import { GardenZenModal } from '../components/GardenZenModal';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
+import { APP_NAVIGATE_EVENT } from '../utils/arenaAttention';
 const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
 
 const normalizeAssetsVisibility = (value?: UserProfile['assetsVisibility']): 'all' | 'friends' | 'nobody' => {
@@ -70,6 +72,17 @@ const ProfileMasteryOrb: React.FC<{
             </div>
         </button>
     </div>
+);
+
+const ProfileGardenOrb: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className="group absolute bottom-4 left-[5.35rem] z-30 flex h-12 w-12 items-center justify-center rounded-full border border-amber-200/35 bg-black/55 text-xl shadow-[0_14px_30px_rgba(0,0,0,0.42),0_0_18px_rgba(244,205,130,0.16)] backdrop-blur-sm transition-transform hover:scale-[1.04]"
+        title="Meu jardim"
+    >
+        <span className="translate-y-[-1px]">{'\u{1FAB4}'}</span>
+    </button>
 );
 
 const UnifiedSovereignDisplay: React.FC<{
@@ -430,6 +443,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const [editableProfile, setEditableProfile] = useState<UserProfile>(baseProfile);
     const [isBorderModalOpen, setBorderModalOpen] = useState(false);
     const [isBackgroundModalOpen, setBackgroundModalOpen] = useState(false);
+    const [isGardenOpen, setGardenOpen] = useState(false);
     const [isBannerModalOpen, setBannerModalOpen] = useState(false);
     const [isClanModalOpen, setClanModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -635,6 +649,16 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
         return <ProfileBackgroundSurface value={displayProfile.backgroundUrl} className="w-full h-full object-cover" alt="" />;
     };
 
+    const openExistingAchievements = () => {
+        onClose();
+        window.setTimeout(() => {
+            window.dispatchEvent(new CustomEvent(APP_NAVIGATE_EVENT, { detail: { view: 'social' } }));
+            window.setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('mundo-tab-request', { detail: { tab: 'hall' } }));
+            }, 80);
+        }, 0);
+    };
+
     // Layout Adjustment: Ensure the card container is centered and scrollable if needed, matching "comprido" (long) description.
     // Using h-[92vh] md:h-[95vh] ensures it takes up most of the screen vertically.
     // z-index increased to 9999 and using Portal to overlay everything
@@ -697,9 +721,22 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         </button>
                                     )}
                                 </div>
+                                <div className="flex flex-col items-end gap-2">
                                     <button onClick={isEditing ? handleSave : onClose} className="px-4 py-1.5 text-xs font-bold rounded-lg luxe-skin-button">
                                         {isEditing ? 'SALVAR' : 'OK'}
                                     </button>
+                                    {!isEditing && !isBasicMode && (
+                                        <button
+                                            type="button"
+                                            onClick={openExistingAchievements}
+                                            className="group flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/30 bg-black/55 text-amber-100 shadow-[0_10px_26px_rgba(0,0,0,0.36),0_0_16px_rgba(251,191,36,0.12)] backdrop-blur-sm transition-transform hover:scale-[1.04]"
+                                            title="Ver feitos"
+                                            aria-label="Abrir feitos"
+                                        >
+                                            <StarIcon className="h-5 w-5 fill-amber-200/15 transition-transform group-hover:rotate-12" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="pt-4 flex flex-col items-center text-center">
@@ -1050,6 +1087,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 onClick={() => setIsAssetsPreviewOpen(true)}
                             />
                         )}
+                        {!isBasicMode && isOwnProfile && (
+                            <ProfileGardenOrb onClick={() => setGardenOpen(true)} />
+                        )}
 
                         {/* Unified Sovereign Display - Hidden in Basic Mode */}
                         {!isBasicMode && displayProfile.sovereign && (
@@ -1105,6 +1145,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                 </Portal>
             )}
             {isClanModalOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanModalOpen(false)} />}
+            {isGardenOpen && <GardenZenModal onClose={() => setGardenOpen(false)} profile={displayProfile} />}
             {isSovereignModalOpen && (
                 <SovereignCustomizer
                     initialConfig={userProfile.sovereign}

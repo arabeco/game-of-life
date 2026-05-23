@@ -1,7 +1,7 @@
 {
   "name": "glyph-app",
   "private": true,
-  "version": "1.0.33",
+  "version": "1.0.37",
   "type": "module",
   "scripts": {
     "dev": "vite",

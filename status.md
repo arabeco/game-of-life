@@ -1,9 +1,9 @@
-# GLYPH STATUS: 1.0.37 (FINAL HARDENING)
+# GLYPH STATUS: 1.0.38 (FINAL HARDENING)
 **Data:** 20/05/2026 | **Fase:** FUNDACAO -> PEDIDO DE PRODUCAO | **Soberano:** Zee
 
 ## 1. ESTADO REAL
 - **Closed test Google Play:** aceito. O gargalo deixou de ser "passar no teste" e virou fechar a versao final com confianca.
-- **Release local atual:** `versionCode 37`, `versionName 1.0.37`.
+- **Release local atual:** `versionCode 38`, `versionName 1.0.38`.
 - **Postura de agora:** patch pequeno, verificavel, sem refatoracao ampla por ansiedade.
 
 ## 2. SCORECARD DE AUDITORIA
@@ -15,7 +15,7 @@
 ## 3. FECHADO AGORA
 [x] Teste fechado aceito pela Google Play.
 [x] Projeto Android em `targetSdkVersion 36`.
-[x] Versao local em `1.0.37 / 37`.
+[x] Versao local em `1.0.38 / 38`.
 [x] Widget/cabecalho do ciclo aprovado visualmente no localhost.
 [x] Historico de ciclo no Planner isolado na direita; ferramentas do dia ficam na esquerda.
 [x] Checklist so ganha relevo depois das 20:00 quando ainda ha pendencias.

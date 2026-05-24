@@ -738,6 +738,7 @@ export interface GameContextType {
     activeCycle: Cycle | null;
     upcomingCycle: Cycle | null;
     dailyCommitment: DailyCommitment;
+    judgedOperationalDates: string[];
     updateOperationalScratch: (text: string) => void;
     unlockDailyCommitment: () => void;
     achievementUnlocked: { type: FeedEventType; data: any; } | null;
@@ -12909,7 +12910,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return (
         <GameContext.Provider value={{
             session,
-            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
+            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,

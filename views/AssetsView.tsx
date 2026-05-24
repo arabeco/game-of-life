@@ -862,7 +862,7 @@ export const AssetsView: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setGardenOpen(true)}
-                                className="absolute bottom-4 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full border border-amber-200/35 bg-black/58 text-2xl shadow-[0_14px_34px_rgba(0,0,0,0.42),0_0_20px_rgba(244,205,130,0.18)] backdrop-blur-md transition-transform hover:scale-105"
+                                className="absolute bottom-[calc(5rem+var(--safe-area-bottom))] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full border border-amber-200/35 bg-black/58 text-2xl shadow-[0_14px_34px_rgba(0,0,0,0.42),0_0_20px_rgba(244,205,130,0.18)] backdrop-blur-md transition-transform hover:scale-105"
                                 title="Meu jardim"
                             >
                                 <span className="translate-y-[-1px]">{'\u{1FAA8}'}</span>

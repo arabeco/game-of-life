@@ -123,8 +123,8 @@
 .planner-floating-vitals__shell {
   position: relative;
   overflow: hidden;
-  border-radius: 24px;
-  padding: 0.42rem;
+  border-radius: 16px;
+  padding: 0.24rem;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.015)),
     radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--skin-accent-color) 18%, transparent), transparent 62%),
@@ -141,7 +141,7 @@
   content: "";
   position: absolute;
   inset: 2px;
-  border-radius: 21px;
+  border-radius: 13px;
   border: 1px solid rgba(255,255,255,0.08);
   pointer-events: none;
 }
@@ -150,8 +150,8 @@
   content: "";
   position: absolute;
   left: 50%;
-  top: 0.58rem;
-  bottom: 0.58rem;
+  top: 0.34rem;
+  bottom: 0.34rem;
   width: 1px;
   transform: translateX(-50%);
   background: linear-gradient(180deg, transparent, rgba(255,255,255,0.18), transparent);
@@ -160,8 +160,8 @@
 
 .planner-vital-orb {
   position: relative;
-  height: 4.35rem;
-  border-radius: 19px;
+  height: 2.45rem;
+  border-radius: 12px;
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--skin-accent-color) 16%, transparent), transparent 54%),
@@ -175,10 +175,10 @@
 .planner-vital-orb__glow {
   position: absolute;
   inset: -30% 12% auto;
-  height: 3.2rem;
+  height: 2.4rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--skin-accent-color) 22%, transparent);
-  filter: blur(15px);
-  opacity: 0.68;
+  filter: blur(12px);
+  opacity: 0.5;
   pointer-events: none;
 }

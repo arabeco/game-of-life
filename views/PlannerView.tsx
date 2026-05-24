@@ -11,7 +11,7 @@ import { MilestonePoolAction } from '../components/MilestonePoolAction';
 import { ActionModal } from '../components/ActionModal';
 import { GlassCard } from '../components/GlassCard';
 import { useTutorial } from '../contexts/TutorialContext';
-import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
+import { buildActionPoolByDate, filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, formatOperationalHourLabel, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, getTaskOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasScheduledTime, isTaskInPool } from '../utils/taskDomain.js';
 import { useLongPress } from '../hooks/useLongPress';
@@ -92,12 +92,11 @@ const AnimatedExpCounter: React.FC<{ snapshot: PlannerExpSnapshot }> = ({ snapsh
         <div className={`planner-vital-orb min-w-0 transition-transform duration-300 ${isPulsing ? 'scale-[1.04]' : ''}`} aria-live="polite">
             <div className="planner-vital-orb__glow" />
             <div className="relative z-10 flex h-full flex-col items-center justify-center gap-0.5">
-                <div className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/42">
-                    <ZapIcon className={`h-2.5 w-2.5 shrink-0 ${isPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_8px_var(--skin-accent-color)]' : 'text-white/35'}`} />
+                <div className="flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.12em] text-white/36">
+                    <ZapIcon className={`h-2 w-2 shrink-0 ${isPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_8px_var(--skin-accent-color)]' : 'text-white/30'}`} />
                     <span>EXP</span>
                 </div>
-                <div className={`tabular-nums text-[18px] font-black leading-none text-[var(--skin-accent-color)] transition-all duration-300 ${isPulsing ? 'drop-shadow-[0_0_10px_var(--skin-accent-color)]' : ''}`}>+{displayValue}</div>
-                <div className="text-[8px] font-black tabular-nums uppercase tracking-[0.12em] text-white/30">{snapshot.completedCount}/{snapshot.totalCount}</div>
+                <div className={`tabular-nums text-[16px] font-black leading-none text-[var(--skin-accent-color)] transition-all duration-300 ${isPulsing ? 'drop-shadow-[0_0_10px_var(--skin-accent-color)]' : ''}`}>+{displayValue}</div>
             </div>
         </div>
     );
@@ -870,21 +869,20 @@ const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ 
     }, []);
 
     return (
-        <div className="planner-floating-vitals pointer-events-none absolute bottom-[calc(0.9rem+var(--safe-area-bottom))] left-1/2 z-40 w-[min(13.25rem,calc(100%-6rem))] -translate-x-1/2">
+        <div className="planner-floating-vitals pointer-events-none absolute bottom-[calc(0.9rem+var(--safe-area-bottom))] left-1/2 z-40 w-[min(10.75rem,calc(100%-8rem))] -translate-x-1/2">
             <div className="planner-floating-vitals__shell">
             <div className="grid grid-cols-2 items-center gap-2">
                 <AnimatedExpCounter snapshot={expSnapshot} />
                 <div className={`planner-vital-orb min-w-0 transition-transform duration-300 ${isStreakPulsing ? 'scale-[1.06]' : ''}`} aria-live="polite">
                     <div className="planner-vital-orb__glow" />
                     <div className="relative z-10 flex h-full flex-col items-center justify-center gap-0.5">
-                        <div className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/42">
-                            <FlameIcon className={`h-2.5 w-2.5 shrink-0 ${isStreakPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_8px_var(--skin-accent-color)]' : 'text-white/35'}`} />
+                        <div className="flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.12em] text-white/36">
+                            <FlameIcon className={`h-2 w-2 shrink-0 ${isStreakPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_8px_var(--skin-accent-color)]' : 'text-white/30'}`} />
                             <span>Linha</span>
                         </div>
-                        <div className={`tabular-nums text-[18px] font-black leading-none text-[var(--skin-accent-color)] transition-all duration-300 ${isStreakPulsing ? 'drop-shadow-[0_0_10px_var(--skin-accent-color)]' : ''}`}>
+                        <div className={`tabular-nums text-[16px] font-black leading-none text-[var(--skin-accent-color)] transition-all duration-300 ${isStreakPulsing ? 'drop-shadow-[0_0_10px_var(--skin-accent-color)]' : ''}`}>
                             {userProfile.dailyProofStreak?.current || 0}
                         </div>
-                        <div className="text-[8px] font-black uppercase tracking-[0.12em] text-white/30">dias</div>
                     </div>
                 </div>
             </div>
@@ -916,6 +914,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         assets,
         addArena,
         activeCycle,
+        judgedOperationalDates,
         userProfile,
         getActionBackgroundStyle,
         showToast,
@@ -2005,46 +2004,62 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const shouldSurfaceChecklist = currentTime.getHours() >= 20 && hasPendingChecklistItems;
     const isToday = formatLocalDateString(currentDate) === getOperationalDateString();
     const plannerExpSnapshot = useMemo<PlannerExpSnapshot>(() => {
-        const selectedDate = formatLocalDateString(currentDate);
-        const isCommitmentDate = dailyCommitment.date === selectedDate;
-        const committedTasks = isCommitmentDate
-            ? tasks.filter(task => dailyCommitment.taskIds.includes(task.id) && taskMatchesOperationalDate(task, selectedDate))
-            : tasks.filter(task => taskMatchesOperationalDate(task, selectedDate));
-
-        if (isCommitmentDate && dailyCommitment.stage === 'judgment') {
-            return {
-                value: Math.max(0, Math.round(dailyCommitment.expDeposited || 0)),
-                completedCount: committedTasks.filter(task => task.completed).length,
-                totalCount: committedTasks.length,
-                isDeposited: true,
-            };
-        }
-
-        const completedTasks = committedTasks.filter(task => task.completed);
-        const totalCount = committedTasks.length;
-        const completedCount = completedTasks.length;
-        const score = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
-        const baseExp = completedTasks.reduce((sum, task) => {
-            const action = getActionById(task.actionId);
-            const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
-            return sum + Math.round(duration * getPlannerActionExpMultiplier(action));
-        }, 0);
-        const performanceBonus = score >= 95 ? SITREP_BONUS_S : score >= 85 ? SITREP_BONUS_A : 0;
-        const relationshipBonusXp = isCommitmentDate ? Math.max(0, Math.round(dailyCommitment.relationshipBonusXp || 0)) : 0;
-        const sitrepBonus = performanceBonus + relationshipBonusXp;
+        const today = getOperationalDateString();
+        const pendingEndDate = activeCycle?.endDate && activeCycle.endDate < today ? activeCycle.endDate : today;
+        const scopedTasks = activeCycle
+            ? filterCycleTasksByScope(tasks, actions, activeCycle, activeCycle.startDate, pendingEndDate)
+            : tasks.filter(task => taskMatchesOperationalDate(task, today));
+        const judgedDates = new Set(judgedOperationalDates || []);
+        const freeActionIds = new Set(actions.filter(action => action.actionType === 'Livre').map(action => action.id));
+        const pendingDates = Array.from(new Set(
+            scopedTasks
+                .map(task => getTaskOperationalDateString(task))
+                .filter((date): date is string => Boolean(date))
+                .filter(date => date <= pendingEndDate)
+                .filter(date => !judgedDates.has(date))
+                .filter(date => !(dailyCommitment.date === date && dailyCommitment.stage === 'judgment'))
+        )).sort();
         const mainSlots = aldeiaSlots.filter(slot => slot.slotId !== 'trono');
         const villageOrder = mainSlots.length > 0
             ? mainSlots.reduce((sum, slot) => sum + slot.health, 0) / mainSlots.length
             : 0;
-        const villageBonus = Math.round((baseExp + sitrepBonus) * ((villageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT));
+        const villageFactor = (villageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT;
 
-        return {
-            value: Math.max(0, baseExp + sitrepBonus + villageBonus),
-            completedCount,
-            totalCount,
-            isDeposited: false,
-        };
-    }, [aldeiaSlots, currentDate, dailyCommitment, getActionById, tasks]);
+        return pendingDates.reduce<PlannerExpSnapshot>((snapshot, operationalDate) => {
+            const dateTasks = scopedTasks.filter(task => taskMatchesOperationalDate(task, operationalDate));
+            const committedTasks = dailyCommitment.date === operationalDate && dailyCommitment.taskIds.length > 0
+                ? dateTasks.filter(task => dailyCommitment.taskIds.includes(task.id))
+                : dateTasks;
+            if (committedTasks.length === 0) return snapshot;
+
+            const completedTasks = committedTasks.filter(task => task.completed);
+            const scoredTasks = committedTasks.filter(task => !freeActionIds.has(task.actionId));
+            const scoredCompletedCount = scoredTasks.filter(task => task.completed).length;
+            const score = scoredTasks.length > 0 ? Math.round((scoredCompletedCount / scoredTasks.length) * 100) : 0;
+            const baseExp = completedTasks.reduce((sum, task) => {
+                const action = getActionById(task.actionId);
+                const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
+                return sum + Math.round(duration * getPlannerActionExpMultiplier(action));
+            }, 0);
+            const performanceBonus = scoredTasks.length > 0
+                ? score >= 95
+                    ? SITREP_BONUS_S
+                    : score >= 85
+                        ? SITREP_BONUS_A
+                        : 0
+                : 0;
+            const relationshipBonusXp = dailyCommitment.date === operationalDate ? Math.max(0, Math.round(dailyCommitment.relationshipBonusXp || 0)) : 0;
+            const pendingExp = baseExp + performanceBonus + relationshipBonusXp;
+            const villageBonus = Math.round(pendingExp * villageFactor);
+
+            return {
+                value: snapshot.value + Math.max(0, pendingExp + villageBonus),
+                completedCount: snapshot.completedCount + completedTasks.length,
+                totalCount: snapshot.totalCount + committedTasks.length,
+                isDeposited: false,
+            };
+        }, { value: 0, completedCount: 0, totalCount: 0, isDeposited: false });
+    }, [activeCycle, actions, aldeiaSlots, dailyCommitment, getActionById, judgedOperationalDates, tasks]);
 
     // UNIFY POOL AND BAY AREA TASKS FOR DISPLAY
     // "Estoque e Espera ÃƒÆ’Ã‚Â© a mesma coisa"
@@ -2134,7 +2149,37 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const isSingleRow = poolItemCount <= 8;
     // Reduced heights as requested
     const bayAreaHeight = canUseAdvancedPlannerMatrix && isAdvancedPlannerMatrixEnabled ? 'h-[112px]' : (isSingleRow ?'h-[42px]' : 'h-[84px]');
-    const bayGridRows = isSingleRow ?'grid-rows-1' : 'grid-rows-2';
+    const bayAreaPages = useMemo(() => {
+        const pageSize = isSingleRow ? 8 : 16;
+        const pages: Array<Array<[string, BayEntryPayload]>> = [];
+        for (let index = 0; index < visibleBayAreaEntries.length; index += pageSize) {
+            pages.push(visibleBayAreaEntries.slice(index, index + pageSize));
+        }
+        return pages;
+    }, [isSingleRow, visibleBayAreaEntries]);
+    const renderBayPoolAction = ([actionId, payload]: [string, BayEntryPayload]) => {
+        const action = getActionById(actionId);
+        if (!action) return null;
+        // Only reuse a concrete bay task if it still belongs to the operational day on screen.
+        // This prevents ancient locked pool tasks from poisoning the current cycle/day flow.
+        const nextTaskId = payload.taskIds?.find(taskId => {
+            const task = tasksById.get(taskId);
+            return Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
+        });
+
+        return (
+            <PoolAction
+                key={actionId}
+                action={action}
+                count={payload.count}
+                isUnlimited={payload.isUnlimited}
+                taskId={nextTaskId}
+                onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)}
+                onCustomDragStart={handleCustomDragStart}
+                onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })}
+            />
+        );
+    };
     const toggleAdvancedPlannerMatrix = () => {
         const nextValue = !isAdvancedPlannerMatrixEnabled;
         setIsAdvancedPlannerMatrixEnabled(nextValue);
@@ -2259,22 +2304,23 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                 </div>
                             ) : (
                                 <div
-                                    className={`grid ${bayGridRows} grid-flow-col auto-cols-max gap-0.5 h-full overflow-x-auto overflow-y-hidden overscroll-x-contain pr-2 scrollbar-hide items-center`}
+                                    className="flex h-full gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain pr-2 scrollbar-hide"
                                     style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}
                                 >
-                                    {visibleBayAreaEntries.length > 0 ?
-                                         visibleBayAreaEntries.map(([actionId, payload]) => {
-                                             const action = getActionById(actionId);
-                                             if (!action) return null;
-                                             // Only reuse a concrete bay task if it still belongs to the operational day on screen.
-                                             // This prevents ancient locked pool tasks from poisoning the current cycle/day flow.
-                                             const nextTaskId = payload.taskIds?.find(taskId => {
-                                                 const task = tasksById.get(taskId);
-                                                 return Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
-                                             });
-                                             
-                                             return (<PoolAction key={actionId} action={action} count={payload.count} isUnlimited={payload.isUnlimited} taskId={nextTaskId} onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)} onCustomDragStart={handleCustomDragStart} onActionClick={(a) => setModalData({ action: a, taskId: nextTaskId })} />);
-                                         }) : (<div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 tracking-[0.12em] row-span-full col-span-full">{'Sem a\u00E7\u00F5es'}</div>)}
+                                    {bayAreaPages.length > 0 ? bayAreaPages.map((pageEntries, pageIndex) => (
+                                        <div
+                                            key={`bay-page-${pageIndex}`}
+                                            className={`grid h-full shrink-0 gap-0.5 ${isSingleRow ? 'grid-rows-1' : 'grid-rows-2'}`}
+                                            style={{
+                                                gridTemplateColumns: `repeat(${isSingleRow ? Math.max(1, pageEntries.length) : 8}, minmax(0, 2.35rem))`,
+                                                gridAutoFlow: 'row',
+                                            }}
+                                        >
+                                            {pageEntries.map(renderBayPoolAction)}
+                                        </div>
+                                    )) : (
+                                        <div className="flex h-full w-full items-center justify-center text-[10px] text-gray-600 tracking-[0.12em]">{'Sem a\u00E7\u00F5es'}</div>
+                                    )}
                                 </div>
                             )}
                         </div>

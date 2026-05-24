@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { GardenPlacedItem, GardenRakeStyle, GardenSandColor, GardenState, GardenStroke, UserProfile } from '../types';
+import { GardenPlacedItem, GardenRakePressure, GardenRakeStyle, GardenSandColor, GardenState, GardenStroke, GardenStrokePoint, UserProfile } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { ItemDef, resolveItemDef } from '../constants/items';
 import { Portal } from './Portal';
 import { Trash2Icon, XIcon } from './Icons';
+import { ConfirmationModal } from './ConfirmationModal';
 
 type SandDef = {
     id: GardenSandColor;
     label: string;
+    description: string;
     color: string;
     groove: string;
     speck: string;
@@ -23,15 +25,23 @@ type GardenItemDef = {
 };
 
 const SAND_COLORS: SandDef[] = [
-    { id: 'classic', label: 'Normal', color: '#cdb78d', groove: 'rgba(89, 64, 36, 0.32)', speck: 'rgba(255, 248, 220, 0.38)' },
-    { id: 'white', label: 'Branca', color: '#e8e2d4', groove: 'rgba(108, 101, 92, 0.26)', speck: 'rgba(255, 255, 255, 0.52)' },
-    { id: 'basalt', label: 'Basalto', color: '#9d9485', groove: 'rgba(42, 37, 34, 0.34)', speck: 'rgba(238, 229, 207, 0.32)' },
+    { id: 'classic', label: 'Dourada', description: 'quente', color: '#c9aa72', groove: 'rgba(78, 52, 25, 0.42)', speck: 'rgba(240, 218, 169, 0.58)' },
+    { id: 'white', label: 'Branca', description: 'limpa', color: '#dfd5bf', groove: 'rgba(86, 76, 61, 0.34)', speck: 'rgba(248, 243, 229, 0.72)' },
+    { id: 'basalt', label: 'Basalto', description: 'seca', color: '#988b75', groove: 'rgba(42, 34, 25, 0.44)', speck: 'rgba(211, 197, 168, 0.5)' },
 ];
 
-const RAKE_STYLES: Array<{ id: GardenRakeStyle; label: string; lines: number; gap: number; width: number; alpha: number }> = [
-    { id: 'three', label: '3 linhas', lines: 3, gap: 7, width: 1.35, alpha: 0.66 },
-    { id: 'wide', label: 'Grosso', lines: 5, gap: 8.5, width: 2.1, alpha: 0.58 },
-    { id: 'soft', label: 'Leve', lines: 3, gap: 10, width: 0.9, alpha: 0.34 },
+const RAKE_STYLES: Array<{ id: GardenRakeStyle; label: string; shortLabel: string; description: string; lines: number; gap: number; width: number; alpha: number }> = [
+    { id: 'fine', label: 'Fino', shortLabel: 'F', description: '3 perto', lines: 3, gap: 5, width: 0.62, alpha: 0.34 },
+    { id: 'three', label: 'Classico', shortLabel: 'C', description: '3 medio', lines: 3, gap: 8, width: 0.78, alpha: 0.44 },
+    { id: 'wide', label: 'Largo', shortLabel: 'L', description: '5 medio', lines: 5, gap: 8, width: 0.84, alpha: 0.46 },
+    { id: 'open', label: 'Aberto', shortLabel: 'A', description: '4 aberto', lines: 4, gap: 13, width: 0.72, alpha: 0.38 },
+    { id: 'deep', label: 'Fundo', shortLabel: 'D', description: '5 forte', lines: 5, gap: 11, width: 1.05, alpha: 0.56 },
+];
+
+const RAKE_PRESSURES: Array<{ id: GardenRakePressure; label: string; shortLabel: string; width: number; alpha: number }> = [
+    { id: 'light', label: 'Fraco', shortLabel: 'F', width: 0.72, alpha: 0.62 },
+    { id: 'medium', label: 'Medio', shortLabel: 'M', width: 1, alpha: 1 },
+    { id: 'strong', label: 'Forte', shortLabel: 'G', width: 1.65, alpha: 1.25 },
 ];
 
 const GARDEN_ITEMS: GardenItemDef[] = [
@@ -44,6 +54,68 @@ const GARDEN_ITEMS: GardenItemDef[] = [
 
 const getSandDef = (id?: GardenSandColor) => SAND_COLORS.find((sand) => sand.id === id) || SAND_COLORS[0];
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const getCanvasCssSize = (canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        width: Math.max(1, rect.width || canvas.clientWidth || canvas.width),
+        height: Math.max(1, rect.height || canvas.clientHeight || canvas.height),
+        dpr: Math.max(1, canvas.width / Math.max(1, rect.width || canvas.clientWidth || canvas.width)),
+    };
+};
+
+const prepareCanvasContext = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, clear = false) => {
+    const { width, height, dpr } = getCanvasCssSize(canvas);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (clear) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { width, height };
+};
+
+const fillSandBase = (ctx: CanvasRenderingContext2D, sand: SandDef, width: number, height: number) => {
+    const gradient = ctx.createRadialGradient(width * 0.32, height * 0.22, 0, width * 0.48, height * 0.42, Math.max(width, height) * 0.9);
+    gradient.addColorStop(0, sand.speck);
+    gradient.addColorStop(0.28, sand.color);
+    gradient.addColorStop(0.76, sand.color);
+    gradient.addColorStop(1, 'rgba(89, 61, 33, 0.34)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    const grainCount = Math.min(5200, Math.max(1200, Math.floor((width * height) / 260)));
+    for (let i = 0; i < grainCount; i += 1) {
+        const x = Math.abs((Math.sin(i * 12.9898) * 43758.5453) % 1) * width;
+        const y = Math.abs((Math.sin(i * 78.233) * 23421.631) % 1) * height;
+        const a = Math.abs((Math.sin(i * 39.425) * 11317.923) % 1);
+        ctx.globalAlpha = 0.045 + a * 0.16;
+        ctx.fillStyle = i % 4 === 0
+            ? 'rgba(255,249,225,0.72)'
+            : i % 4 === 1
+                ? 'rgba(132,94,48,0.38)'
+                : 'rgba(56,39,22,0.25)';
+        const size = a > 0.93 ? 1.45 : a > 0.72 ? 1 : 0.65;
+        ctx.fillRect(x, y, size, size);
+    }
+
+    ctx.globalAlpha = 0.075;
+    ctx.strokeStyle = sand.groove;
+    ctx.lineWidth = 1;
+    for (let y = -24; y < height + 28; y += 18) {
+        ctx.beginPath();
+        ctx.moveTo(-16, y);
+        ctx.bezierCurveTo(width * 0.28, y + 7, width * 0.62, y - 8, width + 16, y + 4);
+        ctx.stroke();
+    }
+
+    ctx.globalAlpha = 0.12;
+    const shade = ctx.createLinearGradient(0, 0, 0, height);
+    shade.addColorStop(0, 'rgba(255,255,255,0.16)');
+    shade.addColorStop(0.48, 'rgba(255,255,255,0)');
+    shade.addColorStop(1, 'rgba(43,27,11,0.14)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+};
+
 const getGardenFallback = (itemId: string): GardenItemDef | undefined => GARDEN_ITEMS.find((item) => item.itemId === itemId);
 const getGardenItemDef = (itemId: string): GardenItemDef | undefined => {
     const catalogDef = resolveItemDef(itemId);
@@ -62,8 +134,8 @@ const getGardenItemDef = (itemId: string): GardenItemDef | undefined => {
 
 const drawSegment = (
     ctx: CanvasRenderingContext2D,
-    from: { x: number; y: number },
-    to: { x: number; y: number },
+    from: GardenStrokePoint,
+    to: GardenStrokePoint,
     stroke: GardenStroke,
     sand: SandDef,
     width: number,
@@ -74,41 +146,54 @@ const drawSegment = (
     const length = Math.hypot(dx, dy) || 1;
     const nx = -dy / length;
     const ny = dx / length;
+    const pressure = Math.max(0.35, Math.min(1.45, ((from.pressure ?? 0.62) + (to.pressure ?? 0.62)) / 2 + 0.25));
 
     if (stroke.tool === 'eraser') {
+        const scale = Math.max(1, Math.min(2.5, Math.max(width, height) / 760));
         ctx.save();
-        ctx.globalAlpha = 0.72;
+        ctx.globalAlpha = 1;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.strokeStyle = sand.color;
-        ctx.lineWidth = 26;
+        ctx.lineWidth = 30 * scale * pressure;
         ctx.beginPath();
         ctx.moveTo(from.x * width, from.y * height);
         ctx.lineTo(to.x * width, to.y * height);
         ctx.stroke();
-        ctx.globalAlpha = 0.18;
+        ctx.globalAlpha = 0.34;
         ctx.strokeStyle = sand.speck;
-        ctx.lineWidth = 18;
+        ctx.lineWidth = 22 * scale * pressure;
+        ctx.stroke();
+        ctx.globalAlpha = 0.08;
+        ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+        ctx.lineWidth = 12 * scale * pressure;
         ctx.stroke();
         ctx.restore();
         return;
     }
 
     const style = RAKE_STYLES.find((entry) => entry.id === stroke.rakeStyle) || RAKE_STYLES[0];
+    const pressureStyle = RAKE_PRESSURES.find((entry) => entry.id === stroke.pressureStyle) || RAKE_PRESSURES[1];
+    const scale = Math.max(1, Math.min(2.5, Math.max(width, height) / 760));
+
     const startOffset = -((style.lines - 1) * style.gap) / 2;
 
     ctx.save();
-    ctx.globalAlpha = style.alpha;
+    ctx.globalAlpha = Math.max(0.16, Math.min(0.94, style.alpha * pressureStyle.alpha * pressure));
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = sand.groove;
-    ctx.lineWidth = style.width;
+    ctx.lineWidth = style.width * pressureStyle.width * scale * pressure;
     for (let index = 0; index < style.lines; index += 1) {
-        const offset = startOffset + index * style.gap;
+        const offset = (startOffset + index * style.gap) * scale;
+        ctx.save();
+        ctx.shadowColor = 'rgba(255,255,255,0.12)';
+        ctx.shadowBlur = style.id === 'deep' ? 0.8 * scale : 0;
         ctx.beginPath();
         ctx.moveTo(from.x * width + nx * offset, from.y * height + ny * offset);
         ctx.lineTo(to.x * width + nx * offset, to.y * height + ny * offset);
         ctx.stroke();
+        ctx.restore();
     }
     ctx.restore();
 };
@@ -117,22 +202,9 @@ const drawGarden = (canvas: HTMLCanvasElement, state: GardenState) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = canvas.width;
-    const height = canvas.height;
+    const { width, height } = prepareCanvasContext(canvas, ctx, true);
     const sand = getSandDef(state.sandColor);
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = sand.color;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.save();
-    ctx.globalAlpha = 0.28;
-    for (let i = 0; i < 360; i += 1) {
-        const x = (Math.sin(i * 12.9898) * 43758.5453) % 1;
-        const y = (Math.sin(i * 78.233) * 23421.631) % 1;
-        ctx.fillStyle = i % 2 === 0 ? sand.speck : 'rgba(0,0,0,0.08)';
-        ctx.fillRect(Math.abs(x) * width, Math.abs(y) * height, 1, 1);
-    }
-    ctx.restore();
+    fillSandBase(ctx, sand, width, height);
 
     (state.strokes || []).forEach((stroke) => {
         stroke.points.forEach((point, index) => {
@@ -148,12 +220,17 @@ const PlaceholderItem: React.FC<{
     def: GardenItemDef;
     selected: boolean;
     onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => void;
-}> = ({ item, def, selected, onPointerDown }) => {
+    onPointerMove: (event: React.PointerEvent<HTMLButtonElement>) => void;
+    onPointerUp: (event: React.PointerEvent<HTMLButtonElement>) => void;
+}> = ({ item, def, selected, onPointerDown, onPointerMove, onPointerUp }) => {
     const size = def.kind === 'plant' ? 54 : 62;
     return (
         <button
             type="button"
             onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
             className={`absolute z-20 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full transition-transform ${selected ? 'scale-110 ring-2 ring-amber-200/80' : 'hover:scale-105'}`}
             style={{
                 left: `${item.x * 100}%`,
@@ -207,8 +284,47 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
     const [gardenState, setGardenState] = useState<GardenState>(initialState);
     const [tool, setTool] = useState<'rake' | 'eraser'>('rake');
     const [rakeStyle, setRakeStyle] = useState<GardenRakeStyle>('three');
+    const [rakePressure, setRakePressure] = useState<GardenRakePressure>('medium');
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [activeTray, setActiveTray] = useState<'tools' | 'items'>('tools');
+    const [isTrayOpen, setIsTrayOpen] = useState(false);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+    const redrawGardenCanvas = (state: GardenState = gardenStateRef.current || gardenState) => {
+        const canvas = canvasRef.current;
+        const board = boardRef.current;
+        if (!canvas || !board) return false;
+
+        const canvasRect = canvas.getBoundingClientRect();
+        const boardRect = board.getBoundingClientRect();
+        const rect = canvasRect.width > 0 && canvasRect.height > 0 ? canvasRect : boardRect;
+        if (rect.width <= 0 || rect.height <= 0) return false;
+
+        const dpr = window.devicePixelRatio || 1;
+        const nextWidth = Math.max(1, Math.floor(rect.width * dpr));
+        const nextHeight = Math.max(1, Math.floor(rect.height * dpr));
+        if (canvas.width !== nextWidth) canvas.width = nextWidth;
+        if (canvas.height !== nextHeight) canvas.height = nextHeight;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        drawGarden(canvas, state);
+        return true;
+    };
+
+    const scheduleGardenRedraw = (state: GardenState = gardenStateRef.current || gardenState) => {
+        window.requestAnimationFrame(() => redrawGardenCanvas(state));
+        window.setTimeout(() => redrawGardenCanvas(state), 60);
+        window.setTimeout(() => redrawGardenCanvas(state), 180);
+    };
+
+    useEffect(() => {
+        drawingStrokeRef.current = null;
+        gardenStateRef.current = initialState;
+        setGardenState(initialState);
+        setHasUnsavedChanges(false);
+        scheduleGardenRedraw(initialState);
+    }, [initialState]);
 
     const ownedArtifactItems = useMemo<ItemDef[]>(() => {
         const deduped = new Map<string, ItemDef>();
@@ -225,24 +341,20 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
     }, [inventory]);
 
     useEffect(() => {
-        const canvas = canvasRef.current;
         const board = boardRef.current;
-        if (!canvas || !board) return;
+        if (!board) return;
+        let frameId = 0;
 
-        const resize = () => {
-            const rect = board.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-            canvas.height = Math.max(1, Math.floor(rect.height * dpr));
-            canvas.style.width = `${rect.width}px`;
-            canvas.style.height = `${rect.height}px`;
-            drawGarden(canvas, gardenState);
-        };
+        const resize = () => redrawGardenCanvas(gardenStateRef.current || gardenState);
 
         resize();
+        frameId = window.requestAnimationFrame(resize);
         const observer = new ResizeObserver(resize);
         observer.observe(board);
-        return () => observer.disconnect();
+        return () => {
+            window.cancelAnimationFrame(frameId);
+            observer.disconnect();
+        };
     }, [gardenState]);
 
     const commitState = (updater: (prev: GardenState) => GardenState) => {
@@ -258,25 +370,53 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
         gardenStateRef.current = gardenState;
     }, [gardenState]);
 
+    const finalizeDrawingState = (): GardenState => {
+        const base = gardenStateRef.current || gardenState;
+        const current = drawingStrokeRef.current;
+        if (!current || current.points.length <= 1) return base;
+
+        const completedStroke = { ...current, points: [...current.points] };
+        const next = { ...base, strokes: [...(base.strokes || []), completedStroke] };
+        drawingStrokeRef.current = null;
+        gardenStateRef.current = next;
+        setGardenState(next);
+        if (isOwnGarden) setHasUnsavedChanges(true);
+        return next;
+    };
+
     const saveGarden = () => {
-        if (!isOwnGarden || !gardenStateRef.current) return;
-        updateUserProfile({ gardenState: { ...gardenStateRef.current, updatedAt: new Date().toISOString() } });
+        if (!isOwnGarden) return;
+        const finalizedState = finalizeDrawingState();
+        updateUserProfile({ gardenState: { ...finalizedState, updatedAt: new Date().toISOString() } });
         setHasUnsavedChanges(false);
         showToast('Jardim salvo.', 'success');
     };
 
-    const getPoint = (event: React.PointerEvent): { x: number; y: number } | null => {
-        const board = boardRef.current;
-        if (!board) return null;
-        const rect = board.getBoundingClientRect();
+    const getPoint = (event: React.PointerEvent): GardenStrokePoint | null => {
+        const surface = canvasRef.current || boardRef.current;
+        if (!surface) return null;
+        const rect = surface.getBoundingClientRect();
         return {
             x: clamp01((event.clientX - rect.left) / rect.width),
             y: clamp01((event.clientY - rect.top) / rect.height),
+            pressure: event.pressure && event.pressure > 0 ? Math.max(0.2, Math.min(1, event.pressure)) : 0.62,
         };
+    };
+
+    const drawLiveSegment = (from: GardenStrokePoint, to: GardenStrokePoint, stroke: GardenStroke) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const { width, height } = prepareCanvasContext(canvas, ctx);
+        drawSegment(ctx, from, to, stroke, getSandDef(gardenStateRef.current?.sandColor || gardenState.sandColor), width, height);
     };
 
     const handleCanvasPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
         if (!isOwnGarden) return;
+        event.preventDefault();
+        setIsTrayOpen(false);
+        redrawGardenCanvas();
         const point = getPoint(event);
         if (!point) return;
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -284,26 +424,26 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
             id: `stroke-${Date.now()}`,
             tool,
             rakeStyle,
+            pressureStyle: rakePressure,
             points: [point],
         };
         drawingStrokeRef.current = stroke;
-        commitState((prev) => ({ ...prev, strokes: [...(prev.strokes || []), stroke] }));
     };
 
     const handleCanvasPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
         const current = drawingStrokeRef.current;
         if (!current) return;
+        event.preventDefault();
         const point = getPoint(event);
         if (!point) return;
+        const previous = current.points[current.points.length - 1];
+        if (previous && Math.hypot(point.x - previous.x, point.y - previous.y) < 0.0018) return;
         current.points.push(point);
-        commitState((prev) => ({
-            ...prev,
-            strokes: (prev.strokes || []).map((stroke) => stroke.id === current.id ? { ...current, points: [...current.points] } : stroke),
-        }));
+        if (previous) drawLiveSegment(previous, point, current);
     };
 
     const stopDrawing = () => {
-        drawingStrokeRef.current = null;
+        finalizeDrawingState();
     };
 
     const addItem = (itemId: string) => {
@@ -319,14 +459,17 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
 
     const startDrag = (event: React.PointerEvent<HTMLButtonElement>, itemId: string) => {
         if (!isOwnGarden) return;
+        event.preventDefault();
         event.stopPropagation();
         event.currentTarget.setPointerCapture(event.pointerId);
         dragRef.current = { id: itemId, pointerId: event.pointerId };
         setSelectedItemId(itemId);
     };
 
-    const handleBoardPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const moveDraggedItem = (event: React.PointerEvent<HTMLElement>) => {
         if (!dragRef.current) return;
+        if (dragRef.current.pointerId !== event.pointerId) return;
+        event.preventDefault();
         const point = getPoint(event);
         if (!point) return;
         const id = dragRef.current.id;
@@ -336,12 +479,17 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
         }));
     };
 
+    const handleBoardPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+        moveDraggedItem(event);
+    };
+
     const stopDrag = () => {
         dragRef.current = null;
     };
 
     const clearDrawing = () => {
         commitState((prev) => ({ ...prev, strokes: [] }));
+        setShowClearConfirm(false);
     };
 
     const removeSelectedItem = () => {
@@ -351,84 +499,43 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
     };
 
     const activeSand = getSandDef(gardenState.sandColor);
+    const activeRake = RAKE_STYLES.find((style) => style.id === rakeStyle) || RAKE_STYLES[0];
+    const activePressure = RAKE_PRESSURES.find((pressure) => pressure.id === rakePressure) || RAKE_PRESSURES[1];
     const placedItems = gardenState.items || [];
+    const selectedItem = selectedItemId ? placedItems.find((item) => item.id === selectedItemId) : null;
+
+    const adjustSelectedItemScale = (delta: number) => {
+        if (!selectedItemId) return;
+        commitState((prev) => ({
+            ...prev,
+            items: (prev.items || []).map((item) => item.id === selectedItemId
+                ? { ...item, scale: Math.max(0.55, Math.min(1.85, Number(item.scale || 1) + delta)) }
+                : item
+            ),
+        }));
+    };
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-[22000] flex items-center justify-center bg-black/82 p-3 backdrop-blur-md">
-                <div className="flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[26px] border border-white/10 bg-[#10100d] shadow-[0_28px_80px_rgba(0,0,0,0.7)]">
-                    <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3">
-                        <div>
-                            <div className="text-[10px] font-black uppercase tracking-[0.26em] text-amber-200/60">Sandbox</div>
-                            <h2 className="text-lg font-black uppercase tracking-[0.12em] text-white">Meu Jardim</h2>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {isOwnGarden && (
-                                <span className={`hidden text-[10px] font-black uppercase tracking-[0.16em] sm:inline ${hasUnsavedChanges ? 'text-amber-200/80' : 'text-emerald-200/70'}`}>
-                                    {hasUnsavedChanges ? 'Alterado' : 'Salvo'}
-                                </span>
-                            )}
-                            {isOwnGarden && (
-                                <button
-                                    type="button"
-                                    onClick={saveGarden}
-                                    disabled={!hasUnsavedChanges}
-                                    className="rounded-full border border-amber-200/30 bg-amber-200/12 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-50 transition-colors hover:bg-amber-200/18 disabled:cursor-default disabled:border-white/8 disabled:bg-white/5 disabled:text-white/35"
-                                >
-                                    Salvar
-                                </button>
-                            )}
-                            <button type="button" onClick={onClose} className="rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition-colors hover:text-white">
-                                <XIcon className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
+            <div className="fixed inset-0 z-[22000] overflow-hidden bg-[#080807]">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(30,22,13,0.92),rgba(10,9,7,1)_62%),radial-gradient(circle_at_50%_0%,rgba(255,232,176,0.18),transparent_34%),radial-gradient(circle_at_82%_88%,rgba(69,99,58,0.18),transparent_36%)]" />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-amber-100/10 to-transparent" />
 
-                    <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 p-3 md:grid-cols-[184px_minmax(0,1fr)_168px] md:grid-rows-1">
-                        <div className="flex gap-2 overflow-x-auto md:flex-col md:overflow-visible">
-                            <div className="min-w-[178px] rounded-2xl border border-white/10 bg-black/24 p-2">
-                                <div className="mb-2 text-[9px] font-black uppercase tracking-[0.2em] text-white/45">Areia</div>
-                                <div className="grid grid-cols-3 gap-1.5 md:grid-cols-1">
-                                    {SAND_COLORS.map((sand) => (
-                                        <button
-                                            key={sand.id}
-                                            type="button"
-                                            onClick={() => commitState((prev) => ({ ...prev, sandColor: sand.id }))}
-                                            className={`flex items-center gap-2 rounded-xl border px-2 py-2 text-left text-[10px] font-black uppercase tracking-[0.12em] transition-colors ${activeSand.id === sand.id ? 'border-amber-200/70 bg-white/12 text-white' : 'border-white/8 bg-white/5 text-white/55'}`}
-                                        >
-                                            <span className="h-5 w-5 rounded-full border border-white/20" style={{ backgroundColor: sand.color }} />
-                                            {sand.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="min-w-[178px] rounded-2xl border border-white/10 bg-black/24 p-2">
-                                <div className="mb-2 text-[9px] font-black uppercase tracking-[0.2em] text-white/45">Ferramenta</div>
-                                <div className="grid grid-cols-2 gap-1.5">
-                                    <button type="button" onClick={() => setTool('rake')} className={`rounded-xl border px-2 py-2 text-[10px] font-black uppercase tracking-[0.12em] ${tool === 'rake' ? 'border-amber-200/70 bg-white/12 text-white' : 'border-white/8 bg-white/5 text-white/55'}`}>Garfo</button>
-                                    <button type="button" onClick={() => setTool('eraser')} className={`rounded-xl border px-2 py-2 text-[10px] font-black uppercase tracking-[0.12em] ${tool === 'eraser' ? 'border-amber-200/70 bg-white/12 text-white' : 'border-white/8 bg-white/5 text-white/55'}`}>Apagar</button>
-                                </div>
-                                <div className="mt-2 grid grid-cols-3 gap-1.5 md:grid-cols-1">
-                                    {RAKE_STYLES.map((style) => (
-                                        <button key={style.id} type="button" onClick={() => setRakeStyle(style.id)} className={`rounded-xl border px-2 py-2 text-[10px] font-black uppercase tracking-[0.12em] ${rakeStyle === style.id ? 'border-amber-200/70 bg-white/12 text-white' : 'border-white/8 bg-white/5 text-white/55'}`}>
-                                            {style.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div
-                            ref={boardRef}
-                            className="relative min-h-[360px] overflow-hidden rounded-[24px] border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_20px_50px_rgba(0,0,0,0.42)]"
-                            onPointerMove={handleBoardPointerMove}
-                            onPointerUp={stopDrag}
-                            onPointerCancel={stopDrag}
-                            style={{ backgroundColor: activeSand.color }}
-                        >
+                <div
+                    ref={boardRef}
+                    className="absolute inset-x-3 bottom-[5.8rem] top-[5.1rem] touch-none overflow-hidden rounded-[30px] border-[10px] border-[#9d7141] shadow-[inset_0_0_0_1px_rgba(255,244,202,0.2),inset_0_14px_24px_rgba(255,236,179,0.1),inset_0_-18px_34px_rgba(50,29,10,0.28),0_26px_70px_rgba(0,0,0,0.52)] md:bottom-6 md:left-6 md:right-[21rem] md:top-[5.5rem]"
+                    onPointerMove={handleBoardPointerMove}
+                    onPointerUp={stopDrag}
+                    onPointerCancel={stopDrag}
+                    style={{
+                        backgroundColor: activeSand.color,
+                        borderColor: '#9d7141',
+                    }}
+                >
+                    <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(90deg,rgba(255,255,255,0.18),transparent_18%,transparent_82%,rgba(61,36,14,0.14)),radial-gradient(circle_at_24%_18%,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_72%_82%,rgba(34,22,11,0.1),transparent_28%)]" />
                             <canvas
                                 ref={canvasRef}
-                                className={`absolute inset-0 z-10 h-full w-full ${isOwnGarden ? (tool === 'eraser' ? 'cursor-crosshair' : 'cursor-cell') : ''}`}
+                                className={`absolute inset-0 z-10 h-full w-full touch-none ${isOwnGarden ? (tool === 'eraser' ? 'cursor-crosshair' : 'cursor-cell') : ''}`}
                                 onPointerDown={handleCanvasPointerDown}
                                 onPointerMove={handleCanvasPointerMove}
                                 onPointerUp={stopDrawing}
@@ -444,29 +551,136 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
                                         def={def}
                                         selected={selectedItemId === item.id}
                                         onPointerDown={(event) => startDrag(event, item.id)}
+                                        onPointerMove={moveDraggedItem}
+                                        onPointerUp={stopDrag}
                                     />
                                 );
                             })}
-                            <div className="pointer-events-none absolute inset-0 z-30 rounded-[24px] shadow-[inset_0_0_70px_rgba(74,48,24,0.18)]" />
-                        </div>
+                    <div className="pointer-events-none absolute inset-0 z-30 rounded-[20px] shadow-[inset_0_0_78px_rgba(68,45,21,0.2),inset_0_0_0_1px_rgba(255,255,255,0.09)]" />
+                </div>
 
-                        <div className="flex gap-2 overflow-x-auto md:flex-col md:overflow-visible">
-                            <div className="min-w-[160px] rounded-2xl border border-white/10 bg-black/24 p-2">
-                                <div className="mb-2 text-[9px] font-black uppercase tracking-[0.2em] text-white/45">Artefatos</div>
-                                <div className="grid max-h-[48vh] grid-cols-5 gap-1.5 overflow-y-auto pr-1 custom-scrollbar md:grid-cols-1">
-                                    {ownedArtifactItems.length === 0 ? (
-                                        <div className="col-span-full rounded-xl border border-white/8 bg-white/5 px-2 py-4 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-white/38">
-                                            Nenhum artefato
+                <header className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-start justify-between gap-3 px-4 pb-3 pt-[calc(0.9rem+var(--safe-area-top))]">
+                    <div className="pointer-events-auto rounded-2xl border border-white/10 bg-black/38 px-4 py-3 shadow-[0_16px_42px_rgba(0,0,0,0.34)] backdrop-blur-xl">
+                        <div className="text-[9px] font-black uppercase tracking-[0.3em] text-amber-100/58">Sandbox</div>
+                        <h2 className="text-[16px] font-black uppercase tracking-[0.12em] text-white">Meu Jardim</h2>
+                    </div>
+                    <div className="pointer-events-auto flex items-center gap-2">
+                        {isOwnGarden && (
+                            <button
+                                type="button"
+                                onClick={saveGarden}
+                                disabled={!hasUnsavedChanges}
+                                className="rounded-full border border-amber-200/34 bg-black/46 px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-amber-50 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-colors hover:bg-amber-200/14 disabled:cursor-default disabled:border-white/8 disabled:text-white/35"
+                            >
+                                {hasUnsavedChanges ? 'Salvar' : 'Salvo'}
+                            </button>
+                        )}
+                        <button type="button" onClick={onClose} className="rounded-full border border-white/12 bg-black/42 p-3 text-white/76 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-colors hover:text-white">
+                            <XIcon className="h-5 w-5" />
+                        </button>
+                    </div>
+                </header>
+
+                <aside className="pointer-events-none fixed bottom-[calc(1rem+var(--safe-area-bottom))] left-0 right-0 z-50 flex justify-center px-3 md:bottom-auto md:left-auto md:right-4 md:top-[calc(5.9rem+var(--safe-area-top))] md:block md:w-[19rem] md:px-0">
+                    {!isTrayOpen ? (
+                        <button
+                            type="button"
+                            onClick={() => setIsTrayOpen(true)}
+                            className="pointer-events-auto grid min-h-[4.1rem] w-[min(24rem,calc(100vw-1.5rem))] grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[26px] border border-amber-100/22 bg-black/52 px-3.5 py-3 text-left shadow-[0_18px_48px_rgba(0,0,0,0.44)] backdrop-blur-2xl md:w-full"
+                        >
+                            <span className="grid h-11 w-11 place-items-center rounded-2xl border border-white/12 bg-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+                                <span className="h-6 w-6 rounded-full border border-white/24" style={{ backgroundColor: activeSand.color }} />
+                            </span>
+                            <span className="min-w-0">
+                                <span className="block text-[9px] font-black uppercase tracking-[0.22em] text-amber-100/54">Bandeja</span>
+                                <span className="block truncate text-[12px] font-black uppercase tracking-[0.12em] text-white">
+                                    {tool === 'eraser' ? 'Apagar areia' : `${activeRake.label} - ${activePressure.label}`}
+                                </span>
+                            </span>
+                            <span className="rounded-full border border-amber-200/28 bg-amber-100/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.14em] text-amber-50">Abrir</span>
+                        </button>
+                    ) : (
+                        <div className="pointer-events-auto w-[min(25rem,calc(100vw-1.5rem))] overflow-hidden rounded-[26px] border border-white/10 bg-black/54 shadow-[0_18px_48px_rgba(0,0,0,0.46)] backdrop-blur-2xl md:w-full">
+                            <div className="grid grid-cols-[1fr_auto] items-center gap-2 border-b border-white/8 p-2">
+                                <div className="grid grid-cols-2 gap-1">
+                                    <button type="button" onClick={() => setActiveTray('tools')} className={`rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] ${activeTray === 'tools' ? 'bg-amber-200/16 text-amber-50 ring-1 ring-amber-200/28' : 'text-white/48'}`}>Ferramentas</button>
+                                    <button type="button" onClick={() => setActiveTray('items')} className={`rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] ${activeTray === 'items' ? 'bg-amber-200/16 text-amber-50 ring-1 ring-amber-200/28' : 'text-white/48'}`}>Itens</button>
+                                </div>
+                                <button type="button" onClick={() => setIsTrayOpen(false)} className="h-9 rounded-2xl border border-white/8 bg-white/5 px-3 text-[10px] font-black uppercase tracking-[0.12em] text-white/62">Fechar</button>
+                            </div>
+
+                            {activeTray === 'tools' ? (
+                                <div className="grid max-h-[46vh] gap-2 overflow-y-auto p-2 custom-scrollbar md:max-h-[68vh]">
+                                    <div className="grid grid-cols-2 gap-1">
+                                        <button type="button" onClick={() => setTool('rake')} className={`rounded-2xl border px-3 py-3 text-[10px] font-black uppercase tracking-[0.14em] ${tool === 'rake' ? 'border-amber-200/70 bg-white/14 text-white' : 'border-white/8 bg-white/5 text-white/56'}`}>Desenhar</button>
+                                        <button type="button" onClick={() => setTool('eraser')} className={`rounded-2xl border px-3 py-3 text-[10px] font-black uppercase tracking-[0.14em] ${tool === 'eraser' ? 'border-amber-200/70 bg-white/14 text-white' : 'border-white/8 bg-white/5 text-white/56'}`}>Apagar</button>
+                                    </div>
+                                    <div className="rounded-3xl border border-white/8 bg-white/[0.04] p-2">
+                                        <div className="mb-2 text-[8px] font-black uppercase tracking-[0.2em] text-white/38">Areia</div>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            {SAND_COLORS.map((sand) => (
+                                                <button
+                                                    key={sand.id}
+                                                    type="button"
+                                                    onClick={() => commitState((prev) => ({ ...prev, sandColor: sand.id }))}
+                                                    className={`flex min-h-[3.35rem] flex-col items-center justify-center gap-1 rounded-2xl border px-1.5 py-2 text-center transition-colors ${activeSand.id === sand.id ? 'border-amber-200/70 bg-white/14 text-white' : 'border-white/8 bg-black/18 text-white/56'}`}
+                                                >
+                                                    <span className="h-5 w-10 rounded-full border border-white/24 shadow-[inset_0_1px_5px_rgba(255,255,255,0.24)]" style={{ backgroundColor: sand.color }} />
+                                                    <span className="text-[8px] font-black uppercase tracking-[0.1em]">{sand.label}</span>
+                                                </button>
+                                            ))}
                                         </div>
+                                    </div>
+                                    <div className="rounded-3xl border border-white/8 bg-white/[0.04] p-2">
+                                        <div className="mb-2 text-[8px] font-black uppercase tracking-[0.2em] text-white/38">Pontas</div>
+                                        <div className="grid grid-cols-5 gap-1">
+                                            {RAKE_STYLES.map((style) => (
+                                                <button key={style.id} type="button" onClick={() => { setTool('rake'); setRakeStyle(style.id); }} className={`rounded-2xl border px-2 py-2.5 text-center ${rakeStyle === style.id && tool === 'rake' ? 'border-amber-200/70 bg-white/14 text-white' : 'border-white/8 bg-black/18 text-white/56'}`}>
+                                                    <span className="block text-[12px] font-black uppercase tracking-[0.12em]">{style.shortLabel}</span>
+                                                    <span className="block truncate text-[7px] font-black uppercase tracking-[0.08em] text-white/36">{style.description}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-3xl border border-white/8 bg-white/[0.04] p-2">
+                                        <div className="mb-2 text-[8px] font-black uppercase tracking-[0.2em] text-white/38">Pressao</div>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            {RAKE_PRESSURES.map((pressure) => (
+                                                <button key={pressure.id} type="button" onClick={() => { setTool('rake'); setRakePressure(pressure.id); }} className={`rounded-2xl border px-2 py-2.5 text-center ${rakePressure === pressure.id && tool === 'rake' ? 'border-amber-200/70 bg-white/14 text-white' : 'border-white/8 bg-black/18 text-white/56'}`}>
+                                                    <span className="block text-[12px] font-black uppercase tracking-[0.12em]">{pressure.shortLabel}</span>
+                                                    <span className="block text-[7px] font-black uppercase tracking-[0.1em] text-white/36">{pressure.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-1">
+                                        <button type="button" onClick={() => setShowClearConfirm(true)} className="rounded-2xl border border-white/8 bg-white/5 px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition-colors hover:bg-white/10">Limpar</button>
+                                        <button type="button" onClick={removeSelectedItem} disabled={!selectedItemId} className="inline-flex items-center justify-center gap-1 rounded-2xl border border-white/8 bg-white/5 px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition-colors hover:bg-white/10 disabled:opacity-35">
+                                            <Trash2Icon className="h-3.5 w-3.5" />
+                                            Item
+                                        </button>
+                                    </div>
+                                    {selectedItem && (
+                                        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-2xl border border-white/8 bg-white/5 px-2 py-2">
+                                            <button type="button" onClick={() => adjustSelectedItemScale(-0.12)} className="h-8 w-8 rounded-xl bg-black/30 text-sm font-black text-white/72">-</button>
+                                            <div className="text-center text-[9px] font-black uppercase tracking-[0.14em] text-white/42">Tamanho</div>
+                                            <button type="button" onClick={() => adjustSelectedItemScale(0.12)} className="h-8 w-8 rounded-xl bg-black/30 text-sm font-black text-white/72">+</button>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="grid max-h-[36vh] grid-cols-5 gap-1.5 overflow-y-auto p-2 custom-scrollbar md:max-h-[68vh] md:grid-cols-3">
+                                    {ownedArtifactItems.length === 0 ? (
+                                        <div className="col-span-full rounded-2xl border border-white/8 bg-white/5 px-2 py-5 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-white/38">Nenhum artefato</div>
                                     ) : ownedArtifactItems.map((item) => (
                                         <button
                                             key={item.id}
                                             type="button"
                                             onClick={() => addItem(item.id)}
-                                            className="group flex min-h-[62px] flex-col items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/5 px-1.5 py-2 text-[9px] font-black uppercase tracking-[0.08em] text-white/70 transition-colors hover:bg-white/10"
+                                            className={`group flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl border px-1.5 py-2 text-[8px] font-black uppercase tracking-[0.08em] text-white/70 transition-colors hover:bg-white/10 ${item.id.startsWith('item_garden_') ? 'border-amber-200/22 bg-amber-100/8' : 'border-white/8 bg-white/5'}`}
                                             title={item.name}
                                         >
-                                            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/22">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/24">
                                                 {item.imageUrl ? (
                                                     <img src={item.imageUrl} alt="" className="h-full w-full object-contain" draggable={false} />
                                                 ) : (
@@ -477,22 +691,21 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                            <div className="min-w-[160px] rounded-2xl border border-white/10 bg-black/24 p-2">
-                                <div className="mb-2 text-[9px] font-black uppercase tracking-[0.2em] text-white/45">Acoes</div>
-                                <div className="grid grid-cols-2 gap-1.5 md:grid-cols-1">
-                                    <button type="button" onClick={clearDrawing} className="rounded-xl border border-white/8 bg-white/5 px-2 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/70 transition-colors hover:bg-white/10">
-                                        Alisar
-                                    </button>
-                                    <button type="button" onClick={removeSelectedItem} disabled={!selectedItemId} className="inline-flex items-center justify-center gap-1 rounded-xl border border-white/8 bg-white/5 px-2 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white/70 transition-colors hover:bg-white/10 disabled:opacity-35">
-                                        <Trash2Icon className="h-3.5 w-3.5" />
-                                        Item
-                                    </button>
-                                </div>
-                            </div>
+                            )}
                         </div>
-                    </div>
-                </div>
+                    )}
+                </aside>
+                {showClearConfirm && (
+                    <ConfirmationModal
+                        title="Limpar areia?"
+                        message="Isso apaga todos os rastros desenhados no jardim. Pedras, plantas e artefatos continuam no lugar."
+                        confirmLabel="LIMPAR"
+                        cancelLabel="VOLTAR"
+                        variant="danger"
+                        onConfirm={clearDrawing}
+                        onCancel={() => setShowClearConfirm(false)}
+                    />
+                )}
             </div>
         </Portal>
     );

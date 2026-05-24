@@ -260,17 +260,20 @@ export interface InventoryItem {
 
 export type GardenSandColor = 'classic' | 'white' | 'basalt';
 export type GardenTool = 'rake' | 'eraser';
-export type GardenRakeStyle = 'three' | 'wide' | 'soft';
+export type GardenRakeStyle = 'fine' | 'three' | 'wide' | 'open' | 'deep';
+export type GardenRakePressure = 'light' | 'medium' | 'strong';
 
 export interface GardenStrokePoint {
   x: number;
   y: number;
+  pressure?: number;
 }
 
 export interface GardenStroke {
   id: string;
   tool: GardenTool;
   rakeStyle?: GardenRakeStyle;
+  pressureStyle?: GardenRakePressure;
   points: GardenStrokePoint[];
 }
 

@@ -123,8 +123,9 @@
 .planner-floating-vitals__shell {
   position: relative;
   overflow: hidden;
-  border-radius: 16px;
-  padding: 0.24rem;
+  border-radius: 14px;
+  padding: 0.2rem;
+  opacity: 0.8;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.015)),
     radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--skin-accent-color) 18%, transparent), transparent 62%),
@@ -141,7 +142,7 @@
   content: "";
   position: absolute;
   inset: 2px;
-  border-radius: 13px;
+  border-radius: 11px;
   border: 1px solid rgba(255,255,255,0.08);
   pointer-events: none;
 }
@@ -160,8 +161,8 @@
 
 .planner-vital-orb {
   position: relative;
-  height: 2.45rem;
-  border-radius: 12px;
+  height: 2.05rem;
+  border-radius: 10px;
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--skin-accent-color) 16%, transparent), transparent 54%),
@@ -175,10 +176,10 @@
 .planner-vital-orb__glow {
   position: absolute;
   inset: -30% 12% auto;
-  height: 2.4rem;
+  height: 1.9rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--skin-accent-color) 22%, transparent);
   filter: blur(12px);
-  opacity: 0.5;
+  opacity: 0.42;
   pointer-events: none;
 }

@@ -14,7 +14,7 @@ begin
   end if;
 
   if p_item_id like 'item_skin_%' then return 'skins'; end if;
-  if p_item_id like 'item_artifact_%' then return 'artifacts'; end if;
+  if p_item_id like 'item_artifact_%' or p_item_id like 'item_garden_%' then return 'artifacts'; end if;
   if p_item_id like 'item_orb_%' then return 'orbs'; end if;
   if p_item_id like 'item_plate_%' then return 'plates'; end if;
   if p_item_id like 'item_border_%' then return 'borders'; end if;
@@ -316,6 +316,8 @@ declare
     'grunge_longo',
     'textured_crop',
     'item_artifact_1_001',
+    'item_garden_stone_1',
+    'item_garden_plant_1',
     'item_orb_1_002',
     'item_plate_1_001',
     'BASIC'

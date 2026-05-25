@@ -248,6 +248,10 @@ export const LoginView: React.FC = () => {
                 newProfile.unlockedItems.plates = {
                     'item_plate_1_001': true // Placa Madeira
                 };
+                newProfile.unlockedItems.artifacts = {
+                    'item_garden_stone_1': true, // Pedra Serena
+                    'item_garden_plant_1': true, // Musgo Vivo
+                };
 
                 const { error: profileError } = await supabase
                     .from('user_profiles')

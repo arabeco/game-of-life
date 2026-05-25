@@ -2280,6 +2280,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'item_skin_1_001', // NÃ¡ufrago
                 'item_skin_1_002', // Casual
                 'item_artifact_1_001', // Adaga Aprendiz
+                'item_garden_stone_1', // Pedra Serena
+                'item_garden_plant_1', // Musgo Vivo
                 'item_orb_1_002',  // Orbe de Cobre
                 'item_plate_1_001', // Placa Madeira
                 'BASIC'            // Tema BÃ¡sico
@@ -9625,9 +9627,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const assetsVisibility = normalizeAssetsVisibilityScope(publicProfile?.assetsVisibility);
         const masteryVisibility = normalizeMasteryVisibilityScope(publicProfile?.masteryVisibility);
         const arenaMiniaturesVisibility = normalizeFeatsVisibilityScope(publicProfile?.featsVisibility);
+        const gardenVisibility = normalizeGardenVisibilityScope(publicProfile?.gardenVisibility);
         const canViewAssets = isOwner || assetsVisibility === 'all' || (assetsVisibility === 'friends' && isFriend);
         const canViewMastery = isOwner || masteryVisibility === 'all' || (masteryVisibility === 'friends' && isFriend);
         const canViewArenaMiniatures = isOwner || arenaMiniaturesVisibility === 'all' || (arenaMiniaturesVisibility === 'friends' && isFriend);
+        const canViewGarden = isOwner || gardenVisibility === 'all' || (gardenVisibility === 'friends' && isFriend);
 
         const userLevels: Record<string, number> = {};
         if (levelsRes.data) {
@@ -9640,6 +9644,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             publicProfile.visibleWidgets = [];
             publicProfile.assetArtById = {};
             publicProfile.assetWidgetValues = {};
+        }
+        if (publicProfile && !canViewGarden && !isOwner) {
+            publicProfile.gardenState = undefined;
         }
 
         let arenasByAsset: Record<string, Arena[]> = {};

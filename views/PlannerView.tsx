@@ -869,7 +869,7 @@ const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ 
     }, []);
 
     return (
-        <div className="planner-floating-vitals pointer-events-none absolute bottom-[calc(0.9rem+var(--safe-area-bottom))] left-1/2 z-40 w-[min(10.75rem,calc(100%-8rem))] -translate-x-1/2">
+        <div className="planner-floating-vitals pointer-events-none absolute bottom-[calc(0.15rem+var(--safe-area-bottom))] left-1/2 z-40 w-[min(9.35rem,calc(100%-10rem))] -translate-x-1/2">
             <div className="planner-floating-vitals__shell">
             <div className="grid grid-cols-2 items-center gap-2">
                 <AnimatedExpCounter snapshot={expSnapshot} />

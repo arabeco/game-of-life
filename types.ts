@@ -262,6 +262,7 @@ export type GardenSandColor = 'classic' | 'white' | 'basalt';
 export type GardenTool = 'rake' | 'eraser';
 export type GardenRakeStyle = 'fine' | 'three' | 'wide' | 'open' | 'deep';
 export type GardenRakePressure = 'light' | 'medium' | 'strong';
+export type GardenRakeSpacing = 'tight' | 'normal' | 'wide' | 'huge';
 
 export interface GardenStrokePoint {
   x: number;
@@ -274,6 +275,7 @@ export interface GardenStroke {
   tool: GardenTool;
   rakeStyle?: GardenRakeStyle;
   pressureStyle?: GardenRakePressure;
+  spacingStyle?: GardenRakeSpacing;
   points: GardenStrokePoint[];
 }
 
@@ -283,6 +285,7 @@ export interface GardenPlacedItem {
   x: number;
   y: number;
   scale?: number;
+  rotation?: number;
 }
 
 export interface GardenState {

@@ -33,6 +33,8 @@ declare
     'grunge_longo',
     'textured_crop',
     'item_artifact_1_001',
+    'item_garden_stone_1',
+    'item_garden_plant_1',
     'item_orb_1_002',
     'item_plate_1_001',
     'BASIC'

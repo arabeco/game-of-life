@@ -36,6 +36,11 @@ const normalizeArenaMiniaturesVisibility = (value?: UserProfile['featsVisibility
     return 'friends';
 };
 
+const normalizeGardenVisibility = (value?: UserProfile['gardenVisibility']): 'all' | 'friends' | 'nobody' => {
+    if (value === 'all' || value === 'friends' || value === 'nobody') return value;
+    return 'friends';
+};
+
 const ProfileMasteryOrb: React.FC<{
     level: number;
     skinId?: string;
@@ -74,12 +79,13 @@ const ProfileMasteryOrb: React.FC<{
     </div>
 );
 
-const ProfileGardenOrb: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+const ProfileGardenOrb: React.FC<{ onClick: () => void; title?: string }> = ({ onClick, title = 'Meu jardim' }) => (
     <button
         type="button"
         onClick={onClick}
         className="group absolute bottom-4 left-[5.35rem] z-30 flex h-12 w-12 items-center justify-center rounded-full border border-amber-200/35 bg-black/55 text-xl shadow-[0_14px_30px_rgba(0,0,0,0.42),0_0_18px_rgba(244,205,130,0.16)] backdrop-blur-sm transition-transform hover:scale-[1.04]"
-        title="Meu jardim"
+        title={title}
+        aria-label={title}
     >
         <span className="translate-y-[-1px]">{'\u{1FAB4}'}</span>
     </button>
@@ -572,10 +578,12 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const assetsVisibility = normalizeAssetsVisibility(displayProfile.assetsVisibility);
     const masteryVisibility = normalizeMasteryVisibility(displayProfile.masteryVisibility);
     const arenaMiniaturesVisibility = normalizeArenaMiniaturesVisibility(displayProfile.featsVisibility);
+    const gardenVisibility = normalizeGardenVisibility(displayProfile.gardenVisibility);
     const canResolvePublicVisibility = isOwnProfile || !!fetchedProfile;
     const canViewAssetsPreview = isOwnProfile || (canResolvePublicVisibility && (assetsVisibility === 'all' || (assetsVisibility === 'friends' && isFriendProfile)));
     const canViewMastery = isOwnProfile || (canResolvePublicVisibility && (masteryVisibility === 'all' || (masteryVisibility === 'friends' && isFriendProfile)));
     const canViewArenaMiniatures = isOwnProfile || (canResolvePublicVisibility && (arenaMiniaturesVisibility === 'all' || (arenaMiniaturesVisibility === 'friends' && isFriendProfile)));
+    const canViewGarden = isOwnProfile || (canResolvePublicVisibility && (gardenVisibility === 'all' || (gardenVisibility === 'friends' && isFriendProfile)));
     const canOpenAssetsPreview = isOwnProfile || canViewAssetsPreview || canViewArenaMiniatures;
     const profileDecagonLevels = !isOwnProfile
         ? (Object.keys(viewedLevels).length > 0 ? viewedLevels : fallbackViewedLevels)
@@ -1087,8 +1095,11 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 onClick={() => setIsAssetsPreviewOpen(true)}
                             />
                         )}
-                        {!isBasicMode && isOwnProfile && (
-                            <ProfileGardenOrb onClick={() => setGardenOpen(true)} />
+                        {!isBasicMode && canViewGarden && (
+                            <ProfileGardenOrb
+                                onClick={() => setGardenOpen(true)}
+                                title={isOwnProfile ? 'Meu jardim' : `Jardim de ${displayProfile.nickname || 'jogador'}`}
+                            />
                         )}
 
                         {/* Unified Sovereign Display - Hidden in Basic Mode */}

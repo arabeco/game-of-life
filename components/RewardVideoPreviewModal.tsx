@@ -4,7 +4,7 @@ import { Portal } from './Portal';
 import { VideoPlayer } from './VideoPlayer';
 import { XIcon } from './Icons';
 
-type PreviewKind = 'chest' | 'levelup' | 'legacy';
+type PreviewKind = 'chest' | 'levelup' | 'report';
 
 interface RewardVideoPreviewModalProps {
     onClose: () => void;
@@ -13,7 +13,7 @@ interface RewardVideoPreviewModalProps {
 const PREVIEWS: Record<PreviewKind, { label: string; src: string; duration: number; placeholder: string }> = {
     chest: {
         label: 'Bau',
-        src: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_common.mp4`,
+        src: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_normal.mp4`,
         duration: 4000,
         placeholder: 'Abrindo bau...',
     },
@@ -23,11 +23,11 @@ const PREVIEWS: Record<PreviewKind, { label: string; src: string; duration: numb
         duration: 4000,
         placeholder: 'Level up...',
     },
-    legacy: {
-        label: 'Legado',
-        src: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/legado.mp4`,
-        duration: 6500,
-        placeholder: 'Projetando legado...',
+    report: {
+        label: 'Relatorio',
+        src: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report_seal.mp4`,
+        duration: 5000,
+        placeholder: 'Selando relatorio...',
     },
 };
 
@@ -84,7 +84,7 @@ export const RewardVideoPreviewModal: React.FC<RewardVideoPreviewModalProps> = (
                             videoClassName="scale-[1.08]"
                             placeholderLabel={preview.placeholder}
                             duration={preview.duration}
-                            playbackRate={activePreview === 'legacy' ? 0.9 : 1}
+                            playbackRate={activePreview === 'report' ? 0.85 : 1}
                             preload="auto"
                             loop
                         />

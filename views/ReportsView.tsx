@@ -23,6 +23,7 @@ import { NOBILITY_RANKS } from '../constants/nobility';
 import { getGoldMechanicPrice } from '../constants/goldCatalog';
 import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks } from '../utils/fairScoreUtils.js';
+import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
 import { buildChestRewardPayload } from '../utils/chestRewardPresentation';
 import { getLegacyProjectionScenePrice, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
@@ -142,9 +143,18 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
         await deleteCycle(cycle.id);
     };
     const totalDays = Math.max(1, daysBetween(parseDate(startDate), parseDate(endDate)) + 1);
+    const cycleArenas = assets.flatMap(asset => asset.arenas);
     const cycleTasks = filterCycleTasksByScope(tasks, actions, cycle, startDate, endDate);
     const completedTasks = cycleTasks.filter(t => t.completed);
-    const cycleProgress = cycleTasks.length > 0 ? Math.round((completedTasks.length / cycleTasks.length) * 100) : 0;
+    const cycleSnapshot = buildCycleWidgetSnapshot({
+        cycle,
+        tasks,
+        actions,
+        arenas: cycleArenas,
+    });
+    const completedActionCount = cycleSnapshot?.completedTaskCount ?? completedTasks.length;
+    const totalActionCount = cycleSnapshot?.totalTaskCount ?? cycleTasks.length;
+    const cycleProgress = Math.round(cycleSnapshot?.taskProgressPercent ?? (cycleTasks.length > 0 ? (completedTasks.length / cycleTasks.length) * 100 : 0));
     const totalMinutes = completedTasks.reduce((sum, t) => sum + (t.duration || 0), 0);
     const totalHours = Math.floor(totalMinutes / 60);
     const reportsChronological = [...reports].sort((left, right) => new Date(left.endDate).getTime() - new Date(right.endDate).getTime());
@@ -158,7 +168,7 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
             };
         }),
         actions,
-        arenas: assets.flatMap(asset => asset.arenas),
+        arenas: cycleArenas,
         previousReports: reportsChronological,
         durationDays: totalDays,
     });
@@ -203,12 +213,12 @@ const SimplifiedCycleHUD: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => voi
                         progress: cycleProgress,
                         time: cycleTiming.timeProgress,
                         progressLabel: 'Progresso',
-                        progressValue: `${completedTasks.length}/${cycleTasks.length} · ${Math.round(cycleProgress)}%`,
+                        progressValue: `${completedActionCount}/${totalActionCount} · ${Math.round(cycleProgress)}%`,
                         timeLabel: 'Tempo',
-                        timeValue: cycleTiming.isUpcoming ? cycleTiming.statusLabel : `Dia ${cycleTiming.elapsedDays}/${cycleTiming.totalDays}`,
+                        timeValue: cycleTiming.statusLabel,
                     }}
                     metrics={[
-                        { label: 'Acoes', value: `${completedTasks.length}/${cycleTasks.length}` },
+                        { label: 'Acoes', value: `${completedActionCount}/${totalActionCount}` },
                         { label: 'Carga', value: `${totalHours}h` },
                         { label: 'Metas', value: `${fairScoreResult.fairness.sealedMetas}/${fairScoreResult.fairness.plannedMetas}` },
                         { label: 'Presenca', value: `${fairScoreResult.fairness.activeDays} dias` },

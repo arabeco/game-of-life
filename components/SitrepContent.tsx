@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { XIcon, EditIcon, CheckIcon, PlusIcon, ShareIcon, ZapIcon, SquareCheckIcon } from './Icons';
+import { XIcon, EditIcon, CheckIcon, ShareIcon, ZapIcon, SquareCheckIcon } from './Icons';
 import { ScheduledTask, Action } from '../types';
 import { shareElementWithFeedback } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
@@ -27,12 +27,9 @@ const CycleHeader: React.FC = () => {
     if (!activeCycle) return null;
 
     const cycleTiming = getCycleTimingSummary(activeCycle.startDate, activeCycle.endDate, dailyCommitment.date);
-    const daysElapsed = cycleTiming.elapsedDays;
-    const totalDays = cycleTiming.totalDays;
-
     return (
         <div className="text-center space-y-2 text-xs p-2 rounded-xl sitrep-neutral-panel">
-            <h3 className="arena-title-text text-[11px] text-white leading-tight tracking-[0.08em]">{activeCycle.name} · Dia {daysElapsed}/{totalDays}</h3>
+            <h3 className="arena-title-text text-[11px] text-white leading-tight tracking-[0.08em]">{activeCycle.name} · {cycleTiming.statusLabel}</h3>
         </div>
     );
 };
@@ -121,7 +118,7 @@ const BattleTaskItem: React.FC<{
             )}
             {isCompleted && (
                 <div className="z-10 p-1">
-                    {isFreeAction ? <div className="free-action-complete-dot" /> : <CheckIcon className="w-5 h-5 accent-text drop-shadow-[0_0_5px_rgba(0,0,0,1)]" />}
+                    <CheckIcon className="w-5 h-5 accent-text drop-shadow-[0_0_5px_rgba(0,0,0,1)]" />
                 </div>
             )}
             <p className="hidden text-[9px] font-semibold text-gray-400">
@@ -187,11 +184,7 @@ const PlannerLikeSitrepTaskItem: React.FC<{
                 </div>
                 {isCompleted ? (
                     <div className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]">
-                        {isFreeAction ? <div className="free-action-complete-dot scale-[0.82]" /> : <SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" />}
-                    </div>
-                ) : isFreeAction ? (
-                    <div className="shrink-0 opacity-45 saturate-50">
-                        <div className="free-action-complete-dot scale-[0.82]" />
+                        <SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" />
                     </div>
                 ) : null}
             </div>
@@ -300,8 +293,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
             await toggleTaskCompletion(existingTask.id);
             showToast("Ação realizada!");
         } else if (completedTask) {
-            await toggleTaskCompletion(completedTask.id);
-            showToast("Ação desmarcada.");
+            showToast("Essa ação já foi realizada. Reabra manualmente se precisar corrigir.");
         } else {
             // Se não estava no planejamento, o scheduleAndCompleteNow já bota no horário de "agora" e completa
             await scheduleAndCompleteNow(actionId);
@@ -344,9 +336,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                                     </div>
                                     {!isFreeAction ? (
                                         <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-black ${isStockOut ? 'border-gray-700 bg-gray-800 text-gray-600' : 'border-white/10 bg-black/30 text-white'}`}>x{group.count}</span>
-                                    ) : (
-                                        <PlusIcon className="h-4 w-4 shrink-0 text-white/55" />
-                                    )}
+                                    ) : null}
                                 </div>
                             </button>
                         );
@@ -428,9 +418,9 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                 <div className='text-center'>
                     <div className={`w-full rounded-full h-1.5 mt-1 ${progressTrackClass}`}><div className="bg-[var(--skin-accent-color)] h-full rounded-full" style={{ width: `${progress}%` }}></div></div>
                     <p className="text-xs text-gray-400 mt-1">
-                        Progresso: {progress.toFixed(0)}% | {commitmentStats.completedCount}/{commitmentStats.totalCount} acoes pontuaveis
-                        {commitmentStats.totalAllCount !== commitmentStats.totalCount && (
-                            <span className="text-gray-500"> | total travado {commitmentStats.completedAllCount}/{commitmentStats.totalAllCount}</span>
+                        Progresso: {progress.toFixed(0)}% | {commitmentStats.completedAllCount}/{commitmentStats.totalAllCount} acoes
+                        {commitmentStats.totalAllCount !== commitmentStats.totalCount && commitmentStats.totalCount > 0 && (
+                            <span className="text-gray-500"> | EXP {commitmentStats.completedCount}/{commitmentStats.totalCount}</span>
                         )}
                     </p>
                 </div>
@@ -443,7 +433,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                         </div>
                         <div className="sitrep-neutral-panel p-2 rounded-lg text-center">
                             <p className="core-label">Feitas</p>
-                            <p className="text-xl arena-title-text text-white leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
+                            <p className="text-xl arena-title-text text-white leading-tight">{commitmentStats.completedAllCount}/{commitmentStats.totalAllCount}</p>
                         </div>
                     </div>
                 )}
@@ -494,7 +484,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                     }}
                     className={`w-full py-2 rounded-xl ${isFutureBattle ? 'luxe-button-secondary text-amber-200 border border-amber-400/20' : 'luxe-skin-button'}`}
                 >
-                    {isFutureBattle ? 'Fechamento bloqueado até amanhã' : 'Gerar score final'}
+                    {isFutureBattle ? 'Fechamento bloqueado até amanhã' : 'Fechar o dia'}
                 </button>
             </>
         );
@@ -503,9 +493,6 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     const renderJudgment = () => {
         const score = dailyCommitment.score || 0;
         const expDeposited = dailyCommitment.expDeposited ?? 0;
-        const sitrepBonus = dailyCommitment.sitrepBonus ?? 0;
-        const relationshipBonusXp = dailyCommitment.relationshipBonusXp ?? 0;
-        const performanceBonusXp = Math.max(0, sitrepBonus - relationshipBonusXp);
         const nextOperationalDate = shiftLocalDateString(dailyCommitment.date, 1);
         const sitrepLabel = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(
             new Date(`${dailyCommitment.date}T12:00:00`)
@@ -532,11 +519,16 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
         const rankLetter = getRankLetter(score);
         const rankColor = getRankColor(rankLetter);
 
-        let verdict = "Guerreiro. Mantenha a disciplina.";
+        let verdict = "Dia fechado. Mantem o fio e escolhe a proxima prova simples.";
         if (score === 100) verdict = "Soberano. A vitória foi absoluta.";
         else if (score < 50) verdict = "A Batalha foi dura. Recupere e avance.";
         const checklistDone = dailySnapshot.checklistCompleted;
         const checklistTotal = dailySnapshot.checklistTotal;
+        if (score === 100) verdict = "Fechamento limpo. O ciclo recebeu prova real hoje.";
+        else if (score >= 80) verdict = "Bom ritmo. Nao inventa outra frente: protege a cadencia.";
+        else if (score < 50) verdict = "O dia ficou pesado, mas voltou para o tabuleiro. Amanha comeca menor.";
+        const cycleProgress = Math.max(0, Math.min(100, dailySnapshot.timeProgressPercent || 0));
+        const actionProgress = Math.max(0, Math.min(100, dailySnapshot.progressPercent || 0));
         const handleShareImage = () => {
             void shareElementWithFeedback(showToast, 'sitrep-capture-area', {
                 title: 'Meu Painel Diario - Life OS',
@@ -560,33 +552,68 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
 
         return (
             <>
-                <div id="sitrep-capture-area" className="space-y-4">
-                    <CycleHeader />
-                    <SitrepBoostStatus />
-                    <div className="text-center space-y-2 py-4">
-                        <div className="relative inline-block mb-4">
-                            <p className={`text-9xl font-black italic tracking-tighter ${rankColor} transition-all duration-1000 animate-in zoom-in-50 fade-in duration-700`}>
-                                {rankLetter}
-                            </p>
-                            <div className="sitrep-neutral-pill absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full border">
-                                <p className={`text-sm font-mono tracking-[0.3em] ${isBasicMode ? 'text-[color:var(--ui-card-text)]' : 'text-white/80'}`}>SCORE: {score}</p>
+                <div id="sitrep-capture-area" className="relative overflow-hidden rounded-[24px] border border-[var(--skin-accent-color)]/20 bg-black/28 p-4 shadow-[inset_0_0_24px_rgba(255,255,255,0.025)]">
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--skin-accent-color)_0%,transparent_62%)] opacity-12" />
+                    <div className="relative z-10 space-y-4">
+                        <div className="text-center">
+                            <p className="core-label text-[var(--skin-accent-color)]">Fechamento diario</p>
+                            <h3 className="mt-1 arena-title-text text-xl text-white luxe-title-shadow leading-tight">Resultado do dia</h3>
+                            <p className="mt-2 text-[11px] leading-relaxed text-gray-300">"{verdict}"</p>
+                        </div>
+
+                        <div className="grid grid-cols-[0.8fr_1.2fr] gap-3 items-stretch">
+                            <div className="sitrep-neutral-panel relative flex min-h-[132px] items-center justify-center overflow-hidden rounded-2xl p-3 text-center">
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--skin-accent-color)_0%,transparent_68%)] opacity-10" />
+                                <div className="relative">
+                                    <p className={`text-7xl font-black italic tracking-tighter ${rankColor} transition-all duration-1000 animate-in zoom-in-50 fade-in duration-700`}>
+                                        {rankLetter}
+                                    </p>
+                                    <div className="sitrep-neutral-pill mx-auto -mt-1 w-fit px-3 py-1 rounded-full border">
+                                        <p className={`text-[10px] font-mono tracking-[0.22em] ${isBasicMode ? 'text-[color:var(--ui-card-text)]' : 'text-white/80'}`}>{score}%</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--skin-accent-color)]/20 bg-white/[0.035] p-3 shadow-[0_0_22px_rgba(0,0,0,0.2)]">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--skin-accent-color)]/25 bg-gradient-to-br from-[var(--skin-accent-color)]/22 to-transparent">
+                                            <ZapIcon className="h-5 w-5 text-[var(--skin-accent-color)]" />
+                                        </div>
+                                        <div className="min-w-0 text-left">
+                                            <p className="core-label">EXP para o ciclo</p>
+                                            <p className="arena-title-text text-xl accent-text luxe-title-shadow leading-tight">+{expDeposited}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="sitrep-neutral-panel rounded-2xl p-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="core-label truncate">{dailySnapshot.cycleName || 'Ciclo'}</p>
+                                        <p className="text-[10px] font-bold text-gray-400">{dailySnapshot.cycleElapsedDays || 0}/{dailySnapshot.cycleTotalDays || 0}</p>
+                                    </div>
+                                    <div className={`mt-2 h-1.5 w-full rounded-full ${progressTrackClass}`}>
+                                        <div className="h-full rounded-full bg-[var(--skin-accent-color)]" style={{ width: `${cycleProgress}%` }} />
+                                    </div>
+                                    <p className="mt-1 text-[10px] text-gray-500">Tempo do ciclo: {cycleProgress.toFixed(0)}%</p>
+                                </div>
                             </div>
                         </div>
 
-                        <p className="text-sm text-gray-300 italic mt-4">"{verdict}"</p>
-
-                        <div className="pt-3">
-                            <p className="text-[10px] uppercase tracking-wider text-gray-400">Exp depositada no ciclo</p>
-                            <p className="text-xl arena-title-text accent-text luxe-title-shadow leading-tight">{expDeposited}</p>
-                            <p className="mt-2 text-[10px] text-gray-500">Se ontem ficou em aberto, voce ainda pode acertar esse dia hoje. Depois disso, ele trava.</p>
-                            {performanceBonusXp > 0 && <p className="text-[10px] text-gray-500">Bonus de performance: +{performanceBonusXp}</p>}
-                            {relationshipBonusXp > 0 && <p className="text-[10px] text-amber-300/80">Bonus de duelo: +{relationshipBonusXp}</p>}
+                        <div className="sitrep-neutral-panel rounded-2xl p-3">
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="core-label">Acoes do dia</p>
+                                <p className="text-[10px] font-bold text-gray-400">{actionProgress.toFixed(0)}%</p>
+                            </div>
+                            <div className={`mt-2 h-1.5 w-full rounded-full ${progressTrackClass}`}>
+                                <div className="h-full rounded-full bg-[var(--skin-accent-color)]" style={{ width: `${actionProgress}%` }} />
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 pt-4 text-center">
+                        <div className="grid grid-cols-3 gap-2 text-center">
                             <div className="sitrep-neutral-panel p-2 rounded-xl">
                                 <p className="core-label">Feitas</p>
-                                <p className="text-lg arena-title-text text-white leading-tight">{commitmentStats.completedCount}/{commitmentStats.totalCount}</p>
+                                <p className="text-lg arena-title-text text-white leading-tight">{commitmentStats.completedAllCount}/{commitmentStats.totalAllCount}</p>
                                 <p className="text-[10px] text-gray-500">travadas</p>
                             </div>
                             <div className="sitrep-neutral-panel p-2 rounded-xl">
@@ -600,6 +627,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                                 <p className="text-[10px] text-gray-500">itens</p>
                             </div>
                         </div>
+                        <p className="text-center text-[10px] text-gray-500">Acoes livres contam no dia, mas nao geram EXP.</p>
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">

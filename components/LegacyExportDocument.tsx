@@ -122,7 +122,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                         <p className="text-xs text-gray-500 mt-2">dias seguidos de execucao</p>
                                     </div>
                                     <div className="legacy-stat-card p-5">
-                                        <p className="legacy-kicker legacy-kicker-muted">Assinatura da Era</p>
+                                        <p className="legacy-kicker legacy-kicker-muted">Ação-chave da Era</p>
                                         <p className="text-lg font-black mt-2 tracking-tight">{era.topActions[0]?.name || 'Sem acao dominante'}</p>
                                         <p className="text-xs text-gray-500 mt-2">acao mais recorrente do periodo</p>
                                     </div>

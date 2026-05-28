@@ -19,7 +19,7 @@ import { RelationshipHubModal } from '../components/RelationshipHubModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
-import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
+import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess, isStaffRole } from '../utils/premiumAccess';
 import { getMoneyCheckoutSalesCopy } from '../utils/billingRuntime';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import {
@@ -87,7 +87,7 @@ const UI_SKIN_SELECTOR_META: Record<string, { label: string; title: string; prev
 
 const notificationModes: { id: NotificationMode, name: string, icon: string, description: string }[] = [
     { id: 'Silencioso', name: 'O Monge', icon: '🧘', description: "Nenhuma notificação será enviada. O sistema aguarda sua busca ativa." },
-    { id: 'Reflexivo', name: 'O Estoico', icon: '⚖️', description: "Um resumo diário com seu score e ações restantes é enviado à noite." },
+    { id: 'Reflexivo', name: 'O Estoico', icon: '⚖️', description: "Um resumo diário com seu resultado e ações restantes é enviado à noite." },
     { id: 'Essencial', name: 'O Executivo', icon: '👔', description: "Apenas alertas para compromissos com horário fixo." },
     { id: 'Militar', name: 'O Soldado', icon: '⚔️', description: "Modo ativo com lembretes para planejar, executar e revisar seu dia." },
 ];
@@ -122,13 +122,13 @@ const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSav
     const renderPreview = () => {
         switch (selectedMode) {
             case 'Silencioso': return (<div className="text-center text-gray-400 space-y-2 p-4"><svg viewBox="0 0 100 20" className="w-24 mx-auto"><path d="M 0 10 Q 25 10, 50 10 T 100 10" stroke="currentColor" strokeWidth="2" fill="none" /></svg><p className="text-sm">{notificationModes.find(m => m.id === 'Silencioso')?.description}</p></div>);
-            case 'Reflexivo': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações restantes: 2. 'A felicidade da sua vida depende da qualidade dos seus pensamentos.'" fixedAtTop stackIndex={0} />);
+            case 'Reflexivo': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Resultado: 85 | Ações restantes: 2. 'A felicidade da sua vida depende da qualidade dos seus pensamentos.'" fixedAtTop stackIndex={0} />);
             case 'Essencial': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-blue-400" />} title="Alerta de Compromisso" time="12:00" message="Reunião de Alinhamento em 2h." fixedAtTop stackIndex={0} />);
             case 'Militar': return (
                 <>
                     <NotificationCard icon={<LightbulbIcon className="w-5 h-5 text-green-400" />} title="Alvorada (Planning)" time="08:00" message="Inicie o Planejamento Tático. Verifique o Grid ou o Painel Diário." fixedAtTop stackIndex={0} />
                     <NotificationCard icon={<ClockIcon className="w-5 h-5 text-orange-400" />} title="Radar de Batalha" time="09:00" message="Próxima ação: Treino de Força (11:00). Prepare-se." fixedAtTop stackIndex={1} />
-                    <NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Score: 85 | Ações restantes: 2." fixedAtTop stackIndex={2} />
+                    <NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Resultado: 85 | Ações restantes: 2." fixedAtTop stackIndex={2} />
                 </>
             );
             default: return null;
@@ -667,10 +667,10 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                     <button onClick={onClose} className="absolute top-4 right-4 inline-flex w-auto px-3.5 py-1.5 text-sm font-bold rounded-xl luxe-skin-button">OK</button>
                     <div className="px-4 pt-2">
                         <div className="mx-auto max-w-[15.75rem] text-center space-y-1">
-                            <div className="text-[10px] font-black tracking-[0.28em] text-white/45 uppercase">Estacoes</div>
-                            <h2 className="text-base font-black uppercase tracking-[0.14em] text-center">Tutoriais</h2>
+                            <div className="text-[10px] font-black tracking-[0.28em] text-white/45 uppercase">Guias</div>
+                            <h2 className="text-base font-black uppercase tracking-[0.14em] text-center">Aprender o app</h2>
                             <p className="text-[11px] text-white/55 leading-snug">
-                                Aqui voce reabre os cards guiados do app. No basico voce revisita os cards 1 e 2. Ativando o Modo Jogo em Preferencias, entram os cards 3 e 4 com progresso, mundo e metajogo.
+                                Aqui voce reabre os cards guiados do app. No basico voce revisita os cards 1 e 2. Ativando o Modo Jogo em Preferencias, entram os cards 3 e 4 com progresso, mundo e recursos extras.
                             </p>
                         </div>
                     </div>
@@ -1630,12 +1630,12 @@ const ChallengeSelectionModal: React.FC<{ title?: string; onClose: () => void; o
     );
 };
 
-type FeedbackQuestion = { id: number; label: string; category: 'Core' | 'Dopamina' | 'Valor' };
+type FeedbackQuestion = { id: number; label: string; category: 'Uso' | 'Dopamina' | 'Valor' };
 
 const feedbackQuestions: FeedbackQuestion[] = [
-    { id: 1, label: 'Fluidez do Campo de Batalha (Planner)', category: 'Core' },
-    { id: 2, label: 'Estabilidade do Sistema (Bugs & Performance)', category: 'Core' },
-    { id: 3, label: 'Ritualística (Painel Diário & Fechamento)', category: 'Core' },
+    { id: 1, label: 'Fluidez do Planner', category: 'Uso' },
+    { id: 2, label: 'Estabilidade do app', category: 'Uso' },
+    { id: 3, label: 'Painel diário e fechamento', category: 'Uso' },
     { id: 4, label: 'Senso de Progresso (XP & Níveis)', category: 'Dopamina' },
     { id: 5, label: 'Identidade Visual (UI & Avatar)', category: 'Dopamina' },
     { id: 6, label: 'Mecânica do Santuário (Manutenção)', category: 'Dopamina' },
@@ -1656,11 +1656,11 @@ const getSovereignLabel = (value: number) => {
 
 const getSovereignPhrase = (questionId: number, value: number) => {
     const rounded = Math.max(1, Math.min(5, Math.round(value)));
-    const core = questionId <= 3;
+    const usage = questionId <= 3;
     const dopamine = questionId >= 4 && questionId <= 6;
     const valueBlock = questionId >= 7;
 
-    const prefix = core ? 'Motor:' : dopamine ? 'Dopamina:' : 'Valor:';
+    const prefix = usage ? 'Uso:' : dopamine ? 'Dopamina:' : 'Valor:';
 
     if (rounded === 1) return `${prefix} em colapso. Precisa de reforço imediato.`;
     if (rounded === 2) return `${prefix} instável. Dá pra usar, mas sangra fricção.`;
@@ -1965,7 +1965,7 @@ const GeralTab: React.FC = () => {
                     <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Modo Jogo</h3>
                     <div className={`text-[10px] px-2 py-0.5 rounded font-mono ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-white/10 text-gray-300'}`}>{appMode === 'GAME' ? 'LIGADO' : 'DESLIGADO'}</div>
                 </div>
-                <p className="text-[11px] leading-relaxed text-gray-500">O core fica sempre ligado. O Modo Jogo adiciona quests, patentes, baús, inventário, Hall da Fama e soberano.</p>
+                <p className="text-[11px] leading-relaxed text-gray-500">O uso principal fica sempre ligado. O Modo Jogo adiciona missoes, patentes, baus, inventario, Hall da Fama e camadas extras.</p>
 
                 <div className="flex gap-2">
                     <button
@@ -2539,6 +2539,7 @@ const PremiumTab: React.FC = () => {
     } | null>(null);
     const [showAllPremiumBenefits, setShowAllPremiumBenefits] = useState(false);
     const [showAllPlatinumBenefits, setShowAllPlatinumBenefits] = useState(false);
+    const isStaffAccess = isStaffRole(userProfile.role);
     const isPremium = hasPremiumAccess(userProfile);
     const isPlatinum = hasPlatinumAccess(userProfile);
     const isBasicMode = (userProfile.appMode || 'GAME') !== 'GAME';
@@ -2551,15 +2552,15 @@ const PremiumTab: React.FC = () => {
         'Todos os modos do Oráculo',
         'Cena do legado com 50% off',
         'Bônus de legado +10% XP',
-        '1 baú raro + 1 ficha grátis por renovação',
+        '1 baú raro + 1 ficha grátis por ativação',
     ];
     const platinumBenefits = [
         'Todas as vantagens do Premium',
         'Até 30 arenas ativas',
-        '1 cena de legado grátis por renovação',
-        '1 ficha média de quiz por renovação',
+        '1 cena de legado grátis por ativação',
+        '1 ficha média de quiz por ativação',
         'Todos os planos de fundo e aparências premium',
-        '1 baú da Temporada + 1 baú raro por renovação',
+        '1 baú da Temporada + 1 baú raro por ativação',
     ];
     const visiblePremiumBenefits = useMemo(
         () => (isBasicMode && !showAllPremiumBenefits ? premiumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : premiumBenefits),
@@ -2576,22 +2577,26 @@ const PremiumTab: React.FC = () => {
     const premiumExpiresLabel = userProfile.premiumExpiresAt
         ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(userProfile.premiumExpiresAt))
         : null;
-    const premiumStatusCopy = isPremium
+    const premiumStatusCopy = isStaffAccess
+        ? 'Acesso GM separado do plano pago'
+        : isPremium
         ? premiumDaysRemaining != null
-            ? `Expira em ${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'}`
+            ? `Premium ativo · faltam ${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'}`
+            : premiumExpiresLabel
+                ? `Válido até ${premiumExpiresLabel}`
+                : null
+        : 'Premium expirado ou ainda não ativado';
+    const platinumStatusCopy = isStaffAccess
+        ? 'Acesso GM separado do plano pago'
+        : isPlatinum
+        ? premiumDaysRemaining != null
+            ? `Platinum ativo · faltam ${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'}`
             : premiumExpiresLabel
                 ? `Válido até ${premiumExpiresLabel}`
                 : null
         : '30 dias por ativação';
-    const platinumStatusCopy = isPlatinum
-        ? premiumDaysRemaining != null
-            ? `Expira em ${premiumDaysRemaining} dia${premiumDaysRemaining === 1 ? '' : 's'}`
-            : premiumExpiresLabel
-                ? `Válido até ${premiumExpiresLabel}`
-                : null
-        : '30 dias por ativação';
-    const premiumActionLabel = isPlatinum ? 'Platinum ativo' : isPremium ? 'Estender premium' : 'Ativar premium';
-    const platinumActionLabel = isPlatinum ? 'Estender platinum' : activeMembershipTier === 'premium' ? 'Subir para platinum' : 'Ativar platinum';
+    const premiumActionLabel = isPlatinum ? 'Platinum 30 dias ativo' : isPremium ? 'Estender 30 dias' : 'Ativar 30 dias';
+    const platinumActionLabel = isPlatinum ? 'Estender 30 dias' : activeMembershipTier === 'premium' ? 'Subir para Platinum 30 dias' : 'Ativar 30 dias';
     const isPremiumExpiringSoon = isPremium && premiumDaysRemaining != null && premiumDaysRemaining <= 7;
     const moneyCheckoutSalesCopy = getMoneyCheckoutSalesCopy();
 
@@ -2612,9 +2617,9 @@ const PremiumTab: React.FC = () => {
                             </div>
                             <div className="min-w-0 flex-1 space-y-1 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                    <h3 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Premium</h3>
+                                    <h3 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Premium 30 dias</h3>
                                     <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
-                                        {premiumLabel}
+                                        {isStaffAccess ? 'ACESSO GM' : premiumLabel}
                                     </div>
                                 </div>
                                 {premiumStatusCopy && (
@@ -2667,7 +2672,7 @@ const PremiumTab: React.FC = () => {
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
+                                {isStaffAccess ? 'Acesso liberado para equipe' : isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
                             </span>
                         </div>
                     </div>
@@ -2682,9 +2687,9 @@ const PremiumTab: React.FC = () => {
                             </div>
                             <div className="min-w-0 flex-1 space-y-1 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                    <h3 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Platinum</h3>
+                                    <h3 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Platinum 30 dias</h3>
                                     <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPlatinum ? 'border-amber-200/30 bg-amber-200/12 text-amber-100' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
-                                        {isPlatinum ? 'ATIVO' : 'DISPONÍVEL'}
+                                        {isStaffAccess ? 'ACESSO GM' : isPlatinum ? 'ATIVO' : 'DISPONÍVEL'}
                                     </div>
                                 </div>
                                 {platinumStatusCopy && (

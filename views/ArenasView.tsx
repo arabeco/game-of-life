@@ -1734,7 +1734,7 @@ export const ArenasView: React.FC = () => {
                     <div className="h-1.5 overflow-hidden rounded-full border border-white/10 bg-white/10">
                         <div
                             className={progressFillClass}
-                            style={{ width: `${progressSummary.progressPercent}%`, background: 'var(--skin-accent-color)' }}
+                            style={{ width: `${progressSummary.progressPercent}%`, background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)' }}
                         />
                     </div>
                 </div>
@@ -2686,7 +2686,7 @@ export const ArenasView: React.FC = () => {
                     id="new-action-button"
                     data-onboarding-id="new-arena-button"
                     onClick={handleOpenCreateArena}
-                    className={`fixed bottom-[calc(3.25rem+var(--safe-area-bottom))] right-4 z-[500] w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
+                    className={`fixed bottom-[calc(4.25rem+var(--safe-area-bottom))] right-4 z-[500] w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform ${isCreateArenaFabHidden ? 'opacity-0 pointer-events-none' : ''}`}
                 >
                     <PlusIcon className="w-6 h-6 text-black" />
                 </button>

@@ -28,7 +28,7 @@ const getActionPhrase = (actions: { name: string; count: number }[]) => {
     if (!topAction?.name || topAction.name === 'Nenhuma') {
         return 'sem uma acao dominante registrada';
     }
-    return `${topAction.name} como assinatura pratica da fase`;
+    return `${topAction.name} como ação-chave da fase`;
 };
 
 const getStreakPhrase = (bestStreak: number) => {

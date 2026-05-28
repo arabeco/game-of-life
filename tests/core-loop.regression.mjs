@@ -2,10 +2,12 @@
 import {
     buildActionPoolByDate,
     buildCyclePaceMetrics,
+    buildDailyExpSnapshot,
     buildDailyArenaFocus,
     buildSitrepStockOptions,
     buildTaskPoolEntries,
     filterCycleTasksByScope,
+    getVisiblePoolTaskIdsForAction,
     getInitialDailyCommitmentTaskIds,
     mergeTasksIntoCommitment,
     reconcileTaskInCommitment,
@@ -206,6 +208,70 @@ const tests = [
         },
     },
     {
+        name: 'exp nao julgada soma apenas tarefas rastreadas concluidas com premium',
+        run() {
+            const actions = [
+                { id: 'action-focus', arenaId: 'arena-1', name: 'Deep work', icon: 'A', duration: 60, repetitions: 1, actionType: 'Compromisso', difficulty: 2 },
+                { id: 'action-free', arenaId: 'arena-1', name: 'Livre', icon: 'L', duration: 90, repetitions: 1, actionType: 'Livre', difficulty: 3 },
+            ];
+            const tasks = [
+                { id: 'task-done', actionId: 'action-focus', date: '2026-03-08', startTime: 540, duration: 60, completed: true },
+                { id: 'task-open', actionId: 'action-focus', date: '2026-03-08', startTime: 660, duration: 30, completed: false },
+                { id: 'task-free', actionId: 'action-free', date: '2026-03-08', startTime: 720, duration: 90, completed: true },
+                { id: 'task-out', actionId: 'action-focus', date: '2026-03-08', startTime: 780, duration: 120, completed: true },
+            ];
+
+            const snapshot = buildDailyExpSnapshot({
+                tasks,
+                actions,
+                operationalDate: '2026-03-08',
+                taskIds: ['task-done', 'task-open', 'task-free'],
+                includePremium: true,
+            });
+
+            assert.equal(snapshot.baseExp, 63);
+            assert.equal(snapshot.premiumBonusExp, 6);
+            assert.equal(snapshot.totalExp, 69);
+            assert.equal(snapshot.completedCount, 1);
+            assert.equal(snapshot.totalCount, 2);
+        },
+    },
+    {
+        name: 'exp nao julgada reage a tirar e desfazer conclusao',
+        run() {
+            const actions = [
+                { id: 'action-focus', arenaId: 'arena-1', name: 'Deep work', icon: 'A', duration: 60, repetitions: 1, actionType: 'Compromisso', difficulty: 1 },
+            ];
+            const tasks = [
+                { id: 'task-done', actionId: 'action-focus', date: '2026-03-08', startTime: 540, duration: 60, completed: true },
+            ];
+
+            assert.equal(buildDailyExpSnapshot({
+                tasks,
+                actions,
+                operationalDate: '2026-03-08',
+                taskIds: ['task-done'],
+                includePremium: false,
+            }).totalExp, 60);
+
+            assert.equal(buildDailyExpSnapshot({
+                tasks,
+                actions,
+                operationalDate: '2026-03-08',
+                taskIds: [],
+                includePremium: false,
+            }).totalExp, 0);
+
+            assert.equal(buildDailyExpSnapshot({
+                tasks: [{ ...tasks[0], completed: false }],
+                actions,
+                operationalDate: '2026-03-08',
+                taskIds: ['task-done'],
+                includePremium: false,
+            }).totalExp, 0);
+        },
+    },
+    {
         name: 'pool diario usa a mesma regra para planner e sitrep',
         run() {
             const actions = [
@@ -242,6 +308,41 @@ const tests = [
 
             const dailyPool = buildActionPoolByDate(actions, taskPool, tasks, '2026-03-09');
             assert.equal(dailyPool['action-focus'].count, 5);
+        },
+    },
+    {
+        name: 'ultima instancia sai do bay ao virar tarefa planejada',
+        run() {
+            const actions = [
+                { id: 'action-focus', arenaId: 'arena-1', name: 'Deep work', icon: 'A', duration: 60, repetitions: 1, actionType: 'Compromisso' },
+            ];
+            const taskPool = buildTaskPoolEntries(actions, new Set(['arena-1']), () => false);
+            const waitingTask = { id: 'task-bay', actionId: 'action-focus', date: '2026-03-08', startTime: -1, duration: 60, completed: false };
+            const plannedTask = { ...waitingTask, startTime: 540 };
+
+            const poolBeforePlanning = buildActionPoolByDate(actions, taskPool, [waitingTask], null, [], true);
+            assert.equal(poolBeforePlanning['action-focus'].count, 0);
+            assert.equal(isTaskInPool(waitingTask), true);
+
+            const poolAfterPlanning = buildActionPoolByDate(actions, taskPool, [plannedTask], null, [], true);
+            assert.equal(poolAfterPlanning['action-focus'].count, 0);
+            assert.equal(isTaskInPool(plannedTask), false);
+        },
+    },
+    {
+        name: 'bay area esconde duplicata velha quando ultima instancia ja foi planejada',
+        run() {
+            const action = { id: 'action-focus', arenaId: 'arena-1', name: 'Deep Work', icon: 'A', duration: 60, repetitions: 1, actionType: 'Compromisso' };
+            const duplicatedBayTask = { id: 'task-bay-duplicated', actionId: 'action-focus', date: '2026-03-08', startTime: -1, duration: 60, completed: false };
+            const plannedTask = { id: 'task-planned', actionId: 'action-focus', date: '2026-03-08', startTime: 540, duration: 60, completed: false };
+
+            const visibleTaskIds = getVisiblePoolTaskIdsForAction(
+                action,
+                [duplicatedBayTask, plannedTask],
+                [duplicatedBayTask.id],
+            );
+
+            assert.deepEqual(visibleTaskIds, []);
         },
     },
     {

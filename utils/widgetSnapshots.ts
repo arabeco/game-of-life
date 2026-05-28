@@ -275,8 +275,10 @@ export const buildDailyWidgetSnapshot = ({
     const todaysTasks = tasks.filter(
       (task) => taskMatchesOperationalDate(task, commitmentDate) && (hasScheduledTime(task) || Boolean(task.completed))
     );
+    const freeActionIds = new Set(actions.filter((action) => action.actionType === 'Livre').map((action) => action.id));
     const completedTasks = todaysTasks.filter((task) => task.completed);
-    const potentialExpFromActions = completedTasks.reduce((sum, task) => {
+    const scoredCompletedTasks = completedTasks.filter((task) => !freeActionIds.has(task.actionId));
+    const potentialExpFromActions = scoredCompletedTasks.reduce((sum, task) => {
       const action = actions.find((candidate) => candidate.id === task.actionId);
       const duration = Number.isFinite(task.duration) ? task.duration : action?.duration || 0;
       return sum + duration;
@@ -336,10 +338,10 @@ export const buildDailyWidgetSnapshot = ({
     cycleElapsedDays: cycleTiming.elapsedDays,
     cycleTotalDays: cycleTiming.totalDays,
     timeProgressPercent: cycleTiming.timeProgress,
-    progressPercent: commitmentStats.totalCount > 0 ? (commitmentStats.completedCount / commitmentStats.totalCount) * 100 : 100,
+    progressPercent: commitmentStats.totalAllCount > 0 ? (commitmentStats.completedAllCount / commitmentStats.totalAllCount) * 100 : 100,
     activeArenaCount,
-    completedCount: commitmentStats.completedCount,
-    totalCount: commitmentStats.totalCount,
+    completedCount: commitmentStats.completedAllCount,
+    totalCount: commitmentStats.totalAllCount,
     completedAllCount: commitmentStats.completedAllCount,
     totalAllCount: commitmentStats.totalAllCount,
     committedCount: commitmentStats.committedTasks.length,

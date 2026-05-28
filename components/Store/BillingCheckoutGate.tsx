@@ -13,7 +13,8 @@ import {
     type NativeStoreBillingPurchaseResult,
     type NativeStoreBillingStatus,
 } from '../../utils/nativeBilling';
-import { useGame } from '../../contexts/GameContext';
+import { useGame, type GoldPackPurchaseContext } from '../../contexts/GameContext';
+import { supabase } from '../../supabaseClient';
 
 type GoldBillingCheckoutConfig = {
     kind: 'gold';
@@ -38,7 +39,7 @@ type BillingCheckoutGateProps = GoldBillingCheckoutConfig | MembershipBillingChe
 const formatBrl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) => {
-    const { showToast } = useGame();
+    const { buyGoldPack, showToast, updateUserProfile } = useGame();
     const [forceWebFallback, setForceWebFallback] = useState(false);
     const [isLoadingAndroidProduct, setIsLoadingAndroidProduct] = useState(false);
     const [androidStatus, setAndroidStatus] = useState<NativeStoreBillingStatus | null>(null);
@@ -116,11 +117,73 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
             setAndroidPurchaseResult(result);
 
             if (result.purchaseState === 'pending') {
-                showToast('Compra pendente na Google Play. Aguarde a confirmacao final.', 'warning');
+                showToast('Compra pendente na Google Play. Assim que aprovar, o app libera o produto.', 'warning');
                 return;
             }
 
-            showToast('Compra confirmada na Google Play. O credito ainda sera conciliado no backend.', 'success');
+            if (props.kind === 'gold') {
+                const purchaseContext: GoldPackPurchaseContext = {
+                    platform: result.platform,
+                    productId: billingEntry.googlePlayProductId,
+                    orderId: result.orderId,
+                    purchaseToken: result.purchaseToken,
+                    packageName: result.packageName,
+                    consumed: result.consumed,
+                    acknowledged: result.acknowledged,
+                    needsServerReconciliation: result.needsServerReconciliation,
+                    products: result.products,
+                };
+                const credited = await buyGoldPack(props.internalProductId, purchaseContext);
+                if (credited) props.onClose();
+                return;
+            }
+
+            const purchaseContext = {
+                platform: result.platform,
+                productId: billingEntry.googlePlayProductId,
+                orderId: result.orderId,
+                purchaseToken: result.purchaseToken,
+                packageName: result.packageName,
+                consumed: result.consumed,
+                acknowledged: result.acknowledged,
+                needsServerReconciliation: result.needsServerReconciliation,
+                products: result.products,
+            };
+
+            if (!purchaseContext.purchaseToken) {
+                throw new Error('A Google Play nao retornou o recibo da compra.');
+            }
+
+            const { data, error } = await supabase.functions.invoke('google-play-purchase', {
+                body: {
+                    kind: 'membership',
+                    membershipTier: props.membershipTier,
+                    productId: billingEntry.googlePlayProductId,
+                    orderId: purchaseContext.orderId || null,
+                    purchaseToken: purchaseContext.purchaseToken,
+                    packageName: purchaseContext.packageName || null,
+                    platform: purchaseContext.platform || 'android',
+                    consumed: purchaseContext.consumed ?? null,
+                    acknowledged: purchaseContext.acknowledged ?? null,
+                    needsServerReconciliation: purchaseContext.needsServerReconciliation ?? null,
+                    products: purchaseContext.products || [],
+                },
+            });
+
+            if (error || !(data as any)?.success) {
+                console.error('Google Play membership validation failed:', error || data);
+                throw new Error('Plano nao validado pela Google Play. Se houve cobranca, me avise para conciliar.');
+            }
+
+            updateUserProfile({
+                isPremium: true,
+                subscriptionTier: ((data as any).membership_tier === 'platinum' ? 'platinum' : 'premium'),
+                premiumExpiresAt: (data as any).premium_expires_at || null,
+                premiumRewardPending: true,
+            });
+
+            showToast(`${props.membershipName} ativado pela Google Play.`, 'success');
+            props.onClose();
         } catch (error) {
             showToast(error instanceof Error ? error.message : 'Falha ao abrir a compra na Google Play.', 'error');
         } finally {
@@ -141,13 +204,15 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
         return <MercadoPagoBrick {...props} />;
     }
 
+    const canShowWebFallback = runtimePlatform === 'web' || import.meta.env.DEV;
+
     return (
         <Portal>
             <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/80 p-4 animate-fade-in backdrop-blur-md">
                 <GlassCard className="relative flex w-full max-w-md flex-col overflow-hidden rounded-[30px] border-[var(--skin-accent-color)]/20 shadow-2xl">
                     <div className="flex items-center justify-between border-b border-white/10 bg-black/40 p-4 backdrop-blur-md">
                         <div>
-                            <h2 className="text-lg font-black uppercase tracking-tight text-white">Billing da loja</h2>
+                            <h2 className="text-lg font-black uppercase tracking-tight text-white">Compra segura</h2>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--skin-accent-color)]">
                                 {formatBrl(props.amount)} - {productSummary}
                             </p>
@@ -158,51 +223,29 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                     </div>
 
                     <div className="space-y-4 bg-black/60 px-5 py-6">
-                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
+                        <div className="rounded-2xl border border-[var(--skin-accent-color)]/25 bg-white/[0.04] p-4 shadow-inner">
+                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">
                                 {runtimePlatform === 'android' ? 'Google Play' : 'App Store'}
                             </div>
-                            <p className="mt-2 text-sm leading-relaxed text-white">
-                                {runtimePlatform === 'android'
-                                    ? 'Este build nativo ja entra na trilha da Google Play. A compra abre pela loja do aparelho, e a conciliacao do credito sera a proxima camada.'
-                                    : 'Este fluxo iOS ja ficou separado do checkout web. A proxima etapa no Mac/Xcode e plugar o StoreKit e manter este mesmo layout.'}
+                            <div className="mt-2 text-2xl font-black text-white">{productSummary}</div>
+                            <p className="mt-1 text-sm font-semibold text-white/70">
+                                {androidProduct?.formattedPrice || formatBrl(props.amount)}
                             </p>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">Produto</div>
-                            <div className="mt-1 text-base font-black text-white">{productSummary}</div>
-                            {billingEntry && (
-                                <div className="mt-3 space-y-1 text-[11px] text-gray-300">
-                                    <div><span className="font-bold text-white/70">Play SKU:</span> {billingEntry.googlePlayProductId}</div>
-                                    <div><span className="font-bold text-white/70">App Store SKU:</span> {billingEntry.appStoreProductId}</div>
-                                    <div><span className="font-bold text-white/70">Tipo:</span> {billingEntry.kind === 'subscription' ? 'assinatura' : 'consumivel'}</div>
-                                </div>
-                            )}
-                        </div>
-
                         {runtimePlatform === 'android' && (
-                            <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
-                                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100">Estado da Google Play</div>
-                                <div className="mt-2 space-y-2 text-[12px] leading-relaxed text-cyan-50">
-                                    {androidStatus && !androidError && (
-                                        <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-100/80">
-                                            {androidStatus.connected ? 'Conectado' : 'Nao conectado'}
-                                        </p>
-                                    )}
-                                    {isLoadingAndroidProduct && <p>Consultando produto na Google Play...</p>}
+                            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                                <div className="space-y-2 text-[12px] leading-relaxed text-white/75">
+                                    {isLoadingAndroidProduct && <p>Carregando compra segura...</p>}
                                     {!isLoadingAndroidProduct && androidError && <p>{androidError}</p>}
                                     {!isLoadingAndroidProduct && !androidError && androidProduct && (
                                         <>
                                             <p className="font-bold text-white">{androidProduct.title || productSummary}</p>
-                                            <p>{androidProduct.description || 'Produto carregado pela Google Play neste aparelho.'}</p>
-                                            <p className="font-black uppercase tracking-[0.14em] text-cyan-100">
-                                                {androidProduct.formattedPrice || formatBrl(props.amount)}
-                                            </p>
+                                            <p>{androidProduct.description || 'Compra processada com seguranca pela Google Play.'}</p>
                                         </>
                                     )}
                                     {!isLoadingAndroidProduct && !androidError && !androidProduct && (
-                                        <p>O produto ainda nao apareceu na Google Play deste aparelho.</p>
+                                        <p>Esta compra ainda nao apareceu na Google Play deste aparelho.</p>
                                     )}
                                 </div>
                             </div>
@@ -213,13 +256,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                                 <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-100">Estado da App Store</div>
                                 <div className="mt-2 space-y-2 text-[12px] leading-relaxed text-slate-100/90">
                                     <p className="font-bold text-white">{productSummary}</p>
-                                    <p>O produto ja esta mapeado para o SKU da Apple e esta pronto para receber StoreKit assim que o projeto iOS for aberto no Xcode.</p>
-                                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-100/70">
-                                        SKU iOS: {billingEntry?.appStoreProductId}
-                                    </p>
-                                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-100/70">
-                                        Tipo: {billingEntry?.kind === 'subscription' ? 'assinatura' : 'consumivel'}
-                                    </p>
+                                    <p>A compra pela App Store sera liberada na versao iOS.</p>
                                     {iosStatusMessage && (
                                         <p className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] leading-relaxed text-slate-50">
                                             {iosStatusMessage}
@@ -230,20 +267,14 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                         )}
 
                         {androidPurchaseResult && runtimePlatform === 'android' && (
-                            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-[11px] leading-relaxed text-amber-100">
-                                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-50">Ultimo retorno da loja</div>
-                                <div className="mt-2 space-y-1">
-                                    <p><span className="font-bold text-white/85">Estado:</span> {androidPurchaseResult.purchaseState}</p>
-                                    <p><span className="font-bold text-white/85">Produto:</span> {androidPurchaseResult.products.join(', ') || billingEntry?.googlePlayProductId}</p>
-                                    <p><span className="font-bold text-white/85">Pedido:</span> {androidPurchaseResult.orderId || 'sem orderId ainda'}</p>
-                                    <p>{androidPurchaseResult.developerNote || 'Compra registrada na Google Play. Falta conciliar o credito no backend.'}</p>
-                                </div>
+                            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-[12px] leading-relaxed text-emerald-50">
+                                {androidPurchaseResult.purchaseState === 'pending'
+                                    ? 'Sua compra ficou pendente na Google Play.'
+                                    : props.kind === 'gold'
+                                        ? 'Compra aprovada. Seu Ouro foi liberado.'
+                                        : 'Compra aprovada.'}
                             </div>
                         )}
-
-                        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-[11px] leading-relaxed text-amber-100">
-                            No app publicado, compra digital nao deve fechar no Pix/web. Aqui o fallback web fica exposto so para este build de desenvolvimento.
-                        </div>
 
                         <div className="flex flex-col gap-2">
                             {runtimePlatform === 'android' && (
@@ -255,9 +286,11 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                                 >
                                     {isPurchasingAndroid
                                         ? 'Abrindo Google Play...'
-                                        : androidProduct?.formattedPrice
-                                            ? `Comprar na Google Play - ${androidProduct.formattedPrice}`
-                                            : 'Comprar na Google Play'}
+                                            : props.kind === 'membership'
+                                                ? `Ativar 30 dias na Google Play${androidProduct?.formattedPrice ? ` - ${androidProduct.formattedPrice}` : ''}`
+                                                : androidProduct?.formattedPrice
+                                                    ? `Comprar na Google Play - ${androidProduct.formattedPrice}`
+                                                    : 'Comprar na Google Play'}
                                 </button>
                             )}
                             {isIosStoreFlow && (
@@ -278,13 +311,15 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                                     </button>
                                 </>
                             )}
-                            <button
-                                type="button"
-                                onClick={() => setForceWebFallback(true)}
-                                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-white/10"
-                            >
-                                {runtimePlatform === 'ios' ? 'Abrir fallback web enquanto o StoreKit nao entra' : 'Abrir fallback web neste build'}
-                            </button>
+                            {canShowWebFallback && (
+                                <button
+                                    type="button"
+                                    onClick={() => setForceWebFallback(true)}
+                                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-white/10"
+                                >
+                                    Abrir checkout web
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={props.onClose}

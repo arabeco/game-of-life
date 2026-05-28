@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
-
-const ORACLE_GRADIENT_ID = 'first-use-onboarding-oracle-gradient';
+import { OracleSpeakerMark } from './OracleSpeakerMark';
 
 type AppView = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
@@ -25,19 +24,6 @@ type StepDef = {
   hideNext?: boolean;
   final?: boolean;
 };
-
-const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4Z" fill={`url(#${ORACLE_GRADIENT_ID})`} fillOpacity="0.2" />
-    <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6ZM12 8C14.21 8 16 9.79 16 12C16 14.21 14.21 16 12 16C9.79 16 8 14.21 8 12C8 9.79 9.79 8 12 8Z" fill={`url(#${ORACLE_GRADIENT_ID})`} />
-    <defs>
-      <linearGradient id={ORACLE_GRADIENT_ID} x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#FFD700" />
-        <stop offset="1" stopColor="#FF8C00" />
-      </linearGradient>
-    </defs>
-  </svg>
-);
 
 const getTargetElement = (selector?: string) => {
   if (!selector) return null;
@@ -241,7 +227,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'finish',
       title: 'Base pronta',
-      text: 'Sua base inicial está pronta. Você já pode começar por esta tela.\n\nEm Configurações > Tutoriais, os cards 1 e 2 aprofundam o core. Em Configurações > Preferências, o Modo Jogo libera também os cards 3 e 4 com progresso, mundo e metajogo.',
+      text: 'Sua base inicial esta pronta. Voce ja pode comecar por esta tela.\n\nEm Configuracoes > Tutoriais, os cards 1 e 2 mostram o uso principal. Em Configuracoes > Preferencias, o Modo Jogo libera tambem os cards 3 e 4 com progresso, mundo e recursos extras.',
       navigation: { view: 'planner', showReports: false, showRestScreen: true, showArenaId: null },
       final: true,
     },
@@ -671,9 +657,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
               <div className="flex gap-4 p-4 md:p-5">
                 <div className="flex-shrink-0">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f3d48a]/50 bg-gradient-to-br from-[#2d261c] to-black shadow-[0_0_24px_rgba(255,215,0,0.16)] md:h-16 md:w-16">
-                    <OracleIcon className="h-6 w-6 animate-pulse-slow md:h-10 md:w-10" />
-                  </div>
+                  <OracleSpeakerMark tone="guide" size="md" badge className="md:hidden" />
+                  <OracleSpeakerMark tone="guide" size="lg" badge className="hidden md:flex" />
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -681,7 +666,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
                     <div className="min-w-0">
                       <div className="mb-1 flex items-center gap-2">
                         <span className="inline-flex items-center rounded-full border border-[#f3d48a]/25 bg-[#f3d48a]/10 px-2 py-1 text-[8px] font-black tracking-[0.22em] text-[#f3d48a] md:text-[10px]">
-                          ONBOARDING
+                          INICIO
                         </span>
                         <span className="text-[9px] uppercase tracking-[0.16em] text-gray-500 md:text-[10px]">
                           {progress}

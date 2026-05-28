@@ -238,9 +238,9 @@ export const CodexStore: React.FC = () => {
     const quizHeroCopy = hasPendingFreeQuiz
         ? 'As campanhas grátis não ficam mais espalhadas no catálogo. O quiz encontra a melhor para o seu momento e ainda mostra uma opção premium como veja também.'
         : hasFreeQuizCredit
-            ? `Sua renovação liberou ${campaignQuizFreeCredits} ficha${campaignQuizFreeCredits === 1 ? '' : 's'} grátis para usar no próximo quiz e puxar uma campanha recomendada sem custo.`
+            ? `Seu plano liberou ${campaignQuizFreeCredits} ficha${campaignQuizFreeCredits === 1 ? '' : 's'} grátis para usar no próximo quiz e puxar uma campanha recomendada sem custo.`
         : hasMediumQuizCredit
-            ? `Sua renovação liberou ${campaignQuizMediumCredits} ficha${campaignQuizMediumCredits === 1 ? '' : 's'} média${campaignQuizMediumCredits === 1 ? '' : 's'} para usar no próximo quiz e liberar uma campanha recomendada sem custo em ouro.`
+            ? `Seu plano liberou ${campaignQuizMediumCredits} ficha${campaignQuizMediumCredits === 1 ? '' : 's'} média${campaignQuizMediumCredits === 1 ? '' : 's'} para usar no próximo quiz e liberar uma campanha recomendada sem custo em ouro.`
             : 'O catálogo aberto foca nas campanhas premium. Se quiser uma rota mais guiada, o quiz ainda recomenda a próxima campanha certa para você.';
     const quizButtonLabel = hasPendingFreeQuiz
         ? 'Fazer quiz grátis'

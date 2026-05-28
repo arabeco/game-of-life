@@ -26,11 +26,11 @@ export const getMoneyCheckoutSalesCopy = (): string => {
     const platform = getBillingRuntimePlatform();
 
     if (platform === 'android') {
-        return 'Google Play Billing nativo';
+        return 'Google Play';
     }
 
     if (platform === 'ios') {
-        return 'App Store Billing preparado para StoreKit';
+        return 'App Store';
     }
 
     return 'Produto direto no Pix';
@@ -54,7 +54,7 @@ export const getMoneyCheckoutRuntimeWarning = (): string | null => {
     const platform = getBillingRuntimePlatform();
 
     if (platform === 'android') {
-        return 'Este build Android ja abre a compra nativa da Google Play. O que falta agora e a conciliacao do credito pelo backend.';
+        return 'Este build Android ja abre a compra nativa da Google Play. A liberacao final do produto depende da confirmacao segura do backend.';
     }
 
     if (platform === 'ios') {

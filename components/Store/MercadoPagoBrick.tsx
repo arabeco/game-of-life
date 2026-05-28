@@ -52,7 +52,7 @@ const MERCADO_PAGO_STATUS_LABELS: Record<string, string> = {
 
 const getMercadoPagoStatusLabel = (paymentResult: any, deliveryDetected: boolean, kind: MercadoPagoBrickProps['kind']) => {
     if (deliveryDetected) {
-        return kind === 'membership' ? 'assinatura ativada' : 'ouro adicionado a sua conta';
+        return kind === 'membership' ? 'plano ativado' : 'ouro adicionado a sua conta';
     }
 
     const statusDetail = String(paymentResult?.status_detail || '').trim().toLowerCase();
@@ -321,7 +321,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
             if (cancelled) return;
 
             if (error) {
-                console.warn('Erro ao verificar assinatura do Mercado Pago:', error.message);
+                console.warn('Erro ao verificar plano do Mercado Pago:', error.message);
                 return;
             }
 
@@ -359,7 +359,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
             setDeliveryDetected(true);
             if (!deliveryToastShownRef.current) {
                 deliveryToastShownRef.current = true;
-                showToast(`${membershipName || 'Assinatura'} ativado com sucesso.`, 'success');
+                showToast(`${membershipName || 'Plano'} ativado com sucesso.`, 'success');
             }
         };
 
@@ -474,7 +474,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                     <div className="mercado-pago-header flex items-center justify-between border-b border-white/10 bg-black/40 p-3 backdrop-blur-md">
                         <div>
                             <h2 className="text-lg font-black uppercase tracking-tight text-white">
-                                {paymentResult ? (deliveryDetected ? (isMembershipCheckout ? 'Assinatura Confirmada' : 'Pagamento Confirmado') : 'Aguardando Pagamento') : 'Pagamento Seguro'}
+                                {paymentResult ? (deliveryDetected ? (isMembershipCheckout ? 'Plano Confirmado' : 'Pagamento Confirmado') : 'Aguardando Pagamento') : 'Pagamento Seguro'}
                             </h2>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--skin-accent-color)]">
                                 {isMembershipCheckout ? `${brlAmountLabel} - ${membershipName}` : `${brlAmountLabel} - ${goldAmount} ouro`}

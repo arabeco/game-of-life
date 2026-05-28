@@ -1,7 +1,7 @@
 ﻿import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { GlobalHeader } from './GlobalHeader';
-import { AssetIcon, ArenaIcon, ConfigIcon, PlannerIcon, SocialIcon } from './Icons';
+import { AssetIcon, ArenaIcon, ConfigIcon, PlannerIcon, SocialIcon, XIcon } from './Icons';
 import { supabase } from '../supabaseClient';
 import { GameProvider, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING, PROFILE_FLAG_TUTORIAL_COMPLETED, useGame } from '../contexts/GameContext';
 import { CodexBuilderProvider, useCodexBuilder } from '../contexts/CodexBuilderContext';
@@ -32,7 +32,7 @@ import {
     getSeasonTransitionStorageKey,
     resolveRuntimeSeasonTransition,
 } from '../utils/seasonPresentation';
-import { getActiveSubscriptionTier, getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess, isPremiumInLastDay } from '../utils/premiumAccess';
+import { getActiveSubscriptionTier, getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import { getGoldMembershipProductByTier, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 import {
@@ -50,6 +50,8 @@ import { DailyCompletionPromptModal } from './DailyCompletionPromptModal';
 import type { AppBroadcast } from './AppBroadcastModal';
 import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../utils/dailyCompletionPrompt';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
+import { ORACLE_SPEECH_EVENT, type OracleSpeechPayload } from '../utils/oracleSpeech';
+import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -77,8 +79,85 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
-const APP_VERSION = '1.0.29';
+const APP_VERSION = '1.0.48';
 const APP_BROADCAST_SEEN_FLAG_PREFIX = 'app_broadcast_seen:';
+
+const OracleSpeechOverlay: React.FC = () => {
+    const [speech, setSpeech] = useState<(OracleSpeechPayload & { id: number }) | null>(null);
+    const [displayedText, setDisplayedText] = useState('');
+
+    useEffect(() => {
+        const handleSpeech = (event: Event) => {
+            const detail = (event as CustomEvent<OracleSpeechPayload>).detail;
+            if (!detail?.message?.trim()) return;
+            setSpeech({ ...detail, id: Date.now() });
+        };
+
+        window.addEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
+        return () => window.removeEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
+    }, []);
+
+    useEffect(() => {
+        if (!speech) return;
+
+        const fullText = speech.message;
+        setDisplayedText('');
+        let index = 0;
+        const typingTimer = window.setInterval(() => {
+            index += 1;
+            setDisplayedText(fullText.slice(0, index));
+            if (index >= fullText.length) window.clearInterval(typingTimer);
+        }, 12);
+
+        const closeTimer = window.setTimeout(() => {
+            setSpeech((current) => current?.id === speech.id ? null : current);
+        }, speech.durationMs ?? 5200);
+
+        return () => {
+            window.clearInterval(typingTimer);
+            window.clearTimeout(closeTimer);
+        };
+    }, [speech]);
+
+    if (!speech) return null;
+
+    const tone: OracleSpeakerTone = speech.tone || 'neutral';
+    const toneTokens = getOracleSpeakerToneTokens(tone);
+    const isTyping = displayedText.length < speech.message.length;
+
+    return (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(86px+var(--safe-area-bottom))] z-[10004] flex justify-center px-4">
+            <div
+                className="pointer-events-auto relative flex w-full max-w-[22.5rem] gap-3 overflow-hidden rounded-[20px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-3 pl-[4.45rem] shadow-[0_18px_60px_rgba(0,0,0,0.46)] backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-300"
+                style={{
+                    borderColor: toneTokens.border,
+                    boxShadow: `0 18px 60px rgba(0,0,0,0.46), 0 0 26px ${toneTokens.glow}`,
+                }}
+            >
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-14" style={{ background: `radial-gradient(circle at top, ${toneTokens.coreSoft}, transparent 72%)` }} />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${toneTokens.border}, transparent)` }} />
+                <OracleSpeakerMark tone={tone} size="md" className="absolute bottom-2.5 left-3" />
+                <button
+                    type="button"
+                    onClick={() => setSpeech(null)}
+                    className="absolute right-3 top-3 rounded-full border border-white/8 bg-white/[0.04] p-1.5 text-white/45 transition-colors hover:text-white"
+                    aria-label="Fechar fala do Oraculo"
+                >
+                    <XIcon className="h-3.5 w-3.5" />
+                </button>
+                <div className="relative z-10 min-w-0 flex-1 pr-7">
+                    <div className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: toneTokens.core }}>
+                        {speech.title || 'Oraculo'}
+                    </div>
+                    <p className="mt-1.5 min-h-[2.1rem] whitespace-pre-wrap text-[12px] font-semibold leading-relaxed text-white/86">
+                        {displayedText}
+                        {isTyping && <span className="ml-1 inline-block h-3 w-1 animate-pulse align-middle opacity-80" style={{ background: toneTokens.core }} />}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 type AppBroadcastRow = {
     id: string;
@@ -1047,7 +1126,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     } | null>(null);
     const [premiumRenewalOfferSeen, setPremiumRenewalOfferSeen] = useState(false);
     const [premiumRenewalBusy, setPremiumRenewalBusy] = useState(false);
-    const [showOnboardingPushPrompt, setShowOnboardingPushPrompt] = useState(false);
     const [isOnboardingPushBusy, setOnboardingPushBusy] = useState(false);
     const [showRewardVideoPreview, setShowRewardVideoPreview] = useState(() => {
         if (typeof window === 'undefined') return false;
@@ -1269,7 +1347,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     useEffect(() => {
         if (!isProfileLoaded || showTerms) return;
         if (userProfile.id === 'placeholder_user') return;
-        if (!onboardingShownInSession) return;
         if (userProfile.onboardingPushPromptedAt) return;
         if (isFirstUseOnboardingActive) return;
         if (shouldHoldVanguardWelcome) return;
@@ -1281,7 +1358,19 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             if (cancelled || permission !== 'prompt') return;
 
             updateUserProfile({ onboardingPushPromptedAt: new Date().toISOString() });
-            setShowOnboardingPushPrompt(true);
+            setOnboardingPushBusy(true);
+            try {
+                const nextPermission = await requestAppPushPermission();
+                if (cancelled) return;
+                if (nextPermission === 'granted') {
+                    await updateOraclePreferences({ pushEnabled: true });
+                    showToast('Push ativado. O Oraculo ja pode te acompanhar fora da tela.', 'success');
+                } else if (nextPermission === 'denied') {
+                    showToast('Tudo bem. O push ficou bloqueado neste aparelho por enquanto.', 'warning');
+                }
+            } finally {
+                if (!cancelled) setOnboardingPushBusy(false);
+            }
         })();
 
         return () => {
@@ -1290,9 +1379,10 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     }, [
         isFirstUseOnboardingActive,
         isProfileLoaded,
-        onboardingShownInSession,
         shouldHoldVanguardWelcome,
         showTerms,
+        showToast,
+        updateOraclePreferences,
         updateUserProfile,
         userProfile.id,
         userProfile.onboardingPushPromptedAt,
@@ -1349,28 +1439,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         }
     }, [handleCloseAppBroadcast]);
 
-    const handleDismissOnboardingPushPrompt = useCallback(() => {
-        setShowOnboardingPushPrompt(false);
-    }, []);
-
-    const handleConfirmOnboardingPushPrompt = useCallback(async () => {
-        setOnboardingPushBusy(true);
-        try {
-            const permission = await requestAppPushPermission();
-            if (permission === 'granted') {
-                await updateOraclePreferences({ pushEnabled: true });
-                showToast('Push ativado. O Oraculo ja pode te acompanhar fora da tela.', 'success');
-            } else if (permission === 'denied') {
-                showToast('Tudo bem. O push ficou bloqueado neste aparelho por enquanto.', 'warning');
-            } else {
-                showToast('Nao consegui ativar o push neste aparelho agora.', 'warning');
-            }
-        } finally {
-            setOnboardingPushBusy(false);
-            setShowOnboardingPushPrompt(false);
-        }
-    }, [showToast, updateOraclePreferences]);
-
     const hasVanguardPayload =
         !!userProfile.vanguardWelcomePayload &&
         Object.keys(userProfile.vanguardWelcomePayload).length > 0;
@@ -1411,8 +1479,13 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const activeMembershipTier = getActiveSubscriptionTier(userProfile);
     const activeMembershipProduct = getGoldMembershipProductByTier(activeMembershipTier) || GOLD_PREMIUM_PRODUCT;
     const discountedPremiumPrice = getDiscountedPremiumPrice(activeMembershipProduct.priceGold, 0.1);
-    const premiumRenewalOfferStorageKey = userProfile.premiumExpiresAt
-        ? `glyph:premium-renewal-offer:${userProfile.id}:${userProfile.premiumExpiresAt}`
+    const premiumRenewalNoticeLevel = premiumDaysRemaining != null && premiumDaysRemaining <= 1
+        ? '1d'
+        : premiumDaysRemaining != null && premiumDaysRemaining <= 3
+            ? '3d'
+            : null;
+    const premiumRenewalOfferStorageKey = userProfile.premiumExpiresAt && premiumRenewalNoticeLevel
+        ? `glyph:premium-renewal-offer:${userProfile.id}:${userProfile.premiumExpiresAt}:${premiumRenewalNoticeLevel}`
         : null;
     const shouldShowPremiumRenewalOffer =
         !showTerms &&
@@ -1423,7 +1496,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         !shouldShowBetaReward &&
         !claimToken &&
         hasPremiumAccess(userProfile) &&
-        isPremiumInLastDay(userProfile) &&
+        !!premiumRenewalNoticeLevel &&
         !premiumRenewalOfferSeen;
 
     const shouldShowAppBroadcast =
@@ -1435,7 +1508,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         !shouldShowBetaReward &&
         !shouldShowPremiumRenewalOffer &&
         !goldShortagePrompt &&
-        !showOnboardingPushPrompt &&
+        !isOnboardingPushBusy &&
         !claimToken &&
         !!pendingAppBroadcast;
 
@@ -1455,6 +1528,19 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         setPremiumRenewalOfferSeen(true);
     }, [premiumRenewalOfferStorageKey]);
 
+    useEffect(() => {
+        if (!shouldShowPremiumRenewalOffer || typeof window === 'undefined') return;
+        const planName = activeMembershipProduct.tier === 'platinum' ? 'Platinum' : 'Premium';
+        window.dispatchEvent(new CustomEvent<OracleSpeechPayload>(ORACLE_SPEECH_EVENT, {
+            detail: {
+                title: 'Oraculo',
+                message: `${planName} termina em ${premiumDaysRemaining || 1} dia${(premiumDaysRemaining || 1) === 1 ? '' : 's'}. Se for continuar, estende antes de virar uma surpresa chata.`,
+                tone: 'warning',
+                durationMs: 6200,
+            },
+        }));
+    }, [activeMembershipProduct.tier, premiumDaysRemaining, shouldShowPremiumRenewalOffer]);
+
     const handleConfirmPremiumRenewalOffer = useCallback(async () => {
         const currentGold = Number(userProfile.wallet?.gold || 0);
         if (currentGold < discountedPremiumPrice) {
@@ -1471,7 +1557,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         try {
             await buyStoreItem(activeMembershipProduct.id, 'premium', {
                 costOverrideGold: discountedPremiumPrice,
-                successMessage: `Renovação ${activeMembershipProduct.tier} com 10% de desconto confirmada por ${discountedPremiumPrice} ouro.`,
+                successMessage: `${activeMembershipProduct.tier === 'platinum' ? 'Platinum' : 'Premium'} estendido por mais 30 dias com 10% de desconto (${discountedPremiumPrice} ouro).`,
             });
             handleDismissPremiumRenewalOffer();
         } finally {
@@ -1574,7 +1660,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 <AppWithTutorial
                     defaultRestScreenOpen={shouldOpenRestByDefault}
                     allowSeasonTransition={shouldAllowSeasonTransition}
-                    suppressScreenIntroTips={isFirstUseOnboardingActive || onboardingShownInSession || showOnboardingPushPrompt}
+                    suppressScreenIntroTips={isFirstUseOnboardingActive || onboardingShownInSession || isOnboardingPushBusy}
                 />
             )}
             <Suspense fallback={null}>
@@ -1606,12 +1692,12 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         mode={userProfile.appMode}
                         payload={userProfile.premiumRewardPayload}
                         onClose={handleClosePremiumReward}
-                        fallbackEyebrow="Renovação premium"
-                        fallbackTitle="Recompensas da assinatura"
-                        fallbackSummary="Sua renovação foi processada e os bônus reais desta fase já foram entregues."
+                        fallbackEyebrow="Premium 30 dias"
+                        fallbackTitle="Recompensas do plano"
+                        fallbackSummary="Sua ativação foi processada e os bônus reais desta fase já foram entregues."
                         fallbackButtonLabel="Continuar"
-                        fallbackItemSectionTitle="Itens desta renovação"
-                        fallbackEmptyMessage="A renovação foi concluída e nenhum cosmético novo precisava ser entregue agora."
+                        fallbackItemSectionTitle="Itens desta ativação"
+                        fallbackEmptyMessage="A ativação foi concluída e nenhum cosmético novo precisava ser entregue agora."
                     />
                 )}
                 {shouldShowBetaReward && (
@@ -1630,9 +1716,9 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 )}
                 {shouldShowPremiumRenewalOffer && (
                     <ConfirmationModal
-                        title={`Último dia do ${activeMembershipProduct.tier}`}
-                        message={`Seu ${activeMembershipProduct.tier} termina em ${premiumDaysRemaining || 1} dia. Se quiser renovar agora, você garante 10% de desconto e fecha por ${discountedPremiumPrice} ouro.`}
-                        confirmLabel={premiumRenewalBusy ? 'RENOVANDO...' : `RENOVAR · ${discountedPremiumPrice} \u{1FA99}`}
+                        title={`${activeMembershipProduct.tier === 'platinum' ? 'Platinum' : 'Premium'} 30 dias`}
+                        message={`Seu plano termina em ${premiumDaysRemaining || 1} dia${(premiumDaysRemaining || 1) === 1 ? '' : 's'}. Se quiser estender agora, você garante 10% de desconto e soma mais 30 dias por ${discountedPremiumPrice} ouro.`}
+                        confirmLabel={premiumRenewalBusy ? 'ESTENDENDO...' : `ESTENDER 30 DIAS · ${discountedPremiumPrice} \u{1FA99}`}
                         cancelLabel="AGORA NÃO"
                         onConfirm={() => { void handleConfirmPremiumRenewalOffer(); }}
                         onCancel={handleDismissPremiumRenewalOffer}
@@ -1647,30 +1733,51 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                     />
                 )}
                 {goldShortagePrompt && (
-                    <ConfirmationModal
-                        title="Saldo insuficiente"
-                        message={`Você tem ${goldShortagePrompt.currentGold} de ouro, mas precisa de ${goldShortagePrompt.requiredGold} para ${goldShortagePrompt.label}. Deseja abrir a recarga agora?`}
-                        confirmLabel="RECARREGAR OURO"
-                        cancelLabel="DEPOIS"
-                        onConfirm={handleOpenGoldStoreFromPrompt}
-                        onCancel={() => setGoldShortagePrompt(null)}
-                    />
-                )}
-                {showOnboardingPushPrompt && (
-                    <ConfirmationModal
-                        title="Ativar push do Oraculo"
-                        message="Quer liberar push neste aparelho para o Oraculo te lembrar do dia, dos sinais e do seu ciclo sem depender de abrir o app?"
-                        confirmLabel={isOnboardingPushBusy ? 'ATIVANDO...' : 'ATIVAR PUSH'}
-                        cancelLabel="AGORA NAO"
-                        onConfirm={() => { void handleConfirmOnboardingPushPrompt(); }}
-                        onCancel={handleDismissOnboardingPushPrompt}
-                    />
+                    <div className="fixed inset-0 z-[10060] flex items-center justify-center bg-black/82 px-4 py-6 backdrop-blur-md animate-fade-in" onClick={() => setGoldShortagePrompt(null)}>
+                        <div
+                            className="w-full max-w-[22rem] overflow-hidden rounded-[26px] border border-[var(--skin-accent-color)]/18 bg-[linear-gradient(180deg,rgba(20,18,14,0.98),rgba(5,5,6,0.98))] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.55)]"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/24 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)]">
+                                    <span className="text-sm font-black">O</span>
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-[var(--skin-accent-color)]">Ouro insuficiente</p>
+                                    <p className="mt-2 text-sm font-semibold leading-relaxed text-white/78">
+                                        Faltam {Math.max(0, goldShortagePrompt.requiredGold - goldShortagePrompt.currentGold)} moedas para {goldShortagePrompt.label}.{' '}
+                                        <button
+                                            type="button"
+                                            onClick={handleOpenGoldStoreFromPrompt}
+                                            className="font-black text-[var(--skin-accent-color)] underline decoration-[var(--skin-accent-color)]/45 underline-offset-4 transition-colors hover:text-white"
+                                        >
+                                            Adquira {Math.max(0, goldShortagePrompt.requiredGold - goldShortagePrompt.currentGold)} moedas aqui
+                                        </button>
+                                        .
+                                    </p>
+                                    <p className="mt-2 text-[11px] font-medium text-white/38">
+                                        Saldo atual: {goldShortagePrompt.currentGold} ouro.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="mt-5 flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setGoldShortagePrompt(null)}
+                                    className="rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/52 transition-colors hover:border-white/18 hover:text-white"
+                                >
+                                    Depois
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
                 {showRewardVideoPreview && (
                     <RewardVideoPreviewModal onClose={() => setShowRewardVideoPreview(false)} />
                 )}
             </Suspense>
             <Suspense fallback={null}>
+                <OracleSpeechOverlay />
                 {achievementUnlocked && (
                     <AchievementModal
                         achievement={achievementUnlocked}

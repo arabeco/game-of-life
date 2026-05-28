@@ -17,6 +17,7 @@ import { getArenaDomainFlags } from '../utils/taskDomain';
 import { supabase } from '../supabaseClient';
 import { requestLocalNotificationPermission } from '../utils/localNotification';
 import { SCREEN_INTRO_TIP_CONTEXT_EVENT } from '../utils/screenIntroTips';
+import { hasPremiumAccess } from '../utils/premiumAccess';
 
 import { Portal } from './Portal';
 import { EmojiGlyph } from './EmojiGlyph';
@@ -390,7 +391,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const canEditAuthorialContent = !disableAuthoring && !isInstalledCampaignAction && !isSeasonLockedAction;
     const canEditExecutionSettings = !isSeasonLockedAction;
     const canEditActionType = !disableAuthoring && canEditExecutionSettings;
-    const canUsePlannerMatrix = Boolean(userProfile?.isPremium || userProfile?.role === 'admin' || userProfile?.role === 'gm');
+    const canUsePlannerMatrix = hasPremiumAccess(userProfile);
     const isDetachedCollaborativeArena = collaborativeLinkedArena;
     const collaborativePersistUserId = collaborativeOwnerUserId || null;
     const effectiveTaskPool = isDetachedCollaborativeArena ? collaborativeArenaTasks : tasks;
@@ -1356,7 +1357,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     />
 
                     {/* Header Fixed */}
-                    <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md flex justify-between items-start z-30 relative border-b border-white/10">
+                    <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md grid grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] items-start gap-2 z-30 relative border-b border-white/10">
                         <div className="flex items-center gap-3 pt-1">
                             {!isPreview && !disableAuthoring && (hasTaskInstanceContext || !isLockedFromSource || mode === 'edit') && (
                                 <button
@@ -1367,16 +1368,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 </button>
                             )}
                         </div>
-                        <div className="flex-1 px-2 text-center">
+                        <div className="min-w-0 px-1 text-center">
                             <div className="ui-modal-eyebrow text-white/54">{headerEyebrow}</div>
-                            <h2 className="ui-modal-title mt-1 text-[#fff5e8] drop-shadow-[0_1px_8px_rgba(255,240,220,0.16)]">
+                            <h2 className="ui-modal-title mt-1 truncate text-[#fff5e8] drop-shadow-[0_1px_8px_rgba(255,240,220,0.16)]" title={headerTitle}>
                                 {headerTitle}
                             </h2>
-                            <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.22em] text-white/58">
+                            <p className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.22em] text-white/58">
                                 {hasTaskInstanceContext && plannerOccurrenceLabel ?`${plannerOccurrenceLabel} • ${currentArena?.name || 'Arena'}` : (currentArena?.name || 'Arena')}
                             </p>
                         </div>
-                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="ui-modal-button luxe-skin-button shrink-0 min-w-[4.5rem]">
+                        <button id="onboarding-action-save-button" onClick={handleHeaderOk} className="ui-modal-button luxe-skin-button justify-self-end shrink-0 min-w-[4.5rem]">
                             OK
                         </button>
                     </div>

@@ -118,7 +118,7 @@ export const LegacyAtlasPanel: React.FC<LegacyAtlasPanelProps> = ({ eras, onOpen
                                                                 <span className="truncate text-right">{cycle.focusArena || 'Nenhuma'}</span>
                                                             </div>
                                                             <div className="flex items-center justify-between gap-2">
-                                                                <span className="text-gray-500">Assinatura</span>
+                                                                <span className="text-gray-500">Ação-chave</span>
                                                                 <span className="truncate text-right">{cycle.signatureAction || 'Nenhuma'}</span>
                                                             </div>
                                                         </div>

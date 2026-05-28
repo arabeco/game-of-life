@@ -8,7 +8,7 @@ import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../
 import { emitArenaAttention } from '../../utils/arenaAttention';
 import { emitAppSensoryCue } from '../../utils/sensoryCue';
 
-type ToastTone = 'success' | 'error' | 'info';
+type ToastTone = 'success' | 'error' | 'info' | 'warning';
 type AchievementState = { type: FeedEventType; data: any } | null;
 type SupabaseLike = { from: (table: string) => any };
 type CompletionAttentionResult = 'arena' | 'campaign' | null;
@@ -264,8 +264,8 @@ export const createTaskDomain = ({
 
         showToast(
             campaignJustCleared && parentCampaign
-                ? `Campanha "${parentCampaign.title}" concluida.`
-                : `Arena "${arena.name}" concluida.`,
+                ? `Muito bem. Campanha "${parentCampaign.title}" concluida.`
+                : `Muito bem. Arena "${arena.name}" concluida.`,
             'success',
         );
         addFeedEvent({
@@ -287,6 +287,36 @@ export const createTaskDomain = ({
         }
 
         return campaignJustCleared ? 'campaign' : 'arena';
+    };
+
+    const maybeTriggerDailyMomentumAttention = (
+        action: Action | undefined,
+        completedTask: ScheduledTask,
+        previousTasks: ScheduledTask[],
+        nextTasks: ScheduledTask[],
+    ) => {
+        if (!action || action.actionType === 'Livre' || action.actionType === 'Marco') return;
+
+        const operationalDate = getTaskOperationalDateString(completedTask);
+        if (!operationalDate) return;
+
+        const countRealCompletedTasks = (sourceTasks: ScheduledTask[]) => sourceTasks.filter((task) => {
+            if (!task.completed || getTaskOperationalDateString(task) !== operationalDate) return false;
+            const taskAction = getActionById(task.actionId);
+            return taskAction && taskAction.actionType !== 'Livre' && taskAction.actionType !== 'Marco';
+        }).length;
+
+        const previousCount = countRealCompletedTasks(previousTasks);
+        const nextCount = countRealCompletedTasks(nextTasks);
+        const crossedThreshold = [3, 5, 8].find((threshold) => previousCount < threshold && nextCount >= threshold);
+        if (!crossedThreshold) return;
+
+        const message =
+            crossedThreshold >= 8
+                ? `${crossedThreshold} acoes reais hoje. Muito bem; agora protege o fechamento.`
+                : `${crossedThreshold} acoes reais hoje. Muito bem.`;
+
+        showToast(message, 'success');
     };
 
     const maybePromptSitrepFollowUp = (task: ScheduledTask, action?: Action) => {
@@ -550,6 +580,11 @@ export const createTaskDomain = ({
         const now = new Date();
         const nowInMinutes = now.getHours() * 60 + now.getMinutes();
         const operationalToday = getOperationalDateString(now);
+        const taskOperationalDate = getTaskOperationalDateString(taskToCheck);
+        if (!taskToCheck.completed && taskOperationalDate && taskOperationalDate > operationalToday) {
+            showToast('Essa acao ainda esta no futuro. Reagende para hoje se ela ja virou prova real.', 'warning');
+            return;
+        }
         const localToday = getLocalDateString(now);
         let updatedTask = buildToggledTaskSnapshot(taskToCheck, action?.duration || 15, nowInMinutes);
 
@@ -599,6 +634,7 @@ export const createTaskDomain = ({
             : null;
         if (updatedTask.completed && !completionAttention) {
             emitAppSensoryCue('task_complete');
+            maybeTriggerDailyMomentumAttention(action, updatedTask, tasks, optimisticTasks);
         }
         runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
         maybePromptSitrepFollowUp(updatedTask, action);
@@ -692,6 +728,7 @@ export const createTaskDomain = ({
         const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
         if (!completionAttention) {
             emitAppSensoryCue('task_complete');
+            maybeTriggerDailyMomentumAttention(action, newTask, tasks, [...tasks, newTask]);
         }
         maybePromptSitrepFollowUp(newTask, action);
         onDailyProofActionCompleted?.({ task: newTask, action, tasksAfterChange: [...tasks, newTask] });
@@ -750,6 +787,7 @@ export const createTaskDomain = ({
             const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks);
             if (!completionAttention && !existingTask.completed) {
                 emitAppSensoryCue('task_complete');
+                maybeTriggerDailyMomentumAttention(action, updatedTask, tasks, optimisticTasks);
             }
             if (!existingTask.completed) {
                 runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
@@ -804,6 +842,7 @@ export const createTaskDomain = ({
         const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks);
         if (!completionAttention) {
             emitAppSensoryCue('task_complete');
+            maybeTriggerDailyMomentumAttention(action, newTask, tasks, optimisticTasks);
         }
         runTaskCompletionSideEffects(newTask, action, optimisticTasks);
         maybePromptSitrepFollowUp(newTask, action);
@@ -1020,6 +1059,10 @@ export const createTaskDomain = ({
         const currentTask = tasks.find(task => task.id === taskId);
         if (currentTask && isTaskLockedByClosedDay(currentTask)) {
             showClosedDayMutationBlockedToast();
+            return;
+        }
+        if (currentTask?.completed) {
+            showToast('Essa acao ja esta concluida. Reabra manualmente antes de devolver ao estoque.', 'warning');
             return;
         }
 

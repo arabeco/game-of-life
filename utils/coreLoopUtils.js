@@ -24,6 +24,66 @@ const parseIsoDate = (value) => {
  */
 export const dedupeIds = (ids) => Array.from(new Set(ids));
 
+const normalizeActionDifficulty = (value) => {
+    const numeric = Number.isFinite(value) ? Number(value) : 2;
+    return Math.min(3, Math.max(0, Math.round(numeric)));
+};
+
+export const getActionExpMultiplier = (action) => {
+    switch (normalizeActionDifficulty(action?.difficulty)) {
+        case 0:
+            return 0;
+        case 2:
+            return 1.05;
+        case 3:
+            return 1.1;
+        case 1:
+        default:
+            return 1;
+    }
+};
+
+export const getTaskBaseExp = (task, action) => {
+    const duration = task?.duration > 0
+        ? task.duration
+        : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
+    return Math.max(0, Math.round(duration * getActionExpMultiplier(action)));
+};
+
+export const buildDailyExpSnapshot = ({
+    tasks,
+    actions,
+    operationalDate,
+    taskIds = [],
+    includePremium = false,
+    premiumRate = 0.1,
+}) => {
+    const actionById = new Map(actions.map(action => [action.id, action]));
+    const taskIdSet = new Set(taskIds);
+    const trackedTasks = tasks.filter(task =>
+        taskIdSet.has(task.id) &&
+        taskMatchesOperationalDate(task, operationalDate)
+    );
+    const scoredTasks = trackedTasks.filter(task => actionById.get(task.actionId)?.actionType !== 'Livre');
+    const completedScoredTasks = scoredTasks.filter(task => task.completed);
+    const baseExp = completedScoredTasks.reduce((sum, task) => (
+        sum + getTaskBaseExp(task, actionById.get(task.actionId))
+    ), 0);
+    const premiumBonusExp = includePremium ? Math.round(baseExp * premiumRate) : 0;
+
+    return {
+        baseExp,
+        premiumBonusExp,
+        totalExp: baseExp + premiumBonusExp,
+        completedCount: completedScoredTasks.length,
+        totalCount: scoredTasks.length,
+        completedAllCount: trackedTasks.filter(task => task.completed).length,
+        totalAllCount: trackedTasks.length,
+        trackedTasks,
+        scoredTasks,
+    };
+};
+
 /**
  * @param {string[]} taskIds
  * @param {Array<Pick<ScheduledTask, 'id' | 'actionId' | 'date'>>} tasks
@@ -142,6 +202,31 @@ export const buildActionPoolByDate = (actions, taskPool, tasks, date, trackedTas
     }
 
     return grouped;
+};
+
+/**
+ * Concrete Bay tasks are reusable instances, but old duplicated pool rows can
+ * exceed the action repetition limit. Only expose the concrete tasks that still
+ * fit after scheduled/completed/queued instances consumed the real stock.
+ *
+ * @param {Action} action
+ * @param {ScheduledTask[]} scopedTasks
+ * @param {string[]} poolTaskIds
+ * @param {string[]} [trackedTaskIds=[]]
+ * @returns {string[]}
+ */
+export const getVisiblePoolTaskIdsForAction = (action, scopedTasks, poolTaskIds, trackedTaskIds = []) => {
+    if (!action) return [];
+    if (action.actionType === 'Livre') return poolTaskIds;
+
+    const maxRepetitions = Number.isFinite(action.repetitions) ? Math.max(1, Math.floor(action.repetitions)) : 1;
+    const consumedOutsidePool = scopedTasks.filter(task =>
+        task.actionId === action.id &&
+        doesTaskConsumePoolCapacity(task, trackedTaskIds)
+    ).length;
+    const visibleConcreteSlots = Math.max(0, maxRepetitions - consumedOutsidePool);
+
+    return poolTaskIds.slice(0, visibleConcreteSlots);
 };
 
 /**

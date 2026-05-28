@@ -21,6 +21,7 @@ import {
 } from '../utils/pushRuntime';
 import { scheduleLocalNotification } from '../utils/localNotification';
 import { buildOracleWidgetSnapshot } from '../utils/widgetSnapshots';
+import { hasPremiumAccess } from '../utils/premiumAccess';
 
 interface OracleSettingsModalProps {
     onClose: () => void;
@@ -215,7 +216,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
     if (!oraclePreferences) return null;
 
-    const isPremium = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
+    const isPremium = hasPremiumAccess(userProfile);
     const activeModeConfig = ORACLE_MODES[oraclePreferences.activeMode] || ORACLE_MODES.neutro;
     const oracleSnapshot = buildOracleWidgetSnapshot({ oraclePreferences, oracleMessages });
     const pushSupport = getAppPushSupport();

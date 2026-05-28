@@ -34,7 +34,35 @@ export type CyclePaceMetrics = {
     plannedDurationDays: number;
 };
 
+export type DailyExpSnapshot = {
+    baseExp: number;
+    premiumBonusExp: number;
+    totalExp: number;
+    completedCount: number;
+    totalCount: number;
+    completedAllCount: number;
+    totalAllCount: number;
+    trackedTasks: ScheduledTask[];
+    scoredTasks: ScheduledTask[];
+};
+
 export function dedupeIds(ids: string[]): string[];
+
+export function getActionExpMultiplier(action?: Pick<Action, 'difficulty'> | null): number;
+
+export function getTaskBaseExp(
+    task: Pick<ScheduledTask, 'duration'>,
+    action?: Pick<Action, 'duration' | 'difficulty'> | null,
+): number;
+
+export function buildDailyExpSnapshot(args: {
+    tasks: ScheduledTask[];
+    actions: Action[];
+    operationalDate: string;
+    taskIds?: string[];
+    includePremium?: boolean;
+    premiumRate?: number;
+}): DailyExpSnapshot;
 
 export function mergeTasksIntoCommitment(
     taskIds: string[],
@@ -71,6 +99,13 @@ export function buildActionPoolByDate(
     trackedTaskIds?: string[],
     consumePoolTasks?: boolean,
 ): ActionPoolByDate;
+
+export function getVisiblePoolTaskIdsForAction(
+    action: Action,
+    scopedTasks: ScheduledTask[],
+    poolTaskIds: string[],
+    trackedTaskIds?: string[],
+): string[];
 
 export function buildSitrepStockOptions(
     actions: Action[],

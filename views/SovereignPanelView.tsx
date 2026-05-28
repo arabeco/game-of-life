@@ -1586,10 +1586,10 @@ const GM_PREMIUM_ACTIVE_BENEFITS = [
 const GM_PLATINUM_ACTIVE_BENEFITS = [
   'Todas as vantagens do Premium',
   'Até 30 arenas ativas',
-  '1 cena de legado grátis por renovação',
+  '1 cena de legado grátis por ativação',
   'Todos os planos de fundo',
   'Todas as aparências premium',
-  '1 baú da Temporada + 1 baú raro por renovação',
+  '1 baú da Temporada + 1 baú raro por ativação',
 ];
 
 const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardModalPayload => {
@@ -1599,8 +1599,8 @@ const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardM
     eyebrow: isPlatinum ? 'Renovação platinum' : 'Renovação premium',
     title: isPlatinum ? 'Platinum ativo' : 'Premium ativo',
     summary: isPlatinum
-      ? 'Preview do GM para validar a renovação do plano maior, com as entregas da rodada e as vantagens ativas do Platinum.'
-      : 'Preview do GM para validar a renovação do Premium, com as entregas da rodada e as vantagens ativas do plano.',
+      ? 'Preview do GM para validar a ativação do plano maior, com as entregas da rodada e as vantagens ativas do Platinum.'
+      : 'Preview do GM para validar a ativação do Premium, com as entregas da rodada e as vantagens ativas do plano.',
     buttonLabel: 'Fechar preview',
     metricCards: [
       { label: 'Plano', value: isPlatinum ? 'Platinum' : 'Premium', detail: '30 dias ativos' },
@@ -1617,7 +1617,7 @@ const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardM
           {
             label: 'Baús',
             value: 'Temporada + raro',
-            detail: 'Os dois baús de renovação do Platinum.',
+            detail: 'Os dois baús da ativação do Platinum.',
             tone: 'gold',
           },
           {
@@ -1637,7 +1637,7 @@ const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardM
           {
             label: 'Baú',
             value: 'Raro',
-            detail: 'Entrega real da renovação do Premium.',
+            detail: 'Entrega real da ativação do Premium.',
             tone: 'gold',
           },
           {
@@ -1688,7 +1688,7 @@ const MembershipRewardPreviewButton: React.FC<{ tier: 'premium' | 'platinum' }> 
         payload={payload}
         onClose={() => setOpen(false)}
         fallbackEyebrow="Renovação premium"
-        fallbackTitle="Recompensas da assinatura"
+        fallbackTitle="Recompensas do plano"
         fallbackSummary="Preview do GM."
         fallbackButtonLabel="Fechar preview"
         fallbackItemSectionTitle="Cosméticos integrados"
@@ -2594,7 +2594,7 @@ export const SovereignPanelView: React.FC = () => {
             <GlassCard variant="neutral" className="p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-400">Laborat??rio de Assinatura</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-400">Laborat??rio de Plano</p>
                   <h2 className="text-lg font-black text-white">Preview do modal de renova????o</h2>
                   <p className="text-xs text-zinc-400">Abra o mesmo modal usado no app para validar Premium e Platinum sem depender de compra real.</p>
                 </div>

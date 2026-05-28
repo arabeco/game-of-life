@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { Portal } from './Portal';
 import { useGame } from '../contexts/GameContext';
-import { LockIcon, UnlockIcon, CalendarIcon, CheckCircleIcon, XCircleIcon, SparklesIcon, UsersIcon, ZapIcon, ShareIcon, XIcon, ArrowRightIcon, EyeIcon, FocusIcon } from './Icons';
+import { LockIcon, UnlockIcon, CalendarIcon, CheckCircleIcon, XCircleIcon, UsersIcon, ZapIcon, ShareIcon, XIcon, ArrowRightIcon, EyeIcon, FocusIcon } from './Icons';
 import { handleShare } from './Share';
 import { GlassCard } from './GlassCard';
 import { SephirotFog } from './SephirotFog';
@@ -15,10 +15,14 @@ import { Action, ActionType, Arena, ScheduledTask, DayOfWeek } from '../types';
 import { FocusAudioPlayer } from './FocusAudioPlayer';
 import { REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
 import { showLocalNotification } from '../utils/localNotification';
-import { buildActionSessionWidgetSnapshot, buildDailyWidgetSnapshot } from '../utils/widgetSnapshots';
-import { buildLocalDateFromString } from '../utils/operationalDay';
+import { buildActionSessionWidgetSnapshot } from '../utils/widgetSnapshots';
+import { buildActionPoolByDate, filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
+import { buildLocalDateFromString, getOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay';
+import { isTaskInPool } from '../utils/taskDomain.js';
 import { EmojiGlyph } from './EmojiGlyph';
 import { SKINS_DATA, BORDERS_DATA } from '../constants';
+import { getNotificationPriority } from '../constants/oracleNotificationPolicy';
+import { OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 
 interface RestScreenProps {
     onClose: () => void;
@@ -126,6 +130,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         scheduleAndCompleteMilestoneNow,
         getLocalDateString,
         oraclePreferences,
+        oracleMessages,
+        notifications,
         appMode,
         activeTheme,
         showToast
@@ -162,6 +168,22 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const actionSessionNotificationSentRef = useRef(false);
     const actionSessionToastSentRef = useRef(false);
     const actionSessionReturnedRef = useRef(false);
+    const unreadOracleMessages = oracleMessages.filter((message) => !message.read).length;
+    const unreadNotifications = notifications.filter((notification) => !notification.read);
+    const oracleUnreadCount = unreadOracleMessages + unreadNotifications.length;
+    const hasCriticalOracleSignal = unreadNotifications.some((notification) => getNotificationPriority(notification.type) === 'critical');
+    const hasActionableOracleSignal = unreadNotifications.some((notification) => {
+        const priority = getNotificationPriority(notification.type);
+        return priority === 'actionable' || priority === 'progress';
+    });
+    const oracleTone: OracleSpeakerTone = hasCriticalOracleSignal
+        ? 'danger'
+        : hasActionableOracleSignal
+            ? 'warning'
+            : oracleUnreadCount > 0
+                ? 'info'
+                : 'neutral';
+    const oracleBadgeClass = 'border-red-100/80 bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.55)]';
 
     // Quick Action Input State
     const [showQuickActionInput, setShowQuickActionInput] = useState(false);
@@ -416,29 +438,39 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
     const checklistDoneCount = checklistItems.filter(item => item.completed).length;
     const checklistTotalCount = checklistItems.length;
-    const dailyPanelSnapshot = React.useMemo(() => buildDailyWidgetSnapshot({
-        activeCycle,
-        dailyCommitment,
-        tasks,
-        actions,
-        arenas: getArenas(),
-        checklistItems,
-        taskPool,
-    }), [activeCycle, dailyCommitment, tasks, actions, checklistItems, taskPool, getArenas]);
-    const dailyCommittedTasks = React.useMemo(() => {
-        const committedIds = new Set(dailyCommitment?.taskIds || []);
-        return tasks.filter((task) => committedIds.has(task.id));
-    }, [dailyCommitment?.taskIds, tasks]);
-    const dailyDoneCount = dailyCommittedTasks.filter((task) => task.completed).length;
-    const dailyOpenCount = Math.max(0, dailyCommittedTasks.length - dailyDoneCount);
+    const restOperationalDate = React.useMemo(() => getOperationalDateString(currentTime), [currentTime]);
+    const restScopedTasks = React.useMemo(() => (
+        activeCycle
+            ? filterCycleTasksByScope(tasks, actions, activeCycle, activeCycle.startDate, activeCycle.endDate)
+            : tasks.filter(task => taskMatchesOperationalDate(task, restOperationalDate))
+    ), [activeCycle, actions, restOperationalDate, tasks]);
+    const restAvailableActionCount = React.useMemo(() => {
+        const actionPool = buildActionPoolByDate(
+            actions,
+            taskPool,
+            restScopedTasks,
+            activeCycle ? null : restOperationalDate,
+            [],
+            Boolean(activeCycle)
+        );
+        const availableActionIds = new Set(
+            Object.entries(actionPool)
+                .filter(([, payload]: [string, any]) => Number(payload?.count || 0) > 0)
+                .map(([actionId]) => actionId)
+        );
+        restScopedTasks
+            .filter(isTaskInPool)
+            .forEach(task => availableActionIds.add(task.actionId));
+        return availableActionIds.size;
+    }, [actions, activeCycle, restOperationalDate, restScopedTasks, taskPool]);
+    const dailyDoneCount = React.useMemo(() => (
+        restScopedTasks.filter(task => task.completed && taskMatchesOperationalDate(task, restOperationalDate)).length
+    ), [restOperationalDate, restScopedTasks]);
     const dailyCommandLabel = currentTime
         .toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })
         .replace('.', '')
         .replace(/^\w/, (letter) => letter.toUpperCase());
-    const dailyAvailableCount = dailyPanelSnapshot.availableUnitCount;
-    const dailyOpenLabel = dailyCommitment?.stage === 'planning'
-        ? `${dailyAvailableCount} ${dailyAvailableCount === 1 ? 'ação disponível' : 'ações disponíveis'}`
-        : `${dailyOpenCount} ${dailyOpenCount === 1 ? 'ação em aberto' : 'ações em aberto'}`;
+    const dailyOpenLabel = `${restAvailableActionCount} ${restAvailableActionCount === 1 ? 'ação disponível' : 'ações disponíveis'}`;
     const dailyDoneLabel = `${dailyDoneCount} ${dailyDoneCount === 1 ? 'feita' : 'feitas'}`;
     const dailyPanelSummary = `HOJE · ${dailyCommandLabel} · ${dailyOpenLabel} · ${dailyDoneLabel}`;
     const handleDailyPanelOpen = () => {
@@ -1381,7 +1413,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onTouchEnd={handleQuickActionEnd}
                             className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform relative"
                         >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-amber-400/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'real_oracle' ? 'scale-110 border-amber-400' : ''}`}>
+                            <div className="relative flex h-11 w-11 items-center justify-center overflow-visible">
                                 {actionProgress?.id === 'real_oracle' && (
                                     <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none" viewBox="0 0 100 100">
                                         <circle
@@ -1396,7 +1428,17 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         />
                                     </svg>
                                 )}
-                                <SparklesIcon className="w-5 h-5 text-amber-400" />
+                                <OracleSpeakerMark
+                                    tone={oracleTone}
+                                    size="sm"
+                                    pulse={oracleUnreadCount > 0}
+                                    className={`transition-transform group-hover:scale-105 ${actionProgress?.id === 'real_oracle' ? 'scale-110' : ''}`}
+                                />
+                                {oracleUnreadCount > 0 && (
+                                    <span className={`absolute -right-1 -top-1 z-20 flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[9px] font-black leading-none ${oracleBadgeClass}`}>
+                                        {oracleUnreadCount > 9 ? '9+' : oracleUnreadCount}
+                                    </span>
+                                )}
                             </div>
                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Oráculo</span>
                         </button>

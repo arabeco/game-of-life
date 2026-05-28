@@ -217,7 +217,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 src={isRankUp
                                     ?`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/levelup.mp4`
                                     : isReportComplete
-                                        ?`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report.mp4`
+                                        ?`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report_seal.mp4`
                                         : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/quest.mp4`}
                                 onEnd={triggerReveal}
                                 className="h-full w-full object-cover"

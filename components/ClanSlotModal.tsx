@@ -52,6 +52,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     const [questTitle, setQuestTitle] = useState('');
     const [questDescription, setQuestDescription] = useState('');
     const [questType, setQuestType] = useState<'individual' | 'clan'>('individual');
+    const [questTarget, setQuestTarget] = useState(1);
     const [questXp, setQuestXp] = useState(50);
     const [questGold, setQuestGold] = useState(100);
     const [assignToOccupant, setAssignToOccupant] = useState(!!occupant);
@@ -118,7 +119,10 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     const slotShellLabel = isOfficeClan ? 'Mesa' : 'Lugar';
     const createEntryLabel = isOfficeClan ? 'Nova tarefa' : 'Nova jornada';
     const getMissionTypeLabel = (quest: ClanCustomQuest) => quest.mission_type === 'singular' ? 'Individual' : 'Coletiva';
-    const getPrimaryActionLabel = (_quest: ClanCustomQuest, _isParticipating: boolean) => 'Ver';
+    const getPrimaryActionLabel = (quest: ClanCustomQuest, isParticipating: boolean) => {
+        if (isParticipating) return 'Abrir tarefa';
+        return quest.mission_type === 'singular' ? 'Assumir tarefa' : 'Entrar na tarefa';
+    };
 
     const findRuntimeQuestAction = (quest: ClanCustomQuest) => {
         const marker = `clan_quest:${quest.id}`;
@@ -219,6 +223,8 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                 slot_id: targetSlotId,
                 status: isAssigned ? 'locked' : 'active',
                 assigned_user_id: isAssigned ? occupant.id : null,
+                target_value: Math.max(1, Number(questTarget) || 1),
+                current_value: 0,
                 reward_xp: questXp,
                 reward_gold: questGold,
                 priority: questPriority,
@@ -444,7 +450,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
                                                         {/* Reward */}
                                                         <div className="mt-1 text-[9px] font-mono text-[var(--skin-accent-color)] z-10 bg-black/40 px-1.5 py-0.5 rounded">
-                                                            +{quest.xp_reward}XP
+                                                            +{quest.reward_xp}XP
                                                         </div>
 
                                                         {/* Status Overlay */}
@@ -460,7 +466,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             if (canAccept) {
-                                                                onOptIn?.(quest);
+                                                                void handleQuestEntry(quest);
                                                             } else if (isAssignedToMe) {
                                                                 // View details?
                                                             }
@@ -635,7 +641,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                                 onClick={() => handleQuestEntry(quest)}
                                                                 className="w-full rounded-xl border border-purple-500/30 bg-purple-900/30 py-2.5 text-[10px] font-bold uppercase tracking-wider text-purple-200 hover:bg-purple-900/45"
                                                             >
-                                                                Ver
+                                                                {getPrimaryActionLabel(quest, true)}
                                                             </button>
                                                         )}
 
@@ -659,7 +665,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                                         showToast('Erro ao processar', 'error');
                                                                     }
                                                                 }}
-                                                                className="w-full rounded-xl border border-red-500/30 bg-red-600/15 py-2.5 text-[10px] font-bold uppercase tracking-wider text-red-200 hover:bg-red-600/25"
+                                                                className="mx-auto block rounded-lg border border-red-500/20 bg-transparent px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-red-300/80 hover:bg-red-500/10"
                                                             >
                                                                 {isBasicMode ? 'Devolver' : 'Cancelar'}
                                                             </button>
@@ -676,13 +682,13 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                                         setSelectedQuestToMove(quest);
                                                                         setView('move-quest');
                                                                     }}
-                                                                    className="rounded-xl border border-blue-500/30 bg-blue-600/15 py-2 text-[10px] font-bold uppercase tracking-wider text-blue-200 hover:bg-blue-600/25"
+                                                                    className="rounded-lg border border-blue-500/20 bg-transparent py-1.5 text-[9px] font-bold uppercase tracking-wider text-blue-200/80 hover:bg-blue-600/10"
                                                                 >
                                                                     Mover
                                                                 </button>
                                                                 <button
                                                                     onClick={() => void handleDeleteQuest(quest)}
-                                                                    className="rounded-xl border border-red-500/30 bg-red-900/35 py-2 text-[10px] font-bold uppercase tracking-wider text-red-200 hover:bg-red-900/50"
+                                                                    className="rounded-lg border border-red-500/20 bg-transparent py-1.5 text-[9px] font-bold uppercase tracking-wider text-red-200/80 hover:bg-red-900/20"
                                                                 >
                                                                     Excluir
                                                                 </button>
@@ -775,6 +781,42 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                 value={questDeadline}
                                 onChange={e => setQuestDeadline(e.target.value)}
                             />
+
+                            <div className="grid grid-cols-3 gap-2">
+                                <label className="block">
+                                    <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-gray-500">Meta</span>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={99}
+                                        className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-[var(--skin-accent-color)]"
+                                        value={questTarget}
+                                        onChange={e => setQuestTarget(Math.max(1, Number(e.target.value) || 1))}
+                                    />
+                                </label>
+                                <label className="block">
+                                    <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-gray-500">EXP</span>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={9999}
+                                        className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-[var(--skin-accent-color)]"
+                                        value={questXp}
+                                        onChange={e => setQuestXp(Math.max(0, Number(e.target.value) || 0))}
+                                    />
+                                </label>
+                                <label className="block">
+                                    <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-gray-500">Ouro</span>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={9999}
+                                        className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-[var(--skin-accent-color)]"
+                                        value={questGold}
+                                        onChange={e => setQuestGold(Math.max(0, Number(e.target.value) || 0))}
+                                    />
+                                </label>
+                            </div>
 
                             <textarea 
                                 placeholder="Descreva a tarefa..."

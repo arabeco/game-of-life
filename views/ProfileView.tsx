@@ -19,6 +19,7 @@ import { ProfileAssetsPreview } from '../components/ProfileAssetsPreview';
 import { GardenZenModal } from '../components/GardenZenModal';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
 import { APP_NAVIGATE_EVENT } from '../utils/arenaAttention';
+import { hasPremiumAccess } from '../utils/premiumAccess';
 const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
 
 const normalizeAssetsVisibility = (value?: UserProfile['assetsVisibility']): 'all' | 'friends' | 'nobody' => {
@@ -367,7 +368,7 @@ export const ShareableProfileCard: React.FC<{
                         <div className="bg-black/50 backdrop-blur-sm border rounded-xl py-1 px-4 inline-block" style={{ borderColor: 'var(--skin-accent-color)' }}>
                             <h2 className="text-3xl font-bold text-white luxe-title-shadow inline-flex items-center gap-1.5">
                                 {userProfile.nickname}
-                                {(userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm') && (
+                                {hasPremiumAccess(userProfile) && (
                                     <CrownIcon className="w-5 h-5 text-yellow-400 drop-shadow-[0_0_4px_rgba(234,179,8,0.6)]" />
                                 )}
                             </h2>
@@ -819,7 +820,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     >
                                         <h2 className="text-3xl font-bold text-white luxe-title-shadow inline-flex items-center gap-1.5">
                                             {displayProfile.nickname}
-                                            {(displayProfile.isPremium || displayProfile.role === 'admin' || displayProfile.role === 'gm') && (
+                                            {hasPremiumAccess(displayProfile) && (
                                                 <CrownIcon className="w-5 h-5 text-yellow-400 drop-shadow-[0_0_4px_rgba(234,179,8,0.6)]" />
                                             )}
                                         </h2>

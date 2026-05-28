@@ -2,6 +2,7 @@
 import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
+import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { getGoldBoostProduct, getGoldMechanicPrice, getGoldMembershipProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 
 import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
@@ -15,21 +16,21 @@ import { useCodexBuilder } from './CodexBuilderContext';
 import { calculateArenaProgress, getCampaignArenaStates } from '../utils/progressUtils';
 import { createTaskDomain } from './gameDomains/taskDomain';
 import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
-import { buildCyclePaceMetrics, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
+import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { getOracleFeedMessagesForOperationalDay, getOracleFeedQuotaStatus, isManualOracleFeedMessage } from '../utils/oracleFeedUtils';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
-import { getExpBoostMultiplier, getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
+import { getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
-import { emitDailyCompletionPrompt } from '../utils/dailyCompletionPrompt';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
+import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
 import { hasAppPushRemoteDeliveryReady, syncAppPushRegistration } from '../utils/pushRuntime';
@@ -69,6 +70,30 @@ const mapToSnakeCase = (obj: any): any => {
     return obj;
 };
 
+const toSafeWalletNumber = (value: unknown): number | null => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? Math.max(0, Math.floor(numeric)) : null;
+};
+
+const resolveProfileWallet = (profile: any, fallback?: Partial<UserWallet> | null): UserWallet => {
+    const wallet = profile?.wallet && typeof profile.wallet === 'object' && !Array.isArray(profile.wallet)
+        ? profile.wallet
+        : {};
+    const walletGold = toSafeWalletNumber(wallet.gold);
+    const columnGold = toSafeWalletNumber(profile?.gold);
+    const fallbackGold = toSafeWalletNumber(fallback?.gold);
+    const walletFragments = toSafeWalletNumber(wallet.fragments);
+    const columnFragments = toSafeWalletNumber(profile?.fragments);
+    const fallbackFragments = toSafeWalletNumber(fallback?.fragments);
+    const resolvedGoldSources = [walletGold, columnGold].filter((value): value is number => value !== null);
+    const resolvedFragmentSources = [walletFragments, columnFragments].filter((value): value is number => value !== null);
+
+    return {
+        gold: resolvedGoldSources.length > 0 ? Math.max(...resolvedGoldSources) : (fallbackGold ?? 0),
+        fragments: resolvedFragmentSources.length > 0 ? Math.max(...resolvedFragmentSources) : (fallbackFragments ?? 0),
+    };
+};
+
 const ASSET_KEY_ALIASES: Record<string, string> = {
     espacoMental: 'espaco-mental',
     espaco_mental: 'espaco-mental',
@@ -81,6 +106,12 @@ const normalizeAssetKeyedRecord = <T,>(value?: Partial<Record<string, T>> | null
         result[normalizedKey] = entryValue as T;
         return result;
     }, {} as Partial<Record<string, T>>);
+};
+
+const buildAssetActionGradient = (assetId?: string | null): string => {
+    const safeAssetId = assetId || 'default';
+    const accent = (ASSET_ACCENT_COLORS as Record<string, string>)[safeAssetId] || '#5d6874';
+    return `var(--asset-grad-${safeAssetId}, linear-gradient(135deg, color-mix(in srgb, ${accent} 50%, #10141b) 0%, color-mix(in srgb, ${accent} 72%, #111827) 100%))`;
 };
 
 const isPlannerMatrixQuadrant = (value: unknown): value is PlannerMatrixQuadrant =>
@@ -117,24 +148,31 @@ const normalizeActionDifficulty = (value?: number | null): 0 | 1 | 2 | 3 => {
     return Math.min(3, Math.max(0, Math.round(numeric))) as 0 | 1 | 2 | 3;
 };
 
-const getActionExpMultiplier = (action?: Pick<Action, 'difficulty'> | null): number => {
-    switch (normalizeActionDifficulty(action?.difficulty)) {
-        case 0:
-            return 0;
-        case 2:
-            return 1.05;
-        case 3:
-            return 1.1;
-        case 1:
-        default:
-            return 1;
-    }
-};
-
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
 export const getLocalDateString = (date: Date = new Date()) => formatLocalDateString(date);
 export const getOperationalDateString = (date: Date = new Date()) => getOperationalDateStringValue(date);
+
+const ALDEIA_PERIOD_HOURS = 6;
+const ALDEIA_FULL_CARE_MINUTES = 30;
+const ALDEIA_PRIMARY_CARE_GAIN = 5;
+const ALDEIA_SUPPORT_CARE_GAIN = 2;
+const getAldeiaPeriodBoundary = (date: Date = new Date()) => {
+    const boundary = new Date(date);
+    const boundaryHour = Math.floor(boundary.getHours() / ALDEIA_PERIOD_HOURS) * ALDEIA_PERIOD_HOURS;
+    boundary.setHours(boundaryHour, 0, 0, 0);
+    return boundary;
+};
+const getAldeiaPeriodKey = (date: Date = new Date()) => {
+    const boundary = getAldeiaPeriodBoundary(date);
+    return `${getLocalDateString(boundary)}T${String(boundary.getHours()).padStart(2, '0')}`;
+};
+const parseAldeiaPeriodKey = (key: string) => {
+    const match = key.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})$/);
+    if (!match) return null;
+    const parsed = new Date(`${match[1]}T${match[2]}:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 
 
 const TUTORIAL_ACTION_ID = 'action_tutorial_01';
@@ -449,11 +487,8 @@ export type ArenaSetupChange = {
 
 
 const getTodayString = () => getOperationalDateString();
-const SITREP_BONUS_A = 60;
-const SITREP_BONUS_S = 120;
 const PARTNERSHIP_LINKED_ARENA_GOLD_COST = getGoldMechanicPrice('partnership_linked_arena', 50);
 const COMPETITION_DUEL_GOLD_COST = getGoldMechanicPrice('competition_challenge', 50);
-const MAX_VILLAGE_BONUS_PERCENT = 0.10; // 10% max bonus from Sanctuary Order
 
 const createDefaultDailyCommitment = (): DailyCommitment => ({
     date: getTodayString(),
@@ -681,6 +716,18 @@ const shouldSkipAutomaticOracle = (
     return !isCriticalTrigger && !hasStructuralNeed && !hasHighRisk;
 };
 
+export type GoldPackPurchaseContext = {
+    platform?: 'android' | 'ios' | 'web' | string;
+    productId?: string | null;
+    orderId?: string | null;
+    purchaseToken?: string | null;
+    packageName?: string | null;
+    consumed?: boolean;
+    acknowledged?: boolean;
+    needsServerReconciliation?: boolean;
+    products?: string[];
+};
+
 const shouldPushOracleFeedMessage = (
     message: OracleMessage,
     appMode: AppMode = 'GAME',
@@ -898,7 +945,7 @@ export interface GameContextType {
     hideToast: () => void;
     // Forge & Store
     inventory: InventoryItem[];
-    buyGoldPack: (packId: string) => Promise<void>;
+    buyGoldPack: (packId: string, purchaseContext?: GoldPackPurchaseContext) => Promise<boolean>;
     buyStoreItem: (itemId: string, type: 'premium' | 'codex' | 'exclusive' | 'boost', options?: { costOverrideGold?: number; successMessage?: string }) => Promise<void>;
     recycleItem: (instanceId: string) => Promise<void>;
     craftItem: (tier: number, category?: string, exactItemId?: string) => Promise<InventoryItem | null>;
@@ -1091,6 +1138,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const seenOracleMessageIdsRef = useRef<Set<string>>(new Set());
     const oracleMessagesHydratedRef = useRef(false);
     const dailyCommitmentPersistTimeoutRef = useRef<number | null>(null);
+    const dailyAutoCloseInFlightRef = useRef<string | null>(null);
+    const dailyOpenCommitmentsRepairInFlightRef = useRef<string | null>(null);
+    const dailyOpenCommitmentsRepairCompletedRef = useRef<Set<string>>(new Set());
     const dmRefreshTimeoutRef = useRef<number | null>(null);
     const relationshipInviteExpiryCheckedAtRef = useRef<number>(0);
     const notificationsRefreshTimeoutRef = useRef<number | null>(null);
@@ -1435,12 +1485,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
         if (mainSlots.length === 0) return;
 
-        const villageOrder = mainSlots.reduce((acc, s) => acc + s.health, 0) / mainSlots.length;
-        const villageBonusFactor = (villageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT;
-        const percent = Math.round(villageBonusFactor * 100);
-        if (percent <= 0) return;
-
-        showToast(`Dever Cumprido: Ordem da Aldeia ativa (+${percent}% de bonus de EXP).`, 'success');
+        showToast('Dever cumprido: a Ordem da Aldeia esta ativa.', 'success');
         localStorage.setItem(key, '1');
     };
 
@@ -2386,30 +2431,70 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }));
     }, [userProfile.wallet?.gold]);
 
-    const buyGoldPack = async (packId: string) => {
+    const buyGoldPack = async (packId: string, purchaseContext: GoldPackPurchaseContext = {}) => {
         const pack = GOLD_PACKS.find(p => p.id === packId);
-        if (!pack) return;
+        if (!pack) return false;
         const userId = getSupabaseUserId();
-        if (!userId) return;
+        if (!userId) return false;
 
-        const { data, error } = await withLatencyToast<{ data: any, error: any }>(
-            supabase.rpc('buy_gold_pack', {
-                p_pack_id: packId,
-                p_amount_gold: pack.total,
-                p_cost_brl: pack.price
+        const hasGooglePlayReceipt = Boolean(purchaseContext.purchaseToken && purchaseContext.productId);
+        if (!hasGooglePlayReceipt) {
+            showToast("Compra nativa sem recibo da Google Play. Tente novamente pela loja do app.", "error");
+            return false;
+        }
+
+        const result = await withLatencyToast<{ data: any, error: any }>(
+            supabase.functions.invoke('google-play-purchase', {
+                body: {
+                    kind: 'gold',
+                    packId,
+                    productId: purchaseContext.productId,
+                    orderId: purchaseContext.orderId || null,
+                    purchaseToken: purchaseContext.purchaseToken,
+                    packageName: purchaseContext.packageName || null,
+                    platform: purchaseContext.platform || 'android',
+                    consumed: purchaseContext.consumed ?? null,
+                    acknowledged: purchaseContext.acknowledged ?? null,
+                    needsServerReconciliation: purchaseContext.needsServerReconciliation ?? null,
+                    products: purchaseContext.products || [],
+                },
             }) as any
         );
 
-        if (error) {
-            console.error("Error buying gold pack:", error);
-            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
-            return;
+        if (result.error || !result.data?.success) {
+            console.error("Error validating Google Play gold pack:", result.error || result.data);
+            showToast("Compra não validada pela Google Play. Se o valor foi cobrado, me avise para conciliar.", "error");
+            return false;
         }
 
+        const data = result.data;
         if (data && data.success) {
-            updateUserProfile({ wallet: { ...userProfile.wallet, gold: data.new_gold } });
-            showToast(`Crédito de ${pack.total} Ouro identificado.`, "success");
+            const resolvedWallet = resolveProfileWallet({
+                gold: data.new_gold,
+                fragments: data.fragments,
+                wallet: data.wallet,
+            }, userProfile.wallet);
+            setUserProfile(prev => ({
+                ...prev,
+                wallet: resolvedWallet,
+            }));
+
+            const { data: walletRow, error: walletError } = await supabase
+                .from('user_profiles')
+                .select('gold,fragments,wallet')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (!walletError && walletRow) {
+                setUserProfile(prev => ({
+                    ...prev,
+                    wallet: resolveProfileWallet(walletRow, prev.wallet),
+                }));
+            }
+
+            showToast(`Crédito de ${Number(data.credited_gold || pack.total)} Ouro confirmado pela Google Play.`, "success");
         }
+        return true;
     };
 
     const buyStoreItem = async (
@@ -3423,7 +3508,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 username: profileData.nickname || profileData.email?.split('@')[0] || 'usuario',
                 clanName: clanInfo?.name,
                 clanIcon: clanInfo?.icon,
-                wallet: { gold: profileData.gold || 0, fragments: profileData.fragments || 0 },
+                wallet: resolveProfileWallet(profileData),
                 inventory: []
             } as UserProfile;
 
@@ -3797,10 +3882,67 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return mapToCamelCase(data) as AldeiaPresence[];
     };
 
+    const creditCompletedAldeiaStay = async (clanId: string, userId: string, nextSlotId: AldeiaSlotId) => {
+        const { data: presenceRow, error: presenceError } = await supabase
+            .from('clan_aldeia_presence')
+            .select('*')
+            .eq('clan_id', clanId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (presenceError || !presenceRow) return;
+
+        const previousPresence = mapToCamelCase(presenceRow) as AldeiaPresence;
+        if (!previousPresence.slotId || previousPresence.slotId === nextSlotId) return;
+
+        const startedAt = new Date(previousPresence.startedAt).getTime();
+        if (Number.isNaN(startedAt)) return;
+
+        const elapsedMinutes = Math.floor((Date.now() - startedAt) / 60000);
+        if (elapsedMinutes < ALDEIA_FULL_CARE_MINUTES) return;
+
+        const previousSlotId = previousPresence.slotId as AldeiaSlotId;
+        const { data: slotRow, error: slotError } = await supabase
+            .from('clan_aldeia_slots')
+            .select('*')
+            .eq('clan_id', clanId)
+            .eq('slot_id', previousSlotId)
+            .maybeSingle();
+
+        if (slotError || !slotRow) return;
+
+        const previousSlot = mapToCamelCase(slotRow) as AldeiaSlot;
+        const nextHealth = Math.min(100, Math.max(0, Number(previousSlot.health || 0) + ALDEIA_PRIMARY_CARE_GAIN));
+        const nextStreakGood = Number(previousSlot.streakGood || 0) + 1;
+
+        await updateAldeiaSlot(clanId, previousSlotId, {
+            health: Math.round(nextHealth),
+            streakGood: nextStreakGood,
+            streakBad: 0,
+            lastVisitedAt: new Date().toISOString(),
+            lastDecayCalculation: getAldeiaPeriodKey(),
+        });
+
+        setAldeiaSlots(prev => prev.map(slot => (
+            slot.clanId === clanId && slot.slotId === previousSlotId
+                ? {
+                    ...slot,
+                    health: Math.round(nextHealth),
+                    streakGood: nextStreakGood,
+                    streakBad: 0,
+                    lastVisitedAt: new Date().toISOString(),
+                    lastDecayCalculation: getAldeiaPeriodKey(),
+                }
+                : slot
+        )));
+    };
+
     const enterAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId) => {
         const userId = getSupabaseUserId();
         console.log(`[ENTER_ALDEIA] Starting for user ${userId}, clan ${clanId}, slot ${slotId}`);
         if (!userId) return;
+
+        await creditCompletedAldeiaStay(clanId, userId, slotId);
 
         // STRATEGY: EXCLUSIVE RPC V2
         // We rely 100% on the server-side function to handle the upsert logic.
@@ -3833,6 +3975,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const performAldeiaDailyUpdate = async (clanId: string) => {
         let slots = await getAldeiaSlots(clanId);
         const today = getLocalDateString();
+        const now = new Date();
+        const currentPeriodEnd = getAldeiaPeriodBoundary(now);
+        const currentPeriodStart = new Date(currentPeriodEnd.getTime() - ALDEIA_PERIOD_HOURS * 60 * 60 * 1000);
+        const currentPeriodKey = getAldeiaPeriodKey(now);
+        const normalizeLastPeriodKey = (lastDecayCalculation?: string | null) => {
+            if (!lastDecayCalculation) return null;
+            if (/^\d{4}-\d{2}-\d{2}T\d{2}$/.test(lastDecayCalculation)) return lastDecayCalculation;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(lastDecayCalculation)) {
+                return lastDecayCalculation === today ? currentPeriodKey : `${lastDecayCalculation}T18`;
+            }
+            return null;
+        };
+        const getElapsedPeriods = (lastDecayCalculation?: string | null) => {
+            const normalizedLastPeriodKey = normalizeLastPeriodKey(lastDecayCalculation);
+            if (!normalizedLastPeriodKey) return 1;
+            if (normalizedLastPeriodKey === currentPeriodKey) return 0;
+
+            const lastPeriod = parseAldeiaPeriodKey(normalizedLastPeriodKey);
+            if (!lastPeriod) return 1;
+            const elapsed = Math.floor((currentPeriodEnd.getTime() - lastPeriod.getTime()) / (ALDEIA_PERIOD_HOURS * 60 * 60 * 1000));
+            return Math.max(1, elapsed);
+        };
+        const getCareMinutesInClosedPeriod = (presence: AldeiaPresence) => {
+            const startedAt = new Date(presence.startedAt);
+            if (Number.isNaN(startedAt.getTime())) return 0;
+            if (startedAt.getTime() < currentPeriodStart.getTime() || startedAt.getTime() >= currentPeriodEnd.getTime()) return 0;
+            const elapsedMinutes = Math.floor((currentPeriodEnd.getTime() - startedAt.getTime()) / 60000);
+            return elapsedMinutes >= ALDEIA_FULL_CARE_MINUTES ? ALDEIA_FULL_CARE_MINUTES : 0;
+        };
 
         // Get clan type to check if it's Office
         const { data: clanData } = await supabase.from('clans').select('clan_type').eq('id', clanId).single();
@@ -3870,54 +4041,42 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Calculate total clan energy for Resonance (25% of all stay minutes)
         let totalClanMinutes = 0;
-        const now = new Date();
         presences.forEach(p => {
-            const startedAt = new Date(p.startedAt).getTime();
-            const elapsedMinutes = Math.floor((now.getTime() - startedAt) / 60000);
-            totalClanMinutes += Math.max(0, Math.min(30, elapsedMinutes));
+            totalClanMinutes += getCareMinutesInClosedPeriod(p);
         });
         const villageResonanceBonus = (totalClanMinutes * 0.25) / 6; // 25% split across 6 slots
 
         for (const slot of slots) {
-            // If already updated today, skip
-            if (slot.lastDecayCalculation === today) continue;
+            const elapsedPeriods = getElapsedPeriods(slot.lastDecayCalculation);
+            if (elapsedPeriods <= 0) continue;
 
             // OFFICE CLAN: No automatic decay or gain. Leader sets manually.
             if (isOfficeClan) {
                 await updateAldeiaSlot(clanId, slot.slotId, {
-                    lastDecayCalculation: today
+                    lastDecayCalculation: currentPeriodKey
                 });
                 continue;
             }
 
-            // CASUAL CLAN: Refined Session-based growth
-            const slotPresences = presences.filter(p => p.slotId === slot.slotId);
+            // CASUAL CLAN: each 6h tick counts care done in the previous window.
+            const slotPresences = presences.filter(p => p.slotId === slot.slotId && getCareMinutesInClosedPeriod(p) > 0);
             let slotGain = 0;
 
-            // First member to complete 30 mins gives +15. Others give +5.
-            // We sort by elapsed time to find who "did 30 mins" first or most.
-            const participantsByTime = slotPresences.map(p => {
-                const startedAt = new Date(p.startedAt).getTime();
-                return Math.floor((now.getTime() - startedAt) / 60000);
-            }).filter(minutes => minutes >= 30);
-
-            if (participantsByTime.length > 0) {
-                slotGain = 15 + (participantsByTime.length - 1) * 5;
-            } else if (slotPresences.length > 0) {
-                // If no one hit 30m, but they stayed, give partial first-member bonus
-                const maxStay = Math.max(...slotPresences.map(p => {
-                    const startedAt = new Date(p.startedAt).getTime();
-                    return Math.min(30, Math.floor((now.getTime() - startedAt) / 60000));
-                }));
-                slotGain = (maxStay / 30) * 15;
+            if (slotPresences.length > 0) {
+                const careScores = slotPresences
+                    .map(p => getCareMinutesInClosedPeriod(p))
+                    .filter(minutes => minutes >= ALDEIA_FULL_CARE_MINUTES);
+                slotGain = careScores.length > 0
+                    ? ALDEIA_PRIMARY_CARE_GAIN + ((careScores.length - 1) * ALDEIA_SUPPORT_CARE_GAIN)
+                    : 0;
             }
 
             // Add resonance from the rest of the village
             slotGain += villageResonanceBonus;
 
-            // Scaled Decay: 5 base + 0.5 per member
-            const dailyDecay = 5 + (members * 0.5);
-            const netChange = slotGain - dailyDecay;
+            // Four ticks per day. A solo player can maintain multiple places by rotating care.
+            const periodDecay = ((5 + Math.min(10, members * 0.5)) / 4) * elapsedPeriods;
+            const netChange = slotGain - periodDecay;
 
             let newHealth = slot.health;
             let newStreakGood = slot.streakGood;
@@ -3938,7 +4097,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 health: Math.round(newHealth),
                 streakGood: newStreakGood,
                 streakBad: newStreakBad,
-                lastDecayCalculation: today,
+                lastDecayCalculation: currentPeriodKey,
                 lastVisitedAt: slotPresences.length > 0 ?new Date().toISOString() : slot.lastVisitedAt
             });
         }
@@ -4332,42 +4491,32 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         operationalDate: string,
         sourceTasks: ScheduledTask[],
         taskIds: string[],
-        relationshipBonusXp = 0,
+        _relationshipBonusXp = 0,
     ) => {
-        const committedTasks = sourceTasks.filter((task) =>
-            taskIds.includes(task.id) && taskMatchesOperationalDate(task, operationalDate)
-        );
-        const freeActionIds = new Set(actions.filter((action) => action.actionType === 'Livre').map((action) => action.id));
-        const scoredTasks = committedTasks.filter((task) => !freeActionIds.has(task.actionId));
-        const completedScoredCount = scoredTasks.filter((task) => task.completed).length;
-        const totalScoredCount = scoredTasks.length;
-        const score = totalScoredCount > 0 ? Math.round((completedScoredCount / totalScoredCount) * 100) : 100;
-        const baseExp = committedTasks.reduce((sum, task) => {
-            if (!task.completed) return sum;
-            const action = actions.find((candidate) => candidate.id === task.actionId);
-            const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
-            return sum + Math.round(duration * getActionExpMultiplier(action));
-        }, 0);
-        const performanceSitrepBonus =
-            totalScoredCount > 0
-                ? score >= 95
-                    ? SITREP_BONUS_S
-                    : score >= 85
-                        ? SITREP_BONUS_A
-                        : 0
-                : 0;
-        const sitrepBonus = performanceSitrepBonus + Math.max(0, Math.round(relationshipBonusXp || 0));
+        const expSnapshot = buildDailyExpSnapshot({
+            tasks: sourceTasks,
+            actions,
+            operationalDate,
+            taskIds,
+            includePremium: hasPremiumAccess(userProfile),
+        });
+        const committedTasks = expSnapshot.trackedTasks;
+        const completedAllCount = expSnapshot.completedAllCount;
+        const totalAllCount = expSnapshot.totalAllCount;
+        const allActionScore = totalAllCount > 0 ? Math.round((completedAllCount / totalAllCount) * 100) : 100;
 
         return {
             taskIds,
             committedTasks,
-            totalCount: totalScoredCount,
-            completedCount: completedScoredCount,
-            score,
-            sitrepBonus,
-            expDeposited: baseExp + sitrepBonus,
+            totalCount: totalAllCount,
+            completedCount: completedAllCount,
+            score: allActionScore,
+            sitrepBonus: 0,
+            baseExp: expSnapshot.baseExp,
+            premiumBonusExp: expSnapshot.premiumBonusExp,
+            expDeposited: expSnapshot.totalExp,
         };
-    }, [actions]);
+    }, [actions, userProfile]);
 
     const settleSkippedCycleDays = useCallback(async () => {
         const userId = getSupabaseUserId();
@@ -4434,14 +4583,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (mergedTaskIds.length === 0) continue;
 
-            const relationshipBonusXp = typeof existingCommitment?.relationshipBonusXp === 'number'
-                ? existingCommitment.relationshipBonusXp
-                : Number(existingCommitment?.relationshipBonusXp || 0);
             const summary = summarizeOperationalDayCommitment(
                 operationalDate,
                 cycleHistoricalTasks,
                 mergedTaskIds,
-                relationshipBonusXp,
+                0,
             );
 
             const commitmentPayload = {
@@ -4452,7 +4598,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 score: summary.score,
                 exp_deposited: summary.expDeposited,
                 sitrep_bonus: summary.sitrepBonus,
-                relationship_bonus_xp: relationshipBonusXp,
+                relationship_bonus_xp: 0,
                 operational_scratch: existingCommitment?.operationalScratch ?? null,
                 updated_at: new Date().toISOString(),
             };
@@ -4537,17 +4683,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [activeCycle, actions, getSupabaseUserId, isClanQuestActionId, refreshOpenCycleDerivedState, showToast, summarizeOperationalDayCommitment, tasks]);
 
     const reconcileJudgedDayTaskMutation = useCallback(async ({
-        taskBefore,
+        operationalDate,
         previousTasks,
         nextTasks,
     }: {
-        taskBefore: ScheduledTask;
-        taskAfter: ScheduledTask;
+        operationalDate: string;
         previousTasks: ScheduledTask[];
         nextTasks: ScheduledTask[];
     }) => {
         const userId = getSupabaseUserId();
-        const operationalDate = getTaskOperationalDateString(taskBefore);
 
         if (!userId || !activeCycle || !operationalDate) return;
         if (operationalDate < activeCycle.startDate || operationalDate > activeCycle.endDate) return;
@@ -4577,46 +4721,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const summarizeDay = (sourceTasks: ScheduledTask[]) => {
             const committedTasks = getCommittedTasksForDate(sourceTasks);
-            const completedTasks = committedTasks.filter((task) => task.completed);
             const totalCount = committedTasks.length;
-            const completedCount = completedTasks.length;
+            const completedCount = committedTasks.filter((task) => task.completed).length;
             const score = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
-            const baseExp = completedTasks.reduce((sum, task) => {
-                const action = actions.find((candidate) => candidate.id === task.actionId);
-                const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
-                return sum + Math.round(duration * getActionExpMultiplier(action));
-            }, 0);
+            const expSnapshot = buildDailyExpSnapshot({
+                tasks: sourceTasks,
+                actions,
+                operationalDate,
+                taskIds,
+                includePremium: hasPremiumAccess(userProfile),
+            });
 
-            return { totalCount, completedCount, score, baseExp };
+            return { totalCount, completedCount, score, totalExp: expSnapshot.totalExp };
         };
 
         const previousSummary = summarizeDay(previousTasks);
         const nextSummary = summarizeDay(nextTasks);
-        const relationshipBonusXp = typeof commitmentRow.relationshipBonusXp === 'number'
-            ? commitmentRow.relationshipBonusXp
-            : Number(commitmentRow.relationshipBonusXp || 0);
-        const previousPerformanceBonus = previousSummary.score >= 95 ? SITREP_BONUS_S : previousSummary.score >= 85 ? SITREP_BONUS_A : 0;
-        const nextPerformanceBonus = nextSummary.score >= 95 ? SITREP_BONUS_S : nextSummary.score >= 85 ? SITREP_BONUS_A : 0;
-        const previousSitrepBonus = typeof commitmentRow.sitrepBonus === 'number'
-            ? commitmentRow.sitrepBonus
-            : previousPerformanceBonus + relationshipBonusXp;
         const previousExpDeposited = typeof commitmentRow.expDeposited === 'number'
             ? commitmentRow.expDeposited
             : Number(commitmentRow.expDeposited || 0);
-        const previousVillageBonus = Math.max(0, previousExpDeposited - previousSummary.baseExp - previousSitrepBonus);
-        const previousVillageBasis = previousSummary.baseExp + previousSitrepBonus;
-        const preservedVillageFactor = previousVillageBasis > 0 ? previousVillageBonus / previousVillageBasis : 0;
-        const nextSitrepBonus = nextPerformanceBonus + relationshipBonusXp;
-        const nextVillageBasis = nextSummary.baseExp + nextSitrepBonus;
-        const nextVillageBonus = nextVillageBasis > 0 ? Math.max(0, Math.round(nextVillageBasis * preservedVillageFactor)) : 0;
-        const nextExpDeposited = nextSummary.baseExp + nextSitrepBonus + nextVillageBonus;
+        const nextSitrepBonus = 0;
+        const nextExpDeposited = nextSummary.totalExp;
 
         const nothingChanged =
             previousSummary.totalCount === nextSummary.totalCount &&
             previousSummary.completedCount === nextSummary.completedCount &&
             previousSummary.score === nextSummary.score &&
             previousExpDeposited === nextExpDeposited &&
-            previousSitrepBonus === nextSitrepBonus;
+            Number(commitmentRow.sitrepBonus || 0) === nextSitrepBonus &&
+            Number(commitmentRow.relationshipBonusXp || 0) === 0;
 
         if (nothingChanged) return;
 
@@ -4628,7 +4761,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             score: nextSummary.score,
             exp_deposited: nextExpDeposited,
             sitrep_bonus: nextSitrepBonus,
-            relationship_bonus_xp: relationshipBonusXp,
+            relationship_bonus_xp: 0,
             operational_scratch: commitmentRow.operationalScratch ?? null,
             updated_at: new Date().toISOString(),
         };
@@ -4692,7 +4825,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         score: nextSummary.score,
                         expDeposited: nextExpDeposited,
                         sitrepBonus: nextSitrepBonus,
-                        relationshipBonusXp,
+                        relationshipBonusXp: 0,
                     }
             ));
         }
@@ -4707,18 +4840,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 : `Dia ${formattedDate} recalculado no ciclo.`,
             'success'
         );
-    }, [actions, activeCycle, dailyCommitment.date, dailyCommitment.stage, getSupabaseUserId, refreshOpenCycleDerivedState, showToast]);
+    }, [actions, activeCycle, dailyCommitment.date, dailyCommitment.stage, getSupabaseUserId, refreshOpenCycleDerivedState, showToast, userProfile]);
 
     // --- Supabase Data Sync ---
     useEffect(() => {
-        const today = getTodayString();
-
-        // Check for daily reset
-        if (dailyCommitment.date !== today) {
-            resetDailyCommitment();
-            setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
-        }
-
         const userId = getSupabaseUserId();
         if (!userId) return;
 
@@ -4834,6 +4959,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             items: effectiveChecklistItems,
                         },
                         sequenceItems: effectiveSequenceItems,
+                        wallet: resolveProfileWallet(camelProfile, prev.wallet),
                     } as UserProfile;
                     next.visibleWidgets = Array.isArray(next.visibleWidgets) ? next.visibleWidgets : [];
                     next.sequenceItems = effectiveSequenceItems;
@@ -6536,23 +6662,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (rewardGrantedNow && rewardChestType) {
                 await syncCompetitionChestLocally(rewardChestType);
             }
-            const bonusDestination = winnerBonusXp > 0 ? applyRelationshipBonusXp(winnerBonusXp) : 'none';
-            if (winnerBonusXp > 0) {
-                if (bonusDestination === 'cycle') {
-                    showToast(`Bonus de Duelo: +${winnerBonusXp} EXP adicionada direto no ciclo.`, 'success');
-                } else if (bonusDestination === 'profile') {
-                    showToast(`Bonus de Duelo: +${winnerBonusXp} EXP aplicada agora no perfil.`, 'success');
-                }
-            }
+            if (winnerBonusXp > 0) applyRelationshipBonusXp(winnerBonusXp);
             window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
             showToast(
-                `Parabens! Voce terminou "${challengeName}" antes de @${opponentNickname} e ganhou um Bau ${rewardChestType || 'Comum'}${
-                    winnerBonusXp > 0
-                        ? bonusDestination === 'sitrep'
-                            ? ` + ${winnerBonusXp} EXP de duelo para o fechamento do ciclo`
-                            : ` + ${winnerBonusXp} EXP de duelo`
-                        : ''
-                }.`,
+                `Parabens! Voce terminou "${challengeName}" antes de @${opponentNickname} e ganhou um Bau ${rewardChestType || 'Comum'}.`,
                 'success'
             );
             return;
@@ -7226,18 +7339,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return result;
     };
 
+    const buildOpenDailyCommitmentState = (date: string = getTodayString()): DailyCommitment => ({
+        date,
+        taskIds: getInitialDailyCommitmentTaskIds(tasks, date, isClanQuestActionId),
+        stage: 'planning',
+        score: null,
+        expDeposited: null,
+        sitrepBonus: null,
+        relationshipBonusXp: null,
+        operationalScratch: null,
+    });
+
     const resetDailyCommitment = () => {
         const today = getTodayString();
-        setDailyCommitmentState({
-            date: today,
-            taskIds: getInitialDailyCommitmentTaskIds(tasks, today, isClanQuestActionId),
-            stage: 'planning',
-            score: null,
-            expDeposited: null,
-            sitrepBonus: null,
-            relationshipBonusXp: null,
-            operationalScratch: null,
-        });
+        setDailyCommitmentState(buildOpenDailyCommitmentState(today));
         setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
     };
     const setDailyCommitment = (taskIds: string[]) => setDailyCommitmentState(prev => ({ ...prev, taskIds: [...new Set(taskIds)] }));
@@ -7247,24 +7362,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const applyRelationshipBonusXp = (bonusXp: number): 'sitrep' | 'cycle' | 'profile' | 'none' => {
         const normalizedBonus = Math.max(0, Math.round(bonusXp));
         if (normalizedBonus <= 0) return 'none';
-
-        const today = getTodayString();
-        if (dailyCommitment.date === today && dailyCommitment.stage !== 'judgment') {
-            setDailyCommitmentState((prev) => ({
-                ...prev,
-                relationshipBonusXp: (prev.relationshipBonusXp || 0) + normalizedBonus,
-            }));
-            return 'sitrep';
-        }
-
-        if (activeCycle) {
-            setCycleExpBonus((prev) => prev + normalizedBonus);
-            return 'cycle';
-        }
-
-        const boostedExp = Math.round(normalizedBonus * getExpBoostMultiplier(userProfile));
-        updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + boostedExp } });
-        return 'profile';
+        return 'none';
     };
     const refreshJudgedOperationalDates = useCallback(async () => {
         const userId = getSupabaseUserId();
@@ -7306,8 +7404,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 stage: dailyCommitment.stage,
                 score: dailyCommitment.score,
                 exp_deposited: dailyCommitment.expDeposited,
-                sitrep_bonus: dailyCommitment.sitrepBonus,
-                relationship_bonus_xp: dailyCommitment.relationshipBonusXp ?? 0,
+                sitrep_bonus: dailyCommitment.stage === 'judgment' ? 0 : dailyCommitment.sitrepBonus,
+                relationship_bonus_xp: dailyCommitment.stage === 'judgment' ? 0 : (dailyCommitment.relationshipBonusXp ?? 0),
                 operational_scratch: dailyCommitment.operationalScratch ?? null,
                 updated_at: new Date().toISOString()
             };
@@ -7409,21 +7507,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [activeCycle?.id, isProfileLoaded, settleSkippedCycleDays, tasks]);
 
     useEffect(() => {
-        const checkDailyReset = () => {
-            const today = getTodayString();
-            if (dailyCommitment.date !== today) {
-                resetDailyCommitment();
-                setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
-            }
-        };
-
-        checkDailyReset();
-        const intervalId = window.setInterval(checkDailyReset, 60000);
-
-        return () => window.clearInterval(intervalId);
-    }, [dailyCommitment.date, resetDailyCommitment, setChecklistItems]);
-
-    useEffect(() => {
         if (dailyCommitment.taskIds.length === 0) return;
 
         const reconciledTaskIds = Array.from(new Set(dailyCommitment.taskIds)).filter(taskId => {
@@ -7446,109 +7529,278 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         ));
     }, [dailyCommitment.date, dailyCommitment.taskIds, isClanQuestActionId, tasks]);
 
-    const endDailyBattle = () => {
-        // Anti-exploit: do not close battles from the future
-        const now = new Date();
+    const closeDailyCommitment = async (
+        commitmentToClose: DailyCommitment = dailyCommitment,
+        options: { resetAfter?: boolean; silent?: boolean } = {}
+    ) => {
         const todayString = getTodayString();
-        if (dailyCommitment.date > todayString) {
+        const closeDate = commitmentToClose.date;
+        if (closeDate > todayString) {
             showToast("Amanhã ainda não pode ser julgado. Hoje você só pode travar as metas.", "error");
-            return;
+            return false;
         }
 
-        const committedTasks = tasks.filter(t => dailyCommitment.taskIds.includes(t.id) && taskMatchesOperationalDate(t, dailyCommitment.date));
-        const completedCount = committedTasks.filter(t => t.completed).length;
-        const totalCount = committedTasks.length;
-        const score = totalCount > 0 ?Math.round((completedCount / totalCount) * 100) : 100;
-
-        const expDepositBase = committedTasks.reduce((sum, task) => {
-            if (!task.completed) return sum;
-            const action = actions.find(a => a.id === task.actionId);
-            const duration = task.duration > 0 ?task.duration : (Number.isFinite(action?.duration) ?(action?.duration || 0) : 0);
-            const weightedDuration = Math.round(duration * getActionExpMultiplier(action));
-            return sum + weightedDuration;
-        }, 0);
-        const performanceSitrepBonus = score >= 95 ?SITREP_BONUS_S : score >= 85 ?SITREP_BONUS_A : 0;
-        const relationshipBonusXp = Math.max(0, Math.round(dailyCommitment.relationshipBonusXp || 0));
-        const sitrepBonus = performanceSitrepBonus + relationshipBonusXp;
-
-        // [NEW] Village Order Bonus (Nerfed to 10% max)
-        const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
-        const villageOrder = mainSlots.length > 0 ?(mainSlots.reduce((acc, s) => acc + s.health, 0) / mainSlots.length) : 0;
-        const villageBonusFactor = (villageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT;
-        const villageBonusExp = Math.round((expDepositBase + sitrepBonus) * villageBonusFactor);
-
-        const expDeposited = expDepositBase + sitrepBonus + villageBonusExp;
-        emitAppSensoryCue('daily_panel_closed');
-        if (relationshipBonusXp > 0) {
-            showToast(`Bonus de Duelo: +${relationshipBonusXp} EXP no fechamento do ciclo.`, 'success');
-        }
-
-        if (villageBonusExp > 0) {
-            showToast(`Bônus de Ordem da Aldeia: +${villageBonusExp} EXP!`, 'success');
-        }
-
-        setAchievementUnlocked({
-            type: 'REPORT_COMPLETED',
-            data: {
-                title: `Relatório Diário - ${score}%`,
-                reward: {
-                    exp: expDeposited
-                }
+        const alreadyJudged = commitmentToClose.stage === 'judgment' || judgedOperationalDates.includes(closeDate);
+        if (alreadyJudged) {
+            if (options.resetAfter) {
+                setDailyCommitmentState(buildOpenDailyCommitmentState(todayString));
+                setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
             }
-        });
+            return true;
+        }
 
-        const newStage = 'judgment';
-        setDailyCommitmentState(prev => ({ ...prev, stage: newStage, score, expDeposited, sitrepBonus, relationshipBonusXp }));
+        const fallbackTaskIds = getInitialDailyCommitmentTaskIds(tasks, closeDate, isClanQuestActionId);
+        const taskIds = commitmentToClose.taskIds.length > 0
+            ? Array.from(new Set(commitmentToClose.taskIds))
+            : fallbackTaskIds;
+        const summary = summarizeOperationalDayCommitment(closeDate, tasks, taskIds, 0);
+        const sitrepBonus = summary.sitrepBonus;
+        const relationshipBonusXp = 0;
+        const expDeposited = summary.expDeposited;
+        if (!options.silent) emitAppSensoryCue('daily_panel_closed');
+
+        const closedCommitment: DailyCommitment = {
+            ...commitmentToClose,
+            date: closeDate,
+            taskIds,
+            stage: 'judgment',
+            score: summary.score,
+            expDeposited,
+            sitrepBonus,
+            relationshipBonusXp,
+        };
+
+        if (options.resetAfter) {
+            setDailyCommitmentState(buildOpenDailyCommitmentState(todayString));
+            setChecklistItems(prev => prev.map(item => ({ ...item, completed: false })));
+        } else {
+            setDailyCommitmentState(prev => (
+                prev.date === closeDate
+                    ? closedCommitment
+                    : prev
+            ));
+        }
+
         setJudgedOperationalDates(prev => (
-            prev.includes(dailyCommitment.date)
+            prev.includes(closeDate)
                 ? prev
-                : [...prev, dailyCommitment.date]
+                : [...prev, closeDate]
         ));
 
-        emitDailyCompletionPrompt({
-            kind: 'sitrep',
-            date: dailyCommitment.date,
-            score,
-            expDeposited,
-        });
+        const shouldDepositIntoCycle = Boolean(
+            activeCycle &&
+            closeDate >= activeCycle.startDate &&
+            closeDate <= activeCycle.endDate
+        );
 
-        if (activeCycle && expDeposited > 0) {
+        if (shouldDepositIntoCycle && expDeposited > 0) {
             setCycleExpBonus(prev => prev + expDeposited);
-            showToast(`${expDeposited} EXP foi adicionada ao seu ciclo.`);
+            if (!options.silent) showToast(`${expDeposited} EXP foi adicionada ao seu ciclo.`);
         } else if (expDeposited > 0) {
-            const boostedExp = Math.round(expDeposited * getExpBoostMultiplier(userProfile));
-            // Fallback if no cycle, apply to user directly?Or just warn?
-            // User asked for "cycle", so assuming cycle is manh?datory for this flow.
-            // But let's apply to user if no cycle, just in case.
-            updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + boostedExp } });
-            showToast(`+${boostedExp} EXP`, 'success');
+            updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + expDeposited } });
+            if (!options.silent) showToast(`+${expDeposited} EXP`, 'success');
         }
 
-        // Persist to Supabase if logged in
         const supabaseUserId = getSupabaseUserId();
         if (supabaseUserId) {
-            const sitrepReport = {
-                id: crypto.randomUUID(),
+            const commitmentPayload = {
                 user_id: supabaseUserId,
-                date: dailyCommitment.date,
-                score: score,
-                completed_tasks_count: completedCount,
-                total_tasks_count: totalCount,
-                task_ids: dailyCommitment.taskIds,
-                bonus_xp: sitrepBonus, // Add explicit bonus_xp column if it exists or rely on recalculation
-                cycle_id: activeCycle?.id // Include cycle_id for proper linking
+                date: closeDate,
+                task_ids: taskIds,
+                stage: 'judgment' as DailyCommitmentStage,
+                score: summary.score,
+                exp_deposited: expDeposited,
+                sitrep_bonus: sitrepBonus,
+                relationship_bonus_xp: relationshipBonusXp,
+                operational_scratch: commitmentToClose.operationalScratch ?? null,
+                updated_at: new Date().toISOString(),
             };
 
-            supabase.from('sitrep_reports').insert(sitrepReport).then(({ error }) => {
-                if (error) console.error("Supabase SITREP report insert error:", error.message);
-            });
+            const { error: closeCommitmentError } = await supabase
+                .from('daily_commitments')
+                .upsert(commitmentPayload, { onConflict: 'user_id,date' });
+
+            if (closeCommitmentError) {
+                console.error("Supabase daily commitment close upsert error:", closeCommitmentError.message);
+            }
+
+            const sitrepReport = {
+                user_id: supabaseUserId,
+                date: closeDate,
+                score: summary.score,
+                completed_tasks_count: summary.completedCount,
+                total_tasks_count: summary.totalCount,
+                task_ids: taskIds,
+                bonus_xp: sitrepBonus,
+                cycle_id: activeCycle?.id ?? null
+            };
+
+            let existingSitrepQuery = supabase
+                .from('sitrep_reports')
+                .select('id')
+                .eq('user_id', supabaseUserId)
+                .eq('date', closeDate)
+                .limit(1);
+
+            existingSitrepQuery = activeCycle?.id
+                ? existingSitrepQuery.eq('cycle_id', activeCycle.id)
+                : existingSitrepQuery.is('cycle_id', null);
+
+            const { data: existingSitreps, error: existingSitrepError } = await existingSitrepQuery;
+            if (existingSitrepError) {
+                console.error("Supabase SITREP report lookup error:", existingSitrepError.message);
+            } else {
+                const existingSitrepId = Array.isArray(existingSitreps) && existingSitreps.length > 0
+                    ? String(existingSitreps[0].id)
+                    : null;
+
+                if (existingSitrepId) {
+                    const { error: updateSitrepError } = await supabase
+                        .from('sitrep_reports')
+                        .update(sitrepReport)
+                        .eq('id', existingSitrepId);
+                    if (updateSitrepError) console.error("Supabase SITREP report update error:", updateSitrepError.message);
+                } else {
+                    const { error: insertSitrepError } = await supabase
+                        .from('sitrep_reports')
+                        .insert({
+                            id: crypto.randomUUID(),
+                            ...sitrepReport,
+                        });
+                    if (insertSitrepError) console.error("Supabase SITREP report insert error:", insertSitrepError.message);
+                }
+            }
         }
+
+        return true;
+    };
+
+    const endDailyBattle = () => {
+        void closeDailyCommitment(dailyCommitment);
     };
 
     const manualCloseSITREP = () => {
         if (dailyCommitment.stage !== 'battle') return;
         endDailyBattle();
     };
+
+    useEffect(() => {
+        if (!isProfileLoaded) return;
+
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        const todayString = getTodayString();
+        const repairKey = `${userId}:${todayString}:${activeCycle?.id ?? 'no-cycle'}:${tasks.length}:${actions.length}`;
+        if (
+            dailyOpenCommitmentsRepairInFlightRef.current === repairKey ||
+            dailyOpenCommitmentsRepairCompletedRef.current.has(repairKey)
+        ) {
+            return;
+        }
+
+        let cancelled = false;
+        dailyOpenCommitmentsRepairInFlightRef.current = repairKey;
+
+        const repairOpenCommitments = async () => {
+            const { data, error } = await supabase
+                .from('daily_commitments')
+                .select('*')
+                .eq('user_id', userId)
+                .lt('date', todayString)
+                .neq('stage', 'judgment')
+                .order('date', { ascending: true })
+                .limit(21);
+
+            if (cancelled) return;
+
+            if (error) {
+                console.error("Error loading open historical daily commitments:", error.message);
+                return;
+            }
+
+            const rows = Array.isArray(data) ? data : [];
+            if (rows.length === 0) {
+                dailyOpenCommitmentsRepairCompletedRef.current.add(repairKey);
+                return;
+            }
+
+            const loadedTaskIds = new Set(tasks.map((task) => task.id));
+            let closedCount = 0;
+            let skippedForTaskLoad = false;
+
+            for (const row of rows) {
+                if (cancelled) return;
+
+                const mapped = mapToCamelCase(row) as Record<string, unknown>;
+                const closeDate = typeof mapped.date === 'string' ? mapped.date : '';
+                if (!closeDate || closeDate >= todayString) continue;
+
+                const storedTaskIds = Array.isArray(mapped.taskIds)
+                    ? mapped.taskIds.filter((taskId): taskId is string => typeof taskId === 'string' && taskId.length > 0)
+                    : [];
+
+                if (storedTaskIds.length > 0 && !storedTaskIds.some((taskId) => loadedTaskIds.has(taskId))) {
+                    skippedForTaskLoad = true;
+                    continue;
+                }
+
+                const commitmentToClose: DailyCommitment = {
+                    date: closeDate,
+                    taskIds: storedTaskIds,
+                    stage: (mapped.stage as DailyCommitmentStage) || 'planning',
+                    score: typeof mapped.score === 'number' ? mapped.score : null,
+                    expDeposited: typeof mapped.expDeposited === 'number' ? mapped.expDeposited : null,
+                    sitrepBonus: typeof mapped.sitrepBonus === 'number' ? mapped.sitrepBonus : null,
+                    relationshipBonusXp: typeof mapped.relationshipBonusXp === 'number' ? mapped.relationshipBonusXp : 0,
+                    operationalScratch: typeof mapped.operationalScratch === 'string' ? mapped.operationalScratch : null,
+                };
+
+                const didClose = await closeDailyCommitment(commitmentToClose, { silent: true });
+                if (didClose) closedCount += 1;
+            }
+
+            if (closedCount > 0 && activeCycle) {
+                await refreshOpenCycleDerivedState(activeCycle);
+            }
+
+            if (!skippedForTaskLoad) {
+                dailyOpenCommitmentsRepairCompletedRef.current.add(repairKey);
+            }
+        };
+
+        void repairOpenCommitments().finally(() => {
+            if (dailyOpenCommitmentsRepairInFlightRef.current === repairKey) {
+                dailyOpenCommitmentsRepairInFlightRef.current = null;
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeCycle, actions.length, closeDailyCommitment, getSupabaseUserId, isProfileLoaded, refreshOpenCycleDerivedState, tasks]);
+
+    useEffect(() => {
+        const checkDailyRollover = () => {
+            const today = getTodayString();
+            if (dailyCommitment.date === today) {
+                dailyAutoCloseInFlightRef.current = null;
+                return;
+            }
+
+            if (dailyAutoCloseInFlightRef.current === dailyCommitment.date) return;
+            dailyAutoCloseInFlightRef.current = dailyCommitment.date;
+
+            void closeDailyCommitment(dailyCommitment, { resetAfter: true, silent: true }).finally(() => {
+                dailyAutoCloseInFlightRef.current = null;
+            });
+        };
+
+        checkDailyRollover();
+        const intervalId = window.setInterval(checkDailyRollover, 60000);
+
+        return () => window.clearInterval(intervalId);
+    }, [closeDailyCommitment, dailyCommitment]);
 
     const saveSanctuaryPosition = async (payload: { clanId: string; userId: string; row: number; col: number; area: string; action: string; timestamp: string }) => {
         try {
@@ -8160,9 +8412,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userProfile.isPremium) return;
         if (!userProfile.premiumExpiresAt) return;
         if (userProfile.role === 'admin' || userProfile.role === 'gm') return;
-        if (isPremiumActive(userProfile)) return;
 
-        updateUserProfile({ isPremium: false, subscriptionTier: null });
+        const expiresAtMs = new Date(userProfile.premiumExpiresAt).getTime();
+        if (!Number.isFinite(expiresAtMs)) return;
+
+        const expirePremium = () => updateUserProfile({ isPremium: false, subscriptionTier: null });
+        if (!isPremiumActive(userProfile)) {
+            expirePremium();
+            return;
+        }
+
+        const timeoutMs = Math.min(Math.max(0, expiresAtMs - Date.now()) + 1000, 2147483647);
+        const timeout = window.setTimeout(expirePremium, timeoutMs);
+        return () => window.clearTimeout(timeout);
     }, [hasHydratedFromSupabase, updateUserProfile, userProfile]);
 
     useEffect(() => {
@@ -8356,7 +8618,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 {
                     label: 'Baú',
                     value: grantedChests.length > 0 ? chestSummary : 'Sem novo baú',
-                    detail: grantedChests.length > 0 ? 'Baú raro entregue na renovação.' : 'Nenhum baú extra nesta rodada.',
+                    detail: grantedChests.length > 0 ? 'Baú raro entregue na ativação.' : 'Nenhum baú extra nesta rodada.',
                     tone: 'gold' as const,
                 },
                 {
@@ -8375,11 +8637,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         return {
             membershipTier: tier,
-            eyebrow: isPlatinum ? 'Renovação platinum' : 'Renovação premium',
+            eyebrow: isPlatinum ? 'Platinum 30 dias' : 'Premium 30 dias',
             title: isPlatinum ? 'Platinum ativo' : 'Premium ativo',
             summary: isPlatinum
-                ? 'Seu plano maior foi renovado por mais 30 dias. Os baús desta rodada, a ficha média de quiz e o crédito grátis de legado já foram liberados.'
-                : 'Seu Premium foi renovado por mais 30 dias. O baú raro e a ficha grátis de quiz desta rodada já foram liberados.',
+                ? 'Seu plano maior ganhou mais 30 dias. Os baús desta ativação, a ficha média de quiz e o crédito grátis de legado já foram liberados.'
+                : 'Seu Premium ganhou mais 30 dias. O baú raro e a ficha grátis de quiz desta ativação já foram liberados.',
             buttonLabel: 'Seguir',
             rewardHighlightsTitle: 'Entregue agora',
             rewardHighlights,
@@ -8388,7 +8650,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             activeBenefits: isPlatinum ? [...PLATINUM_ACTIVE_BENEFITS] : [...PREMIUM_ACTIVE_BENEFITS],
             emptyMessage: grantedChests.length > 0 || legacySceneCreditsGranted > 0 || campaignQuizFreeCreditsGranted > 0 || campaignQuizMediumCreditsGranted > 0
                 ? `Nenhum cosmético novo era necessário agora.${chestSummary !== 'Integrado' ? ` Os baús ${chestSummary} já foram entregues.` : ''}${legacySceneCreditsGranted > 0 ? ` Crédito de legado: ${legacySceneCreditsGranted}.` : ''}${campaignQuizFreeCreditsGranted > 0 ? ` Ficha grátis de quiz: ${campaignQuizFreeCreditsGranted}.` : ''}${campaignQuizMediumCreditsGranted > 0 ? ` Ficha média de quiz: ${campaignQuizMediumCreditsGranted}.` : ''}`.trim()
-                : 'Sua assinatura foi renovada e nenhum cosmético novo precisava ser entregue agora.',
+                : 'Seu plano 30 dias foi ativado e nenhum cosmético novo precisava ser entregue agora.',
             metricCards: [
                 {
                     label: 'Plano',
@@ -8933,6 +9195,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
         const mostRepeatedAction = currentActions.find(a => a.id === mostRepeatedActionId)?.name || 'Nenhuma';
 
+        const isPremiumUser = hasPremiumAccess(userProfile);
         const currentDayCommittedTasks =
             dailyCommitment.stage === 'judgment'
                 ? []
@@ -8945,48 +9208,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         return !!action && cycle.arenaIds.includes(action.arenaId);
                     })()
                 );
-        const currentDayScoredTasks = currentDayCommittedTasks.filter(task => !freeActionIds.has(task.actionId));
-        const currentDayCompletedCount = currentDayScoredTasks.filter(task => task.completed).length;
-        const currentDayTotalCount = currentDayScoredTasks.length;
-        const currentDayScore =
-            currentDayTotalCount > 0
-                ? Math.round((currentDayCompletedCount / currentDayTotalCount) * 100)
-                : 100;
-        const currentDayBaseExp = currentDayCommittedTasks.reduce((sum, task) => {
-            if (!task.completed) return sum;
-            const action = currentActions.find(a => a.id === task.actionId);
-            const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
-            return sum + duration;
-        }, 0);
-        const currentDaySitrepBonus =
-            dailyCommitment.stage === 'judgment'
-                ? 0
-                : currentDayScore >= 95
-                    ? SITREP_BONUS_S
-                    : currentDayScore >= 85
-                        ? SITREP_BONUS_A
-                        : 0;
-        const cycleMainSlots = aldeiaSlots.filter(slot => slot.slotId !== 'trono');
-        const cycleVillageOrder =
-            cycleMainSlots.length > 0
-                ? cycleMainSlots.reduce((sum, slot) => sum + slot.health, 0) / cycleMainSlots.length
-                : 0;
-        const cycleVillageBonusFactor = (cycleVillageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT;
-        const currentDayVillageBonus =
-            dailyCommitment.stage === 'judgment'
-                ? 0
-                : Math.round((currentDayBaseExp + currentDaySitrepBonus) * cycleVillageBonusFactor);
-        const unbankedOpenDayExp = currentDayBaseExp + currentDaySitrepBonus + currentDayVillageBonus;
-        const unbankedHistoricalExp = Array.from(new Set(
+        const currentDayExpSnapshot = buildDailyExpSnapshot({
+            tasks: currentDayCommittedTasks,
+            actions: currentActions,
+            operationalDate: dailyCommitment.date,
+            taskIds: currentDayCommittedTasks.map(task => task.id),
+            includePremium: isPremiumUser,
+        });
+        const unbankedOpenDayExp = dailyCommitment.stage === 'judgment' ? 0 : currentDayExpSnapshot.totalExp;
+        const unbankedHistoricalSummary = Array.from(new Set(
             cycleTasks
                 .map((task) => getTaskOperationalDateString(task))
                 .filter((date): date is string => Boolean(date))
                 .filter((date) => date >= startDate && date <= endDate)
                 .filter((date) => date < dailyCommitment.date)
                 .filter((date) => !judgedOperationalDates.includes(date))
-        )).reduce((sum, operationalDate) => {
+        )).reduce((acc, operationalDate) => {
             const inferredTaskIds = getInitialDailyCommitmentTaskIds(cycleTasks, operationalDate, isClanQuestActionId);
-            if (inferredTaskIds.length === 0) return sum;
+            if (inferredTaskIds.length === 0) return acc;
 
             const summary = summarizeOperationalDayCommitment(
                 operationalDate,
@@ -8995,15 +9234,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 0,
             );
 
-            return sum + summary.expDeposited;
-        }, 0);
-        const isPremiumUser = userProfile.isPremium || userProfile.role === 'admin' || userProfile.role === 'gm';
-        const rawExp = cycleExpBonus + unbankedHistoricalExp + unbankedOpenDayExp;
-        const boostMultiplier = getExpBoostMultiplier(userProfile);
-        const boostedRawExp = Math.round(rawExp * boostMultiplier);
-        const expBoostBonus = Math.max(0, boostedRawExp - rawExp);
-        const premiumBonusExp = isPremiumUser ?Math.round(boostedRawExp * 0.1) : 0;
-        const expGained = boostedRawExp + premiumBonusExp;
+            return {
+                exp: acc.exp + summary.expDeposited,
+                premium: acc.premium + (summary.premiumBonusExp || 0),
+            };
+        }, { exp: 0, premium: 0 });
+        const rawExp = cycleExpBonus + unbankedHistoricalSummary.exp + unbankedOpenDayExp;
+        const expBoostBonus = 0;
+        const premiumBonusExp = unbankedHistoricalSummary.premium + currentDayExpSnapshot.premiumBonusExp;
+        const expGained = rawExp;
 
         const identitySnapshot = {
             avatarUrl: userProfile.avatarUrl,
@@ -9296,7 +9535,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (activeCycle) {
             setCycleExpBonus(prev => prev + expGained);
         } else {
-            const boostedExp = Math.round(expGained * getExpBoostMultiplier(userProfile));
+            const premiumExp = hasPremiumAccess(userProfile) ? Math.round(expGained * 0.1) : 0;
+            const boostedExp = expGained + premiumExp;
             updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + boostedExp } });
         }
     };
@@ -10707,16 +10947,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
     const getActionBackgroundStyle = (actionId: string): React.CSSProperties => {
         const action = actions.find(a => a.id === actionId);
-        if (!action) return { background: 'var(--asset-grad-default)' };
+        if (!action) return { background: buildAssetActionGradient('default') };
         const arena = getArenas().find(ar => ar.id === action.arenaId);
         if (arena) {
             const arenaFlags = getArenaDomainFlags(arena);
             if (arenaFlags.isSeasonQuest) return { background: 'var(--quest-grad-season)' };
             if (arenaFlags.isClanQuest) return { background: 'var(--quest-grad-clan)' };
             if (arenaFlags.isSideQuest) return { background: 'var(--quest-grad-sidequest)' };
+            return { background: buildAssetActionGradient(arena.assetId) };
         }
         const asset = getAssetForAction(actionId);
-        return { background: `var(--asset-grad-${asset?.id || 'default'})` };
+        return { background: buildAssetActionGradient(asset?.id) };
     };
 
     const mergeScheduleIntoContext = (baseContext: Action['context'] | undefined, scheduledDays?: DayOfWeek[], scheduledStartTime?: number) => {
@@ -11516,7 +11757,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (completedProofTasksToday.length === 0) {
             if ((normalizedStreak.lastProofDate || normalizedStreak.lastClosedDate) !== proofDate) return;
             updateUserProfile({ dailyProofStreak: rollbackDailyProofStreakDate(normalizedStreak, proofDate) });
-            showToast('Sequencia em risco: complete uma acao hoje para manter.', 'info');
+            emitOracleSpeech({
+                title: 'Sequencia',
+                message: 'A sequencia ficou em risco. Completa uma acao real hoje e ela volta a respirar.',
+                tone: 'warning',
+            });
             return;
         }
 
@@ -11539,7 +11784,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         updateUserProfile({ dailyProofStreak: streakResult.next });
         if (streakResult.isNewDate) {
             window.setTimeout(() => emitAppSensoryCue('daily_streak'), 120);
-            showToast(`Linha viva: ${streakResult.next.current} dia${streakResult.next.current === 1 ? '' : 's'} com prova real.`, 'success');
+            emitOracleSpeech({
+                title: 'Sequencia',
+                message: `${streakResult.next.current} dia${streakResult.next.current === 1 ? '' : 's'} com prova real. Boa. A sequencia vive de acao, nao de intencao.`,
+                tone: 'success',
+            });
         }
     };
 

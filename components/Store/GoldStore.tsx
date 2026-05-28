@@ -5,7 +5,7 @@ import { GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG, GOLD_PLATINUM_PRODUCT, GOLD_PRE
 import { CheckIcon, CrownIcon } from '../Icons';
 import { BillingCheckoutGate } from './BillingCheckoutGate';
 import { getExpBoostHoursRemaining, getExpBoostLabel, hasActiveExpBoost } from '../../utils/expBoostAccess';
-import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess } from '../../utils/premiumAccess';
+import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess, isStaffRole } from '../../utils/premiumAccess';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { getGoldPackChannelBadgeCopy, getMoneyCheckoutSalesCopy } from '../../utils/billingRuntime';
 
@@ -36,6 +36,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     const [confirmState, setConfirmState] = useState<GoldConfirmState | null>(null);
     const [showAllPremiumBenefits, setShowAllPremiumBenefits] = useState(false);
     const [showAllPlatinumBenefits, setShowAllPlatinumBenefits] = useState(false);
+    const isStaffAccess = isStaffRole(userProfile.role);
     const isPremium = hasPremiumAccess(userProfile);
     const isPlatinum = hasPlatinumAccess(userProfile);
     const isBasicMode = (userProfile.appMode || 'GAME') !== 'GAME';
@@ -65,11 +66,14 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     }, [scrollRequest]);
 
     const premiumBadgeLabel = useMemo(() => {
+        if (isStaffAccess) {
+            return 'Acesso GM';
+        }
         if (isPremium && premiumExpiresLabel) {
             return `${premiumDaysRemaining ?? 0}d - até ${premiumExpiresLabel}`;
         }
         return '30 dias';
-    }, [isPremium, premiumDaysRemaining, premiumExpiresLabel]);
+    }, [isPremium, isStaffAccess, premiumDaysRemaining, premiumExpiresLabel]);
 
     const activeBoostBadge = useMemo(() => {
         if (!hasExpBoost) return 'sem boost';
@@ -82,16 +86,16 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
         'Todos os modos do Oráculo',
         'Cena do legado com 50% off',
         'Bônus de legado +10% XP',
-        '1 baú raro + 1 ficha grátis por renovação',
+        '1 baú raro + 1 ficha grátis por ativação',
     ]), []);
 
     const platinumBenefits = useMemo(() => ([
     'Todas as vantagens do Premium',
     'Até 30 arenas ativas',
-    '1 cena de legado grátis por renovação',
-    '1 ficha média de quiz por renovação',
+    '1 cena de legado grátis por ativação',
+    '1 ficha média de quiz por ativação',
     'Todos os planos de fundo e aparências premium',
-    '1 baú da Temporada + 1 baú raro por renovação',
+    '1 baú da Temporada + 1 baú raro por ativação',
     ]), []);
     const visiblePremiumBenefits = useMemo(
         () => (isBasicMode && !showAllPremiumBenefits ? premiumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : premiumBenefits),
@@ -138,18 +142,18 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                     <CrownIcon className="h-6 w-6 text-[var(--ui-text-accent)]" />
                                 </div>
                                 <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isPremium ? 'border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/12 text-[var(--ui-text-accent)]' : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] text-[color:var(--ui-card-text-soft)]'}`}>
-                                    {isPremium ? 'Ativo' : 'Disponível'}
+                                    {isStaffAccess ? 'Acesso GM' : isPremium ? 'Ativo' : 'Disponível'}
                                 </div>
                             </div>
 
                             <div className="mt-3">
-                                <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Premium</h2>
+                                <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Premium 30 dias</h2>
                                 <p className="mt-1 max-w-[26rem] text-sm leading-relaxed text-[color:var(--ui-card-text-soft)]">
                                     30 dias de acesso, mais alcance no Oráculo, mais fôlego nas arenas e bônus real de legado.
                                 </p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     <span className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                        {isPlatinum ? 'Platinum ativo' : premiumBadgeLabel}
+                                        {isStaffAccess ? 'Acesso GM' : isPlatinum ? 'Platinum 30 dias ativo' : premiumBadgeLabel}
                                     </span>
                                     <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">
                                         +10% XP legado
@@ -194,13 +198,13 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                 disabled={!!loading || isPlatinum}
                                 className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                <span>{isPlatinum ? 'Platinum ativo' : isPremium ? 'Estender premium' : 'Ativar premium'}</span>
+                                <span>{isPlatinum ? 'Platinum 30 dias ativo' : isPremium ? 'Estender 30 dias' : 'Ativar 30 dias'}</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
                                     <span>{formatBrl(GOLD_PREMIUM_PRODUCT.priceBrl)}</span>
                                 </span>
                             </button>
                             <span className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--ui-card-text-soft)]">
-                                {isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
+                                {isStaffAccess ? 'Acesso liberado para equipe' : isPlatinum ? 'Já incluso no plano maior' : moneyCheckoutSalesCopy}
                             </span>
                         </div>
                     </div>
@@ -220,7 +224,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                             </div>
 
                             <div className="mt-3">
-                                <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Platinum</h2>
+                                <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">Platinum 30 dias</h2>
                                 <p className="mt-1 max-w-[26rem] text-sm leading-relaxed text-[color:var(--ui-card-text-soft)]">
                                     O pacote mais alto: leva tudo do Premium e empurra identidade, vitrine e legado para o patamar máximo.
                                 </p>
@@ -229,7 +233,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                         {isPlatinum ? premiumBadgeLabel : '30 dias'}
                                     </span>
                                     <span className="rounded-full border border-amber-200/18 bg-amber-200/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-100">
-                                        1 legado grátis por renovação
+                                        1 legado grátis por ativação
                                     </span>
                                 </div>
                             </div>
@@ -271,7 +275,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                 disabled={!!loading}
                                 className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                <span>{isPlatinum ? 'Estender platinum' : activeMembershipTier === 'premium' ? 'Subir para platinum' : 'Ativar platinum'}</span>
+                                <span>{isPlatinum ? 'Estender 30 dias' : activeMembershipTier === 'premium' ? 'Subir para Platinum 30 dias' : 'Ativar 30 dias'}</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-2 py-1 text-[11px]">
                                     <span>{formatBrl(GOLD_PLATINUM_PRODUCT.priceBrl)}</span>
                                 </span>

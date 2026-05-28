@@ -11,7 +11,7 @@ import { MilestonePoolAction } from '../components/MilestonePoolAction';
 import { ActionModal } from '../components/ActionModal';
 import { GlassCard } from '../components/GlassCard';
 import { useTutorial } from '../contexts/TutorialContext';
-import { buildActionPoolByDate, filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
+import { buildActionPoolByDate, buildDailyExpSnapshot, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getVisiblePoolTaskIdsForAction } from '../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, formatOperationalHourLabel, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, getTaskOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { hasScheduledTime, isTaskInPool } from '../utils/taskDomain.js';
 import { useLongPress } from '../hooks/useLongPress';
@@ -27,33 +27,13 @@ import '../components/core-ui.css';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 
 type PlannerMode = 'horario' | 'execucao';
-type BayEntryPayload = { count: number; isUnlimited: boolean; taskIds?: string[] };
+type BayEntryPayload = { count: number; isUnlimited: boolean; taskIds?: string[]; displayCount?: number };
 type ExecutionDropTarget = { date: string; index: number } | null;
 type PlannerExpSnapshot = {
     value: number;
     completedCount: number;
     totalCount: number;
     isDeposited: boolean;
-};
-
-const SITREP_BONUS_A = 60;
-const SITREP_BONUS_S = 120;
-const MAX_VILLAGE_BONUS_PERCENT = 0.1;
-
-const getFreeActionColorStyle = (
-    backgroundStyle: React.CSSProperties,
-    extra: React.CSSProperties = {},
-): React.CSSProperties => ({
-    ...extra,
-    ['--free-action-bg' as string]: String(backgroundStyle.background || 'var(--asset-grad-default)'),
-});
-
-const getPlannerActionExpMultiplier = (action?: Pick<Action, 'difficulty'> | null): number => {
-    const difficulty = Math.min(3, Math.max(0, Math.round(Number.isFinite(action?.difficulty) ? Number(action?.difficulty) : 2)));
-    if (difficulty === 0) return 0;
-    if (difficulty === 2) return 1.05;
-    if (difficulty === 3) return 1.1;
-    return 1;
 };
 
 const AnimatedExpCounter: React.FC<{ snapshot: PlannerExpSnapshot }> = ({ snapshot }) => {
@@ -65,6 +45,8 @@ const AnimatedExpCounter: React.FC<{ snapshot: PlannerExpSnapshot }> = ({ snapsh
         const startValue = previousValueRef.current;
         const endValue = snapshot.value;
         previousValueRef.current = endValue;
+        let frameId = 0;
+        let cancelled = false;
 
         if (endValue > startValue) {
             setIsPulsing(true);
@@ -73,9 +55,9 @@ const AnimatedExpCounter: React.FC<{ snapshot: PlannerExpSnapshot }> = ({ snapsh
 
         const durationMs = 420;
         const startAt = performance.now();
-        let frameId = 0;
 
         const tick = (now: number) => {
+            if (cancelled) return;
             const progress = Math.min(1, (now - startAt) / durationMs);
             const eased = 1 - Math.pow(1 - progress, 3);
             setDisplayValue(Math.round(startValue + ((endValue - startValue) * eased)));
@@ -85,7 +67,10 @@ const AnimatedExpCounter: React.FC<{ snapshot: PlannerExpSnapshot }> = ({ snapsh
         };
 
         frameId = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(frameId);
+        return () => {
+            cancelled = true;
+            cancelAnimationFrame(frameId);
+        };
     }, [snapshot.value]);
 
     return (
@@ -222,13 +207,10 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
 
     const backgroundStyle = action ?getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isMilestone = action?.actionType === 'Marco';
-    const isFreeAction = action?.actionType === 'Livre';
-    const standardTaskContentStyle = !isFreeAction
-        ? {
-            color: '#f8fafc',
-            textShadow: '0 1px 6px rgba(2, 6, 23, 0.82)',
-        } as React.CSSProperties
-        : undefined;
+    const standardTaskContentStyle = {
+        color: '#f8fafc',
+        textShadow: '0 1px 6px rgba(2, 6, 23, 0.82)',
+    } as React.CSSProperties;
     const displayStartTime = getTaskDisplayStartTime(task, operationalDate);
     const top = (displayStartTime - OPERATIONAL_DAY_START_MINUTE) * scaleFactor;
 
@@ -278,7 +260,7 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
             toggleTaskCompletion(task.id);
             setIsHolding(false);
             setIsTransitioning(false);
-        }, 1000); // Reduced to 1s for better UX
+        }, task.completed ? 3000 : 1800);
     };
 
     const cancelLongPress = () => {
@@ -299,8 +281,8 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
     const handleDragStart = (e: MouseEvent | TouchEvent) => {
         const ghost = (
             <div
-                style={isFreeAction ?getFreeActionColorStyle(backgroundStyle, { height: '40px', width: '100px' }) : { ...backgroundStyle, height: '40px', width: '100px' }}
-                className={`p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80 ${isFreeAction ?'free-action-shell free-action-outline' : ''}`}
+                style={{ ...backgroundStyle, height: '40px', width: '100px' }}
+                className="p-2 flex items-center space-x-2 rounded-2xl text-left opacity-80"
             >
                 <div className="text-lg z-10 shrink-0"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
                 <div className="text-sm font-semibold truncate min-w-0 flex-1 z-10 text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]">{action?.name}</div>
@@ -317,8 +299,10 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         onLongPressRelease: cancelLongPress,
         onClick: handleClick,
         onDragStart: handleDragStart,
-        delay: 300,
-        dragThreshold: 20, // Increased to prevent accidental drags during long press
+        delay: 420,
+        dragThreshold: 14,
+        preventDefaultOnTouch: false,
+        touchDragRequiresLongPress: true,
     });
 
     if (isMilestone) {
@@ -354,30 +338,29 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
         <div
             ref={taskRef}
             {...longPressEvents}
-            className="absolute left-0 right-1 cursor-pointer select-none"
+            className="absolute left-0 right-1 cursor-pointer select-none overflow-hidden rounded-2xl"
             style={{ top: `${top}px`, height: `${height}px`, minHeight: `${30 * scaleFactor}px`, touchAction: 'none' }}
         >
             <div
-                className={`h-full p-2 flex items-center space-x-2 rounded-2xl text-left relative overflow-hidden transition-all ${isFreeAction ?'free-action-shell text-slate-100' : task.completed ?'font-bold' : ''}`}
-                style={isFreeAction ?getFreeActionColorStyle(backgroundStyle, standardTaskContentStyle) : { ...backgroundStyle, ...standardTaskContentStyle }}
+                className={`h-full w-full rounded-2xl text-left relative overflow-hidden transition-all ${task.completed ?'font-bold' : ''}`}
+                style={standardTaskContentStyle}
             >
-                {!isFreeAction && (
-                    <div
-                        className="absolute inset-0"
-                        style={{ background: 'linear-gradient(135deg, rgba(2,6,23,0.1), rgba(2,6,23,0.28) 74%)' }}
-                    />
-                )}
-                <div className={`absolute inset-0 transition-opacity duration-300 ${task.completed ?'opacity-100' : 'opacity-0'}`} style={{ background: isFreeAction ? 'linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04) 65%, rgba(15,23,42,0.14) 100%)' : 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 62%, rgba(0,0,0,0.16) 100%)' }}></div>
-                <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${isFreeAction ?`free-action-outline ${task.completed ?'opacity-95 border-white/25 shadow-[0_0_12px_rgba(255,255,255,0.08)]' : 'opacity-80'}` : task.completed ?'border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`}></div>
-                <div className="text-lg z-10 shrink-0"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
-                <div className={`text-sm font-semibold truncate min-w-0 flex-1 z-10 ${task.completed ?'text-white' : isFreeAction ?'text-slate-100' : 'text-white'}`}>{action?.name}</div>
-                {task.completed && <div className="z-10 shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div>}
-                {isFreeAction && (
-                    <div className={`z-10 shrink-0 ${task.completed ?'hidden' : 'opacity-45 saturate-50'}`}>
-                        <div className="free-action-complete-dot scale-[0.82]" />
-                    </div>
-                )}
-                {isHolding && (<div className={`absolute inset-0 animate-pulse ${isFreeAction ?'bg-black/40 rounded-2xl' : 'bg-black/50 rounded-2xl'}`}><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ?'bg-white/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
+                <div
+                    className="absolute inset-[2px] rounded-[14px]"
+                    style={backgroundStyle}
+                />
+                <div
+                    className="absolute inset-[2px] rounded-[14px]"
+                    style={{ background: 'linear-gradient(135deg, rgba(2,6,23,0.1), rgba(2,6,23,0.28) 74%)' }}
+                />
+                <div className={`absolute inset-[2px] rounded-[14px] transition-opacity duration-300 ${task.completed ?'opacity-100' : 'opacity-0'}`} style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 62%, rgba(0,0,0,0.16) 100%)' }}></div>
+                <div className={`absolute inset-0 border-2 rounded-2xl transition-all ${task.completed ?'border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`}></div>
+                <div className="relative z-10 flex h-full min-w-0 items-center space-x-2 p-2">
+                    <div className="text-lg shrink-0"><EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" /></div>
+                    <div className="text-sm font-semibold truncate min-w-0 flex-1 text-white">{action?.name}</div>
+                    {task.completed && <div className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]"><SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" /></div>}
+                </div>
+                {isHolding && (<div className="absolute inset-0 animate-pulse bg-black/50 rounded-2xl"><div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div></div>)}
                 {showSparkles && <Sparkles />}
             </div>
             <style>{`@keyframes fill { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0% 0 0 0); } } @keyframes unfill { from { clip-path: inset(0% 0 0 0); } to { clip-path: inset(100% 0 0 0); } }`}</style>
@@ -448,17 +431,15 @@ const UnscheduledTaskCard: React.FC<{
     const completionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const backgroundStyle = action ?getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isScheduled = hasScheduledTime(task);
-    const isFreeAction = action?.actionType === 'Livre';
     const stateLabel = task.completed ?'Concluida' : isScheduled ?'Com horario' : 'Execucao livre';
     const timeLabel = isScheduled
         ? `${String(Math.floor(task.startTime / 60)).padStart(2, '0')}:${String(task.startTime % 60).padStart(2, '0')}`
         : 'sem horario';
 
-    const shouldUseActionSkin = executionCard && action && !isFreeAction;
+    const shouldUseActionSkin = Boolean(executionCard && action);
     const cardStyle = {
         touchAction: draggable ?'none' : 'auto',
         ...(shouldUseActionSkin ?backgroundStyle : {}),
-        ...(executionCard && isFreeAction ?getFreeActionColorStyle(backgroundStyle) : {}),
     } as React.CSSProperties;
 
     useEffect(() => {
@@ -514,7 +495,7 @@ const UnscheduledTaskCard: React.FC<{
             completeLikePlanner();
             setIsHolding(false);
             setIsTransitioning(false);
-        }, 1000);
+        }, task.completed ? 3000 : 1800);
     };
 
     const cancelLongPress = () => {
@@ -530,8 +511,8 @@ const UnscheduledTaskCard: React.FC<{
         if (!draggable || !action) return;
         const ghost = (
             <div
-                style={isFreeAction ?getFreeActionColorStyle(backgroundStyle) : shouldUseActionSkin ?backgroundStyle : undefined}
-                className={`relative overflow-hidden rounded-2xl border px-3 py-2 text-left opacity-90 shadow-2xl backdrop-blur-md ${isFreeAction ?'free-action-shell free-action-outline' : shouldUseActionSkin ?'border-white/20' : 'border-white/12 bg-black/80'}`}
+                style={shouldUseActionSkin ?backgroundStyle : undefined}
+                className={`relative overflow-hidden rounded-2xl border px-3 py-2 text-left opacity-90 shadow-2xl backdrop-blur-md ${shouldUseActionSkin ?'border-white/20' : 'border-white/12 bg-black/80'}`}
             >
                 {shouldUseActionSkin && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.10),rgba(2,6,23,0.34)_76%)]" />}
                 <div className="relative z-10 flex items-center gap-2">
@@ -553,8 +534,10 @@ const UnscheduledTaskCard: React.FC<{
             if (isTransitioning) return;
             onTaskClick(task);
         },
-        delay: executionCard ?300 : 260,
-        dragThreshold: executionCard ?20 : 18,
+        delay: executionCard ?420 : 260,
+        dragThreshold: executionCard ?14 : 18,
+        preventDefaultOnTouch: executionCard ?false : undefined,
+        touchDragRequiresLongPress: executionCard,
     });
 
     return (
@@ -562,21 +545,21 @@ const UnscheduledTaskCard: React.FC<{
             ref={cardRef}
             {...longPressEvents}
             data-execution-task-id={executionCard ?task.id : undefined}
-            className={`group relative select-none overflow-hidden rounded-[22px] border shadow-[0_16px_35px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all duration-200 hover:border-white/18 active:scale-[0.99] ${executionCard && isFreeAction ?'free-action-shell free-action-outline' : ''} ${shouldUseActionSkin ?'border-white/15 text-white' : 'bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.28))] hover:bg-white/[0.055]'} ${isDragTarget ?'ring-1 ring-[var(--skin-accent-color)]/70 shadow-[0_0_28px_rgba(250,204,21,0.12)]' : ''} ${task.completed ?'opacity-82' : ''} ${compact ?'px-3 py-2' : 'px-4 py-3'}`}
+            className={`group relative select-none overflow-hidden border shadow-[0_16px_35px_rgba(0,0,0,0.24)] backdrop-blur-md transition-all duration-200 hover:border-white/18 active:scale-[0.99] ${shouldUseActionSkin ?'border-white/15 text-white' : 'bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.28))] hover:bg-white/[0.055]'} ${isDragTarget ?'ring-1 ring-[var(--skin-accent-color)]/70 shadow-[0_0_28px_rgba(250,204,21,0.12)]' : ''} ${task.completed ?'opacity-82' : ''} ${compact ?'rounded-[18px] px-2.5 py-1.5' : 'rounded-[22px] px-4 py-3'}`}
             style={cardStyle}
         >
-            {!shouldUseActionSkin && !isFreeAction && <div className="absolute inset-y-0 left-0 w-1 opacity-60" style={backgroundStyle} />}
+            {!shouldUseActionSkin && <div className="absolute inset-y-0 left-0 w-1 opacity-60" style={backgroundStyle} />}
             {shouldUseActionSkin && <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(2,6,23,0.10),rgba(2,6,23,0.30)_74%)]" />}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,0.13),transparent_34%)] opacity-70" />
-            <div className={`absolute inset-0 border-2 rounded-[22px] transition-all ${executionCard && isFreeAction ?`free-action-outline ${task.completed ?'opacity-95 border-white/25 shadow-[0_0_12px_rgba(255,255,255,0.08)]' : 'opacity-80'}` : task.completed ?'border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`} />
+            <div className={`absolute inset-0 border-2 transition-all ${compact ?'rounded-[18px]' : 'rounded-[22px]'} ${task.completed ?'border-white/25 shadow-[0_0_14px_rgba(255,255,255,0.08)]' : 'border-dashed border-gray-600'}`} />
             {task.completed && <div className="absolute inset-0 bg-emerald-300/[0.035]" />}
-            <div className="relative z-10 flex items-center gap-3">
-                <div className={`flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/28 ${compact ?'h-9 w-9' : 'h-11 w-11'}`}>
+            <div className={`relative z-10 flex items-center ${compact ?'gap-2' : 'gap-3'}`}>
+                <div className={`flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/28 ${compact ?'h-8 w-8' : 'h-11 w-11'}`}>
                     <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]">{action?.name || 'Acao sem vinculo'}</div>
-                    <div className="mt-0.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white/52">
+                    <div className={`${compact ?'text-[12px]' : 'text-[13px]'} truncate font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]`}>{action?.name || 'Acao sem vinculo'}</div>
+                    <div className={`${compact ?'mt-0 text-[8px]' : 'mt-0.5 text-[10px]'} flex items-center gap-2 font-bold uppercase tracking-[0.14em] text-white/52`}>
                         <span className={task.completed ?'text-emerald-200/70' : ''}>{stateLabel}</span>
                         <span className="h-1 w-1 rounded-full bg-white/18" />
                         <span>{task.duration || action?.duration || 30} min</span>
@@ -588,10 +571,6 @@ const UnscheduledTaskCard: React.FC<{
                     task.completed ?(
                         <div className="z-10 shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/28 text-white shadow-[0_0_8px_rgba(255,255,255,0.12)]">
                             <SquareCheckIcon className="h-3.5 w-3.5 text-emerald-300 drop-shadow-[0_0_4px_rgba(52,211,153,0.55)]" />
-                        </div>
-                    ) : isFreeAction ?(
-                        <div className="z-10 shrink-0 opacity-45 saturate-50">
-                            <div className="free-action-complete-dot scale-[0.82]" />
                         </div>
                     ) : null
                 ) : (
@@ -611,8 +590,8 @@ const UnscheduledTaskCard: React.FC<{
                 )}
             </div>
             {executionCard && isHolding && (
-                <div className={`absolute inset-0 animate-pulse ${isFreeAction ?'bg-black/40 rounded-[22px]' : 'bg-black/50 rounded-[22px]'}`}>
-                    <div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : isFreeAction ?'bg-white/25 animate-[fill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div>
+                <div className={`absolute inset-0 animate-pulse bg-black/50 ${compact ?'rounded-[18px]' : 'rounded-[22px]'}`}>
+                    <div className={`h-full w-full ${task.completed ?'bg-red-800/50 animate-[unfill_3s_linear_forwards]' : 'bg-gray-500/50 animate-[fill_3s_linear_forwards]'}`}></div>
                 </div>
             )}
             {executionCard && showSparkles && <Sparkles />}
@@ -708,6 +687,7 @@ const PlannerExecutionStack: React.FC<{
                             <UnscheduledTaskCard
                                 task={task}
                                 action={getActionById(task.actionId)}
+                                compact
                                 draggable
                                 executionCard
                                 isDragTarget={showDropAt(index)}
@@ -830,7 +810,11 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
         <div className="daily-planner-surface flex-grow relative bg-[#111] border border-white/10 rounded-3xl p-2 h-full depth-grid" data-testid="daily-timeline">
             <div className="flex h-full">
                 <div className="w-12 flex-shrink-0">
-                    {hours.map(hour => (<div key={hour} className="text-right pr-2" style={{ height: `${60 * scaleFactor}px` }}><span className="daily-hour-label text-xs font-mono text-gray-500">{formatOperationalHourLabel(hour)}</span></div>))}
+                    {hours.map(hour => (
+                        <div key={hour} className="relative text-right pr-2" style={{ height: `${60 * scaleFactor}px` }}>
+                            <span className="daily-hour-label absolute right-2 -top-[0.42rem] text-xs font-mono text-gray-500">{formatOperationalHourLabel(hour)}</span>
+                        </div>
+                    ))}
                 </div>
                 <div className="daily-grid-column flex-grow relative border-l border-white/10 h-full">
                     {hours.slice(0).map((hour, i) => (<div key={hour} className={`daily-hour-slice relative ${i > 0 ?'border-t border-white/10' : ''}`} style={{ height: `${60 * scaleFactor}px` }}><div className="daily-quarter-line absolute w-full border-t border-white/5" style={{ top: `${15 * scaleFactor}px` }}></div><div className="daily-quarter-line absolute w-full border-t border-white/5" style={{ top: `${30 * scaleFactor}px` }}></div><div className="daily-quarter-line absolute w-full border-t border-white/5" style={{ top: `${45 * scaleFactor}px` }}></div></div>))}
@@ -852,7 +836,7 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
     );
 };
 
-const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ expSnapshot }) => {
+const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot; cycleExpBanked: number }> = ({ expSnapshot, cycleExpBanked }) => {
     const { userProfile } = useGame();
     const [isStreakPulsing, setIsStreakPulsing] = useState(false);
 
@@ -871,22 +855,27 @@ const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot }> = ({ 
     return (
         <div className="planner-floating-vitals pointer-events-none absolute bottom-[calc(0.15rem+var(--safe-area-bottom))] left-1/2 z-40 w-[min(9.35rem,calc(100%-10rem))] -translate-x-1/2">
             <div className="planner-floating-vitals__shell">
-            <div className="grid grid-cols-2 items-center gap-2">
-                <AnimatedExpCounter snapshot={expSnapshot} />
-                <div className={`planner-vital-orb min-w-0 transition-transform duration-300 ${isStreakPulsing ? 'scale-[1.06]' : ''}`} aria-live="polite">
-                    <div className="planner-vital-orb__glow" />
-                    <div className="relative z-10 flex h-full flex-col items-center justify-center gap-0.5">
-                        <div className="flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.12em] text-white/36">
-                            <FlameIcon className={`h-2 w-2 shrink-0 ${isStreakPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_8px_var(--skin-accent-color)]' : 'text-white/30'}`} />
-                            <span>Linha</span>
-                        </div>
-                        <div className={`tabular-nums text-[16px] font-black leading-none text-[var(--skin-accent-color)] transition-all duration-300 ${isStreakPulsing ? 'drop-shadow-[0_0_10px_var(--skin-accent-color)]' : ''}`}>
-                            {userProfile.dailyProofStreak?.current || 0}
+                <div className="grid grid-cols-2 items-center gap-2">
+                    <AnimatedExpCounter snapshot={expSnapshot} />
+                    <div className={`planner-vital-orb min-w-0 transition-transform duration-300 ${isStreakPulsing ? 'scale-[1.06]' : ''}`} aria-live="polite">
+                        <div className="planner-vital-orb__glow" />
+                        <div className="relative z-10 flex h-full flex-col items-center justify-center gap-0.5">
+                            <div className="flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.12em] text-white/36">
+                                <FlameIcon className={`h-2 w-2 shrink-0 ${isStreakPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_8px_var(--skin-accent-color)]' : 'text-white/30'}`} />
+                                <span>Seq.</span>
+                            </div>
+                            <div className={`tabular-nums text-[16px] font-black leading-none text-[var(--skin-accent-color)] transition-all duration-300 ${isStreakPulsing ? 'drop-shadow-[0_0_10px_var(--skin-accent-color)]' : ''}`}>
+                                {userProfile.dailyProofStreak?.current || 0}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            </div>
+                {cycleExpBanked > 0 && (
+                    <div className="mt-1 truncate text-center text-[7px] font-black uppercase tracking-[0.12em] text-white/38">
+                        Ciclo +{cycleExpBanked}
+                    </div>
+                )}
+                </div>
         </div>
     );
 };
@@ -914,7 +903,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         assets,
         addArena,
         activeCycle,
-        judgedOperationalDates,
+        cycleExpBonus,
         userProfile,
         getActionBackgroundStyle,
         showToast,
@@ -1541,7 +1530,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             wheelHandler = (ev: WheelEvent) => { ev.preventDefault(); };
             scroller?.addEventListener('wheel', wheelHandler, { passive: false });
 
-            const maxSpeed = 40;
+            const maxSpeed = 18;
             const step = () => {
                 if (scrollContainerRef.current && lastPointerPosRef.current) {
                     const p = lastPointerPosRef.current;
@@ -1568,16 +1557,16 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         const distPointer = 200 - p.y;
                         const dist = Math.max(distElement, distPointer);
 
-                        const intensity = Math.min(3.0, dist / 100);
-                        dy = -Math.max(15, intensity * maxSpeed);
+                        const intensity = Math.min(2.0, dist / 120);
+                        dy = -Math.max(5, intensity * maxSpeed);
                     }
                     else if (isBottomZone) {
                         const distPointer = p.y - (containerBottom - 100);
                         const distScreen = p.y - (window.innerHeight - 150);
                         const dist = Math.max(distPointer, distScreen);
 
-                        const intensity = Math.min(3.0, dist / 100);
-                        dy = Math.max(15, intensity * maxSpeed);
+                        const intensity = Math.min(2.0, dist / 120);
+                        dy = Math.max(5, intensity * maxSpeed);
                     }
 
                     if (dy !== 0) {
@@ -1958,6 +1947,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const executionTasksByDate = useMemo(() => {
         const candidateTasksByDate: Record<string, ScheduledTask[]> = {};
         plannerScopedTasks.forEach((task) => {
+            const isQueuedForExecution = executionQueuedTaskIds.has(task.id);
+            if (isTaskInPool(task) && !isQueuedForExecution) return;
             const operationalDate = getTaskOperationalDateString(task);
             if (!operationalDate) return;
             if (!candidateTasksByDate[operationalDate]) candidateTasksByDate[operationalDate] = [];
@@ -1991,7 +1982,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         });
 
         return grouped;
-    }, [plannerScopedTasks, sanitizedExecutionQueueByDate]);
+    }, [executionQueuedTaskIds, plannerScopedTasks, sanitizedExecutionQueueByDate]);
     const changeDate = (amount: number) => setCurrentDate(prev => { const newDate = new Date(prev); newDate.setDate(newDate.getDate() + amount); return newDate; });
     
     const dailyTasks = getTasksForDate(currentDate);
@@ -2004,92 +1995,68 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const shouldSurfaceChecklist = currentTime.getHours() >= 20 && hasPendingChecklistItems;
     const isToday = formatLocalDateString(currentDate) === getOperationalDateString();
     const plannerExpSnapshot = useMemo<PlannerExpSnapshot>(() => {
-        const today = getOperationalDateString();
-        const pendingEndDate = activeCycle?.endDate && activeCycle.endDate < today ? activeCycle.endDate : today;
+        const today = getOperationalDateString(currentTime);
+        if (dailyCommitment.date !== today || dailyCommitment.stage === 'judgment') {
+            return { value: 0, completedCount: 0, totalCount: 0, isDeposited: dailyCommitment.stage === 'judgment' };
+        }
+
         const scopedTasks = activeCycle
-            ? filterCycleTasksByScope(tasks, actions, activeCycle, activeCycle.startDate, pendingEndDate)
-            : tasks.filter(task => taskMatchesOperationalDate(task, today));
-        const judgedDates = new Set(judgedOperationalDates || []);
-        const freeActionIds = new Set(actions.filter(action => action.actionType === 'Livre').map(action => action.id));
-        const pendingDates = Array.from(new Set(
-            scopedTasks
-                .map(task => getTaskOperationalDateString(task))
-                .filter((date): date is string => Boolean(date))
-                .filter(date => date <= pendingEndDate)
-                .filter(date => !judgedDates.has(date))
-                .filter(date => !(dailyCommitment.date === date && dailyCommitment.stage === 'judgment'))
-        )).sort();
-        const mainSlots = aldeiaSlots.filter(slot => slot.slotId !== 'trono');
-        const villageOrder = mainSlots.length > 0
-            ? mainSlots.reduce((sum, slot) => sum + slot.health, 0) / mainSlots.length
-            : 0;
-        const villageFactor = (villageOrder / 100) * MAX_VILLAGE_BONUS_PERCENT;
+            ? filterCycleTasksByScope(tasks, actions, activeCycle, activeCycle.startDate, activeCycle.endDate)
+            : tasks;
+        const fallbackTaskIds = dailyCommitment.taskIds.length > 0
+            ? dailyCommitment.taskIds
+            : getInitialDailyCommitmentTaskIds(scopedTasks, today, () => false);
+        const expSnapshot = buildDailyExpSnapshot({
+            tasks: scopedTasks,
+            actions,
+            operationalDate: today,
+            taskIds: fallbackTaskIds,
+            includePremium: hasPremiumAccess(userProfile as any),
+        });
 
-        return pendingDates.reduce<PlannerExpSnapshot>((snapshot, operationalDate) => {
-            const dateTasks = scopedTasks.filter(task => taskMatchesOperationalDate(task, operationalDate));
-            const committedTasks = dailyCommitment.date === operationalDate && dailyCommitment.taskIds.length > 0
-                ? dateTasks.filter(task => dailyCommitment.taskIds.includes(task.id))
-                : dateTasks;
-            if (committedTasks.length === 0) return snapshot;
-
-            const completedTasks = committedTasks.filter(task => task.completed);
-            const scoredTasks = committedTasks.filter(task => !freeActionIds.has(task.actionId));
-            const scoredCompletedCount = scoredTasks.filter(task => task.completed).length;
-            const score = scoredTasks.length > 0 ? Math.round((scoredCompletedCount / scoredTasks.length) * 100) : 0;
-            const baseExp = completedTasks.reduce((sum, task) => {
-                const action = getActionById(task.actionId);
-                const duration = task.duration > 0 ? task.duration : (Number.isFinite(action?.duration) ? (action?.duration || 0) : 0);
-                return sum + Math.round(duration * getPlannerActionExpMultiplier(action));
-            }, 0);
-            const performanceBonus = scoredTasks.length > 0
-                ? score >= 95
-                    ? SITREP_BONUS_S
-                    : score >= 85
-                        ? SITREP_BONUS_A
-                        : 0
-                : 0;
-            const relationshipBonusXp = dailyCommitment.date === operationalDate ? Math.max(0, Math.round(dailyCommitment.relationshipBonusXp || 0)) : 0;
-            const pendingExp = baseExp + performanceBonus + relationshipBonusXp;
-            const villageBonus = Math.round(pendingExp * villageFactor);
-
-            return {
-                value: snapshot.value + Math.max(0, pendingExp + villageBonus),
-                completedCount: snapshot.completedCount + completedTasks.length,
-                totalCount: snapshot.totalCount + committedTasks.length,
-                isDeposited: false,
-            };
-        }, { value: 0, completedCount: 0, totalCount: 0, isDeposited: false });
-    }, [activeCycle, actions, aldeiaSlots, dailyCommitment, getActionById, judgedOperationalDates, tasks]);
+        return {
+            value: expSnapshot.totalExp,
+            completedCount: expSnapshot.completedCount,
+            totalCount: expSnapshot.totalCount,
+            isDeposited: false,
+        };
+    }, [activeCycle, actions, currentTime, dailyCommitment, tasks, userProfile]);
 
     // UNIFY POOL AND BAY AREA TASKS FOR DISPLAY
     // "Estoque e Espera ÃƒÆ’Ã‚Â© a mesma coisa"
     const unifiedBayAreaItems = useMemo(() => {
-        const unified = { ...availableTaskPool };
-        
+        const unified = Object.fromEntries(
+            (Object.entries(availableTaskPool) as [string, BayEntryPayload][])
+                .map(([actionId, payload]) => [actionId, { ...payload, taskIds: [...(payload.taskIds || [])] }])
+        ) as Record<string, BayEntryPayload>;
+        const bayTaskIdsByAction = new Map<string, string[]>();
+
         bayAreaTasks.forEach(task => {
-            // These are tasks that are instantiated but sit in Bay Area.
-            // They should NOT add to the count if they are already counted in the "remaining" logic?
-            // Wait. Logic above: Stock = Total - (Scheduled + Completed).
-            // BayAreaTask is NOT scheduled and NOT completed. So it is NOT subtracted.
-            // So 'remaining' ALREADY INCLUDES the potential for this task.
-            // We just need to attach the taskId to the slot so we can drag it.
-            
             if (!unified[task.actionId]) {
                  // Should exist from pool init, but just in case
                  unified[task.actionId] = { count: 0, isUnlimited: false, taskIds: [] };
             }
-            
-            // We do NOT add to count here because 'remaining' calculation already includes this "slot".
-            // Actually, if I have 3 slots, and 1 is a BayAreaTask, 'remaining' is 3.
-            // If I display '3', and one of them is this task...
-            // It means I have 1 Concrete Task + 2 Virtual Slots.
-            
-            if (!unified[task.actionId].taskIds) unified[task.actionId].taskIds = [];
-            unified[task.actionId].taskIds!.push(task.id);
+            bayTaskIdsByAction.set(task.actionId, [...(bayTaskIdsByAction.get(task.actionId) || []), task.id]);
+        });
+
+        bayTaskIdsByAction.forEach((taskIds, actionId) => {
+            const action = getActionById(actionId);
+            if (!action) return;
+
+            const visibleTaskIds = getVisiblePoolTaskIdsForAction(
+                action,
+                plannerScopedTasks,
+                taskIds,
+                Array.from(executionQueuedTaskIds),
+            );
+            unified[actionId].taskIds = visibleTaskIds;
+            unified[actionId].displayCount = unified[actionId].isUnlimited
+                ? unified[actionId].count
+                : unified[actionId].count + visibleTaskIds.length;
         });
         
         return unified;
-    }, [availableTaskPool, bayAreaTasks]);
+    }, [availableTaskPool, bayAreaTasks, executionQueuedTaskIds, getActionById, plannerScopedTasks]);
 
     const visibleBayAreaEntries = useMemo(() => {
         const arenaAssetIdByArenaId = new Map<string, string>();
@@ -2145,33 +2112,40 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     }, [getActionById, visibleBayAreaEntries]);
 
     // Keep bay height in sync with what is actually rendered, not with every hidden pool key.
+    const bayAreaItemsPerRow = 7;
+    const bayAreaItemsPerPage = bayAreaItemsPerRow * 2;
     const poolItemCount = visibleBayAreaEntries.length;
-    const isSingleRow = poolItemCount <= 8;
+    const isSingleRow = poolItemCount <= bayAreaItemsPerRow;
     // Reduced heights as requested
     const bayAreaHeight = canUseAdvancedPlannerMatrix && isAdvancedPlannerMatrixEnabled ? 'h-[112px]' : (isSingleRow ?'h-[42px]' : 'h-[84px]');
     const bayAreaPages = useMemo(() => {
-        const pageSize = isSingleRow ? 8 : 16;
+        const pageSize = isSingleRow ? bayAreaItemsPerRow : bayAreaItemsPerPage;
         const pages: Array<Array<[string, BayEntryPayload]>> = [];
         for (let index = 0; index < visibleBayAreaEntries.length; index += pageSize) {
             pages.push(visibleBayAreaEntries.slice(index, index + pageSize));
         }
         return pages;
-    }, [isSingleRow, visibleBayAreaEntries]);
+    }, [bayAreaItemsPerPage, bayAreaItemsPerRow, isSingleRow, visibleBayAreaEntries]);
     const renderBayPoolAction = ([actionId, payload]: [string, BayEntryPayload]) => {
         const action = getActionById(actionId);
         if (!action) return null;
-        // Only reuse a concrete bay task if it still belongs to the operational day on screen.
-        // This prevents ancient locked pool tasks from poisoning the current cycle/day flow.
+        // In an active cycle the bay is cycle-wide, so a concrete waiting task
+        // must be reused even if its original operational date is not selected.
+        // Outside a cycle, keep the bay local to the day on screen.
         const nextTaskId = payload.taskIds?.find(taskId => {
             const task = tasksById.get(taskId);
-            return Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
+            if (!task) return false;
+            return activeCycle
+                ? task.date >= activeCycle.startDate && task.date <= activeCycle.endDate
+                : taskMatchesOperationalDate(task, selectedOperationalDateString);
         });
+        if (payload.count <= 0 && !nextTaskId) return null;
 
         return (
             <PoolAction
                 key={actionId}
                 action={action}
-                count={payload.count}
+                count={payload.displayCount ?? payload.count}
                 isUnlimited={payload.isUnlimited}
                 taskId={nextTaskId}
                 onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)}
@@ -2279,14 +2253,16 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                                         if (!action) return null;
                                                         const nextTaskId = payload.taskIds?.find(taskId => {
                                                             const task = tasksById.get(taskId);
-                                                            return Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
+                                                            return activeCycle
+                                                                ? Boolean(task && task.date >= activeCycle.startDate && task.date <= activeCycle.endDate)
+                                                                : Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));
                                                         });
 
                                                         return (
                                                             <PoolAction
                                                                 key={`${quadrant.key}-${actionId}`}
                                                                 action={action}
-                                                                count={payload.count}
+                                                                count={payload.displayCount ?? payload.count}
                                                                 isUnlimited={payload.isUnlimited}
                                                                 taskId={nextTaskId}
                                                                 onComplete={(aid, tid) => scheduleAndCompleteNow(aid, tid)}
@@ -2312,7 +2288,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                             key={`bay-page-${pageIndex}`}
                                             className={`grid h-full shrink-0 gap-0.5 ${isSingleRow ? 'grid-rows-1' : 'grid-rows-2'}`}
                                             style={{
-                                                gridTemplateColumns: `repeat(${isSingleRow ? Math.max(1, pageEntries.length) : 8}, minmax(0, 2.35rem))`,
+                                                gridTemplateColumns: `repeat(${isSingleRow ? Math.max(1, pageEntries.length) : bayAreaItemsPerRow}, minmax(0, 2.35rem))`,
                                                 gridAutoFlow: 'row',
                                             }}
                                         >
@@ -2396,7 +2372,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 </div>
             </div>
 
-            <PlannerFloatingVitals expSnapshot={plannerExpSnapshot} />
+            <PlannerFloatingVitals expSnapshot={plannerExpSnapshot} cycleExpBanked={cycleExpBonus || 0} />
 
             {modalData && (
                 <ActionModal
@@ -2442,19 +2418,19 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     </div>
                 )}
 
-                <div className="planner-floating-stack flex flex-col items-center bg-black/50 backdrop-blur-lg border border-white/8 rounded-full p-1 space-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
+                <div className="planner-floating-stack flex flex-col items-center bg-black/45 backdrop-blur-lg border border-white/8 rounded-full p-0.5 space-y-0.5 shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
                     <button
                         id="focus-mode-button"
                         onClick={() => setShowOracleInput(!showOracleInput)}
-                        className={`planner-soft-control p-2 rounded-full transition-all ${showOracleInput ?'bg-[var(--ui-button-primary-bg)] text-[var(--ui-text-on-accent)]' : 'text-white hover:bg-white/10'}`}
+                        className={`planner-soft-control p-1.5 rounded-full transition-all ${showOracleInput ?'bg-[var(--ui-button-primary-bg)] text-[var(--ui-text-on-accent)]' : 'text-white hover:bg-white/10'}`}
                         title="Adicionar por texto"
                     >
-                        <span className="text-lg">{'\u{1F4DD}'}</span>
+                        <span className="text-sm">{'\u{1F4DD}'}</span>
                     </button>
-                    <div className="w-full h-px bg-white/10 my-1"></div>
-                    <button onClick={() => setZoomLevel(prev => Math.min(3, prev + 1) as 1 | 2 | 3)} disabled={zoomLevel === 3} className="planner-soft-control p-2 disabled:opacity-50"><PlusIcon className="w-5 h-5" /></button>
-                    <span className="planner-date-label font-bold text-xs text-white">{zoomLevel}x</span>
-                    <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="planner-soft-control p-2 disabled:opacity-50"><MinusIcon className="w-5 h-5" /></button>
+                    <div className="w-6 h-px bg-white/10 my-0.5"></div>
+                    <button onClick={() => setZoomLevel(prev => Math.min(3, prev + 1) as 1 | 2 | 3)} disabled={zoomLevel === 3} className="planner-soft-control p-1.5 disabled:opacity-50" title="Aproximar"><PlusIcon className="w-3.5 h-3.5" /></button>
+                    <span className="planner-date-label font-bold text-[9px] leading-none text-white/72">{zoomLevel}x</span>
+                    <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="planner-soft-control p-1.5 disabled:opacity-50" title="Afastar"><MinusIcon className="w-3.5 h-3.5" /></button>
                 </div>
                 <button onClick={() => setIsActionModalOpen(true)} className="w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-6 h-6 text-black" /></button>
             </div>

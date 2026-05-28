@@ -31,6 +31,7 @@ type NormalizedNotification = {
   content: string;
   metadata: JsonRecord;
   read: boolean;
+  createdAt: string;
 };
 
 type OraclePresentation = "ambient_pulse" | "info_card";
@@ -56,6 +57,15 @@ const WEB_PUSH_WEBHOOK_SECRET = Deno.env.get("WEB_PUSH_WEBHOOK_SECRET") || "";
 const SITE_URL = Deno.env.get("SITE_URL") || "https://app.glyph.life";
 const FCM_SERVICE_ACCOUNT_JSON = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON") || "";
 const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID") || "";
+
+const hashString = (value: string): number => {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = ((hash << 5) - hash) + value.charCodeAt(index);
+    hash |= 0;
+  }
+  return hash;
+};
 const FCM_CLIENT_EMAIL = Deno.env.get("FCM_CLIENT_EMAIL") || "";
 const FCM_PRIVATE_KEY = Deno.env.get("FCM_PRIVATE_KEY") || "";
 const ALLOWED_ORIGINS = (
@@ -457,6 +467,7 @@ const normalizeNotification = (payload: unknown): NormalizedNotification => {
     content: asTrimmedString(record.content),
     metadata: isRecord(record.metadata) ? record.metadata : {},
     read: asBoolean(record.read),
+    createdAt: asTrimmedString(record.created_at) || asTrimmedString(record.createdAt) || new Date().toISOString(),
   };
 };
 
@@ -499,14 +510,29 @@ const normalizeOracleMessage = (payload: unknown): NormalizedOracleMessage => {
 };
 
 const getNotificationTitle = (notification: NormalizedNotification): string => {
+  const variantSeed = `${notification.id || notification.userId || ""}:${notification.createdAt || ""}:${notification.type}`;
+  const pickVariant = (lines: string[]) => lines[Math.abs(hashString(variantSeed)) % lines.length] || lines[0];
+
   switch (notification.type) {
     case "cycle_ending":
-      return "Seu ciclo esta proximo do fim.";
+      return pickVariant([
+        "O ciclo esta entrando na reta final.",
+        "A janela do ciclo ficou curta.",
+        "Hora de salvar o que ainda importa.",
+      ]);
     case "cycle_finalized":
-      return "Parabens! Seu ciclo foi finalizado.";
+      return pickVariant([
+        "Ciclo fechado.",
+        "Boa. Esse ciclo virou memoria.",
+        "Relatorio pronto para guardar a fase.",
+      ]);
     case "reward_ready":
     case "mission_redeemable":
-      return "Voce tem novas recompensas.";
+      return pickVariant([
+        "Tem recompensa esperando voce.",
+        "Algo bom ficou pronto.",
+        "Voce deixou valor acumulado.",
+      ]);
     case "mentor_invite":
       return "Voce recebeu um convite de mentor.";
     case "direct_message":
@@ -527,15 +553,31 @@ const getNotificationTitle = (notification: NormalizedNotification): string => {
     case "clan_join":
       return "Seu pedido de grupo foi aceito.";
     case "clan_mission_update":
-      return "Seu grupo precisa de voce.";
+      return pickVariant([
+        "Seu grupo mexeu uma peca.",
+        "Tem movimento novo no grupo.",
+        "A mesa do grupo mudou.",
+      ]);
     case "season_ending":
-      return "A temporada esta acabando.";
+      return pickVariant([
+        "A temporada esta fechando.",
+        "A janela da temporada ficou curta.",
+        "Ultimos movimentos da temporada.",
+      ]);
     case "level_up":
-      return "Voce subiu de nivel.";
+      return pickVariant([
+        "Voce subiu de nivel.",
+        "Nivel novo desbloqueado.",
+        "O progresso apareceu no placar.",
+      ]);
     case "title_unlocked":
       return "Voce desbloqueou um titulo.";
     case "oracle_prompt":
-      return "O Oraculo chamou sua atencao.";
+      return pickVariant([
+        "O Oraculo cutucou de leve.",
+        "Tenho um sinal rapido para voce.",
+        "Vi uma coisa no seu mapa.",
+      ]);
     case "codex_gift":
       return "Uma campanha chegou para voce.";
     case "partnership_invite":
@@ -545,9 +587,17 @@ const getNotificationTitle = (notification: NormalizedNotification): string => {
     case "competition_result":
       return "Seu duelo recebeu um desfecho.";
     case "action_reminder":
-      return "Sua acao vai comecar em breve.";
+      return pickVariant([
+        "Sua acao esta chegando.",
+        "Esta quase na hora de entrar.",
+        "Prepara o terreno: a acao vem ai.",
+      ]);
     default:
-      return "Aviso do sistema.";
+      return pickVariant([
+        "Tem um sinal novo no Glyph.",
+        "Algo mudou no seu mapa.",
+        "Glyph trouxe uma atualizacao.",
+      ]);
   }
 };
 
@@ -559,18 +609,61 @@ const getNotificationBody = (notification: NormalizedNotification): string => {
   }
 
   if (notification.content) return notification.content;
+  const variantSeed = `${notification.id || notification.userId || ""}:${notification.createdAt || ""}:${notification.type}:body`;
+  const pickVariant = (lines: string[]) => lines[Math.abs(hashString(variantSeed)) % lines.length] || lines[0];
 
   switch (notification.type) {
+    case "cycle_ending":
+      return pickVariant([
+        "Nao tenta salvar tudo. Escolhe uma entrega real e fecha uma prova.",
+        "O tempo encurtou. Corta excesso e protege o que ainda muda o ciclo.",
+        "Uma acao certa agora vale mais que redesenhar o plano inteiro.",
+      ]);
+    case "cycle_finalized":
+      return pickVariant([
+        "O que foi feito agora tem registro. Abre o relatorio quando quiser revisar.",
+        "Fase fechada. Guarda a leitura antes de abrir o proximo mapa.",
+        "Boa. O ciclo saiu da cabeca e virou historico.",
+      ]);
     case "codex_gift":
-      return "Uma campanha valiosa foi enviada para a sua biblioteca.";
+      return pickVariant([
+        "Uma campanha nova chegou para a sua biblioteca.",
+        "Tem caminho pronto esperando instalacao.",
+        "Alguem te mandou uma campanha para usar quando fizer sentido.",
+      ]);
     case "direct_message":
       return notification.content || "Uma nova mensagem direta chegou para voce.";
     case "competition_result":
-      return "Seu rival fechou o duelo primeiro.";
+      return pickVariant([
+        "O duelo recebeu um desfecho.",
+        "Tem resultado novo esperando no desafio.",
+        "A competicao virou resultado. Vale conferir.",
+      ]);
     case "action_reminder":
-      return "Uma acao programada sua vai comecar em breve.";
+      return pickVariant([
+        "Arruma o minimo em volta e entra sem renegociar.",
+        "Comeca pequeno. O importante e nao transformar isso em conversa interna.",
+        "Se ainda faz sentido, prepara o ambiente e executa.",
+      ]);
+    case "reward_ready":
+    case "mission_redeemable":
+      return pickVariant([
+        "Abre quando puder. Recompensa parada tambem e energia sem uso.",
+        "Tem ganho esperando coleta. Nada dramatico, so nao deixa sumir do radar.",
+        "Voce ja fez a parte dificil. Agora pega o retorno.",
+      ]);
+    case "oracle_prompt":
+      return pickVariant([
+        "Nao e relatorio. E so uma coisa dominante para decidir o proximo movimento.",
+        "Prometo nao listar doze assuntos. Olha so o sinal principal.",
+        "Tem uma leitura curta esperando voce no Oraculo.",
+      ]);
     default:
-      return "Ha uma atualizacao importante esperando sua leitura.";
+      return pickVariant([
+        "Abre quando puder e resolve em uma passada.",
+        "Tem algo esperando leitura, sem precisar quebrar o seu fluxo agora.",
+        "O app separou isso para voce nao precisar catar depois.",
+      ]);
   }
 };
 
@@ -626,26 +719,31 @@ const resolveDirectMessagePushPresentation = async (
 
 const getOracleMessageTitle = (message: NormalizedOracleMessage): string => {
   const presentation = (asTrimmedString(message.contextSnapshot.presentation) || "ambient_pulse") as OraclePresentation;
+  const pickVariant = (lines: string[]) => lines[Math.abs(hashString(`${message.id}:${message.createdAt}:oracle-title`)) % lines.length] || lines[0];
   if (presentation === "info_card") {
-    return "Novo card do Oraculo";
+    return pickVariant([
+      "O Oraculo deixou um card.",
+      "Tem uma leitura nova no Oraculo.",
+      "Um sinal virou card para voce.",
+    ]);
   }
 
   switch (message.mode) {
     case "coach":
-      return "Oraculo - Coach";
+      return pickVariant(["O Oraculo cutucou voce.", "Sem drama: so uma acao.", "Tenho um empurrao curto."]);
     case "tatico":
-      return "Oraculo - Tatico";
+      return pickVariant(["Movimento tatico na mesa.", "Tem proximo passo claro.", "O mapa pediu foco."]);
     case "estrategico":
-      return "Oraculo - Estrategico";
+      return pickVariant(["Olha a estrategia do ciclo.", "Tem uma escolha importante aqui.", "O ciclo pediu decisao."]);
     case "calmo":
-      return "Oraculo - Calmo";
+      return pickVariant(["Respira. Uma coisa por vez.", "Sem pressa, mas com direcao.", "Volta pelo menor passo."]);
     case "reflexivo":
-      return "Oraculo - Reflexivo";
+      return pickVariant(["Tem um padrao aparecendo.", "Vi um sinal no seu ritmo.", "Uma leitura curta para voce."]);
     case "personalizado":
-      return "Oraculo - Personalizado";
+      return pickVariant(["Falei no seu modo.", "Um sinal no tom que voce escolheu.", "O Oraculo adaptou a leitura."]);
     case "neutro":
     default:
-      return "Oraculo - Neutro";
+      return pickVariant(["O Oraculo tem um sinal.", "Tem leitura nova para voce.", "Vi algo no seu mapa."]);
   }
 };
 
@@ -655,7 +753,12 @@ const getOracleMessageBody = (message: NormalizedOracleMessage): string => {
     .trim();
 
   if (!normalized) {
-    return "O Oraculo trouxe um novo card para voce.";
+    const variants = [
+      "Tem uma leitura curta esperando voce.",
+      "Escolhi um sinal dominante. Sem relatorio longo.",
+      "Olha isso antes de abrir mais uma frente.",
+    ];
+    return variants[Math.abs(hashString(`${message.id}:${message.createdAt}:oracle-empty`)) % variants.length];
   }
 
   return normalized.length > 180

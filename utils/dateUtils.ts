@@ -1,3 +1,5 @@
+import { getOperationalDateString } from './operationalDay.js';
+
 export const parseDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
@@ -13,13 +15,14 @@ export const formatDate = (dateStr: string) => {
 export const getCycleTimingSummary = (startDateStr: string, endDateStr: string, todayDateStr?: string) => {
     const startDate = parseDate(startDateStr);
     const endDate = parseDate(endDateStr);
-    const today = parseDate(todayDateStr || new Date().toISOString().split('T')[0]);
+    const today = parseDate(todayDateStr || getOperationalDateString());
     const totalDays = Math.max(1, daysBetween(startDate, endDate) + 1);
     const isUpcoming = today.getTime() < startDate.getTime();
     const daysUntilStart = isUpcoming ? Math.max(1, daysBetween(today, startDate)) : 0;
     const elapsedDays = isUpcoming
         ? 0
-        : Math.max(1, Math.min(totalDays, daysBetween(startDate, today) + 1));
+        : Math.max(0, Math.min(totalDays, daysBetween(startDate, today)));
+    const displayDay = isUpcoming ? 0 : Math.max(1, Math.min(totalDays, elapsedDays + 1));
     const timeProgress = isUpcoming ? 0 : Math.min(100, (elapsedDays / totalDays) * 100);
 
     return {
@@ -33,7 +36,7 @@ export const getCycleTimingSummary = (startDateStr: string, endDateStr: string, 
         daysUntilStart,
         statusLabel: isUpcoming
             ? (daysUntilStart === 1 ? 'Comeca amanha' : `Comeca em ${daysUntilStart} dias`)
-            : `Dia ${elapsedDays}/${totalDays}`,
+            : `Dia ${displayDay}/${totalDays}`,
         inclusiveLabel: 'Conta o dia inicial e o dia final.',
     };
 };

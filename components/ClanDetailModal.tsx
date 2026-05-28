@@ -343,7 +343,10 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
     const groupBoardTabLabel = isOfficeClan ? 'Quadro' : 'Jornadas';
     const groupBoardTitle = isOfficeClan ? 'Quadro da equipe' : 'Jornadas do grupo';
     const getMissionTypeLabel = (missionType: ClanCustomQuest['mission_type']) => missionType === 'singular' ? 'Individual' : 'Coletiva';
-    const getGroupActionLabel = (_quest: ClanCustomQuest, _isInstalled: boolean) => 'Ver';
+    const getGroupActionLabel = (quest: ClanCustomQuest, isInstalled: boolean) => {
+        if (isInstalled) return 'Abrir tarefa';
+        return quest.mission_type === 'singular' ? 'Assumir tarefa' : 'Entrar na tarefa';
+    };
 
     useEffect(() => {
         trigger('whoosh');
@@ -519,31 +522,35 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                 return;
             }
 
-            if (myParticipations.includes(quest.id)) {
-                showToast("Essa acao ja esta no seu app.", "info");
-                return;
-            }
             if (quest.mission_type === 'singular' && (quest.status === 'locked' || quest.assigned_user_id) && quest.assigned_user_id !== userProfile.id) {
                 showToast("Esta tarefa ja esta com outra pessoa.", "error");
                 return;
             }
 
-            // Check if already participating (extra safety)
-            if (myParticipations.includes(quest.id)) {
-                showToast("Essa acao ja esta no seu app.", "info");
+            const alreadyParticipating = myParticipations.includes(quest.id);
+            const existingPlannerAction = findCustomQuestPlannerAction(quest);
+            const clanArena = await ensureClanAppArena();
+
+            if (alreadyParticipating && existingPlannerAction) {
+                if (existingPlannerAction.arenaId !== clanArena.id) {
+                    updateAction(existingPlannerAction.id, { arenaId: clanArena.id });
+                }
+                showToast(`Essa acao ja esta na arena "${clanArena.name}".`, "info");
                 return;
             }
 
-            const { error: participationError } = await supabase
-                .from('clan_mission_participants')
-                .insert({
-                    clan_id: clan.id,
-                    mission_id: quest.id,
-                    user_id: userProfile.id
-                });
+            if (!alreadyParticipating) {
+                const { error: participationError } = await supabase
+                    .from('clan_mission_participants')
+                    .insert({
+                        clan_id: clan.id,
+                        mission_id: quest.id,
+                        user_id: userProfile.id
+                    });
 
-            if (participationError && participationError.code !== '23505') {
-                throw participationError;
+                if (participationError && participationError.code !== '23505') {
+                    throw participationError;
+                }
             }
 
             if (quest.mission_type === 'singular') {
@@ -554,9 +561,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                 if (lockError) throw lockError;
             }
 
-            const existingPlannerAction = findCustomQuestPlannerAction(quest);
             if (existingPlannerAction) {
-                const clanArena = await ensureClanAppArena();
                 if (existingPlannerAction.arenaId !== clanArena.id) {
                     updateAction(existingPlannerAction.id, { arenaId: clanArena.id });
                 }
@@ -567,10 +572,8 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                 return;
             }
 
-            const questArena = await ensureClanAppArena();
-
             const newAction = await addAction({
-                arenaId: questArena.id,
+                arenaId: clanArena.id,
                 name: quest.title,
                 description: quest.description || 'Tarefa do grupo',
                 icon: getGroupTaskIcon(quest.category),
@@ -604,7 +607,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
             showToast(
                 scheduledInPlanner
                     ? `${activationText} e agendada no Planner!`
-                    : `${activationText} no seu app.`,
+                    : `${activationText} na arena "${clanArena.name}".`,
             );
 
             setMyParticipations(prev => [...prev, quest.id]);
@@ -703,20 +706,22 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
         };
     }, [clan?.id, getAldeiaSlots, getAldeiaPresence, performAldeiaDailyUpdate]);
 
-    // Helper to calculate effective health (DB health + active minutes capped at 30)
+    // Helper to calculate effective health (DB health + active minutes in current 6h window)
     const getEffectiveHealth = useCallback((slotId: string) => {
         const slotData = aldeiaSlots.find(s => s.slotId === slotId);
         if (!slotData) return 0;
         if (isOfficeClan) return slotData.health;
 
         const baseHealth = slotData.health;
-        const occupants = aldeiaPresence.filter(p => p.slotId === slotId);
+        const currentPeriodStart = new Date(now);
+        currentPeriodStart.setHours(Math.floor(currentPeriodStart.getHours() / 6) * 6, 0, 0, 0);
+        const occupants = aldeiaPresence.filter(p => p.slotId === slotId && new Date(p.startedAt).getTime() >= currentPeriodStart.getTime());
 
         let extraPoints = 0;
         occupants.forEach(occ => {
             const startedAt = new Date(occ.startedAt).getTime();
             const elapsedMinutes = Math.floor((now.getTime() - startedAt) / 60000);
-            extraPoints += Math.max(0, Math.min(30, elapsedMinutes));
+            if (elapsedMinutes >= 30) extraPoints += 5;
         });
 
         return Math.min(100, baseHealth + extraPoints);
@@ -1495,6 +1500,11 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                                 </div>
                                                             );
                                                         })}
+                                                        {occupants.length > 0 && (
+                                                            <div className="absolute right-2 top-1 z-50 flex h-5 min-w-5 items-center justify-center rounded-full border border-black/30 bg-[var(--skin-accent-color)] px-1.5 text-[9px] font-black text-black shadow-[0_0_10px_rgba(0,0,0,0.45)]">
+                                                                {occupants.length}
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {/* Slot Label (Transparent) */}
@@ -1913,11 +1923,11 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                             }}
                                                             className="w-full rounded-lg border border-purple-500/30 bg-purple-900/40 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-purple-300 hover:bg-purple-900/60"
                                                         >
-                                                            Ver
+                                                            {getGroupActionLabel(quest, true)}
                                                         </button>
                                                         <button
                                                             onClick={() => handleAbortMission(quest)}
-                                                            className="w-full rounded-lg border border-red-500/30 bg-red-900/40 py-2 text-[10px] font-bold uppercase tracking-wider text-red-300 hover:bg-red-900/60"
+                                                            className="mx-auto block rounded-lg border border-red-500/20 bg-transparent px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-red-300/80 hover:bg-red-900/20"
                                                         >
                                                             Devolver tarefa
                                                         </button>

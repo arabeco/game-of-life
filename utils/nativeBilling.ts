@@ -33,7 +33,6 @@ export interface NativeStoreBillingPurchaseResult {
     products: string[];
     needsServerReconciliation: boolean;
     developerNote?: string;
-    consumedPurchaseToken?: string;
 }
 
 interface StoreBillingPlugin {

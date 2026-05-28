@@ -4,7 +4,7 @@ import React, { useCallback, useRef, useEffect } from 'react';
 import { lockTouchHoldSelection } from '../utils/touchHoldSelection';
 
 interface LongPressOptions {
-    onLongPress: (event: React.MouseEvent | React.TouchEvent) => void;
+    onLongPress?: (event: React.MouseEvent | React.TouchEvent) => void;
     onLongPressCancel?: () => void;
     onLongPressRelease?: () => void;
     onClick?: (event: React.MouseEvent | React.TouchEvent) => void;
@@ -13,6 +13,7 @@ interface LongPressOptions {
     dragThreshold?: number;
     preventDefaultOnTouch?: boolean;
     touchDragRequiresLongPress?: boolean;
+    dragIntent?: 'any' | 'vertical' | 'horizontal';
 }
 
 const isTouchEvent = (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent): e is TouchEvent | React.TouchEvent => 'touches' in e;
@@ -56,7 +57,7 @@ export const useLongPress = (options: LongPressOptions) => {
         // Allow move handler to run in 'longpress' state to detect a drag-after-longpress-trigger.
         if (state.current !== 'pending' && state.current !== 'longpress') return;
 
-        const { dragThreshold = 10, onDragStart, onLongPressCancel, touchDragRequiresLongPress } = optionsRef.current;
+        const { dragThreshold = 10, onDragStart, onLongPressCancel, touchDragRequiresLongPress, dragIntent = 'any' } = optionsRef.current;
         if (shouldPreventTouchDefault() && isTouchEvent(e) && e.cancelable) {
             e.preventDefault();
         }
@@ -65,6 +66,19 @@ export const useLongPress = (options: LongPressOptions) => {
         const dy = currentPos.y - startPos.current.y;
 
         if (Math.sqrt(dx * dx + dy * dy) > dragThreshold) {
+            const isHorizontalIntent = Math.abs(dx) >= Math.abs(dy);
+            const matchesDragIntent =
+                dragIntent === 'any'
+                || (dragIntent === 'horizontal' && isHorizontalIntent)
+                || (dragIntent === 'vertical' && !isHorizontalIntent);
+
+            if (!matchesDragIntent) {
+                state.current = 'idle';
+                cleanup();
+                onLongPressCancel?.();
+                return;
+            }
+
             if (touchDragRequiresLongPress && isTouchEvent(e) && state.current === 'pending') {
                 state.current = 'idle';
                 cleanup();
@@ -125,7 +139,7 @@ export const useLongPress = (options: LongPressOptions) => {
         timeout.current = setTimeout(() => {
             if (state.current === 'pending') {
                 state.current = 'longpress';
-                onLongPress(e);
+                onLongPress?.(e);
                 // DO NOT remove move listeners. This allows `handleMove` to still
                 // detect a drag and cancel the long press if needed.
             }

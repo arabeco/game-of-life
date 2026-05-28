@@ -55,16 +55,16 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
   assets: {
     id: 'assets',
     label: 'Ativos',
-    title: 'Este e seu mapa geral.',
-    summary: 'Aqui voce ve quais areas da vida estao fortes, fracas ou pedindo cuidado.',
-    items: ['olhe o ativo mais baixo e abra ele se quiser decidir o proximo movimento.'],
+    title: 'Olha o mapa antes de correr.',
+    summary: 'Aqui eu vejo quais areas estao fortes, cansadas ou pedindo uma prova real.',
+    items: ['abre o ativo mais fraco e escolhe um movimento pequeno.'],
   },
   arenas: {
     id: 'arenas',
     label: 'Arenas',
-    title: 'Aqui as frentes viram jogo.',
-    summary: 'Arenas sao projetos, metas ou partes da vida que precisam de acao real.',
-    items: ['crie uma arena simples; depois voce melhora o nome e os detalhes.'],
+    title: 'Uma frente por vez.',
+    summary: 'Arena e onde uma parte da vida deixa de ser ideia e vira coisa jogavel.',
+    items: ['crie uma arena simples. O nome perfeito pode esperar.'],
   },
   arena_modal: {
     id: 'arena_modal',
@@ -76,9 +76,9 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
   planner: {
     id: 'planner',
     label: 'Planner',
-    title: 'Este e o seu hoje.',
-    summary: 'Aqui voce puxa acoes para o dia, completa o que fez e sente o ciclo andar.',
-    items: ['pegue uma acao do estoque ou complete algo que ja esta na grade.'],
+    title: 'Agora o dia fica concreto.',
+    summary: 'Puxa uma acao, fecha uma prova e deixa o ciclo sentir que voce apareceu.',
+    items: ['complete uma acao real. Uma ja muda o estado do dia.'],
   },
   action_modal: {
     id: 'action_modal',
@@ -90,16 +90,16 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
   rest: {
     id: 'rest',
     label: 'Descanso',
-    title: 'Respira. Aqui e leitura do agora.',
-    summary: 'Essa tela tira o ruido e mostra o estado do dia sem te jogar em mil botoes.',
-    items: ['use o painel diario quando quiser revisar ou fechar o dia com calma.'],
+    title: 'Respira. Eu leio o agora.',
+    summary: 'Essa tela reduz o ruido e mostra o que importa sem te jogar em mil botoes.',
+    items: ['se o dia ja teve prova, fecha com calma. Se nao teve, pega uma pequena.'],
   },
   social: {
     id: 'social',
     label: 'Mundo',
-    title: 'Aqui mora o lado social.',
-    summary: 'Pessoas, mensagens, loja e camadas compartilhadas ficam aqui, longe do fluxo do dia.',
-    items: ['entre na aba que voce procura: pessoas, mensagens, loja ou campanhas.'],
+    title: 'Aqui mora o mundo fora da sua tela.',
+    summary: 'Pessoas, mensagens, loja e camadas compartilhadas ficam aqui sem invadir o seu dia.',
+    items: ['resolve o que chamou voce e volta para a proxima acao.'],
   },
   social_people: {
     id: 'social_people',
@@ -118,9 +118,9 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
   social_messages: {
     id: 'social_messages',
     label: 'Mensagens',
-    title: 'DMs ficam aqui.',
-    summary: 'Conversas diretas moram no Mundo. O Oraculo avisa, mas nao mistura os papeis.',
-    items: ['abra uma conversa ou volte depois se nao houver nada urgente.'],
+    title: 'Conversa humana fica aqui.',
+    summary: 'Eu aviso quando precisa, mas nao misturo DM com leitura do sistema.',
+    items: ['abre quem importa agora; o resto pode esperar.'],
   },
   social_clan: {
     id: 'social_clan',
@@ -139,9 +139,9 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
   store: {
     id: 'store',
     label: 'Loja',
-    title: 'Expansoes sem pressa.',
-    summary: 'A loja libera campanhas, itens e ouro. Nada aqui precisa atrapalhar seu dia.',
-    items: ['explore uma aba por vez; campanha muda estrutura, item muda presenca.'],
+    title: 'Compra sem virar labirinto.',
+    summary: 'Campanhas, itens e ouro ficam aqui. Entra pelo que voce quer usar de verdade.',
+    items: ['uma aba por vez. Campanha muda estrutura; item muda presenca.'],
   },
   store_codexes: {
     id: 'store_codexes',
@@ -202,9 +202,9 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
   settings_preferences: {
     id: 'settings_preferences',
     label: 'Preferencias',
-    title: 'Deixe o app menos barulhento.',
-    summary: 'Aqui voce regula visual, som, vibracao, dicas e comportamento do Oraculo.',
-    items: ['desligue o que incomoda e mantenha o que te ajuda a voltar.'],
+    title: 'Me regula do seu jeito.',
+    summary: 'Aqui voce ajusta visual, som, vibracao, dicas e o quanto eu apareco.',
+    items: ['desliga o que cansa e deixa ligado o que te traz de volta.'],
   },
   settings_premium: {
     id: 'settings_premium',
@@ -223,16 +223,16 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
   profile: {
     id: 'profile',
     label: 'Perfil',
-    title: 'E assim que voce aparece.',
-    summary: 'Perfil junta identidade, nivel, sinais publicos e partes visiveis da sua conta.',
-    items: ['revise nome, visual e privacidade antes de mostrar para alguem.'],
+    title: 'Esse e o seu sinal publico.',
+    summary: 'Perfil junta identidade, nivel e o que voce decidiu mostrar para fora.',
+    items: ['confere visual e privacidade antes de deixar alguem ver.'],
   },
   reports: {
     id: 'reports',
     label: 'Relatorios',
     title: 'Aqui o ciclo vira memoria.',
-    summary: 'Relatorios guardam fases fechadas, leituras e progresso que ja aconteceu.',
-    items: ['se estiver vazio, comece ou encerre um ciclo para acender esta area.'],
+    summary: 'Relatorio nao e bronca: e prova guardada do que voce viveu e fechou.',
+    items: ['se estiver vazio, fecha um ciclo quando tiver material real.'],
   },
 };
 

@@ -193,7 +193,7 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
                                         summary={scoreInfo.phrase}
                                         metrics={[
                                             { label: 'Foco', value: cycle.focusArena || 'Nenhuma' },
-                                            { label: 'Assinatura', value: cycle.signatureAction || 'Nenhuma' },
+                                            { label: 'Ação-chave', value: cycle.signatureAction || 'Nenhuma' },
                                             { label: 'Score', value: String(cycle.score) },
                                             { label: 'Era', value: era.label },
                                         ]}

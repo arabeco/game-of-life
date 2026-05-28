@@ -77,7 +77,7 @@ export const LegacyGenerationModal: React.FC<LegacyGenerationModalProps> = ({ on
             <div className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-xl transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'animate-fade-in opacity-100'}`}>
                 <GlassCard className={`relative aspect-[9/16] w-full max-w-[300px] overflow-hidden border-[var(--skin-accent-color)]/30 shadow-[0_0_50px_rgba(0,0,0,0.8)] transition-all duration-300 ${isClosing ? 'scale-[0.985] opacity-0' : 'scale-100 opacity-100'}`}>
                     <VideoPlayer
-                        src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/legado.mp4`}
+                        src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/report_seal.mp4`}
                         onEnd={() => {}}
                         className="h-full w-full object-cover"
                         videoClassName="scale-[1.08]"

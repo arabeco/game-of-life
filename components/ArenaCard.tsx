@@ -433,7 +433,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         ? (isClanQuestArena ? '#C0C0C0' : assetAccentColor)
         : visualPalette.accent;
     const skinColor = visualPalette.border;
-    const progressFillColor = `linear-gradient(90deg, ${rgbaString(accentColor, 0.32)} 0%, ${accentColor} 52%, rgba(255,255,255,0.92) 100%)`;
+    const arenaGoldBar = 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)';
     const highlightClass = highlightPhase === 'populate'
         ? 'arena-card-highlight arena-card-highlight--populate'
         : highlightPhase === 'celebrate'
@@ -480,7 +480,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             className={`${baseClasses} ${styleClasses} ${archivedClasses} ${isCompactThumbnail ? 'justify-start gap-[1px]' : ''}`} 
             style={{ ...cardStyle, ...tiltStyle }}
         >
-            {!isCompactThumbnail && <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ backgroundColor: skinColor }} />}
+            {!isCompactThumbnail && <div className="absolute top-0 left-0 right-0 h-[2px] z-10" style={{ background: arenaGoldBar }} />}
             {arena.isArchived && (
                 <div
                     title="Arquivada"
@@ -679,7 +679,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         className={`arena-plate-progress-fill ${highlightPhase === 'celebrate' && progress >= 100 ? 'arena-plate-progress-fill--celebrate' : ''}`}
                         style={{
                             width: `${progress}%`,
-                            background: progressFillColor,
+                            background: arenaGoldBar,
                         }}
                     ></div>
                 </div>

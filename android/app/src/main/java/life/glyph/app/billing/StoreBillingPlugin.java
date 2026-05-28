@@ -1,11 +1,9 @@
 package life.glyph.app.billing;
 
 import androidx.annotation.NonNull;
-import com.android.billingclient.api.AcknowledgePurchaseParams;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.BillingResult;
-import com.android.billingclient.api.ConsumeParams;
 import com.android.billingclient.api.PendingPurchasesParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.Purchase;
@@ -231,11 +229,21 @@ public class StoreBillingPlugin extends Plugin implements PurchasesUpdatedListen
         }
 
         if (BillingClient.ProductType.INAPP.equals(pendingPurchaseProductType)) {
-            consumePurchase(selectedPurchase, purchaseCall);
+            JSObject payload = buildPurchasePayload(selectedPurchase, selectedPurchase.isAcknowledged(), false, "purchased");
+            payload.put("needsServerReconciliation", true);
+            payload.put("developerNote", "Compra confirmada na Google Play. O servidor vai validar e consumir o item.");
+            clearPendingPurchase();
+            purchaseCall.resolve(payload);
+            purchaseCall.release(getBridge());
             return;
         }
 
-        acknowledgePurchase(selectedPurchase, purchaseCall);
+        JSObject payload = buildPurchasePayload(selectedPurchase, selectedPurchase.isAcknowledged(), false, "purchased");
+        payload.put("needsServerReconciliation", true);
+        payload.put("developerNote", "Plano confirmado na Google Play. O servidor vai validar e reconhecer a compra.");
+        clearPendingPurchase();
+        purchaseCall.resolve(payload);
+        purchaseCall.release(getBridge());
     }
 
     private void createBillingClientIfNeeded() {
@@ -341,63 +349,6 @@ public class StoreBillingPlugin extends Plugin implements PurchasesUpdatedListen
             clearPendingPurchase();
             call.release(getBridge());
         }
-    }
-
-    private void acknowledgePurchase(Purchase purchase, PluginCall call) {
-        if (purchase.isAcknowledged()) {
-            JSObject payload = buildPurchasePayload(purchase, true, false, "purchased");
-            payload.put("needsServerReconciliation", true);
-            payload.put("developerNote", "Compra confirmada na Google Play. Falta conciliar o credito no backend.");
-            clearPendingPurchase();
-            call.resolve(payload);
-            call.release(getBridge());
-            return;
-        }
-
-        AcknowledgePurchaseParams params = AcknowledgePurchaseParams
-            .newBuilder()
-            .setPurchaseToken(purchase.getPurchaseToken())
-            .build();
-
-        billingClient.acknowledgePurchase(params, billingResult -> {
-            if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                rejectWithBillingResult(call, "A compra foi feita, mas nao foi possivel reconhecer a assinatura", "PURCHASE_ACK_FAILED", billingResult);
-                clearPendingPurchase();
-                call.release(getBridge());
-                return;
-            }
-
-            JSObject payload = buildPurchasePayload(purchase, true, false, "purchased");
-            payload.put("needsServerReconciliation", true);
-            payload.put("developerNote", "Assinatura confirmada na Google Play. Falta conciliar o acesso no backend.");
-            clearPendingPurchase();
-            call.resolve(payload);
-            call.release(getBridge());
-        });
-    }
-
-    private void consumePurchase(Purchase purchase, PluginCall call) {
-        ConsumeParams params = ConsumeParams
-            .newBuilder()
-            .setPurchaseToken(purchase.getPurchaseToken())
-            .build();
-
-        billingClient.consumeAsync(params, (billingResult, purchaseToken) -> {
-            if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-                rejectWithBillingResult(call, "A compra foi feita, mas nao foi possivel consumir o item", "PURCHASE_CONSUME_FAILED", billingResult);
-                clearPendingPurchase();
-                call.release(getBridge());
-                return;
-            }
-
-            JSObject payload = buildPurchasePayload(purchase, purchase.isAcknowledged(), true, "purchased");
-            payload.put("consumedPurchaseToken", purchaseToken);
-            payload.put("needsServerReconciliation", true);
-            payload.put("developerNote", "Compra consumivel confirmada na Google Play. Falta conciliar o ouro no backend.");
-            clearPendingPurchase();
-            call.resolve(payload);
-            call.release(getBridge());
-        });
     }
 
     private void queryPurchases(String productType, JSArray sink, Runnable onComplete) {

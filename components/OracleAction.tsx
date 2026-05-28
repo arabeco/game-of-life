@@ -1121,7 +1121,7 @@ export const OracleAction: React.FC = () => {
         `Rascunho pronto: criar a acao "${payload.name}" na arena "${getPayloadArenaLabel(payload)}" com ${payload.duration || 30} min.${scheduleLine}`,
         payload.createArenaName ? `Como essa arena ainda nao existe, eu tambem vou criar "${payload.createArenaName}".` : '',
         approxLine,
-        'Se quiser, posso preencher duracao, repeticoes, dificuldade ou tipo.',
+        'Manual tambem e simples: da para criar pelo +. Se quiser, eu deixo o rascunho pronto para voce.',
         ...buildConfirmationFooter(kind),
       ]);
     }
@@ -1681,7 +1681,7 @@ export const OracleAction: React.FC = () => {
         formatAssistantText([
           'Nao classifiquei o pedido ainda.',
           '',
-          'Posso receber coisas como:',
+          'Pelo app, o + resolve o caminho manual. Se quiser que eu monte por voce, posso receber coisas como:',
           '1. criar ciclo Reconstrucao ate 12/04',
           '2. marcar consulta medica amanha de manha',
           '3. fiz academia as 9h',

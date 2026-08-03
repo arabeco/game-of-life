@@ -182,7 +182,7 @@ const extractActionReference = (text: string): string | null => {
     /(?:agendar|agenda|programar|programa|marcar|marca)\s+(.+?)(?=\s+(?:para|pra|amanha|hoje|de manha|demanha|manha|tarde|noite|seg|ter|qua|qui|sex|sab|dom|as\b|ass\b|\d{1,2}[/:h]|$))/i,
     /(?:fiz|feito|feita|realizei|terminei|completei|completar|completa|concluir|conclui)\s+(.+?)(?=\s+(?:agora|para|pra|amanha|hoje|de manha|demanha|manha|tarde|noite|as\b|ass\b|\d{1,2}[/:h]|$))/i,
     /(?:desmarcar|desmarca|desfazer|desfaz|descompletar|descompleta|tirar|remove|remover)\s+(.+?)(?=\s+(?:do planner|da agenda|de hoje|amanha|hoje|as\b|ass\b|\d{1,2}[/:h]|$))/i,
-    /(?:editar|edita|alterar|altera|mudar|muda|renomear|renomeia|ajustar|ajusta)\s+(.+?)(?=\s+(?:com|para|pra|na|no|descricao|descriÃ§Ã£o|dificuldade|duracao|repeticoes|repetiÃ§Ãµes|$))/i,
+    /(?:editar|edita|alterar|altera|mudar|muda|renomear|renomeia|ajustar|ajusta)\s+(.+?)(?=\s+(?:com|para|pra|na|no|descricao|descrição|dificuldade|duracao|repeticoes|repetições|$))/i,
   ];
 
   for (const pattern of patterns) {
@@ -204,7 +204,7 @@ const extractArenaReference = (text: string): string | null => {
 
   const normalized = normalizeText(text);
   const patterns = [
-    /(?:editar|edita|alterar|altera|mudar|muda|arquivar|arquiva|desarquivar|desarquiva)\s+(.+?)(?=\s+(?:com|para|pra|descricao|descriÃ§Ã£o|prioridade|$))/i,
+    /(?:editar|edita|alterar|altera|mudar|muda|arquivar|arquiva|desarquivar|desarquiva)\s+(.+?)(?=\s+(?:com|para|pra|descricao|descrição|prioridade|$))/i,
     /(?:remover|remove|deletar|deleta|apagar|apaga|excluir|exclui)\s+(.+?)(?=\s+(?:agora|$))/i,
   ];
 

@@ -26,6 +26,7 @@ import {
     SCREEN_INTRO_TIP_CONTEXT_EVENT,
     SCREEN_INTRO_TIP_LIST,
     SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT,
+    SCREEN_INTRO_TIPS_DISABLED_FLAG,
     areScreenIntroTipsEnabled,
     setScreenIntroTipsEnabled,
     type ScreenIntroTipId,
@@ -627,15 +628,21 @@ const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () 
 };
 
 const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userProfile, showToast } = useGame();
-    const [screenTipsEnabled, setScreenTipsEnabledState] = useState(() => areScreenIntroTipsEnabled(userProfile.id));
+    const { userProfile, showToast, updateUserProfile } = useGame();
+    const profileFlags = userProfile.completedSeasonMissions || [];
+    const [screenTipsEnabled, setScreenTipsEnabledState] = useState(() => areScreenIntroTipsEnabled(userProfile.id, profileFlags));
 
     useEffect(() => {
-        setScreenTipsEnabledState(areScreenIntroTipsEnabled(userProfile.id));
-    }, [userProfile.id]);
+        setScreenTipsEnabledState(areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []));
+    }, [userProfile.completedSeasonMissions, userProfile.id]);
 
     const handleScreenTipsToggle = (enabled: boolean) => {
         setScreenIntroTipsEnabled(userProfile.id, enabled);
+        const currentFlags = userProfile.completedSeasonMissions || [];
+        const nextFlags = enabled
+            ? currentFlags.filter((flag) => flag !== SCREEN_INTRO_TIPS_DISABLED_FLAG)
+            : Array.from(new Set([...currentFlags, SCREEN_INTRO_TIPS_DISABLED_FLAG]));
+        updateUserProfile({ completedSeasonMissions: nextFlags });
         setScreenTipsEnabledState(enabled);
         window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, {
             detail: { enabled },

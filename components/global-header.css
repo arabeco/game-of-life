@@ -53,8 +53,11 @@
 }
 
 .shell-float-button {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
   display: flex;
   align-items: center;
   justify-content: center;

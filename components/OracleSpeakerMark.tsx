@@ -18,10 +18,10 @@ const TONE_TOKENS: Record<OracleSpeakerTone, {
     label: 'Oraculo',
   },
   guide: {
-    core: '#d8e6ff',
-    coreSoft: 'rgba(216,230,255,0.16)',
-    border: 'rgba(216,230,255,0.42)',
-    glow: 'rgba(216,230,255,0.18)',
+    core: '#f3d48a',
+    coreSoft: 'rgba(243,212,138,0.16)',
+    border: 'rgba(243,212,138,0.46)',
+    glow: 'rgba(243,212,138,0.18)',
     label: 'Guia',
   },
   success: {
@@ -46,10 +46,10 @@ const TONE_TOKENS: Record<OracleSpeakerTone, {
     label: 'Risco',
   },
   info: {
-    core: '#7dd3fc',
-    coreSoft: 'rgba(125,211,252,0.14)',
-    border: 'rgba(125,211,252,0.44)',
-    glow: 'rgba(125,211,252,0.2)',
+    core: '#f3d48a',
+    coreSoft: 'rgba(243,212,138,0.14)',
+    border: 'rgba(243,212,138,0.44)',
+    glow: 'rgba(243,212,138,0.18)',
     label: 'Sinal',
   },
 };
@@ -102,9 +102,9 @@ export const OracleSpeakerMark: React.FC<{
     <div
       className={`relative flex shrink-0 items-center justify-center rounded-full border bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.22),transparent_34%),linear-gradient(145deg,rgba(45,38,28,0.98),rgba(0,0,0,0.98))] ${sizes.shell} ${className}`}
       style={{
-        borderColor: tokens.border,
+        borderColor: 'rgba(243,212,138,0.46)',
         color: tokens.core,
-        boxShadow: `0 0 28px ${tokens.glow}, 0 12px 28px rgba(0,0,0,0.44)`,
+        boxShadow: `0 0 18px rgba(243,212,138,0.16), 0 12px 28px rgba(0,0,0,0.44)`,
       }}
       aria-label={tokens.label}
     >

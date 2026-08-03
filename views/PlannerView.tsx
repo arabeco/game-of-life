@@ -13,7 +13,7 @@ import { GlassCard } from '../components/GlassCard';
 import { useTutorial } from '../contexts/TutorialContext';
 import { buildActionPoolByDate, buildDailyExpSnapshot, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getVisiblePoolTaskIdsForAction } from '../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_START_MINUTE, OPERATIONAL_DAY_TOTAL_MINUTES, buildLocalDateFromString, formatLocalDateString, formatOperationalHourLabel, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes, getOperationalDateString, getOperationalDisplayMinutes, getOperationalHourTicks, getTaskDisplayStartTime, getTaskOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
-import { hasScheduledTime, isTaskInPool } from '../utils/taskDomain.js';
+import { hasScheduledTime, isClanQuestAction, isTaskInPool } from '../utils/taskDomain.js';
 import { useLongPress } from '../hooks/useLongPress';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { APP_SENSORY_CUE_EVENT, type AppSensoryCuePayload } from '../utils/sensoryCue';
@@ -891,6 +891,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         checklistItems,
         sequenceItems,
         dailyCommitment,
+        judgedOperationalDates,
+        judgedTaskIdsByDate,
         aldeiaSlots,
         rescheduleTask,
         returnTaskToPool,
@@ -910,6 +912,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     } = useGame();
     const { isTutorialActive, currentStep, nextStep } = useTutorial();
     const getActionById = useCallback((id: string) => actions.find(a => a.id === id), [actions]);
+    const allArenas = useMemo(() => assets.flatMap(asset => asset.arenas || []), [assets]);
+    const isClanQuestActionId = useCallback((actionId: string) => isClanQuestAction(actionId, actions, allArenas), [actions, allArenas]);
     const [currentDate, setCurrentDate] = useState(() => buildLocalDateFromString(getOperationalDateString()));
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
     const [plannerMode, setPlannerMode] = useState<PlannerMode>('horario');
@@ -1129,11 +1133,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
         const map: Array<[RegExp, DayOfWeek]> = [
             [/^(seg|segunda)$/i, 'SEG'],
-            [/^(ter|terca|terÃƒÆ’Ã‚Â§a)$/i, 'TER'],
+            [/^(ter|terca|terça)$/i, 'TER'],
             [/^(qua|quarta)$/i, 'QUA'],
             [/^(qui|quinta)$/i, 'QUI'],
             [/^(sex|sexta)$/i, 'SEX'],
-            [/^(sab|sabado|sÃƒÆ’Ã‚Â¡bado)$/i, 'SAB'],
+            [/^(sab|sabado|sábado)$/i, 'SAB'],
             [/^(dom|domingo)$/i, 'DOM'],
         ];
 
@@ -1192,8 +1196,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             normalizedAfter.search(/\b\d+\s*(x|vez|vezes)\b/i),
             normalizedAfter.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
             normalizedAfter.search(/\b(\d{1,2}\s*(?:hora|horas)?\s*(?:da|de)\s*(manha|tarde|noite)|(?:de|da)\s*(manha|tarde|noite)|as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
-            normalizedAfter.search(/\b(seg|segunda|ter|terca|terÃƒÆ’Ã‚Â§a|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sÃƒÆ’Ã‚Â¡bado|dom|domingo)\b/i),
-            normalizedAfter.search(/\s[-ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â]\s/),
+            normalizedAfter.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
+            normalizedAfter.search(/\s[-–]\s/),
             normalizedAfter.search(/[|,;]/),
         ].filter(i => i >= 0);
 
@@ -1220,7 +1224,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 normalizedBase.search(/\b\d+\s*(x|vez|vezes)\b/i),
                 normalizedBase.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
                 normalizedBase.search(/\b(?:as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
-                normalizedBase.search(/\b(seg|segunda|ter|terca|terÃƒÆ’Ã‚Â§a|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sÃƒÆ’Ã‚Â¡bado|dom|domingo)\b/i),
+                normalizedBase.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
             ].filter(i => i >= 0);
             const nameEnd = cutPoints.length > 0 ?Math.min(...cutPoints) : normalizedBase.length;
             const parsedName = normalizedBase.slice(0, nameEnd).trim();
@@ -1542,17 +1546,17 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     const containerBottom = rect.bottom;
                     const draggedElementTop = p.y - dragOffsetRef.current.y;
 
-                    // LÃƒÆ’Ã‚Â³gica Dupla para Subir:
-                    // 1. Se o topo do elemento tocar o topo do container (precisÃƒÆ’Ã‚Â£o)
-                    // 2. OU se o ponteiro estiver nos primeiros 200px da tela (fallback de seguranÃƒÆ’Ã‚Â§a)
+                    // Logica dupla para subir:
+                    // 1. Se o topo do elemento tocar o topo do container (precisao)
+                    // 2. OU se o ponteiro estiver nos primeiros 200px da tela (fallback de seguranca)
                     const isTopZone = draggedElementTop < (containerTop + 80) || p.y < 200;
 
-                    // LÃƒÆ’Ã‚Â³gica para Descer:
-                    // 1. Ponteiro nos ÃƒÆ’Ã‚Âºltimos 150px do container ou da tela
+                    // Logica para descer:
+                    // 1. Ponteiro nos ultimos 150px do container ou da tela
                     const isBottomZone = p.y > (containerBottom - 100) || p.y > (window.innerHeight - 150);
 
                     if (isTopZone) {
-                        // Calcula intensidade baseada no quÃƒÆ’Ã‚Â£o "pra cima" estÃƒÆ’Ã‚Â¡
+                        // Calcula intensidade baseada no quanto "pra cima" esta
                         const distElement = (containerTop + 80) - draggedElementTop;
                         const distPointer = 200 - p.y;
                         const dist = Math.max(distElement, distPointer);
@@ -1648,7 +1652,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     if (!dailyViewEl) return;
                     const gridRect = dailyViewEl.getBoundingClientRect();
 
-                    // Permitir margem para manter o indicador visÃƒÆ’Ã‚Â­vel durante o auto-scroll nas bordas
+                    // Permitir margem para manter o indicador visivel durante o auto-scroll nas bordas
                     const scrollMargin = 150;
                     if (pos.y < gridRect.top - scrollMargin || pos.y > gridRect.bottom + scrollMargin) {
                         setDailyDropIndicator(null);
@@ -1985,31 +1989,67 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     }, [executionQueuedTaskIds, plannerScopedTasks, sanitizedExecutionQueueByDate]);
     const changeDate = (amount: number) => setCurrentDate(prev => { const newDate = new Date(prev); newDate.setDate(newDate.getDate() + amount); return newDate; });
     
+    const isTaskAlreadyJudged = useCallback((task: ScheduledTask | undefined | null) => {
+        if (!task) return false;
+        const operationalDate = getTaskOperationalDateString(task);
+        if (!operationalDate) return false;
+        const judgedIds = judgedTaskIdsByDate[operationalDate] || [];
+        if (dailyCommitment.date === operationalDate && dailyCommitment.stage === 'judgment') {
+            return [...judgedIds, ...dailyCommitment.taskIds].includes(task.id);
+        }
+        return judgedIds.includes(task.id);
+    }, [dailyCommitment.date, dailyCommitment.stage, dailyCommitment.taskIds, judgedTaskIdsByDate]);
+
+    const canReuseBayTask = useCallback((task: ScheduledTask | undefined | null) =>
+        Boolean(task && isTaskInPool(task) && !isTaskAlreadyJudged(task)),
+        [isTaskAlreadyJudged]
+    );
+
     const dailyTasks = getTasksForDate(currentDate);
-    const bayAreaTasks = plannerScopedTasks.filter(task => isTaskInPool(task) && !executionQueuedTaskIds.has(task.id)); // Waiting bay scoped to the active cycle or visible operational day
+    const bayAreaTasks = plannerScopedTasks.filter(task => canReuseBayTask(task) && !executionQueuedTaskIds.has(task.id)); // Waiting bay scoped to the active cycle or visible operational day
     const scheduledTasks = dailyTasks.filter(hasScheduledTime); // For DailyView
     const weeklyScheduledTasks = tasks.filter(hasScheduledTime);
-    
+
     const allTasksCompleted = checklistItems.every(item => item.completed);
     const hasPendingChecklistItems = checklistItems.some(item => !item.completed);
     const shouldSurfaceChecklist = currentTime.getHours() >= 20 && hasPendingChecklistItems;
     const isToday = formatLocalDateString(currentDate) === getOperationalDateString();
+
     const plannerExpSnapshot = useMemo<PlannerExpSnapshot>(() => {
-        const today = getOperationalDateString(currentTime);
-        if (dailyCommitment.date !== today || dailyCommitment.stage === 'judgment') {
-            return { value: 0, completedCount: 0, totalCount: 0, isDeposited: dailyCommitment.stage === 'judgment' };
-        }
+        const selectedDate = formatLocalDateString(currentDate);
 
         const scopedTasks = activeCycle
             ? filterCycleTasksByScope(tasks, actions, activeCycle, activeCycle.startDate, activeCycle.endDate)
             : tasks;
-        const fallbackTaskIds = dailyCommitment.taskIds.length > 0
-            ? dailyCommitment.taskIds
-            : getInitialDailyCommitmentTaskIds(scopedTasks, today, () => false);
+
+        const isSelectedCommitment = dailyCommitment.date === selectedDate;
+        const realTaskIdsForDate = getInitialDailyCommitmentTaskIds(scopedTasks, selectedDate, isClanQuestActionId);
+        const judgedIdsForDate = new Set([
+            ...(judgedTaskIdsByDate[selectedDate] || []),
+            ...(isSelectedCommitment && dailyCommitment.stage === 'judgment' ? dailyCommitment.taskIds : []),
+        ]);
+        const fallbackTaskIds = isSelectedCommitment && dailyCommitment.taskIds.length > 0
+            ? Array.from(new Set([
+                ...dailyCommitment.taskIds.filter(taskId =>
+                    scopedTasks.some(task =>
+                        task.id === taskId &&
+                        taskMatchesOperationalDate(task, selectedDate) &&
+                        !isClanQuestActionId(task.actionId) &&
+                        !judgedIdsForDate.has(task.id)
+                    )
+                ),
+                ...realTaskIdsForDate,
+            ])).filter(taskId => !judgedIdsForDate.has(taskId))
+            : realTaskIdsForDate.filter(taskId => !judgedIdsForDate.has(taskId));
+        const isDeposited = judgedOperationalDates.includes(selectedDate) && fallbackTaskIds.length === 0;
+
+        if (isDeposited) {
+            return { value: 0, completedCount: 0, totalCount: 0, isDeposited: true };
+        }
         const expSnapshot = buildDailyExpSnapshot({
             tasks: scopedTasks,
             actions,
-            operationalDate: today,
+            operationalDate: selectedDate,
             taskIds: fallbackTaskIds,
             includePremium: hasPremiumAccess(userProfile as any),
         });
@@ -2020,10 +2060,10 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             totalCount: expSnapshot.totalCount,
             isDeposited: false,
         };
-    }, [activeCycle, actions, currentTime, dailyCommitment, tasks, userProfile]);
+    }, [activeCycle, actions, currentDate, dailyCommitment, isClanQuestActionId, judgedOperationalDates, judgedTaskIdsByDate, tasks, userProfile]);
 
     // UNIFY POOL AND BAY AREA TASKS FOR DISPLAY
-    // "Estoque e Espera ÃƒÆ’Ã‚Â© a mesma coisa"
+    // "Estoque e Espera e a mesma coisa"
     const unifiedBayAreaItems = useMemo(() => {
         const unified = Object.fromEntries(
             (Object.entries(availableTaskPool) as [string, BayEntryPayload][])
@@ -2134,7 +2174,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         // Outside a cycle, keep the bay local to the day on screen.
         const nextTaskId = payload.taskIds?.find(taskId => {
             const task = tasksById.get(taskId);
-            if (!task) return false;
+            if (!canReuseBayTask(task)) return false;
             return activeCycle
                 ? task.date >= activeCycle.startDate && task.date <= activeCycle.endDate
                 : taskMatchesOperationalDate(task, selectedOperationalDateString);
@@ -2253,6 +2293,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                                         if (!action) return null;
                                                         const nextTaskId = payload.taskIds?.find(taskId => {
                                                             const task = tasksById.get(taskId);
+                                                            if (!canReuseBayTask(task)) return false;
                                                             return activeCycle
                                                                 ? Boolean(task && task.date >= activeCycle.startDate && task.date <= activeCycle.endDate)
                                                                 : Boolean(task && taskMatchesOperationalDate(task, selectedOperationalDateString));

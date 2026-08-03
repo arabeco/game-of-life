@@ -240,7 +240,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         if (actionHoldInterval.current) return;
 
         const startTime = Date.now();
-        const duration = 600; // 0.6 seconds to trigger action
+        const duration = action === 'real_oracle' ? 140 : 600; // Oraculo abre como toque; os outros continuam com segurada.
 
         actionHoldInterval.current = window.setInterval(() => {
             const elapsed = Date.now() - startTime;
@@ -275,12 +275,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
             // New behavior: Open text input overlay instead of OracleFeed
             setShowQuickActionInput(true);
         } else if (action === 'real_oracle') {
-            // Open the actual Oracle Feed
-            setIsClosing(true);
-            setTimeout(() => {
-                onClose();
-                onOpenOracle?.();
-            }, 700);
+            onOpenOracle?.();
         } else {
             // For others, close RestScreen and then open the modal via callback
             setIsClosing(true);
@@ -1282,7 +1277,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onMouseLeave={handleQuickActionEnd}
                             onTouchStart={() => handleQuickActionStart('checklist')}
                             onTouchEnd={handleQuickActionEnd}
-                            className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform relative"
+                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
                         >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'checklist' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
                                 {actionProgress?.id === 'checklist' && (
@@ -1316,7 +1311,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onMouseLeave={handleQuickActionEnd}
                             onTouchStart={() => handleQuickActionStart('mood')}
                             onTouchEnd={handleQuickActionEnd}
-                            className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform relative"
+                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
                         >
                             <div
                                 className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'mood' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}
@@ -1345,6 +1340,45 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Humor</span>
                         </button>
 
+                        {/* ORACLE INDICATOR */}
+                        <button
+                            onMouseDown={() => handleQuickActionStart('real_oracle')}
+                            onMouseUp={handleQuickActionEnd}
+                            onMouseLeave={handleQuickActionEnd}
+                            onTouchStart={() => handleQuickActionStart('real_oracle')}
+                            onTouchEnd={handleQuickActionEnd}
+                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
+                        >
+                            <div className="relative flex h-12 w-12 items-center justify-center overflow-visible">
+                                {actionProgress?.id === 'real_oracle' && (
+                                    <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r="48"
+                                            fill="none"
+                                            stroke="#fbbf24"
+                                            strokeWidth="4"
+                                            strokeDasharray="301.6"
+                                            strokeDashoffset={301.6 - (301.6 * actionProgress.progress) / 100}
+                                        />
+                                    </svg>
+                                )}
+                                <OracleSpeakerMark
+                                    tone={oracleTone}
+                                    size="sm"
+                                    pulse={oracleUnreadCount > 0}
+                                    className={`transition-transform group-hover:scale-105 ${actionProgress?.id === 'real_oracle' ? 'scale-110' : ''}`}
+                                />
+                                {oracleUnreadCount > 0 && (
+                                    <span className={`absolute -right-1 -top-1 z-20 flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[9px] font-black leading-none ${oracleBadgeClass}`}>
+                                        {oracleUnreadCount > 9 ? '9+' : oracleUnreadCount}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Oráculo</span>
+                        </button>
+
                         {/* Nova Ação (Input) */}
                         <button
                             onMouseDown={() => handleQuickActionStart('new_action')}
@@ -1352,7 +1386,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onMouseLeave={handleQuickActionEnd}
                             onTouchStart={() => handleQuickActionStart('new_action')}
                             onTouchEnd={handleQuickActionEnd}
-                            className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform relative"
+                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
                         >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'new_action' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
                                 {actionProgress?.id === 'new_action' && (
@@ -1404,44 +1438,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Foco</span>
                         </button>
 
-                        {/* ORIGINAL ORACLE INDICATOR RESTORED */}
-                        <button
-                            onMouseDown={() => handleQuickActionStart('real_oracle')}
-                            onMouseUp={handleQuickActionEnd}
-                            onMouseLeave={handleQuickActionEnd}
-                            onTouchStart={() => handleQuickActionStart('real_oracle')}
-                            onTouchEnd={handleQuickActionEnd}
-                            className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform relative"
-                        >
-                            <div className="relative flex h-11 w-11 items-center justify-center overflow-visible">
-                                {actionProgress?.id === 'real_oracle' && (
-                                    <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none" viewBox="0 0 100 100">
-                                        <circle
-                                            cx="50"
-                                            cy="50"
-                                            r="48"
-                                            fill="none"
-                                            stroke="#fbbf24"
-                                            strokeWidth="4"
-                                            strokeDasharray="301.6"
-                                            strokeDashoffset={301.6 - (301.6 * actionProgress.progress) / 100}
-                                        />
-                                    </svg>
-                                )}
-                                <OracleSpeakerMark
-                                    tone={oracleTone}
-                                    size="sm"
-                                    pulse={oracleUnreadCount > 0}
-                                    className={`transition-transform group-hover:scale-105 ${actionProgress?.id === 'real_oracle' ? 'scale-110' : ''}`}
-                                />
-                                {oracleUnreadCount > 0 && (
-                                    <span className={`absolute -right-1 -top-1 z-20 flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[9px] font-black leading-none ${oracleBadgeClass}`}>
-                                        {oracleUnreadCount > 9 ? '9+' : oracleUnreadCount}
-                                    </span>
-                                )}
-                            </div>
-                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Oráculo</span>
-                        </button>
                     </div>
 
                     <div className="relative flex h-[7rem] flex-col items-center">

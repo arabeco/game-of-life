@@ -12,6 +12,8 @@ import { QUEST_VISUAL, withAlpha } from '../constants/rarityVisuals';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { calculateArenaProgress } from '../utils/progressUtils';
+import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
+import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import './arena-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 import { RelationshipHubModal } from './RelationshipHubModal';
@@ -51,7 +53,8 @@ const ActionSquare: React.FC<{
     skinColor: string;
     sharedPool: boolean;
     countingTasks: ScheduledTask[];
-}> = ({ action, onClick, skinColor, sharedPool, countingTasks }) => {
+    relationshipLinkType?: RelationshipLinkType | null;
+}> = ({ action, onClick, skinColor, sharedPool, countingTasks, relationshipLinkType = null }) => {
     const { getActionBackgroundStyle, getArenas, getClanQuestProgress, getClanQuestForActionName, getSharedActionPoolProgress } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
 
@@ -86,6 +89,7 @@ const ActionSquare: React.FC<{
     const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
     const displayProgress = isClanQuest ?`${clanProgress}/${target}` : (isFreeAction ?`${completedCount}` : `${completedCount}/${totalProposed}`);
     const displayIcon = action.icon || '\u{1F4DD}';
+    const surfaceBadge = resolveActionSurfaceBadge(action, relationshipLinkType);
 
     return (
         <div className="relative flex-shrink-0">
@@ -118,6 +122,11 @@ const ActionSquare: React.FC<{
             >
                 <span>{displayProgress}</span>
             </div>
+            {surfaceBadge && (
+                <div className={`pointer-events-none absolute bottom-1 left-1/2 z-20 -translate-x-1/2 rounded-full border px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-[0.08em] shadow-[0_4px_12px_rgba(0,0,0,0.35)] ${getActionSurfaceBadgeClassName(surfaceBadge.tone)}`}>
+                    {surfaceBadge.label}
+                </div>
+            )}
         </div>
     );
 };
@@ -149,7 +158,7 @@ export const ArenaDetailModal: React.FC<{
     collaborativeOwnerUserId = null,
     onLinkedArenaRefresh,
 }) => {
-    const { getActionsForArena, assets, updateArena, deleteArena, removeRelationshipArenaShare, tasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, enrichedClanMembers, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
+    const { getActionsForArena, assets, updateArena, deleteArena, removeRelationshipArenaShare, tasks, activeCycle, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, clanQuestParticipants, fetchClanQuestParticipants, joinClanMission, getClanQuestsForArena, seasonQuests, setArenaAsShared, clan, userProfile, enrichedClanMembers, getSharedActionPoolProgress, showToast, userCodexes } = useGame();
     const [actionModalState, setActionModalState] = useState<{ action: Action | null, mode: 'view' | 'edit', key: string } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editableArena, setEditableArena] = useState({ assetId: arena.assetId, name: arena.name, description: arena.description, icon: arena.icon });
@@ -297,7 +306,7 @@ export const ArenaDetailModal: React.FC<{
     const forceSharedPool = effectiveRelationshipType ? true : (isOfficeMode ? true : undefined);
     const tasksForCounts = useMemo(() => {
         if (Array.isArray(tasksOverride)) return tasksOverride;
-        if (!activeCycle) return tasks;
+        if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
 
         const today = getLocalDateString();
         const cycleEnd = today < activeCycle.endDate ? today : activeCycle.endDate;
@@ -306,7 +315,7 @@ export const ArenaDetailModal: React.FC<{
             task.date >= activeCycle.startDate &&
             task.date <= cycleEnd
         );
-    }, [activeCycle, tasks, tasksOverride]);
+    }, [activeCycle, freeProgressResetAt, tasks, tasksOverride]);
     const arenaProgressState = useMemo(() => calculateArenaProgress({
         arena,
         actions: allActions,
@@ -321,6 +330,7 @@ export const ArenaDetailModal: React.FC<{
     const allActionInstances = arenaProgressState.totalPlanned || 0;
     const allCompletedInstances = arenaProgressState.totalCompleted || 0;
     const progress = arenaProgressState.progressPercent || 0;
+    const hasMeasurableProgress = arenaProgressState.hasMeasurableProgress;
     const isRelationshipArena = effectiveRelationshipType === 'mentoria' || effectiveRelationshipType === 'competicao' || effectiveRelationshipType === 'parceria';
     const canUnsharePartnershipArena = effectiveRelationshipType === 'parceria' && localArenaExists;
     const allowRelationshipArenaDelete = effectiveRelationshipType === 'mentoria'
@@ -800,6 +810,7 @@ export const ArenaDetailModal: React.FC<{
                                             onClick={() => openActionDetails(action)}
                                             sharedPool={isSharedPool}
                                             countingTasks={tasksForCounts}
+                                            relationshipLinkType={effectiveRelationshipType as RelationshipLinkType | null}
                                         />
                                     ))}
                                     {!previewMode && !isReadOnlyArena && (
@@ -812,11 +823,19 @@ export const ArenaDetailModal: React.FC<{
                         </div>
 
                         <div className="flex-shrink-0 space-y-2 pt-2">
-                            <div className="arena-plate-progress">
-                                <div className="arena-plate-progress-fill" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)' }}></div>
-                            </div>
+                            {hasMeasurableProgress ? (
+                                <div className="arena-plate-progress">
+                                    <div className="arena-plate-progress-fill" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)' }}></div>
+                                </div>
+                            ) : (
+                                <div className="rounded-full border border-white/8 bg-black/20 px-3 py-1 text-center text-[10px] font-black uppercase tracking-[0.14em] text-white/42">
+                                    Sem meta definida
+                                </div>
+                            )}
                                 <p className="text-sm font-bold text-gray-300 text-center">
-                                {isClanQuestArena
+                                {!hasMeasurableProgress
+                                    ? (allActions.length > 0 ? 'Acoes livres' : 'Sem acoes')
+                                    : isClanQuestArena
                                     ?`${clanQuestTotals.totalProgress}/${clanQuestTotals.totalGoal}`
                                     : isSharedPool
                                         ? `${allActionInstances - allCompletedInstances} acoes restantes`

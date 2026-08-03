@@ -92,26 +92,26 @@ O medo de lancar e esperado: o produto e grande e voce esta segurando varias sup
 - [x] GATE: Produto de prateleira pronto para beta, com correcoes rapidas em andamento
 
 ### Nivel 9: Marketing & Testes
-- [x] Setup completo na Google Play Console
-- [x] Redes sociais criadas e Instagram com seguidores/posts agendados
-- [x] Inicio do Closed Beta com 20 testers / 14 dias
+- [x] Setup completo dos canais de distribuicao/publicacao
+- [x] Redes sociais criadas e primeiros materiais de aquisicao preparados
+- [x] Teste externo com usuarios reais concluido
 - [x] Producao de material visual com prints reais e uso real do app
-- [ ] GATE: Validacao externa concluida e tracao inicial de comunidade
+- [ ] Ativacao real de monetizacao: produtos, paywall, compra, reembolso e entrega validados ponta a ponta
+- [ ] Integracoes criticas de lancamento validadas entre codigo, backend, hospedagem, autenticacao, pagamentos e console de distribuicao
+- [ ] GATE: Validacao externa concluida, tracao inicial de comunidade e receita testada sem intervencao manual
 
 **Marco:** Glyph aceito para producao. Proximo passo e rodar ultimos testes e fechar a versao final.
 
 ### Nivel 10: Produto Vivo
 - [ ] Lancamento oficial para o publico geral
-- [ ] Supabase Pro ativado ou Free validado com margem segura para uso publico
-- [ ] Custom domain Supabase configurado para Auth, Edge Functions e Storage
-- [ ] Webhooks de pagamento apontando para dominio/projeto definitivo
-- [ ] URLs antigas de Storage/Supabase removidas do app antes de escala
-- [ ] Ativacao final de gateways de pagamento e planos Plus/Pro com receita real
-- [ ] Configuracao final de ASO com keywords e screenshots profissionais
-- [ ] Monitoramento de metricas e inicio do trafego pago
+- [ ] Infraestrutura validada com margem segura para uso publico
+- [ ] Dominios, webhooks, storage e URLs finais configurados
+- [ ] Configuracao final de ASO, copy e screenshots profissionais
+- [ ] Monitoramento de metricas, custos, erros e feedback real
+- [ ] Inicio controlado de aquisicao/trafego
 - [ ] GATE: Soberania digital atingida com geracao de receita e escala ativa
 
-**Nivel atual:** Nivel 9 iniciado.
+**Nivel atual:** Nivel 9 em fechamento.
 
 ### Depois do Produto Vivo: Operacao Continua
 - [ ] Monitorar egress, storage, database, Edge Functions e custos semanalmente no primeiro mes

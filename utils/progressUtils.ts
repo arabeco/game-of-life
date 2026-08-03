@@ -17,6 +17,7 @@ export interface ArenaProgressResult {
   progressPercent: number;
   totalCompleted: number;
   totalPlanned: number;
+  hasMeasurableProgress: boolean;
   completedActionIds: string[];
   isClanQuestArena: boolean;
   isSeasonQuestArena: boolean;

@@ -7,7 +7,7 @@ import { getScoreGrade } from '../utils/dateUtils';
 import { VideoPlayer } from './VideoPlayer';
 import { CycleAtlasPanel } from './CycleAtlasPanel';
 import { resolveItemDef } from '../constants/items';
-import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon, RefreshCwIcon } from './Icons';
 import { MetalReportCard } from './MetalReportCard';
 import { exportElementAsImage, shouldPreferNativeShare } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
@@ -25,6 +25,7 @@ interface ReportResultCarouselProps {
     onShare: () => void;
     onPostToFeed: () => void;
     onStartNewCycle?: () => void; // Added for reward slide
+    onContinueFromHere?: () => void;
     chest?: ChestType | null;     // Added for reward slide
     expGained?: number;           // Added for reward slide
     fragmentsGained?: number;
@@ -80,6 +81,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     onShare,
     onPostToFeed,
     onStartNewCycle,
+    onContinueFromHere,
     chest,
     expGained,
     fragmentsGained,
@@ -652,6 +654,28 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                         title={chestOpened ? 'Baú já aberto' : 'Abrir baú agora'}
                                     >
                                         {isOpeningChest ? 'Abrindo...' : chestOpened ? 'Baú aberto' : 'Abrir baú'}
+                                    </button>
+                                )}
+
+                                {onStartNewCycle && (
+                                    <button
+                                        onClick={onOk}
+                                        className="report-secondary-cta shrink-0"
+                                        title="Sair com metas livres zeradas"
+                                    >
+                                        <XIcon className="h-4 w-4" />
+                                        <span>Sair</span>
+                                    </button>
+                                )}
+
+                                {onStartNewCycle && onContinueFromHere && (
+                                    <button
+                                        onClick={onContinueFromHere}
+                                        className="report-secondary-cta shrink-0"
+                                        title="Manter este progresso no modo livre"
+                                    >
+                                        <RefreshCwIcon className="h-4 w-4" />
+                                        <span>Continuar</span>
                                     </button>
                                 )}
 

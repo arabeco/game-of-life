@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
 import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, RelationshipLinkType, ScheduledTask } from '../types';
-import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon, FolderStarIcon, EditIcon, CheckIcon, LinkIcon } from '../components/Icons';
+import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon, FolderStarIcon, EditIcon, CheckIcon, LinkIcon, RefreshCwIcon } from '../components/Icons';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
 import { ArenaCard } from '../components/ArenaCard';
@@ -23,6 +23,8 @@ import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { getContentVisualPalette, resolveArenaVisualFamily, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 import { supabase } from '../supabaseClient';
 import { hasCompletedFreeCampaignQuiz } from '../utils/campaignQuiz';
+import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
+import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -78,7 +80,7 @@ type ArenaAttentionState = {
 };
 
 export const ArenasView: React.FC = () => {
-    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, userCodexes, installCodex } = useGame();
+    const { getArenas, assets, actions, tasks, addArena, updateArena, addAction, arenaFolders, createArenaFolder, moveArenaToFolder, reorderArena, reorderEntity, reorderEntityPriority, campaigns, addCampaign, updateCampaign, deleteCampaign, activeCycle, freeProgressResetAt, resetFreeProgress, arenasViewMode, setArenasViewMode, userProfile, getClanQuestProgress, getClanQuestsForArena, getSharedActionPoolProgress, userCodexes, installCodex } = useGame();
     const { isBuilderMode } = useCodexBuilder();
     const [selectedArenaId, setSelectedArenaId] = useState<string | null>(null);
     const [sharedLinkedArenas, setSharedLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
@@ -1186,9 +1188,10 @@ export const ArenasView: React.FC = () => {
     }, [actions]);
     const getActionsForArena = (arenaId: string) => actionsByArenaId.get(arenaId) ?? [];
     const cycleScopedTasks = useMemo(() => {
-        if (!activeCycle) return tasks;
+        if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
         return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
-    }, [activeCycle, tasks]);
+    }, [activeCycle, freeProgressResetAt, tasks]);
+    const canResetFreeGoals = !activeCycle && cycleScopedTasks.some((task) => task.completed);
     const tasksByActionId = useMemo(() => {
         const map = new Map<string, ScheduledTask[]>();
         cycleScopedTasks.forEach((task) => {
@@ -1254,6 +1257,7 @@ export const ArenasView: React.FC = () => {
             completed: progress.totalCompleted,
             total: progress.totalPlanned,
             percent: Math.round(progress.progressPercent),
+            hasMeasurableProgress: progress.hasMeasurableProgress,
         };
     };
     const arenaProgressById = useMemo(() => {
@@ -1309,13 +1313,21 @@ export const ArenasView: React.FC = () => {
             {value}
         </span>
     );
-    const renderActionListRow = (action: Action, actionTasks?: ScheduledTask[]) => {
+    const renderActionListRow = (action: Action, actionTasks?: ScheduledTask[], relationshipBadgeType?: RelationshipLinkType | null) => {
         const metrics = getActionListMetrics(action, actionTasks);
+        const surfaceBadge = resolveActionSurfaceBadge(action, relationshipBadgeType);
 
         return (
             <div key={action.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded-xl border border-white/6 bg-black/18 px-2 py-1.5">
-                <div className="min-w-0 text-[11px] font-semibold text-white/88 truncate">
-                    {action.name}
+                <div className="flex min-w-0 items-center gap-1.5">
+                    {surfaceBadge && (
+                        <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[7px] font-black uppercase leading-none tracking-[0.08em] ${getActionSurfaceBadgeClassName(surfaceBadge.tone)}`}>
+                            {surfaceBadge.label}
+                        </span>
+                    )}
+                    <span className="min-w-0 truncate text-[11px] font-semibold text-white/88">
+                        {action.name}
+                    </span>
                 </div>
                 {renderListValue(metrics.durationLabel, true)}
                 {renderListValue(`${metrics.completed}/${metrics.total}`)}
@@ -1411,8 +1423,14 @@ export const ArenasView: React.FC = () => {
                         )}
                     </button>
                     <div className="flex items-center gap-2">
-                        {renderListValue(`${metrics.completed}/${metrics.total}`)}
-                        {renderListValue(`${metrics.percent}%`)}
+                        {metrics.hasMeasurableProgress ? (
+                            <>
+                                {renderListValue(`${metrics.completed}/${metrics.total}`)}
+                                {renderListValue(`${metrics.percent}%`)}
+                            </>
+                        ) : (
+                            renderListValue('Sem meta', true)
+                        )}
                     </div>
                     <button
                         type="button"
@@ -1435,7 +1453,7 @@ export const ArenasView: React.FC = () => {
                             const actionTasks = options.tasksOverride
                                 ? options.tasksOverride.filter((task) => task.actionId === action.id)
                                 : (tasksByActionId.get(action.id) ?? []);
-                            return renderActionListRow(action, actionTasks);
+                            return renderActionListRow(action, actionTasks, relationshipBadgeType);
                         }) : (
                             <div className="px-2 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white/38">
                                 Sem ações
@@ -1460,6 +1478,7 @@ export const ArenasView: React.FC = () => {
     ) => {
         const arenaCount = campaign.arenaIds.length;
         const actionCount = options.actionCount ?? campaign.arenaIds.reduce((count, arenaId) => count + getActionsForArena(arenaId).length, 0);
+        const campaignMetrics = getCampaignProgressMetrics(campaign);
         const isDragOver = dragOverId === campaign.id;
         const isDragged = draggedId === campaign.id;
         const isSortable = shouldEnableListReorder && !!options.sortable;
@@ -1519,7 +1538,7 @@ export const ArenasView: React.FC = () => {
                     <div className="flex items-center gap-2">
                         {renderListValue(`${arenaCount} ar`)}
                         {renderListValue(`${actionCount} ac`, true)}
-                        {renderListValue(`${Math.round(progress)}%`)}
+                        {renderListValue(campaignMetrics.totalPlanned > 0 ? `${Math.round(progress)}%` : 'Sem meta', campaignMetrics.totalPlanned <= 0)}
                     </div>
                     {options.installAction ? (
                         <button
@@ -1728,15 +1747,19 @@ export const ArenasView: React.FC = () => {
                 </div>
                 <div className="px-2.5 pb-2">
                     <div className="mb-1 flex items-center justify-between text-[8px] font-black uppercase tracking-[0.14em] text-white/58">
-                        <span>{progressSummary.totalCompleted}/{progressSummary.totalPlanned} acoes</span>
+                        <span>{progressSummary.totalPlanned > 0 ? `${progressSummary.totalCompleted}/${progressSummary.totalPlanned} acoes` : 'Sem meta'}</span>
                         <span>{progressSummary.clearedArenaCount}/{progressSummary.totalArenaCount} arenas</span>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full border border-white/10 bg-white/10">
-                        <div
-                            className={progressFillClass}
-                            style={{ width: `${progressSummary.progressPercent}%`, background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)' }}
-                        />
-                    </div>
+                    {progressSummary.totalPlanned > 0 ? (
+                        <div className="h-1.5 overflow-hidden rounded-full border border-white/10 bg-white/10">
+                            <div
+                                className={progressFillClass}
+                                style={{ width: `${progressSummary.progressPercent}%`, background: 'linear-gradient(90deg, #7a5813 0%, #d4af37 46%, #f6e2a3 100%)' }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="h-1.5 rounded-full border border-white/8 bg-black/18" aria-label="Sem meta definida" />
+                    )}
                 </div>
             </div>
         );
@@ -2078,6 +2101,20 @@ export const ArenasView: React.FC = () => {
                         </button>
                     </div>
                 </div>
+
+                {canResetFreeGoals && (
+                    <div className="mb-4 flex justify-end">
+                        <button
+                            type="button"
+                            onClick={resetFreeProgress}
+                            className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition-all hover:border-[var(--skin-accent-color)]/35 hover:text-white"
+                            title="Zerar a contagem de metas livres sem apagar historico"
+                        >
+                            <RefreshCwIcon className="h-3.5 w-3.5" />
+                            Zerar metas
+                        </button>
+                    </div>
+                )}
 
                 {isSelectionMode && (
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 p-3">

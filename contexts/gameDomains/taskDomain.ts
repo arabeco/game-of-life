@@ -7,6 +7,7 @@ import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTas
 import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../utils/progressUtils';
 import { emitArenaAttention } from '../../utils/arenaAttention';
 import { emitAppSensoryCue } from '../../utils/sensoryCue';
+import { emitOracleSpeech } from '../../utils/oracleSpeech';
 
 type ToastTone = 'success' | 'error' | 'info' | 'warning';
 type AchievementState = { type: FeedEventType; data: any } | null;
@@ -14,6 +15,8 @@ type SupabaseLike = { from: (table: string) => any };
 type CompletionAttentionResult = 'arena' | 'campaign' | null;
 
 const DAY_MAP: DayOfWeek[] = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+
+const pickOracleLine = (lines: string[]) => lines[Math.floor(Math.random() * lines.length)] || lines[0] || '';
 
 export interface TaskDomainApi {
     scheduleMultipleTasks: (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => Promise<void>;
@@ -36,6 +39,7 @@ interface CreateTaskDomainParams {
     campaigns: Campaign[];
     dailyCommitment: DailyCommitment;
     judgedOperationalDates: string[];
+    judgedTaskIdsByDate: Record<string, string[]>;
     clan: Clan | null;
     supabase: SupabaseLike;
     setTasks: Dispatch<SetStateAction<ScheduledTask[]>>;
@@ -71,6 +75,7 @@ export const createTaskDomain = ({
     campaigns,
     dailyCommitment,
     judgedOperationalDates,
+    judgedTaskIdsByDate,
     clan,
     supabase,
     setTasks,
@@ -95,26 +100,29 @@ export const createTaskDomain = ({
     tutorialCompletedFlag,
     reconcileJudgedDayTaskMutation,
 }: CreateTaskDomainParams): TaskDomainApi => {
-    const isOperationalDateJudged = (operationalDate: string) =>
-        !!operationalDate && judgedOperationalDates.includes(operationalDate);
-
-    const isTaskLockedByClosedDay = (task: ScheduledTask) => {
-        const taskOperationalDate = getTaskOperationalDateString(task);
-        if (!taskOperationalDate) return false;
-
-        return (taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment')
-            || isOperationalDateJudged(taskOperationalDate);
+    const getJudgedTaskIdsForDate = (operationalDate: string) => {
+        const ids = judgedTaskIdsByDate[operationalDate] || [];
+        if (dailyCommitment.date === operationalDate && dailyCommitment.stage === 'judgment') {
+            return Array.from(new Set([...ids, ...dailyCommitment.taskIds]));
+        }
+        return ids;
     };
 
-    const getEditableLockedOperationalDate = (task: Pick<ScheduledTask, 'date' | 'startTime'>): string | false => {
+    const isTaskInJudgedActionScope = (task: Pick<ScheduledTask, 'id' | 'date' | 'startTime'>) => {
+        const taskOperationalDate = getTaskOperationalDateString(task);
+        if (!taskOperationalDate) return false;
+        return getJudgedTaskIdsForDate(taskOperationalDate).includes(task.id);
+    };
+
+    const isTaskLockedByJudgment = (task: ScheduledTask) =>
+        Boolean(task.completed) && isTaskInJudgedActionScope(task);
+
+    const getEditableLockedOperationalDate = (task: Pick<ScheduledTask, 'id' | 'date' | 'startTime' | 'completed'>): string | false => {
         const taskOperationalDate = getTaskOperationalDateString(task as ScheduledTask);
         if (!taskOperationalDate || !activeCycle) return false;
         if (taskOperationalDate < activeCycle.startDate || taskOperationalDate > activeCycle.endDate) return false;
 
-        if (
-            (taskOperationalDate === dailyCommitment.date && dailyCommitment.stage === 'judgment')
-            || isOperationalDateJudged(taskOperationalDate)
-        ) {
+        if (task.completed && getJudgedTaskIdsForDate(taskOperationalDate).includes(task.id)) {
             return taskOperationalDate;
         }
 
@@ -123,8 +131,7 @@ export const createTaskDomain = ({
 
     const isTaskCompletionEditableWithinOpenCycle = (task: ScheduledTask) => Boolean(getEditableLockedOperationalDate(task));
 
-    const canMutateClosedDayPlacement = (task: Pick<ScheduledTask, 'date' | 'startTime'>) =>
-        !isCommitmentDayClosedForTask(task) || Boolean(getEditableLockedOperationalDate(task));
+    const canPlaceTaskInJudgmentScope = (_task: Pick<ScheduledTask, 'date' | 'startTime'>) => true;
 
     const maybeReconcileRetroactiveMutations = async (
         operationalDates: Array<string | false>,
@@ -143,21 +150,25 @@ export const createTaskDomain = ({
         }
     };
 
-    const showClosedDayMutationBlockedToast = () => {
-        showToast('Esse dia ja foi julgado e agora esta travado.', 'error');
-    };
-
-    const isCommitmentDayClosedForTask = (task: Pick<ScheduledTask, 'date' | 'startTime'>) => {
-        const operationalDate = getTaskOperationalDateString(task as Pick<ScheduledTask, 'date' | 'startTime'> & Partial<ScheduledTask>);
-        if (!operationalDate) return false;
-
-        return (dailyCommitment.stage === 'judgment' && operationalDate === dailyCommitment.date)
-            || isOperationalDateJudged(operationalDate);
+    const showJudgedActionMutationBlockedToast = () => {
+        showToast('Essa conclusao ja entrou em um julgamento. Reabra/crie outra acao para compensar sem apagar XP antigo.', 'warning');
     };
 
     const isTaskInsideActiveCycle = (task: Pick<ScheduledTask, 'date'>) => {
         if (!activeCycle) return true;
         return task.date >= activeCycle.startDate && task.date <= activeCycle.endDate;
+    };
+
+    const getTasksInsideActiveCycle = (sourceTasks: ScheduledTask[]) => {
+        if (!activeCycle) return sourceTasks;
+        return sourceTasks.filter((task) => {
+            const operationalDate = getTaskOperationalDateString(task);
+            return Boolean(
+                operationalDate &&
+                operationalDate >= activeCycle.startDate &&
+                operationalDate <= activeCycle.endDate
+            );
+        });
     };
 
     const rollbackOptimisticTaskCreation = (taskIdsToRollback: string[]) => {
@@ -200,16 +211,19 @@ export const createTaskDomain = ({
         const arenaActions = getActionsForArena(arena.id);
         if (arenaActions.length === 0) return null;
 
+        const previousCycleTasks = getTasksInsideActiveCycle(previousTasks);
+        const nextCycleTasks = getTasksInsideActiveCycle(nextTasks);
+
         const previousProgress = calculateArenaProgress({
             arena,
             actions: arenaActions,
-            tasks: previousTasks,
+            tasks: previousCycleTasks,
         });
 
         const nextProgress = calculateArenaProgress({
             arena,
             actions: arenaActions,
-            tasks: nextTasks,
+            tasks: nextCycleTasks,
         });
 
         if (previousProgress.progressPercent >= 100 || nextProgress.progressPercent < 100 || !nextProgress.isCleared) {
@@ -229,13 +243,13 @@ export const createTaskDomain = ({
                 campaign: parentCampaign,
                 arenasById,
                 actionsByArena,
-                tasks: previousTasks,
+                tasks: previousCycleTasks,
             });
             const nextCampaignProgress = calculateCampaignProgressSummary({
                 campaign: parentCampaign,
                 arenasById,
                 actionsByArena,
-                tasks: nextTasks,
+                tasks: nextCycleTasks,
             });
 
             campaignJustCleared =
@@ -268,6 +282,21 @@ export const createTaskDomain = ({
                 : `Muito bem. Arena "${arena.name}" concluida.`,
             'success',
         );
+        emitOracleSpeech({
+            title: campaignJustCleared ? 'Campanha' : 'Arena',
+            message: campaignJustCleared && parentCampaign
+                ? pickOracleLine([
+                    `Campanha "${parentCampaign.title}" fechada. Boa. Agora deixa esse marco assentar antes de abrir outra frente grande.`,
+                    `"${parentCampaign.title}" concluiu. Isso ja e um bloco inteiro de vida organizado, nao so uma tarefa.`,
+                ])
+                : pickOracleLine([
+                    `Arena "${arena.name}" concluida. Muito bem. Essa frente ganhou forma real.`,
+                    `"${arena.name}" fechou. Boa. Agora vale registrar o que funcionou antes de empilhar outra coisa.`,
+                ]),
+            tone: 'success',
+            durationMs: campaignJustCleared ? 5600 : 5000,
+        });
+
         addFeedEvent({
             type: 'ARENA_COMPLETED',
             content: { title: arena.name, icon: arena.icon || '🏟️' }
@@ -311,12 +340,95 @@ export const createTaskDomain = ({
         const crossedThreshold = [3, 5, 8].find((threshold) => previousCount < threshold && nextCount >= threshold);
         if (!crossedThreshold) return;
 
-        const message =
-            crossedThreshold >= 8
-                ? `${crossedThreshold} acoes reais hoje. Muito bem; agora protege o fechamento.`
-                : `${crossedThreshold} acoes reais hoje. Muito bem.`;
+        const message = crossedThreshold >= 8
+            ? pickOracleLine([
+                `${crossedThreshold} acoes reais hoje. Muito bem; agora protege o fechamento.`,
+                `${crossedThreshold} acoes reais no dia. Bom ritmo. Agora nao precisa provar mais nada, precisa fechar limpo.`,
+            ])
+            : crossedThreshold >= 5
+                ? pickOracleLine([
+                    `${crossedThreshold} acoes reais hoje. O dia ganhou corpo.`,
+                    `${crossedThreshold} entregas reais. Boa. Agora escolhe a proxima sem inflar o dia.`,
+                ])
+                : pickOracleLine([
+                    `${crossedThreshold} acoes reais hoje. Muito bem.`,
+                    `Tres acoes reais ja mudam o dia. Continua com calma.`,
+                ]);
 
-        showToast(message, 'success');
+        emitOracleSpeech({
+            title: crossedThreshold >= 8 ? 'Fechamento' : 'Ritmo',
+            message,
+            tone: 'success',
+            durationMs: crossedThreshold >= 8 ? 4700 : 3900,
+        });
+    };
+
+    const maybeTriggerActionCycleProgressAttention = (
+        action: Action | undefined,
+        completedTask: ScheduledTask,
+        previousTasks: ScheduledTask[],
+        nextTasks: ScheduledTask[],
+    ): boolean => {
+        if (!completedTask.completed || !action || !activeCycle || action.actionType === 'Livre' || action.actionType === 'Marco') return false;
+
+        const target = Math.max(1, Math.floor(Number(action.repetitions || 1)));
+        if (target <= 1) return false;
+
+        const isTaskInCurrentCycleForAction = (task: ScheduledTask) => {
+            const taskDate = getTaskOperationalDateString(task);
+            return Boolean(
+                task.completed &&
+                task.actionId === action.id &&
+                taskDate &&
+                taskDate >= activeCycle.startDate &&
+                taskDate <= activeCycle.endDate
+            );
+        };
+
+        const previousCount = previousTasks.filter(isTaskInCurrentCycleForAction).length;
+        const nextCount = nextTasks.filter(isTaskInCurrentCycleForAction).length;
+        if (nextCount <= previousCount) return false;
+
+        const cappedCount = Math.min(nextCount, target);
+        const remaining = Math.max(0, target - cappedCount);
+        const actionName = action.name || 'essa acao';
+        const message = remaining === 0
+            ? pickOracleLine([
+                `${actionName}: ${cappedCount}/${target} no ciclo. Fechou a meta dessa acao.`,
+                `${actionName} completou o combinado do ciclo: ${cappedCount}/${target}. Boa.`,
+            ])
+            : remaining === 1
+                ? pickOracleLine([
+                    `${actionName}: ${cappedCount}/${target} no ciclo. Falta so 1 para fechar essa meta.`,
+                    `Boa. ${actionName} esta quase la: ${cappedCount}/${target}.`,
+                ])
+                : cappedCount === 1
+                    ? pickOracleLine([
+                        `${actionName} entrou no ciclo: 1/${target}. Agora e so manter sem inflar.`,
+                        `Primeira de ${actionName} registrada neste ciclo. Faltam ${remaining}.`,
+                    ])
+                    : pickOracleLine([
+                        `${actionName}: ${cappedCount}/${target} no ciclo. Faltam ${remaining}.`,
+                        `Boa. ${actionName} ja tem ${cappedCount} entregas no ciclo; restam ${remaining}.`,
+                    ]);
+
+        emitOracleSpeech({
+            title: remaining === 0 ? 'Meta' : 'Progresso',
+            message,
+            tone: 'success',
+            durationMs: remaining <= 1 ? 5000 : 4300,
+        });
+        return true;
+    };
+
+    const maybeTriggerTaskCompletionSpeech = (
+        action: Action | undefined,
+        completedTask: ScheduledTask,
+        previousTasks: ScheduledTask[],
+        nextTasks: ScheduledTask[],
+    ) => {
+        if (maybeTriggerActionCycleProgressAttention(action, completedTask, previousTasks, nextTasks)) return;
+        maybeTriggerDailyMomentumAttention(action, completedTask, previousTasks, nextTasks);
     };
 
     const maybePromptSitrepFollowUp = (task: ScheduledTask, action?: Action) => {
@@ -356,9 +468,9 @@ export const createTaskDomain = ({
 
         if (newTasks.length === 0) return;
 
-        const allowedTasks = newTasks.filter(task => canMutateClosedDayPlacement(task));
+        const allowedTasks = newTasks.filter(task => canPlaceTaskInJudgmentScope(task));
         if (allowedTasks.length !== newTasks.length) {
-            showClosedDayMutationBlockedToast();
+            showJudgedActionMutationBlockedToast();
         }
         if (allowedTasks.length === 0) return;
 
@@ -410,8 +522,8 @@ export const createTaskDomain = ({
             completed: false,
         };
 
-        if (!canMutateClosedDayPlacement(newTask)) {
-            showClosedDayMutationBlockedToast();
+        if (!canPlaceTaskInJudgmentScope(newTask)) {
+            showJudgedActionMutationBlockedToast();
             return undefined;
         }
 
@@ -568,13 +680,12 @@ export const createTaskDomain = ({
     const toggleTaskCompletion = async (taskId: string) => {
         const taskToCheck = tasks.find(task => task.id === taskId);
         if (!taskToCheck) return;
-        const retroactiveOperationalDate = getEditableLockedOperationalDate(taskToCheck);
-        const wasLockedByClosedDay = isTaskLockedByClosedDay(taskToCheck);
-        const canRetroactivelyToggle = Boolean(retroactiveOperationalDate);
-        if (wasLockedByClosedDay && !canRetroactivelyToggle) {
-            showClosedDayMutationBlockedToast();
+        const wasLockedByJudgment = isTaskLockedByJudgment(taskToCheck);
+        if (wasLockedByJudgment) {
+            showJudgedActionMutationBlockedToast();
             return;
         }
+        const previousRetroactiveOperationalDate = getEditableLockedOperationalDate(taskToCheck);
 
         const action = getActionById(taskToCheck.actionId);
         const now = new Date();
@@ -604,6 +715,7 @@ export const createTaskDomain = ({
         }
 
         const optimisticTasks = restoreTaskSnapshot(tasks, updatedTask);
+        const nextRetroactiveOperationalDate = getEditableLockedOperationalDate(updatedTask);
 
         setTasks(prevTasks => restoreTaskSnapshot(prevTasks, updatedTask));
         setDailyCommitmentState(prev => ({
@@ -613,6 +725,11 @@ export const createTaskDomain = ({
 
         try {
             await persistTaskCompletionUpdate(updatedTask);
+            await maybeReconcileRetroactiveMutations(
+                [previousRetroactiveOperationalDate, nextRetroactiveOperationalDate],
+                tasks,
+                optimisticTasks,
+            );
         } catch (error: any) {
             console.error('Supabase toggle task completion error:', error?.message || error);
             restoreTaskAfterPersistenceFailure(taskToCheck);
@@ -620,21 +737,12 @@ export const createTaskDomain = ({
             return;
         }
 
-        if (wasLockedByClosedDay && canRetroactivelyToggle) {
-            try {
-                await maybeReconcileRetroactiveMutations([retroactiveOperationalDate], tasks, optimisticTasks);
-            } catch (error: any) {
-                console.error('Retroactive judged day reconciliation error:', error?.message || error);
-                showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o dia fechado.', 'error');
-            }
-        }
-
         const completionAttention = updatedTask.completed
             ? maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks)
             : null;
         if (updatedTask.completed && !completionAttention) {
             emitAppSensoryCue('task_complete');
-            maybeTriggerDailyMomentumAttention(action, updatedTask, tasks, optimisticTasks);
+            maybeTriggerTaskCompletionSpeech(action, updatedTask, tasks, optimisticTasks);
         }
         runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
         maybePromptSitrepFollowUp(updatedTask, action);
@@ -662,8 +770,8 @@ export const createTaskDomain = ({
             !task.completed
         );
 
-        if (!existingTaskForToday && !canMutateClosedDayPlacement({ date, startTime })) {
-            showClosedDayMutationBlockedToast();
+        if (!existingTaskForToday && !canPlaceTaskInJudgmentScope({ date, startTime })) {
+            showJudgedActionMutationBlockedToast();
             return;
         }
 
@@ -728,7 +836,7 @@ export const createTaskDomain = ({
         const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
         if (!completionAttention) {
             emitAppSensoryCue('task_complete');
-            maybeTriggerDailyMomentumAttention(action, newTask, tasks, [...tasks, newTask]);
+            maybeTriggerTaskCompletionSpeech(action, newTask, tasks, [...tasks, newTask]);
         }
         maybePromptSitrepFollowUp(newTask, action);
         onDailyProofActionCompleted?.({ task: newTask, action, tasksAfterChange: [...tasks, newTask] });
@@ -744,8 +852,8 @@ export const createTaskDomain = ({
 
         if (existingTask) {
             const existingTaskRetroDate = getEditableLockedOperationalDate(existingTask);
-            if (isTaskLockedByClosedDay(existingTask) && !existingTaskRetroDate) {
-                showClosedDayMutationBlockedToast();
+            if (isTaskLockedByJudgment(existingTask)) {
+                showJudgedActionMutationBlockedToast();
                 return;
             }
 
@@ -758,8 +866,8 @@ export const createTaskDomain = ({
             };
 
             const nextRetroDate = getEditableLockedOperationalDate(updatedTask);
-            if (!canMutateClosedDayPlacement(updatedTask)) {
-                showClosedDayMutationBlockedToast();
+            if (!canPlaceTaskInJudgmentScope(updatedTask)) {
+                showJudgedActionMutationBlockedToast();
                 return;
             }
 
@@ -787,7 +895,7 @@ export const createTaskDomain = ({
             const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks);
             if (!completionAttention && !existingTask.completed) {
                 emitAppSensoryCue('task_complete');
-                maybeTriggerDailyMomentumAttention(action, updatedTask, tasks, optimisticTasks);
+                maybeTriggerTaskCompletionSpeech(action, updatedTask, tasks, optimisticTasks);
             }
             if (!existingTask.completed) {
                 runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
@@ -806,8 +914,8 @@ export const createTaskDomain = ({
             createdAt: new Date().toISOString(),
         };
 
-        if (!canMutateClosedDayPlacement(newTask)) {
-            showClosedDayMutationBlockedToast();
+        if (!canPlaceTaskInJudgmentScope(newTask)) {
+            showJudgedActionMutationBlockedToast();
             return;
         }
 
@@ -842,7 +950,7 @@ export const createTaskDomain = ({
         const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, optimisticTasks);
         if (!completionAttention) {
             emitAppSensoryCue('task_complete');
-            maybeTriggerDailyMomentumAttention(action, newTask, tasks, optimisticTasks);
+            maybeTriggerTaskCompletionSpeech(action, newTask, tasks, optimisticTasks);
         }
         runTaskCompletionSideEffects(newTask, action, optimisticTasks);
         maybePromptSitrepFollowUp(newTask, action);
@@ -876,8 +984,8 @@ export const createTaskDomain = ({
             completed: true,
         };
 
-        if (!canMutateClosedDayPlacement(newTask)) {
-            showClosedDayMutationBlockedToast();
+        if (!canPlaceTaskInJudgmentScope(newTask)) {
+            showJudgedActionMutationBlockedToast();
             return;
         }
 
@@ -921,6 +1029,15 @@ export const createTaskDomain = ({
         const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
         if (!completionAttention) {
             emitAppSensoryCue('task_complete');
+            emitOracleSpeech({
+                title: 'Marco',
+                message: pickOracleLine([
+                    `Marco "${action.name}" concluido. Isso muda o desenho do ciclo.`,
+                    `"${action.name}" virou prova. Boa. Esse era um ponto de passagem, nao so mais uma acao.`,
+                ]),
+                tone: 'success',
+                durationMs: 5000,
+            });
         }
         maybePromptSitrepFollowUp(newTask, action);
         onDailyProofActionCompleted?.({ task: newTask, action, tasksAfterChange: [...tasks, newTask] });
@@ -934,8 +1051,8 @@ export const createTaskDomain = ({
     const deleteTask = (taskId: string) => {
         const currentTask = tasks.find(task => task.id === taskId);
         const retroactiveOperationalDate = currentTask ? getEditableLockedOperationalDate(currentTask) : false;
-        if (currentTask && isTaskLockedByClosedDay(currentTask) && !retroactiveOperationalDate) {
-            showClosedDayMutationBlockedToast();
+        if (currentTask && isTaskLockedByJudgment(currentTask)) {
+            showJudgedActionMutationBlockedToast();
             return;
         }
 
@@ -969,7 +1086,7 @@ export const createTaskDomain = ({
                 );
             } catch (reconcileError: any) {
                 console.error('Retroactive judged day reconciliation error:', reconcileError?.message || reconcileError);
-                showToast('A tarefa foi removida, mas nao foi possivel recalcular o dia fechado.', 'error');
+                showToast('A tarefa foi removida, mas nao foi possivel recalcular o julgamento das acoes.', 'error');
             }
         });
     };
@@ -978,17 +1095,13 @@ export const createTaskDomain = ({
         const currentTask = tasks.find(task => task.id === taskId);
         if (!currentTask) return;
         const previousRetroactiveOperationalDate = getEditableLockedOperationalDate(currentTask);
-        if (isTaskLockedByClosedDay(currentTask) && !previousRetroactiveOperationalDate) {
-            showClosedDayMutationBlockedToast();
+        if (isTaskLockedByJudgment(currentTask)) {
+            showJudgedActionMutationBlockedToast();
             return;
         }
 
         const nextTask = { ...currentTask, ...updates };
         const nextRetroactiveOperationalDate = getEditableLockedOperationalDate(nextTask);
-        if (isCommitmentDayClosedForTask({ date: nextTask.date, startTime: nextTask.startTime }) && !nextRetroactiveOperationalDate) {
-            showClosedDayMutationBlockedToast();
-            return;
-        }
         const shouldReconcileDailyCommitment =
             updates.date !== undefined ||
             updates.actionId !== undefined ||
@@ -1033,7 +1146,7 @@ export const createTaskDomain = ({
                     );
                 } catch (reconcileError: any) {
                     console.error('Retroactive judged day reconciliation error:', reconcileError?.message || reconcileError);
-                    showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o dia fechado.', 'error');
+                    showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o julgamento das acoes.', 'error');
                 }
             });
     };
@@ -1057,8 +1170,8 @@ export const createTaskDomain = ({
 
     const returnTaskToPool = (taskId: string, targetOperationalDate?: string) => {
         const currentTask = tasks.find(task => task.id === taskId);
-        if (currentTask && isTaskLockedByClosedDay(currentTask)) {
-            showClosedDayMutationBlockedToast();
+        if (currentTask && isTaskLockedByJudgment(currentTask)) {
+            showJudgedActionMutationBlockedToast();
             return;
         }
         if (currentTask?.completed) {

@@ -7,6 +7,8 @@ import { calculateArenaProgress } from '../utils/progressUtils';
 import { EmojiGlyph } from './EmojiGlyph';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { getContentVisualPalette, resolveArenaVisualFamily } from '../utils/contentCardVisuals';
+import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
+import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import './arena-ui.css';
 
 const hexToRgb = (hex: string) => {
@@ -158,7 +160,8 @@ const ActionIcon: React.FC<{
     onDrop?: (e: React.DragEvent) => void;
     isDragOver?: boolean;
     compact?: boolean;
-}> = ({ action, onDragStart, onDragOver, onDrop, isDragOver, compact = false }) => {
+    relationshipBadgeType?: RelationshipLinkType | null;
+}> = ({ action, onDragStart, onDragOver, onDrop, isDragOver, compact = false, relationshipBadgeType = null }) => {
     const { getActionBackgroundStyle, getArenas, getClanQuestProgress, getClanQuestForActionName } = useGame();
     const backgroundStyle = getActionBackgroundStyle(action.id);
     
@@ -172,6 +175,7 @@ const ActionIcon: React.FC<{
     const currentProgress = clanQuest ? getClanQuestProgress(clanQuest.id) : 0;
     const target = clanQuest?.requirements?.clanGoal || clanQuest?.goal_value || 50;
     const actionsRemaining = clanQuest ? Math.max(0, target - currentProgress) : 0;
+    const surfaceBadge = resolveActionSurfaceBadge(action, relationshipBadgeType);
 
     const renderIcon = () => {
         // Override for special quests
@@ -201,6 +205,14 @@ const ActionIcon: React.FC<{
             className={`${compact ? 'w-[1.32rem] h-[1.32rem] rounded-[6px]' : 'w-6 h-6 rounded-md'} border ${isDragOver ? 'border-white scale-110' : 'border-[var(--accent-bronze)]'} flex items-center justify-center flex-shrink-0 relative overflow-visible transition-all cursor-grab active:cursor-grabbing`}
         >
             {renderIcon()}
+            {surfaceBadge && !compact && (
+                <span className={`pointer-events-none absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full border px-1 py-[1px] text-[6px] font-black uppercase leading-none tracking-[0.06em] shadow-[0_3px_8px_rgba(0,0,0,0.35)] ${getActionSurfaceBadgeClassName(surfaceBadge.tone)}`}>
+                    {surfaceBadge.label}
+                </span>
+            )}
+            {surfaceBadge && compact && (
+                <span className={`pointer-events-none absolute -right-0.5 -top-0.5 z-20 h-1.5 w-1.5 rounded-full border ${getActionSurfaceBadgeClassName(surfaceBadge.tone)}`} />
+            )}
         </div>
     );
 };
@@ -229,10 +241,11 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     disableAnimatedBackground = false,
     tasks: propTasks
 }) => {
-    const { appMode, tasks: contextTasks, activeCycle, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction, userCodexes } = useGame();
+    const { appMode, tasks: contextTasks, activeCycle, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction, userCodexes } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const tasksForCounts = useMemo(() => {
-        if (propTasks || !activeCycle) return tasks;
+        if (propTasks) return tasks;
+        if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
 
         const today = getLocalDateString();
         const cycleEnd = today < activeCycle.endDate ? today : activeCycle.endDate;
@@ -241,7 +254,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             task.date >= activeCycle.startDate &&
             task.date <= cycleEnd
         );
-    }, [activeCycle, propTasks, tasks]);
+    }, [activeCycle, freeProgressResetAt, propTasks, tasks]);
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);
     const [linkType, setLinkType] = useState<string | null>(null);
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -364,9 +377,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
 
     const participants = clanQuests.reduce((acc, quest) => acc + (clanQuestParticipants[quest.id] || 0), 0);
 
-    const progress = useMemo(() => {
-        if (typeof progressPercent === 'number') return progressPercent;
-
+    const calculatedProgress = useMemo(() => {
         return calculateArenaProgress({
             arena,
             actions,
@@ -375,8 +386,12 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             getClanQuestProgress,
             getSharedActionPoolProgress,
             forceSharedPool: linkType ? true : undefined,
-        }).progressPercent;
-    }, [actions, arena, clanQuests, getClanQuestProgress, getSharedActionPoolProgress, linkType, progressPercent, tasksForCounts]);
+        });
+    }, [actions, arena, clanQuests, getClanQuestProgress, getSharedActionPoolProgress, linkType, tasksForCounts]);
+    const progress = typeof progressPercent === 'number'
+        ? progressPercent
+        : calculatedProgress.progressPercent;
+    const hasMeasurableProgress = calculatedProgress.hasMeasurableProgress;
 
     const getIcon = () => {
         return <EmojiGlyph symbol={arena.icon || '\u{1F3DB}\uFE0F'} size="arena" className="text-white" />;
@@ -615,6 +630,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                         onDragOver={(e) => handleActionDragOver(e, action.id)}
                                         onDrop={(e) => handleActionDrop(e, action.id)}
                                         isDragOver={isDragOver}
+                                        relationshipBadgeType={effectiveLinkType}
                                         compact
                                     />
                                 );
@@ -669,20 +685,29 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                                     onDragOver={(e) => handleActionDragOver(e, action.id)}
                                     onDrop={(e) => handleActionDrop(e, action.id)}
                                     isDragOver={dragOverActionId === action.id}
+                                    relationshipBadgeType={effectiveLinkType}
                                 />
                             ))}
                         </div>
                     </>
                 )}
-                <div className={`arena-plate-progress w-full ${isCompactThumbnail ? 'arena-mini-progress' : 'mt-0.5'}`}>
-                    <div
-                        className={`arena-plate-progress-fill ${highlightPhase === 'celebrate' && progress >= 100 ? 'arena-plate-progress-fill--celebrate' : ''}`}
-                        style={{
-                            width: `${progress}%`,
-                            background: arenaGoldBar,
-                        }}
-                    ></div>
-                </div>
+                {hasMeasurableProgress ? (
+                    <div className={`arena-plate-progress w-full ${isCompactThumbnail ? 'arena-mini-progress' : 'mt-0.5'}`}>
+                        <div
+                            className={`arena-plate-progress-fill ${highlightPhase === 'celebrate' && progress >= 100 ? 'arena-plate-progress-fill--celebrate' : ''}`}
+                            style={{
+                                width: `${progress}%`,
+                                background: arenaGoldBar,
+                            }}
+                        ></div>
+                    </div>
+                ) : isCompactThumbnail ? (
+                    <div className="h-[0.32rem] w-full" aria-label="Sem meta definida" />
+                ) : (
+                    <div className="mt-0.5 w-full rounded-full border border-white/8 bg-black/18 px-2 py-1 text-center text-[8px] font-black uppercase tracking-[0.12em] text-white/38">
+                        Sem meta definida
+                    </div>
+                )}
             </div>
         </div>
     );

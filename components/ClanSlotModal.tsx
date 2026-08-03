@@ -25,6 +25,7 @@ interface ClanSlotModalProps {
     myParticipations?: string[];
     onOptIn?: (quest: ClanCustomQuest) => void | Promise<void>;
     allSlots?: { id: AldeiaSlotId; label: string; emoji: string; note?: string }[];
+    startInCreateMode?: boolean;
 }
 
 export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({ 
@@ -41,7 +42,8 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     onUpdate,
     myParticipations = [],
     onOptIn,
-    allSlots = []
+    allSlots = [],
+    startInCreateMode = false
 }) => {
     const { userProfile, showToast, appMode, clan, getArenas, getActionsForArena, deleteAction } = useGame();
     const isBasicMode = appMode === 'BASIC';
@@ -96,9 +98,9 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
     useEffect(() => {
         // Reset view when slotId changes
-        setView('details');
+        setView(startInCreateMode ? 'create-quest' : 'details');
         setSelectedQuestToMove(null);
-    }, [slotId]);
+    }, [slotId, startInCreateMode]);
 
     const plannerProgress = React.useMemo(() => {
         if (!occupant) return 0;
@@ -108,20 +110,32 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
         return Math.min(100, (totalProgress / memberActiveQuests.length) * 100);
     }, [occupant, clanQuests]);
 
+    const openClanQuests = React.useMemo(
+        () => clanQuests
+            .filter(q => q.status !== 'completed' && q.status !== 'aborted')
+            .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()),
+        [clanQuests]
+    );
+    const currentOpenQuest = openClanQuests[0] || null;
+    const canCreateQuest = userRole === 'leader' && !currentOpenQuest;
     const slotQuests = React.useMemo(
-        () => clanQuests.filter(q => q.slot_id === slotId && q.status !== 'completed'),
-        [clanQuests, slotId]
+        () => currentOpenQuest && currentOpenQuest.slot_id === slotId ? [currentOpenQuest] : [],
+        [currentOpenQuest, slotId]
     );
 
-    const boardTitle = isOfficeClan ? 'Tarefas desta mesa' : 'Jornadas deste lugar';
+    const boardTitle = isOfficeClan ? 'Prioridade desta mesa' : 'Missao deste lugar';
     const boardEmptyText = isOfficeClan ? 'Esta mesa esta vazia.' : 'Ninguem entrou aqui ainda.';
     const slotRecadoLabel = isOfficeClan ? 'Recado desta mesa' : 'Recado deste lugar';
     const slotShellLabel = isOfficeClan ? 'Mesa' : 'Lugar';
-    const createEntryLabel = isOfficeClan ? 'Nova tarefa' : 'Nova jornada';
-    const getMissionTypeLabel = (quest: ClanCustomQuest) => quest.mission_type === 'singular' ? 'Individual' : 'Coletiva';
+    const createEntryLabel = isOfficeClan ? 'Nova prioridade' : 'Nova missao';
+    const getMissionTypeLabel = (quest: ClanCustomQuest) => {
+        if (isOfficeClan) return quest.mission_type === 'singular' ? 'Atribuida' : 'Coletiva';
+        return quest.mission_type === 'singular' ? 'Individual' : 'Coletiva';
+    };
     const getPrimaryActionLabel = (quest: ClanCustomQuest, isParticipating: boolean) => {
-        if (isParticipating) return 'Abrir tarefa';
-        return quest.mission_type === 'singular' ? 'Assumir tarefa' : 'Entrar na tarefa';
+        if (isParticipating) return isOfficeClan ? 'Abrir entrega' : 'Abrir missao';
+        if (isOfficeClan) return quest.mission_type === 'singular' ? 'Assumir entrega' : 'Participar';
+        return quest.mission_type === 'singular' ? 'Assumir missao' : 'Participar';
     };
 
     const findRuntimeQuestAction = (quest: ClanCustomQuest) => {
@@ -209,6 +223,10 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
     const handleCreateQuest = async () => {
         if (!questTitle.trim()) return showToast("Título obrigatório", "error");
+        if (currentOpenQuest) {
+            showToast(isOfficeClan ? 'Finalize ou apague a prioridade atual antes de criar outra.' : 'Finalize ou apague a missao atual antes de criar outra.', 'warning');
+            return;
+        }
         
         try {
             const isAssigned = questType === 'individual' && assignToOccupant && occupant;
@@ -391,7 +409,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                         )}
 
                         {/* Active Group Tasks on this Slot */}
-                        {(slotQuests.length > 0 || userRole === 'leader') && (
+                        {(slotQuests.length > 0 || canCreateQuest) && (
                             <div className="space-y-4">
                                 <div className='relative text-center flex-shrink-0'>
                                     <hr className="border-t border-gray-800" />
@@ -558,7 +576,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                             );
                                         });
 
-                                        if (userRole === 'leader') {
+                                        if (canCreateQuest) {
                                             quests.push(
                                                 <div key="add-quest-btn" className="relative flex-shrink-0 snap-center">
                                                     <button 
@@ -698,7 +716,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                 </div>
                                             );
                                         })}
-                                        {userRole === 'leader' && (
+                                        {canCreateQuest && (
                                             <button
                                                 onClick={() => setView('create-quest')}
                                                 className="w-full min-h-[88px] rounded-xl border-2 border-dashed border-amber-800/40 text-amber-700 transition-all hover:bg-amber-900/10"
@@ -745,7 +763,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                         <div className="space-y-3">
                             <input 
                                 type="text" 
-                                placeholder="Titulo da Tarefa"
+                                placeholder={isOfficeClan ? 'Titulo da prioridade' : 'Titulo da missao'}
                                 className="w-full p-3 bg-black/30 border border-white/10 rounded-xl focus:border-[var(--skin-accent-color)] outline-none text-sm text-white"
                                 value={questTitle}
                                 onChange={e => setQuestTitle(e.target.value)}
@@ -906,7 +924,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
                         <div className="flex gap-2 pt-2">
                             <button onClick={() => setView('details')} className="flex-1 py-2 rounded-lg bg-white/5 text-gray-400 text-xs font-bold hover:bg-white/10">Voltar</button>
-                            <button onClick={handleCreateQuest} className="flex-[2] py-2 rounded-lg bg-[var(--skin-accent-color)] text-black text-xs font-bold hover:brightness-110">Criar Tarefa</button>
+                            <button onClick={handleCreateQuest} className="flex-[2] py-2 rounded-lg bg-[var(--skin-accent-color)] text-black text-xs font-bold hover:brightness-110">{isOfficeClan ? 'Criar prioridade' : 'Criar missao'}</button>
                         </div>
                     </div>
                 )}

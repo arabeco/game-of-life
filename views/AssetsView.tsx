@@ -10,6 +10,7 @@ import { EditIcon, XIcon } from '../components/Icons';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
 import { calculateArenaProgress } from '../utils/progressUtils';
+import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import { formatDate, getCycleTimingSummary } from '../utils/dateUtils';
 import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
 import type { Action, Asset, Slot, SlotValue } from '../types';
@@ -110,7 +111,7 @@ const buildCycleActionTotal = (cycleActions: Action[], scheduledTaskCount: numbe
 };
 
 export const AssetsView: React.FC = () => {
-    const { assets, userProfile, updateUserProfile, showToast, appMode, activeCycle, dailyCommitment, getArenas, actions, tasks } = useGame();
+    const { assets, userProfile, updateUserProfile, showToast, appMode, activeCycle, freeProgressResetAt, dailyCommitment, getArenas, actions, tasks } = useGame();
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
     const [isEditingAssetDetail, setIsEditingAssetDetail] = useState(false);
     const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
@@ -179,9 +180,9 @@ export const AssetsView: React.FC = () => {
 
     const allArenas = useMemo(() => getArenas(), [getArenas, assets]);
     const cycleScopedTasks = useMemo(() => {
-        if (!activeCycle) return tasks;
+        if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
         return tasks.filter((task) => typeof task?.date === 'string' && task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
-    }, [tasks, activeCycle?.startDate, activeCycle?.endDate]);
+    }, [tasks, activeCycle?.startDate, activeCycle?.endDate, freeProgressResetAt]);
 
     const assetStats = useMemo(() => {
         return new Map(
@@ -206,8 +207,9 @@ export const AssetsView: React.FC = () => {
                     totalPlanned += arenaProgress.totalPlanned;
                 }
 
-                const progressPercent = totalPlanned > 0 ? Math.round((totalCompleted / totalPlanned) * 100) : 100;
-                return [asset.id, { activeCount, archivedCount, totalActions: actionsForAsset.length, totalCompleted, totalPlanned, progressPercent }];
+                const hasMeasurableProgress = totalPlanned > 0;
+                const progressPercent = hasMeasurableProgress ? Math.round((totalCompleted / totalPlanned) * 100) : 0;
+                return [asset.id, { activeCount, archivedCount, totalActions: actionsForAsset.length, totalCompleted, totalPlanned, progressPercent, hasMeasurableProgress }];
             })
         );
     }, [allArenas, assets, actions, cycleScopedTasks]);
@@ -755,7 +757,7 @@ export const AssetsView: React.FC = () => {
                                 const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
                                 const accent = ASSET_ACCENT_COLORS[asset.id as keyof typeof ASSET_ACCENT_COLORS] || 'var(--skin-accent-color)';
                                 const accentRgb = hexToRgb(accent);
-                                const stats = assetStats.get(asset.id) || { activeCount: 0, archivedCount: 0, totalActions: 0, totalCompleted: 0, totalPlanned: 0, progressPercent: 100 };
+                                const stats = assetStats.get(asset.id) || { activeCount: 0, archivedCount: 0, totalActions: 0, totalCompleted: 0, totalPlanned: 0, progressPercent: 0, hasMeasurableProgress: false };
 
                                 return (
                                     <div
@@ -840,18 +842,22 @@ export const AssetsView: React.FC = () => {
                                                             <span className="font-black" style={{ color: 'rgba(248, 250, 253, 0.96)' }}>{stats.totalActions}</span> ações
                                                         </span>
                                                     </div>
-                                                <div className="mt-0.5">
-                                                    <div className="h-[3px] w-full overflow-hidden rounded-full bg-black/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                                                        <div
-                                                            className="h-full rounded-full transition-all duration-500"
-                                                            style={{
-                                                                width: `${stats.progressPercent}%`,
-                                                                background: 'linear-gradient(90deg, #b47a18 0%, #ffd462 48%, #fff1b8 100%)',
-                                                                boxShadow: '0 0 12px rgba(255,212,98,0.42), 0 0 2px rgba(255,255,255,0.68)',
-                                                            }}
-                                                        />
+                                                {stats.hasMeasurableProgress ? (
+                                                    <div className="mt-0.5">
+                                                        <div className="h-[3px] w-full overflow-hidden rounded-full bg-black/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                                                            <div
+                                                                className="h-full rounded-full transition-all duration-500"
+                                                                style={{
+                                                                    width: `${stats.progressPercent}%`,
+                                                                    background: 'linear-gradient(90deg, #b47a18 0%, #ffd462 48%, #fff1b8 100%)',
+                                                                    boxShadow: '0 0 12px rgba(255,212,98,0.42), 0 0 2px rgba(255,255,255,0.68)',
+                                                                }}
+                                                            />
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                ) : (
+                                                    <div className="mt-0.5 h-[3px] w-full rounded-full bg-black/10" aria-label="Sem meta definida" />
+                                                )}
                                             </div>
                                         </button>
                                     </div>

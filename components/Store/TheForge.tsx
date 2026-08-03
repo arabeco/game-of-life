@@ -38,6 +38,8 @@ const FEATURED_FRAGMENT_CATEGORIES: ItemCategory[] = [
     'plate',
 ];
 
+const HONOR_CATEGORIES = new Set<ItemCategory>(['insignia', 'insignias']);
+
 const getCasualCampaignFragmentCost = (durationDays: number) => {
     if (durationDays >= 21) return 42;
     if (durationDays >= 14) return 34;
@@ -101,7 +103,7 @@ export const TheForge: React.FC = () => {
         return inventory
             .filter((inst) => !inst.isEquipped)
             .map((inst) => ({ ...inst, def: resolveItemDef(inst.id) }))
-            .filter((item) => item.def);
+            .filter((item) => item.def && !HONOR_CATEGORIES.has(item.def.category));
     }, [inventory]);
 
     const getCraftCost = (tier: number) => {

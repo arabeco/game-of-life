@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { CheckIcon, SendIcon, XIcon } from './Icons';
 import { Portal } from './Portal';
 import { SupabaseService } from '../services/SupabaseService';
+import { UserAvatar } from './UserAvatar';
 
 export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const {
@@ -91,7 +92,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
                             {clanJoinRequestsIncoming.length > 0 ? (
                                 clanJoinRequestsIncoming.map(request => (
                                     <div key={request.id} className="bg-black/20 p-2 rounded-xl flex items-center space-x-3">
-                                        <img src={request.requesterProfile?.avatarUrl} alt={request.requesterProfile?.nickname} className="w-10 h-10 rounded-full" />
+                                        <UserAvatar avatarUrl={request.requesterProfile?.avatarUrl} nickname={request.requesterProfile?.nickname || 'Jogador'} className="h-10 w-10" level={request.requesterProfile?.level} showBorder={false} />
                                         <div className="flex-grow min-w-0">
                                             <h4 className="font-bold text-white text-sm truncate">{request.requesterProfile?.nickname || 'Jogador'}</h4>
                                             <p className="text-xs text-gray-400">Nivel {request.requesterProfile?.level || 1}</p>
@@ -125,7 +126,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
                             {availableFriends.length > 0 ? (
                                 availableFriends.map(friend => (
                                     <div key={friend.id} className="bg-black/20 p-2 rounded-xl flex items-center space-x-3">
-                                        <img src={friend.avatarUrl} alt={friend.nickname} className="w-10 h-10 rounded-full" />
+                                        <UserAvatar avatarUrl={friend.avatarUrl} nickname={friend.nickname} className="h-10 w-10" level={friend.level} showBorder={false} />
                                         <div className="flex-grow">
                                             <h4 className="font-bold text-white text-sm">{friend.nickname}</h4>
                                             <p className="text-xs text-gray-400">Nivel {friend.level}</p>

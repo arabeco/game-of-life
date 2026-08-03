@@ -18,6 +18,7 @@ type InventoryEntry = {
     acquiredAt: string;
     isEquipped?: boolean;
     def?: ItemDef;
+    count?: number;
 };
 
 const HONOR_CATEGORIES = new Set(['insignia', 'insignias']);
@@ -87,7 +88,7 @@ export const Inventory: React.FC = () => {
         for (const item of visibleItems) {
             const current = deduped.get(item.id);
             if (!current) {
-                deduped.set(item.id, item);
+                deduped.set(item.id, { ...item, count: 1 });
                 continue;
             }
 
@@ -97,8 +98,14 @@ export const Inventory: React.FC = () => {
                 Boolean(item.isEquipped) ||
                 (!current.isEquipped && (Number.isNaN(currentStamp) || (!Number.isNaN(nextStamp) && nextStamp > currentStamp)));
 
+            if (isHonorCategory(item.def?.category)) {
+                const nextCount = (current.count || 1) + 1;
+                deduped.set(item.id, { ...(shouldReplace ? item : current), count: nextCount });
+                continue;
+            }
+
             if (shouldReplace) {
-                deduped.set(item.id, item);
+                deduped.set(item.id, { ...item, count: current.count || 1 });
             }
         }
 
@@ -264,6 +271,11 @@ export const Inventory: React.FC = () => {
                                     {equipped && (
                                         <div className="absolute top-1 right-1 bg-green-500/20 text-green-400 rounded-full p-0.5 border border-green-500/30">
                                             <CheckIcon className="w-3 h-3" />
+                                        </div>
+                                    )}
+                                    {isHonorCategory(item.def?.category) && (item.count || 1) > 1 && (
+                                        <div className="absolute top-1 left-1 min-w-6 rounded-full border border-amber-300/40 bg-amber-400/20 px-1.5 py-0.5 text-center text-[10px] font-black text-amber-100 shadow-lg">
+                                            x{item.count}
                                         </div>
                                     )}
 

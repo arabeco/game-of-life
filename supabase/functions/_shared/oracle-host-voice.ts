@@ -34,6 +34,18 @@ export type OracleHostContext = {
   pendingActionsToday: number;
   overdueActions: number;
   staleArenas: string[];
+  focusArenaSignal?: {
+    arenaName: string;
+    progressPercent: number | null;
+    expectedProgressPercent: number | null;
+    pace: "adiantado" | "no_ritmo" | "atrasado" | "critico" | "sem_medida";
+    pendingActions: number;
+    pendingActionsToday: number;
+    suggestedAdjustment: "reduzir_meta" | "pausar_arena" | "criar_meta_minima" | "proteger_uma_acao" | "manter_ritmo";
+    reason: string;
+  } | null;
+  stalledArenaCount?: number;
+  overloadedArenaCount?: number;
   pendingChests: number;
   needsFirstArena: boolean;
   needsFirstAction: boolean;
@@ -67,6 +79,11 @@ export const ORACLE_BASE_UNIVERSAL = [
   "- Fale de uma coisa dominante por vez. Nao despeje todos os dados do app.",
   "- O centro da fala e o dia da pessoa: o que fazer agora, o que ficou aberto, o que ja virou prova.",
   "- Fale de ciclo so quando ele mudar a decisao de hoje. Nao comece toda resposta por ciclo.",
+  "- Fale em portugues natural. Evite palavras soltas em ingles nas falas ao usuario quando houver equivalente claro em portugues.",
+  "- Nao use termos como coach, check-in, feedback, focus, push, slider, streak, task, tradeoff ou workflow nas falas ao usuario.",
+  "- Quando existir focusArenaSignal, use essa arena como leitura principal se isso deixar a fala mais concreta.",
+  "- Se focusArenaSignal.suggestedAdjustment for reduzir_meta, normalize ajustar repeticoes ou reduzir meta no meio do ciclo.",
+  "- Se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar uma meta minima.",
   "- Sempre priorize quatro leituras: prioridade de agora, risco real, acao recomendada e proximo movimento.",
   "- Se houver nextMove, priorityActionName, priorityArenaName ou cycleRisk, trate isso como centro da resposta.",
   "- Se faltar primeira arena, primeira acao ou primeira tarefa, fale sem bronca: primeiro trilho, depois refinamento.",
@@ -329,8 +346,20 @@ export const deriveOracleHostOperationalState = (
     return "sem_direcao";
   }
 
+  if (context.focusArenaSignal?.suggestedAdjustment === "criar_meta_minima") {
+    return "sem_direcao";
+  }
+
   if (context.cycleRisk === "alto" || context.cyclePace === "critico") {
     return "em_risco";
+  }
+
+  if (context.focusArenaSignal?.suggestedAdjustment === "pausar_arena") {
+    return "arena_esquecida";
+  }
+
+  if (context.focusArenaSignal?.suggestedAdjustment === "reduzir_meta") {
+    return "escopo_pesado";
   }
 
   if (context.overdueActions > 0 || context.cyclePace === "atrasado") {
@@ -402,6 +431,10 @@ export const buildOracleHostVoiceDirective = ({
     "- Fale de ciclos, arenas e acoes como movimento real, nao como relatorio.",
     "- Varie a frase. Use os exemplos como direcao de voz, nao copie sempre literal.",
     "- Se houver priorityArenaName ou priorityActionName, use o nome quando isso deixar a fala mais concreta.",
+    "- Se houver focusArenaSignal, prefira falar da arena mais importante agora em vez de falar do ciclo inteiro.",
+    "- Se a arena estiver atrasada, ofereca ajuste de meta ou repeticoes sem culpa.",
+    "- Se a arena nao tiver medida, diga que ela pode ficar sem barra ou ganhar uma meta minima.",
+    "- Evite palavras soltas em ingles nas falas ao usuario; use portugues natural.",
     "- Se a sequencia estiver em 0, nao finja continuidade.",
     "- Se dailyProofLastClosedDate for hoje, pode tratar como prova real do dia ja registrada.",
     "",

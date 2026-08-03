@@ -60,6 +60,10 @@ type OracleContext = {
   hasArenas: boolean;
   totalArenas: number;
   arenaNames: string[];
+  arenaSignals: OracleArenaSignal[];
+  focusArenaSignal: OracleArenaSignal | null;
+  stalledArenaCount: number;
+  overloadedArenaCount: number;
   staleArenas: string[];
   completedActionsInCycle: number;
   pendingActionsToday: number;
@@ -92,6 +96,26 @@ type OracleContext = {
   needsFirstAction: boolean;
   needsFirstTask: boolean;
   needsSitrepClosure: boolean;
+};
+
+type OracleArenaSignal = {
+  arenaId: string;
+  arenaName: string;
+  actionCount: number;
+  measurableActionCount: number;
+  progressPercent: number | null;
+  expectedProgressPercent: number | null;
+  progressDelta: number | null;
+  pace: "adiantado" | "no_ritmo" | "atrasado" | "critico" | "sem_medida";
+  completedActions: number;
+  plannedActions: number;
+  pendingActions: number;
+  pendingActionsToday: number;
+  hasMeasurableProgress: boolean;
+  lastProofDate: string | null;
+  daysSinceProof: number | null;
+  suggestedAdjustment: "reduzir_meta" | "pausar_arena" | "criar_meta_minima" | "proteger_uma_acao" | "manter_ritmo";
+  reason: string;
 };
 
 type OraclePreferencesRuntime = {
@@ -142,6 +166,8 @@ type ActionRow = {
   id: string;
   arena_id: string;
   name?: string | null;
+  repetitions?: number | null;
+  action_type?: string | null;
 };
 
 type TaskRow = {
@@ -246,11 +272,11 @@ const ORACLE_CATEGORY_LABELS: Record<OracleCategory, string> = {
   frases_inspiradoras: "Carta inspiradora",
   reflexoes_filosoficas: "Reflexao filosofica",
   fragmentos_sabedoria: "Fragmento de sabedoria",
-  dicas_produtividade: "Card de foco",
+  dicas_produtividade: "Sinal de foco",
   rituais_lifestyle: "Dica de vida",
-  provocacoes: "Card de choque",
+  provocacoes: "Sinal de alerta",
   sussurros_maestria: "Sussurro de maestria",
-  analise_padroes: "Card de analise",
+  analise_padroes: "Leitura de ritmo",
 };
 
 const DEFAULT_ORACLE_PREFERENCES = {
@@ -643,8 +669,8 @@ const isManualOracleFeedMessage = (message: OracleMessageRuntime): boolean => (
   message.deliveryType === "feed" && message.contextSnapshot.triggerType === "manual"
 );
 
-const resolveOraclePresentation = (category: OracleCategory, triggerType: OracleTriggerType): OraclePresentation => (
-  triggerType === "manual" || ORACLE_INTEL_CATEGORIES.has(category) ? "info_card" : "ambient_pulse"
+const resolveOraclePresentation = (_category: OracleCategory, triggerType: OracleTriggerType): OraclePresentation => (
+  triggerType === "manual" ? "info_card" : "ambient_pulse"
 );
 
 const hasOracleStructuralNeed = (contextData: OracleContext): boolean => (
@@ -710,6 +736,72 @@ const daysBetweenInclusive = (startDate: string, endDate: string): number => {
   const start = new Date(`${startDate}T00:00:00Z`);
   const end = new Date(`${endDate}T00:00:00Z`);
   return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+};
+
+const diffDateDays = (fromDate: string, toDate: string): number | null => {
+  const from = new Date(`${fromDate}T00:00:00Z`);
+  const to = new Date(`${toDate}T00:00:00Z`);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return null;
+  return Math.round((to.getTime() - from.getTime()) / 86400000);
+};
+
+const getActionCycleWeight = (action: ActionRow): number => {
+  const actionType = asTrimmedString(action.action_type);
+  if (actionType === "Livre") return 0;
+  if (actionType === "Marco" || actionType === "Compromisso") return 1;
+  return Math.max(1, Math.floor(asNumber(action.repetitions, 1)));
+};
+
+const resolveArenaPace = (
+  completionPercent: number | null,
+  expectedPercent: number | null,
+): OracleArenaSignal["pace"] => {
+  if (completionPercent === null || expectedPercent === null) return "sem_medida";
+  const delta = completionPercent - expectedPercent;
+  if (delta >= 10) return "adiantado";
+  if (delta >= -10) return "no_ritmo";
+  if (delta >= -25) return "atrasado";
+  return "critico";
+};
+
+const buildArenaSignalReason = (signal: Omit<OracleArenaSignal, "reason">): string => {
+  if (signal.suggestedAdjustment === "criar_meta_minima") {
+    return "A arena tem acoes livres ou sem contador, entao precisa de meta minima se a pessoa quiser medir avanco.";
+  }
+  if (signal.suggestedAdjustment === "pausar_arena") {
+    return "A arena ficou varios dias sem prova real dentro do ciclo.";
+  }
+  if (signal.suggestedAdjustment === "reduzir_meta") {
+    return "O avanco da arena ficou abaixo do tempo ja gasto no ciclo.";
+  }
+  if (signal.suggestedAdjustment === "proteger_uma_acao") {
+    return "A arena tem acao pendente hoje e pode voltar ao fio com um passo pequeno.";
+  }
+  return "A arena esta acompanhando o ritmo ou nao pede ajuste agora.";
+};
+
+const compareArenaSignals = (left: OracleArenaSignal, right: OracleArenaSignal): number => {
+  const adjustmentScore: Record<OracleArenaSignal["suggestedAdjustment"], number> = {
+    reduzir_meta: 5,
+    pausar_arena: 4,
+    proteger_uma_acao: 3,
+    criar_meta_minima: 2,
+    manter_ritmo: 1,
+  };
+  const paceScore: Record<OracleArenaSignal["pace"], number> = {
+    critico: 5,
+    atrasado: 4,
+    sem_medida: 3,
+    no_ritmo: 2,
+    adiantado: 1,
+  };
+  const score = (signal: OracleArenaSignal) =>
+    adjustmentScore[signal.suggestedAdjustment] * 1000 +
+    paceScore[signal.pace] * 100 +
+    signal.pendingActionsToday * 10 +
+    signal.pendingActions +
+    Math.max(0, -(signal.progressDelta ?? 0));
+  return score(right) - score(left);
 };
 
 const buildNextMove = ({
@@ -845,6 +937,92 @@ const buildOracleOperationalContext = ({
   const priorityTask = sortedByUrgency[0] || null;
   const priorityAction = priorityTask ? actionById.get(priorityTask.action_id) || null : null;
   const priorityArena = priorityAction ? arenaById.get(priorityAction.arena_id) || null : null;
+  const relevantArenas = activeCycle
+    ? activeArenas.filter((arena) => cycleArenaIds.size === 0 || cycleArenaIds.has(arena.id))
+    : activeArenas;
+  const arenaSignals = relevantArenas
+    .map((arena): OracleArenaSignal | null => {
+      const arenaActions = actions.filter((action) => action.arena_id === arena.id);
+      if (arenaActions.length === 0) {
+        const baseSignal: Omit<OracleArenaSignal, "reason"> = {
+          arenaId: arena.id,
+          arenaName: asTrimmedString(arena.name, "Arena") || "Arena",
+          actionCount: 0,
+          measurableActionCount: 0,
+          progressPercent: null,
+          expectedProgressPercent: expectedCycleProgress,
+          progressDelta: null,
+          pace: "sem_medida",
+          completedActions: 0,
+          plannedActions: 0,
+          pendingActions: 0,
+          pendingActionsToday: 0,
+          hasMeasurableProgress: false,
+          lastProofDate: null,
+          daysSinceProof: null,
+          suggestedAdjustment: "criar_meta_minima",
+        };
+        return { ...baseSignal, reason: buildArenaSignalReason(baseSignal) };
+      }
+
+      const arenaActionIds = new Set(arenaActions.map((action) => action.id));
+      const measurableActions = arenaActions.filter((action) => asTrimmedString(action.action_type) !== "Livre");
+      const plannedActions = measurableActions.reduce((sum, action) => sum + getActionCycleWeight(action), 0);
+      const arenaCycleTasks = cycleTasks.filter((task) => arenaActionIds.has(task.action_id));
+      const completedTasks = arenaCycleTasks.filter((task) => asBoolean(task.completed, false));
+      const completedActions = plannedActions > 0
+        ? Math.min(plannedActions, completedTasks.filter((task) => actionById.get(task.action_id)?.action_type !== "Livre").length)
+        : completedTasks.length;
+      const progressPercent = plannedActions > 0 ? Math.round((completedActions / plannedActions) * 100) : null;
+      const progressDelta = progressPercent !== null && expectedCycleProgress !== null
+        ? progressPercent - expectedCycleProgress
+        : null;
+      const pace = resolveArenaPace(progressPercent, expectedCycleProgress);
+      const pendingActions = plannedActions > 0 ? Math.max(0, plannedActions - completedActions) : 0;
+      const pendingActionsTodayForArena = pendingTodayTasks.filter((task) => arenaActionIds.has(task.action_id)).length;
+      const completedDates = completedTasks.map((task) => getTaskOperationalDateString(task)).sort();
+      const lastProofDate = completedDates.length > 0 ? completedDates[completedDates.length - 1] : null;
+      const daysSinceProof = lastProofDate ? diffDateDays(lastProofDate, operationalDate) : null;
+      const suggestedAdjustment: OracleArenaSignal["suggestedAdjustment"] =
+        plannedActions === 0
+          ? "criar_meta_minima"
+          : (daysSinceProof !== null && daysSinceProof >= 7 && completedActions === 0)
+            ? "pausar_arena"
+            : (pace === "critico" || pace === "atrasado")
+              ? "reduzir_meta"
+              : pendingActionsTodayForArena > 0
+                ? "proteger_uma_acao"
+                : "manter_ritmo";
+      const baseSignal: Omit<OracleArenaSignal, "reason"> = {
+        arenaId: arena.id,
+        arenaName: asTrimmedString(arena.name, "Arena") || "Arena",
+        actionCount: arenaActions.length,
+        measurableActionCount: measurableActions.length,
+        progressPercent,
+        expectedProgressPercent: expectedCycleProgress,
+        progressDelta,
+        pace,
+        completedActions,
+        plannedActions,
+        pendingActions,
+        pendingActionsToday: pendingActionsTodayForArena,
+        hasMeasurableProgress: plannedActions > 0,
+        lastProofDate,
+        daysSinceProof,
+        suggestedAdjustment,
+      };
+      return { ...baseSignal, reason: buildArenaSignalReason(baseSignal) };
+    })
+    .filter((signal): signal is OracleArenaSignal => Boolean(signal))
+    .sort(compareArenaSignals)
+    .slice(0, 6);
+  const focusArenaSignal = arenaSignals[0] || null;
+  const stalledArenaCount = arenaSignals.filter((signal) => (
+    signal.suggestedAdjustment === "pausar_arena" ||
+    signal.pace === "critico" ||
+    (signal.daysSinceProof ?? 0) >= 7
+  )).length;
+  const overloadedArenaCount = arenaSignals.filter((signal) => signal.suggestedAdjustment === "reduzir_meta").length;
   const recentThreshold = shiftDateString(operationalDate, -6);
   const staleArenas = activeArenas
     .filter((arena) => actions.some((action) => action.arena_id === arena.id))
@@ -877,6 +1055,10 @@ const buildOracleOperationalContext = ({
     hasArenas: hasArenaEvidence,
     totalArenas: Math.max(activeArenas.length, cycleArenaIds.size, inferredArenaIds.size),
     arenaNames: activeArenas.map((arena) => asTrimmedString(arena.name)).filter(Boolean),
+    arenaSignals,
+    focusArenaSignal,
+    stalledArenaCount,
+    overloadedArenaCount,
     staleArenas,
     completedActionsInCycle,
     pendingActionsToday: pendingTodayTasks.length,
@@ -999,7 +1181,7 @@ const loadOracleRuntimeState = async (
       .returns<ArenaRow[]>(),
     supabaseAdmin
       .from("actions")
-      .select("id, arena_id, name")
+      .select("id, arena_id, name, repetitions, action_type")
       .eq("user_id", userId)
       .returns<ActionRow[]>(),
     supabaseAdmin
@@ -1172,31 +1354,41 @@ const buildAutomaticUserPrompt = ({
 }): string => {
   if (presentation === "info_card") {
     return [
-      "Gere um card curto para o feed do usuario.",
+      "Gere uma fala curta para o feed do usuario.",
       `Categoria solicitada: ${category}`,
       `Momento de disparo: ${triggerType}`,
       "Formato obrigatorio:",
-      "PRIORIDADE: uma frase curta",
-      "RISCO: uma frase curta",
-      "AJA: um comando concreto e imediato",
+      "1 ou 2 frases naturais, sem cabecalho",
       "Regras:",
-      "- foco operacional",
-      "- sem saudacao generica",
-      "- sem misticismo",
-      "- nao descreva o contexto inteiro; decida o que importa",
+      "- sem PRIORIDADE, RISCO ou AJA",
+      "- sem bronca, placar, desafio de habito ou tom de app gamificado",
+      "- sem palavras soltas em ingles quando houver equivalente em portugues",
+      "- se existir focusArenaSignal, use essa arena como assunto principal",
+      "- se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa",
+      "- se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima",
+      "- se existir priorityActionName, pergunte algo como \"Que tal [acao] hoje?\"",
+      "- se cyclePace for atrasado ou critico, diga que parece atrasado olhando tempo/progresso do ciclo",
+      "- se estiver tudo no ritmo, sugira manter uma acao simples em vez de empilhar tarefa",
       `Contexto atual: ${JSON.stringify(contextData)}`,
     ].join("\n");
   }
 
   return [
-    "Gere um pulso curto para o feed do usuario.",
+    "Gere uma fala curta do Oraculo para o feed do usuario.",
     `Categoria solicitada: ${category}`,
     `Momento de disparo: ${triggerType}`,
     "Regras:",
-    "- no maximo 2 frases",
-    "- a primeira frase define o foco",
-    "- a segunda frase define o proximo movimento",
-    "- sem saudacao e sem floreio",
+    "- no maximo 2 frases, em portugues natural",
+    "- sem saudacao e sem floreio motivacional",
+    "- sem PRIORIDADE, RISCO ou AJA",
+    "- sem bronca, placar, desafio de habito ou tom de app gamificado",
+    "- sem palavras soltas em ingles quando houver equivalente em portugues",
+    "- se existir focusArenaSignal, use essa arena como assunto principal",
+    "- se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa",
+    "- se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima",
+    "- se existir priorityActionName, use uma pergunta leve: \"Que tal [acao] hoje?\"",
+    "- se cyclePace for atrasado ou critico, mencione que o ciclo parece atrasado olhando tempo/progresso",
+    "- se existir nextMove, transforme em sugestao humana, nao comando",
     `Contexto atual: ${JSON.stringify(contextData)}`,
   ].join("\n");
 };
@@ -1251,7 +1443,7 @@ const createAutomaticOracleMessage = async (
       .returns<ArenaRow[]>(),
     supabaseAdmin
       .from("actions")
-      .select("id, arena_id, name")
+      .select("id, arena_id, name, repetitions, action_type")
       .eq("user_id", userId)
       .returns<ActionRow[]>(),
     supabaseAdmin
@@ -1376,7 +1568,7 @@ const createAutomaticOracleMessage = async (
         categoryLabel: ORACLE_CATEGORY_LABELS[category],
         generatedFor: "feed",
         operationalState,
-        summary: presentation === "info_card" ? "Card operacional do Oraculo" : "Pulso curto do Oraculo",
+        summary: presentation === "info_card" ? "Card do Oraculo" : "Sinal do Oraculo",
       },
       read: false,
       created_at: now.toISOString(),
@@ -1574,8 +1766,15 @@ const handleClientOracleRequest = async (req: Request, origin: string | null) =>
       oracleDebounceState.set(user.id, { fingerprint: debounceFingerprint, timestamp: startedAt });
 
       const supabaseAdmin = getSupabaseAdmin();
-      const runtime = await loadOracleRuntimeState(supabaseAdmin, user.id, new Date());
-      const effectiveIsPremium = asBoolean(body?.isPremium, runtime.isPremium);
+      let runtime: Awaited<ReturnType<typeof loadOracleRuntimeState>> | null = null;
+      try {
+        runtime = await loadOracleRuntimeState(supabaseAdmin, user.id, new Date());
+      } catch (runtimeError) {
+        console.error("Oracle runtime context failed; continuing without app context:", runtimeError);
+      }
+      const requestedMode = normalizeOracleMode(body?.mode);
+      const effectiveMode = runtime?.preferences.activeMode || requestedMode;
+      const effectiveIsPremium = asBoolean(body?.isPremium, runtime?.isPremium ?? false);
       const structuredContext = routeOracleIntent(text, suppliedMemory);
       const actionDraft = structuredContext.shouldOfferAction
         ? parseOracleActionDraft(text, getOperationalDateString(new Date()))
@@ -1591,9 +1790,9 @@ const handleClientOracleRequest = async (req: Request, origin: string | null) =>
             : "chat";
 
       const premiumHint = !effectiveIsPremium ? buildOraclePremiumHint(structuredContext) : null;
-      const appContext = structuredContext.appContextUsed ? runtime.contextData : null;
+      const appContext = structuredContext.appContextUsed && runtime ? runtime.contextData : null;
       const promptSystem = buildOracleChatSystemPrompt({
-        mode: runtime.preferences.activeMode,
+        mode: effectiveMode,
         intent: structuredContext.recognizedIntent,
         isPremium: effectiveIsPremium,
       });
@@ -1602,7 +1801,7 @@ const handleClientOracleRequest = async (req: Request, origin: string | null) =>
         structuredContext,
         memory: suppliedMemory,
         appContext,
-        mode: runtime.preferences.activeMode,
+        mode: effectiveMode,
       });
 
       try {
@@ -1661,14 +1860,22 @@ const handleClientOracleRequest = async (req: Request, origin: string | null) =>
       }
     }
 
-    const { text } = await callOpenRouter({
-      systemPrompt,
-      userPrompt,
-      models: [model, OPENROUTER_FALLBACK_MODEL],
-      referer: origin || SITE_URL,
-    });
+    try {
+      const { text } = await callOpenRouter({
+        systemPrompt,
+        userPrompt,
+        models: [model, OPENROUTER_FALLBACK_MODEL],
+        referer: origin || SITE_URL,
+      });
 
-    return jsonResponse(origin, 200, { text });
+      return jsonResponse(origin, 200, { text });
+    } catch (modelError) {
+      console.error("Oracle card generation failed; returning safe fallback:", modelError);
+      return jsonResponse(origin, 200, {
+        text: "Nao consegui gerar uma fala completa agora. Ainda assim, escolhe uma acao pequena e deixa o dia menos aberto.",
+        fallbackUsed: true,
+      });
+    }
   } catch (error) {
     return jsonResponse(origin, 500, {
       error: "Unexpected error in oracle function.",

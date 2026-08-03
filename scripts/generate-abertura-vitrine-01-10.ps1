@@ -399,9 +399,9 @@ foreach ($item in $items) {
         $bg.Dispose()
 
         if ($slideIndex -eq 1) {
-            Draw-FitText -Graphics $graphics -Text $item.Title -Family $headlineFamily -BaseSize 112 -Brush $goldBrush -X 90 -Y 42 -Width 900 -Height 170 -Format $formatCenter -MinSize 44 -ShadowOffset 4 -ShadowBrush $shadowBrush -OutlineBrush $titleOutlineBrush -OutlineOffset 2
+            Draw-FitText -Graphics $graphics -Text $item.Title -Family $headlineFamily -BaseSize 104 -Brush $goldBrush -X 90 -Y 58 -Width 900 -Height 160 -Format $formatCenter -MinSize 44 -ShadowOffset 4 -ShadowBrush $shadowBrush -OutlineBrush $titleOutlineBrush -OutlineOffset 2
 
-            Draw-FitText -Graphics $graphics -Text $item.Line -Family $bodyFamily -BaseSize 54 -Brush $ivoryBrush -X 120 -Y 188 -Width 840 -Height 112 -Format $formatCenter -MinSize 28 -ShadowOffset 3 -ShadowBrush $shadowBrush
+            Draw-FitText -Graphics $graphics -Text $item.Line -Family $bodyFamily -BaseSize 54 -Brush $ivoryBrush -X 120 -Y 214 -Width 840 -Height 112 -Format $formatCenter -MinSize 28 -ShadowOffset 3 -ShadowBrush $shadowBrush
 
             if ($printPath) {
                 $targetX = 220
@@ -443,7 +443,7 @@ foreach ($item in $items) {
         if ($slideIndex -eq 3) {
             Draw-FitText -Graphics $graphics -Text "GLYPH" -Family $headlineFamily -BaseSize 114 -Brush $goldBrush -X 120 -Y 520 -Width 840 -Height 120 -Format $formatCenter -MinSize 72 -ShadowOffset 4 -ShadowBrush $shadowBrush -OutlineBrush $outlineBrush -OutlineOffset 3
 
-            Draw-FitText -Graphics $graphics -Text "Organize seu império." -Family $bodyFamily -BaseSize 52 -Brush $ivoryBrush -X 120 -Y 640 -Width 840 -Height 90 -Format $formatCenter -MinSize 30 -ShadowOffset 3 -ShadowBrush $shadowBrush
+            Draw-FitText -Graphics $graphics -Text "Organize seu imp$([char]0x00E9)rio." -Family $bodyFamily -BaseSize 52 -Brush $ivoryBrush -X 120 -Y 640 -Width 840 -Height 90 -Format $formatCenter -MinSize 30 -ShadowOffset 3 -ShadowBrush $shadowBrush
 
             Draw-Foot -Graphics $graphics -Family $headlineFamily -Brush $goldBrush -Width $width -Height $height -Text "glyph.life" -LogoPath $logoPath
         }

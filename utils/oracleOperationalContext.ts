@@ -1,4 +1,4 @@
-import { Action, Asset, Cycle, DailyCommitment, DailyProofStreak, OracleCategory, OracleContext, OracleMode, ScheduledTask } from '../types';
+import { Action, Asset, Cycle, DailyCommitment, DailyProofStreak, OracleArenaSignal, OracleCategory, OracleContext, OracleMode, ScheduledTask } from '../types';
 import { filterCycleTasksByScope } from './coreLoopUtils.js';
 import { getOperationalDateString, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 
@@ -77,6 +77,66 @@ const resolveCyclePace = (
   if (delta >= -10) return 'no_ritmo';
   if (delta >= -25) return 'atrasado';
   return 'critico';
+};
+
+const resolveArenaPace = (
+  completionPercent: number | null,
+  expectedPercent: number | null,
+): OracleArenaSignal['pace'] => {
+  if (completionPercent === null || expectedPercent === null) return 'sem_medida';
+  const delta = completionPercent - expectedPercent;
+  if (delta >= 10) return 'adiantado';
+  if (delta >= -10) return 'no_ritmo';
+  if (delta >= -25) return 'atrasado';
+  return 'critico';
+};
+
+const buildArenaSignalReason = (signal: Omit<OracleArenaSignal, 'reason'>): string => {
+  if (signal.suggestedAdjustment === 'criar_meta_minima') {
+    return 'A arena tem acoes livres ou sem contador, entao precisa de meta minima se voce quiser medir avanco.';
+  }
+  if (signal.suggestedAdjustment === 'pausar_arena') {
+    return 'A arena ficou varios dias sem prova real dentro do ciclo.';
+  }
+  if (signal.suggestedAdjustment === 'reduzir_meta') {
+    return 'O avanco da arena ficou abaixo do tempo ja gasto no ciclo.';
+  }
+  if (signal.suggestedAdjustment === 'proteger_uma_acao') {
+    return 'A arena tem acao pendente hoje e pode voltar ao fio com um passo pequeno.';
+  }
+  return 'A arena esta acompanhando o ritmo ou nao pede ajuste agora.';
+};
+
+const compareArenaSignals = (left: OracleArenaSignal, right: OracleArenaSignal): number => {
+  const adjustmentScore: Record<OracleArenaSignal['suggestedAdjustment'], number> = {
+    reduzir_meta: 5,
+    pausar_arena: 4,
+    proteger_uma_acao: 3,
+    criar_meta_minima: 2,
+    manter_ritmo: 1,
+  };
+  const paceScore: Record<OracleArenaSignal['pace'], number> = {
+    critico: 5,
+    atrasado: 4,
+    sem_medida: 3,
+    no_ritmo: 2,
+    adiantado: 1,
+  };
+
+  const leftScore =
+    adjustmentScore[left.suggestedAdjustment] * 1000 +
+    paceScore[left.pace] * 100 +
+    left.pendingActionsToday * 10 +
+    left.pendingActions +
+    Math.max(0, -(left.progressDelta ?? 0));
+  const rightScore =
+    adjustmentScore[right.suggestedAdjustment] * 1000 +
+    paceScore[right.pace] * 100 +
+    right.pendingActionsToday * 10 +
+    right.pendingActions +
+    Math.max(0, -(right.progressDelta ?? 0));
+
+  return rightScore - leftScore;
 };
 
 const buildNextMove = ({
@@ -219,6 +279,96 @@ export const buildOracleOperationalContext = ({
   const priorityTask = sortTasksByUrgency(overdueTasks)[0] || sortTasksByUrgency(pendingTodayTasks)[0] || null;
   const priorityAction = priorityTask ? actionById.get(priorityTask.actionId) || null : null;
   const priorityArena = priorityAction ? arenaById.get(priorityAction.arenaId) || null : null;
+  const relevantArenas = activeCycle
+    ? activeArenas.filter((arena) => cycleArenaIds.size === 0 || cycleArenaIds.has(arena.id))
+    : activeArenas;
+  const expectedArenaProgress = expectedCycleProgress;
+  const arenaSignals = relevantArenas
+    .map((arena): OracleArenaSignal | null => {
+      const arenaActions = actions.filter((action) => action.arenaId === arena.id);
+      if (arenaActions.length === 0) {
+        const baseSignal: Omit<OracleArenaSignal, 'reason'> = {
+          arenaId: arena.id,
+          arenaName: arena.name,
+          actionCount: 0,
+          measurableActionCount: 0,
+          progressPercent: null,
+          expectedProgressPercent: expectedArenaProgress,
+          progressDelta: null,
+          pace: 'sem_medida',
+          completedActions: 0,
+          plannedActions: 0,
+          pendingActions: 0,
+          pendingActionsToday: 0,
+          hasMeasurableProgress: false,
+          lastProofDate: null,
+          daysSinceProof: null,
+          suggestedAdjustment: 'criar_meta_minima',
+        };
+        return { ...baseSignal, reason: buildArenaSignalReason(baseSignal) };
+      }
+
+      const arenaActionIds = new Set(arenaActions.map((action) => action.id));
+      const measurableActions = arenaActions.filter((action) => action.actionType !== 'Livre');
+      const plannedActions = measurableActions.reduce((sum, action) => sum + getActionCycleWeight(action), 0);
+      const arenaCycleTasks = cycleTasks.filter((task) => arenaActionIds.has(task.actionId));
+      const completedTasks = arenaCycleTasks.filter((task) => task.completed);
+      const completedActions = plannedActions > 0
+        ? Math.min(plannedActions, completedTasks.filter((task) => actionById.get(task.actionId)?.actionType !== 'Livre').length)
+        : completedTasks.length;
+      const progressPercent = plannedActions > 0 ? Math.round((completedActions / plannedActions) * 100) : null;
+      const progressDelta = progressPercent !== null && expectedArenaProgress !== null
+        ? progressPercent - expectedArenaProgress
+        : null;
+      const pace = resolveArenaPace(progressPercent, expectedArenaProgress);
+      const pendingActions = plannedActions > 0 ? Math.max(0, plannedActions - completedActions) : 0;
+      const pendingActionsTodayForArena = pendingTodayTasks.filter((task) => arenaActionIds.has(task.actionId)).length;
+      const completedDates = completedTasks
+        .map((task) => getTaskOperationalDateString(task))
+        .sort();
+      const lastProofDate = completedDates.length > 0 ? completedDates[completedDates.length - 1] : null;
+      const daysSinceProof = lastProofDate ? diffLocalDays(lastProofDate, operationalDate) : null;
+      const suggestedAdjustment: OracleArenaSignal['suggestedAdjustment'] =
+        plannedActions === 0
+          ? 'criar_meta_minima'
+          : (daysSinceProof !== null && daysSinceProof >= 7 && completedActions === 0)
+            ? 'pausar_arena'
+            : (pace === 'critico' || pace === 'atrasado')
+              ? 'reduzir_meta'
+              : pendingActionsTodayForArena > 0
+                ? 'proteger_uma_acao'
+                : 'manter_ritmo';
+
+      const baseSignal: Omit<OracleArenaSignal, 'reason'> = {
+        arenaId: arena.id,
+        arenaName: arena.name,
+        actionCount: arenaActions.length,
+        measurableActionCount: measurableActions.length,
+        progressPercent,
+        expectedProgressPercent: expectedArenaProgress,
+        progressDelta,
+        pace,
+        completedActions,
+        plannedActions,
+        pendingActions,
+        pendingActionsToday: pendingActionsTodayForArena,
+        hasMeasurableProgress: plannedActions > 0,
+        lastProofDate,
+        daysSinceProof,
+        suggestedAdjustment,
+      };
+      return { ...baseSignal, reason: buildArenaSignalReason(baseSignal) };
+    })
+    .filter((signal): signal is OracleArenaSignal => Boolean(signal))
+    .sort(compareArenaSignals)
+    .slice(0, 6);
+  const focusArenaSignal = arenaSignals[0] || null;
+  const stalledArenaCount = arenaSignals.filter((signal) => (
+    signal.suggestedAdjustment === 'pausar_arena' ||
+    signal.pace === 'critico' ||
+    (signal.daysSinceProof ?? 0) >= 7
+  )).length;
+  const overloadedArenaCount = arenaSignals.filter((signal) => signal.suggestedAdjustment === 'reduzir_meta').length;
 
   const recentThreshold = shiftLocalDateString(operationalDate, -6);
   const staleArenas = activeArenas
@@ -272,6 +422,10 @@ export const buildOracleOperationalContext = ({
     hasArenas: hasArenaEvidence,
     totalArenas: Math.max(activeArenas.length, cycleArenaIds.size, inferredArenaIds.size),
     arenaNames: activeArenas.map((arena) => arena.name),
+    arenaSignals,
+    focusArenaSignal,
+    stalledArenaCount,
+    overloadedArenaCount,
     staleArenas,
     completedActionsInCycle,
     pendingActionsToday: pendingTodayTasks.length,

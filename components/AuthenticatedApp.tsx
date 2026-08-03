@@ -43,6 +43,8 @@ import {
     hasSeenScreenIntroTip,
     markScreenIntroTipSeen,
     setScreenIntroTipsEnabled,
+    SCREEN_INTRO_TIPS_DISABLED_FLAG,
+    getScreenIntroTipSeenFlag,
     type ScreenIntroTipId,
 } from '../utils/screenIntroTips';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -50,7 +52,7 @@ import { DailyCompletionPromptModal } from './DailyCompletionPromptModal';
 import type { AppBroadcast } from './AppBroadcastModal';
 import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../utils/dailyCompletionPrompt';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
-import { ORACLE_SPEECH_EVENT, type OracleSpeechPayload } from '../utils/oracleSpeech';
+import { ORACLE_SPEECH_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
 import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 import './auth-shell.css';
 
@@ -81,6 +83,86 @@ type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
 const APP_VERSION = '1.0.48';
 const APP_BROADCAST_SEEN_FLAG_PREFIX = 'app_broadcast_seen:';
+const PLANNER_ORACLE_LAST_OPEN_PREFIX = 'planner_oracle_last_open:';
+const PLANNER_ORACLE_LAST_SPEECH_PREFIX = 'planner_oracle_last_speech:';
+const ORACLE_SPEECH_TYPING_INTERVAL_MS = 22;
+
+const shouldShowPlannerReturnSpeechForPresence = (presenceLevel: number): boolean => {
+    if (presenceLevel <= 1) return false;
+    const chance = presenceLevel >= 3 ? 0.55 : 0.25;
+    return Math.random() < chance;
+};
+
+const parseLocalDateOnly = (dateString?: string | null): Date | null => {
+    if (!dateString) return null;
+    const [year, month, day] = dateString.slice(0, 10).split('-').map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
+const diffLocalDays = (fromDateString?: string | null, toDateString?: string | null): number | null => {
+    const from = parseLocalDateOnly(fromDateString);
+    const to = parseLocalDateOnly(toDateString || new Date().toISOString().slice(0, 10));
+    if (!from || !to) return null;
+    return Math.round((to.getTime() - from.getTime()) / 86400000);
+};
+
+const pickOracleLine = (lines: string[]) => lines[Math.floor(Math.random() * lines.length)] || lines[0] || '';
+
+const buildPlannerReturnSpeech = ({
+    arenasCount,
+    actionsCount,
+    cycleLengthDays,
+    cycleProgress,
+    daysSinceLastPlannerOpen,
+    daysSinceLastProof,
+    hasActiveCycle,
+}: {
+    arenasCount: number;
+    actionsCount: number;
+    cycleLengthDays: number | null;
+    cycleProgress: number;
+    daysSinceLastPlannerOpen: number | null;
+    daysSinceLastProof: number | null;
+    hasActiveCycle: boolean;
+}): string | null => {
+    if (daysSinceLastPlannerOpen !== null && daysSinceLastPlannerOpen >= 3) {
+        return pickOracleLine([
+            `Voce nao abriu o Planner nos ultimos ${daysSinceLastPlannerOpen} dias. Antes de compensar tudo, ajuste o numero de acoes nas arenas se precisar.`,
+            `Faz ${daysSinceLastPlannerOpen} dias que voce nao passa por aqui. Eu recomecaria pequeno: uma acao real hoje, o resto a gente reorganiza depois.`,
+        ]);
+    }
+
+    if (!hasActiveCycle && arenasCount > 0) {
+        return pickOracleLine([
+            'Para nao se perder nas acoes, eu comecaria com um ciclo de 1 semana ou menos. Quer montar um pequeno?',
+            'Voce ja tem arena. Agora falta uma janela curta para ela respirar: um ciclo de ate 7 dias costuma ser mais facil de conduzir.',
+        ]);
+    }
+
+    if (cycleLengthDays && cycleLengthDays > 7 && cycleProgress < 35) {
+        return pickOracleLine([
+            `Esse ciclo tem ${cycleLengthDays} dias e ainda esta em ${cycleProgress}%. Talvez um ciclo de 1 semana ou menos fique mais facil de conduzir.`,
+            `O ciclo esta longo para o progresso atual: ${cycleProgress}% em ${cycleLengthDays} dias. Pode valer encurtar a rodada e proteger o foco.`,
+        ]);
+    }
+
+    if (daysSinceLastProof !== null && daysSinceLastProof >= 3) {
+        return pickOracleLine([
+            `Faz ${daysSinceLastProof} dias desde sua ultima prova fechada. Talvez hoje seja dia de reduzir a carga e fechar uma acao pequena.`,
+            `A sequencia esfriou um pouco. Nao precisa voltar perfeito: uma prova real hoje ja recoloca o ciclo em movimento.`,
+        ]);
+    }
+
+    if (arenasCount === 1 && actionsCount <= 3) {
+        return pickOracleLine([
+            'Voce esta com uma arena so. Se fizer sentido, adicionar uma segunda frente pode equilibrar melhor o ciclo.',
+            'Sua estrutura esta bem enxuta. Uma segunda arena pode ajudar a separar o que e corpo, trabalho, casa ou foco.',
+        ]);
+    }
+
+    return null;
+};
 
 const OracleSpeechOverlay: React.FC = () => {
     const [speech, setSpeech] = useState<(OracleSpeechPayload & { id: number }) | null>(null);
@@ -107,11 +189,12 @@ const OracleSpeechOverlay: React.FC = () => {
             index += 1;
             setDisplayedText(fullText.slice(0, index));
             if (index >= fullText.length) window.clearInterval(typingTimer);
-        }, 12);
+        }, ORACLE_SPEECH_TYPING_INTERVAL_MS);
 
+        const readableDurationMs = fullText.length * ORACLE_SPEECH_TYPING_INTERVAL_MS + 2400;
         const closeTimer = window.setTimeout(() => {
             setSpeech((current) => current?.id === speech.id ? null : current);
-        }, speech.durationMs ?? 5200);
+        }, Math.max(speech.durationMs ?? 5200, readableDurationMs));
 
         return () => {
             window.clearInterval(typingTimer);
@@ -126,30 +209,30 @@ const OracleSpeechOverlay: React.FC = () => {
     const isTyping = displayedText.length < speech.message.length;
 
     return (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(86px+var(--safe-area-bottom))] z-[10004] flex justify-center px-4">
+        <div className="pointer-events-none fixed inset-x-0 top-[calc(10px+var(--safe-area-top))] z-[10004] flex justify-center px-4">
             <div
-                className="pointer-events-auto relative flex w-full max-w-[22.5rem] gap-3 overflow-hidden rounded-[20px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-3 pl-[4.45rem] shadow-[0_18px_60px_rgba(0,0,0,0.46)] backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-300"
+                className="pointer-events-auto relative flex w-full max-w-[22rem] gap-2 overflow-hidden rounded-[16px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-2.5 pl-[4.65rem] shadow-[0_12px_38px_rgba(0,0,0,0.38)] backdrop-blur-xl animate-in fade-in slide-in-from-top-3 duration-300"
                 style={{
                     borderColor: toneTokens.border,
-                    boxShadow: `0 18px 60px rgba(0,0,0,0.46), 0 0 26px ${toneTokens.glow}`,
+                    boxShadow: `0 12px 38px rgba(0,0,0,0.38), 0 0 20px ${toneTokens.glow}`,
                 }}
             >
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-14" style={{ background: `radial-gradient(circle at top, ${toneTokens.coreSoft}, transparent 72%)` }} />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-10" style={{ background: `radial-gradient(circle at top, ${toneTokens.coreSoft}, transparent 72%)` }} />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${toneTokens.border}, transparent)` }} />
-                <OracleSpeakerMark tone={tone} size="md" className="absolute bottom-2.5 left-3" />
+                <OracleSpeakerMark tone={tone} size="sm" className="absolute left-3 top-1/2 -translate-y-1/2" />
                 <button
                     type="button"
                     onClick={() => setSpeech(null)}
-                    className="absolute right-3 top-3 rounded-full border border-white/8 bg-white/[0.04] p-1.5 text-white/45 transition-colors hover:text-white"
+                    className="absolute right-2.5 top-2 rounded-full border border-white/8 bg-white/[0.04] p-1 text-white/45 transition-colors hover:text-white"
                     aria-label="Fechar fala do Oraculo"
                 >
-                    <XIcon className="h-3.5 w-3.5" />
+                    <XIcon className="h-3 w-3" />
                 </button>
-                <div className="relative z-10 min-w-0 flex-1 pr-7">
-                    <div className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: toneTokens.core }}>
+                <div className="relative z-10 min-w-0 flex-1 pr-6">
+                    <div className="text-[8px] font-black uppercase tracking-[0.16em]" style={{ color: toneTokens.core }}>
                         {speech.title || 'Oraculo'}
                     </div>
-                    <p className="mt-1.5 min-h-[2.1rem] whitespace-pre-wrap text-[12px] font-semibold leading-relaxed text-white/86">
+                    <p className="mt-1 min-h-[1.35rem] max-h-[2.8rem] overflow-hidden whitespace-pre-wrap text-[11px] font-semibold leading-snug text-white/86">
                         {displayedText}
                         {isTyping && <span className="ml-1 inline-block h-3 w-1 animate-pulse align-middle opacity-80" style={{ background: toneTokens.core }} />}
                     </p>
@@ -303,7 +386,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     suppressScreenIntroTips = false,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, appMode, activeTheme, notifications, showToast } = useGame();
+    const { userProfile, appMode, activeTheme, notifications, showToast, assets, actions, activeCycle, cycleProgress, oraclePreferences, updateUserProfile } = useGame();
     const historyReady = useRef(false);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
@@ -321,7 +404,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [isReportsVisible, setReportsVisible] = useState(false);
     const [dailyCompletionPrompt, setDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
     const [pendingSitrepOpen, setPendingSitrepOpen] = useState(false);
-    const [screenTipsEnabled, setScreenTipsEnabled] = useState(() => areScreenIntroTipsEnabled(userProfile.id));
+    const [screenTipsEnabled, setScreenTipsEnabled] = useState(() => areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []));
     const [activeScreenTipId, setActiveScreenTipId] = useState<ScreenIntroTipId | null>(null);
     const [screenIntroContextId, setScreenIntroContextId] = useState<ScreenIntroTipId | null>(null);
     const unreadNotificationsCount = getUnreadBadgeCount(notifications);
@@ -334,10 +417,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [unreadNotificationsCount]);
 
     useEffect(() => {
-        setScreenTipsEnabled(areScreenIntroTipsEnabled(userProfile.id));
+        setScreenTipsEnabled(areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []));
         setActiveScreenTipId(null);
         setScreenIntroContextId(null);
-    }, [userProfile.id]);
+    }, [userProfile.completedSeasonMissions, userProfile.id]);
 
     useEffect(() => {
         setScreenIntroContextId(null);
@@ -348,14 +431,14 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             const nextEnabled = (event as CustomEvent<{ enabled?: boolean }>).detail?.enabled;
             const resolvedEnabled = typeof nextEnabled === 'boolean'
                 ? nextEnabled
-                : areScreenIntroTipsEnabled(userProfile.id);
+                : areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []);
             setScreenTipsEnabled(resolvedEnabled);
             if (!resolvedEnabled) setActiveScreenTipId(null);
         };
 
         window.addEventListener(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, handleSettingsChanged as EventListener);
         return () => window.removeEventListener(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, handleSettingsChanged as EventListener);
-    }, [userProfile.id]);
+    }, [userProfile.completedSeasonMissions, userProfile.id]);
 
     useEffect(() => {
         const handleContextChanged = (event: Event) => {
@@ -658,6 +741,55 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [currentView, pendingSitrepOpen]);
 
     useEffect(() => {
+        if (currentView !== 'planner' || isRestScreenVisible || userProfile.id === 'placeholder_user') return;
+
+        const today = new Date().toISOString().slice(0, 10);
+        const openKey = `${PLANNER_ORACLE_LAST_OPEN_PREFIX}${userProfile.id}`;
+        const speechKey = `${PLANNER_ORACLE_LAST_SPEECH_PREFIX}${userProfile.id}`;
+        const previousPlannerOpen = localStorage.getItem(openKey);
+        const lastSpeechDate = localStorage.getItem(speechKey);
+        localStorage.setItem(openKey, today);
+
+        if (lastSpeechDate === today) return;
+
+        const daysSinceLastPlannerOpen = diffLocalDays(previousPlannerOpen, today);
+        const shouldConsiderReturnSpeech = !previousPlannerOpen || (daysSinceLastPlannerOpen !== null && daysSinceLastPlannerOpen >= 2);
+        if (!shouldConsiderReturnSpeech) return;
+
+        const arenasCount = assets.reduce((sum, asset) => sum + (asset.arenas?.length || 0), 0);
+        const cycleLengthDays = activeCycle
+            ? (diffLocalDays(activeCycle.startDate, activeCycle.endDate) ?? 0) + 1
+            : null;
+        const lastProofDate = userProfile.dailyProofStreak?.lastProofDate || userProfile.dailyProofStreak?.lastClosedDate || null;
+        const message = buildPlannerReturnSpeech({
+            arenasCount,
+            actionsCount: actions.length,
+            cycleLengthDays,
+            cycleProgress,
+            daysSinceLastPlannerOpen,
+            daysSinceLastProof: diffLocalDays(lastProofDate, today),
+            hasActiveCycle: Boolean(activeCycle),
+        });
+
+        if (!message) return;
+
+        localStorage.setItem(speechKey, today);
+        const presenceLevel = oraclePreferences?.presenceLevel ?? 1;
+        if (!shouldShowPlannerReturnSpeechForPresence(presenceLevel)) return;
+
+        const timer = window.setTimeout(() => {
+            emitOracleSpeech({
+                title: 'Oraculo',
+                message,
+                tone: 'info',
+                durationMs: 6800,
+            });
+        }, 520);
+
+        return () => window.clearTimeout(timer);
+    }, [actions.length, activeCycle, assets, currentView, cycleProgress, isRestScreenVisible, oraclePreferences?.presenceLevel, userProfile.dailyProofStreak, userProfile.id]);
+
+    useEffect(() => {
         if (suppressScreenIntroTips) {
             setActiveScreenTipId(null);
             return;
@@ -684,7 +816,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             return;
         }
 
-        if (hasSeenScreenIntroTip(userProfile.id, resolvedTipId)) {
+        if (hasSeenScreenIntroTip(userProfile.id, resolvedTipId, userProfile.completedSeasonMissions || [])) {
             setActiveScreenTipId(null);
             return;
         }
@@ -702,6 +834,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         screenTipsEnabled,
         screenIntroContextId,
         suppressScreenIntroTips,
+        userProfile.completedSeasonMissions,
         userProfile.id,
     ]);
 
@@ -709,9 +842,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         if (!activeScreenTipId) return;
 
         markScreenIntroTipSeen(userProfile.id, activeScreenTipId);
+        const nextProfileFlags = new Set(userProfile.completedSeasonMissions || []);
+        nextProfileFlags.add(getScreenIntroTipSeenFlag(activeScreenTipId));
 
         if (options?.disableFuture) {
             setScreenIntroTipsEnabled(userProfile.id, false);
+            nextProfileFlags.add(SCREEN_INTRO_TIPS_DISABLED_FLAG);
             setScreenTipsEnabled(false);
             showToast('Dicas iniciais ocultadas. Para religar: Config > Preferencias > Tutoriais.', 'info');
             window.dispatchEvent(new CustomEvent(SCREEN_INTRO_TIPS_SETTINGS_CHANGED_EVENT, {
@@ -719,8 +855,9 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             }));
         }
 
+        updateUserProfile({ completedSeasonMissions: Array.from(nextProfileFlags) });
         setActiveScreenTipId(null);
-    }, [activeScreenTipId, showToast, userProfile.id]);
+    }, [activeScreenTipId, showToast, updateUserProfile, userProfile.completedSeasonMissions, userProfile.id]);
 
     useEffect(() => {
         const handleAutoFinishedCycle = () => {

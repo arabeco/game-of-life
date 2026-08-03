@@ -17,6 +17,7 @@ import { UserCodex } from '../types';
 import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
 import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQuizModal';
 import { hasCompletedFreeCampaignQuiz } from '../utils/campaignQuiz';
+import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 
 interface CampaignsCodexProps {
     onClose: () => void;
@@ -190,7 +191,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     onUpdatePreviewCampaign = null,
     previewMeta,
 }) => {
-    const { campaigns, getArenas, actions, tasks, activeCycle, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, userProfile, installCodex, showToast } = useGame();
+    const { campaigns, getArenas, actions, tasks, activeCycle, freeProgressResetAt, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, userProfile, installCodex, showToast } = useGame();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
@@ -341,9 +342,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const campaignActionsSource = isPreviewCampaign ? localPreviewActions : actions;
     const cycleScopedTasks = useMemo(() => {
         if (isPreviewCampaign) return [] as typeof tasks;
-        if (!activeCycle) return tasks;
+        if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
         return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
-    }, [activeCycle, isPreviewCampaign, tasks]);
+    }, [activeCycle, freeProgressResetAt, isPreviewCampaign, tasks]);
     
     // Reset selection if campaign is deleted
     useEffect(() => {

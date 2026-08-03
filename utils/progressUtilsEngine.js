@@ -44,11 +44,12 @@ export const calculateArenaProgress = ({
             progressPercent,
             totalCompleted: totals.totalCompleted,
             totalPlanned: totals.totalPlanned,
+            hasMeasurableProgress: totals.totalPlanned > 0,
             completedActionIds: progressPercent >= 100 ? actions.map(action => action.id) : [],
             isClanQuestArena,
             isSeasonQuestArena,
             isSharedPool: false,
-            isCleared: progressPercent >= 100,
+            isCleared: totals.totalPlanned > 0 && progressPercent >= 100,
         };
     }
 
@@ -87,11 +88,12 @@ export const calculateArenaProgress = ({
         progressPercent,
         totalCompleted,
         totalPlanned,
+        hasMeasurableProgress: totalPlanned > 0,
         completedActionIds,
         isClanQuestArena,
         isSeasonQuestArena,
         isSharedPool,
-        isCleared: actions.length > 0 && progressPercent >= 100,
+        isCleared: totalPlanned > 0 && progressPercent >= 100,
     };
 };
 

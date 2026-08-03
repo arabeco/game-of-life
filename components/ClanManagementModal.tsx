@@ -7,6 +7,7 @@ import { IconPickerModal } from './IconPickerModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { AddClanMemberModal } from './AddClanMemberModal';
 import { RecruitmentStatus } from '../types';
+import { UserAvatar } from './UserAvatar';
 
 export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { clan, enrichedClanMembers, updateClan, kickClanMember } = useGame();
@@ -122,7 +123,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                         <h3 className="text-sm font-bold uppercase text-center text-gray-400">Pessoas</h3>
                         {enrichedClanMembers.map(member => (
                             <div key={member.id} className="bg-black/20 p-2 rounded-xl flex items-center space-x-3">
-                                <img src={member.avatarUrl} alt={member.nickname} className="w-10 h-10 rounded-full" />
+                                <UserAvatar avatarUrl={member.avatarUrl} nickname={member.nickname} className="h-10 w-10" level={member.level} showBorder={false} />
                                 <div className="flex-grow">
                                     <h4 className="font-bold text-white text-sm">{member.nickname}</h4>
                                     <p className="text-xs text-gray-400">Nivel {member.level}</p>
@@ -139,7 +140,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                     </div>
 
                     <div className="space-y-2">
-                        <button onClick={() => setIsAddMemberModalOpen(true)} className="w-full py-2 rounded-xl luxe-button-secondary">Gerir Entradas</button>
+                        <button onClick={() => setIsAddMemberModalOpen(true)} className="w-full py-2 rounded-xl luxe-button-secondary">Pedidos e Convites</button>
                         <button onClick={handleSave} disabled={isSaving} className="w-full py-2 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed">{isSaving ? 'SALVANDO...' : 'SALVAR MUDANÇAS'}</button>
                     </div>
                 </GlassCard>

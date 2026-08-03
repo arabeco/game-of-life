@@ -2,19 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTutorial } from '../contexts/TutorialContext';
 import { Portal } from './Portal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
-
-const OracleIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4Z" fill="url(#oracle-gradient)" fillOpacity="0.2" />
-        <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6ZM12 8C14.21 8 16 9.79 16 12C16 14.21 14.21 16 12 16C9.79 16 8 14.21 8 12C8 9.79 9.79 8 12 8Z" fill="url(#oracle-gradient)" />
-        <defs>
-            <linearGradient id="oracle-gradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#FFD700" />
-                <stop offset="1" stopColor="#FF8C00" />
-            </linearGradient>
-        </defs>
-    </svg>
-);
+import { OracleSpeakerMark } from './OracleSpeakerMark';
 
 const getCategoryLabel = (category?: string) => {
     switch (category) {
@@ -223,17 +211,17 @@ export const OracleTutorialOverlay: React.FC = () => {
                             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#f3d48a]/60 to-transparent pointer-events-none" />
 
                             <div className="flex gap-3 md:gap-4 p-3 md:p-5">
-                                <div className="flex-shrink-0">
-                                    <div className="w-11 h-11 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-[#2d261c] to-black border border-[#f3d48a]/50 flex items-center justify-center shadow-[0_0_24px_rgba(255,215,0,0.16)]">
-                                        <OracleIcon className="w-6 h-6 md:w-10 md:h-10 animate-pulse-slow" />
-                                    </div>
-                                </div>
+                                <OracleSpeakerMark tone="guide" size="lg" badge className="mt-0.5 scale-[0.82] md:scale-100" />
 
                                 <div className="flex-grow flex flex-col justify-between min-h-[78px] md:min-h-[112px]">
                                     <div>
                                         <div className="flex items-start justify-between gap-3 mb-2">
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.22em] text-[#f3d48a]">
+                                                        Oraculo
+                                                    </span>
+                                                    <span className="h-1 w-1 rounded-full bg-white/20" />
                                                     <span className="inline-flex items-center rounded-full border border-[#f3d48a]/25 bg-[#f3d48a]/10 px-2 py-1 text-[8px] md:text-[10px] font-black tracking-[0.22em] text-[#f3d48a]">
                                                         {categoryLabel}
                                                     </span>

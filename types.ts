@@ -1227,6 +1227,26 @@ export interface OracleMessage {
   createdAt: string;
 }
 
+export interface OracleArenaSignal {
+  arenaId: string;
+  arenaName: string;
+  actionCount: number;
+  measurableActionCount: number;
+  progressPercent: number | null;
+  expectedProgressPercent: number | null;
+  progressDelta: number | null;
+  pace: 'adiantado' | 'no_ritmo' | 'atrasado' | 'critico' | 'sem_medida';
+  completedActions: number;
+  plannedActions: number;
+  pendingActions: number;
+  pendingActionsToday: number;
+  hasMeasurableProgress: boolean;
+  lastProofDate: string | null;
+  daysSinceProof: number | null;
+  suggestedAdjustment: 'reduzir_meta' | 'pausar_arena' | 'criar_meta_minima' | 'proteger_uma_acao' | 'manter_ritmo';
+  reason: string;
+}
+
 export interface OracleContext {
   currentTime: string;
   timeOfDay: "madrugada" | "manha" | "tarde" | "noite";
@@ -1247,6 +1267,10 @@ export interface OracleContext {
   hasArenas: boolean;
   totalArenas: number;
   arenaNames: string[];
+  arenaSignals: OracleArenaSignal[];
+  focusArenaSignal: OracleArenaSignal | null;
+  stalledArenaCount: number;
+  overloadedArenaCount: number;
   staleArenas: string[];
   completedActionsInCycle: number;
   pendingActionsToday: number;

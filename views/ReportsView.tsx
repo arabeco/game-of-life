@@ -628,7 +628,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         reports, activeCycle, upcomingCycle, startCycle, updateCycle, endCycle, assets, actions,
         applyExp, addChest, addFeedEvent, seasons, userProfile,
         oraclePreferences, showToast, grantInventoryItem, grantUserUnlock, updateUserProfile,
-        setAchievementUnlocked, deleteCycle, fetchNotifications, openChest // Added deleteCycle here
+        deleteCycle, fetchNotifications, openChest, continueFreeProgressFrom
     } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
@@ -651,6 +651,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [scanAttempt, setScanAttempt] = useState(0);
     const [postCycleRewardsGranted, setPostCycleRewardsGranted] = useState(false);
     const [postCycleChestOpened, setPostCycleChestOpened] = useState(false);
+    const [postCycleChestPrepared, setPostCycleChestPrepared] = useState(false);
     const [isOpeningPostCycleChest, setIsOpeningPostCycleChest] = useState(false);
     const [reportRewardPayload, setReportRewardPayload] = useState<RewardModalPayload | null>(null);
     const [isExportingLegacy, setIsExportingLegacy] = useState(false);
@@ -946,6 +947,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setIsPostCycleFlow(true);
         setPostCycleRewardsGranted(false);
         setPostCycleChestOpened(false);
+        setPostCycleChestPrepared(false);
         setReportRewardPayload(null);
         setIsOpeningPostCycleChest(false);
 
@@ -1176,11 +1178,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 awardedInsignias,
                 awardedExp,
                 awardedFragments,
-                chestReady: Boolean(awardedChest),
+                chestReady: !awardedChest || postCycleChestPrepared,
             };
         }
 
-        applyExp(awardedExp);
+        applyExp(awardedExp, { forceProfile: true, includePremium: false });
         if (awardedFragments > 0) {
             updateUserProfile({
                 wallet: {
@@ -1200,19 +1202,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         let chestReady = true;
         if (awardedChest) {
             chestReady = Boolean(await addChest(awardedChest));
-        }
-
-        setAchievementUnlocked({
-            type: 'REPORT_COMPLETED',
-            data: {
-                title: `Relatório de Ciclo - ${selectedReport?.performanceScore || 0}%`,
-                reward: {
-                    exp: awardedExp,
-                    items: [...awardedInsignias],
-                    chest: awardedChest
-                }
+            if (chestReady) {
+                setPostCycleChestPrepared(true);
             }
-        });
+        }
 
         if (userProfile?.id && selectedReport && oraclePreferences?.notificationsEnabled !== false) {
             try {
@@ -1248,6 +1241,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         fragmentsGained,
         isPostCycleFlow,
         postCycleRewardsGranted,
+        postCycleChestPrepared,
         applyExp,
         updateUserProfile,
         userProfile.wallet,
@@ -1261,7 +1255,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         showToast,
         buildPostCycleRewardToastV2,
         buildCycleFinalizedNotificationContent,
-        setAchievementUnlocked,
     ]);
 
     const handleOpenPostCycleChest = useCallback(async () => {
@@ -1270,13 +1263,24 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setIsOpeningPostCycleChest(true);
         try {
             const rewardState = await ensurePostCycleRewardsGranted({ suppressToast: true });
-            if (!rewardState.chestReady) {
+            let chestReady = rewardState.chestReady;
+
+            if (!chestReady && !postCycleChestPrepared) {
+                chestReady = Boolean(await addChest(earnedChest));
+                if (chestReady) {
+                    setPostCycleChestPrepared(true);
+                }
+            }
+
+            if (!chestReady) {
                 showToast('Não foi possível preparar o baú deste ciclo.', 'error');
                 return;
             }
 
             const result = await openChest(earnedChest);
-            if (!result) return;
+            if (!result) {
+                return;
+            }
 
             setPostCycleChestOpened(true);
             setReportRewardPayload(buildChestRewardPayload(result, earnedChest));
@@ -1290,7 +1294,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         earnedChest,
         postCycleChestOpened,
         isOpeningPostCycleChest,
+        postCycleChestPrepared,
         ensurePostCycleRewardsGranted,
+        addChest,
         openChest,
         showToast,
     ]);
@@ -1308,6 +1314,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setIsPostCycleFlow(false);
         setGrantedInsignias([]);
         setFragmentsGained(0);
+        setPostCycleChestPrepared(false);
         setReportRewardPayload(null);
     };
 
@@ -1324,6 +1331,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setIsPostCycleFlow(false);
         setPostCycleRewardsGranted(false);
         setPostCycleChestOpened(false);
+        setPostCycleChestPrepared(false);
         setIsOpeningPostCycleChest(false);
         setFragmentsGained(0);
         setReportRewardPayload(null);
@@ -1363,8 +1371,17 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setIsPostCycleFlow(false);
         setGrantedInsignias([]);
         setFragmentsGained(0);
+        setPostCycleChestPrepared(false);
         setReportRewardPayload(null);
         setView('hub');
+    };
+
+    const handleContinueFromCycleResult = async () => {
+        const resetAt = selectedReport?.startDate ? `${selectedReport.startDate}T00:00:00` : null;
+        await handlePostCycleResultsOk();
+        if (resetAt) {
+            continueFreeProgressFrom(resetAt);
+        }
     };
 
     const getSeasonById = (seasonId?: string) => seasons.find(s => s.id === seasonId);
@@ -2647,6 +2664,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             await handleDeleteReportCycle(selectedReport);
                         }}
                         onStartNewCycle={handleStartNewCycleFromResults}
+                        onContinueFromHere={isPostCycleFlow ?() => { void handleContinueFromCycleResult(); } : undefined}
                         chest={isPostCycleFlow ?earnedChest : null}
                         expGained={isPostCycleFlow ?expGained : undefined}
                         fragmentsGained={isPostCycleFlow ?fragmentsGained : undefined}

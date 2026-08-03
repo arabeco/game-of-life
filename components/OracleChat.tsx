@@ -204,12 +204,6 @@ const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>,
     }
 };
 
-const ORACLE_INFO_CATEGORIES = new Set<OracleCategory>([
-    'dicas_produtividade',
-    'provocacoes',
-    'analise_padroes',
-]);
-
 const ORACLE_CATEGORY_VISUALS: Record<OracleCategory, {
     label: string;
     accentClass: string;
@@ -239,11 +233,11 @@ const ORACLE_CATEGORY_VISUALS: Record<OracleCategory, {
         bgClass: 'bg-violet-500/8',
     },
     dicas_produtividade: {
-        label: 'Card de foco',
+        label: 'Sinal de foco',
         accentClass: 'text-amber-100',
         badgeClass: 'border-amber-300/20 bg-amber-400/12 text-amber-100',
         borderClass: 'border-amber-300/18',
-        bgClass: 'bg-[linear-gradient(180deg,rgba(191,148,56,0.16),rgba(15,15,15,0.92))]',
+        bgClass: 'bg-amber-500/8',
     },
     rituais_lifestyle: {
         label: 'Dica de vida',
@@ -253,11 +247,11 @@ const ORACLE_CATEGORY_VISUALS: Record<OracleCategory, {
         bgClass: 'bg-lime-500/8',
     },
     provocacoes: {
-        label: 'Card de choque',
+        label: 'Sinal de alerta',
         accentClass: 'text-rose-100',
         badgeClass: 'border-rose-300/20 bg-rose-400/12 text-rose-100',
         borderClass: 'border-rose-300/18',
-        bgClass: 'bg-[linear-gradient(180deg,rgba(190,65,91,0.16),rgba(15,15,15,0.92))]',
+        bgClass: 'bg-rose-500/8',
     },
     sussurros_maestria: {
         label: 'Sussurro de maestria',
@@ -267,23 +261,20 @@ const ORACLE_CATEGORY_VISUALS: Record<OracleCategory, {
         bgClass: 'bg-fuchsia-500/8',
     },
     analise_padroes: {
-        label: 'Card de analise',
+        label: 'Leitura de ritmo',
         accentClass: 'text-cyan-100',
         badgeClass: 'border-cyan-300/20 bg-cyan-400/12 text-cyan-100',
         borderClass: 'border-cyan-300/18',
-        bgClass: 'bg-[linear-gradient(180deg,rgba(55,138,181,0.16),rgba(15,15,15,0.92))]',
+        bgClass: 'bg-cyan-500/8',
     },
 };
 
 const resolveFeedPresentation = (
-    category?: OracleCategory,
+    _category?: OracleCategory,
     snapshot?: { presentation?: 'ambient_pulse' | 'info_card' | null } | null,
 ): 'ambient_pulse' | 'info_card' => {
     if (snapshot?.presentation === 'ambient_pulse' || snapshot?.presentation === 'info_card') {
         return snapshot.presentation;
-    }
-    if (category && ORACLE_INFO_CATEGORIES.has(category)) {
-        return 'info_card';
     }
     return 'ambient_pulse';
 };

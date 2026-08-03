@@ -93,7 +93,7 @@ const getPushDeliveryTone = ({
 
 const MANUAL_LIBRARY_CATEGORIES: { id: OracleCategory; label: string; icon: string }[] = [
     { id: 'frases_inspiradoras', label: 'Frases Inspiradoras', icon: '🔥' },
-    { id: 'reflexoes_filosoficas', label: 'Reflexoes Filosoficas', icon: '🧠' },
+    { id: 'reflexoes_filosoficas', label: 'Reflexões Filosóficas', icon: '🧠' },
     { id: 'fragmentos_sabedoria', label: 'Fragmentos de Sabedoria', icon: '📜' },
     { id: 'rituais_lifestyle', label: 'Dicas de Vida', icon: '🌿' },
     { id: 'sussurros_maestria', label: 'Sussurros da Maestria', icon: '👁️' },

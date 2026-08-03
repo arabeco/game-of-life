@@ -11,6 +11,7 @@ import { ArenaSelectionModal } from './ArenaSelectionModal';
 import { DatePickerModal } from './DatePickerModal';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
+import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
 import { REST_SCREEN_ACTION_SESSION_CLEAR_EVENT, REST_SCREEN_ACTION_SESSION_EVENT, createRestScreenActionSession } from '../utils/restScreenActionSession';
 import { OPERATIONAL_DAY_START_MINUTE, getActualDateStringForOperationalMinutes, getActualStartTimeForOperationalMinutes } from '../utils/operationalDay.js';
 import { getArenaDomainFlags } from '../utils/taskDomain';
@@ -1118,6 +1119,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const displayDifficultyLabel = displayDifficulty === 0
         ? 'LAZER • sem EXP'
         : null;
+    const displaySurfaceBadge = displayAction ? resolveActionSurfaceBadge(displayAction) : null;
     const briefingPages = React.useMemo(() => paginateBriefing(displayAction?.briefing), [displayAction?.briefing]);
     const briefingPreviewText = React.useMemo(() => {
         const previewPage = briefingPages[0] || displayAction?.briefing || '';
@@ -1446,6 +1448,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-[#2a211c] to-black border border-[var(--skin-accent-color)]/30 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-all duration-500">
                                                 <EmojiGlyph symbol={displayAction.icon || '📝'} size="picker" className="scale-[1.55] text-white drop-shadow-[0_0_15px_var(--sephirot-glow-color)]" />
                                             </div>
+                                            {displaySurfaceBadge && (
+                                                <div className={`absolute -bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full border px-2 py-1 text-[8px] font-black uppercase leading-none tracking-[0.1em] shadow-[0_6px_16px_rgba(0,0,0,0.4)] ${getActionSurfaceBadgeClassName(displaySurfaceBadge.tone)}`}>
+                                                    {displaySurfaceBadge.label}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Desc Only (Title moved to Header) - Expandable */}

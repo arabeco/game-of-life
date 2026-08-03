@@ -39,6 +39,8 @@ export const SCREEN_INTRO_TIP_CONTEXT_EVENT = 'glyph:screen-intro-tip-context';
 
 const SCREEN_INTRO_TIPS_ENABLED_PREFIX = 'glyph:screen-intro-tips:enabled';
 const SCREEN_INTRO_TIPS_SEEN_PREFIX = 'glyph:screen-intro-tips:seen';
+export const SCREEN_INTRO_TIPS_DISABLED_FLAG = '__flag_screen_intro_tips_disabled_v1';
+export const getScreenIntroTipSeenFlag = (tipId: ScreenIntroTipId) => `__flag_screen_intro_tip_seen_v1:${tipId}`;
 
 const sanitizeUserId = (userId?: string | null) => {
   const trimmed = String(userId || '').trim();
@@ -241,7 +243,8 @@ export const SCREEN_INTRO_TIP_LIST = Object.values(SCREEN_INTRO_TIPS);
 export const hasScreenIntroTip = (tipId: string): tipId is ScreenIntroTipId =>
   Object.prototype.hasOwnProperty.call(SCREEN_INTRO_TIPS, tipId);
 
-export const areScreenIntroTipsEnabled = (userId?: string | null): boolean => {
+export const areScreenIntroTipsEnabled = (userId?: string | null, profileFlags: string[] = []): boolean => {
+  if (profileFlags.includes(SCREEN_INTRO_TIPS_DISABLED_FLAG)) return false;
   if (typeof window === 'undefined') return true;
   return window.localStorage.getItem(getEnabledStorageKey(userId)) !== '0';
 };
@@ -251,7 +254,8 @@ export const setScreenIntroTipsEnabled = (userId: string | null | undefined, ena
   window.localStorage.setItem(getEnabledStorageKey(userId), enabled ? '1' : '0');
 };
 
-export const hasSeenScreenIntroTip = (userId: string | null | undefined, tipId: ScreenIntroTipId): boolean => {
+export const hasSeenScreenIntroTip = (userId: string | null | undefined, tipId: ScreenIntroTipId, profileFlags: string[] = []): boolean => {
+  if (profileFlags.includes(getScreenIntroTipSeenFlag(tipId))) return true;
   if (typeof window === 'undefined') return false;
   return window.localStorage.getItem(getSeenStorageKey(userId, tipId)) === 'seen';
 };

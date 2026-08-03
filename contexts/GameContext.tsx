@@ -33,6 +33,7 @@ import { emitAppSensoryCue } from '../utils/sensoryCue';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
+import { FREE_PROGRESS_RESET_FLAG_PREFIX, buildFreeProgressResetFlag, filterTasksAfterFreeProgressReset, getFreeProgressResetAt } from '../utils/freeProgressScope';
 import { hasAppPushRemoteDeliveryReady, syncAppPushRegistration } from '../utils/pushRuntime';
 import { getNotificationBody, getNotificationTitle, getVisibleNotificationsForProfile, shouldPushNotificationForProfile } from '../constants/oracleNotificationPolicy';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
@@ -116,6 +117,8 @@ const buildAssetActionGradient = (assetId?: string | null): string => {
 
 const isPlannerMatrixQuadrant = (value: unknown): value is PlannerMatrixQuadrant =>
     value === 'ui' || value === 'nui' || value === 'uni' || value === 'nuni';
+
+const pickOracleLine = (lines: string[]) => lines[Math.floor(Math.random() * lines.length)] || lines[0] || '';
 
 const normalizeActionFromDbRow = (row: any): Action => {
     const action = mapToCamelCase(row) as Action & { plannerQuadrant?: PlannerMatrixQuadrant };
@@ -601,6 +604,11 @@ type OracleTriggerResult = {
     cooldownMs?: number;
 };
 
+type ApplyExpOptions = {
+    forceProfile?: boolean;
+    includePremium?: boolean;
+};
+
 const ORACLE_INTEL_CATEGORIES = new Set<OracleCategory>([
     'dicas_produtividade',
     'provocacoes',
@@ -624,18 +632,18 @@ const ORACLE_CATEGORY_LABELS: Record<OracleCategory, string> = {
     frases_inspiradoras: 'Carta inspiradora',
     reflexoes_filosoficas: 'Reflexao filosofica',
     fragmentos_sabedoria: 'Fragmento de sabedoria',
-    dicas_produtividade: 'Card de foco',
+    dicas_produtividade: 'Sinal de foco',
     rituais_lifestyle: 'Dica de vida',
-    provocacoes: 'Card de choque',
+    provocacoes: 'Sinal de alerta',
     sussurros_maestria: 'Sussurro de maestria',
-    analise_padroes: 'Card de analise',
+    analise_padroes: 'Leitura de ritmo',
 };
 
 const resolveOraclePresentation = (
-    category: OracleCategory,
+    _category: OracleCategory,
     triggerType: 'app_open' | 'cron' | 'manual',
 ): 'ambient_pulse' | 'info_card' => (
-    triggerType === 'manual' || ORACLE_INTEL_CATEGORIES.has(category) ? 'info_card' : 'ambient_pulse'
+    triggerType === 'manual' ? 'info_card' : 'ambient_pulse'
 );
 
 const resolveManualOracleCategory = (enabledCategories: OracleCategory[] = []): OracleCategory => {
@@ -786,6 +794,7 @@ export interface GameContextType {
     upcomingCycle: Cycle | null;
     dailyCommitment: DailyCommitment;
     judgedOperationalDates: string[];
+    judgedTaskIdsByDate: Record<string, string[]>;
     updateOperationalScratch: (text: string) => void;
     unlockDailyCommitment: () => void;
     achievementUnlocked: { type: FeedEventType; data: any; } | null;
@@ -873,10 +882,13 @@ export interface GameContextType {
     startCycle: (name: string, endDate: string, startDate?: string) => void;
     updateCycle: (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => Promise<void>;
     endCycle: (currentAssets: Asset[], currentActions: Action[]) => EndCycleResult;
-    applyExp: (expGained: number) => void;
-    addChest: (chestType: ChestType) => Promise<void>;
+    applyExp: (expGained: number, options?: ApplyExpOptions) => void;
+    addChest: (chestType: ChestType) => Promise<boolean>;
     startNewCycle: (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => void;
     deleteCycle: (cycleId: string) => Promise<boolean>; // Added deleteCycle to interface
+    freeProgressResetAt: string | null;
+    resetFreeProgress: () => void;
+    continueFreeProgressFrom: (resetAt: string) => void;
     setDailyCommitment: (taskIds: string[]) => void;
     lockDailyCommitment: () => void;
     endDailyBattle: () => void;
@@ -1102,6 +1114,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const [dailyCommitment, setDailyCommitmentState] = useState<DailyCommitment>(() => createDefaultDailyCommitment());
     const [judgedOperationalDates, setJudgedOperationalDates] = useState<string[]>([]);
+    const [judgedTaskIdsByDate, setJudgedTaskIdsByDate] = useState<Record<string, string[]>>({});
 
     const [cycleExpBonus, setCycleExpBonus] = useState<number>(0);
     const [cycleProgress, setCycleProgress] = useState<number>(0);
@@ -1786,38 +1799,52 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       - nao force foco operacional aqui
       Contexto atual: ${JSON.stringify(contextData)}`
             : triggerType === 'manual'
-                ? `Gere um card operacional curto para o chat do usuario.
+                ? `Gere uma fala operacional curta para o chat do usuario.
       Categoria solicitada: ${category}
       Formato obrigatorio:
-      PRIORIDADE: uma frase curta
-      RISCO: uma frase curta
-      AJA: um comando concreto e imediato
+      1 ou 2 frases naturais, sem cabecalho
       Regras:
       - sem saudacao
-      - sem texto decorativo
-      - se faltar ciclo, arena, acao, tarefa ou fechamento do SITREP, isso vira o AJA
-      - se existir nextMove, use isso como centro
+      - sem PRIORIDADE, RISCO ou AJA
+      - sem bronca, placar, desafio de habito ou tom de app gamificado
+      - sem palavras soltas em ingles quando houver equivalente em portugues
+      - se existir focusArenaSignal, use essa arena como assunto principal
+      - se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa
+      - se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima
+      - se existir priorityActionName, pergunte algo como "Que tal [acao] hoje?"
+      - se cyclePace for atrasado ou critico, mencione de forma humana que o ciclo parece atrasado pelo tempo/progresso
+      - se existir nextMove, use isso como sugestao leve
       Contexto atual: ${JSON.stringify(contextData)}`
             : presentation === 'info_card'
-                ? `Gere um card curto para o feed do usuario.
+                ? `Gere uma fala curta para o feed do usuario.
       Categoria solicitada: ${category}
       Formato obrigatorio:
-      PRIORIDADE: uma frase curta
-      RISCO: uma frase curta
-      AJA: um comando concreto e imediato
+      1 ou 2 frases naturais, sem cabecalho
       Regras:
-      - foco operacional
-      - sem saudacao generica
-      - sem misticismo
-      - nao descreva o contexto inteiro; decida o que importa
+      - sem PRIORIDADE, RISCO ou AJA
+      - sem bronca, placar, desafio de habito ou tom de app gamificado
+      - sem palavras soltas em ingles quando houver equivalente em portugues
+      - se existir focusArenaSignal, use essa arena como assunto principal
+      - se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa
+      - se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima
+      - se existir priorityActionName, pergunte algo como "Que tal [acao] hoje?"
+      - se cyclePace for atrasado ou critico, diga que parece atrasado olhando tempo/progresso do ciclo
+      - se estiver tudo no ritmo, sugira manter uma acao simples em vez de empilhar tarefa
       Contexto atual: ${JSON.stringify(contextData)}`
-                : `Gere um pulso curto para o feed do usuario.
+                : `Gere uma fala curta do Oraculo para o feed do usuario.
       Categoria solicitada: ${category}
       Regras:
-      - no maximo 2 frases
-      - a primeira frase define o foco
-      - a segunda frase define o proximo movimento
-      - sem saudacao e sem floreio
+      - no maximo 2 frases, em portugues natural
+      - sem saudacao e sem floreio motivacional
+      - sem PRIORIDADE, RISCO ou AJA
+      - sem bronca, placar, desafio de habito ou tom de app gamificado
+      - sem palavras soltas em ingles quando houver equivalente em portugues
+      - se existir focusArenaSignal, use essa arena como assunto principal
+      - se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa
+      - se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima
+      - se existir priorityActionName, use uma pergunta leve: "Que tal [acao] hoje?"
+      - se cyclePace for atrasado ou critico, mencione que o ciclo parece atrasado olhando tempo/progresso
+      - se existir nextMove, transforme em sugestao humana, nao comando
       Contexto atual: ${JSON.stringify(contextData)}`;
 
         // 7. Call AI via Edge Function (server-side secret)
@@ -1874,10 +1901,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     generatedFor: triggerType === 'manual' ? 'chat' : 'feed',
                     operationalState,
                     summary: triggerType === 'manual'
-                        ? 'Card operacional do chat'
-                        : presentation === 'info_card'
-                            ? 'Card operacional do Oraculo'
-                            : 'Pulso curto do Oraculo',
+                        ? ORACLE_CATEGORY_LABELS[category]
+                        : 'Sinal do Oraculo',
                 },
                 read: false,
                 createdAt: new Date().toISOString()
@@ -3055,8 +3080,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const checklistItemsHydratedRef = useRef(false);
     const sequenceItemsHydratedRef = useRef(false);
 
-    const [achievementUnlocked, setAchievementUnlocked] = useState<{ type: FeedEventType; data: any; } | null>(null);
+    const [achievementUnlocked, setAchievementUnlockedState] = useState<{ type: FeedEventType; data: any; } | null>(null);
+    const [, setAchievementQueue] = useState<{ type: FeedEventType; data: any; }[]>([]);
+    const activeAchievementRef = useRef<{ type: FeedEventType; data: any; } | null>(null);
     const [feed, setFeed] = useState<FeedEvent[]>(() => []);
+
+    const setAchievementUnlocked = useCallback((achievement: { type: FeedEventType; data: any; } | null) => {
+        if (!achievement) {
+            activeAchievementRef.current = null;
+            setAchievementUnlockedState(null);
+            setAchievementQueue(prev => {
+                const [nextAchievement, ...remaining] = prev;
+                if (nextAchievement) {
+                    window.setTimeout(() => {
+                        activeAchievementRef.current = nextAchievement;
+                        setAchievementUnlockedState(nextAchievement);
+                    }, 160);
+                }
+                return remaining;
+            });
+            return;
+        }
+
+        if (activeAchievementRef.current) {
+            setAchievementQueue(prev => [...prev, achievement]);
+            return;
+        }
+
+        activeAchievementRef.current = achievement;
+        setAchievementUnlockedState(achievement);
+    }, []);
 
     useEffect(() => {
         friendsRef.current = friends;
@@ -4518,6 +4571,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     }, [actions, userProfile]);
 
+    const resolveOperationalScoredTaskIds = useCallback((
+        operationalDate: string,
+        sourceTasks: ScheduledTask[],
+        storedTaskIds: string[] = [],
+    ) => {
+        const storedValidIds = storedTaskIds.filter((taskId) =>
+            sourceTasks.some((task) =>
+                task.id === taskId &&
+                taskMatchesOperationalDate(task, operationalDate) &&
+                !isClanQuestActionId(task.actionId)
+            )
+        );
+        const realTaskIds = getInitialDailyCommitmentTaskIds(sourceTasks, operationalDate, isClanQuestActionId);
+        return Array.from(new Set([...storedValidIds, ...realTaskIds]));
+    }, [isClanQuestActionId]);
+
     const settleSkippedCycleDays = useCallback(async () => {
         const userId = getSupabaseUserId();
         if (!userId || !activeCycle) return;
@@ -4569,7 +4638,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const existingCommitment = existingByDate.get(operationalDate);
             if (existingCommitment?.stage === 'judgment') continue;
 
-            const inferredTaskIds = getInitialDailyCommitmentTaskIds(cycleHistoricalTasks, operationalDate, isClanQuestActionId);
             const cycleScopedTaskIds = new Set(
                 cycleHistoricalTasks
                     .filter((task) => taskMatchesOperationalDate(task, operationalDate))
@@ -4578,8 +4646,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const existingTaskIds = Array.isArray(existingCommitment?.taskIds)
                 ? existingCommitment.taskIds.filter((taskId): taskId is string => typeof taskId === 'string' && taskId.length > 0 && cycleScopedTaskIds.has(taskId))
                 : [];
-            const inferredTasks = cycleHistoricalTasks.filter((task) => inferredTaskIds.includes(task.id) && taskMatchesOperationalDate(task, operationalDate));
-            const mergedTaskIds = mergeTasksIntoCommitment(existingTaskIds, inferredTasks, operationalDate, isClanQuestActionId);
+            const mergedTaskIds = resolveOperationalScoredTaskIds(operationalDate, cycleHistoricalTasks, existingTaskIds);
 
             if (mergedTaskIds.length === 0) continue;
 
@@ -4672,6 +4739,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (settledCount === 0) return;
 
         setJudgedOperationalDates((prev) => Array.from(new Set([...prev, ...newlyJudgedDates])));
+        setJudgedTaskIdsByDate((prev) => {
+            const next = { ...prev };
+            for (const operationalDate of newlyJudgedDates) {
+                const existingCommitment = existingByDate.get(operationalDate);
+                const existingTaskIds = Array.isArray(existingCommitment?.taskIds)
+                    ? existingCommitment.taskIds.filter((taskId): taskId is string => typeof taskId === 'string' && taskId.length > 0)
+                    : [];
+                next[operationalDate] = resolveOperationalScoredTaskIds(operationalDate, cycleHistoricalTasks, existingTaskIds);
+            }
+            return next;
+        });
         await refreshOpenCycleDerivedState(activeCycle);
         const expLabel = settledExpTotal > 0 ? ` +${settledExpTotal} XP no ciclo.` : '';
         showToast(
@@ -4680,7 +4758,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 : `${settledCount} dias pendentes foram reconciliados pelo historico real.${expLabel}`,
             'success'
         );
-    }, [activeCycle, actions, getSupabaseUserId, isClanQuestActionId, refreshOpenCycleDerivedState, showToast, summarizeOperationalDayCommitment, tasks]);
+    }, [activeCycle, actions, getSupabaseUserId, isClanQuestActionId, refreshOpenCycleDerivedState, resolveOperationalScoredTaskIds, showToast, summarizeOperationalDayCommitment, tasks]);
 
     const reconcileJudgedDayTaskMutation = useCallback(async ({
         operationalDate,
@@ -4712,9 +4790,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (commitmentRow.stage !== 'judgment') return;
 
-        const taskIds = Array.isArray(commitmentRow.taskIds)
+        const storedTaskIds = Array.isArray(commitmentRow.taskIds)
             ? commitmentRow.taskIds.filter((taskId): taskId is string => typeof taskId === 'string' && taskId.length > 0)
             : [];
+        const taskIds = resolveOperationalScoredTaskIds(operationalDate, nextTasks, storedTaskIds);
 
         const getCommittedTasksForDate = (sourceTasks: ScheduledTask[]) =>
             sourceTasks.filter((task) => taskIds.includes(task.id) && taskMatchesOperationalDate(task, operationalDate));
@@ -4829,6 +4908,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     }
             ));
         }
+        setJudgedTaskIdsByDate((prev) => ({
+            ...prev,
+            [operationalDate]: taskIds,
+        }));
 
         await refreshOpenCycleDerivedState(activeCycle);
 
@@ -4840,7 +4923,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 : `Dia ${formattedDate} recalculado no ciclo.`,
             'success'
         );
-    }, [actions, activeCycle, dailyCommitment.date, dailyCommitment.stage, getSupabaseUserId, refreshOpenCycleDerivedState, showToast, userProfile]);
+    }, [actions, activeCycle, dailyCommitment.date, dailyCommitment.stage, getSupabaseUserId, refreshOpenCycleDerivedState, resolveOperationalScoredTaskIds, showToast, userProfile]);
 
     // --- Supabase Data Sync ---
     useEffect(() => {
@@ -7289,6 +7372,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (data && data.success) {
             return handleChestOpenResult(data, chestType);
         }
+
+        const failureMessage = data?.message || data?.error || 'O baú não pôde ser aberto agora.';
+        console.error("Chest open returned no reward:", { chestType, data });
+        showToast(String(failureMessage), 'error');
         return null;
     };
 
@@ -7368,12 +7455,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) {
             setJudgedOperationalDates([]);
+            setJudgedTaskIdsByDate({});
             return;
         }
 
         const { data, error } = await supabase
             .from('daily_commitments')
-            .select('date')
+            .select('date, task_ids')
             .eq('user_id', userId)
             .eq('stage', 'judgment');
 
@@ -7382,13 +7470,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
+        const rows = Array.isArray(data) ? data : [];
         setJudgedOperationalDates(
-            Array.isArray(data)
-                ? data
-                    .map((row: { date?: unknown }) => (typeof row.date === 'string' ? row.date : ''))
-                    .filter((date): date is string => Boolean(date))
-                : []
+            rows
+                .map((row: { date?: unknown }) => (typeof row.date === 'string' ? row.date : ''))
+                .filter((date): date is string => Boolean(date))
         );
+        setJudgedTaskIdsByDate(Object.fromEntries(
+            rows
+                .map((row: { date?: unknown; task_ids?: unknown }) => {
+                    const date = typeof row.date === 'string' ? row.date : '';
+                    const taskIds = Array.isArray(row.task_ids)
+                        ? row.task_ids.filter((taskId): taskId is string => typeof taskId === 'string' && taskId.length > 0)
+                        : [];
+                    return [date, taskIds] as const;
+                })
+                .filter(([date]) => Boolean(date))
+        ));
     }, [getSupabaseUserId]);
 
     // Persistence: Save dailyCommitment to Supabase whenever it changes
@@ -7549,10 +7647,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return true;
         }
 
-        const fallbackTaskIds = getInitialDailyCommitmentTaskIds(tasks, closeDate, isClanQuestActionId);
-        const taskIds = commitmentToClose.taskIds.length > 0
-            ? Array.from(new Set(commitmentToClose.taskIds))
-            : fallbackTaskIds;
+        const taskIds = resolveOperationalScoredTaskIds(closeDate, tasks, commitmentToClose.taskIds);
         const summary = summarizeOperationalDayCommitment(closeDate, tasks, taskIds, 0);
         const sitrepBonus = summary.sitrepBonus;
         const relationshipBonusXp = 0;
@@ -7586,6 +7681,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 ? prev
                 : [...prev, closeDate]
         ));
+        setJudgedTaskIdsByDate(prev => ({
+            ...prev,
+            [closeDate]: taskIds,
+        }));
 
         const shouldDepositIntoCycle = Boolean(
             activeCycle &&
@@ -8156,11 +8255,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     const rankInsigniaId = `insignia_rank_${newRankIndex + 1}_${newRankId}`;
                     const rankRewardDetails = RANK_REWARDS[newRankId] || [];
 
-                    // NEW: Grant rare insignia for rank up
-                    const rareInsigniaId = 'insignia_levelup_rara';
-                    grantUserUnlock('insignias', rareInsigniaId);
-                    grantInventoryItem(rareInsigniaId, true);
-
                     // Grant specific rank insignia
                     grantUserUnlock('insignias', rankInsigniaId);
                     grantInventoryItem(rankInsigniaId, true);
@@ -8180,9 +8274,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     const rankRewardItemIds = rankRewardDetails
                         .filter(reward => reward.category !== 'ui_skins')
                         .map(reward => reward.itemId);
-                    const allRankRewardItems = [...new Set([rareInsigniaId, rankInsigniaId, ...rankRewardItemIds])];
+                    const allRankRewardItems = [...new Set([rankInsigniaId, ...rankRewardItemIds])];
                     const allRankRewardDetails = [
-                        { category: 'insignias', itemId: rareInsigniaId, name: 'Ouro: Patente Rara' },
                         ...rankRewardDetails,
                     ];
 
@@ -8484,6 +8577,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return Number(ECONOMY.recycle_values[recycleKey] || ECONOMY.recycle_values.tier_1 || 0);
     };
 
+    const isStackableHonorItem = (itemId: string): boolean => {
+        const itemDef = resolveItemDef(itemId);
+        const isInsignia = itemDef?.category === 'insignia' || itemDef?.category === 'insignias';
+        if (!isInsignia) return false;
+        return Boolean(itemDef?.isQuestExclusive || itemDef?.isReportExclusive)
+            || itemId.startsWith('insignia_quest_')
+            || itemId.startsWith('insignia_report_');
+    };
+
     const grantInventoryItem = async (itemId: string, silent: boolean = false) => {
         const itemDef = resolveItemDef(itemId);
         if (itemId !== 'none' && itemDef?.category !== 'insignia' && !isItemCatalogVisible(itemDef || itemId)) {
@@ -8491,40 +8593,43 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         const userId = getSupabaseUserId();
         if (!userId) return { item: null, granted: false, duplicateConverted: false, fragmentsGranted: 0 };
+        const isStackableHonor = isStackableHonorItem(itemId);
 
-        const localExisting = inventory.find((inventoryItem) => inventoryItem.id === itemId);
-        if (localExisting) {
-            const duplicateFragments = getDuplicateItemFragmentReward(itemId);
-            const nextFragments = (userProfile.wallet?.fragments || 0) + duplicateFragments;
-            updateUserProfile({ wallet: { ...userProfile.wallet, fragments: nextFragments } });
-            showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} fragmentos.`, 'info');
-            return { item: localExisting, granted: false, duplicateConverted: true, fragmentsGranted: duplicateFragments };
-        }
+        if (!isStackableHonor) {
+            const localExisting = inventory.find((inventoryItem) => inventoryItem.id === itemId);
+            if (localExisting) {
+                const duplicateFragments = getDuplicateItemFragmentReward(itemId);
+                const nextFragments = (userProfile.wallet?.fragments || 0) + duplicateFragments;
+                updateUserProfile({ wallet: { ...userProfile.wallet, fragments: nextFragments } });
+                showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} fragmentos.`, 'info');
+                return { item: localExisting, granted: false, duplicateConverted: true, fragmentsGranted: duplicateFragments };
+            }
 
-        const { data: existingRows, error: existingLookupError } = await supabase
-            .from('user_inventory')
-            .select('id, item_id, created_at')
-            .eq('user_id', userId)
-            .eq('item_id', itemId)
-            .limit(1);
+            const { data: existingRows, error: existingLookupError } = await supabase
+                .from('user_inventory')
+                .select('id, item_id, created_at')
+                .eq('user_id', userId)
+                .eq('item_id', itemId)
+                .limit(1);
 
-        if (existingLookupError) {
-            console.error('Error checking existing inventory item:', existingLookupError);
-        } else if (existingRows && existingRows.length > 0) {
-            const existingRow = existingRows[0];
-            const existingItem: InventoryItem = {
-                id: existingRow.item_id,
-                instanceId: existingRow.id,
-                acquiredAt: existingRow.created_at || new Date().toISOString(),
-                isEquipped: false,
-            };
+            if (existingLookupError) {
+                console.error('Error checking existing inventory item:', existingLookupError);
+            } else if (existingRows && existingRows.length > 0) {
+                const existingRow = existingRows[0];
+                const existingItem: InventoryItem = {
+                    id: existingRow.item_id,
+                    instanceId: existingRow.id,
+                    acquiredAt: existingRow.created_at || new Date().toISOString(),
+                    isEquipped: false,
+                };
 
-            setInventory((prev) => prev.some((inventoryItem) => inventoryItem.instanceId === existingItem.instanceId) ? prev : [...prev, existingItem]);
-            const duplicateFragments = getDuplicateItemFragmentReward(itemId);
-            const nextFragments = (userProfile.wallet?.fragments || 0) + duplicateFragments;
-            updateUserProfile({ wallet: { ...userProfile.wallet, fragments: nextFragments } });
-            showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} fragmentos.`, 'info');
-            return { item: existingItem, granted: false, duplicateConverted: true, fragmentsGranted: duplicateFragments };
+                setInventory((prev) => prev.some((inventoryItem) => inventoryItem.instanceId === existingItem.instanceId) ? prev : [...prev, existingItem]);
+                const duplicateFragments = getDuplicateItemFragmentReward(itemId);
+                const nextFragments = (userProfile.wallet?.fragments || 0) + duplicateFragments;
+                updateUserProfile({ wallet: { ...userProfile.wallet, fragments: nextFragments } });
+                showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} fragmentos.`, 'info');
+                return { item: existingItem, granted: false, duplicateConverted: true, fragmentsGranted: duplicateFragments };
+            }
         }
 
         const { data, error } = await supabase
@@ -8553,7 +8658,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const isInsignia = itemDef?.category === 'insignias' || itemDef?.category === 'insignia';
 
             if (isInsignia) {
-                console.log(`[Supabase] InsÃ­gnia persistida com sucesso: ${itemId} (ID: ${data.id})`);
+                console.log(`[Supabase] Insígnia persistida com sucesso: ${itemId} (ID: ${data.id})`);
             }
 
             if (!silent) {
@@ -8796,6 +8901,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
     };
 
+    const freeProgressResetAt = useMemo(
+        () => getFreeProgressResetAt(userProfile),
+        [userProfile.completedSeasonMissions]
+    );
+
+    const resetFreeProgress = () => {
+        setFreeProgressResetMarker(new Date().toISOString(), true);
+    };
+
+    const continueFreeProgressFrom = (resetAt: string) => {
+        setFreeProgressResetMarker(resetAt, false);
+        showToast('Metas mantidas para continuar sem ciclo.', 'success');
+    };
+
+    const setFreeProgressResetMarker = (resetAt: string, shouldToast = false) => {
+        const resetDate = new Date(resetAt);
+        if (Number.isNaN(resetDate.getTime())) return;
+
+        const completed = userProfile.completedSeasonMissions || [];
+        const nextFlag = buildFreeProgressResetFlag(resetDate);
+        const preservedFlags = completed.filter((flag) => !flag.startsWith(FREE_PROGRESS_RESET_FLAG_PREFIX));
+
+        updateUserProfile({
+            completedSeasonMissions: [...preservedFlags, nextFlag],
+        });
+        if (shouldToast) {
+            showToast('Metas zeradas. Seu historico e XP continuam salvos.', 'success');
+        }
+    };
+
     useEffect(() => {
         const activeSeason = activeRuntimeSeasonConfig;
         const rewardItemIds = activeSeason?.launchRewardItemIds || [];
@@ -8962,6 +9097,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } else {
             setUpcomingCycle(null);
             setActiveCycle(newCycle);
+            setFreeProgressResetMarker(new Date().toISOString(), false);
         }
 
         // Sync to Supabase
@@ -9196,11 +9332,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const mostRepeatedAction = currentActions.find(a => a.id === mostRepeatedActionId)?.name || 'Nenhuma';
 
         const isPremiumUser = hasPremiumAccess(userProfile);
+        const currentOpenDayTaskIds = dailyCommitment.stage === 'judgment'
+            ? []
+            : resolveOperationalScoredTaskIds(dailyCommitment.date, cycleTasks, dailyCommitment.taskIds);
         const currentDayCommittedTasks =
             dailyCommitment.stage === 'judgment'
                 ? []
-                : tasks.filter(task =>
-                    dailyCommitment.taskIds.includes(task.id) &&
+                : cycleTasks.filter(task =>
+                    currentOpenDayTaskIds.includes(task.id) &&
                     taskMatchesOperationalDate(task, dailyCommitment.date) &&
                     (() => {
                         if (!cycle?.arenaIds?.length) return true;
@@ -9445,6 +9584,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Encerrar ciclo ativo
         setActiveCycle(null);
         setCycleExpBonus(0);
+        setFreeProgressResetMarker(new Date().toISOString(), false);
 
         // Adicionar relatÃ³rio Ã  lista
         setReports(prev => [newReport, ...prev]);
@@ -9523,19 +9663,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setUpcomingCycle(null);
         setCycleProgress(0);
         setCycleExpBonus(0);
+        setFreeProgressResetMarker(`${upcomingCycle.startDate}T00:00:00`, false);
         showToast(`O ciclo "${upcomingCycle.name}" comecou hoje.`, 'success');
     }, [activeCycle, hasHydratedFromSupabase, showToast, upcomingCycle]);
 
-    const applyExp = (expGained: number) => {
+    const applyExp = (expGained: number, options: ApplyExpOptions = {}) => {
         // This function is now mostly for immediate visual feedback or small grants.
         // Major cycle EXP is applied at endDailyBattle or endCycle.
         if (!expGained) return;
 
         // Check if we should bank it for the cycle instead of immediate apply
-        if (activeCycle) {
+        if (activeCycle && !options.forceProfile) {
             setCycleExpBonus(prev => prev + expGained);
         } else {
-            const premiumExp = hasPremiumAccess(userProfile) ? Math.round(expGained * 0.1) : 0;
+            const shouldIncludePremium = options.includePremium ?? true;
+            const premiumExp = shouldIncludePremium && hasPremiumAccess(userProfile) ? Math.round(expGained * 0.1) : 0;
             const boostedExp = expGained + premiumExp;
             updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + boostedExp } });
         }
@@ -9586,7 +9728,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const wasUpcomingCycle = upcomingCycle?.id === cycleId;
         const { data: cycleRow, error: cycleLoadError } = await supabase
             .from('cycles')
-            .select('id, user_id, start_date, end_date, arena_ids, report_data')
+            .select('id, user_id, start_date, end_date, created_at, arena_ids, report_data')
             .eq('id', cycleId)
             .eq('user_id', userId)
             .maybeSingle();
@@ -9608,6 +9750,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         let cycleActionIds: string[] = [];
         const cycleStartDate = String(cycleRow.start_date || '');
         const cycleEndDate = String(cycleRow.end_date || cycleStartDate || '');
+        const cycleCreatedAt = String(cycleRow.created_at || '');
         const scopedTaskIds = new Set<string>();
 
         if (cycleArenaIds.length > 0) {
@@ -9727,6 +9870,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setTasks(prev => prev.filter(task => !scopedTaskIds.has(task.id)));
         }
         setReports(prev => prev.filter(report => report.cycleId !== cycleId && report.id !== cycleId));
+        const deletionResetAt = (() => {
+            if (wasActiveCycle) return new Date().toISOString();
+            if (cycleStartDate && cycleCreatedAt && cycleCreatedAt.slice(0, 10) === cycleStartDate) return cycleCreatedAt;
+            if (cycleStartDate) return `${cycleStartDate}T00:00:00`;
+            return cycleCreatedAt;
+        })();
+        const shouldPreserveDeletionResetBoundary = wasActiveCycle || Boolean(cycleRow.report_data);
+        if (shouldPreserveDeletionResetBoundary && deletionResetAt) {
+            const deletionResetTime = Date.parse(deletionResetAt);
+            const currentResetTime = freeProgressResetAt ? Date.parse(freeProgressResetAt) : 0;
+            if (!Number.isNaN(deletionResetTime) && (Number.isNaN(currentResetTime) || deletionResetTime > currentResetTime)) {
+                setFreeProgressResetMarker(deletionResetAt, false);
+            }
+        }
         showToast('Ciclo excluido com sucesso.', 'success');
 
         // If it was the active cycle, try to fetch another one or just clear state
@@ -11759,7 +11916,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             updateUserProfile({ dailyProofStreak: rollbackDailyProofStreakDate(normalizedStreak, proofDate) });
             emitOracleSpeech({
                 title: 'Sequencia',
-                message: 'A sequencia ficou em risco. Completa uma acao real hoje e ela volta a respirar.',
+                message: pickOracleLine([
+                    'A sequencia ficou em risco. Completa uma acao real hoje e ela volta a respirar.',
+                    'A prova de hoje saiu do tabuleiro. Se ainda fizer sentido, uma acao real recoloca a sequencia de pe.',
+                ]),
                 tone: 'warning',
             });
             return;
@@ -11786,7 +11946,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             window.setTimeout(() => emitAppSensoryCue('daily_streak'), 120);
             emitOracleSpeech({
                 title: 'Sequencia',
-                message: `${streakResult.next.current} dia${streakResult.next.current === 1 ? '' : 's'} com prova real. Boa. A sequencia vive de acao, nao de intencao.`,
+                message: streakResult.next.current === 1
+                    ? pickOracleLine([
+                        'Primeira prova real do dia. Agora o ciclo tem algo concreto para contar.',
+                        'Boa. Uma acao real vale mais que um plano bonito.',
+                    ])
+                    : pickOracleLine([
+                        `${streakResult.next.current} dia${streakResult.next.current === 1 ? '' : 's'} com prova real. Boa. A sequencia vive de acao, nao de intencao.`,
+                        `${streakResult.next.current} dias com prova real. Mantem pequeno, mas mantem vivo.`,
+                    ]),
                 tone: 'success',
             });
         }
@@ -11798,6 +11966,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         campaigns,
         dailyCommitment,
         judgedOperationalDates,
+        judgedTaskIdsByDate,
         clan,
         supabase,
         setTasks,
@@ -13090,9 +13259,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [isProfileLoaded, hasHydratedFromSupabase, assets.length]); // Check assets length to ensure they are loaded
 
     const cycleScopedTasks = useMemo(() => {
-        if (!activeCycle) return tasks;
+        if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
         return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
-    }, [activeCycle, tasks]);
+    }, [activeCycle, freeProgressResetAt, tasks]);
 
     const taskPool = useMemo(() => {
         const activeArenas = allArenas.filter(arena => !arena.isArchived);
@@ -13166,13 +13335,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return (
         <GameContext.Provider value={{
             session,
-            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
+            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

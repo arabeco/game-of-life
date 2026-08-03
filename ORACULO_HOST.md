@@ -344,6 +344,34 @@ Familias de implementacao:
 - Manutencao: `arena_esquecida`, `pronto_para_fechar`
 - Valor: `oportunidade_util`, `em_ritmo`, `primeira_acao_do_dia`, `sequencia_mantida`
 
+## Regra de linguagem
+
+O Oraculo deve falar em portugues natural.
+
+Evitar palavras soltas em ingles quando existe equivalente claro em portugues. Nao usar termos como `coach`, `check-in`, `feedback`, `focus`, `planner`, `push`, `slider`, `streak`, `task`, `tradeoff` ou `workflow` nas falas para o usuario, a menos que sejam nomes fixos de tela, configuracao tecnica ou texto de sistema inevitavel.
+
+Preferir:
+
+- `arena`, `acao`, `ciclo`, `dia`, `progresso`, `ritmo`, `sequencia`, `aviso`, `fala`, `ajuste`, `revisao`
+- frases curtas, humanas e especificas
+- uma sugestao concreta por vez
+
+Quando tiver contexto suficiente, o Oraculo deve olhar arena por arena antes de falar. A fala deve citar a arena que mais precisa de atencao naquele momento, usando progresso e tempo do ciclo para orientar sem culpar.
+
+Exemplos:
+
+> Bay Area esta com pouco avanco e o ciclo ja passou da metade. Quer reduzir a meta ou fazer uma acao pequena hoje?
+
+> Treino esta andando bem, mas Office ficou parado. Hoje talvez valha proteger so uma acao de Office.
+
+> Voce abriu 4 arenas, mas so 1 esta andando. Quer pausar alguma ate o proximo ciclo?
+
+> Essa arena esta livre demais para medir. Quer deixar sem barra ou criar uma meta minima?
+
+Se o plano ficou pesado, a fala deve normalizar o ajuste:
+
+> Parece que esse ciclo ficou pesado. Melhor reduzir a meta agora do que abandonar tudo depois.
+
 ## Modos de voz
 
 Os modos mudam o jeito de falar, nao a verdade do estado.

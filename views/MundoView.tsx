@@ -4,7 +4,7 @@ import { useTutorial } from '../contexts/TutorialContext';
 import { GlassCard } from '../components/GlassCard';
 import { CreateClanModal } from '../components/CreateClanModal';
 import { Clan, RelationshipLink, RelationshipLinkInvite, UserProfile } from '../types';
-import { ClanDetailModal } from '../components/ClanDetailModal';
+import { ClanOverviewModal } from '../components/ClanOverviewModal';
 import { SocialCard } from '../components/SocialCard';
 import { PlusIcon, CheckIcon, XIcon, TrophyIcon, ShoppingBagIcon, CalendarIcon, UsersIcon, ArchiveBoxIcon, LinkIcon } from '../components/Icons';
 import { SEASONS, ACTIVE_SEASON_ID } from '../constants/GameContent';
@@ -14,24 +14,20 @@ import { ArsenalView } from './ArsenalView';
 import { SeasonView } from './SeasonView';
 import { UserAvatar } from '../components/UserAvatar';
 import { ProfileView } from './ProfileView';
-import { RelationshipHubModal } from '../components/RelationshipHubModal';
+import { ConnectionsModal } from '../components/ConnectionsModal';
 import { DirectMessages } from '../components/DirectMessages';
-import { ClanChat } from '../components/ClanChat';
 import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/screenIntroTips';
 import './mundo-ui.css';
 
-const RELATION_LABELS: Record<'mentoria' | 'parceria' | 'competicao', string> = {
+const RELATION_LABELS: Record<'mentoria' | 'parceria', string> = {
     mentoria: 'Mentoria',
     parceria: 'Parceria',
-    competicao: 'Competicao',
 };
 
-const relationBadgeClass = (type: 'mentoria' | 'parceria' | 'competicao') =>
+const relationBadgeClass = (type: 'mentoria' | 'parceria') =>
     type === 'mentoria'
         ? 'border-[var(--skin-accent-color)]/26 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)]'
-        : type === 'parceria'
-            ? 'border-cyan-400/24 bg-cyan-400/12 text-cyan-200'
-            : 'border-rose-400/24 bg-rose-400/12 text-rose-200';
+        : 'border-cyan-400/24 bg-cyan-400/12 text-cyan-200';
 
 const JoinClanBox: React.FC<{ onCreate: () => void }> = ({ onCreate }) => {
     return (
@@ -58,7 +54,7 @@ const ClanInfoBox: React.FC<{ onClick: () => void }> = ({ onClick }) => {
     const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
 
     return (
-        <GlassCard variant="gold" className="mundo-clan-card p-4 space-y-2 text-center transition-all" id="clan-sanctuary">
+        <GlassCard variant="gold" className="mundo-clan-card p-4 space-y-2 text-center transition-all" id="clan-overview">
             <button onClick={onClick} className="mundo-clan-card__button w-full text-left space-y-2">
                 <div className="flex items-center justify-center space-x-2">
                     <span className="text-3xl">{clan.icon}</span>
@@ -198,9 +194,10 @@ const RequestSection: React.FC<{
 
 type SocialSection = 'people' | 'messages' | 'clan';
 
-const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId?: string | null }> = ({
+const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId?: string | null; requestsRevision?: number }> = ({
     initialSection = 'people',
     initialParticipantId = null,
+    requestsRevision = 0,
 }) => {
     const {
         clan,
@@ -219,11 +216,13 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
         approveClanJoinRequest,
         rejectClanJoinRequest,
         cancelClanJoinRequest,
+        notifications,
+        respondToClanInvite,
         fetchRelationshipHubData,
         getUserPublicData,
         respondToRelationshipInvite,
     } = useGame();
-    const [modal, setModal] = useState<'create' | 'sanctuary' | null>(null);
+    const [modal, setModal] = useState<'create' | 'clan-overview' | null>(null);
     const [activeSection, setActiveSection] = useState<SocialSection>(initialSection);
     const [activeTab, setActiveTab] = useState<'aliados' | 'solicitacoes'>('aliados');
     const [searchResults, setSearchResults] = useState<{ players: UserProfile[], clans: Clan[] }>({ players: [], clans: [] });
@@ -241,6 +240,10 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
     }, [initialSection]);
 
     useEffect(() => {
+        if (requestsRevision > 0) setActiveTab('solicitacoes');
+    }, [requestsRevision]);
+
+    useEffect(() => {
         const tipId: ScreenIntroTipId =
             activeTab === 'solicitacoes'
                 ? 'social_requests'
@@ -255,17 +258,27 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
         }));
     }, [activeSection, activeTab]);
 
+    const incomingClanInvites = notifications.filter(notification => (
+        notification.type === 'clan_invite'
+        && notification.metadata?.inviteNotification === true
+        && notification.metadata?.joinRequest !== true
+    ));
+
     const requestCount = friendRequestsIncoming.length
         + friendRequestsOutgoing.length
         + relationshipInvites.length
         + clanJoinRequestsIncoming.length
-        + clanJoinRequestsOutgoing.length;
+        + clanJoinRequestsOutgoing.length
+        + incomingClanInvites.length;
 
     const activeRelationshipsForProfile = (profileId: string) =>
-        relationshipLinks.filter(link => link.mentorId === profileId || link.pupilId === profileId);
+        relationshipLinks.filter(link => (
+            link.linkType !== 'competicao'
+            && (link.mentorId === profileId || link.pupilId === profileId)
+        ));
 
     const relationshipBadgesForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => link.linkType))) as Array<'mentoria' | 'parceria' | 'competicao'>;
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => link.linkType))) as Array<'mentoria' | 'parceria'>;
 
         return activeTypes.map(type => (
             <span
@@ -297,7 +310,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
 
     const relationshipIncoming = relationshipInvites.filter(invite => invite.recipientId === userProfile.id);
     const relationshipOutgoing = relationshipInvites.filter(invite => invite.senderId === userProfile.id);
-    const incomingRequestCount = friendRequestsIncoming.length + relationshipIncoming.length + clanJoinRequestsIncoming.length;
+    const incomingRequestCount = friendRequestsIncoming.length + relationshipIncoming.length + clanJoinRequestsIncoming.length + incomingClanInvites.length;
     const outgoingRequestCount = friendRequestsOutgoing.length + relationshipOutgoing.length + clanJoinRequestsOutgoing.length;
 
     const handleJoinClan = async (targetClan: Clan) => {
@@ -376,6 +389,32 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                         <div className="flex gap-2">
                                             <button onClick={() => approveClanJoinRequest(request)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
                                             <button onClick={() => rejectClanJoinRequest(request)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
+                                        </div>
+                                    }
+                                />
+                            );
+                        })}
+
+                        {incomingClanInvites.map(invite => {
+                            const senderId = String(invite.metadata?.senderId || invite.metadata?.inviterId || '');
+                            const senderProfile = friends.find(friend => friend.id === senderId) || {
+                                ...buildFallbackProfile(senderId || `clan-invite-${invite.id}`),
+                                nickname: String(invite.metadata?.senderNickname || 'Lider do grupo'),
+                            };
+                            return (
+                                <SocialCard
+                                    key={invite.id}
+                                    profile={senderProfile}
+                                    subtitle={`Convite para ${String(invite.metadata?.clanName || 'um grupo')}`}
+                                    badges={
+                                        <span className="rounded-full border border-amber-400/24 bg-amber-400/12 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-amber-200">
+                                            Grupo
+                                        </span>
+                                    }
+                                    actions={
+                                        <div className="flex gap-2">
+                                            <button onClick={() => void respondToClanInvite(invite.id, true)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30" title="Aceitar convite"><CheckIcon className="w-4 h-4" /></button>
+                                            <button onClick={() => void respondToClanInvite(invite.id, false)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30" title="Recusar convite"><XIcon className="w-4 h-4" /></button>
                                         </div>
                                     }
                                 />
@@ -606,11 +645,8 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                 <div className="space-y-5">
                     {clan ? (
                         <>
-                            <ClanInfoBox onClick={() => setModal('sanctuary')} />
-                            {modal === 'sanctuary' && <ClanDetailModal clanName={clan.name} onClose={() => setModal(null)} />}
-                            <div className="min-h-[24rem] max-h-[calc(100dvh-18rem)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
-                                <ClanChat />
-                            </div>
+                            <ClanInfoBox onClick={() => setModal('clan-overview')} />
+                            {modal === 'clan-overview' && <ClanOverviewModal onClose={() => setModal(null)} />}
                         </>
                     ) : (
                         <JoinClanBox onCreate={() => setModal('create')} />
@@ -896,7 +932,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
             )}
             {modal === 'create' && <CreateClanModal onClose={() => setModal(null)} />}
             {selectedProfile && <ProfileView profile={selectedProfile} onClose={() => setSelectedProfile(null)} />}
-            {isRelationshipHubOpen && <RelationshipHubModal onClose={() => setRelationshipHubOpen(false)} />}
+            {isRelationshipHubOpen && <ConnectionsModal onClose={() => setRelationshipHubOpen(false)} />}
         </div>
     );
 };
@@ -909,6 +945,7 @@ const MundoView: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>('social');
     const [socialSection, setSocialSection] = useState<SocialSection>('people');
     const [socialParticipantId, setSocialParticipantId] = useState<string | null>(null);
+    const [socialRequestsRevision, setSocialRequestsRevision] = useState(0);
     const isBasicMode = appMode === 'BASIC' && !didForceGameMode;
 
     const tabs = useMemo(() => {
@@ -968,6 +1005,7 @@ const MundoView: React.FC = () => {
                 section?: string | null;
                 socialSection?: SocialSection;
                 participantId?: string | null;
+                openRequests?: boolean;
             }>).detail || {};
             if (!detail.tab || !tabs.some(tab => tab.id === detail.tab)) return;
 
@@ -975,6 +1013,7 @@ const MundoView: React.FC = () => {
             if (detail.tab === 'social') {
                 setSocialSection(detail.socialSection || 'people');
                 setSocialParticipantId(detail.participantId || null);
+                if (detail.openRequests) setSocialRequestsRevision(current => current + 1);
             }
 
             if (detail.tab === 'loja') {
@@ -1014,7 +1053,7 @@ const MundoView: React.FC = () => {
 
             {/* Content Area */}
             <div className="mundo-content-shell flex-1 overflow-y-auto p-4 custom-scrollbar">
-                {activeTab === 'social' && <SocialTab initialSection={socialSection} initialParticipantId={socialParticipantId} />}
+                {activeTab === 'social' && <SocialTab initialSection={socialSection} initialParticipantId={socialParticipantId} requestsRevision={socialRequestsRevision} />}
                 {activeTab === 'hall' && <HallOfFameView />}
                 {activeTab === 'loja' && <StoreView />}
                 {activeTab === 'temporada' && <SeasonView />}

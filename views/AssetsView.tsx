@@ -7,7 +7,9 @@ import { GardenZenModal } from '../components/GardenZenModal';
 import { InputModal } from '../components/inputs/InputModal';
 import { Sephirot } from '../components/Sephirot';
 import { EditIcon, XIcon } from '../components/Icons';
-import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { ASSET_ACCENT_COLORS, DEFAULT_ASSET_ART_BY_ID } from '../constants/assetVisuals';
+import { LIFE_AREAS } from '../constants/lifeAreas';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
@@ -74,6 +76,9 @@ const buildAssetArtLayer = (value?: string): string | null => {
         : `url("${escapeCssUrl(primarySource)}")`;
 };
 
+const getDefaultAssetArt = (assetId: string): string | undefined =>
+    DEFAULT_ASSET_ART_BY_ID[assetId as keyof typeof DEFAULT_ASSET_ART_BY_ID];
+
 const relativeLuminance = (rgb: [number, number, number] | null) => {
     if (!rgb) return 0;
     const channel = (value: number) => {
@@ -136,7 +141,9 @@ export const AssetsView: React.FC = () => {
     const selectedAssetArtUrl = selectedAsset
         ? (draftAssetArtUrl !== undefined ? draftAssetArtUrl : currentSelectedAssetArtUrl)
         : undefined;
-    const selectedAssetArtLayer = buildAssetArtLayer(selectedAssetArtUrl);
+    const selectedAssetArtLayer = buildAssetArtLayer(
+        selectedAssetArtUrl || (selectedAsset ? getDefaultAssetArt(selectedAsset.id) : undefined)
+    );
     const selectedAssetPrimarySlot = useMemo(() => {
         if (!selectedAsset?.slots?.[0]) return null;
         const slot = selectedAsset.slots[0];
@@ -171,8 +178,8 @@ export const AssetsView: React.FC = () => {
     const stretchY = 1;
     const cycleSummaryTop = '10px';
     const cycleSummaryTopPx = 10;
-    const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 8;
-    const assetsGridBottomPx = 64;
+    const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 18;
+    const assetsGridBottomPx = 72;
     const overviewCoords = useMemo(
         () => Object.entries(overviewLayout).map(([id, position]) => ({ id, ...position })),
         [overviewLayout],
@@ -467,14 +474,6 @@ export const AssetsView: React.FC = () => {
         setEditingSlot(null);
     };
 
-    const showAssetAura = true;
-    const selectedAssetShellStyle: React.CSSProperties = {
-        backgroundImage: `radial-gradient(circle at 16% 0%, rgba(255,246,204,0.26), transparent 29%),
-            radial-gradient(circle at 24% 22%, rgba(226,192,98,0.16), transparent 25%),
-            radial-gradient(circle at 92% 88%, ${rgbaString(selectedAssetAccentRgb, 0.14)}, transparent 24%),
-            linear-gradient(135deg, rgba(224,186,84,0.24) 0%, rgba(255,250,230,0.06) 18%, rgba(8,8,8,0.94) 46%, rgba(2,2,2,0.98) 66%, ${rgbaString(selectedAssetAccentRgb, 0.08)} 100%)`,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 48px rgba(0,0,0,0.42)',
-    };
     const selectedAssetCanvasStyle: React.CSSProperties = {
         backgroundImage: `${selectedAssetArtLayer ? `linear-gradient(180deg, rgba(5,5,7,0.08) 0%, rgba(5,5,7,0.54) 44%, rgba(5,5,7,0.78) 100%), ${selectedAssetArtLayer}, ` : ''}radial-gradient(circle at 16% 0%, rgba(255,246,204,0.24), transparent 29%),
             radial-gradient(circle at 92% 88%, ${rgbaString(selectedAssetAccentRgb, 0.16)}, transparent 24%),
@@ -491,7 +490,7 @@ export const AssetsView: React.FC = () => {
     if (selectedAsset) {
         return (
             <div
-                className="assets-detail-root h-full overflow-y-auto px-4 pb-4"
+                className="assets-detail-root flex h-full overflow-y-auto px-4 py-4"
                 style={{
                     '--ui-card-text': 'rgba(248, 250, 252, 0.94)',
                     '--ui-card-text-soft': 'rgba(203, 213, 225, 0.86)',
@@ -499,26 +498,16 @@ export const AssetsView: React.FC = () => {
                     '--ui-text-accent-soft': 'rgba(214, 223, 233, 0.84)',
                 } as React.CSSProperties}
             >
-                <div className="mx-auto max-w-[520px]">
+                <div className="my-auto w-full max-w-[520px] mx-auto">
                     <div
-                        className="dossier-bg relative flex flex-col overflow-hidden rounded-[28px] border border-[color:var(--skin-accent-color)] px-4 pb-4 pt-4 shadow-2xl shadow-black/50"
-                        style={selectedAssetShellStyle}
+                        className="relative flex flex-col overflow-hidden rounded-[24px] border px-3 pb-3 pt-3 shadow-2xl shadow-black/50"
+                        style={{
+                            ...selectedAssetCanvasStyle,
+                            borderColor: rgbaString(selectedAssetAccentRgb, 0.58),
+                        }}
                     >
-                        {showAssetAura && (
-                            <div
-                                className="modal-aura-overlay"
-                                style={{ '--modal-aura-color': 'rgba(229, 191, 88, 0.16)' } as React.CSSProperties}
-                            />
-                        )}
-                        <div
-                            className="modal-sheen-overlay"
-                            style={{
-                                '--modal-sheen-color': 'rgba(255, 222, 120, 0.82)',
-                                zIndex: 24,
-                            } as React.CSSProperties}
-                        />
                         <div className="relative z-10">
-                        <div className="grid grid-cols-[auto_1fr_auto] items-start gap-3">
+                        <div className="flex items-start justify-between gap-3">
                             {isEditingAssetDetail ? (
                                 <AssetArtButton
                                     assetId={selectedAsset.id}
@@ -533,13 +522,7 @@ export const AssetsView: React.FC = () => {
                                 <div className="h-8 w-8" />
                             )}
 
-                            <div className="flex items-center justify-center">
-                                <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-white/58">
-                                    Painel do ativo
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-self-end gap-2">
+                            <div className="flex items-center gap-2">
                                 {isEditingAssetDetail ? (
                                     <button
                                         type="button"
@@ -571,44 +554,43 @@ export const AssetsView: React.FC = () => {
                         </div>
 
                         <div
-                            className="mt-3 overflow-hidden rounded-[24px] border border-white/10"
-                            style={selectedAssetCanvasStyle}
+                            className="overflow-hidden"
                         >
-                            <div className="min-w-0 pb-3 pt-4 text-center">
-                                <p
-                                    className="luxe-title-ornate truncate px-6 text-lg font-black uppercase tracking-[0.18em] luxe-title-shadow"
-                                    style={{ color: 'var(--ui-card-text)' }}
-                                >
-                                    {selectedAsset.name}
-                                </p>
+                            <div className={`grid min-w-0 grid-cols-[56px_minmax(0,1fr)_88px] items-center gap-2 px-2 pb-4 text-center ${isEditingAssetDetail ? 'pt-1' : '-mt-8 pt-0'}`}>
+                                <Sephirot
+                                    asset={selectedAsset}
+                                    onClick={() => {}}
+                                    levelColor={isBasicMode ? basicSephirotLevelColor : undefined}
+                                    useSkinArtworkOnly={hasSephirotRasterArt}
+                                    showLabel={false}
+                                    size="56px"
+                                    interactive={false}
+                                />
+                                <div className="flex min-h-[52px] min-w-0 items-center justify-center rounded-[12px] border border-white/24 bg-[rgba(18,21,27,0.58)] px-4 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_18px_rgba(0,0,0,0.28)] backdrop-blur-[3px]">
+                                    <p
+                                        className="line-clamp-2 text-[21px] font-black uppercase leading-[1.08] tracking-[0.055em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]"
+                                    >
+                                        {selectedAsset.name}
+                                    </p>
+                                </div>
+                                <div className="h-14 w-full" />
                             </div>
 
-                            <div className="mx-3 mb-3 rounded-[20px] border border-white/10 bg-black/24 px-3 py-3 backdrop-blur-[2px]">
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-base font-black text-white shadow-[0_10px_24px_rgba(0,0,0,0.24)]"
-                                        style={{
-                                            borderColor: rgbaString(selectedAssetAccentRgb, 0.34),
-                                            background: `linear-gradient(135deg, ${rgbaString(selectedAssetAccentRgb, 0.32)} 0%, rgba(10,12,16,0.92) 100%)`,
-                                        }}
-                                    >
-                                        {selectedAssetLevel}
-                                    </div>
-                                    <div className="min-w-0 text-left">
-                                        <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/42">
-                                            Maestria atual
-                                        </p>
-                                        <p className="mt-1 text-[12px] font-semibold leading-snug text-white/86">
+                            <div className="mx-1 mb-2 border-y border-white/14 bg-[rgba(5,7,10,0.62)] px-3 py-3">
+                                <div className="min-w-0 text-center">
+                                        <p
+                                            className="text-[14px] font-semibold leading-[1.35] text-white/95"
+                                            style={{ WebkitFontSmoothing: 'antialiased', textRendering: 'optimizeLegibility' }}
+                                        >
                                             {selectedAssetMasteryPhrase || 'Essa area ainda nao tem uma frase de maestria definida.'}
                                         </p>
-                                    </div>
                                 </div>
                             </div>
 
                             <div className="overflow-y-auto pr-1 -mr-1 custom-scrollbar px-1 pb-1">
                                 <div className="space-y-2">
                                 {canShowSelectedAssetWidget && selectedAssetPrimarySlot ? (
-                                    <div className="rounded-[24px] border border-white/10 bg-black/20 p-4 backdrop-blur-[2px]">
+                                    <div className="border-t border-white/12 px-3 py-3">
                                         <div className="text-center">
                                             <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/88">
                                                 {selectedAssetPrimarySlot.label}
@@ -748,123 +730,95 @@ export const AssetsView: React.FC = () => {
                         </div>
 
                         <div id="assets-grid" className="absolute inset-x-0" style={{ top: assetsGridTopPx, bottom: assetsGridBottomPx }}>
-                            {overviewCoords.map(coord => {
-                                const asset = assets.find(a => a.id === coord.id);
+                            <div className="grid h-full grid-rows-5">
+                            {LIFE_AREAS.map(area => {
+                                const asset = assets.find(a => a.id === area.id);
                                 if (!asset) return null;
-                                const assetArtLayer = buildAssetArtLayer(assetArtById[asset.id]);
-
-                                const yNorm = coord.y / 100;
-                                const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
+                                const assetArtLayer = buildAssetArtLayer(assetArtById[asset.id] || getDefaultAssetArt(asset.id));
                                 const accent = ASSET_ACCENT_COLORS[asset.id as keyof typeof ASSET_ACCENT_COLORS] || 'var(--skin-accent-color)';
                                 const accentRgb = hexToRgb(accent);
                                 const stats = assetStats.get(asset.id) || { activeCount: 0, archivedCount: 0, totalActions: 0, totalCompleted: 0, totalPlanned: 0, progressPercent: 0, hasMeasurableProgress: false };
+                                const activeArenas = asset.arenas.filter(arena => !arena.isArchived);
+                                const visibleArenas = activeArenas.slice(0, 8);
+                                const hiddenArenaCount = Math.max(0, activeArenas.length - visibleArenas.length);
 
                                 return (
-                                    <div
+                                    <button
                                         key={asset.id}
-                                        className="absolute flex items-center justify-center"
-                                        style={{
-                                            left: `${coord.x}%`,
-                                            top: `${yStretched * 100}%`,
-                                            transform: 'translate(-50%, -50%)',
-                                        }}
+                                        type="button"
+                                        onClick={() => handleOpenAsset(asset)}
+                                        className="group relative h-[84%] w-full max-w-[396px] place-self-center text-left transition-transform duration-200 hover:-translate-y-px"
                                     >
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOpenAsset(asset)}
-                                            className="group relative flex min-h-[70px] w-[124px] flex-col items-center overflow-visible rounded-[22px] border px-2 pb-0.5 pt-[18px] text-center transition-all duration-300 hover:-translate-y-[2px]"
+                                        <div
+                                            className="absolute inset-0 overflow-hidden rounded-[11px] border"
                                             style={{
-                                                borderColor: rgbaString(accentRgb, 0.42),
-                                                backgroundImage: `${assetArtLayer ? `linear-gradient(180deg, rgba(6,7,10,0.04) 0%, rgba(6,7,10,0.4) 42%, rgba(6,7,10,0.62) 100%), ${assetArtLayer}, ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.17)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.09)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.04)} 0%, rgba(32,36,45,0.72) 18%, rgba(10,12,16,0.82) 100%)`,
-                                                backgroundSize: assetArtLayer ? 'cover, auto, auto, auto' : undefined,
-                                                backgroundPosition: assetArtLayer ? 'center, center, center, center' : undefined,
-                                                boxShadow: `0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 999px ${rgbaString(accentRgb, 0.022)}, 0 0 0 1px ${rgbaString(accentRgb, 0.12)}`,
+                                                borderColor: rgbaString(accentRgb, 0.54),
+                                                backgroundImage: `${assetArtLayer ? `linear-gradient(90deg, rgba(6,7,10,0.48), rgba(6,7,10,0.74)), ${assetArtLayer}, ` : ''}linear-gradient(105deg, ${rgbaString(accentRgb, 0.5)} 0%, ${rgbaString(accentRgb, 0.2)} 46%, rgba(8,10,14,0.9) 100%)`,
+                                                backgroundSize: assetArtLayer ? 'cover, cover, auto' : undefined,
+                                                backgroundPosition: 'center',
+                                                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.1), inset 5px 0 0 ${rgbaString(accentRgb, 0.82)}, 0 7px 16px rgba(0,0,0,0.42), 0 0 12px ${rgbaString(accentRgb, 0.12)}`,
                                             }}
+                                        />
+
+                                        <div
+                                            className="absolute left-3 top-0 z-20 flex h-14 w-14 -translate-y-[28%] items-center justify-center"
                                         >
-                                            <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[42%]">
-                                                <Sephirot
-                                                    asset={asset}
-                                                    onClick={() => handleOpenAsset(asset)}
-                                                    levelColor={isBasicMode ? basicSephirotLevelColor : undefined}
-                                                    useSkinArtworkOnly={hasSephirotRasterArt}
-                                                    showLabel={false}
-                                                    size="50px"
-                                                    interactive={false}
-                                                />
+                                            <Sephirot
+                                                asset={asset}
+                                                onClick={() => handleOpenAsset(asset)}
+                                                levelColor={isBasicMode ? basicSephirotLevelColor : undefined}
+                                                useSkinArtworkOnly={hasSephirotRasterArt}
+                                                showLabel={false}
+                                                size="56px"
+                                                interactive={false}
+                                            />
+                                        </div>
+
+                                        <div className="absolute inset-0 z-10 flex min-w-0 flex-col px-3 pb-[34px] pt-[6px]">
+                                            <div className="mx-auto flex min-h-[38px] w-[64%] items-center justify-center rounded-[10px] border border-white/22 bg-[rgba(18,21,27,0.58)] px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_7px_16px_rgba(0,0,0,0.26)] backdrop-blur-[3px]">
+                                                <h2 className="line-clamp-2 text-center text-[15px] font-black uppercase leading-[1.06] tracking-[0.04em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]">
+                                                    {area.id === 'proposito' ? area.shortName : area.name}
+                                                </h2>
                                             </div>
-                                            <div className="-mt-0.5 relative z-10 flex w-full justify-center">
-                                                <div
-                                                    className="w-fit max-w-[104px] rounded-[10px] border border-white/5 px-1.5 py-[0.1rem] shadow-[0_6px_14px_rgba(0,0,0,0.12)]"
-                                                    style={{
-                                                        backgroundColor: 'rgba(8, 10, 14, 0.34)',
-                                                        boxShadow: `0 6px 14px rgba(0,0,0,0.12), inset 0 1px 0 ${rgbaString(accentRgb, 0.02)}`,
-                                                        backdropFilter: 'none',
-                                                        WebkitBackdropFilter: 'none',
-                                                        transform: 'translateZ(0)',
-                                                        backfaceVisibility: 'hidden',
-                                                        WebkitFontSmoothing: 'antialiased',
-                                                        isolation: 'isolate',
-                                                    }}
-                                                >
-                                                    <p
-                                                        className="w-full truncate px-0.5 text-center text-[8px] font-black uppercase leading-none tracking-[0.02em]"
-                                                        style={{
-                                                            color: 'rgba(248, 250, 253, 0.96)',
-                                                            textShadow: '0 1px 2px rgba(0,0,0,0.92), 0 0 12px rgba(0,0,0,0.34)',
-                                                            transform: 'translateZ(0)',
-                                                            backfaceVisibility: 'hidden',
-                                                            WebkitFontSmoothing: 'antialiased',
-                                                            textRendering: 'geometricPrecision',
-                                                        }}
-                                                    >
-                                                        {asset.name}
-                                                    </p>
+
+                                            <div className="mx-auto mt-auto grid min-w-0 grid-cols-[72px_64px_72px] items-end justify-center gap-2">
+                                                <div className="flex aspect-square w-[72px] flex-col items-center justify-center rounded-[6px] border border-white/24 bg-black/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_7px_16px_rgba(0,0,0,0.34)] backdrop-blur-[2px]">
+                                                    <span className="text-[8px] font-black uppercase leading-none tracking-[0.06em] text-white/66">Arenas</span>
+                                                    <span className="mt-2 text-[25px] font-black leading-none text-white">{stats.activeCount}</span>
+                                                </div>
+
+                                                <div className="mx-auto flex h-[54px] w-[56px] min-w-0 flex-wrap content-center justify-center gap-x-1 gap-y-0.5 overflow-hidden text-[15px] [text-shadow:0_2px_7px_rgba(0,0,0,0.95)]">
+                                                    {visibleArenas.length > 0
+                                                        ? <>
+                                                            {visibleArenas.map(arena => <span key={arena.id} className="w-4 text-center">{arena.icon || '◦'}</span>)}
+                                                            {hiddenArenaCount > 0 && <span className="w-4 text-center text-[8px] font-black text-white/68">+{hiddenArenaCount}</span>}
+                                                        </>
+                                                        : <span className="text-[8px] font-black uppercase tracking-[0.08em] text-white/38">Vazia</span>}
+                                                </div>
+
+                                                <div className="flex aspect-square w-[72px] flex-col items-center justify-center rounded-[6px] border border-white/24 bg-black/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_7px_16px_rgba(0,0,0,0.34)] backdrop-blur-[2px]">
+                                                    <span className="text-[8px] font-black uppercase leading-none tracking-[0.06em] text-white/66">Acoes</span>
+                                                    <span className="mt-2 text-[25px] font-black leading-none text-white">{stats.totalActions}</span>
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        <div className="absolute inset-x-3 bottom-1.5 z-20 h-2 overflow-hidden rounded-full border border-[#e3e8ef]/80 bg-black/78 shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0_8px_rgba(224,232,242,0.48),0_1px_0_rgba(255,255,255,0.28)]">
                                             <div
-                                                className="-mt-0.5 mx-auto rounded-[12px] border border-white/5 px-1.5 py-[0.28rem] text-[9px] font-semibold uppercase tracking-[0.06em]"
+                                                className="h-full rounded-full transition-all duration-500"
                                                 style={{
-                                                    width: 'fit-content',
-                                                    minWidth: '88px',
-                                                    maxWidth: '100px',
-                                                    backgroundColor: 'rgba(8,10,14,0.32)',
-                                                    backgroundImage: 'none',
-                                                    boxShadow: `inset 0 1px 0 ${rgbaString(accentRgb, 0.02)}`,
-                                                    backdropFilter: 'none',
-                                                    WebkitBackdropFilter: 'none',
+                                                    width: stats.hasMeasurableProgress ? `${stats.progressPercent}%` : '0%',
+                                                    background: `linear-gradient(90deg, ${rgbaString(accentRgb, 0.94)} 0%, ${rgbString(lightenToward(accentRgb, [255, 255, 255], 0.42))} 100%)`,
+                                                    boxShadow: `0 0 12px ${rgbaString(accentRgb, 0.88)}, inset 0 1px 0 rgba(255,255,255,0.38)`,
                                                 }}
-                                            >
-                                                <div className="flex items-center justify-between gap-3">
-                                                        <span style={{ color: 'rgba(236, 240, 247, 0.82)', textShadow: '0 1px 8px rgba(0,0,0,0.52)' }}>
-                                                            <span className="font-black" style={{ color: 'rgba(248, 250, 253, 0.96)' }}>{stats.activeCount}</span> arenas
-                                                        </span>
-                                                        <span style={{ color: 'rgba(236, 240, 247, 0.82)', textShadow: '0 1px 8px rgba(0,0,0,0.52)' }}>
-                                                            <span className="font-black" style={{ color: 'rgba(248, 250, 253, 0.96)' }}>{stats.totalActions}</span> ações
-                                                        </span>
-                                                    </div>
-                                                {stats.hasMeasurableProgress ? (
-                                                    <div className="mt-0.5">
-                                                        <div className="h-[3px] w-full overflow-hidden rounded-full bg-black/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                                                            <div
-                                                                className="h-full rounded-full transition-all duration-500"
-                                                                style={{
-                                                                    width: `${stats.progressPercent}%`,
-                                                                    background: 'linear-gradient(90deg, #b47a18 0%, #ffd462 48%, #fff1b8 100%)',
-                                                                    boxShadow: '0 0 12px rgba(255,212,98,0.42), 0 0 2px rgba(255,255,255,0.68)',
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="mt-0.5 h-[3px] w-full rounded-full bg-black/10" aria-label="Sem meta definida" />
-                                                )}
-                                            </div>
-                                        </button>
-                                    </div>
+                                            />
+                                        </div>
+                                    </button>
                                 );
                             })}
+                            </div>
                         </div>
-                        {!isBasicMode && (
+                        {!isBasicMode && PRODUCT_FEATURES.personalGarden && (
                             <button
                                 type="button"
                                 onClick={() => setGardenOpen(true)}
@@ -877,7 +831,7 @@ export const AssetsView: React.FC = () => {
                     </div>
                 </div>
             </div>
-            {isGardenOpen && <GardenZenModal onClose={() => setGardenOpen(false)} />}
+            {PRODUCT_FEATURES.personalGarden && isGardenOpen && <GardenZenModal onClose={() => setGardenOpen(false)} />}
         </div>
     );
 };

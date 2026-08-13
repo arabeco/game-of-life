@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { Arena } from '../types';
+import { Arena, Asset } from '../types';
 import { CrownIcon, ChevronRightIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
@@ -8,6 +8,7 @@ import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 import { SCREEN_INTRO_TIP_CONTEXT_EVENT } from '../utils/screenIntroTips';
+import { isLifeAreaId, LIFE_AREAS, LIFE_AREA_IDS } from '../constants/lifeAreas';
 
 interface NewArenaModalProps {
     assetId?: string;
@@ -21,25 +22,21 @@ interface NewArenaModalProps {
     };
 }
 
-const AssetSelectionModal: React.FC<{ currentAssetId: string; onSelect: (assetId: string) => void; onClose: () => void }> = ({ onSelect, onClose }) => {
+const AssetSelectionModal: React.FC<{ onSelect: (assetId: string) => void; onClose: () => void }> = ({ onSelect, onClose }) => {
     const { assets } = useGame();
-    const geralAsset = assets.find(a => a.id === 'geral');
-    const assetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
+    const areaAssets = LIFE_AREAS
+        .map(area => assets.find(asset => asset.id === area.id))
+        .filter((asset): asset is Asset => Boolean(asset));
 
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[245] flex items-center justify-center animate-fade-in" onClick={onClose}>
                 <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                    <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar Ativo</h2>
+                    <h2 className="text-lg font-bold uppercase tracking-wider text-center">Selecionar área</h2>
                     <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {geralAsset && (
-                            <button onClick={() => onSelect(geralAsset.id)} className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-white/10">
-                                {assetLabel(geralAsset.id, geralAsset.name)}
-                            </button>
-                        )}
-                        {assets.filter(a => a.id !== 'geral').map(asset => (
+                        {areaAssets.map(asset => (
                             <button key={asset.id} onClick={() => onSelect(asset.id)} className="w-full p-3 rounded-xl text-left bg-black/20 hover:bg-white/10">
-                                {assetLabel(asset.id, asset.name)}
+                                {asset.name}
                             </button>
                         ))}
                     </div>
@@ -53,7 +50,9 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     const { addArena, assets, showToast, userProfile } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [assetId, setAssetId] = useState(initialAssetId || 'geral');
+    const [assetId, setAssetId] = useState(
+        initialAssetId && isLifeAreaId(initialAssetId) ? initialAssetId : LIFE_AREA_IDS[0],
+    );
     const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
     const modalCardRef = useRef<HTMLDivElement>(null);
 
@@ -61,6 +60,16 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
         if (!isOpen) return;
         window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaModalOpened));
     }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setAssetId(currentAssetId => {
+            const requestedAssetId = initialAssetId && isLifeAreaId(initialAssetId) ? initialAssetId : null;
+            if (requestedAssetId && assets.some(asset => asset.id === requestedAssetId)) return requestedAssetId;
+            if (isLifeAreaId(currentAssetId) && assets.some(asset => asset.id === currentAssetId)) return currentAssetId;
+            return LIFE_AREA_IDS.find(areaId => assets.some(asset => asset.id === areaId)) || LIFE_AREA_IDS[0];
+        });
+    }, [assets, initialAssetId, isOpen]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -120,7 +129,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
     };
 
     const selectedAsset = assets.find(a => a.id === assetId);
-    const selectedAssetLabel = selectedAsset?.id === 'geral' ? 'OUTROS / SIDEQUEST' : selectedAsset?.name;
+    const selectedAssetLabel = selectedAsset?.name;
 
     return (
         <>
@@ -141,7 +150,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                                 onClick={() => setIsAssetPickerOpen(true)}
                                 className="w-full p-3 bg-black/30 border border-[var(--glass-border)] rounded-xl flex justify-between items-center text-left"
                             >
-                                <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAssetLabel || 'Selecione o Ativo Pai'}</span>
+                                <span className={!selectedAsset ? 'text-gray-400' : ''}>{selectedAssetLabel || 'Selecione a área'}</span>
                                 <ChevronRightIcon className="w-5 h-5 text-gray-400" />
                             </button>
                             <input
@@ -172,7 +181,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                     </GlassCard>
                 </div>
             </Portal>
-            {isAssetPickerOpen && <AssetSelectionModal currentAssetId={assetId} onSelect={(id) => {
+            {isAssetPickerOpen && <AssetSelectionModal onSelect={(id) => {
                 setAssetId(id);
                 setIsAssetPickerOpen(false);
                 window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.arenaAssetSelected, { detail: { assetId: id } }));

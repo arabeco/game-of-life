@@ -1,6 +1,8 @@
-import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType, Slot } from '../types';
+import { LevelUnlocks, SovereignConfig, ItemRarity, UnlockCategory, Asset, Skin, Mood, ChestType } from '../types';
 import { ITEMS_DB, getCatalogItemsByCategory, getCatalogItems, isItemCatalogVisible, isRankRewardItem } from './items';
 import { ACTIVE_SEASON_ID, GM_SEASONS, GM_SEASON_MISSIONS, GM_SEASON_QUESTS, SEASONS } from './seasonContent';
+import { LIFE_AREAS } from './lifeAreas';
+import { CATALOG_AVATAR_ROOT } from './catalogAssets';
 
 // ==========================================
 // CONFIGURAÇÃO DO JOGO (GM BOARD)
@@ -10,7 +12,7 @@ export const MAX_CLAN_MEMBERS = 10;
 
 // --- COSMÉTICOS (SOVEREIGN ASSETS) ---
 // Atualizado com o link do Supabase fornecido
-const AVATAR_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
+const AVATAR_BASE_URL = CATALOG_AVATAR_ROOT;
 
 export const SKIN_TONES = ['#FBE5D5', '#F3C7AC', '#E2A984', '#C68642', '#8D5524', '#613817'] as const;
 
@@ -174,10 +176,16 @@ export const SKIN_CHEST_POOL = ['VOID'].filter(id => isItemCatalogVisible(id));
 
 export const SANCTUARY_BACKGROUND_OPTIONS = [
   { id: 'garden', name: 'Jardim', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land1.jpg' },
+  { id: 'territory-1', name: 'Territorio I', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land01.jpg' },
+  { id: 'territory-2', name: 'Territorio II', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land02.jpg' },
+  { id: 'territory-3', name: 'Territorio III', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land03.jpg' },
+  { id: 'territory-4', name: 'Territorio IV', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land04.jpg' },
+  { id: 'territory-5', name: 'Territorio V', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land05.jpg' },
   { id: 'garden-aurora', name: 'Jardim Aurora', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardenaurora.jpg' },
   { id: 'garden-cyber', name: 'Jardim Cyber', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardencyber.jpg' },
   { id: 'garden-ember', name: 'Jardim Ember', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardenember.jpg' },
   { id: 'garden-frost', name: 'Jardim Frost', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardenfrost.jpg' },
+  { id: 'office-1', name: 'Escritorio I', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office1.jpg' },
 ];
 export const DEFAULT_SANCTUARY_BACKGROUND = SANCTUARY_BACKGROUND_OPTIONS[0].value;
 
@@ -201,287 +209,38 @@ export const MOODS_DATA: Mood[] = [
     { label: "Iluminação", min: 95, max: 101, color: "linear-gradient(90deg, #b227b5, #d06ad8)", trackStart: "#b227b5", trackEnd: "#d06ad8" },
 ];
 
-export const MASTERY_LEVEL_DESCRIPTIONS: Record<string, string[]> = {
-  consciencia: [
-    "Estou perdido em pensamentos, raramente presente.",
-    "Ocasionalmente, percebo a beleza ao meu redor.",
-    "ìs vezes sinto uma breve gratidão, mas o ceticismo domina.",
-    "Começo a praticar a atenção plena, mas me distraio facilmente.",
-    "A gratidão se torna um hábito diário, mesmo que forçado.",
-    "Sinto uma conexão mais profunda com o momento presente.",
-    "A paz interior surge com mais frequência em meu dia a dia.",
-    "Vejo a interconexão de todas as coisas com clareza.",
-    "A consciência plena é meu estado natural, não um esforço.",
-    "Vivo em um estado de fluxo, uno com o momento presente."
-  ],
-  espiritualidade: [
-    "Nego qualquer dimensão além do material.",
-    "Questiono a existência de algo maior, mas com ceticismo.",
-    "Exploro diferentes filosofias, mas sem compromisso.",
-    "Adoto uma prática espiritual, mas de forma irregular.",
-    "Minha prática se torna consistente e significativa.",
-    "Sinto uma presença ou energia superior em minha vida.",
-    "A fé (ou confiança no universo) guia minhas decisões.",
-    "Experimento momentos de transcendência e unidade.",
-    "Minha vida é uma expressão da minha verdade espiritual.",
-    "Sinto-me em comunhão constante com o divino/universo."
-  ],
-  'espaco-mental': [
-    "Minha mente é um caos de pensamentos negativos e reativos.",
-    "Reconheço meus padrões de pensamento, mas não consigo mudá-los.",
-    "Começo a desafiar crenças limitantes com algum sucesso.",
-    "Pratico técnicas para acalmar a mente, como meditação.",
-    "Consigo observar meus pensamentos sem me identificar com eles.",
-    "Escolho conscientemente minhas reações em vez de ser reativo.",
-    "Minha mente se torna uma ferramenta a meu serviço, não meu mestre.",
-    "Cultivo clareza e foco com facilidade.",
-    "A paz mental é meu estado padrão, mesmo em meio ao caos.",
-    "Minha mente é um santuário de criatividade e sabedoria."
-  ],
-  projetos: [
-    "Tenho ideias, mas nunca começo nada.",
-    "Começo projetos, mas desisto na primeira dificuldade.",
-    "Consigo completar pequenos projetos com muito esforço.",
-    "Aprendo a planejar e organizar minhas ideias de forma eficaz.",
-    "Executo projetos de médio prazo com consistência.",
-    "A criatividade flui e encontro soluções inovadoras.",
-    "Colaboro efetivamente com outros para realizar grandes visões.",
-    "Meus projetos impactam positivamente minha vida e a dos outros.",
-    "Sou uma fonte de inspiração e realização criativa.",
-    "Manifesto minhas visões no mundo com maestria e propósito."
-  ],
-  proposito: [
-    "Sinto-me perdido, sem direção ou sentido na vida.",
-    "Busco um propósito, mas sinto que nada me preenche.",
-    "Identifico meus valores, mas não sei como aplicá-los.",
-    "Experimento diferentes caminhos em busca de alinhamento.",
-    "Defino uma missão de vida que ressoa com minha verdade.",
-    "Minhas ações diárias começam a refletir minha missão.",
-    "Meu trabalho e vida pessoal estão alinhados com meu propósito.",
-    "Sinto uma profunda sensação de significado e contribuição.",
-    "Inspiro outros a encontrarem e viverem seus propósitos.",
-    "Minha vida é a personificação do meu propósito."
-  ],
-  conexoes: [
-    "Sinto-me isolado e desconectado dos outros.",
-    "Tenho relacionamentos superficiais e baseados em necessidade.",
-    "Começo a praticar a escuta ativa e a empatia.",
-    "Estabeleço limites saudáveis em meus relacionamentos.",
-    "Cultivo amizades genuínas e de apoio mútuo.",
-    "Sou capaz de expressar amor e vulnerabilidade de forma autêntica.",
-    "Meus relacionamentos são fontes de crescimento e alegria.",
-    "Crio uma comunidade forte e unida ao meu redor.",
-    "Minhas conexões transcendem o ego e se baseiam na alma.",
-    "Sou um catalisador de amor e união no mundo."
-  ],
-  financas: [
-    "Estou constantemente endividado e ansioso com dinheiro.",
-    "Consigo pagar as contas, mas vivo de salário em salário.",
-    "Crio um orçamento e começo a controlar meus gastos.",
-    "Construo uma reserva de emergência e quito dívidas ruins.",
-    "Começo a investir para o futuro de forma consistente.",
-    "Minha renda passiva começa a crescer.",
-    "Tenho clareza sobre meus objetivos e plano financeiro.",
-    "O dinheiro se torna uma ferramenta para liberdade e impacto.",
-    "Alcanço a independência financeira.",
-    "Uso minha riqueza para criar um legado e ajudar os outros."
-  ],
-  trabalho: [
-    "Detesto meu trabalho e sinto-me estagnado.",
-    "Faço o mínimo necessário para manter o emprego.",
-    "Busco desenvolver novas habilidades, mas sem foco.",
-    "Encontro um trabalho que se alinha melhor com meus interesses.",
-    "Torno-me proficiente e valorizado em minha área.",
-    "Encontro prazer e desafio no meu trabalho diário.",
-    "Sou reconhecido como um especialista ou líder.",
-    "Meu trabalho contribui para algo maior que eu.",
-    "Inovo e crio valor de forma excepcional em minha carreira.",
-    "Meu trabalho é uma expressão de minha maestria e paixão."
-  ],
-  hobbies: [
-    "Não tenho tempo ou energia para hobbies.",
-    "Meus hobbies são passivos, como assistir TV.",
-    "Experimento novas atividades, mas nada me prende.",
-    "Encontro um hobby que me desafia e me dá prazer.",
-    "Dedico tempo regularmente para minhas paixões.",
-    "Atinjo um nível de habilidade que me orgulha.",
-    "Meus hobbies são uma fonte de relaxamento e criatividade.",
-    "Conecto-me com outras pessoas através dos meus interesses.",
-    "Meus hobbies se tornam uma parte essencial da minha identidade.",
-    "Alcanço um estado de fluxo e maestria em minhas paixões."
-  ],
-  fisico: [
-    "Negligencio completamente minha saúde física.",
-    "Tenho hábitos prejudiciais (má alimentação, sedentarismo).",
-    "Tento me exercitar e comer melhor, mas sou inconsistente.",
-    "Adoto uma rotina de exercícios e alimentação mais saudável.",
-    "Meu corpo se torna mais forte, flexível e com mais energia.",
-    "O bem-estar físico se torna um pilar da minha vida.",
-    "Escuto meu corpo e atendo às suas necessidades com sabedoria.",
-    "Supero meus limites e atinjo metas físicas desafiadoras.",
-    "Meu corpo é um templo de vitalidade e alto desempenho.",
-    "Irradio saúde e inspiro outros a cuidarem de si mesmos."
-  ],
-  geral: [],
-};
+export const MASTERY_LEVEL_DESCRIPTIONS: Record<string, string[]> = Object.fromEntries([
+  ...LIFE_AREAS.map((area) => [area.id, Array.from(area.levelDescriptions)]),
+  ['geral', []],
+]) as Record<string, string[]>;
 
-MASTERY_LEVEL_DESCRIPTIONS.consciencia[2] = 'Às vezes sinto uma breve gratidão, mas o ceticismo domina.';
-
-const createPrimaryAssetSlot = (slot: Slot): Slot[] => [slot];
-
-const PRIMARY_ASSET_SLOTS: Record<string, Slot[]> = {
-  consciencia: createPrimaryAssetSlot({
-    id: 'widget_consciencia',
-    label: 'Filosofia',
-    type: 1,
-    inputType: 'wheelpick',
-    options: ['Nao definido', 'Estoicismo', 'Pragmatismo', 'Minimalismo', 'Disciplina', 'Equilibrio', 'Autoconhecimento', 'Fe', 'Carpe diem', 'Servico', 'Outro'],
-    value: 'Nao definido',
-  }),
-  espiritualidade: createPrimaryAssetSlot({
-    id: 'widget_espiritualidade',
-    label: 'Crenca principal',
-    type: 1,
-    inputType: 'wheelpick',
-    options: ['Nao definido', 'Catolicismo', 'Protestantismo', 'Espiritismo', 'Umbanda / Candomble', 'Budismo', 'Gnosticismo', 'Ateismo / agnosticismo', 'Outro'],
-    value: 'Nao definido',
-  }),
-  'espaco-mental': createPrimaryAssetSlot({
-    id: 'widget_espaco_mental',
-    label: 'Maior virtude',
-    type: 1,
-    inputType: 'wheelpick',
-    options: ['Nao definido', 'Coragem', 'Justica', 'Prudencia', 'Temperanca', 'Disciplina', 'Honestidade', 'Lealdade', 'Sabedoria', 'Compaixao', 'Humildade', 'Resiliencia', 'Paciencia', 'Generosidade', 'Foco', 'Fe'],
-    value: 'Nao definido',
-  }),
-  projetos: createPrimaryAssetSlot({
-    id: 'widget_projetos',
-    label: 'Forma de criacao',
-    type: 1,
-    inputType: 'wheelpick',
-    options: ['Nao definido', 'Escrita', 'Musica', 'Video', 'Arte visual', 'Fotografia', 'Programacao', 'Negocio', 'Outro'],
-    value: 'Nao definido',
-  }),
-  proposito: createPrimaryAssetSlot({
-    id: 'widget_proposito',
-    label: 'Missao',
-    type: 1,
-    inputType: 'wheelpick',
-    options: ['Nao definido', 'Inspirar', 'Criar', 'Servir', 'Liderar', 'Ensinar', 'Curar', 'Proteger', 'Construir', 'Transformar', 'Explorar', 'Conectar', 'Outro'],
-    value: 'Nao definido',
-  }),
-  conexoes: createPrimaryAssetSlot({
-    id: 'widget_conexoes',
-    label: 'Foco relacional',
-    type: 1,
-    inputType: 'wheelpick',
-    options: ['Nao definido', 'Familia', 'Par romantico', 'Amizades', 'Mentores', 'Comunidade', 'Network', 'Solitude', 'Outro'],
-    value: 'Nao definido',
-  }),
-  financas: createPrimaryAssetSlot({
-    id: 'widget_financas',
-    label: 'Momento financeiro',
-    type: 1,
-    inputType: 'wheelpick',
-    options: ['Nao definido', 'Endividado', 'Saindo do negativo', 'Me mantenho', 'Estavel', 'Investindo', 'Prosperando'],
-    value: 'Nao definido',
-  }),
-  trabalho: createPrimaryAssetSlot({
-    id: 'widget_trabalho',
-    label: 'Oficio principal',
-    type: 1,
-    inputType: 'wheelpick',
-    options: [
-      'Nao definido',
-      'Estudante',
-      'Empreendedor',
-      'Desenvolvedor',
-      'Designer',
-      'Marketing',
-      'Vendas / comercial',
-      'Professor',
-      'Advogado',
-      'Medico',
-      'Psicologo',
-      'Enfermeiro',
-      'Engenheiro',
-      'Arquiteto',
-      'Administrador / gestor',
-      'Financeiro / contabil',
-      'RH / recrutamento',
-      'Atendimento / suporte',
-      'Operacoes / logistica',
-      'Produtor de conteudo',
-      'Consultor',
-      'Servidor publico',
-      'Outro',
-    ],
-    value: 'Nao definido',
-  }),
-  hobbies: createPrimaryAssetSlot({
-    id: 'widget_hobbies',
-    label: 'Atividade favorita',
-    type: 1,
-    inputType: 'wheelpick',
-    options: ['Nao definido', 'Esportes', 'Futebol', 'Tenis', 'Poker', 'Games', 'Musica', 'Leitura', 'Cinema', 'Academia', 'Corrida', 'Culinaria', 'Viagem', 'Outro'],
-    value: 'Nao definido',
-  }),
-  fisico: createPrimaryAssetSlot({
-    id: 'widget_fisico',
-    label: 'Forma fisica',
-    type: 1,
-    inputType: 'wheelpick',
-    options: ['Nao definido', 'Em reabilitacao', 'Sedentario', 'Retomando', 'Ativo', 'Em forma', 'Atletico'],
-    value: 'Nao definido',
-  }),
-  geral: [],
-};
-
-const RAW_ASSETS_DATA: Omit<Asset, 'slots'>[] = [
-  {
-    id: 'consciencia', name: 'CONSCIÊNCIA', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.consciencia.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
-  {
-    id: 'espiritualidade', name: 'ESPIRITUALIDADE', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.espiritualidade.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
-  {
-    id: 'espaco-mental', name: 'ESPAÇO MENTAL', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS['espaco-mental'].reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
-  {
-    id: 'projetos', name: 'PROJETOS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.projetos.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
-  {
-    id: 'proposito', name: 'PROPÓSITO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.proposito.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
-  {
-    id: 'conexoes', name: 'CONEXÕES', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.conexoes.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
-  {
-    id: 'financas', name: 'FINANÇAS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.financas.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
-  {
-    id: 'trabalho', name: 'TRABALHO/ESTUDOS', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.trabalho.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
-  {
-    id: 'hobbies', name: 'HOBBIES', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.hobbies.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
-  {
-    id: 'fisico', name: 'FÍSICO', level: 0, levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.fisico.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}), arenas: []
-  },
+export const ASSETS_DATA: Asset[] = [
+  ...LIFE_AREAS.map<Asset>((area) => ({
+    id: area.id,
+    name: area.name,
+    level: 0,
+    levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS[area.id].reduce(
+      (acc, description, index) => ({ ...acc, [index + 1]: description }),
+      {} as Record<number, string>,
+    ),
+    arenas: [],
+    slots: [{
+      id: area.widget.id,
+      label: area.widget.label,
+      type: 1 as const,
+      inputType: 'wheelpick' as const,
+      options: [...area.widget.options],
+      value: 'Não definido',
+    }],
+  })),
   {
     id: 'geral',
     name: 'GERAL',
     level: 0,
-    levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS.geral.reduce((acc, desc, i) => ({ ...acc, [i+1]: desc }), {}),
+    levelDescriptions: {},
     arenas: [
-        { id: 'arena_outros', assetId: 'geral', name: 'Outros', description: 'Arena para ações gerais não categorizadas.', icon: '🗂️', actionIds: [] }
-    ]
+      { id: 'arena_outros', assetId: 'geral', name: 'Outros', description: 'Arena para ações gerais não categorizadas.', icon: '🗂️', actionIds: [] },
+    ],
+    slots: [],
   },
 ];
-
-export const ASSETS_DATA: Asset[] = RAW_ASSETS_DATA.map((asset) => ({
-  ...asset,
-  slots: PRIMARY_ASSET_SLOTS[asset.id] ?? [],
-}));
-
-

@@ -1,29 +1,9 @@
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Asset, Slot, SlotValue } from '../types';
 import { AssetArenaBoard } from './AssetArenaBoard';
-import { Sephirot } from './Sephirot';
-import { SephirotFog } from './SephirotFog';
-import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { ASSET_ACCENT_COLORS, DEFAULT_ASSET_ART_BY_ID } from '../constants/assetVisuals';
+import { LIFE_AREAS } from '../constants/lifeAreas';
 import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../utils/profileBackgrounds';
-
-const SEPHIROT_COORDS = [
-    { id: 'consciencia', x: 50, y: 7 },
-    { id: 'espaco-mental', x: 16.66, y: 21.5 },
-    { id: 'espiritualidade', x: 83.33, y: 21.5 },
-    { id: 'proposito', x: 16.66, y: 35.5 },
-    { id: 'projetos', x: 83.33, y: 35.5 },
-    { id: 'conexoes', x: 50, y: 49.5 },
-    { id: 'trabalho', x: 16.66, y: 64.5 },
-    { id: 'financas', x: 83.33, y: 64.5 },
-    { id: 'hobbies', x: 50, y: 78.5 },
-    { id: 'fisico', x: 50, y: 93 },
-];
-
-type FogConfig = {
-    color: string;
-    tintStrength: number;
-    alphaMax: number;
-};
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
     const normalized = hex.replace('#', '').trim();
@@ -50,16 +30,8 @@ const buildAssetArtLayer = (value?: string): string | null => {
         : `url("${escapeCssUrl(primarySource)}")`;
 };
 
-const readCssNumber = (value: string | null | undefined, fallback: number): number => {
-    const parsed = Number.parseFloat((value || '').trim());
-    return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const hasRasterSephirotBackground = (value: string | null | undefined): boolean => {
-    const normalized = (value || '').trim();
-    if (!normalized || normalized === 'none') return false;
-    return /url\((['"]?).+\.(png|jpe?g)(?:[?#][^'")]*)?\1\)/i.test(normalized);
-};
+const getDefaultAssetArt = (assetId: string): string | undefined =>
+    DEFAULT_ASSET_ART_BY_ID[assetId as keyof typeof DEFAULT_ASSET_ART_BY_ID];
 
 const isSlotValueEmpty = (value: SlotValue | undefined): boolean => {
     if (value === undefined || value === null) return true;
@@ -99,72 +71,11 @@ export const ProfileAssetsPreview: React.FC<{
     onClose,
 }) => {
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
-    const containerRef = useRef<HTMLDivElement | null>(null);
-    const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-    const [fogConfig, setFogConfig] = useState<FogConfig>({
-        color: '#ffffff',
-        tintStrength: 0.08,
-        alphaMax: 0.13,
-    });
-    const [hasSephirotRasterArt, setHasSephirotRasterArt] = useState(false);
 
     const selectedAsset = useMemo(
         () => assets.find((asset) => asset.id === selectedAssetId) || null,
         [assets, selectedAssetId]
     );
-
-    const baseAspect = 9 / 16;
-    const containerAspect = containerSize.width > 0 && containerSize.height > 0
-        ? containerSize.width / containerSize.height
-        : baseAspect;
-    const stretchY = containerAspect < baseAspect ? baseAspect / containerAspect : 1;
-
-    const fogPoints = useMemo(() => {
-        const assetById = new Map<string, Asset>(assets.map((asset) => [asset.id, asset]));
-
-        return SEPHIROT_COORDS.map((coord) => {
-            const yNorm = coord.y / 100;
-            const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
-            const asset = assetById.get(coord.id);
-            return {
-                x: coord.x,
-                y: yStretched * 100,
-                level: asset ? asset.level : 1,
-            };
-        });
-    }, [assets, stretchY]);
-
-    useLayoutEffect(() => {
-        const target = containerRef.current ?? document.documentElement;
-        const styles = getComputedStyle(target);
-        const fogColor = styles.getPropertyValue('--fog-color').trim() || styles.getPropertyValue('--skin-accent-color').trim() || '#ffffff';
-        const tintStrength = readCssNumber(styles.getPropertyValue('--fog-tint-strength'), 0.22);
-        const alphaMax = readCssNumber(styles.getPropertyValue('--fog-alpha-max'), 0.15);
-        const sephirotBackground = styles.getPropertyValue('--sephirot-bg-image').trim();
-        setFogConfig({ color: fogColor, tintStrength, alphaMax });
-        setHasSephirotRasterArt(hasRasterSephirotBackground(sephirotBackground));
-    }, [skinId]);
-
-    useLayoutEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        const updateSize = () => {
-            const rect = container.getBoundingClientRect();
-            setContainerSize({ width: rect.width, height: rect.height });
-        };
-
-        updateSize();
-
-        if (typeof ResizeObserver !== 'undefined') {
-            const observer = new ResizeObserver(() => updateSize());
-            observer.observe(container);
-            return () => observer.disconnect();
-        }
-
-        window.addEventListener('resize', updateSize);
-        return () => window.removeEventListener('resize', updateSize);
-    }, []);
 
     const selectedAssetAccent = selectedAsset
         ? ASSET_ACCENT_COLORS[selectedAsset.id as keyof typeof ASSET_ACCENT_COLORS] || '#4b5563'
@@ -172,7 +83,9 @@ export const ProfileAssetsPreview: React.FC<{
     const selectedAssetLevel = selectedAsset ? Math.max(1, Number(selectedAsset.level || 1)) : 1;
     const selectedAssetMasteryPhrase = selectedAsset?.levelDescriptions?.[selectedAssetLevel] || '';
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
-    const selectedAssetArtUrl = selectedAsset ? assetArtById[selectedAsset.id] : undefined;
+    const selectedAssetArtUrl = selectedAsset
+        ? assetArtById[selectedAsset.id] || getDefaultAssetArt(selectedAsset.id)
+        : undefined;
     const selectedAssetArtLayer = buildAssetArtLayer(selectedAssetArtUrl);
     const selectedAssetPrimarySlot = selectedAsset
         ? getPrimaryAssetSlot(selectedAsset, assetWidgetValues)
@@ -319,74 +232,43 @@ export const ProfileAssetsPreview: React.FC<{
                 </button>
             </div>
 
-            <div className="mt-3 flex-1 overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_30%),linear-gradient(180deg,#070707_0%,#020202_100%)]">
-                <div ref={containerRef} className="relative h-full w-full">
-                    <div className="assets-sephirot-backdrop absolute inset-0 z-0" />
+            <div className="mt-3 grid min-h-0 flex-1 grid-rows-5 gap-2 overflow-hidden rounded-lg bg-black/45 p-2">
+                {LIFE_AREAS.map((area) => {
+                    const asset = assets.find((item) => item.id === area.id);
+                    if (!asset) return null;
+                    const assetArtLayer = buildAssetArtLayer(assetArtById[asset.id] || getDefaultAssetArt(asset.id));
+                    const accentRgb = hexToRgb(area.color);
+                    const activeArenas = asset.arenas.filter((arena) => !arena.isArchived).length;
+                    const totalActions = asset.arenas.reduce((sum, arena) => sum + (arena.actionIds?.length || 0), 0);
 
-                    <div className="relative z-10 h-full w-full">
-                        {SEPHIROT_COORDS.map((coord) => {
-                            const asset = assets.find((item) => item.id === coord.id);
-                            if (!asset) return null;
-                            const assetArtLayer = buildAssetArtLayer(assetArtById[asset.id]);
-                            const accent = ASSET_ACCENT_COLORS[asset.id as keyof typeof ASSET_ACCENT_COLORS] || 'var(--skin-accent-color)';
-                            const accentRgb = hexToRgb(accent);
-                            const activeArenas = asset.arenas.filter((arena) => !arena.isArchived).length;
-                            const totalActions = asset.arenas.reduce((sum, arena) => sum + (arena.actionIds?.length || 0), 0);
-
-                            const yNorm = coord.y / 100;
-                            const yStretched = Math.min(1, Math.max(0, (yNorm - 0.5) * stretchY + 0.5));
-
-                            return (
-                                <div
-                                    key={asset.id}
-                                    className="absolute flex items-center justify-center"
-                                    style={{
-                                        left: `${coord.x}%`,
-                                        top: `${10 + (yStretched * 80)}%`,
-                                        transform: 'translate(-50%, -50%)',
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedAssetId(asset.id)}
-                                        className="group relative flex min-h-[66px] w-[118px] flex-col items-center overflow-visible rounded-[22px] border px-2 pb-0.5 pt-[16px] text-center transition-all duration-300 hover:-translate-y-[2px]"
-                                        style={{
-                                            borderColor: rgbaString(accentRgb, 0.42),
-                                            backgroundImage: `${assetArtLayer ? `linear-gradient(180deg, rgba(6,7,10,0.12) 0%, rgba(6,7,10,0.68) 42%, rgba(6,7,10,0.9) 100%), ${assetArtLayer}, ` : ''}radial-gradient(circle at 50% -16%, ${rgbaString(accentRgb, 0.19)}, transparent 34%), radial-gradient(circle at 50% 108%, ${rgbaString(accentRgb, 0.11)} 0%, transparent 54%), linear-gradient(180deg, ${rgbaString(accentRgb, 0.06)} 0%, rgba(32,36,45,0.9) 18%, rgba(10,12,16,0.96) 100%)`,
-                                            backgroundSize: assetArtLayer ? 'cover, auto, auto, auto' : undefined,
-                                            backgroundPosition: assetArtLayer ? 'center, center, center, center' : undefined,
-                                            boxShadow: `0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 999px ${rgbaString(accentRgb, 0.022)}, 0 0 0 1px ${rgbaString(accentRgb, 0.12)}`,
-                                        }}
-                                    >
-                                        <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[42%]">
-                                            <Sephirot
-                                                asset={asset}
-                                                onClick={() => setSelectedAssetId(asset.id)}
-                                                useSkinArtworkOnly={hasSephirotRasterArt}
-                                                showLabel={false}
-                                                size="46px"
-                                                interactive={false}
-                                            />
-                                        </div>
-                                        <div className="-mt-0.5 relative z-10 flex w-full justify-center">
-                                            <div className="w-[102px] rounded-[10px] border border-white/10 bg-[rgba(8,10,14,0.58)] px-2 py-[0.18rem] shadow-[0_8px_18px_rgba(0,0,0,0.18)]">
-                                                <p className="w-full truncate px-0.5 text-center text-[8px] font-black uppercase leading-none tracking-[0.02em] text-white/95 [text-shadow:0_1px_10px_rgba(0,0,0,0.58)]">
-                                                    {asset.name}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="-mt-0.5 w-full rounded-[12px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,10,14,0.58)_0%,rgba(8,10,14,0.74)_100%)] px-2 py-[0.42rem] text-[9px] font-semibold uppercase tracking-[0.06em]">
-                                            <div className="flex items-center justify-between gap-2 text-white/82 [text-shadow:0_1px_8px_rgba(0,0,0,0.52)]">
-                                                <span><span className="font-black text-white/95">{activeArenas}</span> arenas</span>
-                                                <span><span className="font-black text-white/95">{totalActions}</span> ações</span>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                    return (
+                        <button
+                            key={asset.id}
+                            type="button"
+                            onClick={() => setSelectedAssetId(asset.id)}
+                            className="grid min-h-0 grid-cols-[42px_minmax(0,1fr)_auto] items-center gap-3 overflow-hidden rounded-lg border px-3 text-left transition-transform hover:-translate-y-px"
+                            style={{
+                                borderColor: rgbaString(accentRgb, 0.45),
+                                backgroundImage: `${assetArtLayer ? `linear-gradient(90deg, rgba(5,6,9,0.42), rgba(5,6,9,0.8)), ${assetArtLayer}, ` : ''}linear-gradient(105deg, ${rgbaString(accentRgb, 0.42)} 0%, ${rgbaString(accentRgb, 0.16)} 48%, rgba(7,9,13,0.94) 100%)`,
+                                backgroundSize: assetArtLayer ? 'cover, cover, auto' : undefined,
+                                backgroundPosition: 'center',
+                                boxShadow: `inset 4px 0 0 ${rgbaString(accentRgb, 0.8)}, inset 0 1px 0 rgba(255,255,255,0.08)`,
+                            }}
+                        >
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/30 text-xl">
+                                {area.icon}
+                            </span>
+                            <span className="min-w-0">
+                                <span className="block truncate text-[10px] font-black uppercase tracking-[0.08em] text-white">{area.name}</span>
+                                <span className="mt-0.5 block truncate text-[9px] text-white/55">{area.description}</span>
+                            </span>
+                            <span className="text-right text-[9px] font-bold uppercase text-white/68">
+                                <span className="block text-sm font-black text-white">{Math.max(1, asset.level || 1)}</span>
+                                <span>{activeArenas} arenas · {totalActions} ações</span>
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );

@@ -72,7 +72,7 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
                                 <div className="max-w-[220px]">
                                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Preview</p>
                                     <p className="mt-2 text-sm font-black text-white">{previewLabel}</p>
-                                    <p className="mt-1 text-xs text-gray-500">{era.cycleCount} ciclos Â· score mÃ©dio {era.avgScore}</p>
+                                    <p className="mt-1 text-xs text-gray-500">{era.cycleCount} ciclos · score médio {era.avgScore}</p>
                                     <p className="mt-3 text-[11px] leading-relaxed text-gray-400">{currentNarrative}</p>
                                 </div>
                             </div>

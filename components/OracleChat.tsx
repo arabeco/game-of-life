@@ -2,7 +2,7 @@
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon, MicIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
-import { Notification, OracleActionDraft, OracleCategory, OracleContext, OracleMode, OraclePremiumHint, OracleResponseKind, OracleResponsePayload, OracleStructuredContext } from '../types';
+import { Notification, OracleCategory, OracleContext, OracleMode, OraclePremiumHint, OracleResponseKind, OracleResponsePayload, OracleStructuredContext } from '../types';
 import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
@@ -10,20 +10,12 @@ import { isTaskInPool } from '../utils/taskDomain.js';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
-import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQuizModal';
 import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { buildOracleConversationMemory } from '../utils/oracleConversationMemory';
-import { isConfirmationText } from '../utils/oracleActionUtils';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
 
-type OracleTabTarget = 'chat' | 'action' | 'requests';
-type OracleQuickActionId = 'campaign_quiz' | 'manual_start' | 'adjust_existing';
-interface PendingClarification {
-  type: 'campaign_route';
-  originalInput: string;
-}
-
+type OracleTabTarget = 'chat' | 'requests';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -31,9 +23,7 @@ interface Message {
   mode?: OracleMode;
   responseKind?: OracleResponseKind;
   structuredContext?: OracleStructuredContext | null;
-  actionDraft?: OracleActionDraft | null;
   premiumHint?: OraclePremiumHint | null;
-  actionPrompt?: string | null;
   originalInput?: string | null;
   feedId?: string;
   feedCategory?: OracleCategory;
@@ -46,7 +36,6 @@ interface Message {
 
 type ChatQuickAction =
   | { id: string; label: string; kind: 'send_prompt'; prompt: string }
-  | { id: string; label: string; kind: 'open_action_tab'; assistant: string; prompt?: string }
   | { id: string; label: string; kind: 'open_planner_create_action' }
   | { id: string; label: string; kind: 'open_sitrep' }
   | { id: string; label: string; kind: 'open_cycle' }
@@ -59,59 +48,16 @@ const normalizeOracleText = (value: string) =>
     .toLowerCase()
     .trim();
 
-const detectCampaignRouteIntent = (rawInput: string): PendingClarification | null => {
+const detectRequestedInfoCardCategory = (rawInput: string): OracleCategory | null => {
   const normalized = normalizeOracleText(rawInput);
-  if (!normalized) return null;
+  const asksForContent = /\b(card|manda|mande|mostra|mostre|quero|traz|traga|puxa|puxe|conteudo)\b/.test(normalized);
+  if (!asksForContent) return null;
 
-  const operationalIntent = /\b(cria(?:r)?|edita(?:r)?|ajusta(?:r)?|muda(?:r)?|agenda(?:r)?|programa(?:r)?|completa(?:r)?|conclu(?:ir|i)|instala(?:r)?|compra(?:r)?|organiza(?:r)? meu dia)\b/.test(normalized);
-  if (operationalIntent) return null;
-
-  const broadStarter = /\b(quero|preciso|gostaria|me ajuda|me ajude|como comeco|como faco|to querendo|estou querendo|quero voltar|quero comecar|quero melhorar|quero organizar)\b/.test(normalized);
-  const trackedDomain = /\b(trein|treino|correr|corrida|academia|calisten|ler|leitura|estud|foco|produt|dorm|sono|aliment|nutri|finance|dinheiro|relac|conex|medit|rotin|habit|disciplina|corpo)\b/.test(normalized);
-
-  if (!broadStarter || !trackedDomain) {
-    return null;
-  }
-
-  return {
-    type: 'campaign_route',
-    originalInput: rawInput.trim(),
-  };
-};
-
-const resolveCampaignRouteChoice = (rawInput: string): OracleQuickActionId | null => {
-  const normalized = normalizeOracleText(rawInput);
-  if (!normalized) return null;
-
-  if (
-    normalized === '1'
-    || normalized.includes('fazer quiz')
-    || normalized.includes('faca o quiz')
-    || normalized.includes('quiz')
-    || normalized.includes('campanha certa')
-  ) {
-    return 'campaign_quiz';
-  }
-
-  if (
-    normalized === '2'
-    || normalized.includes('montar manual')
-    || normalized.includes('manual')
-    || normalized.includes('comeco manual')
-    || normalized.includes('comecar manual')
-  ) {
-    return 'manual_start';
-  }
-
-  if (
-    normalized === '3'
-    || normalized.includes('ajustar')
-    || normalized.includes('ja existe')
-    || normalized.includes('já existe')
-  ) {
-    return 'adjust_existing';
-  }
-
+  if (/\b(inspir|motivacional|frase)\b/.test(normalized)) return 'frases_inspiradoras';
+  if (/\b(filosof|estoic|reflex)\b/.test(normalized)) return 'reflexoes_filosoficas';
+  if (/\b(sabedoria|fragmento)\b/.test(normalized)) return 'fragmentos_sabedoria';
+  if (/\b(ritual|dica de vida|estilo de vida|lifestyle)\b/.test(normalized)) return 'rituais_lifestyle';
+  if (/\b(maestria|sussurro)\b/.test(normalized)) return 'sussurros_maestria';
   return null;
 };
 
@@ -297,62 +243,11 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
   };
 };
 
-const formatDraftTime = (minutes: number | null | undefined) => {
-  if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes < 0) return '';
-  const hour = String(Math.floor(minutes / 60)).padStart(2, '0');
-  const minute = String(minutes % 60).padStart(2, '0');
-  return `${hour}:${minute}`;
-};
-
-const buildActionPromptFromDraft = (draft: OracleActionDraft): string => {
-  const parts: string[] = [];
-
-  switch (draft.kind) {
-    case 'create_cycle':
-      parts.push(`criar ciclo ${draft.cycleName || ''}`.trim());
-      break;
-    case 'edit_cycle_date':
-      parts.push(`editar ciclo ${draft.date ? `para ${draft.date}` : ''}`.trim());
-      break;
-    case 'create_arena':
-      parts.push(`criar arena ${draft.arenaName || ''}`.trim());
-      break;
-    case 'update_arena':
-      parts.push(`editar arena ${draft.arenaName || ''}`.trim());
-      break;
-    case 'create_action':
-      parts.push(`criar ação ${draft.actionName || ''}`.trim());
-      break;
-    case 'update_action':
-      parts.push(`editar ação ${draft.actionName || ''}`.trim());
-      break;
-    case 'schedule_action':
-      parts.push(`agendar ${draft.actionName || 'ação'}`.trim());
-      if (draft.date) parts.push(`para ${draft.date}`);
-      if (typeof draft.startTime === 'number') parts.push(`às ${formatDraftTime(draft.startTime)}`);
-      break;
-    case 'complete_action':
-      parts.push(`completei ${draft.actionName || 'a ação'}`.trim());
-      break;
-    case 'organize_day':
-      parts.push(`organizar meu dia ${draft.organizeMode || ''}`.trim());
-      break;
-    case 'status':
-      parts.push('status do app');
-      break;
-    default:
-      parts.push(draft.originalText);
-      break;
-  }
-
-  return parts.join(' ').replace(/\s+/g, ' ').trim();
-};
-
 const buildVoicePreview = (transcript: string) => {
   const normalized = normalizeOracleText(transcript);
   const soundsOperational = /\b(criar|cria|editar|edita|ajustar|ajusta|agendar|agenda|programar|organizar|organiza|completei|concluir|conclui|marcar|marca)\b/.test(normalized);
   if (soundsOperational) {
-    return `Entendi isso: "${transcript}". Isso parece pedido de ação. Revise e envie que eu monto o preview antes de aplicar.`;
+    return `Entendi isso: "${transcript}". Envie e eu ajudo voce a decidir o melhor caminho no app.`;
   }
   return `Entendi isso: "${transcript}". Isso parece conversa. Se estiver certo, envie e eu sigo daqui.`;
 };
@@ -375,14 +270,12 @@ const shouldAttachContextLink = (content: string, actionId: string, previousMess
   return false;
 };
 
-export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false, onNavigateTab }) => {
-  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, addArena, addAction, triggerOracle } = useGame();
+export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
+  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
-  const [isCampaignQuizOpen, setIsCampaignQuizOpen] = useState(false);
-  const [pendingClarification, setPendingClarification] = useState<PendingClarification | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [isSpeechAvailable, setIsSpeechAvailable] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -392,7 +285,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const inputRef = useRef<HTMLInputElement>(null);
   const speechRef = useRef<any>(null);
   const sendMessageRef = useRef<(overrideInput?: string) => void>(() => {});
-  const lastActionOfferRef = useRef<{ draft: OracleActionDraft; prompt: string; assistant: string } | null>(null);
 
   const [currentMode, setCurrentMode] = useState<OracleMode>(oraclePreferences?.activeMode || 'neutro');
   const isPremiumUser = useMemo(() => hasPremiumAccess(userProfile), [userProfile]);
@@ -459,17 +351,14 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   const contextualStarter = useMemo(() => {
     const arenasCount = assets.reduce((sum, asset) => sum + asset.arenas.length, 0);
-    const committedCount = dailyCommitment.taskIds.length;
     const pendingToday = tasks.filter((task) => {
       if (!task.date || task.completed) return false;
       return task.date.split('T')[0] === getLocalDateString();
     }).length;
-
-    const stageLabel = dailyCommitment.stage === 'battle'
-      ? 'travado para execução'
-      : dailyCommitment.stage === 'judgment'
-        ? 'em fechamento'
-        : 'aberto para planejamento';
+    const completedToday = tasks.filter((task) => {
+      if (!task.date || !task.completed) return false;
+      return task.date.split('T')[0] === getLocalDateString();
+    }).length;
 
     if (arenasCount === 0) {
       return {
@@ -488,17 +377,17 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     const cycleLine = cycleProgress > 0
       ? `Seu ciclo esta em ${cycleProgress}%.`
       : 'Seu ciclo esta ativo.';
-    const dayLine = committedCount > 0
-      ? `Seu painel diario tem ${committedCount} compromisso${committedCount === 1 ? '' : 's'} e esta ${stageLabel}.`
+    const dayLine = completedToday > 0
+      ? `Hoje ja tem ${completedToday} acao${completedToday === 1 ? '' : 'es'} concluida${completedToday === 1 ? '' : 's'} e ${pendingToday} pendencia${pendingToday === 1 ? '' : 's'}.`
       : pendingToday > 0
-        ? `Seu painel diario ainda nao ganhou forma, e existem ${pendingToday} pendencia${pendingToday === 1 ? '' : 's'} no dia.`
-        : 'Seu painel diario ainda nao ganhou forma.';
+        ? `Hoje ainda nao tem acao concluida, mas existem ${pendingToday} pendencia${pendingToday === 1 ? '' : 's'} no Planner.`
+        : 'Hoje ainda esta limpo no Planner.';
 
     return {
       content: `${cycleLine} ${dayLine} Em vez de te explicar tela, vou direto ao ponto: o que voce quer fazer hoje?`,
-      quickActions: [{ id: 'starter-open-sitrep-live', label: 'Clique aqui para abrir o painel diario.', kind: 'open_sitrep' as const }],
+      quickActions: [{ id: 'starter-open-sitrep-live', label: 'Clique aqui para abrir o resumo diario.', kind: 'open_sitrep' as const }],
     };
-  }, [activeCycle, assets, cycleProgress, dailyCommitment.stage, dailyCommitment.taskIds.length, tasks]);
+  }, [activeCycle, assets, cycleProgress, tasks]);
 
   // Update mode when preferences change
   useEffect(() => {
@@ -738,103 +627,25 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     return `${mentalAssetName} pedindo contenção às ${hourLabel}. Vejo ${bayLine} e ${pendingLine}. ${cycleLine} Amanhã, preserve só 1 missão crítica e encaixe 30 min de Tela de Descanso antes de reacelerar.`;
   }, [activeCycle, assets, bayAreaVisibleCount, cycleProgress, tasks]);
 
-  const buildCampaignRouteMessage = useCallback((rawInput: string) => {
-    const normalized = normalizeOracleText(rawInput);
-    const mentionsSomethingAlreadyBuilt = /\b(voltar|retomar|ajustar|melhorar)\b/.test(normalized);
-    const opener = mentionsSomethingAlreadyBuilt
-      ? 'Isso parece uma frente que pode passar por diagnóstico antes de mexer na estrutura.'
-      : 'Isso parece uma frente nova, não uma execução direta.';
-
-    return [
-      opener,
-      'Posso te ajudar de 3 jeitos:',
-      '1. Fazer o quiz para eu indicar a campanha certa',
-      '2. Montar um começo manual agora',
-      '3. Ajustar algo que você já tem',
-      'Se preferir, responda 1, 2 ou 3.',
-    ].join('\n');
-  }, []);
-
-  const openActionTabWithGuidance = useCallback((detail: { assistant: string; prompt?: string }) => {
-    onNavigateTab?.('action');
-    window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('oracle-action-guidance', { detail }));
-    }, 120);
-  }, [onNavigateTab]);
-
-  const handleCampaignRouteSelection = useCallback((selection: OracleQuickActionId, clarification: PendingClarification | null) => {
-    setPendingClarification(null);
-
-    if (selection === 'campaign_quiz') {
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: 'assistant',
-          content: 'Perfeito. Vou abrir o quiz normal de campanhas para indicar a trilha mais coerente para esse momento.',
-          timestamp: new Date(),
-          mode: currentMode,
-        },
-      ]);
-      setIsCampaignQuizOpen(true);
-      return;
-    }
-
-    if (selection === 'manual_start') {
-      const helperText = clarification?.originalInput
-        ? `Vamos montar isso manualmente na aba Ação. A partir do seu pedido (${clarification.originalInput}), eu sugiro começar por ciclo, arena ou primeira ação.`
-        : 'Vamos montar isso manualmente na aba Ação.';
-
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: 'assistant',
-          content: onNavigateTab
-            ? 'Abrindo a aba Ação. Lá eu monto a estrutura com perguntas curtas e confirmação antes de aplicar.'
-            : `${helperText}\n\nAbra a aba Ação para seguir com a execução guiada.`,
-          timestamp: new Date(),
-          mode: currentMode,
-        },
-      ]);
-
-      if (onNavigateTab) {
-        openActionTabWithGuidance({
-          assistant: `${helperText}\n\nMe diga o que você quer criar primeiro: ciclo, arena, ação ou organização do dia.`,
-        });
-      }
-      return;
-    }
-
-    const adjustText = 'Certo. Vamos olhar o que já existe sem recriar nada.';
-    setMessages((previous) => [
-      ...previous,
-      {
-        role: 'assistant',
-        content: onNavigateTab
-          ? 'Abrindo a aba Ação para ajustar o que você já tem.'
-          : `${adjustText}\n\nAbra a aba Ação e me diga o que quer ajustar: data final do ciclo, arena, ação ou agenda.`,
-        timestamp: new Date(),
-        mode: currentMode,
-      },
-    ]);
-
-    if (onNavigateTab) {
-      openActionTabWithGuidance({
-        assistant: `${adjustText}\n\nMe diga o que você quer ajustar: data final do ciclo, arena, ação ou agenda.`,
-      });
-    }
-  }, [currentMode, onNavigateTab, openActionTabWithGuidance]);
-
   const handleCommand = async (cmd: string): Promise<string | null> => {
     const lowerCmd = cmd.toLowerCase().trim();
+
+    if (lowerCmd.startsWith('!criar-arena')) {
+      return 'Eu nao crio arenas pelo chat. Abra Arenas e toque no +; se quiser, eu posso ajudar voce a decidir o nome, a prioridade e o que vale acompanhar.';
+    }
+
+    if (lowerCmd.startsWith('!criar-acao')) {
+      return 'Eu nao crio acoes pelo chat. Abra a arena, toque no + e use o formulario direto; posso ajudar a escolher uma meta realista antes disso.';
+    }
     
     // Help Command
     if (lowerCmd === '?ajuda' || lowerCmd === '?help') {
-        return "?? **Comandos do Oráculo**\n\nUse **?** para saber o que é algo.\nUse **!** para ver seus dados ou criar novos elementos.\n\nExemplos:\n• **?arenas** - O que são Arenas?\n• **!arenas** - Ver minhas Arenas\n• **!assets** - Ver Categorias (Assets)\n• **!criar-arena <nome> <id_categoria>** - Criar nova Arena\n• **!criar-acao <nome> <id_arena>** - Criar nova Ação\n\nExperimente também conversar naturalmente comigo!";
+        return "**Como eu posso ajudar**\n\nPergunte sobre seu ciclo, suas arenas ou o que fazer hoje. Eu leio o progresso, aponto riscos e ajudo voce a decidir. Para criar ou editar algo, use os botoes do proprio app.";
     }
 
     // Explanation Commands (?)
     if (lowerCmd === '?arenas') {
-        return "??? **Sobre as Arenas**\n\nAs Arenas são os domínios da sua vida onde você busca maestria (ex: Saúde, Trabalho, Finanças). Cada Arena contém suas Ações e Missões.\n\nElas representam as áreas que você deseja evoluir no GLYPH. Você pode criar novas Arenas no Inventário.";
+        return "**Sobre as arenas**\n\nAs cinco áreas organizam sua vida. Dentro delas, cada arena representa algo concreto que você quer cuidar, como academia, faculdade ou família. Abra uma área e toque no + para criar uma arena.";
     }
 
     // List Commands (!)
@@ -847,66 +658,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
 
     if (lowerCmd === '!assets') {
-        if (assets.length === 0) return "Categorias não encontradas.";
-        return `?? **Categorias Disponíveis (Assets)**\n\n${assets.map(a => `• **${a.name}** (ID: \`${a.id}\`)`).join('\n')}`;
-    }
-
-    // Creation Commands
-    if (lowerCmd.startsWith('!criar-arena')) {
-        const parts = cmd.split(' ');
-        if (parts.length < 3) return "? Formato inválido. Use: `!criar-arena <nome> <id_categoria>`\nEx: `!criar-arena Corrida saude`";
-        
-        const name = parts[1];
-        const assetId = parts[2].toLowerCase();
-        
-        // Find asset by ID or Name
-        const targetAsset = assets.find(a => a.id.toLowerCase() === assetId || a.name.toLowerCase() === assetId);
-        
-        if (!targetAsset) return `? Categoria \`${assetId}\` não encontrada. Use \`!assets\` para ver as disponíveis.`;
-        
-        try {
-            const newArena = await addArena(targetAsset.id, {
-                name,
-                description: "Criada via Oráculo",
-                icon: "Sparkles",
-            });
-            return `? **Arena Criada!**\n\nNome: ${newArena.name}\nCategoria: ${targetAsset.name}\nID: \`${newArena.id.slice(0,8)}\``;
-        } catch (e) {
-            return "? Erro ao criar arena. Verifique os logs.";
-        }
-    }
-
-    if (lowerCmd.startsWith('!criar-acao')) {
-        const parts = cmd.split(' ');
-        if (parts.length < 3) return "? Formato inválido. Use: `!criar-acao <nome> <id_arena>`\nEx: `!criar-acao Meditar <id_da_arena>`";
-        
-        const name = parts[1];
-        const arenaIdPart = parts[2].toLowerCase();
-        
-        // Find arena by ID (partial or full) or Name
-        const allArenas = assets.flatMap(a => a.arenas);
-        const targetArena = allArenas.find(a => 
-            a.id.toLowerCase().startsWith(arenaIdPart) || 
-            a.name.toLowerCase() === arenaIdPart
-        );
-        
-        if (!targetArena) return `? Arena \`${arenaIdPart}\` não encontrada. Use \`!arenas\` para ver as disponíveis.`;
-        
-        try {
-            const newAction = await addAction({
-                arenaId: targetArena.id,
-                name,
-                description: "Criada via Oráculo",
-                icon: "Activity",
-                duration: 30,
-                repetitions: 1,
-                actionType: 'Ação',
-                difficulty: 'Média'
-            });
-            return `? **Ação Criada!**\n\nNome: ${newAction.name}\nArena: ${targetArena.name}\nID: \`${newAction.id.slice(0,8)}\``;
-        } catch (e) {
-            return "? Erro ao criar ação. Verifique os logs.";
-        }
+        if (assets.length === 0) return "Áreas não encontradas.";
+        return `**Suas áreas**\n\n${assets.filter((asset) => asset.id !== 'geral').map(a => `• **${a.name}**`).join('\n')}`;
     }
 
     return null;
@@ -916,37 +669,48 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     const nextInput = (overrideInput ?? input).trim();
     if (!nextInput || isLoading) return;
 
-    if (lastActionOfferRef.current && isConfirmationText(nextInput)) {
-      const pendingOffer = lastActionOfferRef.current;
-      lastActionOfferRef.current = null;
-      setMessages((prev) => [...prev, { role: 'user', content: nextInput, timestamp: new Date() }]);
-      setInput('');
-      setMessages((prev) => [...prev, {
-        role: 'assistant',
-        content: 'Perfeito. Vou te levar para o modo ação com esse rascunho.',
-        timestamp: new Date(),
-        mode: currentMode,
-      }]);
-      openActionTabWithGuidance({
-        assistant: pendingOffer.assistant,
-        prompt: pendingOffer.prompt,
-      });
-      return;
-    }
-
     const userMessage: Message = { role: 'user', content: nextInput, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
-    const routeChoice = pendingClarification ? resolveCampaignRouteChoice(nextInput) : null;
-    if (routeChoice) {
-      handleCampaignRouteSelection(routeChoice, pendingClarification);
-      setIsLoading(false);
+    const requestedInfoCategory = detectRequestedInfoCardCategory(nextInput);
+    if (requestedInfoCategory) {
+      try {
+        const result = await requestOracleContentCard(requestedInfoCategory);
+        if (result?.status === 'generated' && result.message) {
+          setMessages((previous) => [
+            ...previous,
+            {
+              role: 'assistant',
+              content: result.message!.content,
+              timestamp: new Date(result.message!.createdAt),
+              mode: result.message!.mode,
+              feedId: result.message!.id,
+              feedCategory: result.message!.category,
+              feedPresentation: resolveFeedPresentation(result.message!.category, result.message!.contextSnapshot),
+              feedSummary: result.message!.contextSnapshot?.categoryLabel || 'Card de conteudo',
+              feedTrigger: 'manual',
+            },
+          ]);
+        } else {
+          const statusText = result?.status === 'premium_required'
+            ? 'Esses cards fazem parte do Premium.'
+            : result?.status === 'daily_limit'
+              ? 'Esse tema ja foi entregue hoje, ou os cinco temas do dia ja foram usados.'
+              : 'Nao consegui entregar esse card agora.';
+          setMessages((previous) => [...previous, {
+            role: 'assistant',
+            content: statusText,
+            timestamp: new Date(),
+            mode: currentMode,
+          }]);
+        }
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
-
-    setPendingClarification(null);
 
     if (nextInput.startsWith('?') || nextInput.startsWith('!')) {
         const commandResponse = await handleCommand(nextInput);
@@ -957,22 +721,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
              }, 600);
              return;
         }
-    }
-
-    const campaignRouteIntent = detectCampaignRouteIntent(nextInput);
-    if (campaignRouteIntent) {
-      setPendingClarification(campaignRouteIntent);
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: 'assistant',
-          content: buildCampaignRouteMessage(nextInput),
-          timestamp: new Date(),
-          mode: currentMode,
-        },
-      ]);
-      setIsLoading(false);
-      return;
     }
 
     const recoveryFastPath = buildRecoveryFastPath(nextInput);
@@ -1002,9 +750,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           content: message.content,
           timestamp: message.timestamp,
         })),
-        {
-          lastActionOffer: lastActionOfferRef.current?.draft.summary || null,
-        },
+        {},
       );
 
       const { data, error } = await supabase.functions.invoke('oracle', {
@@ -1030,7 +776,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         throw new Error('Oracle function returned empty content.');
       }
 
-      const actionPrompt = payload.actionDraft ? buildActionPromptFromDraft(payload.actionDraft) : null;
       const assistantMessage: Message = {
         role: 'assistant',
         content: text,
@@ -1038,21 +783,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         mode: currentMode,
         responseKind: payload.kind,
         structuredContext: payload.structuredContext,
-        actionDraft: payload.actionDraft || null,
         premiumHint: payload.premiumHint || null,
-        actionPrompt,
         originalInput: userMessage.content,
       };
-
-      if (payload.actionDraft && actionPrompt) {
-        lastActionOfferRef.current = {
-          draft: payload.actionDraft,
-          prompt: actionPrompt,
-          assistant: `Rascunho pronto: ${payload.actionDraft.summary}. Revise e confirme antes de aplicar.`,
-        };
-      } else {
-        lastActionOfferRef.current = null;
-      }
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
@@ -1076,21 +809,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       case 'send_prompt':
         handleSendMessage(action.prompt);
         return;
-      case 'open_action_tab':
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: action.assistant,
-            timestamp: new Date(),
-            mode: currentMode,
-          },
-        ]);
-        openActionTabWithGuidance({
-          assistant: action.assistant,
-          prompt: action.prompt,
-        });
-        return;
       case 'open_planner_create_action':
         openPlannerCreateAction();
         return;
@@ -1106,7 +824,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       default:
         return;
     }
-  }, [currentMode, openActionTabWithGuidance, openArenasView, openCycleReview, openPlannerCreateAction, openPlannerSitrep]);
+  }, [openArenasView, openCycleReview, openPlannerCreateAction, openPlannerSitrep]);
 
   const formatCooldownLabel = (milliseconds: number): string => {
     if (milliseconds <= 0) return 'agora';
@@ -1128,7 +846,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       case 'disabled':
         return 'Ative a IA do Oráculo para gerar cards informativos no chat.';
       case 'daily_limit':
-        return `Limite manual atingido. Hoje voce ja puxou ${oracleFeedStatus.manualSentToday}/${oracleFeedStatus.manualDailyTarget} cards.`;
+        return `Os temas de hoje ja foram entregues (${oracleFeedStatus.combinedSentToday}/${oracleFeedStatus.dailyLimit}). Amanhã cada tema fica disponivel novamente.`;
       case 'cooldown':
         return `Novo card manual em ${formatCooldownLabel(cooldownMs || 0)}.`;
       case 'error':
@@ -1143,7 +861,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     setIsGeneratingCard(true);
     try {
-      const result = await triggerOracle('manual');
+      const result = await requestOracleContentCard();
       if (result?.status === 'generated' && result.message) {
         setMessages((previous) => {
           if (previous.some((message) => message.feedId === result.message?.id)) {
@@ -1186,8 +904,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   const manualGenerateDisabled = isGeneratingCard || isLoading;
   const selectedThemeCount = oraclePreferences?.enabledCategories?.length || 0;
-  const autoQuotaLabel = `${oracleFeedStatus.autoSentToday}/${oracleFeedStatus.autoDailyTarget}`;
-  const manualQuotaLabel = `${oracleFeedStatus.manualSentToday}/${oracleFeedStatus.manualDailyTarget}`;
+  const manualQuotaLabel = `${oracleFeedStatus.combinedSentToday}/${oracleFeedStatus.dailyLimit}`;
   const manualGenerateLabel = !isPremiumUser
     ? 'Premium'
     : isGeneratingCard
@@ -1195,8 +912,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       : 'Card do Oraculo';
   const selectedThemeLabel = selectedThemeCount === 1 ? '1 tema marcado' : `${selectedThemeCount} temas marcados`;
   const oracleInputHint = selectedThemeCount > 0
-    ? `Auto: 1 por tema por dia (${autoQuotaLabel}). Manual Premium: ate 5 por dia, sem cooldown, sorteando seus ${selectedThemeLabel}.`
-    : `Auto: 1 por tema por dia. Manual Premium: ate 5 por dia, sem cooldown.`;
+    ? `Premium: um card por tema ao dia, ate 5 no total. Pedir agora consome a vaga de um dos seus ${selectedThemeLabel}.`
+    : 'Premium: escolha temas para receber ate 5 cards por dia.';
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1378,31 +1095,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       ))}
                     </div>
                   )}
-                  {msg.actionDraft && msg.actionPrompt && (
-                    <div className="mt-3 rounded-2xl border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/8 px-3 py-3">
-                      <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
-                        Rascunho de execução
-                      </div>
-                      <div className="mt-1 text-xs leading-relaxed text-white/74">
-                        {msg.actionDraft.summary}. Nada foi aplicado ainda.
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openActionTabWithGuidance({
-                            assistant: `Rascunho pronto: ${msg.actionDraft?.summary || 'ajuste operacional'}. Revise e confirme antes de aplicar.`,
-                            prompt: msg.actionPrompt || msg.originalInput || '',
-                          })}
-                          className="rounded-full border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/14 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/22"
-                        >
-                          Revisar/aplicar
-                        </button>
-                        <span className="text-[10px] leading-snug text-white/42">
-                          ou responda "pode" para abrir a revisão.
-                        </span>
-                      </div>
-                    </div>
-                  )}
                   {msg.premiumHint && !isPremiumUser && (
                     <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] leading-relaxed text-white/72">
                       <span className="font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">{msg.premiumHint.label}</span>
@@ -1501,7 +1193,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       return (
         <div className="flex flex-col h-full w-full">
           {content}
-          {isCampaignQuizOpen && <CampaignRecommendationQuizModal onClose={() => setIsCampaignQuizOpen(false)} />}
         </div>
       );
   }
@@ -1517,7 +1208,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                 {content}
             </div>
         </div>
-        {isCampaignQuizOpen && <CampaignRecommendationQuizModal onClose={() => setIsCampaignQuizOpen(false)} />}
         </>
     </Portal>
   );

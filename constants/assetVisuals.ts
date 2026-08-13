@@ -1,64 +1,28 @@
+import { LIFE_AREAS } from './lifeAreas';
+
+export const DEFAULT_ASSET_ART_BY_ID = {
+  proposito: '/assets/life-areas/purpose.webp',
+  relacoes: '/assets/life-areas/relationships.webp',
+  trabalho: '/assets/life-areas/work-study.webp',
+  lazer: '/assets/life-areas/leisure.webp',
+  saude: '/assets/life-areas/health.webp',
+} as const;
+
+const AREA_ICONS = {
+  proposito: ['✨', '🧭', '🕯️', '🙏', '🧘', '🌌', '📿', '☀️', '🌙', '🪶', '📜', '⭐'],
+  relacoes: ['🤝', '🫂', '💬', '📞', '✉️', '👥', '❤️', '☕', '🎉', '🏡', '📣', '🌉'],
+  trabalho: ['💼', '💻', '📊', '🧾', '🖥️', '📈', '🗓️', '🧠', '🛠️', '📚', '🏢', '✍️'],
+  lazer: ['🎨', '🎸', '🎮', '📷', '🎲', '🎬', '🎤', '🧶', '🏄', '📖', '🛹', '🎻'],
+  saude: ['💪', '🏃', '🏋️', '🚴', '🥗', '🏊', '🥊', '🧘', '⚽', '🫀', '👟', '🥤'],
+} as const;
+
 export const ASSET_VISUALS = {
-  consciencia: {
-    label: 'Consciência',
-    color: '#6a4c8f',
-    tabIcon: '🧠',
-    icons: ['🧠', '🪞', '🔍', '📓', '📖', '🧩', '🗝️', '🧭', '🪶', '🫧', '🧘', '✨'],
-  },
-  'espaco-mental': {
-    label: 'Espaço Mental',
-    color: '#97c3e8',
-    tabIcon: '🌬️',
-    icons: ['🌬️', '☁️', '🌙', '🎧', '🛏️', '🫖', '📚', '🫧', '🧺', '🌫️', '🕯️', '🔕'],
-  },
-  espiritualidade: {
-    label: 'Espiritualidade',
-    color: '#79a8df',
-    tabIcon: '🕯️',
-    icons: ['🕯️', '🙏', '🧘', '✨', '🌌', '🔮', '📿', '☀️', '🌙', '⛩️', '🛐', '🪷'],
-  },
-  proposito: {
-    label: 'Propósito',
-    color: '#5566be',
-    tabIcon: '🎯',
-    icons: ['🎯', '🧭', '🏹', '👑', '🚀', '📜', '🏔️', '🔥', '🪶', '🗺️', '⚔️', '🌟'],
-  },
-  projetos: {
-    label: 'Projetos',
-    color: '#63a8ca',
-    tabIcon: '🛠️',
-    icons: ['🛠️', '📐', '📦', '🏗️', '🧱', '🗂️', '🧪', '🎬', '💡', '📌', '🪚', '⚙️'],
-  },
-  conexoes: {
-    label: 'Conexões',
-    color: '#3d6c3f',
-    tabIcon: '🤝',
-    icons: ['🤝', '🫂', '💬', '📞', '✉️', '👥', '❤️', '☕', '🎉', '🧑‍🤝‍🧑', '📣', '🌉'],
-  },
-  trabalho: {
-    label: 'Trabalho',
-    color: '#c7a13a',
-    tabIcon: '💼',
-    icons: ['💼', '💻', '📊', '🧾', '🖥️', '📈', '🗓️', '🧠', '🛠️', '📚', '🏢', '🧑‍💼'],
-  },
-  financas: {
-    label: 'Finanças',
-    color: '#d0ad42',
-    tabIcon: '💰',
-    icons: ['💰', '💳', '🏦', '📈', '🧾', '💎', '🪙', '💹', '📊', '🏛️', '🧮', '💸'],
-  },
-  hobbies: {
-    label: 'Hobbies',
-    color: '#d88944',
-    tabIcon: '🎨',
-    icons: ['🎨', '🎸', '🎮', '📷', '🎲', '🎬', '🎤', '🧶', '🏄', '📚', '🛹', '🎻'],
-  },
-  fisico: {
-    label: 'Físico',
-    color: '#a63a4d',
-    tabIcon: '💪',
-    icons: ['💪', '🏃‍♂️', '🏋️‍♂️', '🚴‍♂️', '🥗', '🏊‍♂️', '🥊', '🧘‍♂️', '⚽', '🫀', '👟', '🥤'],
-  },
+  ...Object.fromEntries(LIFE_AREAS.map((area) => [area.id, {
+    label: area.name,
+    color: area.color,
+    tabIcon: area.icon,
+    icons: AREA_ICONS[area.id],
+  }])),
   geral: {
     label: 'Geral',
     color: '#4b5563',
@@ -87,10 +51,7 @@ export const ICON_PICKER_CATEGORIES: IconPickerCategory[] = [
     label: 'Sugeridos',
     color: '#6b7280',
     tabIcon: '✨',
-    icons: [
-      '🏆', '📚', '🔥', '💼', '🧠', '🎯', '💰', '🤝', '🏃‍♂️', '🎨', '🧘', '📝',
-      '📌', '✅', '⭐', '👑', '⚔️', '🛠️',
-    ],
+    icons: ['🏆', '📚', '🔥', '💼', '🧠', '🎯', '💰', '🤝', '🏃', '🎨', '🧘', '📝', '📌', '✅', '⭐', '👑', '⚔️', '🛠️'],
   },
   ...Object.entries(ASSET_VISUALS).map(([id, config]) => ({
     id: id as AssetVisualId,

@@ -2,22 +2,19 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { MASTERY_TOTAL_MAX_LEVEL, toMasteryIndex } from '../constants/lifeAreas';
 import { GlassCard } from '../components/GlassCard';
 import { ShareIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
 import { shareElementWithFeedback } from '../components/Share';
 import './mastery-quiz.css';
 
-const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
-
-type MasteryMode = 'LEGADO' | 'SOBERANO';
+const AssetPentagon = React.lazy(() => import('../components/AssetPentagon').then((m) => ({ default: m.AssetPentagon })));
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
     const { assets, updateAllAssetLevels, showToast, userProfile } = useGame();
-    const [mode, setMode] = useState<MasteryMode>('LEGADO');
     const [tempLevels, setTempLevels] = useState<Record<string, number>>({});
-    const [tempPhrases, setTempPhrases] = useState<Record<string, string[]>>({});
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
     const [currentAssetIndex, setCurrentAssetIndex] = useState(0);
@@ -25,12 +22,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
 
     const buildDraftFromAssets = () => {
         const initialLevels = assets.reduce((acc, asset) => ({ ...acc, [asset.id]: asset.level || 1 }), {});
-        const initialPhrases = assets.reduce((acc, asset) => {
-            const fullPhrases = MASTERY_LEVEL_DESCRIPTIONS[asset.id] || [];
-            return { ...acc, [asset.id]: fullPhrases };
-        }, {});
-
-        return { initialLevels, initialPhrases };
+        return { initialLevels };
     };
 
     const filteredAssets = useMemo(() => assets.filter((asset) => asset.id !== 'geral'), [assets]);
@@ -40,10 +32,9 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
         if (Object.keys(tempLevels).length > 0) return;
         if (assets.length === 0) return;
 
-        const { initialLevels, initialPhrases } = buildDraftFromAssets();
+        const { initialLevels } = buildDraftFromAssets();
 
         setTempLevels(initialLevels);
-        setTempPhrases(initialPhrases);
     }, [assets, tempLevels]);
 
     useEffect(() => {
@@ -62,6 +53,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                 .reduce((sum, [, level]) => sum + (level === 0 ? 1 : Number(level || 1)), 0),
         [tempLevels],
     );
+    const masteryIndex = toMasteryIndex(totalLevel);
 
     const currentDescriptions = useMemo(
         () => (currentAsset ? (MASTERY_LEVEL_DESCRIPTIONS[currentAsset.id] || []) : []),
@@ -106,7 +98,6 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
     const accentColor = (ASSET_ACCENT_COLORS as Record<string, string>)[currentAsset.id] || '#C9A84C';
     const sliderMax = Math.max(1, currentDescriptions.length || 10);
     const currentLevel = clamp(tempLevels[currentAsset.id] || 1, 1, sliderMax);
-    const currentPhrase = currentDescriptions[currentLevel - 1] || 'Escolha como está essa área hoje.';
     const currentProgress = filteredAssets.length > 0 ? Math.round(((currentAssetIndex + 1) / filteredAssets.length) * 100) : 0;
 
     const handleLevelChange = (nextLevel: number) => {
@@ -124,7 +115,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
             if (levelsToSave[assetId] === 0) levelsToSave[assetId] = 1;
         });
 
-        const success = updateAllAssetLevels(levelsToSave, mode === 'SOBERANO' ? tempPhrases : undefined);
+        const success = updateAllAssetLevels(levelsToSave);
         if (success) {
             setShowConfirmModal(false);
             onClose?.();
@@ -151,9 +142,8 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
     };
 
     const discardAssessmentDraft = () => {
-        const { initialLevels, initialPhrases } = buildDraftFromAssets();
+        const { initialLevels } = buildDraftFromAssets();
         setTempLevels(initialLevels);
-        setTempPhrases(initialPhrases);
         setCurrentAssetIndex(0);
         setIsAssessmentActive(false);
         setShowExitConfirmModal(false);
@@ -185,18 +175,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                     </button>
 
                     <div className="mastery-quiz-mode-switch">
-                        <button
-                            onClick={() => setMode('LEGADO')}
-                            className={`mastery-quiz-mode-pill ${mode === 'LEGADO' ? 'is-active' : ''}`}
-                        >
-                            Legado
-                        </button>
-                        <button
-                            onClick={() => setMode('SOBERANO')}
-                            className={`mastery-quiz-mode-pill ${mode === 'SOBERANO' ? 'is-active' : ''}`}
-                        >
-                            Soberano
-                        </button>
+                        <span className="mastery-quiz-mode-pill is-active">Avaliação</span>
                     </div>
 
                     <button
@@ -221,24 +200,24 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                     <div className="mastery-quiz-panel-inner">
                         {!isAssessmentActive ? (
                             <div className="mastery-quiz-overview">
-                                <div className="mastery-quiz-decagon-frame">
-                                    <div className="mastery-quiz-decagon-square">
+                                <div className="mastery-quiz-pentagon-frame">
+                                    <div className="mastery-quiz-pentagon-square">
                                         <Suspense fallback={<div className="h-full w-full rounded-[1.4rem] bg-white/5" />}>
-                                            <AssetDecagon assets={assets} tempLevels={tempLevels} size="100%" />
+                                            <AssetPentagon assets={assets} tempLevels={tempLevels} size="100%" />
                                         </Suspense>
                                     </div>
                                 </div>
 
                                 <div className="mastery-quiz-overview-copy">
                                     <div className="mastery-quiz-kicker">Maestria atual</div>
-                                    <h1 className="mastery-quiz-overview-title">Seu decágono atual</h1>
+                                    <h1 className="mastery-quiz-overview-title">Seu pentágono atual</h1>
                                     <p className="mastery-quiz-overview-note">{overviewNote}</p>
                                 </div>
 
                                 <div className="mastery-quiz-overview-metrics mastery-quiz-overview-metrics--compact">
                                     <div className="mastery-quiz-overview-metric">
-                                        <div className="mastery-quiz-total-label">Nível geral</div>
-                                        <div className="mastery-quiz-total-value mastery-quiz-total-value--hero">{totalLevel}</div>
+                                        <div className="mastery-quiz-total-label">Índice Glyph</div>
+                                        <div className="mastery-quiz-total-value mastery-quiz-total-value--hero">{masteryIndex}/{MASTERY_TOTAL_MAX_LEVEL}</div>
                                     </div>
                                     <div className="mastery-quiz-overview-metric">
                                         <div className="mastery-quiz-total-label">Última avaliação</div>
@@ -259,10 +238,10 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                             </div>
                         ) : (
                             <>
-                                <div className="mastery-quiz-decagon-frame">
-                                    <div className="mastery-quiz-decagon-square">
+                                <div className="mastery-quiz-pentagon-frame">
+                                    <div className="mastery-quiz-pentagon-square">
                                         <Suspense fallback={<div className="h-full w-full rounded-[1.4rem] bg-white/5" />}>
-                                            <AssetDecagon assets={assets} tempLevels={tempLevels} size="100%" />
+                                            <AssetPentagon assets={assets} tempLevels={tempLevels} size="100%" />
                                         </Suspense>
                                     </div>
                                 </div>
@@ -273,8 +252,8 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                                         <h1 className="mastery-quiz-asset-name">{currentAsset.name}</h1>
                                     </div>
                                     <div className="mastery-quiz-meta-side">
-                                        <div className="mastery-quiz-total-label">Nível total</div>
-                                        <div className="mastery-quiz-total-value">{totalLevel}</div>
+                                        <div className="mastery-quiz-total-label">Índice Glyph</div>
+                                        <div className="mastery-quiz-total-value">{masteryIndex}/{MASTERY_TOTAL_MAX_LEVEL}</div>
                                     </div>
                                 </div>
 
@@ -290,32 +269,24 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                                     </div>
                                 </div>
 
-                                <div className="mastery-quiz-phrase-shell">
-                                    <div className="mastery-quiz-level-chip">Nível {currentLevel}</div>
-                                    <div className="mastery-quiz-phrase">{currentPhrase}</div>
-                                </div>
-
-                                <div className="mastery-quiz-slider-shell">
-                                    <div className="mastery-quiz-slider-label-row">
-                                        <span>Baixo</span>
-                                        <span>Ajuste pelo deslize</span>
-                                        <span>Alto</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min={1}
-                                        max={sliderMax}
-                                        value={currentLevel}
-                                        onChange={(event) => handleLevelChange(parseInt(event.target.value, 10))}
-                                        className="mastery-quiz-range"
-                                    />
-                                    <div className="mastery-quiz-slider-scale" style={{ gridTemplateColumns: `repeat(${sliderMax}, minmax(0, 1fr))` }}>
-                                        {Array.from({ length: sliderMax }).map((_, index) => (
-                                            <span key={`${currentAsset.id}-${index + 1}`} className={currentLevel === index + 1 ? 'is-active' : ''}>
-                                                {index + 1}
-                                            </span>
-                                        ))}
-                                    </div>
+                                <div className="mastery-quiz-level-options" role="radiogroup" aria-label={`Nível de ${currentAsset.name}`}>
+                                    {currentDescriptions.map((description, index) => {
+                                        const level = index + 1;
+                                        const isSelected = currentLevel === level;
+                                        return (
+                                            <button
+                                                key={`${currentAsset.id}-${level}`}
+                                                type="button"
+                                                role="radio"
+                                                aria-checked={isSelected}
+                                                onClick={() => handleLevelChange(level)}
+                                                className={`mastery-quiz-level-option ${isSelected ? 'is-selected' : ''}`}
+                                            >
+                                                <span className="mastery-quiz-level-number">{level}</span>
+                                                <span className="mastery-quiz-level-description">{description}</span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
 
                                 <div className="mastery-quiz-actions">
@@ -343,12 +314,10 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                     <GlassCard variant="accent" className="mastery-quiz-confirm-card" onClick={(event) => event.stopPropagation()}>
                         <h2 className="mastery-quiz-confirm-title">Confirmar atualização</h2>
                         <p className="mastery-quiz-confirm-copy">
-                            Seu nível geral será atualizado para <strong>{totalLevel}</strong>.
+                            Seu Índice Glyph será atualizado para <strong>{masteryIndex}/{MASTERY_TOTAL_MAX_LEVEL}</strong>.
                         </p>
                         <p className="mastery-quiz-confirm-note">
-                            {mode === 'LEGADO'
-                                ? 'Deseja atualizar seu nível agora? Você só poderá fazer isso novamente em 72 horas.'
-                                : 'Deseja salvar as alterações? As frases podem mudar depois, mas o nível geral só pode ser editado novamente em 72 horas.'}
+                            Deseja atualizar sua maestria agora? Você só poderá fazer isso novamente em 72 horas.
                         </p>
                         <div className="mastery-quiz-confirm-actions">
                             <button onClick={() => setShowConfirmModal(false)} className="luxe-button-secondary w-full py-3 rounded-2xl">

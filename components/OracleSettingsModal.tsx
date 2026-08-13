@@ -7,20 +7,15 @@ import { XIcon, CheckIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
 import {
     disableAppPushRegistration,
-    getAppPushSetupHint,
     getAppPushPermission,
     getNativePushPlatform,
     getNativePushProviderLabel,
-    hasAppPushRemoteDeliveryReady,
     getAppPushSupport,
     requestAppPushPermission,
-    sendAppPushRemoteTest,
     syncAppPushRegistration,
     type AppPushPermission,
     type AppPushSyncResult,
 } from '../utils/pushRuntime';
-import { scheduleLocalNotification } from '../utils/localNotification';
-import { buildOracleWidgetSnapshot } from '../utils/widgetSnapshots';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 
 interface OracleSettingsModalProps {
@@ -30,17 +25,22 @@ interface OracleSettingsModalProps {
 }
 
 type SettingsTab = 'modos' | 'categorias';
-type ToggleKey = 'iaEnabled' | 'notificationsEnabled' | 'dailyFocusCardEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
+type ToggleKey = 'dailyFocusCardEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
 
 const ORACLE_PRESENCE_LEVELS: Array<{
     value: OraclePresenceLevel;
     label: string;
     caption: string;
 }> = [
-    { value: 0, label: 'Silencioso', caption: 'So avisos humanos, convites, mensagens e alertas criticos.' },
-    { value: 1, label: 'Leve', caption: 'Poucos sinais. Sem cards automaticos de rotina.' },
-    { value: 2, label: 'Equilibrado', caption: 'Padrao recomendado. Pulso de foco quando fizer sentido.' },
-    { value: 3, label: 'Presente', caption: 'Mais companion, ainda com limite e sem spam.' },
+    { value: 0, label: 'Silencioso', caption: 'O Oraculo so responde quando voce o chama.' },
+    { value: 2, label: 'Equilibrado', caption: 'Um toque relevante por dia, quando houver algo que ajude.' },
+    { value: 3, label: 'Presente', caption: 'Ate dois toques relevantes por dia, sem falar a cada entrada.' },
+];
+
+const SIMPLE_ORACLE_MODES: Array<{ id: OracleMode; label: string; description: string }> = [
+    { id: 'neutro', label: 'Neutro', description: 'Claro, direto e sem carregar no tom.' },
+    { id: 'calmo', label: 'Acolhedor', description: 'Mais gentil quando o ritmo apertar.' },
+    { id: 'tatico', label: 'Direto', description: 'Vai ao ponto e destaca a proxima decisao.' },
 ];
 
 const PUSH_PERMISSION_LABEL: Record<AppPushPermission, string> = {
@@ -50,86 +50,12 @@ const PUSH_PERMISSION_LABEL: Record<AppPushPermission, string> = {
     unsupported: 'Sem suporte neste aparelho',
 };
 
-const getPushDeliveryLabel = ({
-    pushEnabled,
-    isNative,
-    remoteReady,
-    permission,
-}: {
-    pushEnabled: boolean;
-    isNative: boolean;
-    remoteReady: boolean;
-    permission: AppPushPermission;
-}) => {
-    if (!pushEnabled) return 'Push desligado neste aparelho';
-    if (permission === 'denied') return 'O aparelho bloqueou notificacoes';
-    if (permission === 'unsupported') return 'Este aparelho nao suporta este tipo de push';
-
-    if (isNative) {
-        return remoteReady
-            ? 'Entrega remota pronta neste aparelho'
-            : 'Push local pronto. Remoto ainda em sincronizacao';
-    }
-
-    return remoteReady
-        ? 'Push remoto pronto neste navegador'
-        : 'Push local habilitado neste navegador';
-};
-
-const getPushDeliveryTone = ({
-    pushEnabled,
-    remoteReady,
-    permission,
-}: {
-    pushEnabled: boolean;
-    remoteReady: boolean;
-    permission: AppPushPermission;
-}) => {
-    if (!pushEnabled) return 'border-white/10 bg-white/5 text-gray-400';
-    if (permission === 'denied' || permission === 'unsupported') return 'border-amber-500/30 bg-amber-500/10 text-amber-200';
-    if (remoteReady) return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200';
-    return 'border-sky-500/30 bg-sky-500/10 text-sky-200';
-};
-
 const MANUAL_LIBRARY_CATEGORIES: { id: OracleCategory; label: string; icon: string }[] = [
     { id: 'frases_inspiradoras', label: 'Frases Inspiradoras', icon: '🔥' },
     { id: 'reflexoes_filosoficas', label: 'Reflexões Filosóficas', icon: '🧠' },
     { id: 'fragmentos_sabedoria', label: 'Fragmentos de Sabedoria', icon: '📜' },
     { id: 'rituais_lifestyle', label: 'Dicas de Vida', icon: '🌿' },
     { id: 'sussurros_maestria', label: 'Sussurros da Maestria', icon: '👁️' },
-];
-
-const ORACLE_MESSAGE_RULES = [
-    {
-        title: 'Push real',
-        body: 'So para horario, risco forte, DM, convite ou aviso importante.',
-        tone: 'border-emerald-400/20 bg-emerald-400/[0.08] text-emerald-100',
-    },
-    {
-        title: 'Automatico opcional',
-        body: 'Cards de foco, resumo de ciclo e provocacoes do modo escolhido.',
-        tone: 'border-amber-400/20 bg-amber-400/[0.08] text-amber-100',
-    },
-    {
-        title: 'No chat do Oraculo',
-        body: 'Frases, reflexoes, analises longas e cards por tema.',
-        tone: 'border-white/10 bg-white/[0.04] text-gray-300',
-    },
-];
-
-const ORACLE_USE_STEPS = [
-    {
-        title: '1. Escolha o tom',
-        body: 'Neutro no gratis. Premium libera coach, tatico, calmo, reflexivo e personalizado.',
-    },
-    {
-        title: '2. Marque os temas',
-        body: 'Os temas dizem que tipo de card o Oraculo pode puxar quando voce pedir ou liberar automatico.',
-    },
-    {
-        title: '3. Ligue push se quiser',
-        body: 'Push e so para tirar voce do mundo real quando existe algo acionavel.',
-    },
 ];
 
 const getRemotePushFailureMessage = (result: AppPushSyncResult): string => {
@@ -167,24 +93,24 @@ const getRemotePushFailureMessage = (result: AppPushSyncResult): string => {
 };
 
 const normalizeOracleCopy = (value: string) => value
-    .replaceAll('Ã¡', 'a')
-    .replaceAll('Ã¢', 'a')
-    .replaceAll('Ã£', 'a')
-    .replaceAll('Ã ', 'a')
-    .replaceAll('Ã§', 'c')
-    .replaceAll('Ã©', 'e')
-    .replaceAll('Ãª', 'e')
-    .replaceAll('Ã­', 'i')
-    .replaceAll('Ã³', 'o')
-    .replaceAll('Ã´', 'o')
-    .replaceAll('Ãµ', 'o')
-    .replaceAll('Ãº', 'u')
-    .replaceAll('Â°', 'o')
-    .replaceAll('Â', '')
-    .replaceAll('â€¦', '...')
-    .replaceAll('â€”', '-')
-    .replaceAll('â€“', '-')
-    .replaceAll('â†’', '->');
+    .replaceAll('\u00C3\u00A1', 'a')
+    .replaceAll('\u00C3\u00A2', 'a')
+    .replaceAll('\u00C3\u00A3', 'a')
+    .replaceAll('\u00C3\u00A0', 'a')
+    .replaceAll('\u00C3\u00A7', 'c')
+    .replaceAll('\u00C3\u00A9', 'e')
+    .replaceAll('\u00C3\u00AA', 'e')
+    .replaceAll('\u00C3\u00AD', 'i')
+    .replaceAll('\u00C3\u00B3', 'o')
+    .replaceAll('\u00C3\u00B4', 'o')
+    .replaceAll('\u00C3\u00B5', 'o')
+    .replaceAll('\u00C3\u00BA', 'u')
+    .replaceAll('\u00C2\u00B0', 'o')
+    .replaceAll('\u00C2', '')
+    .replaceAll('\u00E2\u20AC\u00A6', '...')
+    .replaceAll('\u00E2\u20AC\u201D', '-')
+    .replaceAll('\u00E2\u20AC\u201C', '-')
+    .replaceAll('\u00E2\u2020\u2019', '->');
 
 const normalizeOracleIcon = (value: string) => {
     const iconMap: Record<string, string> = {
@@ -208,30 +134,26 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     onOpenChat,
     variant = 'preferences',
 }) => {
-    const { oraclePreferences, oracleMessages, updateOraclePreferences, userProfile, showToast } = useGame();
+    const { oraclePreferences, updateOraclePreferences, userProfile, showToast } = useGame();
     const [activeTab, setActiveTab] = useState<SettingsTab>('modos');
     const [pushPermission, setPushPermission] = useState<AppPushPermission>('default');
-    const [pushRemoteReady, setPushRemoteReady] = useState(false);
-    const [isTestingPush, setIsTestingPush] = useState(false);
 
     if (!oraclePreferences) return null;
 
     const isPremium = hasPremiumAccess(userProfile);
-    const activeModeConfig = ORACLE_MODES[oraclePreferences.activeMode] || ORACLE_MODES.neutro;
-    const oracleSnapshot = buildOracleWidgetSnapshot({ oraclePreferences, oracleMessages });
+    const visibleMode = SIMPLE_ORACLE_MODES.some((mode) => mode.id === oraclePreferences.activeMode)
+        ? oraclePreferences.activeMode
+        : 'neutro';
+    const activeModeConfig = ORACLE_MODES[visibleMode] || ORACLE_MODES.neutro;
     const pushSupport = getAppPushSupport();
 
     useEffect(() => {
         let cancelled = false;
 
         void (async () => {
-            const [permission, remoteReady] = await Promise.all([
-                getAppPushPermission(),
-                hasAppPushRemoteDeliveryReady(),
-            ]);
+            const permission = await getAppPushPermission();
             if (!cancelled) {
                 setPushPermission(permission);
-                setPushRemoteReady(remoteReady);
             }
         })();
 
@@ -243,12 +165,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     const handleToggle = (key: ToggleKey) => {
         if (key === 'dailyFocusCardEnabled') {
             const nextEnabled = !Boolean(oraclePreferences.dailyFocusCardEnabled);
-            updateOraclePreferences({
-                dailyFocusCardEnabled: nextEnabled,
-                presenceLevel: nextEnabled
-                    ? (Math.max(2, oraclePreferences.presenceLevel ?? 1) as OraclePresenceLevel)
-                    : oraclePreferences.presenceLevel,
-            });
+            updateOraclePreferences({ dailyFocusCardEnabled: nextEnabled });
             return;
         }
 
@@ -261,7 +178,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         if (!nextEnabled) {
             await disableAppPushRegistration();
             await updateOraclePreferences({ pushEnabled: false });
-            setPushRemoteReady(false);
             showToast('Push no aparelho desativado.', 'info');
             return;
         }
@@ -271,14 +187,12 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
         if (permission !== 'granted') {
             await updateOraclePreferences({ pushEnabled: false });
-            setPushRemoteReady(false);
             showToast('Permissao de push negada. Os avisos continuam dentro do app.', 'warning');
             return;
         }
 
         const remoteSync = await syncAppPushRegistration();
-        await updateOraclePreferences({ pushEnabled: true });
-        setPushRemoteReady(remoteSync.remoteDeliveryReady);
+        await updateOraclePreferences({ pushEnabled: true, notificationsEnabled: true });
 
         if (!pushSupport.supported) {
             showToast('Push local ativado. Este aparelho nao suporta push remoto completo.', 'warning');
@@ -303,67 +217,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         showToast('Push no aparelho ativado.', 'success');
     };
 
-    const handleLocalPushTest = async () => {
-        setIsTestingPush(true);
-        try {
-            const permission = await requestAppPushPermission();
-            setPushPermission(permission);
-
-            if (permission !== 'granted') {
-                showToast('Permissao de notificacao nao liberada neste aparelho.', 'warning');
-                return;
-            }
-
-            const delivered = await scheduleLocalNotification({
-                title: 'Teste GLYPH',
-                body: 'Teste local com atraso de 15s: permissao e canal funcionando.',
-                tag: 'glyph-local-push-test',
-                url: '/?oracle=notifications',
-            }, 15000);
-
-            showToast(delivered ? 'Teste local agendado para daqui 15 segundos.' : 'Nao foi possivel agendar o teste local.', delivered ? 'success' : 'warning');
-        } finally {
-            setIsTestingPush(false);
-        }
-    };
-
-    const handleRemotePushTest = async () => {
-        setIsTestingPush(true);
-        try {
-            const permission = await requestAppPushPermission();
-            setPushPermission(permission);
-
-            if (permission !== 'granted') {
-                showToast('Permissao de push nao liberada neste aparelho.', 'warning');
-                return;
-            }
-
-            const remoteSync = await syncAppPushRegistration();
-            await updateOraclePreferences({ pushEnabled: true });
-            setPushRemoteReady(remoteSync.remoteDeliveryReady);
-
-            if (!remoteSync.ok) {
-                showToast(getRemotePushFailureMessage(remoteSync), 'warning');
-                return;
-            }
-
-            showToast('Teste remoto armado. Vou disparar em 15 segundos.', 'info');
-            await new Promise(resolve => window.setTimeout(resolve, 15000));
-
-            const testResult = await sendAppPushRemoteTest();
-            if (testResult.ok && testResult.sent > 0) {
-                setPushRemoteReady(true);
-                showToast('Teste remoto enviado. Se o app estiver em segundo plano, ele deve chegar pelo aparelho.', 'success');
-                return;
-            }
-
-            const detail = testResult.error || testResult.detail || `sent:${testResult.sent} failed:${testResult.failed} skipped:${testResult.skipped}`;
-            showToast(`Teste remoto nao confirmou entrega: ${detail}`, 'warning');
-        } finally {
-            setIsTestingPush(false);
-        }
-    };
-
     const handleModeSelect = (mode: OracleMode) => {
         updateOraclePreferences({ activeMode: mode });
     };
@@ -372,8 +225,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         updateOraclePreferences({
             presenceLevel: level,
             notificationsEnabled: true,
-            dailyFocusCardEnabled: level >= 2,
-            dmNotificationsEnabled: true,
         });
     };
 
@@ -419,36 +270,15 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
     const renderModeSummaryCard = () => (
         <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5">
-            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Modo atual</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Jeito de falar</div>
             <div className="mt-1 text-sm font-bold text-white">{normalizeOracleCopy(activeModeConfig.name)}</div>
             <p className="mt-0.5 text-[11px] leading-relaxed text-gray-400">{normalizeOracleCopy(activeModeConfig.description)}</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-300">
-                    Auto {normalizeOracleCopy(activeModeConfig.attentionProfile)}
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-300">
-                    Push {normalizeOracleCopy(activeModeConfig.pushProfile)}
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-300">
-                    Feed {oracleSnapshot.unreadCount} nao lidos
-                </span>
-            </div>
-        </div>
-    );
-
-    const renderMessagePolicyCards = () => (
-        <div className="grid grid-cols-1 gap-2">
-            {ORACLE_MESSAGE_RULES.map((rule) => (
-                <div key={rule.title} className={`rounded-xl border px-3 py-2 ${rule.tone}`}>
-                    <div className="text-[10px] font-black uppercase tracking-[0.18em]">{rule.title}</div>
-                    <p className="mt-1 text-[11px] leading-relaxed opacity-80">{rule.body}</p>
-                </div>
-            ))}
         </div>
     );
 
     const renderPresenceSlider = () => {
-        const currentLevel = oraclePreferences.presenceLevel ?? (oraclePreferences.dailyFocusCardEnabled ? 2 : 1);
+        const storedLevel = oraclePreferences.presenceLevel ?? 1;
+        const currentLevel: OraclePresenceLevel = storedLevel <= 0 ? 0 : storedLevel >= 3 ? 3 : 2;
         const current = ORACLE_PRESENCE_LEVELS.find((level) => level.value === currentLevel) || ORACLE_PRESENCE_LEVELS[1];
 
         return (
@@ -458,22 +288,9 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Presenca</div>
                         <div className="mt-1 text-sm font-black text-white">{current.label}</div>
                     </div>
-                    <span className="rounded-full border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">
-                        {currentLevel}/3
-                    </span>
                 </div>
                 <p className="mt-1 text-[11px] leading-relaxed text-gray-400">{current.caption}</p>
-                <input
-                    type="range"
-                    min={0}
-                    max={3}
-                    step={1}
-                    value={currentLevel}
-                    onChange={(event) => handlePresenceChange(Number(event.target.value) as OraclePresenceLevel)}
-                    className="mt-3 h-2 w-full appearance-none rounded-full bg-gradient-to-r from-gray-700 via-[var(--skin-accent-color)]/55 to-emerald-300/70 outline-none"
-                    aria-label="Nivel de presenca do Oraculo"
-                />
-                <div className="mt-2 grid grid-cols-4 gap-1 text-center">
+                <div className="mt-3 grid grid-cols-3 gap-1 text-center">
                     {ORACLE_PRESENCE_LEVELS.map((level) => (
                         <button
                             key={level.value}
@@ -493,27 +310,13 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         );
     };
 
-    const renderUseGuide = () => (
-        <div className="rounded-2xl border border-white/10 bg-black/24 p-3">
-            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Como usar</div>
-            <div className="mt-2 grid grid-cols-1 gap-2">
-                {ORACLE_USE_STEPS.map((step) => (
-                    <div key={step.title} className="rounded-xl border border-white/8 bg-white/[0.035] px-3 py-2">
-                        <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--ui-text-accent)]">{step.title}</div>
-                        <p className="mt-1 text-[11px] leading-relaxed text-gray-400">{step.body}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
     const renderModes = () => (
         <div className="space-y-3.5">
             {renderModeSummaryCard()}
 
             <div className="grid grid-cols-1 gap-1">
-                {Object.values(ORACLE_MODES).map((mode) => {
-                    const isSelected = oraclePreferences.activeMode === mode.id;
+                {SIMPLE_ORACLE_MODES.map((mode) => {
+                    const isSelected = visibleMode === mode.id;
                     const isLocked = !isPremium && mode.id !== 'neutro';
 
                     return (
@@ -532,22 +335,14 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center justify-between gap-2">
-                                        <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>{normalizeOracleCopy(mode.name)}</span>
+                                        <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>{mode.label}</span>
                                         {isLocked && (
                                             <span className="rounded border border-amber-500/20 bg-black/40 px-2 py-0.5 text-[10px] text-amber-500">
                                                 PREMIUM
                                             </span>
                                         )}
                                     </div>
-                                    <p className="mt-0.5 text-[10px] leading-relaxed text-gray-500">{normalizeOracleCopy(mode.description)}</p>
-                                    <div className="mt-1 flex flex-wrap gap-1.5">
-                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-[3px] text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">
-                                            {normalizeOracleCopy(mode.attentionProfile)}
-                                        </span>
-                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-[3px] text-[9px] font-black uppercase tracking-[0.12em] text-gray-400">
-                                            Push {normalizeOracleCopy(mode.pushProfile)}
-                                        </span>
-                                    </div>
+                                    <p className="mt-0.5 text-[10px] leading-relaxed text-gray-500">{mode.description}</p>
                                 </div>
                             </div>
                         </button>
@@ -555,27 +350,15 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                 })}
             </div>
 
-            {oraclePreferences.activeMode === 'personalizado' && (
-                <div className="animate-fade-in rounded-xl border border-white/10 bg-black/20 p-4">
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-400">Instrucoes Personalizadas</label>
-                    <textarea
-                        className="h-24 w-full resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-gray-200 focus:border-[var(--skin-accent-color)] focus:outline-none"
-                        placeholder="Ex: Fale como um mestre zen, use metaforas de agua..."
-                        value={oraclePreferences.customModeInstructions || ''}
-                        onChange={(e) => updateOraclePreferences({ customModeInstructions: e.target.value })}
-                    />
-                    <p className="mt-2 text-[10px] text-gray-600">O Oraculo segue esse tom sem perder a leitura operacional.</p>
-                </div>
-            )}
         </div>
     );
 
     const renderManualLibraryCategories = () => (
             <div className="space-y-3">
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5">
-                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Biblioteca manual</div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Temas assinados</div>
                     <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
-                        O automático tenta girar 1 pulso por tema marcado ao longo do dia. No Premium, o botão manual pode puxar até 5 cards por dia.
+                        Voce pode pedir um card de cada tema por dia, ate cinco no total. A entrega automatica escolhe no maximo um deles.
                     </p>
                 </div>
                 {MANUAL_LIBRARY_CATEGORIES.map((cat) => {
@@ -640,7 +423,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                     <div className="custom-scrollbar flex-1 overflow-y-auto p-4">
                         {variant === 'preferences' ? (
                             <div className="space-y-4">
-                                {renderUseGuide()}
                                 {renderPresenceSlider()}
 
                                 <div className="space-y-2">
@@ -650,92 +432,35 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
                                 <div className="space-y-2 pt-1">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Temas dos cards</h3>
-                                    {renderManualLibraryCategories()}
-                                </div>
-
-                                <div className="space-y-2 pt-1">
-                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Regra de mensagens</h3>
-                                    {renderMessagePolicyCards()}
-                                </div>
-
-                                <div className="space-y-1 pt-1">
-                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Controles</h3>
-                                    {renderSwitchRow({
-                                        icon: 'IA',
-                                        label: 'IA do Oraculo',
-                                        description: `Permite chat e cards usando o modo ${activeModeConfig.name}.`,
-                                        enabled: Boolean(oraclePreferences.iaEnabled),
-                                        onToggle: () => handleToggle('iaEnabled'),
-                                    })}
-                                    {renderSwitchRow({
-                                        icon: 'IN',
-                                        label: 'Avisos internos',
-                                        description: 'Sinais do sistema e do Oraculo dentro do app.',
-                                        enabled: Boolean(oraclePreferences.notificationsEnabled),
-                                        onToggle: () => handleToggle('notificationsEnabled'),
-                                    })}
                                     {renderSwitchRow({
                                         icon: 'CD',
-                                        label: 'Cards automaticos',
-                                        description: 'Opt-in: cards de foco e temas marcados, respeitando silencio.',
+                                        label: 'Receber conteudo automaticamente',
+                                        description: 'No maximo um por dia. No chat, ainda da para pedir um de cada tema.',
                                         enabled: Boolean(oraclePreferences.dailyFocusCardEnabled),
                                         onToggle: () => handleToggle('dailyFocusCardEnabled'),
                                         accentClass: 'bg-amber-500/70',
                                     })}
+                                    {renderManualLibraryCategories()}
+                                </div>
+
+                                <div className="space-y-1 pt-1">
+                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Avisos</h3>
                                     {renderSwitchRow({
                                         icon: 'DM',
-                                        label: 'DMs e convites',
-                                        description: 'Aviso e push para mensagens diretas e interacoes humanas.',
+                                        label: 'Mensagens e convites',
+                                        description: 'Independem do jeito de falar e da presenca do Oraculo.',
                                         enabled: Boolean(oraclePreferences.dmNotificationsEnabled),
                                         onToggle: () => handleToggle('dmNotificationsEnabled'),
                                         accentClass: 'bg-sky-500/70',
                                     })}
                                     {renderSwitchRow({
                                         icon: 'P',
-                                        label: 'Push real no aparelho',
+                                        label: 'Avisos no aparelho',
                                         description: PUSH_PERMISSION_LABEL[pushPermission],
                                         enabled: Boolean(oraclePreferences.pushEnabled),
                                         onToggle: handlePushToggle,
                                         accentClass: 'bg-emerald-500/70',
                                     })}
-                                    <div
-                                        className={`ml-7 rounded-xl border px-3 py-2 text-[11px] font-semibold ${getPushDeliveryTone({
-                                            pushEnabled: Boolean(oraclePreferences.pushEnabled),
-                                            remoteReady: pushRemoteReady,
-                                            permission: pushPermission,
-                                        })}`}
-                                    >
-                                        {getPushDeliveryLabel({
-                                            pushEnabled: Boolean(oraclePreferences.pushEnabled),
-                                            isNative: pushSupport.isNative,
-                                            remoteReady: pushRemoteReady,
-                                            permission: pushPermission,
-                                        })}
-                                    </div>
-                                    <div className="ml-7 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[10px] leading-relaxed text-gray-400">
-                                        {getAppPushSetupHint()}
-                                    </div>
-                                    <details className="ml-7 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                                        <summary className="cursor-pointer text-[10px] font-black uppercase tracking-[0.16em] text-white/62">Testes de push</summary>
-                                        <div className="mt-2 grid grid-cols-2 gap-2">
-                                            <button
-                                                type="button"
-                                                disabled={isTestingPush}
-                                                onClick={handleLocalPushTest}
-                                                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/62 transition-colors hover:border-white/20 hover:text-white disabled:cursor-wait disabled:opacity-50"
-                                            >
-                                                Local
-                                            </button>
-                                            <button
-                                                type="button"
-                                                disabled={isTestingPush}
-                                                onClick={handleRemotePushTest}
-                                                className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100 transition-colors hover:bg-emerald-400/[0.12] disabled:cursor-wait disabled:opacity-50"
-                                            >
-                                                Remoto
-                                            </button>
-                                        </div>
-                                    </details>
                                 </div>
 
                                 {false && <div className="space-y-2">

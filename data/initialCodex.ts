@@ -8,7 +8,7 @@ export const BIOLOGICAL_MACHINE_CODEX: CodexTemplate = {
   author: 'Soberano System',
   price: 200,
   durationDays: 28,
-  primaryAssetId: 'fisico',
+  primaryAssetId: 'saude',
   campaignType: 'aprendizado',
   campaignTheme: 'bem_estar',
   tags: ['Saúde', 'Biohacking', 'Energia'],

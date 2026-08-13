@@ -6,7 +6,7 @@ import { Slot, UserProfile, Clan, ClanRank, Asset } from '../types';
 import { BorderSelectionModal } from '../components/BorderSelectionModal';
 import { BackgroundImageSelectionModal } from '../components/BackgroundImageSelectionModal';
 import { BannerSelectionModal } from '../components/BannerSelectionModal';
-import { ClanDetailModal } from '../components/ClanDetailModal';
+import { ClanOverviewModal } from '../components/ClanOverviewModal';
 import { SKINS_DATA, BORDERS_DATA } from '../constants';
 import { SOVEREIGN_ASSETS } from '../constants/avatar';
 import { Sovereign } from '../components/Avatar';
@@ -18,9 +18,12 @@ import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface
 import { ProfileAssetsPreview } from '../components/ProfileAssetsPreview';
 import { GardenZenModal } from '../components/GardenZenModal';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
+import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { APP_NAVIGATE_EVENT } from '../utils/arenaAttention';
 import { hasPremiumAccess } from '../utils/premiumAccess';
-const AssetDecagon = React.lazy(() => import('../components/AssetDecagon').then((m) => ({ default: m.AssetDecagon })));
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
+import { ConnectionsModal } from '../components/ConnectionsModal';
+const AssetPentagon = React.lazy(() => import('../components/AssetPentagon').then((m) => ({ default: m.AssetPentagon })));
 
 const normalizeAssetsVisibility = (value?: UserProfile['assetsVisibility']): 'all' | 'friends' | 'nobody' => {
     if (value === 'all' || value === 'friends' || value === 'nobody') return value;
@@ -384,7 +387,7 @@ export const ShareableProfileCard: React.FC<{
                 {userProfile.bannerUrl && (
                     <div className="pt-0 pb-0 text-center flex items-center justify-center -my-1 px-4">
                         <img
-                            src={userProfile.bannerUrl}
+                            src={resolveCatalogAssetUrl(userProfile.bannerUrl)}
                             alt="Banner"
                             className="mx-auto h-16 object-contain scale-115"
                             crossOrigin="anonymous"
@@ -456,6 +459,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isSovereignModalOpen, setIsSovereignModalOpen] = useState(false);
     const [isAssetsPreviewOpen, setIsAssetsPreviewOpen] = useState(false);
+    const [connectionType, setConnectionType] = useState<'mentoria' | 'parceria' | null>(null);
     const [activeWidgetTab, setActiveWidgetTab] = useState<ProfileTab>('summary');
 
     const [viewedClan, setViewedClan] = useState<Clan | null>(null);
@@ -586,7 +590,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const canViewArenaMiniatures = isOwnProfile || (canResolvePublicVisibility && (arenaMiniaturesVisibility === 'all' || (arenaMiniaturesVisibility === 'friends' && isFriendProfile)));
     const canViewGarden = isOwnProfile || (canResolvePublicVisibility && (gardenVisibility === 'all' || (gardenVisibility === 'friends' && isFriendProfile)));
     const canOpenAssetsPreview = isOwnProfile || canViewAssetsPreview || canViewArenaMiniatures;
-    const profileDecagonLevels = !isOwnProfile
+    const profilePentagonLevels = !isOwnProfile
         ? (Object.keys(viewedLevels).length > 0 ? viewedLevels : fallbackViewedLevels)
         : undefined;
     const profileAssets = useMemo(() => {
@@ -829,13 +833,23 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         <span className="text-sm font-bold text-white">{clanName}</span>
                                         <span className="text-xs text-gray-400">{currentClanRank?.name || 'N/A'}</span>
                                     </button>
+                                    {isFriendProfile && (
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <button type="button" onClick={() => setConnectionType('mentoria')} className="rounded-md border border-amber-300/20 bg-black/55 px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-amber-100 backdrop-blur-sm">
+                                                Orientar
+                                            </button>
+                                            <button type="button" onClick={() => setConnectionType('parceria')} className="rounded-md border border-cyan-300/20 bg-black/55 px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-cyan-100 backdrop-blur-sm">
+                                                Parceria
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="px-4 pb-0 w-full">
                                 {!isBasicMode && displayProfile.bannerUrl ? (
                                     <div className="relative group mb-0 -my-1 px-4 flex items-center justify-center">
-                                        <img src={displayProfile.bannerUrl} alt="Banner" className="mx-auto h-16 object-contain scale-115" crossOrigin="anonymous" />
+                                        <img src={resolveCatalogAssetUrl(displayProfile.bannerUrl)} alt="Banner" className="mx-auto h-16 object-contain scale-115" crossOrigin="anonymous" />
                                         {isEditing && isOwnProfile && (
                                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer z-10" onClick={() => setBannerModalOpen(true)}>
                                                 <EditIcon className="w-6 h-6 text-white" />
@@ -972,9 +986,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         canViewMastery && hasMeaningfulMastery ? (
                                             <div className="bg-black/30 backdrop-blur-sm p-1 rounded-2xl border border-white/5 w-full flex items-center justify-center">
                                                 <Suspense fallback={<div className="w-[220px] h-[220px]" />}>
-                                                    <AssetDecagon
+                                                    <AssetPentagon
                                                         assets={assets}
-                                                        tempLevels={profileDecagonLevels}
+                                                        tempLevels={profilePentagonLevels}
                                                         size={220}
                                                     />
                                                 </Suspense>
@@ -1075,9 +1089,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     ) : (
                                         <div className="bg-black/30 backdrop-blur-sm p-1 rounded-2xl border border-white/5 w-full flex items-center justify-center">
                                             <Suspense fallback={<div className="w-[220px] h-[220px]" />}>
-                                                <AssetDecagon
+                                                <AssetPentagon
                                                     assets={assets}
-                                                    tempLevels={profileDecagonLevels}
+                                                    tempLevels={profilePentagonLevels}
                                                     size={220}
                                                 />
                                             </Suspense>
@@ -1096,7 +1110,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 onClick={() => setIsAssetsPreviewOpen(true)}
                             />
                         )}
-                        {!isBasicMode && canViewGarden && (
+                        {!isBasicMode && PRODUCT_FEATURES.personalGarden && canViewGarden && (
                             <ProfileGardenOrb
                                 onClick={() => setGardenOpen(true)}
                                 title={isOwnProfile ? 'Meu jardim' : `Jardim de ${displayProfile.nickname || 'jogador'}`}
@@ -1156,8 +1170,15 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                     />
                 </Portal>
             )}
-            {isClanModalOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanModalOpen(false)} />}
-            {isGardenOpen && <GardenZenModal onClose={() => setGardenOpen(false)} profile={displayProfile} />}
+            {isClanModalOpen && clan && <ClanOverviewModal onClose={() => setClanModalOpen(false)} />}
+            {connectionType && (
+                <ConnectionsModal
+                    initialTab={connectionType}
+                    initialRecipientId={displayProfile.id}
+                    onClose={() => setConnectionType(null)}
+                />
+            )}
+            {PRODUCT_FEATURES.personalGarden && isGardenOpen && <GardenZenModal onClose={() => setGardenOpen(false)} profile={displayProfile} />}
             {isSovereignModalOpen && (
                 <SovereignCustomizer
                     initialConfig={userProfile.sovereign}

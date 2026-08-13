@@ -347,6 +347,16 @@ try {
   await sleep(1500);
   try { await pressEscape(); } catch {}
   try { await clickByText('Pular'); } catch {}
+  for (const label of ['ENTENDI', 'FECHAR', 'OK']) {
+    try {
+      await clickByText(label);
+      await sleep(350);
+    } catch {}
+  }
+  await evaluate(`(() => {
+    window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
+    return true;
+  })()`);
   await sleep(1000);
 
   await clickSelector('#nav-planner');
@@ -375,10 +385,7 @@ try {
     await clickByText('CONFIRMAR');
     await waitFor(
       'active cycle planner state',
-      `(() => {
-        const body = document.body?.innerText || '';
-        return body.includes(${JSON.stringify(cycleName)}) || body.includes('Dia 0/');
-      })()`,
+      `(() => document.querySelector('#report-button') instanceof HTMLElement)()`,
       15000,
     );
     checkpoints.push('cycle-started');

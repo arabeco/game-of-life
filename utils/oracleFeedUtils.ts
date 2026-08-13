@@ -1,8 +1,8 @@
-import { AppMode, OracleMessage, OraclePreferences } from '../types';
+import type { AppMode, OracleCategory, OracleMessage, OraclePreferences } from '../types';
 import { getOperationalDateString as getOperationalDateStringValue } from './operationalDay.js';
 
-const MIN_ORACLE_AUTO_TARGET = 1;
 const MAX_ORACLE_DAILY_TARGET = 5;
+const MAX_ORACLE_AUTOMATIC_DAILY_TARGET = 1;
 const DAY_MINUTES = 24 * 60;
 export const ORACLE_MANUAL_DAILY_TARGET = 5;
 
@@ -37,20 +37,12 @@ const getQuietWindowMinutes = (preferences: Pick<OraclePreferences, 'quietHoursS
 
 export const resolveOracleAutoDailyTarget = (
   preferences: Pick<OraclePreferences, 'enabledCategories' | 'presenceLevel'> | null | undefined,
-  appMode: AppMode = 'GAME',
+  _appMode: AppMode = 'GAME',
 ): number => {
-  const presenceLevel = preferences?.presenceLevel ?? 1;
-  if (presenceLevel <= 1) return 0;
-
-  if (appMode === 'BASIC') {
-    return 1;
-  }
-
-  if (presenceLevel === 2) return 1;
-  if (presenceLevel === 3) return 2;
-
   const enabledCount = preferences?.enabledCategories?.length ?? 0;
-  return clamp(enabledCount || MAX_ORACLE_DAILY_TARGET, MIN_ORACLE_AUTO_TARGET, MAX_ORACLE_DAILY_TARGET);
+  const presenceLevel = preferences?.presenceLevel ?? 1;
+  if (presenceLevel <= 0 || enabledCount === 0) return 0;
+  return MAX_ORACLE_AUTOMATIC_DAILY_TARGET;
 };
 
 export const getOracleAutoGapMs = (
@@ -97,6 +89,9 @@ export type OracleFeedQuotaStatus = {
   manualSentToday: number;
   manualRemainingToday: number;
   combinedSentToday: number;
+  dailyLimit: number;
+  usedCategoriesToday: OracleCategory[];
+  remainingCategories: OracleCategory[];
   autoGapMs: number;
   nextAutoInMs: number;
   latestFeedAt: string | null;
@@ -109,14 +104,27 @@ export const getOracleFeedQuotaStatus = (
   appMode: AppMode = 'GAME',
 ): OracleFeedQuotaStatus => {
   const autoDailyTarget = resolveOracleAutoDailyTarget(preferences, appMode);
-  const manualDailyTarget = ORACLE_MANUAL_DAILY_TARGET;
   const todayMessages = getOracleFeedMessagesForOperationalDay(messages, now);
   const autoMessagesToday = todayMessages.filter((message) => !isManualOracleFeedMessage(message));
   const manualMessagesToday = todayMessages.filter(isManualOracleFeedMessage);
+  const enabledCategories = (preferences?.enabledCategories || []).slice(0, MAX_ORACLE_DAILY_TARGET);
+  const dailyLimit = Math.min(MAX_ORACLE_DAILY_TARGET, enabledCategories.length);
+  const manualDailyTarget = dailyLimit;
+  const usedCategoriesToday = Array.from(new Set(
+    todayMessages
+      .map((message) => message.category)
+      .filter((category): category is OracleCategory => enabledCategories.includes(category)),
+  ));
+  const remainingCategories = enabledCategories.filter((category) => !usedCategoriesToday.includes(category));
+  const combinedSentToday = usedCategoriesToday.length;
   const autoSentToday = autoMessagesToday.length;
   const manualSentToday = manualMessagesToday.length;
-  const autoRemainingToday = Math.max(0, autoDailyTarget - autoSentToday);
-  const manualRemainingToday = Math.max(0, manualDailyTarget - manualSentToday);
+  const combinedRemainingToday = Math.max(0, dailyLimit - combinedSentToday);
+  const autoRemainingToday = Math.max(0, Math.min(
+    combinedRemainingToday,
+    autoDailyTarget - autoMessagesToday.length,
+  ));
+  const manualRemainingToday = combinedRemainingToday;
   const autoGapMs = getOracleAutoGapMs(preferences, appMode);
   const latestAutoTodayMessage = getLatestOracleFeedMessage(autoMessagesToday);
   const latestFeedMessage = getLatestOracleFeedMessage(messages);
@@ -133,7 +141,10 @@ export const getOracleFeedQuotaStatus = (
     manualDailyTarget,
     manualSentToday,
     manualRemainingToday,
-    combinedSentToday: todayMessages.length,
+    combinedSentToday,
+    dailyLimit,
+    usedCategoriesToday,
+    remainingCategories,
     autoGapMs,
     nextAutoInMs,
     latestFeedAt: latestFeedMessage?.createdAt ?? null,

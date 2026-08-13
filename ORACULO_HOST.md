@@ -1,5 +1,35 @@
 # Oraculo Host
 
+## Contrato simples atual
+
+O Oraculo tem dois trabalhos diferentes e eles nao devem competir:
+
+1. **Coach e assessor:** le ciclo, arenas e acoes; faz perguntas curtas; percebe atraso, excesso, ausencia e progresso; sugere treinar, retomar, reduzir, editar, pausar ou remover algo. Essas falas nao gastam cota de conteudo.
+2. **Conteudo Premium:** entrega cards dos temas assinados. O limite e de ate cinco por dia, no maximo um por tema. Um pedido manual ocupa a vaga daquele tema e impede que o mesmo tema seja enviado automaticamente no mesmo dia.
+
+O Oraculo pode usar tons diferentes, mas nao cria nem altera ciclo, arena, acao ou tarefa. Ele ajuda a pessoa a decidir e indica o caminho curto; os botoes do app executam.
+
+Exemplos de fala do coach:
+
+- `Que tal treinar hoje?`
+- `Voce ja treinou hoje?`
+- `Seu ciclo esta ficando para tras olhando o tempo e o progresso. Quer rever alguma meta?`
+- `A arena Academia esta atrasada. Quer reduzir repeticoes, editar uma acao ou tirar o que perdeu sentido?`
+
+Regra de simplicidade: uma observacao, uma sugestao e no maximo uma pergunta.
+
+### Limite com o social
+
+Mentoria e parceria continuam no Mundo, nao dentro do Oraculo. O Oraculo pode perceber que uma relacao ajudaria e apontar o caminho, mas nao envia convites nem compartilha arenas.
+
+O estado atual do produto mistura conceitos proximos:
+
+- mentoria e direcional: mentor acompanha pupilo, exige Mentor Premium e pode criar arena vinculada para o pupilo
+- parceria e mutua: pessoas expoem arenas proprias uma para a outra
+- as duas aparecem como `vinculo`, usam convites, ouro e arenas vinculadas, por isso a escolha inicial fica confusa
+
+Refino futuro recomendado: primeiro escolher a pessoa e o objetivo (`acompanhar` ou `fazer junto`); os nomes Mentoria e Parceria aparecem depois, com uma frase explicando o resultado concreto.
+
 Este e o documento unico do Oraculo do GLYPH.
 
 O Oraculo nao e apenas uma IA de mensagens. Ele e o host do app: recebe a pessoa, le o estado do dia, explica o caminho simples, oferece ajuda concreta e aparece com cuidado fora da tela.
@@ -391,19 +421,33 @@ Os modos mudam o jeito de falar, nao a verdade do estado.
 Controle atual:
 
 ```text
-0 Silencioso -> 1 Leve -> 2 Equilibrado -> 3 Presente
+0 Silencioso -> 2 Equilibrado -> 3 Presente
 ```
 
 | Nivel | Comportamento |
 | --- | --- |
 | 0 Silencioso | Sem Oraculo proativo. Mantem avisos humanos, convites e alertas criticos. |
-| 1 Leve | Poucos sinais. Sem cards automaticos de rotina. |
-| 2 Equilibrado | Padrao recomendado. Pode gerar pulso de foco dentro do app. |
-| 3 Presente | Mais companion. Pode mandar push de Oraculo, com limite e anti-spam. |
+| 2 Equilibrado | Padrao recomendado. No maximo um toque automatico relevante por dia. |
+| 3 Presente | Mais proativo, sem falar a cada entrada. Push do Oraculo continua excepcional. |
 
 Push do Oraculo deve ser raro. O nivel maximo nao significa falar toda hora; significa aparecer mais vezes quando ha motivo bom.
 
 Notificacoes humanas, convites, DMs e alertas criticos seguem politica propria. O Oraculo organiza o destino, mas nao deve fingir que tudo e conversa dele.
+
+### Motor automatico
+
+O motor deve decidir antes de carregar o estado operacional completo.
+
+Ordem obrigatoria:
+
+1. verificar preferencia, presenca, horario silencioso e Premium
+2. verificar cota e intervalo usando somente as mensagens recentes
+3. carregar ciclo, arenas, acoes e tarefas apenas para quem passou
+4. gerar no maximo um card automatico por dia
+
+A geracao interna nao depende de inscricao em push. Push e apenas uma forma opcional de entregar externamente uma mensagem que ja foi gerada.
+
+As tarefas consultadas pelo motor ficam limitadas ao ciclo ativo. Sem ciclo, usa apenas a janela recente necessaria para orientar o usuario.
 
 ## Sequencia
 
@@ -449,7 +493,7 @@ Sequencia mantida:
 
 Host explicando:
 
-> Pelo `+` voce cria uma arena ou acao em poucos passos. Se quiser, eu monto o rascunho e voce so revisa antes de aplicar.
+> Pelo `+` voce cria uma arena ou acao em poucos passos. Eu posso ajudar a decidir a meta e o que vale priorizar, mas a mudanca e feita pelos controles do app.
 
 ## Implementacao atual
 

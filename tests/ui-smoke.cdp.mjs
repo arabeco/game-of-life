@@ -289,6 +289,16 @@ try {
   await sleep(1500);
   try { await pressEscape(); } catch {}
   try { await clickByText('Pular'); } catch {}
+  for (const label of ['ENTENDI', 'FECHAR', 'OK']) {
+    try {
+      await clickByText(label);
+      await sleep(350);
+    } catch {}
+  }
+  await evaluate(`(() => {
+    window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
+    return true;
+  })()`);
   await sleep(1000);
 
   await clickSelector('#nav-arenas');
@@ -315,7 +325,7 @@ try {
   checkpoints.push('planner-open');
 
   await clickSelector('#sitrep-button');
-  await waitFor('sitrep modal', `(() => document.body && (document.body.innerText.includes('Planejamento') || document.body.innerText.includes('PAINEL DI')))()`, 10000);
+  await waitFor('sitrep modal', `(() => document.body && document.body.innerText.toUpperCase().includes('RESUMO DIARIO'))()`, 10000);
   checkpoints.push('sitrep-open');
 
   console.log(JSON.stringify({ success: true, email: user?.email || null, arenaName, actionName, checkpoints }, null, 2));

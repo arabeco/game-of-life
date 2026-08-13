@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
-import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, RelationshipLinkType, ScheduledTask } from '../types';
+import { Arena, Action, ActionType, ArenaFolder, Campaign, LinkedRelationshipArena, RelationshipLinkType, ScheduledTask, Asset } from '../types';
 import { PlusIcon, ArchiveBoxIcon, XIcon, LayersIcon, ListRowsIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, TrophyIcon, UsersIcon, FolderStarIcon, EditIcon, CheckIcon, LinkIcon, RefreshCwIcon } from '../components/Icons';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { ArenaDetailModal } from '../components/ArenaDetailModal';
 import { NewArenaModal } from '../components/NewArenaModal';
 import { ArenaCard } from '../components/ArenaCard';
@@ -14,7 +15,7 @@ import { CampaignDetailModal } from '../components/CampaignDetailModal';
 import { CampaignsCodex } from '../components/CampaignsCodex';
 import { CreateCampaignModal } from '../components/CreateCampaignModal';
 import { CampaignArenaStack } from '../components/CampaignArenaStack';
-import { RelationshipHubModal } from '../components/RelationshipHubModal';
+import { ConnectionsModal } from '../components/ConnectionsModal';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 import { calculateArenaProgress, calculateCampaignProgress, calculateCampaignProgressSummary } from '../utils/progressUtils';
 import { ARENA_ATTENTION_EVENT, ArenaAttentionPayload, ArenaAttentionPhase, consumeArenaAttention } from '../utils/arenaAttention';
@@ -22,9 +23,9 @@ import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/c
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { getContentVisualPalette, resolveArenaVisualFamily, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 import { supabase } from '../supabaseClient';
-import { hasCompletedFreeCampaignQuiz } from '../utils/campaignQuiz';
 import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
+import { LIFE_AREAS } from '../constants/lifeAreas';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -138,7 +139,6 @@ export const ArenasView: React.FC = () => {
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
     const [isCampaignHubOpen, setCampaignHubOpen] = useState(false);
-    const [autoOpenCampaignQuiz, setAutoOpenCampaignQuiz] = useState(false);
     const [campaignHubOpenNonce, setCampaignHubOpenNonce] = useState(0);
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
@@ -277,13 +277,8 @@ export const ArenasView: React.FC = () => {
             .length,
         [installedCampaignCodexIds, userCodexes],
     );
-    const hasPendingFreeCampaignQuiz = !hasCompletedFreeCampaignQuiz();
-    const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
-    const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
-    const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
-    const shouldSpotlightCampaignFolder = installableCampaignLibraryCount > 0 || hasPendingFreeCampaignQuiz || totalQuizCredits > 0 || (campaigns.length === 0 && ownedArenaIds.size <= 2);
-    const campaignFolderQuizBadgeCount = hasPendingFreeCampaignQuiz || totalQuizCredits > 0 ? 1 : 0;
-    const campaignFolderBadgeCount = campaigns.length + installableCampaignLibraryCount + campaignFolderQuizBadgeCount;
+    const shouldSpotlightCampaignFolder = installableCampaignLibraryCount > 0 || (campaigns.length === 0 && ownedArenaIds.size <= 2);
+    const campaignFolderBadgeCount = campaigns.length + installableCampaignLibraryCount;
     const campaignFolderBadgeLabel = String(campaignFolderBadgeCount);
     const campaignFolderButtonClassName = `group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] ${
         shouldSpotlightCampaignFolder
@@ -691,7 +686,7 @@ export const ArenasView: React.FC = () => {
                 </span>
             );
         }
-        if (linkType === 'competicao') {
+        if (PRODUCT_FEATURES.relationshipCompetition && linkType === 'competicao') {
             return (
                 <span title="Competição" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-rose-300/40 bg-rose-500/18 text-rose-300">
                     <TrophyIcon className="h-[9px] w-[9px]" />
@@ -755,7 +750,6 @@ export const ArenasView: React.FC = () => {
         setSelectedCampaignId(null);
         setSelectedReceivedCampaignPreview(null);
         setShowCreateCampaignModal(false);
-        setAutoOpenCampaignQuiz(hasPendingFreeCampaignQuiz || totalQuizCredits > 0);
         setCampaignHubOpenNonce((current) => current + 1);
         setCampaignHubOpen(true);
     };
@@ -1169,7 +1163,7 @@ export const ArenasView: React.FC = () => {
     useEffect(() => {
         if (!isBuilderMode) return;
         if (builderAssetId) return;
-        const fallback = assets.find(a => a.id !== 'geral')?.id || assets[0]?.id || '';
+        const fallback = LIFE_AREAS.find(area => assets.some(asset => asset.id === area.id))?.id || '';
         if (fallback) setBuilderAssetId(fallback);
     }, [assets, builderAssetId, isBuilderMode]);
 
@@ -1554,7 +1548,7 @@ export const ArenasView: React.FC = () => {
                                 color: visualPalette.chipText,
                             }}
                         >
-                            Instalar
+                            Iniciar
                         </button>
                     ) : (
                         <button
@@ -1613,7 +1607,9 @@ export const ArenasView: React.FC = () => {
             </div>
         );
     };
-    const assetOptions = assets;
+    const assetOptions = LIFE_AREAS
+        .map(area => assets.find(asset => asset.id === area.id))
+        .filter((asset): asset is Asset => Boolean(asset));
 
     const handleAddPendingAction = () => {
         if (!actionName.trim()) return;
@@ -1820,7 +1816,7 @@ export const ArenasView: React.FC = () => {
                             <label className="text-xs font-bold text-gray-400">Ativo</label>
                             <select value={builderAssetId} onChange={e => setBuilderAssetId(e.target.value)} className="w-full px-4 py-2 bg-black/30 border border-white/20 rounded-xl focus:outline-none focus:border-[var(--skin-accent-color)]">
                                 {assetOptions.map(asset => (
-                                    <option key={asset.id} value={asset.id}>{asset.id === 'geral' ? 'OUTROS / SIDEQUEST' : asset.name}</option>
+                                    <option key={asset.id} value={asset.id}>{asset.name}</option>
                                 ))}
                             </select>
                         </div>
@@ -2337,7 +2333,7 @@ export const ArenasView: React.FC = () => {
                                                     })).chipText,
                                                 }}
                                             >
-                                                Instalar
+                                                Iniciar
                                             </button>
                                         </div>
                                     </div>
@@ -2761,15 +2757,13 @@ export const ArenasView: React.FC = () => {
             {isCampaignHubOpen && (
                 <CampaignsCodex
                     key={`campaign-hub-${campaignHubOpenNonce}`}
-                    autoOpenRecommendationQuiz={autoOpenCampaignQuiz}
                     onClose={() => {
                         setCampaignHubOpen(false);
-                        setAutoOpenCampaignQuiz(false);
                     }}
                 />
             )}
             {isRelationshipHubOpen && (
-                <RelationshipHubModal onClose={() => setRelationshipHubOpen(false)} />
+                <ConnectionsModal onClose={() => setRelationshipHubOpen(false)} />
             )}
             {selectedCampaign && (
                 <CampaignsCodex

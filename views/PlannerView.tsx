@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, MinusIcon, SquareCheckIcon, PanelIcon, FlameIcon, ArchiveBoxIcon, PlayIcon, ZapIcon } from '../components/Icons';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType, PlannerMatrixQuadrant } from '../types';
+import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType, PlannerMatrixQuadrant, Report } from '../types';
 import { ChecklistModal } from '../components/ChecklistModal';
 import { WeeklyPlannerGrid } from '../components/WeeklyPlannerGrid';
 import { PoolAction } from '../components/PoolAction';
@@ -891,8 +891,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         checklistItems,
         sequenceItems,
         dailyCommitment,
-        judgedOperationalDates,
-        judgedTaskIdsByDate,
+        reports,
         aldeiaSlots,
         rescheduleTask,
         returnTaskToPool,
@@ -914,6 +913,24 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const getActionById = useCallback((id: string) => actions.find(a => a.id === id), [actions]);
     const allArenas = useMemo(() => assets.flatMap(asset => asset.arenas || []), [assets]);
     const isClanQuestActionId = useCallback((actionId: string) => isClanQuestAction(actionId, actions, allArenas), [actions, allArenas]);
+    const isTaskInClosedCycleScope = useCallback((task: ScheduledTask | undefined | null) => {
+        if (!task) return false;
+        const operationalDate = getTaskOperationalDateString(task);
+        if (!operationalDate) return false;
+
+        return (reports as Report[]).some((report) => {
+            if (operationalDate < report.startDate || operationalDate > report.endDate) return false;
+            const weeklyAtlas = report.metrics?.weeklyAtlas || [];
+            const closedTaskIds = weeklyAtlas.flatMap((week) =>
+                (week.days || []).flatMap((day) =>
+                    [...(day.scheduledItems || []), ...(day.unscheduledItems || [])]
+                        .map((item) => item.taskId)
+                        .filter(Boolean)
+                )
+            );
+            return closedTaskIds.length > 0 ? closedTaskIds.includes(task.id) : Boolean(task.completed);
+        });
+    }, [reports]);
     const [currentDate, setCurrentDate] = useState(() => buildLocalDateFromString(getOperationalDateString()));
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
     const [plannerMode, setPlannerMode] = useState<PlannerMode>('horario');
@@ -1990,15 +2007,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const changeDate = (amount: number) => setCurrentDate(prev => { const newDate = new Date(prev); newDate.setDate(newDate.getDate() + amount); return newDate; });
     
     const isTaskAlreadyJudged = useCallback((task: ScheduledTask | undefined | null) => {
-        if (!task) return false;
-        const operationalDate = getTaskOperationalDateString(task);
-        if (!operationalDate) return false;
-        const judgedIds = judgedTaskIdsByDate[operationalDate] || [];
-        if (dailyCommitment.date === operationalDate && dailyCommitment.stage === 'judgment') {
-            return [...judgedIds, ...dailyCommitment.taskIds].includes(task.id);
-        }
-        return judgedIds.includes(task.id);
-    }, [dailyCommitment.date, dailyCommitment.stage, dailyCommitment.taskIds, judgedTaskIdsByDate]);
+        return isTaskInClosedCycleScope(task);
+    }, [isTaskInClosedCycleScope]);
 
     const canReuseBayTask = useCallback((task: ScheduledTask | undefined | null) =>
         Boolean(task && isTaskInPool(task) && !isTaskAlreadyJudged(task)),
@@ -2022,30 +2032,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             ? filterCycleTasksByScope(tasks, actions, activeCycle, activeCycle.startDate, activeCycle.endDate)
             : tasks;
 
-        const isSelectedCommitment = dailyCommitment.date === selectedDate;
         const realTaskIdsForDate = getInitialDailyCommitmentTaskIds(scopedTasks, selectedDate, isClanQuestActionId);
-        const judgedIdsForDate = new Set([
-            ...(judgedTaskIdsByDate[selectedDate] || []),
-            ...(isSelectedCommitment && dailyCommitment.stage === 'judgment' ? dailyCommitment.taskIds : []),
-        ]);
-        const fallbackTaskIds = isSelectedCommitment && dailyCommitment.taskIds.length > 0
-            ? Array.from(new Set([
-                ...dailyCommitment.taskIds.filter(taskId =>
-                    scopedTasks.some(task =>
-                        task.id === taskId &&
-                        taskMatchesOperationalDate(task, selectedDate) &&
-                        !isClanQuestActionId(task.actionId) &&
-                        !judgedIdsForDate.has(task.id)
-                    )
-                ),
-                ...realTaskIdsForDate,
-            ])).filter(taskId => !judgedIdsForDate.has(taskId))
-            : realTaskIdsForDate.filter(taskId => !judgedIdsForDate.has(taskId));
-        const isDeposited = judgedOperationalDates.includes(selectedDate) && fallbackTaskIds.length === 0;
-
-        if (isDeposited) {
-            return { value: 0, completedCount: 0, totalCount: 0, isDeposited: true };
-        }
+        const fallbackTaskIds = realTaskIdsForDate.filter(taskId => !isTaskInClosedCycleScope(scopedTasks.find(task => task.id === taskId)));
         const expSnapshot = buildDailyExpSnapshot({
             tasks: scopedTasks,
             actions,
@@ -2060,7 +2048,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             totalCount: expSnapshot.totalCount,
             isDeposited: false,
         };
-    }, [activeCycle, actions, currentDate, dailyCommitment, isClanQuestActionId, judgedOperationalDates, judgedTaskIdsByDate, tasks, userProfile]);
+    }, [activeCycle, actions, currentDate, isClanQuestActionId, isTaskInClosedCycleScope, tasks, userProfile]);
 
     // UNIFY POOL AND BAY AREA TASKS FOR DISPLAY
     // "Estoque e Espera e a mesma coisa"
@@ -2231,7 +2219,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                     </span>
                                 )}
                             </button>
-                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Painel diario">
+                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Resumo diario">
                                 <PanelIcon className="h-3.5 w-3.5" />
                             </button>
                         </div>

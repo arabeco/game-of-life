@@ -194,15 +194,22 @@ async function ensureArenaModalOpen(page) {
 
   const currentTitle = await getOnboardingTitle(page);
   if (['ATIVO PAI', 'NOME DA ARENA', 'META DA ARENA', 'CRIAR ARENA'].includes(currentTitle)) {
-    await page.waitFor(
-      'arena modal fields',
-      `(() => {
-        return document.querySelector('#new-arena-asset-button') instanceof HTMLElement
-          || document.querySelector('#new-arena-name-input') instanceof HTMLInputElement
-          || document.querySelector('#new-arena-submit-button') instanceof HTMLElement;
-      })()`,
-      12000,
-    );
+    try {
+      await page.waitFor(
+        'arena modal fields',
+        `(() => {
+          return document.querySelector('#new-arena-asset-button') instanceof HTMLElement
+            || document.querySelector('#new-arena-name-input') instanceof HTMLInputElement
+            || document.querySelector('#new-arena-submit-button') instanceof HTMLElement;
+        })()`,
+        12000,
+      );
+    } catch (error) {
+      throw new Error([
+        error instanceof Error ? error.message : String(error),
+        JSON.stringify({ console: page.getConsoleMessages(), exceptions: page.getExceptions() }, null, 2),
+      ].join('\n\n'));
+    }
     return;
   }
 
@@ -332,7 +339,15 @@ async function main() {
     checkpoints.push('onboarding-open');
 
     await advanceOverlay(page, 'Primeiro ciclo');
-    await page.waitForSelector('#new-cycle-name-input', 20000);
+    try {
+      await page.waitForSelector('#new-cycle-name-input', 20000);
+    } catch (error) {
+      throw new Error([
+        error instanceof Error ? error.message : String(error),
+        await page.bodyText(),
+        JSON.stringify({ console: page.getConsoleMessages(), exceptions: page.getExceptions() }, null, 2),
+      ].join('\n\n'));
+    }
     await waitForOnboardingTitle(page, 'Nomeie a fase', 12000);
     checkpoints.push('cycle-step');
 
@@ -387,19 +402,19 @@ async function main() {
     await page.clickSelector('#onboarding-action-save-button');
     checkpoints.push('action-created');
 
-    let currentStep = await waitForOneOfOnboardingTitles(page, ['Planner', 'Tela de descanso', 'Painel Diario', 'Base pronta'], 20000);
+    let currentStep = await waitForOneOfOnboardingTitles(page, ['Planner', 'Tela de descanso', 'Resumo Diario', 'Base pronta'], 20000);
     if (currentStep === 'PLANNER') {
       await advanceOverlay(page, 'Planner');
-      currentStep = await waitForOneOfOnboardingTitles(page, ['Tela de descanso', 'Painel Diario', 'Base pronta'], 12000);
+      currentStep = await waitForOneOfOnboardingTitles(page, ['Tela de descanso', 'Resumo Diario', 'Base pronta'], 12000);
     }
 
     if (currentStep === 'TELA DE DESCANSO') {
       await advanceOverlay(page, 'Tela de descanso');
-      currentStep = await waitForOneOfOnboardingTitles(page, ['Painel Diario', 'Base pronta'], 12000);
+      currentStep = await waitForOneOfOnboardingTitles(page, ['Resumo Diario', 'Base pronta'], 12000);
     }
 
-    if (currentStep === 'PAINEL DIARIO') {
-      await advanceOverlay(page, 'Painel Diario');
+    if (currentStep === 'RESUMO DIARIO') {
+      await advanceOverlay(page, 'Resumo Diario');
       currentStep = await waitForOneOfOnboardingTitles(page, ['Base pronta'], 12000);
     }
 

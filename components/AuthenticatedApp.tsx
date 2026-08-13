@@ -54,6 +54,13 @@ import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
 import { ORACLE_SPEECH_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
 import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
+import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
+import {
+    buildPlannerCoachSpeech,
+    getOracleCoachDailyLimit,
+    shouldShowPlannerCoach,
+} from '../utils/oracleCoach';
+import { getOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import './auth-shell.css';
 
 const AssetsView = React.lazy(() => import('../views/AssetsView').then((m) => ({ default: m.AssetsView })));
@@ -87,12 +94,6 @@ const PLANNER_ORACLE_LAST_OPEN_PREFIX = 'planner_oracle_last_open:';
 const PLANNER_ORACLE_LAST_SPEECH_PREFIX = 'planner_oracle_last_speech:';
 const ORACLE_SPEECH_TYPING_INTERVAL_MS = 22;
 
-const shouldShowPlannerReturnSpeechForPresence = (presenceLevel: number): boolean => {
-    if (presenceLevel <= 1) return false;
-    const chance = presenceLevel >= 3 ? 0.55 : 0.25;
-    return Math.random() < chance;
-};
-
 const parseLocalDateOnly = (dateString?: string | null): Date | null => {
     if (!dateString) return null;
     const [year, month, day] = dateString.slice(0, 10).split('-').map(Number);
@@ -107,64 +108,8 @@ const diffLocalDays = (fromDateString?: string | null, toDateString?: string | n
     return Math.round((to.getTime() - from.getTime()) / 86400000);
 };
 
-const pickOracleLine = (lines: string[]) => lines[Math.floor(Math.random() * lines.length)] || lines[0] || '';
-
-const buildPlannerReturnSpeech = ({
-    arenasCount,
-    actionsCount,
-    cycleLengthDays,
-    cycleProgress,
-    daysSinceLastPlannerOpen,
-    daysSinceLastProof,
-    hasActiveCycle,
-}: {
-    arenasCount: number;
-    actionsCount: number;
-    cycleLengthDays: number | null;
-    cycleProgress: number;
-    daysSinceLastPlannerOpen: number | null;
-    daysSinceLastProof: number | null;
-    hasActiveCycle: boolean;
-}): string | null => {
-    if (daysSinceLastPlannerOpen !== null && daysSinceLastPlannerOpen >= 3) {
-        return pickOracleLine([
-            `Voce nao abriu o Planner nos ultimos ${daysSinceLastPlannerOpen} dias. Antes de compensar tudo, ajuste o numero de acoes nas arenas se precisar.`,
-            `Faz ${daysSinceLastPlannerOpen} dias que voce nao passa por aqui. Eu recomecaria pequeno: uma acao real hoje, o resto a gente reorganiza depois.`,
-        ]);
-    }
-
-    if (!hasActiveCycle && arenasCount > 0) {
-        return pickOracleLine([
-            'Para nao se perder nas acoes, eu comecaria com um ciclo de 1 semana ou menos. Quer montar um pequeno?',
-            'Voce ja tem arena. Agora falta uma janela curta para ela respirar: um ciclo de ate 7 dias costuma ser mais facil de conduzir.',
-        ]);
-    }
-
-    if (cycleLengthDays && cycleLengthDays > 7 && cycleProgress < 35) {
-        return pickOracleLine([
-            `Esse ciclo tem ${cycleLengthDays} dias e ainda esta em ${cycleProgress}%. Talvez um ciclo de 1 semana ou menos fique mais facil de conduzir.`,
-            `O ciclo esta longo para o progresso atual: ${cycleProgress}% em ${cycleLengthDays} dias. Pode valer encurtar a rodada e proteger o foco.`,
-        ]);
-    }
-
-    if (daysSinceLastProof !== null && daysSinceLastProof >= 3) {
-        return pickOracleLine([
-            `Faz ${daysSinceLastProof} dias desde sua ultima prova fechada. Talvez hoje seja dia de reduzir a carga e fechar uma acao pequena.`,
-            `A sequencia esfriou um pouco. Nao precisa voltar perfeito: uma prova real hoje ja recoloca o ciclo em movimento.`,
-        ]);
-    }
-
-    if (arenasCount === 1 && actionsCount <= 3) {
-        return pickOracleLine([
-            'Voce esta com uma arena so. Se fizer sentido, adicionar uma segunda frente pode equilibrar melhor o ciclo.',
-            'Sua estrutura esta bem enxuta. Uma segunda arena pode ajudar a separar o que e corpo, trabalho, casa ou foco.',
-        ]);
-    }
-
-    return null;
-};
-
 const OracleSpeechOverlay: React.FC = () => {
+    const { oraclePreferences, userProfile } = useGame();
     const [speech, setSpeech] = useState<(OracleSpeechPayload & { id: number }) | null>(null);
     const [displayedText, setDisplayedText] = useState('');
 
@@ -172,12 +117,23 @@ const OracleSpeechOverlay: React.FC = () => {
         const handleSpeech = (event: Event) => {
             const detail = (event as CustomEvent<OracleSpeechPayload>).detail;
             if (!detail?.message?.trim()) return;
+
+            const presenceLevel = oraclePreferences?.presenceLevel ?? 1;
+            if (presenceLevel <= 0) return;
+
+            const today = getOperationalDateString(new Date());
+            const storageKey = `oracle_speech_daily:${userProfile.id}:${today}`;
+            const spokenToday = Number.parseInt(localStorage.getItem(storageKey) || '0', 10) || 0;
+            const dailyLimit = getOracleCoachDailyLimit(presenceLevel);
+            if (spokenToday >= dailyLimit) return;
+
+            localStorage.setItem(storageKey, String(spokenToday + 1));
             setSpeech({ ...detail, id: Date.now() });
         };
 
         window.addEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
         return () => window.removeEventListener(ORACLE_SPEECH_EVENT, handleSpeech as EventListener);
-    }, []);
+    }, [oraclePreferences?.presenceLevel, userProfile.id]);
 
     useEffect(() => {
         if (!speech) return;
@@ -211,7 +167,7 @@ const OracleSpeechOverlay: React.FC = () => {
     return (
         <div className="pointer-events-none fixed inset-x-0 top-[calc(10px+var(--safe-area-top))] z-[10004] flex justify-center px-4">
             <div
-                className="pointer-events-auto relative flex w-full max-w-[22rem] gap-2 overflow-hidden rounded-[16px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-2.5 pl-[4.65rem] shadow-[0_12px_38px_rgba(0,0,0,0.38)] backdrop-blur-xl animate-in fade-in slide-in-from-top-3 duration-300"
+                className="pointer-events-none relative flex w-full max-w-[22rem] gap-2 overflow-hidden rounded-[16px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-2.5 pl-[4.65rem] shadow-[0_12px_38px_rgba(0,0,0,0.38)] backdrop-blur-xl animate-in fade-in slide-in-from-top-3 duration-300"
                 style={{
                     borderColor: toneTokens.border,
                     boxShadow: `0 12px 38px rgba(0,0,0,0.38), 0 0 20px ${toneTokens.glow}`,
@@ -223,7 +179,7 @@ const OracleSpeechOverlay: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => setSpeech(null)}
-                    className="absolute right-2.5 top-2 rounded-full border border-white/8 bg-white/[0.04] p-1 text-white/45 transition-colors hover:text-white"
+                    className="pointer-events-auto absolute right-2.5 top-2 rounded-full border border-white/8 bg-white/[0.04] p-1 text-white/45 transition-colors hover:text-white"
                     aria-label="Fechar fala do Oraculo"
                 >
                     <XIcon className="h-3 w-3" />
@@ -386,7 +342,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     suppressScreenIntroTips = false,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, appMode, activeTheme, notifications, showToast, assets, actions, activeCycle, cycleProgress, oraclePreferences, updateUserProfile } = useGame();
+    const { userProfile, appMode, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, updateUserProfile } = useGame();
     const historyReady = useRef(false);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
@@ -743,7 +699,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     useEffect(() => {
         if (currentView !== 'planner' || isRestScreenVisible || userProfile.id === 'placeholder_user') return;
 
-        const today = new Date().toISOString().slice(0, 10);
+        const now = new Date();
+        const today = getOperationalDateString(now);
         const openKey = `${PLANNER_ORACLE_LAST_OPEN_PREFIX}${userProfile.id}`;
         const speechKey = `${PLANNER_ORACLE_LAST_SPEECH_PREFIX}${userProfile.id}`;
         const previousPlannerOpen = localStorage.getItem(openKey);
@@ -753,15 +710,34 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         if (lastSpeechDate === today) return;
 
         const daysSinceLastPlannerOpen = diffLocalDays(previousPlannerOpen, today);
-        const shouldConsiderReturnSpeech = !previousPlannerOpen || (daysSinceLastPlannerOpen !== null && daysSinceLastPlannerOpen >= 2);
-        if (!shouldConsiderReturnSpeech) return;
-
         const arenasCount = assets.reduce((sum, asset) => sum + (asset.arenas?.length || 0), 0);
         const cycleLengthDays = activeCycle
             ? (diffLocalDays(activeCycle.startDate, activeCycle.endDate) ?? 0) + 1
             : null;
         const lastProofDate = userProfile.dailyProofStreak?.lastProofDate || userProfile.dailyProofStreak?.lastClosedDate || null;
-        const message = buildPlannerReturnSpeech({
+        const oracleContext = buildOracleOperationalContext({
+            now,
+            assets,
+            actions,
+            tasks,
+            activeCycle,
+            cycleProgress,
+            activeMode: oraclePreferences?.activeMode || 'neutro',
+            customModeInstructions: oraclePreferences?.customModeInstructions || null,
+            enabledCategories: oraclePreferences?.enabledCategories || [],
+            username: userProfile.nickname || 'Viajante',
+            level: userProfile.level || 1,
+            dailyCommitment,
+            dailyProofStreak: userProfile.dailyProofStreak || null,
+        });
+        const actionById = new Map<string, (typeof actions)[number]>(
+            actions.map((action) => [action.id, action] as const),
+        );
+        const completedActionNameToday = tasks
+            .filter((task) => task.completed && taskMatchesOperationalDate(task, today))
+            .map((task) => actionById.get(task.actionId)?.name || null)
+            .find((name): name is string => Boolean(name)) || null;
+        const message = buildPlannerCoachSpeech({
             arenasCount,
             actionsCount: actions.length,
             cycleLengthDays,
@@ -769,13 +745,19 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             daysSinceLastPlannerOpen,
             daysSinceLastProof: diffLocalDays(lastProofDate, today),
             hasActiveCycle: Boolean(activeCycle),
+            cyclePace: oracleContext.cyclePace,
+            focusArenaName: oracleContext.focusArenaSignal?.arenaName || null,
+            focusArenaPace: oracleContext.focusArenaSignal?.pace || null,
+            focusArenaAdjustment: oracleContext.focusArenaSignal?.suggestedAdjustment || null,
+            priorityActionName: oracleContext.priorityActionName,
+            completedActionNameToday,
         });
 
         if (!message) return;
 
         localStorage.setItem(speechKey, today);
         const presenceLevel = oraclePreferences?.presenceLevel ?? 1;
-        if (!shouldShowPlannerReturnSpeechForPresence(presenceLevel)) return;
+        if (!shouldShowPlannerCoach(presenceLevel)) return;
 
         const timer = window.setTimeout(() => {
             emitOracleSpeech({
@@ -787,7 +769,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         }, 520);
 
         return () => window.clearTimeout(timer);
-    }, [actions.length, activeCycle, assets, currentView, cycleProgress, isRestScreenVisible, oraclePreferences?.presenceLevel, userProfile.dailyProofStreak, userProfile.id]);
+    }, [actions, activeCycle, assets, currentView, cycleProgress, dailyCommitment, isRestScreenVisible, oraclePreferences, tasks, userProfile.dailyProofStreak, userProfile.id, userProfile.level, userProfile.nickname]);
 
     useEffect(() => {
         if (suppressScreenIntroTips) {
@@ -1045,7 +1027,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 }
             >
                 <div
-                    key={`${currentView}:${viewTransitionVersion}`}
+                    key={currentView}
                     className={`auth-view-stage${viewTransitionVersion > 0 ? ` auth-view-stage--${viewTransitionKind}` : ''}`}
                 >
                     {viewContent}

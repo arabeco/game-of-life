@@ -833,10 +833,21 @@ export interface ClanJoinRequest {
   clanProfile?: Clan;
 }
 
+export interface ClanInvitation {
+    id: string;
+    clanId: string;
+    clanName: string;
+    inviterId: string;
+    inviterNickname: string;
+    inviteeId: string;
+    createdAt: string;
+}
+
 // FIX: Define EnrichedClanMember to resolve role conflict and be reusable.
 export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
   role: 'leader' | 'member';
   joined_at: string;
+  contributionPoints: number;
 };
 
 // Sistema de Santuario - Posicionamento e Tempo

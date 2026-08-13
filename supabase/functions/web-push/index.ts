@@ -112,11 +112,7 @@ const POLICY: Record<string, { priority: NotificationPriority; basicVisible: boo
   system: { priority: "critical", basicVisible: true, gameVisible: true },
 };
 
-const PROFILE_PUSH: Record<OracleAttentionProfile, NotificationPriority[]> = {
-  essencial: ["critical"],
-  equilibrado: ["critical", "actionable"],
-  ativo: ["critical", "actionable", "ambient"],
-};
+const NOTIFICATION_PUSH_PRIORITIES: NotificationPriority[] = ["critical", "actionable"];
 
 const MODE_PUSH_PROFILE: Record<OracleMode, OracleAttentionProfile> = {
   neutro: "equilibrado",
@@ -771,14 +767,14 @@ const shouldPushNotification = (
   appMode: AppMode,
   activeMode: OracleMode,
 ): boolean => {
+  void activeMode;
   if (notification.read) return false;
 
   const policy = POLICY[notification.type] || POLICY.system;
   if (appMode === "BASIC" && !policy.basicVisible) return false;
   if (appMode !== "BASIC" && !policy.gameVisible) return false;
 
-  const pushProfile = PROFILE_PUSH[MODE_PUSH_PROFILE[activeMode] || "equilibrado"];
-  return pushProfile.includes(policy.priority);
+  return NOTIFICATION_PUSH_PRIORITIES.includes(policy.priority);
 };
 
 const shouldPushOracleMessage = (

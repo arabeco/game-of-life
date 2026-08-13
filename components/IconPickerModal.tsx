@@ -25,7 +25,6 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ onSelect, onCl
                 <GlassCard variant="neutral" className="core-surface-strong m-4 w-full max-w-3xl space-y-4 rounded-[28px]" onClick={e => e.stopPropagation()}>
                     <div className="space-y-1">
                         <h2 className={`text-base text-center font-semibold tracking-[0.08em] ${isLightTheme ? 'text-slate-900' : 'text-white'}`}>Selecionar ícone</h2>
-                        <p className={`text-center text-xs ${isLightTheme ? 'text-slate-600' : 'text-gray-400'}`}>A biblioteca agora segue os 10 ativos para deixar as arenas mais legíveis.</p>
                     </div>
 
                     <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">

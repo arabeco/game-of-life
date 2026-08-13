@@ -4,6 +4,7 @@ import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, Trash2Icon, ShareIcon } from './Icons';
 import { ITEMS_DB, ItemDef, ItemCategory, isItemCatalogVisible } from '../constants/items';
+import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { UnlockCategory } from '../types';
 import { ItemArt } from './ItemArt';
 
@@ -99,7 +100,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
         (currentItem.category === 'aura' && userProfile.sovereign?.aura === currentItem.id) ||
         (currentItem.category === 'orb' && userProfile.sovereign?.orb === currentItem.id) ||
         (currentItem.category === 'plate' && [userProfile.sovereign?.sovereignPlate, userProfile.sovereign?.artifactPlate, userProfile.sovereign?.glyphPlate].includes(currentItem.id)) ||
-        (currentItem.category === 'banner' && userProfile.bannerUrl === currentItem.imageUrl)
+        (currentItem.category === 'banner' && resolveCatalogAssetUrl(userProfile.bannerUrl) === currentItem.imageUrl)
     );
 
     const handleEquip = async () => {

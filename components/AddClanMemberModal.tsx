@@ -19,6 +19,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
     } = useGame();
     const [activeTab, setActiveTab] = useState<'requests' | 'invite'>('requests');
     const [busyId, setBusyId] = useState<string | null>(null);
+    const [pendingInviteeIds, setPendingInviteeIds] = useState<string[]>([]);
 
     const availableFriends = useMemo(() => (
         friends.filter(friend =>
@@ -31,6 +32,11 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
         [enrichedClanMembers, userProfile?.id]
     );
 
+    React.useEffect(() => {
+        if (!canManage) return;
+        void SupabaseService.getPendingClanInviteeIds().then(setPendingInviteeIds);
+    }, [canManage]);
+
     const handleSendInvite = async (friendId: string, nickname: string) => {
         if (!clan) return;
         if (!canManage) {
@@ -40,36 +46,45 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
         if (busyId) return;
 
         setBusyId(friendId);
-        const content = `${userProfile.nickname || 'Um lider'} convidou voce para entrar no grupo ${clan.name}. Abra o grupo e solicite entrada.`;
-        await SupabaseService.createNotification(
-            friendId,
-            'clan_invite',
-            content,
-            {
-                clanId: clan.id,
-                clanName: clan.name,
-                joinRequest: false,
-                inviteNotification: true,
-                inviterId: userProfile.id,
-                senderId: userProfile.id,
-                senderNickname: userProfile.nickname || null,
-                url: '/?oracle=clan',
-            },
-        );
-        showToast(`Convite enviado para ${nickname}.`, 'success');
-        setBusyId(null);
+        try {
+            const result = await SupabaseService.sendClanInvitation(friendId);
+            if (!result.ok) {
+                showToast(result.reason === 'already_invited' ? 'Esse convite ja esta pendente.' : 'Nao foi possivel enviar o convite.', 'warning');
+                return;
+            }
+            setPendingInviteeIds(current => current.includes(friendId) ? current : [...current, friendId]);
+            showToast(`Convite enviado para ${nickname}.`, 'success');
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    const handleRevokeInvite = async (friendId: string) => {
+        if (busyId) return;
+        setBusyId(friendId);
+        try {
+            const revoked = await SupabaseService.revokeClanInvitation(friendId);
+            if (!revoked) {
+                showToast('Nao foi possivel cancelar o convite.', 'error');
+                return;
+            }
+            setPendingInviteeIds(current => current.filter(id => id !== friendId));
+            showToast('Convite cancelado.', 'success');
+        } finally {
+            setBusyId(null);
+        }
     };
 
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10002] flex items-center justify-center animate-fade-in" onClick={onClose}>
-                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                <GlassCard variant="neutral" className="w-full max-w-md m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center">
                         <h2 className="text-lg font-bold uppercase tracking-wider">Entrada no Grupo</h2>
                         <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-gray-300">
-                        Convites servem para avisar a pessoa. A entrada continua sendo por solicitacao aprovada.
+                        A pessoa pode aceitar ou recusar o convite diretamente em Solicitacoes.
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -131,14 +146,15 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
                                             <h4 className="font-bold text-white text-sm">{friend.nickname}</h4>
                                             <p className="text-xs text-gray-400">Nivel {friend.level}</p>
                                         </div>
-                                        <button
-                                            onClick={() => handleSendInvite(friend.id, friend.nickname)}
-                                            disabled={!canManage || busyId === friend.id}
-                                            className="px-3 py-1 bg-white/10 text-sm rounded-lg hover:bg-white/20 disabled:opacity-50 inline-flex items-center gap-1"
-                                        >
-                                            <SendIcon className="w-4 h-4" />
-                                            Convidar
-                                        </button>
+                                        {pendingInviteeIds.includes(friend.id) ? (
+                                            <button onClick={() => handleRevokeInvite(friend.id)} disabled={busyId === friend.id} className="px-3 py-2 bg-red-500/12 text-red-300 text-xs font-bold rounded-lg hover:bg-red-500/20 disabled:opacity-50 inline-flex items-center gap-1">
+                                                <XIcon className="w-4 h-4" /> Cancelar
+                                            </button>
+                                        ) : (
+                                            <button onClick={() => handleSendInvite(friend.id, friend.nickname)} disabled={!canManage || busyId === friend.id} className="px-3 py-2 bg-white/10 text-xs font-bold rounded-lg hover:bg-white/20 disabled:opacity-50 inline-flex items-center gap-1">
+                                                <SendIcon className="w-4 h-4" /> Convidar
+                                            </button>
+                                        )}
                                     </div>
                                 ))
                             ) : (

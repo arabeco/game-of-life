@@ -19,6 +19,7 @@ import { supabase } from '../supabaseClient';
 import { requestLocalNotificationPermission } from '../utils/localNotification';
 import { SCREEN_INTRO_TIP_CONTEXT_EVENT } from '../utils/screenIntroTips';
 import { hasPremiumAccess } from '../utils/premiumAccess';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 
 import { Portal } from './Portal';
 import { EmojiGlyph } from './EmojiGlyph';
@@ -406,8 +407,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             ? 'Campanhas mantem o conteudo protegido. Aqui voce ajusta so a execucao local.'
             : null;
 
-    // Office Mode specific
-    const isOfficeMode = clan?.clanType === 'Office';
+    const isOfficeMode = PRODUCT_FEATURES.clanSharedActions && clan?.clanType === 'Office';
     const enrichedMembers = enrichedClanMembers;
 
     const handleSave = () => {

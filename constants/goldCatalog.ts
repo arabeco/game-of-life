@@ -168,9 +168,9 @@ export const GOLD_CODEX_CATALOG = [
 export const GOLD_MECHANIC_CATALOG = [
     { id: 'create_clan', name: 'Criar grupo', priceGold: GOLD_CLAN_CREATION_COST, source: 'sql' },
     { id: 'legacy_projection_scene', name: 'Gerar a cena do legado', priceGold: 50, source: 'sql' },
-    { id: 'relationship_invite_mentoria', name: 'Convite de mentoria', priceGold: 100, source: 'sql' },
-    { id: 'relationship_invite_parceria', name: 'Convite de parceria', priceGold: 50, source: 'sql' },
-    { id: 'relationship_invite_competicao', name: 'Convite de competição', priceGold: 50, source: 'sql' },
+    { id: 'relationship_invite_mentoria', name: 'Convite de mentoria', priceGold: 0, source: 'sql' },
+    { id: 'relationship_invite_parceria', name: 'Convite de parceria', priceGold: 0, source: 'sql' },
+    { id: 'relationship_invite_competicao', name: 'Convite de competição', priceGold: 0, source: 'sql' },
     { id: 'mentor_linked_arena', name: 'Nova arena vinculada de mentoria', priceGold: 50, source: 'sql' },
     { id: 'partnership_linked_arena', name: 'Mostrar arena para parceiro', priceGold: 50, source: 'sql' },
     { id: 'competition_challenge', name: 'Forjar duelo competitivo', priceGold: 50, source: 'sql' },

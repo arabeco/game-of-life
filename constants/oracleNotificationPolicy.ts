@@ -1,5 +1,4 @@
 import { AppMode, Notification, NotificationType, OracleMode } from '../types';
-import { getOracleModeConfig, OracleAttentionProfile } from './oracle';
 
 export type NotificationLane = 'essential' | 'progress' | 'feed';
 export type NotificationPriority = 'critical' | 'actionable' | 'progress' | 'ambient';
@@ -226,7 +225,7 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
 };
 
 const FALLBACK_POLICY: NotificationPolicy = POLICY.system;
-const ORACLE_CHAT_NOTIFICATION_TYPES: NotificationType[] = ['cycle_ending', 'oracle_prompt', 'action_reminder'];
+const ORACLE_CHAT_NOTIFICATION_TYPES: NotificationType[] = [];
 
 const getPolicy = (type: NotificationType): NotificationPolicy => POLICY[type] || FALLBACK_POLICY;
 
@@ -428,44 +427,21 @@ export const getNotificationBody = (
   }
 };
 
-const PROFILE_VISIBILITY: Record<OracleAttentionProfile, NotificationPriority[]> = {
-  essencial: ['critical', 'actionable'],
-  equilibrado: ['critical', 'actionable', 'progress'],
-  ativo: ['critical', 'actionable', 'progress', 'ambient'],
-};
-
-const PROFILE_PUSH: Record<OracleAttentionProfile, NotificationPriority[]> = {
-  essencial: ['critical'],
-  equilibrado: ['critical', 'actionable'],
-  ativo: ['critical', 'actionable', 'ambient'],
-};
-
-const profileIncludesPriority = (
-  profile: OracleAttentionProfile,
-  priority: NotificationPriority,
-  visibilityMap: Record<OracleAttentionProfile, NotificationPriority[]>,
-): boolean => visibilityMap[profile].includes(priority);
+const PUSH_PRIORITIES: NotificationPriority[] = ['critical', 'actionable'];
 
 export const shouldShowNotificationForProfile = (
   type: NotificationType,
   appMode: AppMode,
   oracleMode: OracleMode,
 ): boolean => {
+  void oracleMode;
   const policy = getPolicy(type);
 
   if (appMode === 'BASIC') {
     return policy.basicVisible;
   }
 
-  if (!policy.gameVisible) {
-    return false;
-  }
-
-  return profileIncludesPriority(
-    getOracleModeConfig(oracleMode).attentionProfile,
-    policy.priority,
-    PROFILE_VISIBILITY,
-  );
+  return policy.gameVisible;
 };
 
 export const shouldPushNotificationForProfile = (
@@ -473,15 +449,12 @@ export const shouldPushNotificationForProfile = (
   appMode: AppMode,
   oracleMode: OracleMode,
 ): boolean => {
+  void oracleMode;
   if (notification.read) return false;
   if (!shouldShowNotificationForProfile(notification.type, appMode, oracleMode)) return false;
 
   const policy = getPolicy(notification.type);
-  return profileIncludesPriority(
-    getOracleModeConfig(oracleMode).pushProfile,
-    policy.priority,
-    PROFILE_PUSH,
-  );
+  return PUSH_PRIORITIES.includes(policy.priority);
 };
 
 export const getVisibleNotificationsForProfile = (

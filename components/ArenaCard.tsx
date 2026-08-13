@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Arena, Action, RelationshipLinkType } from '../types';
 import { CheckIcon, CrownIcon, TrophyIcon, UsersIcon } from './Icons';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
 import { calculateArenaProgress } from '../utils/progressUtils';
@@ -306,7 +307,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                  .maybeSingle();
 
              if (data) {
-                 setLinkType(data.link_type);
+                 setLinkType(data.link_type === 'competicao' ? null : data.link_type);
              }
         };
         fetchLinkType();
@@ -419,7 +420,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
             );
         }
 
-        if (effectiveLinkType === 'competicao') {
+        if (PRODUCT_FEATURES.relationshipCompetition && effectiveLinkType === 'competicao') {
             return (
                 <span title="Competição" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-rose-300/40 bg-rose-500/18 text-rose-300 shadow-[0_4px_10px_rgba(244,63,94,0.18)]">
                     <TrophyIcon className="h-[9px] w-[9px]" />

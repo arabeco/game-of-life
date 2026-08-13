@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { Action, Arena, Campaign, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, ScheduledTask, SeasonQuest } from '../../types';
+import type { Action, Arena, Campaign, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, Report, ScheduledTask, SeasonQuest } from '../../types';
 import { mergeTasksIntoCommitment, reconcileTaskInCommitment } from '../../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_START_MINUTE, getOperationalDateString, getTaskOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
 import { isSharedArena } from '../../utils/taskDomain.js';
@@ -8,6 +8,7 @@ import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../
 import { emitArenaAttention } from '../../utils/arenaAttention';
 import { emitAppSensoryCue } from '../../utils/sensoryCue';
 import { emitOracleSpeech } from '../../utils/oracleSpeech';
+import { PRODUCT_FEATURES } from '../../constants/featureFlags';
 
 type ToastTone = 'success' | 'error' | 'info' | 'warning';
 type AchievementState = { type: FeedEventType; data: any } | null;
@@ -37,8 +38,8 @@ interface CreateTaskDomainParams {
     tasks: ScheduledTask[];
     activeCycle: Cycle | null;
     campaigns: Campaign[];
+    reports: Report[];
     dailyCommitment: DailyCommitment;
-    judgedOperationalDates: string[];
     judgedTaskIdsByDate: Record<string, string[]>;
     clan: Clan | null;
     supabase: SupabaseLike;
@@ -73,8 +74,8 @@ export const createTaskDomain = ({
     tasks,
     activeCycle,
     campaigns,
+    reports,
     dailyCommitment,
-    judgedOperationalDates,
     judgedTaskIdsByDate,
     clan,
     supabase,
@@ -101,11 +102,32 @@ export const createTaskDomain = ({
     reconcileJudgedDayTaskMutation,
 }: CreateTaskDomainParams): TaskDomainApi => {
     const getJudgedTaskIdsForDate = (operationalDate: string) => {
-        const ids = judgedTaskIdsByDate[operationalDate] || [];
-        if (dailyCommitment.date === operationalDate && dailyCommitment.stage === 'judgment') {
-            return Array.from(new Set([...ids, ...dailyCommitment.taskIds]));
-        }
-        return ids;
+        return judgedTaskIdsByDate[operationalDate] || [];
+    };
+
+    const getClosedReportTaskIds = (report: Report) => {
+        const weeklyAtlas = report.metrics?.weeklyAtlas || [];
+        return weeklyAtlas.flatMap((week) =>
+            (week.days || []).flatMap((day) =>
+                [...(day.scheduledItems || []), ...(day.unscheduledItems || [])]
+                    .map((item) => item.taskId)
+                    .filter(Boolean)
+            )
+        );
+    };
+
+    const isOperationalDateInsideClosedCycle = (operationalDate: string) =>
+        reports.some((report) => operationalDate >= report.startDate && operationalDate <= report.endDate);
+
+    const isTaskInClosedCycleScope = (task: Pick<ScheduledTask, 'id' | 'date' | 'startTime'>) => {
+        const taskOperationalDate = getTaskOperationalDateString(task);
+        if (!taskOperationalDate) return false;
+
+        return reports.some((report) => {
+            if (taskOperationalDate < report.startDate || taskOperationalDate > report.endDate) return false;
+            const closedTaskIds = getClosedReportTaskIds(report);
+            return closedTaskIds.length > 0 ? closedTaskIds.includes(task.id) : true;
+        });
     };
 
     const isTaskInJudgedActionScope = (task: Pick<ScheduledTask, 'id' | 'date' | 'startTime'>) => {
@@ -115,14 +137,12 @@ export const createTaskDomain = ({
     };
 
     const isTaskLockedByJudgment = (task: ScheduledTask) =>
-        Boolean(task.completed) && isTaskInJudgedActionScope(task);
+        Boolean(task.completed) && isTaskInClosedCycleScope(task);
 
     const getEditableLockedOperationalDate = (task: Pick<ScheduledTask, 'id' | 'date' | 'startTime' | 'completed'>): string | false => {
         const taskOperationalDate = getTaskOperationalDateString(task as ScheduledTask);
-        if (!taskOperationalDate || !activeCycle) return false;
-        if (taskOperationalDate < activeCycle.startDate || taskOperationalDate > activeCycle.endDate) return false;
-
-        if (task.completed && getJudgedTaskIdsForDate(taskOperationalDate).includes(task.id)) {
+        if (!taskOperationalDate) return false;
+        if (task.completed && isTaskInJudgedActionScope(task)) {
             return taskOperationalDate;
         }
 
@@ -131,7 +151,10 @@ export const createTaskDomain = ({
 
     const isTaskCompletionEditableWithinOpenCycle = (task: ScheduledTask) => Boolean(getEditableLockedOperationalDate(task));
 
-    const canPlaceTaskInJudgmentScope = (_task: Pick<ScheduledTask, 'date' | 'startTime'>) => true;
+    const canPlaceTaskInJudgmentScope = (task: Pick<ScheduledTask, 'date' | 'startTime'>) => {
+        const taskOperationalDate = getTaskOperationalDateString(task);
+        return Boolean(taskOperationalDate && !isOperationalDateInsideClosedCycle(taskOperationalDate));
+    };
 
     const maybeReconcileRetroactiveMutations = async (
         operationalDates: Array<string | false>,
@@ -151,7 +174,7 @@ export const createTaskDomain = ({
     };
 
     const showJudgedActionMutationBlockedToast = () => {
-        showToast('Essa conclusao ja entrou em um julgamento. Reabra/crie outra acao para compensar sem apagar XP antigo.', 'warning');
+        showToast('Essa acao pertence a um ciclo fechado. Crie outra acao para compensar sem apagar historico antigo.', 'warning');
     };
 
     const isTaskInsideActiveCycle = (task: Pick<ScheduledTask, 'date'>) => {
@@ -595,8 +618,8 @@ export const createTaskDomain = ({
             return;
         }
 
-        const isOfficeMode = clan?.clanType === 'Office';
-        let shouldPersistSharedCompletion = isOfficeMode || isSharedArena(arena);
+        const isOfficeMode = PRODUCT_FEATURES.clanSharedActions && clan?.clanType === 'Office';
+        let shouldPersistSharedCompletion: boolean = PRODUCT_FEATURES.clanSharedActions && (isOfficeMode || isSharedArena(arena));
 
         if (!shouldPersistSharedCompletion) {
             const linkedArenaResult = await supabase
@@ -1086,7 +1109,7 @@ export const createTaskDomain = ({
                 );
             } catch (reconcileError: any) {
                 console.error('Retroactive judged day reconciliation error:', reconcileError?.message || reconcileError);
-                showToast('A tarefa foi removida, mas nao foi possivel recalcular o julgamento das acoes.', 'error');
+                showToast('A tarefa foi removida, mas nao foi possivel recalcular o resumo diario.', 'error');
             }
         });
     };
@@ -1146,7 +1169,7 @@ export const createTaskDomain = ({
                     );
                 } catch (reconcileError: any) {
                     console.error('Retroactive judged day reconciliation error:', reconcileError?.message || reconcileError);
-                    showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o julgamento das acoes.', 'error');
+                    showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o resumo diario.', 'error');
                 }
             });
     };

@@ -1,3 +1,5 @@
+import { CATALOG_AVATAR_ROOT } from './catalogAssets';
+
 export type Gender = 'male' | 'female';
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
@@ -18,7 +20,7 @@ export interface BodyDefinition {
     filename: string;
 }
 
-export const AVATAR_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
+export const AVATAR_BASE_URL = CATALOG_AVATAR_ROOT;
 
 export const BODY_DB: BodyDefinition[] = [
     { id: 'body_masc_1', gender: 'male', toneId: '1', filename: 'body_masc_1.png' },

@@ -3,7 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import {
   buildOraclePremiumHint,
   normalizeOracleText,
-  parseOracleActionDraft,
   routeOracleIntent,
   type OracleConversationMemory,
   type OracleResponseKind,
@@ -227,6 +226,9 @@ type UserProfileRow = {
   chests?: unknown;
   app_mode?: string | null;
   daily_proof_streak?: unknown;
+  is_premium?: boolean | null;
+  premium_expires_at?: string | null;
+  subscription_tier?: string | null;
 };
 
 type AppMode = "BASIC" | "GAME";
@@ -490,8 +492,7 @@ const normalizeOracleCategories = (value: unknown): OracleCategory[] => (
 );
 
 const normalizeOracleManualCategories = (enabledCategories: OracleCategory[] = []): OracleCategory[] => {
-  const filtered = enabledCategories.filter((category) => ORACLE_MANUAL_LIBRARY_CATEGORIES.includes(category));
-  return filtered.length > 0 ? filtered : [...ORACLE_MANUAL_LIBRARY_CATEGORIES];
+  return enabledCategories.filter((category) => ORACLE_MANUAL_LIBRARY_CATEGORIES.includes(category));
 };
 
 const resolveRuntimeOraclePreferences = (userId: string, row: OraclePreferencesRow | null): OraclePreferencesRuntime => ({
@@ -612,16 +613,10 @@ const isQuietHours = (date: Date, preferences: Pick<OraclePreferencesRuntime, "q
 
 const resolveOracleAutoDailyTarget = (
   preferences: Pick<OraclePreferencesRuntime, "enabledCategories" | "presenceLevel">,
-  appMode: AppMode,
+  _appMode: AppMode,
 ): number => {
-  if (preferences.presenceLevel <= 1) return 0;
-  if (appMode === "BASIC") {
-    return 1;
-  }
-
-  if (preferences.presenceLevel === 2) return 1;
-  if (preferences.presenceLevel === 3) return 2;
-  return 0;
+  if (preferences.presenceLevel <= 0 || preferences.enabledCategories.length === 0) return 0;
+  return 1;
 };
 
 const getOracleAutoGapMs = (
@@ -665,71 +660,23 @@ const getOracleFeedMessagesForOperationalDay = (messages: OracleMessageRuntime[]
   ));
 };
 
-const isManualOracleFeedMessage = (message: OracleMessageRuntime): boolean => (
-  message.deliveryType === "feed" && message.contextSnapshot.triggerType === "manual"
-);
-
-const resolveOraclePresentation = (_category: OracleCategory, triggerType: OracleTriggerType): OraclePresentation => (
-  triggerType === "manual" ? "info_card" : "ambient_pulse"
-);
-
-const hasOracleStructuralNeed = (contextData: OracleContext): boolean => (
-  !contextData.hasCycle ||
-  contextData.needsFirstArena ||
-  contextData.needsFirstAction ||
-  contextData.needsFirstTask ||
-  contextData.needsSitrepClosure
-);
-
 const resolveAutomaticOracleCategory = (
-  appMode: AppMode,
-  mode: OracleMode,
-  contextData: OracleContext,
+  _appMode: AppMode,
+  _mode: OracleMode,
+  _contextData: OracleContext,
   messages: OracleMessageRuntime[],
   enabledCategories: OracleCategory[],
   now: Date,
-): OracleCategory => {
-  if (appMode === "BASIC") return "dicas_produtividade";
-  if (hasOracleStructuralNeed(contextData)) return "dicas_produtividade";
-
-  const categoryProfile = ORACLE_MODES[mode].automaticCategories;
-  if (contextData.cycleRisk === "alto") {
-    return contextData.overdueActions > 0 ? categoryProfile.critical : categoryProfile.high;
-  }
-
+): OracleCategory | null => {
   const ambientPool = normalizeOracleManualCategories(enabledCategories);
-  const todayFeedMessages = getOracleFeedMessagesForOperationalDay(messages, now).filter((message) => !isManualOracleFeedMessage(message));
+  const todayFeedMessages = getOracleFeedMessagesForOperationalDay(messages, now);
   const sentAmbientCategories = new Set(
     todayFeedMessages
       .map((message) => message.category)
       .filter((category) => ambientPool.includes(category)),
   );
   const nextAmbientCategory = ambientPool.find((category) => !sentAmbientCategories.has(category));
-  if (nextAmbientCategory) return nextAmbientCategory;
-  if (contextData.cycleRisk === "medio") return categoryProfile.medium;
-  return categoryProfile.low;
-};
-
-const shouldSkipAutomaticOracle = (
-  appMode: AppMode,
-  mode: OracleMode,
-  triggerType: OracleTriggerType,
-  contextData: OracleContext,
-  isCriticalTrigger: boolean,
-): boolean => {
-  if (triggerType === "manual") return false;
-  if (appMode === "BASIC") return false;
-
-  const automationProfile = ORACLE_MODES[mode].automationProfile;
-  const hasStructuralNeed = hasOracleStructuralNeed(contextData);
-  const hasHighRisk = contextData.cycleRisk === "alto";
-
-  if (automationProfile === "proativo") return false;
-  if (automationProfile === "equilibrado") {
-    return triggerType === "cron" && !isCriticalTrigger && !hasStructuralNeed && !hasHighRisk;
-  }
-  if (triggerType === "cron") return !isCriticalTrigger;
-  return !isCriticalTrigger && !hasStructuralNeed && !hasHighRisk;
+  return nextAmbientCategory || null;
 };
 
 const daysBetweenInclusive = (startDate: string, endDate: string): number => {
@@ -1341,57 +1288,27 @@ const buildSystemPrompt = (
   ].join("\n");
 };
 
-const buildAutomaticUserPrompt = ({
+const buildAutomaticContentCardPrompt = ({
   category,
-  contextData,
   triggerType,
-  presentation,
 }: {
   category: OracleCategory;
-  contextData: OracleContext;
   triggerType: OracleTriggerType;
-  presentation: OraclePresentation;
-}): string => {
-  if (presentation === "info_card") {
-    return [
-      "Gere uma fala curta para o feed do usuario.",
-      `Categoria solicitada: ${category}`,
-      `Momento de disparo: ${triggerType}`,
-      "Formato obrigatorio:",
-      "1 ou 2 frases naturais, sem cabecalho",
-      "Regras:",
-      "- sem PRIORIDADE, RISCO ou AJA",
-      "- sem bronca, placar, desafio de habito ou tom de app gamificado",
-      "- sem palavras soltas em ingles quando houver equivalente em portugues",
-      "- se existir focusArenaSignal, use essa arena como assunto principal",
-      "- se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa",
-      "- se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima",
-      "- se existir priorityActionName, pergunte algo como \"Que tal [acao] hoje?\"",
-      "- se cyclePace for atrasado ou critico, diga que parece atrasado olhando tempo/progresso do ciclo",
-      "- se estiver tudo no ritmo, sugira manter uma acao simples em vez de empilhar tarefa",
-      `Contexto atual: ${JSON.stringify(contextData)}`,
-    ].join("\n");
-  }
-
-  return [
-    "Gere uma fala curta do Oraculo para o feed do usuario.",
+}): string => [
+    "Gere um card curto de conteudo premium para o usuario.",
     `Categoria solicitada: ${category}`,
     `Momento de disparo: ${triggerType}`,
+    "Formato obrigatorio:",
+    "TITULO: ate 4 palavras",
+    "CARD: 2 a 4 linhas curtas",
+    "FECHO: 1 linha final breve",
     "Regras:",
-    "- no maximo 2 frases, em portugues natural",
-    "- sem saudacao e sem floreio motivacional",
-    "- sem PRIORIDADE, RISCO ou AJA",
-    "- sem bronca, placar, desafio de habito ou tom de app gamificado",
-    "- sem palavras soltas em ingles quando houver equivalente em portugues",
-    "- se existir focusArenaSignal, use essa arena como assunto principal",
-    "- se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa",
-    "- se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima",
-    "- se existir priorityActionName, use uma pergunta leve: \"Que tal [acao] hoje?\"",
-    "- se cyclePace for atrasado ou critico, mencione que o ciclo parece atrasado olhando tempo/progresso",
-    "- se existir nextMove, transforme em sugestao humana, nao comando",
-    `Contexto atual: ${JSON.stringify(contextData)}`,
+    "- sem saudacao, placar, cobranca ou relatorio do ciclo",
+    "- entregue somente o tema assinado; nao transforme o card em fala operacional",
+    "- se a categoria for rituais_lifestyle, traga uma dica pratica e simples",
+    "- nas outras categorias, produza uma ideia memoravel, util e limpa",
+    "- nao repita frases recentes",
   ].join("\n");
-};
 
 const isCycleClosingSoon = (activeCycle: CycleRow | null, contextData: OracleContext, now: Date): boolean => {
   if (!activeCycle || contextData.pendingActionsToday <= 0) return false;
@@ -1406,18 +1323,7 @@ const createAutomaticOracleMessage = async (
   origin: string | null,
 ): Promise<{ status: string; reason?: string; messageId?: string }> => {
   const now = new Date();
-  const [
-    preferencesResult,
-    profileResult,
-    cycleResult,
-    arenasResult,
-    actionsResult,
-    tasksResult,
-    dailyCommitmentResult,
-    assetLevelsResult,
-    oracleMessagesResult,
-    unreadClanAlertResult,
-  ] = await Promise.all([
+  const [preferencesResult, profileResult] = await Promise.all([
     supabaseAdmin
       .from("oracle_preferences")
       .select("user_id, ia_enabled, notifications_enabled, daily_focus_card_enabled, presence_level, enabled_categories, active_mode, custom_mode_instructions, quiet_hours_start, quiet_hours_end")
@@ -1425,17 +1331,76 @@ const createAutomaticOracleMessage = async (
       .maybeSingle<OraclePreferencesRow>(),
     supabaseAdmin
       .from("user_profiles")
-      .select("id, nickname, level, chests, app_mode, daily_proof_streak")
+      .select("id, nickname, level, chests, app_mode, daily_proof_streak, is_premium, premium_expires_at, subscription_tier")
       .eq("id", userId)
       .maybeSingle<UserProfileRow>(),
+  ]);
+
+  if (preferencesResult.error) return { status: "error", reason: preferencesResult.error.message };
+  if (profileResult.error) return { status: "error", reason: profileResult.error.message };
+
+  const preferences = resolveRuntimeOraclePreferences(userId, preferencesResult.data ?? null);
+  if (!preferences.iaEnabled) return { status: "skipped", reason: "ia_disabled" };
+  if (!preferences.notificationsEnabled) return { status: "skipped", reason: "notifications_disabled" };
+  if (!preferences.dailyFocusCardEnabled) return { status: "skipped", reason: "daily_focus_disabled" };
+  if (preferences.presenceLevel <= 0) return { status: "skipped", reason: "presence_disabled" };
+  if (normalizeOracleManualCategories(preferences.enabledCategories).length === 0) {
+    return { status: "skipped", reason: "no_categories" };
+  }
+  if (isQuietHours(now, preferences)) return { status: "skipped", reason: "quiet_hours" };
+
+  const profile = profileResult.data ?? null;
+  const isPremium = asBoolean(profile?.is_premium, false)
+    || Boolean(asTrimmedString(profile?.premium_expires_at))
+    || ["premium", "platinum"].includes(asTrimmedString(profile?.subscription_tier));
+  if (!isPremium) return { status: "skipped", reason: "premium_required" };
+  const appMode: AppMode = asTrimmedString(profile?.app_mode) === "BASIC" ? "BASIC" : "GAME";
+
+  const [cycleResult, oracleMessagesResult] = await Promise.all([
     supabaseAdmin
       .from("cycles")
-      .select("id, name, start_date, end_date, arena_ids, report_data")
+      .select("id, name, start_date, end_date, arena_ids")
       .eq("user_id", userId)
       .is("report_data", null)
       .order("start_date", { ascending: false })
       .limit(1)
-      .maybeSingle<CycleRow & { report_data?: unknown }>(),
+      .maybeSingle<CycleRow>(),
+    supabaseAdmin
+      .from("oracle_messages")
+      .select("id, category, content, mode, delivery_type, context_snapshot, read, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .returns<OracleMessageRow[]>(),
+  ]);
+
+  if (cycleResult.error) return { status: "error", reason: cycleResult.error.message };
+  if (oracleMessagesResult.error) return { status: "error", reason: oracleMessagesResult.error.message };
+
+  const activeCycle = cycleResult.data ?? null;
+  const oracleMessages = normalizeOracleMessages(oracleMessagesResult.data);
+  const autoDailyTarget = resolveOracleAutoDailyTarget(preferences, appMode);
+  const todayMessages = getOracleFeedMessagesForOperationalDay(oracleMessages, now);
+  const subscribedCategories = normalizeOracleManualCategories(preferences.enabledCategories);
+  const autoMessagesToday = todayMessages.filter((message) => (
+    subscribedCategories.includes(message.category)
+    && message.contextSnapshot?.triggerType !== "manual"
+  ));
+  const autoSentToday = new Set(autoMessagesToday.map((message) => message.category)).size;
+  const autoRemainingToday = Math.max(0, autoDailyTarget - autoSentToday);
+  if (autoRemainingToday <= 0) return { status: "skipped", reason: "daily_limit" };
+
+  const autoGapMs = getOracleAutoGapMs(preferences, appMode);
+  const latestAutoTodayMessage = getLatestOracleFeedMessage(autoMessagesToday);
+  if (latestAutoTodayMessage) {
+    const nextAutoInMs = Math.max(0, autoGapMs - (now.getTime() - new Date(latestAutoTodayMessage.createdAt).getTime()));
+    if (nextAutoInMs > 0) return { status: "skipped", reason: "cooldown" };
+  }
+
+  const operationalDate = getOperationalDateString(now);
+  const taskWindowStart = activeCycle?.start_date || shiftDateString(operationalDate, -30);
+  const taskWindowEnd = activeCycle?.end_date || operationalDate;
+  const [arenasResult, actionsResult, tasksResult, dailyCommitmentResult, assetLevelsResult] = await Promise.all([
     supabaseAdmin
       .from("arenas")
       .select("id, asset_id, name, is_archived, action_ids")
@@ -1450,84 +1415,44 @@ const createAutomaticOracleMessage = async (
       .from("scheduled_tasks")
       .select("id, action_id, date, start_time, completed")
       .eq("user_id", userId)
+      .gte("date", taskWindowStart)
+      .lte("date", taskWindowEnd)
       .returns<TaskRow[]>(),
     supabaseAdmin
       .from("daily_commitments")
       .select("date, stage")
       .eq("user_id", userId)
-      .eq("date", getOperationalDateString(now))
+      .eq("date", operationalDate)
       .maybeSingle<DailyCommitmentRow>(),
     supabaseAdmin
       .from("asset_levels")
       .select("asset_id, level")
       .eq("user_id", userId)
       .returns<AssetLevelRow[]>(),
-    supabaseAdmin
-      .from("oracle_messages")
-      .select("id, category, content, mode, delivery_type, context_snapshot, read, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(50)
-      .returns<OracleMessageRow[]>(),
-    supabaseAdmin
-      .from("notifications")
-      .select("id", { head: true, count: "exact" })
-      .eq("user_id", userId)
-      .eq("read", false)
-      .eq("type", "clan_mission_update"),
   ]);
 
-  if (preferencesResult.error) return { status: "error", reason: preferencesResult.error.message };
+  const operationalError = [
+    arenasResult.error,
+    actionsResult.error,
+    tasksResult.error,
+    dailyCommitmentResult.error,
+    assetLevelsResult.error,
+  ].find(Boolean);
+  if (operationalError) return { status: "error", reason: operationalError.message };
 
-  const preferences = resolveRuntimeOraclePreferences(userId, preferencesResult.data ?? null);
-  if (!preferences.iaEnabled) return { status: "skipped", reason: "ia_disabled" };
-  if (!preferences.notificationsEnabled) return { status: "skipped", reason: "notifications_disabled" };
-  if (!preferences.dailyFocusCardEnabled) return { status: "skipped", reason: "daily_focus_disabled" };
-  if (preferences.presenceLevel <= 1) return { status: "skipped", reason: "presence_low" };
-  if (isQuietHours(now, preferences)) return { status: "skipped", reason: "quiet_hours" };
-
-  const profile = profileResult.data ?? null;
-  const appMode: AppMode = asTrimmedString(profile?.app_mode) === "BASIC" ? "BASIC" : "GAME";
-  const activeCycle = cycleResult.data ?? null;
-  const arenas = arenasResult.data ?? [];
-  const actions = actionsResult.data ?? [];
-  const tasks = tasksResult.data ?? [];
-  const dailyCommitment = dailyCommitmentResult.data ?? null;
-  const assetLevels = assetLevelsResult.data ?? [];
-  const oracleMessages = normalizeOracleMessages(oracleMessagesResult.data);
   const contextData = buildOracleOperationalContext({
     now,
     profile,
     preferences,
-    arenas,
-    actions,
-    tasks,
+    arenas: arenasResult.data ?? [],
+    actions: actionsResult.data ?? [],
+    tasks: tasksResult.data ?? [],
     activeCycle,
-    dailyCommitment,
-    assetLevels,
+    dailyCommitment: dailyCommitmentResult.data ?? null,
+    assetLevels: assetLevelsResult.data ?? [],
   });
 
-  const autoDailyTarget = resolveOracleAutoDailyTarget(preferences, appMode);
-  const todayMessages = getOracleFeedMessagesForOperationalDay(oracleMessages, now);
-  const autoMessagesToday = todayMessages.filter((message) => !isManualOracleFeedMessage(message));
-  const autoSentToday = autoMessagesToday.length;
-  const autoRemainingToday = Math.max(0, autoDailyTarget - autoSentToday);
-  if (autoRemainingToday <= 0) return { status: "skipped", reason: "daily_limit" };
-
-  const autoGapMs = getOracleAutoGapMs(preferences, appMode);
-  const latestAutoTodayMessage = getLatestOracleFeedMessage(autoMessagesToday);
-  if (latestAutoTodayMessage) {
-    const nextAutoInMs = Math.max(0, autoGapMs - (now.getTime() - new Date(latestAutoTodayMessage.createdAt).getTime()));
-    if (nextAutoInMs > 0) return { status: "skipped", reason: "cooldown" };
-  }
-
   const triggerType: OracleTriggerType = autoSentToday === 0 ? "app_open" : "cron";
-  const unreadClanAlerts = unreadClanAlertResult.count ?? 0;
-  const isCriticalTrigger = unreadClanAlerts > 0 || isCycleClosingSoon(activeCycle, contextData, now);
-  if (shouldSkipAutomaticOracle(appMode, preferences.activeMode, triggerType, contextData, isCriticalTrigger)) {
-    return { status: "skipped", reason: "profile_skip" };
-  }
-
   const category = resolveAutomaticOracleCategory(
     appMode,
     preferences.activeMode,
@@ -1536,7 +1461,8 @@ const createAutomaticOracleMessage = async (
     preferences.enabledCategories,
     now,
   );
-  const presentation = resolveOraclePresentation(category, triggerType);
+  if (!category) return { status: "skipped", reason: "daily_limit" };
+  const presentation: OraclePresentation = "info_card";
   const recentOracleLines = oracleMessages.map((message) => message.content).filter(Boolean).slice(0, 5);
   const operationalState = deriveOracleOperationalState(contextData, now);
   const systemPrompt = buildSystemPrompt(preferences.activeMode, contextData, {
@@ -1544,7 +1470,7 @@ const createAutomaticOracleMessage = async (
     recentLines: recentOracleLines,
     now,
   });
-  const userPrompt = buildAutomaticUserPrompt({ category, contextData, triggerType, presentation });
+  const userPrompt = buildAutomaticContentCardPrompt({ category, triggerType });
   const { text } = await callOpenRouter({
     systemPrompt,
     userPrompt,
@@ -1567,8 +1493,9 @@ const createAutomaticOracleMessage = async (
         presentation,
         categoryLabel: ORACLE_CATEGORY_LABELS[category],
         generatedFor: "feed",
+        purpose: "premium_content_card",
         operationalState,
-        summary: presentation === "info_card" ? "Card do Oraculo" : "Sinal do Oraculo",
+        summary: "Card do Oraculo",
       },
       read: false,
       created_at: now.toISOString(),
@@ -1591,18 +1518,18 @@ const buildOracleChatSystemPrompt = ({
   "",
   ORACLE_MODES[mode]?.promptBlock || ORACLE_MODES.neutro.promptBlock,
   "",
-  "MODO CONVERSA UNIVERSAL + ACAO",
+  "MODO CONVERSA UNIVERSAL + ASSESSORIA",
   "- Responda com naturalidade, calor e valor real. Fale como uma presenca atenta, nao como template.",
   "- Varie ritmo e abertura. Nao comece sempre do mesmo jeito.",
   "- Fale sobre o app quando a pergunta for sobre o app.",
   "- Fale sobre qualquer assunto quando o usuario quiser conversa geral.",
   "- Nao force o GLYPH em assuntos gerais puros.",
   "- Se o usuario pedir como funciona, explique curto e use exemplos reais do app.",
-  "- Se o usuario pedir ajuda para fazer, montar, criar, organizar, agendar, completar ou ajustar algo, mostre primeiro que e simples fazer pelo app.",
-  "- Quando a operacao depender de tela/botao, cite o caminho manual pelo + em linguagem curta.",
-  "- Depois ofereca apoio: 'se quiser, eu monto o rascunho para voce'.",
-  "- Se houver intencao operacional, sugira ponte curta para o modo acao com linguagem natural.",
-  "- Nao diga que voce aplicou mudancas se nada foi confirmado.",
+  "- Seja coach e assessor: observe o contexto, faca uma pergunta util e recomende uma decisao pequena.",
+  "- Pode sugerir treinar hoje, retomar uma acao, reduzir repeticoes, editar ou remover algo que perdeu sentido.",
+  "- Quando a operacao depender de tela ou botao, indique o caminho curto no app.",
+  "- Nao crie, edite, agende, complete ou delete ciclo, arena, acao ou tarefa pelo chat.",
+  "- Nao ofereca rascunho nem modo acao. Os controles normais do app devem ser o caminho mais facil.",
   isPremium
     ? "- Usuario premium: voce pode aprofundar mais quando fizer sentido, mantendo clareza."
     : "- Usuario free: entregue valor curto e forte. Se ele pedir profundidade repetida, aponte premium com sutileza.",
@@ -1649,8 +1576,8 @@ const buildOracleChatUserPrompt = ({
     "- frases curtas por padrao",
     "- quando util, use blocos leves como 'o que entendi' e 'o que eu sugiro'",
     "- se o usuario estiver aprendendo, explique o minimo necessario e de um exemplo",
-    "- se o usuario quiser resolver, mostre o caminho simples pelo + e depois ofereca criar/ajustar pelo modo acao",
-    "- se houver ponte para o modo acao, termine com convite natural: 'se quiser, eu monto o rascunho para voce'",
+    "- se o usuario quiser resolver, recomende uma decisao e mostre o caminho simples pelo botao correspondente no app",
+    "- termine com no maximo uma pergunta util; nunca ofereca criar ou aplicar a mudanca pelo Oraculo",
     "- nao use JSON",
   ].join("\n"));
 
@@ -1668,13 +1595,10 @@ const buildOracleFallbackResponse = ({
   appContext: OracleContext | null;
   elapsedMs: number;
 }) => {
-  const actionDraft = parseOracleActionDraft(text, getOperationalDateString(new Date()));
-  const responseKind: OracleResponseKind = structuredContext.shouldOfferAction ? "action_offer" : structuredContext.appContextUsed ? "app_answer" : "chat";
-  const message = structuredContext.shouldOfferAction
-    ? `Entendi isso como um pedido de ação. Posso te levar para o modo ação com este rascunho: ${actionDraft.summary}.`
-    : structuredContext.appContextUsed && appContext
-      ? `Agora eu não consegui aprofundar pela IA, mas olhando seu estado atual no app, o foco mais claro é ${appContext.nextMove || "organizar o próximo passo"}.`
-      : "Agora eu não consegui aprofundar pela IA, mas posso continuar em uma resposta mais curta ou te levar para uma ação concreta se você quiser.";
+  const responseKind: OracleResponseKind = structuredContext.appContextUsed ? "app_answer" : "chat";
+  const message = structuredContext.appContextUsed && appContext
+    ? `Agora eu não consegui aprofundar pela IA, mas olhando seu estado atual no app, o foco mais claro é ${appContext.nextMove || "organizar o próximo passo"}.`
+    : "Agora eu não consegui aprofundar pela IA, mas posso continuar com uma leitura curta do que voce quer decidir.";
 
   return {
     kind: responseKind,
@@ -1683,7 +1607,7 @@ const buildOracleFallbackResponse = ({
       ...structuredContext,
       appContextUsed: Boolean(appContext),
     },
-    actionDraft: structuredContext.shouldOfferAction ? actionDraft : null,
+    actionDraft: null,
     premiumHint: null,
     telemetry: {
       routeIntent: structuredContext.recognizedIntent,
@@ -1776,18 +1700,11 @@ const handleClientOracleRequest = async (req: Request, origin: string | null) =>
       const effectiveMode = runtime?.preferences.activeMode || requestedMode;
       const effectiveIsPremium = asBoolean(body?.isPremium, runtime?.isPremium ?? false);
       const structuredContext = routeOracleIntent(text, suppliedMemory);
-      const actionDraft = structuredContext.shouldOfferAction
-        ? parseOracleActionDraft(text, getOperationalDateString(new Date()))
-        : null;
-      const normalizedText = normalizeOracleText(text);
-      const explicitHandoff = /\b(ja|já|leva|levar|abre|abrir|vai pro modo acao|modo acao|modo ação)\b/.test(normalizedText);
       const responseKind: OracleResponseKind = structuredContext.needsClarification
         ? "clarification"
-        : structuredContext.shouldOfferAction
-          ? (explicitHandoff ? "action_handoff" : "action_offer")
-          : structuredContext.appContextUsed
-            ? "app_answer"
-            : "chat";
+        : structuredContext.appContextUsed
+          ? "app_answer"
+          : "chat";
 
       const premiumHint = !effectiveIsPremium ? buildOraclePremiumHint(structuredContext) : null;
       const appContext = structuredContext.appContextUsed && runtime ? runtime.contextData : null;
@@ -1822,7 +1739,7 @@ const handleClientOracleRequest = async (req: Request, origin: string | null) =>
             ...structuredContext,
             appContextUsed: Boolean(appContext),
           },
-          actionDraft,
+          actionDraft: null,
           premiumHint,
           telemetry: {
             routeIntent: structuredContext.recognizedIntent,
@@ -1927,20 +1844,23 @@ const handleAutomaticOracleCron = async (req: Request, origin: string | null) =>
     }
   }
 
-  const { data: activeSubscriptions, error: subscriptionsError } = await supabaseAdmin
-    .from("push_subscriptions")
+  const { data: eligiblePreferences, error: preferencesError } = await supabaseAdmin
+    .from("oracle_preferences")
     .select("user_id")
-    .is("disabled_at", null);
+    .eq("ia_enabled", true)
+    .eq("notifications_enabled", true)
+    .eq("daily_focus_card_enabled", true)
+    .gt("presence_level", 0);
 
-  if (subscriptionsError) {
+  if (preferencesError) {
     return jsonResponse(origin, 500, {
-      error: "Failed to load active push subscriptions.",
-      details: subscriptionsError.message,
+      error: "Failed to load eligible Oracle preferences.",
+      details: preferencesError.message,
     });
   }
 
   const uniqueUserIds = Array.from(new Set(
-    (activeSubscriptions || []).map((row) => asTrimmedString((row as JsonRecord).user_id)).filter(Boolean),
+    (eligiblePreferences || []).map((row) => asTrimmedString((row as JsonRecord).user_id)).filter(Boolean),
   ));
 
   const shuffledUserIds = uniqueUserIds

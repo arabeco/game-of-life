@@ -18,7 +18,7 @@ import {
 
 const MoodModal = React.lazy(() => import('./MoodModal').then(m => ({ default: m.MoodModal })));
 const OracleFeed = React.lazy(() => import('./OracleFeed').then(m => ({ default: m.OracleFeed })));
-const ClanDetailModal = React.lazy(() => import('./ClanDetailModal').then(m => ({ default: m.ClanDetailModal })));
+const ClanOverviewModal = React.lazy(() => import('./ClanOverviewModal').then(m => ({ default: m.ClanOverviewModal })));
 const RestScreen = React.lazy(() => import('./RestScreen').then(m => ({ default: m.RestScreen })));
 
 const HeaderOverlayFallback: React.FC = () => (
@@ -385,7 +385,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                         }}
                     />
                 )}
-                {isClanOpen && clan && <ClanDetailModal clanName={clan.name} onClose={() => setClanOpen(false)} />}
+                {isClanOpen && clan && <ClanOverviewModal onClose={() => setClanOpen(false)} />}
                 {isRestScreenOpen && (
                     <RestScreen 
                         onClose={() => {

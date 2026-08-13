@@ -3,6 +3,7 @@ import { UserProfile } from '../types';
 
 import { ProfileBackgroundSurface } from './ProfileBackgroundSurface';
 import { UserAvatar } from './UserAvatar';
+import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 
 export const SocialCard: React.FC<{
     profile: UserProfile;
@@ -36,7 +37,7 @@ export const SocialCard: React.FC<{
                     {profile.bannerUrl && (
                         <div className="mt-0.5 h-6 self-start">
                             <img
-                                src={profile.bannerUrl}
+                                src={resolveCatalogAssetUrl(profile.bannerUrl)}
                                 alt="Banner"
                                 className="h-full object-contain drop-shadow-sm opacity-90 group-hover:opacity-100 transition-opacity"
                             />

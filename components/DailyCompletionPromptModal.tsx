@@ -16,16 +16,16 @@ const buildPromptCopy = (
     if (payload.kind === 'sitrep') {
         if (mode === 'BASIC') {
             return {
-                eyebrow: 'Painel Diario',
-                title: 'Dia encerrado',
-                message: 'Seu Painel Diario foi fechado. Quer abrir o Painel Diario para revisar o resultado agora?',
+                eyebrow: 'Resumo Diario',
+                title: 'Resumo atualizado',
+                message: 'Seu resumo do dia foi atualizado. Quer abrir a leitura do progresso agora?',
             };
         }
 
         return {
-            eyebrow: 'Ritual Diario',
-            title: 'Painel Diario selado',
-            message: 'O julgamento do dia foi concluido. Quer abrir o Painel Diario para ver o resultado completo agora?',
+            eyebrow: 'Resumo Diario',
+            title: 'Progresso consolidado',
+            message: 'O resumo do dia foi atualizado com as acoes registradas. Quer ver os detalhes agora?',
         };
     }
 
@@ -108,7 +108,7 @@ export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProp
                                             : 'border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/14 text-white hover:bg-[var(--skin-accent-color)]/20'
                                     }`}
                                 >
-                                    Abrir Painel Diario
+                                    Abrir resumo
                                 </button>
                             )}
                         </div>

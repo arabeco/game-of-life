@@ -1029,7 +1029,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
             ? 'Arena pessoal das tarefas da equipe.'
             : 'Arena pessoal das tarefas do grupo.'
     );
-    const getClanAppArenaAssetId = () => (isOfficeClan ? 'trabalho' : 'conexoes');
+    const getClanAppArenaAssetId = () => (isOfficeClan ? 'trabalho' : 'relacoes');
     const getClanAppArenaIcon = () => (
         isOfficeClan
             ? '🏢'

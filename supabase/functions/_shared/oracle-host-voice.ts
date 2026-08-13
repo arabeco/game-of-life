@@ -427,7 +427,7 @@ export const buildOracleHostVoiceDirective = ({
     "- Se o usuario perguntar como funciona, explique curto com exemplo.",
     "- Se o usuario pedir ajuda para fazer, montar, criar, organizar, agendar, completar ou ajustar algo, mostre primeiro que e simples fazer pelo app.",
     "- Quando a operacao depender de tela/botao, cite o caminho manual pelo + em linguagem curta.",
-    "- Depois ofereca apoio: se quiser, eu monto o rascunho para voce.",
+    "- Depois indique o caminho curto no app e ajude a pessoa a decidir, sem criar ou aplicar mudancas.",
     "- Fale de ciclos, arenas e acoes como movimento real, nao como relatorio.",
     "- Varie a frase. Use os exemplos como direcao de voz, nao copie sempre literal.",
     "- Se houver priorityArenaName ou priorityActionName, use o nome quando isso deixar a fala mais concreta.",

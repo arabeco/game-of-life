@@ -18,6 +18,7 @@ import {
     type CampaignThemeId,
     type CampaignTypeId,
 } from '../../utils/campaignCatalogMeta';
+import { LIFE_AREAS } from '../../constants/lifeAreas';
 
 const isProbablyImageUrl = (value?: string | null) => {
     if (!value) return false;
@@ -55,31 +56,11 @@ type CatalogEntry = {
     filterCategories: CampaignCategoryId[];
 };
 
-const ASSET_FILTER_ORDER = [
-    'consciencia',
-    'espaco-mental',
-    'espiritualidade',
-    'proposito',
-    'projetos',
-    'conexoes',
-    'trabalho',
-    'financas',
-    'hobbies',
-    'fisico',
-] as const;
+const ASSET_FILTER_ORDER = LIFE_AREAS.map((area) => area.id);
 
-const ASSET_FALLBACK_LABELS: Record<string, string> = {
-    consciencia: 'Consciencia',
-    'espaco-mental': 'Espaco mental',
-    espiritualidade: 'Espiritualidade',
-    proposito: 'Proposito',
-    projetos: 'Projetos',
-    conexoes: 'Conexoes',
-    trabalho: 'Trabalho',
-    financas: 'Financas',
-    hobbies: 'Hobbies',
-    fisico: 'Fisico',
-};
+const ASSET_FALLBACK_LABELS: Record<string, string> = Object.fromEntries(
+    LIFE_AREAS.map((area) => [area.id, area.name]),
+);
 
 const TAG_THEME_FALLBACK: Array<{ id: CampaignThemeId; keys: string[] }> = [
     { id: 'exercicio', keys: ['fisico', 'movimento', 'explosao', 'treino', 'ativacao'] },

@@ -207,6 +207,45 @@ export class SupabaseService {
     };
   }
 
+  static async sendClanInvitation(inviteeId: string): Promise<{ ok: boolean; reason?: string }> {
+    const { data, error } = await supabase.rpc('send_my_clan_invite', { p_invitee_id: inviteeId });
+    if (error) {
+      console.error('Error sending clan invitation:', error);
+      return { ok: false, reason: error.message };
+    }
+    return { ok: data?.sent === true, reason: data?.reason };
+  }
+
+  static async respondToClanInvitation(notificationId: string, accept: boolean): Promise<{ ok: boolean; clanId?: string; reason?: string }> {
+    const { data, error } = await supabase.rpc('respond_to_my_clan_invite', {
+      p_notification_id: notificationId,
+      p_accept: accept,
+    });
+    if (error) {
+      console.error('Error responding to clan invitation:', error);
+      return { ok: false, reason: error.message };
+    }
+    return { ok: data?.responded === true, clanId: data?.clan_id, reason: data?.reason };
+  }
+
+  static async revokeClanInvitation(inviteeId: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('revoke_my_clan_invite', { p_invitee_id: inviteeId });
+    if (error) {
+      console.error('Error revoking clan invitation:', error);
+      return false;
+    }
+    return data?.revoked === true;
+  }
+
+  static async getPendingClanInviteeIds(): Promise<string[]> {
+    const { data, error } = await supabase.rpc('get_my_pending_clan_invitee_ids');
+    if (error) {
+      console.error('Error loading pending clan invitations:', error);
+      return [];
+    }
+    return Array.isArray(data) ? data.map(String) : [];
+  }
+
   // Garantir conta admin soberana
   static async ensureAdminAccount(): Promise<UserProfile | null> {
     try {

@@ -165,7 +165,7 @@ const scoreFullEntry = (entry: CampaignEntry, answers: QuizAnswers, orderedTitle
     const desiredType = answers.p3 ? desiredTypeByP3[answers.p3] || null : null;
     const desiredDuration = answers.p4 ? desiredDurationByP4[answers.p4] || 7 : 7;
     const desiredTier = Math.max(1, Math.min(3, (answers.p4 === 'C' ? 3 : answers.p4 === 'B' ? 2 : 1) + (answers.p5 === 'A' ? -1 : answers.p5 === 'D' ? 1 : 0) + (answers.p6 === 'C' ? -1 : 0)));
-    const assetPrefs = answers.p1 === 'A' ? ['fisico'] : answers.p1 === 'B' ? ['espaco-mental', 'consciencia'] : answers.p1 === 'C' ? ['trabalho', 'consciencia'] : answers.p1 === 'D' ? ['financas'] : answers.p1 === 'E' ? ['conexoes'] : ['consciencia', 'proposito'];
+    const assetPrefs = answers.p1 === 'A' ? ['saude'] : answers.p1 === 'B' ? ['proposito'] : answers.p1 === 'C' ? ['trabalho', 'proposito'] : answers.p1 === 'D' ? ['trabalho'] : answers.p1 === 'E' ? ['relacoes'] : ['proposito'];
     const idx = orderedTitles.get(entry.normalizedTitle);
     if (idx !== undefined) score += 120 - idx * 12;
     if (desiredType && entry.typeId === desiredType) score += 24;

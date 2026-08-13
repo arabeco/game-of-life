@@ -2,9 +2,10 @@
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { GOLD_PLATINUM_PRODUCT, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, ProfileVisibilityScope, Arena, Action, ScheduledTask } from '../types';
-import { ChevronRightIcon, XIcon, LightbulbIcon, ClockIcon, TrashIcon, CheckIcon, SendIcon, CrownIcon } from '../components/Icons';
+import { ChevronRightIcon, XIcon, LightbulbIcon, TrashIcon, CheckIcon, SendIcon, CrownIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
 import { CodexLibrary } from '../components/CodexLibrary';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -15,9 +16,10 @@ import { SpectatorArenaModal } from '../components/SpectatorArenaModal';
 import { CODEXES, getCatalogItemsByCategory } from '../constants/items';
 import { Portal } from '../components/Portal';
 import { SupabaseService } from '../services/SupabaseService';
-import { RelationshipHubModal } from '../components/RelationshipHubModal';
+import { ConnectionsModal } from '../components/ConnectionsModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
+import { MASTERY_TOTAL_MAX_LEVEL, toMasteryIndex } from '../constants/lifeAreas';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess, isStaffRole } from '../utils/premiumAccess';
 import { getMoneyCheckoutSalesCopy } from '../utils/billingRuntime';
@@ -57,12 +59,11 @@ const CodexModal = lazy(() =>
 const CampaignsCodex = lazy(() =>
     import('../components/CampaignsCodex').then((module) => ({ default: module.CampaignsCodex }))
 );
-const AssetDecagon = lazy(() =>
-    import('../components/AssetDecagon').then((module) => ({ default: module.AssetDecagon }))
+const AssetPentagon = lazy(() =>
+    import('../components/AssetPentagon').then((module) => ({ default: module.AssetPentagon }))
 );
 
 type SettingsTab = 'Geral' | 'Preferências' | 'Premium' | 'Temporada';
-type NotificationMode = 'Silencioso' | 'Reflexivo' | 'Essencial' | 'Militar';
 type ProfileVisibilityOption = ProfileVisibilityScope;
 type UiSettingsSkinOption = { id: string; name: string };
 
@@ -84,72 +85,6 @@ const UI_SKIN_SELECTOR_META: Record<string, { label: string; title: string; prev
     VOID: { label: 'VAZIO', title: 'Vazio Primordial', prefersLightText: true },
     GENESIS: { label: 'GÊNESIS', title: 'Gênesis', prefersLightText: true },
     item_theme_nebulosa: { label: 'NEBULOSA', title: 'Nebulosa Astral', prefersLightText: true },
-};
-
-const notificationModes: { id: NotificationMode, name: string, icon: string, description: string }[] = [
-    { id: 'Silencioso', name: 'O Monge', icon: '🧘', description: "Nenhuma notificação será enviada. O sistema aguarda sua busca ativa." },
-    { id: 'Reflexivo', name: 'O Estoico', icon: '⚖️', description: "Um resumo diário com seu resultado e ações restantes é enviado à noite." },
-    { id: 'Essencial', name: 'O Executivo', icon: '👔', description: "Apenas alertas para compromissos com horário fixo." },
-    { id: 'Militar', name: 'O Soldado', icon: '⚔️', description: "Modo ativo com lembretes para planejar, executar e revisar seu dia." },
-];
-
-const NotificationCard: React.FC<{ icon: React.ReactNode, title: string, time?: string, message: string, fixedAtTop?: boolean, stackIndex?: number }> = ({ icon, title, time, message, fixedAtTop = true, stackIndex = 0 }) => {
-    const topClasses = ['top-[88px]', 'top-[168px]', 'top-[248px]'];
-    const topClass = topClasses[Math.max(0, Math.min(stackIndex, topClasses.length - 1))];
-    const fixedClasses = fixedAtTop ? `fixed left-1/2 -translate-x-1/2 z-[90] w-[min(360px,92vw)] ${topClass}` : '';
-
-    return (
-        <GlassCard variant="neutral" className={`p-3 animate-fade-in ${fixedClasses}`}>
-            <div className="flex items-start space-x-3">
-                <div className="mt-1">{icon}</div>
-                <div className="flex-grow">
-                    <div className="flex justify-between items-baseline">
-                        <h4 className="font-bold text-sm text-white">{title}</h4>
-                        {time && <p className="text-xs text-gray-400">{time}</p>}
-                    </div>
-                    <p className="text-sm text-gray-300">{message}</p>
-                </div>
-                <button className="p-1 text-gray-500 hover:text-white"><XIcon className="w-4 h-4" /></button>
-            </div>
-        </GlassCard>
-    );
-};
-
-const NotificationSettingsModal: React.FC<{ currentMode: NotificationMode, onSave: (mode: NotificationMode) => void, onClose: () => void }> = ({ currentMode, onSave, onClose }) => {
-    const [selectedMode, setSelectedMode] = useState<NotificationMode>(currentMode);
-
-    const handleSave = () => { onSave(selectedMode); onClose(); };
-
-    const renderPreview = () => {
-        switch (selectedMode) {
-            case 'Silencioso': return (<div className="text-center text-gray-400 space-y-2 p-4"><svg viewBox="0 0 100 20" className="w-24 mx-auto"><path d="M 0 10 Q 25 10, 50 10 T 100 10" stroke="currentColor" strokeWidth="2" fill="none" /></svg><p className="text-sm">{notificationModes.find(m => m.id === 'Silencioso')?.description}</p></div>);
-            case 'Reflexivo': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Resultado: 85 | Ações restantes: 2. 'A felicidade da sua vida depende da qualidade dos seus pensamentos.'" fixedAtTop stackIndex={0} />);
-            case 'Essencial': return (<NotificationCard icon={<ClockIcon className="w-5 h-5 text-blue-400" />} title="Alerta de Compromisso" time="12:00" message="Reunião de Alinhamento em 2h." fixedAtTop stackIndex={0} />);
-            case 'Militar': return (
-                <>
-                    <NotificationCard icon={<LightbulbIcon className="w-5 h-5 text-green-400" />} title="Alvorada (Planning)" time="08:00" message="Inicie o Planejamento Tático. Verifique o Grid ou o Painel Diário." fixedAtTop stackIndex={0} />
-                    <NotificationCard icon={<ClockIcon className="w-5 h-5 text-orange-400" />} title="Radar de Batalha" time="09:00" message="Próxima ação: Treino de Força (11:00). Prepare-se." fixedAtTop stackIndex={1} />
-                    <NotificationCard icon={<ClockIcon className="w-5 h-5 accent-text" />} title="O Boletim Diário" time="20:00" message="Resultado: 85 | Ações restantes: 2." fixedAtTop stackIndex={2} />
-                </>
-            );
-            default: return null;
-        }
-    };
-
-    return (
-        <Portal>
-            <div className="settings-overlay-shell animate-fade-in" onClick={onClose}>
-                <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
-                    <h2 className="text-lg font-bold uppercase tracking-wider text-center">Configurar Notificações</h2>
-                    <div className="grid grid-cols-2 gap-2">
-                        {notificationModes.map(mode => (<button key={mode.id} onClick={() => setSelectedMode(mode.id)} className={`p-3 rounded-xl transition-colors text-center ${selectedMode === mode.id ? 'bg-white/20 ring-2 ring-white/30' : 'bg-black/20 hover:bg-white/10'}`}><span className="text-2xl">{mode.icon}</span><p className="text-sm font-bold">{mode.name}</p></button>))}
-                    </div>
-                    <div className="settings-panel-card settings-preview-surface">{renderPreview()}</div>
-                    <button onClick={handleSave} className="w-full py-2 rounded-xl luxe-skin-button">SALVAR</button>
-                </GlassCard>
-            </div>
-        </Portal>
-    );
 };
 
 const SettingSelector: React.FC<{ label: string; value: string; onClick: () => void; }> = ({ label, value, onClick }) => (
@@ -360,11 +295,13 @@ const PrivacyPreferencesModal: React.FC<{
                             value={featsVisibility}
                             onChange={onFeatsVisibilityChange}
                         />
-                        <VisibilityScopeControl
-                            label="Mostrar meu jardim"
-                            value={gardenVisibility}
-                            onChange={onGardenVisibilityChange}
-                        />
+                        {PRODUCT_FEATURES.personalGarden && (
+                            <VisibilityScopeControl
+                                label="Mostrar meu jardim"
+                                value={gardenVisibility}
+                                onChange={onGardenVisibilityChange}
+                            />
+                        )}
                     </div>
                 </GlassCard>
             </div>
@@ -1945,6 +1882,7 @@ const GeralTab: React.FC = () => {
     const masteryTotalLevel = assets
         .filter(a => a.id !== 'geral')
         .reduce((sum, a) => sum + (a.level === 0 ? 1 : (a.level || 1)), 0);
+    const masteryIndex = toMasteryIndex(masteryTotalLevel);
 
     useEffect(() => {
         // Listener for Tutorial Mastery Quiz Trigger (Step 11)
@@ -2042,10 +1980,10 @@ const GeralTab: React.FC = () => {
                                 </span>
                             </div>
                             <div>
-                                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Seu nivel geral</div>
+                                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Índice Glyph</div>
                                 <div className="mt-1 flex items-end gap-2">
-                                    <span className="text-4xl font-black leading-none text-white">{masteryTotalLevel}</span>
-                                    <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">Legado</span>
+                                    <span className="text-4xl font-black leading-none text-white">{masteryIndex}</span>
+                                    <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">/{MASTERY_TOTAL_MAX_LEVEL}</span>
                                 </div>
                             </div>
                             <p className="max-w-[18rem] text-[11px] leading-relaxed text-gray-400">
@@ -2056,7 +1994,7 @@ const GeralTab: React.FC = () => {
                             <div className="flex h-[8.75rem] w-[8.75rem] items-center justify-center rounded-[1.6rem] border border-[var(--skin-accent-color)]/16 bg-black/28 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_24px_rgba(0,0,0,0.22)]">
                                 <div className="h-[7.5rem] w-[7.5rem]">
                                     <Suspense fallback={<div className="h-full w-full rounded-full bg-white/5" />}>
-                                        <AssetDecagon assets={assets} size="100%" />
+                                        <AssetPentagon assets={assets} size="100%" />
                                     </Suspense>
                                 </div>
                             </div>
@@ -2099,7 +2037,7 @@ const GeralTab: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Seu nível</div>
-                            <div className="text-2xl font-black text-white">{masteryTotalLevel}</div>
+                            <div className="text-2xl font-black text-white">{masteryIndex}/{MASTERY_TOTAL_MAX_LEVEL}</div>
                         </div>
                         <div className="text-right">
                             <div className="text-xs text-gray-500">Legado / Soberano</div>
@@ -2499,7 +2437,7 @@ const LegacyPremiumTab: React.FC = () => {
                     )}
                 </GlassCard>
             </section>
-            {isLinksOpen && <RelationshipHubModal onClose={() => setLinksOpen(false)} />}
+            {isLinksOpen && <ConnectionsModal onClose={() => setLinksOpen(false)} />}
 
             {isOracleSettingsOpen && (
                 <OracleSettingsModal

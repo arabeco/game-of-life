@@ -19,7 +19,6 @@ type StepDef = {
   targetSelector?: string;
   navigation?: NavigationDetail;
   autoAdvanceSelector?: string;
-  waitForEvent?: string;
   padding?: number;
   hideNext?: boolean;
   final?: boolean;
@@ -103,7 +102,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
       text: 'Quando estiver bom, confirme aqui. Assim o seu primeiro ciclo já nasce como dado real.',
       targetSelector: '#new-cycle-submit-button',
       navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
-      waitForEvent: FIRST_USE_ONBOARDING_EVENTS.cycleCreated,
       hideNext: true,
       padding: 12,
     },
@@ -145,7 +143,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
       text: 'Quando fizer sentido, confirme aqui. Eu sigo sozinho assim que a arena nascer.',
       targetSelector: '#new-arena-submit-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
-      waitForEvent: FIRST_USE_ONBOARDING_EVENTS.arenaCreated,
       hideNext: true,
       padding: 12,
     },
@@ -195,7 +192,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
       text: 'Quando estiver pronta, confirme aqui. Eu levo você para o planner assim que a ação for criada.',
       targetSelector: '#onboarding-action-save-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
-      waitForEvent: FIRST_USE_ONBOARDING_EVENTS.actionCreated,
       hideNext: true,
       padding: 12,
     },
@@ -210,7 +206,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'rest-entry',
       title: 'Tela de descanso',
-      text: 'Esse atalho abre a tela de descanso. Toque aqui quando quiser entrar no Painel Diário do agora.',
+      text: 'Esse atalho abre a tela de descanso. Toque aqui quando quiser ver o resumo do agora.',
       targetSelector: '#lock-icon-button',
       navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
       autoAdvanceSelector: '#sitrep-embedded-card',
@@ -218,8 +214,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
     {
       id: 'sitrep-card',
-      title: 'Painel Diário',
-      text: 'Aqui você acompanha o dia de hoje. Não precisa mexer em tudo agora. O importante é saber onde o fluxo diário mora e como destravar essa camada quando quiser agir.',
+      title: 'Resumo Diario',
+      text: 'Aqui voce acompanha o que foi feito no dia e como isso entra no ciclo. Nao e uma tela para travar metas; e uma leitura rapida do seu padrao.',
       targetSelector: '#sitrep-embedded-card',
       navigation: { view: 'planner', showReports: false, showRestScreen: true, showArenaId: null },
       padding: 14,
@@ -296,7 +292,10 @@ export const FirstUseOnboardingOverlay: React.FC<{
   useEffect(() => {
     if (!active || !step) return;
     const detail = { ...defaultNavigation, ...(step.navigation || {}) };
-    window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail }));
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail }));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [active, step]);
 
   useEffect(() => {
@@ -406,24 +405,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
   }, [active, step?.id, step?.targetSelector]);
 
   useEffect(() => {
-    if (!active || !step?.waitForEvent) return;
-
-    const handleEvent = (event: Event) => {
-      const customEvent = event as CustomEvent<{ arenaId?: string; actionId?: string }>;
-      if (step.waitForEvent === FIRST_USE_ONBOARDING_EVENTS.arenaCreated) {
-        setCreatedArenaId(customEvent.detail?.arenaId || null);
-      }
-      if (step.waitForEvent === FIRST_USE_ONBOARDING_EVENTS.actionCreated) {
-        setCreatedActionId(customEvent.detail?.actionId || null);
-      }
-      advanceStep();
-    };
-
-    window.addEventListener(step.waitForEvent, handleEvent as EventListener);
-    return () => window.removeEventListener(step.waitForEvent, handleEvent as EventListener);
-  }, [active, step?.id, step?.waitForEvent, advanceStep]);
-
-  useEffect(() => {
     if (!active) return;
 
     const handleCycleSetupOpened = () => {
@@ -440,9 +421,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
     const handleCycleCreated = () => {
       jumpToAtLeast('arena-entry');
-      window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent(FIRST_USE_ONBOARDING_EVENTS.requestArenaModalOpen));
-      }, 280);
     };
 
     const handleArenaModalOpened = () => {
@@ -556,7 +534,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     if (isTyping) {
       setDisplayedText(step.text);
       setIsTyping(false);
-      return;
+      if (!shouldTriggerTargetOnNext(step)) return;
     }
 
     if (!canAdvanceFromStep(step)) return;

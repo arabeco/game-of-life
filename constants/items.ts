@@ -1,5 +1,7 @@
 ﻿import { ItemRarity } from '../types';
 import { ACTIVE_GOLD_ITEM_PRICE_BY_ID, GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG } from './goldCatalog';
+import { PRODUCT_FEATURES } from './featureFlags';
+import { CATALOG_ASSET_ROOT, CATALOG_AVATAR_ROOT, CATALOG_GLYPH_ROOT, CATALOG_INTERFACE_ROOT } from './catalogAssets';
 
 export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest' | 'insignia' | 'insignias';
 export type ItemSeasonSlot = 'skin' | 'border' | 'banner' | 'glyph' | 'orb' | 'plate' | 'insignia' | 'ui_skin';
@@ -36,10 +38,10 @@ export interface ItemDef {
     seasonSlot?: ItemSeasonSlot; // Slot inside the seasonal collection
 }
 
-const BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
-const GLYPHS_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars/glyphs';
-const INTERFACE_BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/interface';
-const ROOT_IMAGES_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
+const BASE_URL = CATALOG_AVATAR_ROOT;
+const GLYPHS_BASE_URL = CATALOG_GLYPH_ROOT;
+const INTERFACE_BASE_URL = CATALOG_INTERFACE_ROOT;
+const ROOT_IMAGES_URL = CATALOG_ASSET_ROOT;
 
 type CatalogItemInput = Omit<ItemDef, 'category'>;
 type AssetBackedItemInput = Omit<ItemDef, 'category' | 'imageUrl'> & { asset?: string };
@@ -150,7 +152,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_4_001', name: 'Armadura Placa', category: 'skin', tier: 4, rarity: 'epic', icon: '🛡️', imageUrl: avatarPngAsset('SKIN_T4_ARMADURA_PLACA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_4_001 },
     { id: 'item_skin_4_002', name: 'Mago Círculo', category: 'skin', tier: 4, rarity: 'epic', icon: '🧙', imageUrl: avatarPngAsset('SKIN_T4_MAGO_CIRCULO'), isRankExclusive: true },
     // T5 (Lendário)
-    avatarItem('skin', { id: 'item_skin_5_001', name: 'Entidade de Luz', tier: 5, rarity: 'legendary', icon: '✨', asset: 'SKIN_T5_ENTIDADE_LUZ.png', isRankExclusive: true }),
+    catalogItem('skin', { id: 'item_skin_5_001', name: 'Entidade de Luz', tier: 5, rarity: 'legendary', icon: '✨', isRankExclusive: true }),
     avatarItem('skin', { id: 'item_skin_5_002', name: 'Vestido Real', tier: 5, rarity: 'legendary', icon: '\uD83D\uDC57', asset: 'SKIN_T5_VESTIDO_REAL.png', isChestExclusive: true, description: 'Traje lendário reservado aos baús mais raros do inventário.' }),
 
     // Season
@@ -247,7 +249,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png`, isGmExclusive: true },
     // Novos T5
     { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 5, rarity: 'legendary', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
-    { id: 'item_border_aurora_1_2026', name: 'Aurora I', category: 'border', tier: 4, rarity: 'epic', icon: '🌠', imageUrl: `${INTERFACE_BASE_URL}/borda_auroraI.png`, isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border' },
+    catalogItem('border', { id: 'item_border_aurora_1_2026', name: 'Aurora I', tier: 4, rarity: 'epic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border' }),
 
     // --- BANNERS ---
     // T1
@@ -273,7 +275,7 @@ export const ITEMS_DB: ItemDef[] = [
     // T5
     { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png`, isGmExclusive: true },
     { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 5, rarity: 'legendary', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
-    { id: 'item_banner_aurora_1_2026', name: 'Aurora I', category: 'banner', tier: 4, rarity: 'epic', icon: '🌠', imageUrl: `${INTERFACE_BASE_URL}/banner_auroraI.png`, isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner' },
+    catalogItem('banner', { id: 'item_banner_aurora_1_2026', name: 'Aurora I', tier: 4, rarity: 'epic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner' }),
 
     // --- GLIFOS ---
     // T1
@@ -590,7 +592,11 @@ export const isItemPendingArt = (itemOrId?: ItemDef | string): boolean => {
     return PENDING_ART_ID_SET.has(item.id);
 };
 
-export const isItemCatalogVisible = (itemOrId?: ItemDef | string): boolean => !isItemPendingArt(itemOrId);
+export const isItemCatalogVisible = (itemOrId?: ItemDef | string): boolean => {
+    const itemId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.id;
+    if (!PRODUCT_FEATURES.personalGarden && itemId?.startsWith('item_garden_')) return false;
+    return !isItemPendingArt(itemOrId);
+};
 
 export const getCatalogItems = (predicate?: (item: ItemDef) => boolean): ItemDef[] => {
     return ITEMS_DB.filter(item => isItemCatalogVisible(item) && (!predicate || predicate(item)));

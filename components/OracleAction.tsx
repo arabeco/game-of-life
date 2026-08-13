@@ -86,7 +86,7 @@ const createMessageId = () => `${Date.now()}_${Math.random().toString(16).slice(
 const ACTION_INTRO = [
   'Aba operacional do GLYPH.',
   'Eu executo o core loop com perguntas curtas, rascunho e confirmacao antes de aplicar.',
-  'Posso criar ciclo, ajustar a data final do ciclo, criar/editar arena, criar/editar/programar acao, concluir por horario, desmarcar tarefa e organizar o dia.',
+  'Posso criar ciclo, ajustar a data final do ciclo, criar/editar arena, criar/editar/programar acao, concluir por horario, desmarcar tarefa e priorizar o dia no Planner.',
   'Excluir arena fica manual por seguranca.',
 ].join('\n\n');
 
@@ -402,7 +402,6 @@ export const OracleAction: React.FC = () => {
     taskPool,
     tasks,
     toggleTaskCompletion,
-    unlockDailyCommitment,
     updateAction,
     updateArena,
     updateCycle,
@@ -1202,7 +1201,7 @@ export const OracleAction: React.FC = () => {
     }
 
     return formatAssistantText([
-      `Rascunho pronto: organizar hoje em modo ${payload.organizeMode || 'padrao'}, mexendo no planner e no painel diario.`,
+      `Rascunho pronto: priorizar hoje em modo ${payload.organizeMode || 'padrao'}, mexendo no Planner sem travar metas.`,
       ...buildConfirmationFooter(kind),
     ]);
   };
@@ -1248,7 +1247,7 @@ export const OracleAction: React.FC = () => {
       return `Mover "${action?.name || 'acao'}" em ${formatDateLabel(targetDate)}.`;
     }
     if (kind === 'organize_day') {
-      return `Organizar o dia no modo ${payload.organizeMode || 'padrao'}.`;
+      return `Priorizar o dia no Planner no modo ${payload.organizeMode || 'padrao'}.`;
     }
     if (kind === 'status') {
       return 'Mostrar status do dia.';
@@ -1481,14 +1480,6 @@ export const OracleAction: React.FC = () => {
         ? 4
         : 3;
 
-    if (dailyCommitment.stage === 'judgment') {
-      return 'O painel diario ja esta em julgamento. Reabra no proximo dia para reorganizar.';
-    }
-
-    if (dailyCommitment.stage === 'battle') {
-      unlockDailyCommitment();
-    }
-
     const today = getLocalDateString();
     const todaysPendingTasks = tasks
       .filter((task) => task.date === today && !task.completed)
@@ -1499,6 +1490,10 @@ export const OracleAction: React.FC = () => {
       });
 
     const selectedTaskIds = todaysPendingTasks.slice(0, targetCount).map((task) => task.id);
+    const selectedNames: string[] = selectedTaskIds
+      .map((taskId) => todaysPendingTasks.find((task) => task.id === taskId))
+      .map((task) => task ? actions.find((action) => action.id === task.actionId)?.name : null)
+      .filter((name): name is string => Boolean(name));
     const existingActionIds = new Set(todaysPendingTasks.map((task) => task.actionId));
     const usedStartTimes = new Set(todaysPendingTasks.filter((task) => task.startTime >= 0).map((task) => task.startTime));
 
@@ -1528,17 +1523,21 @@ export const OracleAction: React.FC = () => {
         usedStartTimes.add(nextSlot);
         if (createdTask?.id) {
           selectedTaskIds.push(createdTask.id);
+          selectedNames.push(action.name);
         }
       }
     }
 
     if (selectedTaskIds.length === 0) {
-      return 'Nao encontrei acoes boas para montar o dia agora.';
+      return 'Nao encontrei acoes boas para priorizar agora.';
     }
 
-    setDailyCommitment(selectedTaskIds);
-    updateOperationalScratch(`Dia organizado em modo ${payload.organizeMode || 'padrao'} pela aba Acao.`);
-    return `Dia organizado com ${selectedTaskIds.length} frente(s) no painel diario.`;
+    updateOperationalScratch(`Prioridade sugerida em modo ${payload.organizeMode || 'padrao'} pela aba Acao.`);
+    return formatAssistantText([
+      `Separei ${selectedTaskIds.length} frente(s) boas para hoje no Planner.`,
+      selectedNames.length > 0 ? `Prioridade: ${selectedNames.join(', ')}.` : '',
+      'O resumo diario vai apenas ler o que for concluido, sem travar metas.',
+    ]);
   };
 
   const handleExecutorStart = (kind: PendingExecutor['kind'], payload: ExecutorPayload) => {
@@ -1686,7 +1685,7 @@ export const OracleAction: React.FC = () => {
           '2. marcar consulta medica amanha de manha',
           '3. fiz academia as 9h',
           '4. desmarcar relatorio',
-          '5. organizar meu dia no modo leve',
+          '5. priorizar meu dia no modo leve',
         ]),
         'warning',
       );

@@ -3,18 +3,6 @@ import { Asset } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { ArenaCard } from './ArenaCard';
 import { ArenaDetailModal } from './ArenaDetailModal';
-import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
-
-const hexToRgb = (hex: string): [number, number, number] | null => {
-    const normalized = hex.replace('#', '').trim();
-    if (normalized.length !== 6) return null;
-    const value = Number.parseInt(normalized, 16);
-    if (Number.isNaN(value)) return null;
-    return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
-};
-
-const rgbaString = (rgb: [number, number, number] | null, alpha: number): string =>
-    rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : `rgba(255, 215, 0, ${alpha})`;
 
 interface AssetArenaBoardProps {
     asset: Asset;
@@ -29,23 +17,11 @@ const pileTransform = (index: number) => {
 };
 
 const sectionTitleClass = 'text-center text-[10px] font-black uppercase tracking-[0.28em] text-[var(--skin-accent-color)]';
-const emptyClass = 'rounded-2xl border border-dashed border-white/10 bg-black/15 px-4 py-4 text-center text-xs text-white/45';
+const emptyClass = 'px-4 py-4 text-center text-xs text-white/45';
 
 export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArchived = true, interactive = true }) => {
-    const { getActionsForArena, userProfile, appMode } = useGame();
+    const { getActionsForArena } = useGame();
     const [viewingArenaId, setViewingArenaId] = useState<string | null>(null);
-    const assetAccent = ASSET_ACCENT_COLORS[asset.id as keyof typeof ASSET_ACCENT_COLORS] || '#F0C843';
-    const assetAccentRgb = hexToRgb(assetAccent);
-    const isRestrainedMetal = appMode === 'BASIC' || userProfile.skin === 'BASIC' || userProfile.skin === 'default';
-    const sectionStyle: React.CSSProperties = {
-        backgroundImage: isRestrainedMetal
-            ? `radial-gradient(circle at 18% 0%, rgba(255,255,255,0.1), transparent 28%),
-               linear-gradient(145deg, rgba(226,192,98,0.08) 0%, rgba(255,255,255,0.025) 30%, rgba(0,0,0,0.12) 70%, ${rgbaString(assetAccentRgb, 0.1)} 100%)`
-            : `radial-gradient(circle at 18% 0%, rgba(255,255,255,0.13), transparent 26%),
-               linear-gradient(145deg, rgba(226,192,98,0.1) 0%, rgba(255,255,255,0.03) 30%, rgba(0,0,0,0.12) 70%, ${rgbaString(assetAccentRgb, 0.13)} 100%)`,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.075), 0 0 18px rgba(226,192,98,0.045)',
-        backdropFilter: 'blur(12px) saturate(125%)',
-    };
 
     const sortedArenas = useMemo(() => {
         return [...(asset.arenas || [])].sort((a, b) => {
@@ -71,7 +47,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArc
         <>
             <div className="flex flex-col gap-2.5">
                 {showArchived && (
-                    <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.008))] px-4 py-3" style={sectionStyle}>
+                    <section className="border-t border-white/12 px-3 py-3">
                         <p className={sectionTitleClass}>Arquivadas</p>
 
                         {archivedArenas.length > 0 ? (
@@ -83,15 +59,15 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArc
                                             type="button"
                                             onClick={interactive ? () => setViewingArenaId(arena.id) : undefined}
                                             disabled={!interactive}
-                                            className={`w-[4.65rem] shrink-0 ${index > 0 ? '-ml-3.5' : ''}`}
+                                            className={`w-[9.25rem] shrink-0 ${index > 0 ? '-ml-6' : ''}`}
                                             style={{ transform: pileTransform(index) }}
                                         >
-                                            <div className="pointer-events-none h-[5.85rem] w-full drop-shadow-[0_10px_20px_rgba(0,0,0,0.32)]">
+                                            <div className="pointer-events-none h-[4.75rem] w-full drop-shadow-[0_10px_20px_rgba(0,0,0,0.32)]">
                                                 <ArenaCard
                                                     arena={arena}
                                                     actions={getActionsForArena(arena.id)}
                                                     onClick={interactive ? () => setViewingArenaId(arena.id) : undefined}
-                                                    variant="compact"
+                                                    variant="overview"
                                                 />
                                             </div>
                                         </button>
@@ -106,19 +82,19 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArc
                     </section>
                 )}
 
-                <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.008))] px-4 py-3" style={sectionStyle}>
-                    <p className={sectionTitleClass}>Ativas</p>
+                <section className="border-t border-white/12 px-3 py-3">
+                    {showArchived && <p className={sectionTitleClass}>Ativas</p>}
 
                     {activeArenas.length > 0 ? (
-                        <div className="mt-2.5 overflow-x-auto pb-1.5">
-                            <div className="flex min-w-max gap-2 pr-1">
+                        <div className={`${showArchived ? 'mt-2.5 ' : ''}overflow-x-auto pb-1.5`}>
+                            <div className="flex min-w-max gap-2.5 pr-1">
                                 {activeArenas.map((arena) => (
-                                    <div key={arena.id} className="h-[6.15rem] w-[4.9rem] shrink-0">
+                                    <div key={arena.id} className="h-[4.75rem] w-[9.25rem] shrink-0">
                                         <ArenaCard
                                             arena={arena}
                                             actions={getActionsForArena(arena.id)}
                                             onClick={interactive ? () => setViewingArenaId(arena.id) : undefined}
-                                            variant="compact"
+                                            variant="overview"
                                         />
                                     </div>
                                 ))}

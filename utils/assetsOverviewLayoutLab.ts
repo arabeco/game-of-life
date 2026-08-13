@@ -5,20 +5,15 @@ export interface AssetOverviewLayoutEntry {
 
 export type AssetOverviewLayoutConfig = Record<string, AssetOverviewLayoutEntry>;
 
-export const ASSET_OVERVIEW_LAYOUT_STORAGE_KEY = 'glyph:assets-overview-layout-v4';
+export const ASSET_OVERVIEW_LAYOUT_STORAGE_KEY = 'glyph:assets-overview-layout-v5';
 export const ASSET_OVERVIEW_LAYOUT_UPDATED_EVENT = 'glyph:assets-overview-layout-updated';
 
 export const DEFAULT_ASSET_OVERVIEW_LAYOUT: AssetOverviewLayoutConfig = {
-  consciencia: { x: 50, y: 10.5 },
-  'espaco-mental': { x: 16.66, y: 18.5 },
-  espiritualidade: { x: 83.33, y: 18.5 },
-  proposito: { x: 16.66, y: 39.25 },
-  projetos: { x: 83.33, y: 39.25 },
-  conexoes: { x: 50, y: 49.75 },
-  trabalho: { x: 16.66, y: 62.75 },
-  financas: { x: 83.33, y: 62.75 },
-  hobbies: { x: 50, y: 70.75 },
-  fisico: { x: 50, y: 91 },
+  proposito: { x: 50, y: 10 },
+  relacoes: { x: 50, y: 30 },
+  trabalho: { x: 50, y: 50 },
+  lazer: { x: 50, y: 70 },
+  saude: { x: 50, y: 90 },
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));

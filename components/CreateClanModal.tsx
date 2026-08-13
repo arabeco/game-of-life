@@ -3,22 +3,19 @@ import { GlassCard } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
 import { IconPickerModal } from './IconPickerModal';
 import { CheckIcon } from './Icons';
-import { ClanType, RecruitmentStatus } from '../types';
-import { DEFAULT_SANCTUARY_BACKGROUND } from '../constants';
+import { RecruitmentStatus } from '../types';
+import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
 import { GOLD_CLAN_CREATION_COST } from '../constants/goldCatalog';
 import { Portal } from './Portal';
 import { ConfirmationModal } from './ConfirmationModal';
 
-const clanTypes: ClanType[] = ['Casual', 'Office'];
 const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
 
 export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { createClan, appMode, userProfile } = useGame();
-    const isBasicMode = appMode === 'BASIC';
+    const { createClan, userProfile } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('\u{1F3DB}\uFE0F');
-    const [clanType, setClanType] = useState<ClanType>(isBasicMode ? 'Office' : 'Casual');
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [backgroundUrl, setBackgroundUrl] = useState(DEFAULT_SANCTUARY_BACKGROUND);
@@ -26,26 +23,15 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const [isConfirmingDebit, setIsConfirmingDebit] = useState(false);
     const canAffordClanCreation = (userProfile.wallet?.gold || 0) >= GOLD_CLAN_CREATION_COST;
 
-    const officeBackgrounds = [
-        { id: 'office1', label: 'Escritorio 1', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office1.jpg' },
-        { id: 'office2', label: 'Escritorio 2', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office2.jpg' },
-        { id: 'office3', label: 'Escritorio 3', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office3.jpg' },
-    ];
-
     const performSave = async () => {
         if (!name.trim()) {
             alert('O nome do grupo nao pode estar vazio.');
             return;
         }
 
-        let finalBackgroundUrl = backgroundUrl;
-        if (clanType.toLowerCase() === 'office' && !officeBackgrounds.some((bg) => bg.value === backgroundUrl)) {
-            finalBackgroundUrl = officeBackgrounds[0].value;
-        }
-
         setIsSubmitting(true);
         try {
-            const created = await createClan({ name, icon, description, clanType, recruitmentStatus, backgroundUrl: finalBackgroundUrl });
+            const created = await createClan({ name, icon, description, clanType: 'Casual', recruitmentStatus, backgroundUrl });
             if (created) onClose();
         } finally {
             setIsSubmitting(false);
@@ -82,7 +68,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
         <>
             <Portal>
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-                    <GlassCard variant="gold" className="m-4 w-full max-w-sm space-y-4 rounded-3xl" onClick={(e) => e.stopPropagation()}>
+                    <GlassCard variant="gold" className="m-4 w-full max-w-md space-y-4 rounded-3xl" onClick={(e) => e.stopPropagation()}>
                         <h2 className="text-center text-lg font-bold uppercase tracking-wider">Criar Grupo</h2>
                         <div className="flex flex-col items-center space-y-4">
                             <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-yellow-300">
@@ -108,39 +94,19 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                     rows={2}
                                     className="w-full rounded-xl border border-[var(--glass-border)] bg-black/30 p-3 text-center text-sm focus:border-[var(--skin-accent-color)] focus:outline-none"
                                 />
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400">Tipo de Grupo</label>
-                                    <div className="mt-1 flex rounded-xl bg-black/20 p-1">
-                                        {isBasicMode ? (
-                                            <button className="w-full cursor-default rounded-lg bg-white/10 py-1 text-sm text-gray-200">Equipe</button>
-                                        ) : (
-                                            clanTypes.map((type) => (
-                                                <button
-                                                    key={type}
-                                                    onClick={() => setClanType(type)}
-                                                    className={`w-full rounded-lg py-1 text-sm ${clanType === type ? 'bg-white/10' : 'text-gray-400'}`}
-                                                >
-                                                    {type === 'Office' ? 'Equipe' : 'Social'}
-                                                </button>
-                                            ))
-                                        )}
-                                    </div>
-                                    {isBasicMode && (
-                                        <p className="mt-1 text-[10px] text-gray-500">No modo basico, novos grupos nascem como equipe.</p>
-                                    )}
-                                </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase text-gray-400">Fundo do Espaco</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {(clanType.toLowerCase() === 'office' ? officeBackgrounds : []).map((option) => {
+                                    <label className="text-xs font-bold uppercase text-gray-400">Plano de fundo</label>
+                                    <div className="grid max-h-64 grid-cols-2 gap-3 overflow-y-auto pr-1">
+                                        {SANCTUARY_BACKGROUND_OPTIONS.map((option) => {
                                             const isSelected = backgroundUrl === option.value;
                                             return (
                                                 <button
                                                     key={option.id}
                                                     onClick={() => setBackgroundUrl(option.value)}
-                                                    className={`relative overflow-hidden rounded-xl border-2 transition-all ${isSelected ? 'scale-105 border-[var(--skin-accent-color)]' : 'border-white/10 opacity-60 hover:opacity-100'}`}
+                                                    className={`relative overflow-hidden rounded-xl border-2 transition-all ${isSelected ? 'border-[var(--skin-accent-color)]' : 'border-white/10 opacity-70 hover:opacity-100'}`}
                                                 >
-                                                    <div className="aspect-square w-full bg-cover bg-center" style={{ backgroundImage: `url(${option.value})` }} />
+                                                    <div className="aspect-[16/9] w-full bg-cover bg-center" style={{ backgroundImage: `url(${option.value})` }} title={option.name} />
+                                                    <span className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-[10px] font-bold text-white">{option.name}</span>
                                                     {isSelected && (
                                                         <div className="absolute inset-0 flex items-center justify-center bg-[var(--skin-accent-color)]/10">
                                                             <CheckIcon className="h-6 w-6 text-[var(--skin-accent-color)]" />

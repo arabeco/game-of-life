@@ -8,7 +8,7 @@ import { SephirotFog } from './SephirotFog';
 import { MoodModal } from './MoodModal';
 import { ChecklistModal } from './ChecklistModal';
 import { SitrepContent } from './SitrepContent';
-import { ClanDetailModal } from './ClanDetailModal';
+import { ClanOverviewModal } from './ClanOverviewModal';
 import { OracleFeed } from './OracleFeed';
 import { WheelPicker } from './inputs/WheelPicker';
 import { Action, ActionType, Arena, ScheduledTask, DayOfWeek } from '../types';
@@ -198,7 +198,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         task: currentActionSessionTask,
         nowMs: Date.now(),
     }), [actionSession, currentActionSessionTask, actionSessionTimeLeft]);
-    const sitrepStatusLabel = isSitrepLocked ? 'Travado' : 'Liberado';
+    const sitrepStatusLabel = isSitrepLocked ? 'Resumo' : 'Aberto';
     const isBasicMode = appMode === 'BASIC';
     const isLightTheme = activeTheme === 'LIGHT';
     const unlockHint = isUnlocked ? 'Saindo...' : 'Segure 1s para desbloquear';
@@ -1169,7 +1169,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 </div>
 
 
-                {/* Center Section: Painel Diário (Main Focus) */}
+                {/* Center Section: Resumo Diario */}
                 <div className="flex-1 flex min-h-0 w-full items-center justify-center px-4 pb-2 z-10 animate-fade-in overflow-hidden">
                     <div className={`relative flex w-full flex-col group transition-[max-width,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-w-[21rem] translate-y-1' : 'max-w-md translate-y-0'}`}>
                         {/* Decorative background glow */}
@@ -1203,9 +1203,9 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                             <CheckCircleIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                         </div>
                                         <div>
-                                            <h2 className="restscreen-neutral-label text-[10px] font-black uppercase tracking-[0.2em]">PAINEL DIÁRIO</h2>
+                                            <h2 className="restscreen-neutral-label text-[10px] font-black uppercase tracking-[0.2em]">RESUMO DIARIO</h2>
                                             <div className="restscreen-neutral-title text-xs font-bold uppercase tracking-wider">
-                                                {dailyCommitment.stage === 'planning' ? 'Planejamento' : dailyCommitment.stage === 'battle' ? 'Combate' : 'Julgamento'}
+                                                Acoes e ciclo
                                             </div>
                                         </div>
                                     </div>
@@ -1342,12 +1342,10 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                         {/* ORACLE INDICATOR */}
                         <button
-                            onMouseDown={() => handleQuickActionStart('real_oracle')}
-                            onMouseUp={handleQuickActionEnd}
-                            onMouseLeave={handleQuickActionEnd}
-                            onTouchStart={() => handleQuickActionStart('real_oracle')}
-                            onTouchEnd={handleQuickActionEnd}
+                            type="button"
+                            onClick={() => handleQuickAction('real_oracle')}
                             className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
+                            aria-label="Abrir Oraculo"
                         >
                             <div className="relative flex h-12 w-12 items-center justify-center overflow-visible">
                                 {actionProgress?.id === 'real_oracle' && (
@@ -1505,7 +1503,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     </div>
                 )}
                 {isClanOpen && clan && (
-                    <ClanDetailModal clanName={clan.name} onClose={() => setIsClanOpen(false)} />
+                    <ClanOverviewModal onClose={() => setIsClanOpen(false)} />
                 )}
 
                 {/* Quick Action Input Overlay */}

@@ -8,9 +8,10 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { AddClanMemberModal } from './AddClanMemberModal';
 import { RecruitmentStatus } from '../types';
 import { UserAvatar } from './UserAvatar';
+import { SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
 
 export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { clan, enrichedClanMembers, updateClan, kickClanMember } = useGame();
+    const { clan, enrichedClanMembers, updateClan, kickClanMember, deleteClan } = useGame();
     const [name, setName] = useState(clan?.name || '');
     const [icon, setIcon] = useState(clan?.icon || '🏛️');
     const [description, setDescription] = useState(clan?.description || '');
@@ -20,13 +21,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
     const [memberToKick, setMemberToKick] = useState<string | null>(null);
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-
-    const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
-    const officeBackgrounds = [
-        { id: 'office1', label: 'Escritorio 1', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office1.jpg' },
-        { id: 'office2', label: 'Escritorio 2', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office2.jpg' },
-        { id: 'office3', label: 'Escritorio 3', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office3.jpg' },
-    ];
+    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
     if (!clan) return null;
 
@@ -48,11 +43,17 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
         }
     };
 
+    const handleDeleteClan = async () => {
+        setIsConfirmingDelete(false);
+        await deleteClan();
+        onClose();
+    };
+
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10001] overflow-y-auto animate-fade-in" onClick={onClose}>
                 <div className="min-h-full flex items-start justify-center p-4">
-                <GlassCard variant="gold" className="w-full max-w-sm space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
+                <GlassCard variant="gold" className="w-full max-w-md space-y-5 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 z-10 flex justify-between items-center bg-[color:var(--modal-bg,#0a0b0f)]/92 backdrop-blur-md rounded-t-3xl -mx-0 px-0">
                         <h2 className="text-lg font-bold uppercase tracking-wider">Gerenciar Grupo</h2>
                         <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
@@ -95,28 +96,27 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                             </div>
                         </div>
 
-                        {isOfficeClan && (
-                            <div className="w-full space-y-2">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center block">Fundo do Espaco</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {officeBackgrounds.map(option => {
+                        <div className="w-full space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center block">Plano de fundo</label>
+                                <div className="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto pr-1">
+                                    {SANCTUARY_BACKGROUND_OPTIONS.map(option => {
                                         const isSelected = backgroundUrl === option.value;
                                         return (
                                             <button
                                                 key={option.id}
                                                 onClick={() => setBackgroundUrl(option.value)}
-                                                className={`relative rounded-xl overflow-hidden border-2 transition-all ${isSelected ? 'border-[var(--skin-accent-color)] scale-105' : 'border-white/10 opacity-60 hover:opacity-100'}`}
+                                                className={`relative rounded-xl overflow-hidden border-2 transition-all ${isSelected ? 'border-[var(--skin-accent-color)]' : 'border-white/10 opacity-70 hover:opacity-100'}`}
                                             >
                                                 <div
-                                                    className="aspect-square w-full bg-cover bg-center"
+                                                    className="aspect-[16/9] w-full bg-cover bg-center"
                                                     style={{ backgroundImage: `url(${option.value})` }}
                                                 />
+                                                <span className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-[10px] font-bold text-white">{option.name}</span>
                                             </button>
                                         );
                                     })}
                                 </div>
-                            </div>
-                        )}
+                        </div>
                     </div>
 
                     <div className="space-y-2">
@@ -141,6 +141,15 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
 
                     <div className="space-y-2">
                         <button onClick={() => setIsAddMemberModalOpen(true)} className="w-full py-2 rounded-xl luxe-button-secondary">Pedidos e Convites</button>
+                        <button
+                            onClick={() => setIsConfirmingDelete(true)}
+                            disabled={enrichedClanMembers.length > 1}
+                            className="w-full rounded-xl border border-red-500/20 bg-red-500/10 py-2 text-xs font-bold uppercase text-red-300 disabled:cursor-not-allowed disabled:opacity-35"
+                            title={enrichedClanMembers.length > 1 ? 'Remova ou transfira as outras pessoas antes de excluir.' : 'Excluir grupo'}
+                        >
+                            Excluir grupo
+                        </button>
+                        {enrichedClanMembers.length > 1 && <p className="text-center text-[10px] text-white/35">Para excluir, o grupo precisa ficar apenas com a lideranca.</p>}
                         <button onClick={handleSave} disabled={isSaving} className="w-full py-2 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed">{isSaving ? 'SALVANDO...' : 'SALVAR MUDANÇAS'}</button>
                     </div>
                 </GlassCard>
@@ -148,6 +157,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
             </div>
             {isIconPickerOpen && <IconPickerModal onSelect={(i) => { setIcon(i); setIsIconPickerOpen(false); }} onClose={() => setIsIconPickerOpen(false)} />}
             {memberToKick && <ConfirmationModal title="Remover Pessoa" message={`Tem certeza que deseja remover ${enrichedClanMembers.find(m => m.id === memberToKick)?.nickname}?`} onConfirm={handleKickMember} onCancel={() => setMemberToKick(null)} />}
+            {isConfirmingDelete && <ConfirmationModal title="Excluir Grupo" message="Essa acao apaga o grupo definitivamente. O progresso pessoal e os ciclos permanecem." onConfirm={handleDeleteClan} onCancel={() => setIsConfirmingDelete(false)} />}
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
         </Portal>
     );

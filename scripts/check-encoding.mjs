@@ -7,6 +7,8 @@ const ignoreFragments = [
   `${path.sep}node_modules${path.sep}`,
   `${path.sep}dist${path.sep}`,
   `${path.sep}.git${path.sep}`,
+  `${path.sep}android${path.sep}app${path.sep}build${path.sep}`,
+  `${path.sep}android${path.sep}app${path.sep}src${path.sep}main${path.sep}assets${path.sep}public${path.sep}`,
   `${path.sep}contexts${path.sep}GameContext_utf8.tsx`,
   `${path.sep}temp_`,
   `${path.sep}ActionModal.head.tsx`,

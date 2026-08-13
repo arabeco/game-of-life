@@ -1182,7 +1182,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             };
         }
 
-        applyExp(awardedExp, { forceProfile: true, includePremium: false });
+        applyExp(awardedExp, {
+            forceProfile: true,
+            includePremium: false,
+            contributionSource: selectedReport ? `cycle:${selectedReport.cycleId || selectedReport.id}` : undefined,
+        });
         if (awardedFragments > 0) {
             updateUserProfile({
                 wallet: {

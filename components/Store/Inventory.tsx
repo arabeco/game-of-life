@@ -10,6 +10,7 @@ import { getChestVisual, getTierVisual, normalizeVisualRarity, withAlpha } from 
 import { ItemArt } from '../ItemArt';
 import { RewardPackModal } from '../RewardPackModal';
 import { buildChestRewardPayload } from '../../utils/chestRewardPresentation';
+import { resolveCatalogAssetUrl } from '../../constants/catalogAssets';
 
 type InventoryTab = 'all' | 'sovereign' | 'glyph' | 'interface' | 'honors' | 'chests';
 type InventoryEntry = {
@@ -70,7 +71,7 @@ export const Inventory: React.FC = () => {
         if (category === 'plate') return [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate, userProfile.sovereign.glyphPlate].includes(itemId);
         if (category === 'border') return userProfile.border === itemId;
         if (category === 'ui_skin') return userProfile.skin === itemId;
-        if (category === 'banner') return !!imageUrl && userProfile.bannerUrl === imageUrl;
+        if (category === 'banner') return !!imageUrl && resolveCatalogAssetUrl(userProfile.bannerUrl) === imageUrl;
         return false;
     };
 

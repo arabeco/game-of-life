@@ -309,7 +309,7 @@ try {
       'campaigns menu open',
       `(() => {
         const body = (document.body?.innerText || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
-        return body.includes('BIBLIOTECA PRONTA PARA INSTALAR') || (body.includes('CAMPANHAS') && body.includes('BIBLIOTECA') && body.includes('PRONTAS'));
+        return body.includes('CAMPANHAS') && body.includes('GUARDADAS') && (body.includes('PARA INICIAR') || body.includes('TODAS EM USO'));
       })()`,
       20000,
     );

@@ -1,6 +1,5 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { useRef } from 'react';
 import { Action, Arena, Campaign } from '../types';
 import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, LightbulbIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
@@ -15,8 +14,6 @@ import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../utils/c
 import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
 import { UserCodex } from '../types';
 import { CodexCoverArt as SharedCodexCoverArt } from './CodexCoverArt';
-import { CampaignRecommendationQuizModal } from './Store/CampaignRecommendationQuizModal';
-import { hasCompletedFreeCampaignQuiz } from '../utils/campaignQuiz';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 
 interface CampaignsCodexProps {
@@ -159,7 +156,7 @@ const CompactCampaignFolderTile: React.FC<{
                 </div>
                 {installed ? (
                     <span className="inline-flex items-center rounded-full border border-emerald-400/26 bg-emerald-500/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-emerald-200">
-                        Instalada
+                        Em uso
                     </span>
                 ) : (
                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-white/6 text-white/70 transition-all group-hover:bg-white/12">
@@ -175,8 +172,8 @@ const getCampaignSourceLabel = (codex: UserCodex | null | undefined) => {
     if (!codex) return 'Minha';
     if (codex.mentor_relationship_link_id) return 'Recebida';
     if (codex.source_type === 'gift_link' || codex.source_type === 'gift_in_app') return 'Recebida';
-    if (codex.source_type === 'catalog') return 'Loja';
-    return 'Meu codex';
+    if (codex.source_type === 'catalog') return 'Pronta';
+    return 'Autoral';
 };
 
 export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
@@ -186,12 +183,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     previewArenas = [],
     previewActions = [],
     previewEditable = false,
-    autoOpenRecommendationQuiz = false,
     onDeletePreviewCampaign = null,
     onUpdatePreviewCampaign = null,
     previewMeta,
 }) => {
-    const { campaigns, getArenas, actions, tasks, activeCycle, freeProgressResetAt, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, userProfile, installCodex, showToast } = useGame();
+    const { campaigns, getArenas, actions, tasks, activeCycle, freeProgressResetAt, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, installCodex, showToast } = useGame();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
@@ -207,8 +203,6 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     const [visiblePhaseCount, setVisiblePhaseCount] = useState(1);
     const [libraryPreview, setLibraryPreview] = useState<CodexCampaignPreview | null>(null);
     const [libraryPreviewCodex, setLibraryPreviewCodex] = useState<UserCodex | null>(null);
-    const [isRecommendationQuizOpen, setRecommendationQuizOpen] = useState(false);
-    const autoOpenedRecommendationQuizRef = useRef(false);
 
     // Expandable Description State
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -221,12 +215,6 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         setLocalPreviewArenas(previewArenas);
         setLocalPreviewActions(previewActions);
     }, [previewActions, previewArenas, previewCampaign]);
-
-    useEffect(() => {
-        if (!autoOpenRecommendationQuiz || autoOpenedRecommendationQuizRef.current) return;
-        autoOpenedRecommendationQuizRef.current = true;
-        setRecommendationQuizOpen(true);
-    }, [autoOpenRecommendationQuiz]);
 
     const handleOpenCampaignStore = () => {
         window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'codexes' } }));
@@ -282,32 +270,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         () => libraryEntries.filter((entry) => !entry.isInstalled).length,
         [libraryEntries],
     );
-    const hasOwnedFreeCampaign = useMemo(
-        () => libraryEntries.some((entry) => Number(entry.codex.price || 0) <= 0),
-        [libraryEntries],
-    );
-    const hasPendingFreeQuiz = !hasCompletedFreeCampaignQuiz() && !hasOwnedFreeCampaign;
-    const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
-    const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
-    const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
-    const quizButtonLabel = hasPendingFreeQuiz
-        ? 'Quiz grátis'
-        : campaignQuizFreeCredits > 0
-            ? 'Ficha grátis'
-            : campaignQuizMediumCredits > 0
-                ? 'Ficha média'
-                : 'Quiz';
-    const quizButtonBadgeLabel = totalQuizCredits > 0 ? String(totalQuizCredits) : null;
-    const quizHelperLabel = hasPendingFreeQuiz
-        ? 'Libera sua primeira campanha guiada'
-        : campaignQuizFreeCredits > 0
-            ? 'Usa sua ficha grátis para recomendar e liberar'
-            : campaignQuizMediumCredits > 0
-                ? 'Usa sua ficha média para recomendar e liberar'
-                : 'Responde e o sistema aponta a campanha certa';
     const handleInstallLibraryCampaign = async (codex: UserCodex) => {
         if (installedCodexIds.has(codex.id)) {
-            showToast('Essa campanha ja esta instalada nas suas campanhas.', 'info');
+            showToast('Essa campanha ja esta em uso.', 'info');
             return;
         }
 
@@ -776,36 +741,13 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                                 <button
                                     type="button"
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        event.stopPropagation();
-                                        setRecommendationQuizOpen(true);
-                                    }}
-                                    className={`relative inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
-                                        hasPendingFreeQuiz
-                                            ? 'border border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/16 text-[var(--ui-text-accent)] shadow-[0_0_0_1px_rgba(255,255,255,0.04)] hover:border-[var(--skin-accent-color)]/45 hover:bg-[var(--skin-accent-color)]/22'
-                                            : 'border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)] hover:border-[var(--skin-accent-color)]/38 hover:bg-[var(--skin-accent-color)]/16'
-                                    }`}
-                                >
-                                    <LightbulbIcon className="h-3.5 w-3.5" />
-                                    <span>{quizButtonLabel}</span>
-                                    {quizButtonBadgeLabel ? (
-                                        <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/20 bg-black/85 px-1.5 py-0.5 text-[8px] font-black leading-none text-white">
-                                            {quizButtonBadgeLabel}
-                                        </span>
-                                    ) : null}
-                                </button>
-                                <button
-                                    type="button"
                                     onClick={handleOpenCampaignStore}
-                                    className="inline-flex min-h-[42px] items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/86 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10"
+                                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/40 hover:bg-[var(--skin-accent-color)]/16"
                                 >
-                                    Loja
+                                    <LightbulbIcon className="h-3.5 w-3.5" /> Descobrir campanhas
                                 </button>
                             </div>
-                            <div className="mt-2 text-center text-[10px] text-white/48">
-                                {quizHelperLabel}
-                            </div>
+                            <div className="mt-2 text-center text-[10px] text-white/48">Escolha uma pronta ou acompanhe as que ja estao em uso.</div>
                         </div>
                         
                         <div className="overflow-y-auto p-4">
@@ -813,26 +755,13 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 <div className="space-y-3">
                                     <div className="flex items-end justify-between gap-3">
                                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Ativas</div>
-                                        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/65">
-                                            {visibleCampaigns.length} em uso
+                                        <div className="flex items-center gap-2">
+                                            <button type="button" onClick={handleCreateCampaign} className="inline-flex items-center gap-1 rounded-md border border-white/10 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-white/55 hover:text-white"><PlusIcon className="h-3 w-3" /> Criar do zero</button>
+                                            <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/65">{visibleCampaigns.length} em uso</div>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                                        <button
-                                            onClick={handleCreateCampaign}
-                                            className="group aspect-[4/3] rounded-[1.2rem] border-2 border-dashed border-white/10 bg-white/[0.02] transition-all hover:border-[var(--skin-accent-color)] hover:bg-white/5"
-                                        >
-                                            <div className="flex h-full flex-col items-center justify-center gap-2">
-                                                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-all group-hover:border-[var(--skin-accent-color)]/40 group-hover:bg-[var(--skin-accent-color)]/16">
-                                                    <PlusIcon className="h-5 w-5" />
-                                                </div>
-                                                <span className="text-[11px] font-black uppercase tracking-[0.14em] text-white/62 transition-colors group-hover:text-white">
-                                                    Nova campanha
-                                                </span>
-                                            </div>
-                                        </button>
-
                                         {visibleCampaigns.map((campaign) => {
                                             const campaignArenas = campaign.arenaIds
                                                 .map((arenaId) => (campaignArenasSource === allArenas ? arenaById.get(arenaId) : campaignArenasSource.find((arena) => arena.id === arenaId)))
@@ -867,9 +796,9 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 {libraryEntries.length > 0 && (
                                     <div className="space-y-3 border-t border-white/8 pt-4">
                                         <div className="flex items-end justify-between gap-3">
-                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Biblioteca</div>
+                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Guardadas</div>
                                             <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/65">
-                                                {readyToInstallLibraryCount > 0 ? `${readyToInstallLibraryCount} prontas` : 'Todas instaladas'}
+                                                {readyToInstallLibraryCount > 0 ? `${readyToInstallLibraryCount} para iniciar` : 'Todas em uso'}
                                             </div>
                                         </div>
 
@@ -885,7 +814,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                                     sourceLabel={sourceLabel}
                                                     footerLabel={`${arenaCount} arenas`}
                                                     installed={isInstalled}
-                                                    badgeLabel="Biblioteca"
+                                                    badgeLabel="Guardada"
                                                 />
                                             ))}
                                         </div>
@@ -904,9 +833,6 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                 setIsCreateCampaignModalOpen(false);
                             }}
                         />
-                    )}
-                    {isRecommendationQuizOpen && (
-                        <CampaignRecommendationQuizModal onClose={() => setRecommendationQuizOpen(false)} />
                     )}
                 </div>
             </Portal>
@@ -990,7 +916,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                                             : 'luxe-skin-button'
                                                     }`}
                                                 >
-                                                    {previewMeta.installLabel || 'Instalar'}
+                                                    {previewMeta.installLabel || 'Iniciar'}
                                                 </button>
                                             )}
                                             <button
@@ -998,7 +924,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                                 onClick={handleOpenCampaignStore}
                                                 className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10"
                                             >
-                                                Loja
+                                                Descobrir
                                             </button>
                                             <button onClick={onClose} className="shrink-0 rounded-xl px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] luxe-skin-button">
                                                 OK
@@ -1115,7 +1041,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                     onClick={handleOpenCampaignStore}
                                     className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10"
                                 >
-                                    Loja
+                                    Descobrir
                                 </button>
                                 <button onClick={onClose} className="px-5 py-2 text-sm font-bold rounded-xl luxe-skin-button">
                                     OK
@@ -1419,19 +1345,16 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                             previewActions={libraryPreview.actions}
                             previewMeta={{
                                 coverImage: libraryPreviewCodex?.template?.coverImage,
-                                badgeLabel: 'Biblioteca',
+                                badgeLabel: 'Guardada',
                                 author: libraryPreviewCodex?.author || 'Autor desconhecido',
-                                note: 'Essa campanha ja e sua e pode ser instalada a qualquer momento.',
-                                installLabel: installedCodexIds.has(libraryPreviewCodex?.id || '') ? 'Instalada' : 'Instalar',
+                                note: 'Essa campanha ja e sua e pode ser iniciada a qualquer momento.',
+                                installLabel: installedCodexIds.has(libraryPreviewCodex?.id || '') ? 'Em uso' : 'Iniciar',
                                 installDisabled: installedCodexIds.has(libraryPreviewCodex?.id || ''),
                                 onInstall: libraryPreviewCodex
                                     ? () => handleInstallLibraryCampaign(libraryPreviewCodex)
                                     : null,
                             }}
                         />
-                    )}
-                    {isRecommendationQuizOpen && (
-                        <CampaignRecommendationQuizModal onClose={() => setRecommendationQuizOpen(false)} />
                     )}
                 </GlassCard>
             </div>

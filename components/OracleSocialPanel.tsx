@@ -6,6 +6,7 @@ import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { ClanChat } from './ClanChat';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ModerationReportModal } from './ModerationReportModal';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 
 type SocialSelection =
   | { type: 'dm'; participantId: string }
@@ -164,7 +165,7 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  if (sortedConversations.length === 0 && availableFriends.length === 0 && !clan) {
+  if (sortedConversations.length === 0 && availableFriends.length === 0 && (!PRODUCT_FEATURES.clanChat || !clan)) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-black/20 p-8 text-center text-gray-500">
         <MessageIcon className="mb-4 h-12 w-12 opacity-20" />
@@ -256,7 +257,7 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
           </button>
         ))}
 
-        {clan && (
+        {PRODUCT_FEATURES.clanChat && clan && (
           <>
             <div className="my-1 h-px w-8 bg-white/10" />
             <button

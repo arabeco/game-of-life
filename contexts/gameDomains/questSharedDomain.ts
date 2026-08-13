@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Action, Arena, Asset, Clan, SeasonQuest } from '../../types';
 import { normalizeDomainLabel } from '../../utils/taskDomain.js';
+import { PRODUCT_FEATURES } from '../../constants/featureFlags';
 
 type ToastTone = 'success' | 'error' | 'info';
 type SupabaseLike = {
@@ -51,6 +52,7 @@ export const useQuestSharedDomain = ({
     const normalizeQuestLabel = (value?: string) => normalizeDomainLabel(value);
 
     const getClanQuestForActionName = (actionName?: string): SeasonQuest | null => {
+        if (!PRODUCT_FEATURES.clanMissions) return null;
         if (!actionName) return null;
         const normalized = normalizeQuestLabel(actionName);
         const direct = seasonQuests.find(quest => quest.type === 'clan' && normalizeQuestLabel(quest.actionTemplate?.name) === normalized);
@@ -123,6 +125,7 @@ export const useQuestSharedDomain = ({
     };
 
     const getOrCreateOfficeArena = async (): Promise<Arena | null> => {
+        if (!PRODUCT_FEATURES.clanSharedActions) return null;
         if (clan?.clanType !== 'Office') return null;
 
         const officeArenaPrefix = 'Clan Office';
@@ -141,6 +144,7 @@ export const useQuestSharedDomain = ({
     };
 
     const cleanupEmptyOfficeArena = (arenaId: string) => {
+        if (!PRODUCT_FEATURES.clanSharedActions) return;
         if (clan?.clanType !== 'Office') return;
 
         const arena = getArenas().find(item => item.id === arenaId);
@@ -154,6 +158,7 @@ export const useQuestSharedDomain = ({
     };
 
     const setArenaAsShared = (arenaId: string, isShared: boolean) => {
+        if (!PRODUCT_FEATURES.clanSharedActions) return;
         updateArena(arenaId, { description: isShared ? '[SHARED]' : '' } as any);
         if (isShared) {
             showToast('Arena marcada como compartilhada para o cla!', 'success');
@@ -161,6 +166,7 @@ export const useQuestSharedDomain = ({
     };
 
     const updateCustomClanMissionProgress = async (missionId: string, increment: number) => {
+        if (!PRODUCT_FEATURES.clanMissions) return;
         const { data, error } = await supabase.rpc('update_clan_mission_progress', {
             p_mission_id: missionId,
             p_increment: increment,

@@ -3,6 +3,15 @@ import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, Sequen
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
+import {
+    collapseLifeAreaLevels,
+    LIFE_AREA_IDS,
+    normalizeLifeAreaId,
+    normalizeLifeAreaIdList,
+    normalizeLifeAreaRecord,
+    RETIRED_LIFE_AREA_IDS,
+} from '../constants/lifeAreas';
 import { getGoldBoostProduct, getGoldMechanicPrice, getGoldMembershipProduct, GOLD_CLAN_CREATION_COST, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 
 import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
@@ -16,10 +25,10 @@ import { useCodexBuilder } from './CodexBuilderContext';
 import { calculateArenaProgress, getCampaignArenaStates } from '../utils/progressUtils';
 import { createTaskDomain } from './gameDomains/taskDomain';
 import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
-import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
+import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
-import { getOracleFeedMessagesForOperationalDay, getOracleFeedQuotaStatus, isManualOracleFeedMessage } from '../utils/oracleFeedUtils';
+import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
@@ -42,6 +51,7 @@ import { resolveTemplateCampaignMeta } from '../utils/campaignCatalogMeta';
 import { ECONOMY } from '../constants/economy';
 import { publishGlyphAndroidWidgetSnapshot } from '../utils/androidWidget';
 import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
+import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -95,18 +105,8 @@ const resolveProfileWallet = (profile: any, fallback?: Partial<UserWallet> | nul
     };
 };
 
-const ASSET_KEY_ALIASES: Record<string, string> = {
-    espacoMental: 'espaco-mental',
-    espaco_mental: 'espaco-mental',
-};
-
 const normalizeAssetKeyedRecord = <T,>(value?: Partial<Record<string, T>> | null): Partial<Record<string, T>> => {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-    return Object.entries(value).reduce((result, [key, entryValue]) => {
-        const normalizedKey = ASSET_KEY_ALIASES[key] || key;
-        result[normalizedKey] = entryValue as T;
-        return result;
-    }, {} as Partial<Record<string, T>>);
+    return normalizeLifeAreaRecord(value);
 };
 
 const buildAssetActionGradient = (assetId?: string | null): string => {
@@ -490,7 +490,6 @@ export type ArenaSetupChange = {
 
 
 const getTodayString = () => getOperationalDateString();
-const PARTNERSHIP_LINKED_ARENA_GOLD_COST = getGoldMechanicPrice('partnership_linked_arena', 50);
 const COMPETITION_DUEL_GOLD_COST = getGoldMechanicPrice('competition_challenge', 50);
 
 const createDefaultDailyCommitment = (): DailyCommitment => ({
@@ -601,19 +600,18 @@ type OracleTriggerResult = {
     manualDailyTarget?: number;
     manualSentToday?: number;
     manualRemainingToday?: number;
+    combinedSentToday?: number;
+    dailyLimit?: number;
+    usedCategoriesToday?: OracleCategory[];
+    remainingCategories?: OracleCategory[];
     cooldownMs?: number;
 };
 
 type ApplyExpOptions = {
     forceProfile?: boolean;
     includePremium?: boolean;
+    contributionSource?: string;
 };
-
-const ORACLE_INTEL_CATEGORIES = new Set<OracleCategory>([
-    'dicas_produtividade',
-    'provocacoes',
-    'analise_padroes',
-]);
 
 const ORACLE_MANUAL_LIBRARY_CATEGORIES: OracleCategory[] = [
     'frases_inspiradoras',
@@ -624,8 +622,7 @@ const ORACLE_MANUAL_LIBRARY_CATEGORIES: OracleCategory[] = [
 ];
 
 const normalizeOracleManualCategories = (enabledCategories: OracleCategory[] = []): OracleCategory[] => {
-    const filtered = enabledCategories.filter((category) => ORACLE_MANUAL_LIBRARY_CATEGORIES.includes(category));
-    return filtered.length > 0 ? filtered : [...ORACLE_MANUAL_LIBRARY_CATEGORIES];
+    return enabledCategories.filter((category) => ORACLE_MANUAL_LIBRARY_CATEGORIES.includes(category));
 };
 
 const ORACLE_CATEGORY_LABELS: Record<OracleCategory, string> = {
@@ -639,89 +636,16 @@ const ORACLE_CATEGORY_LABELS: Record<OracleCategory, string> = {
     analise_padroes: 'Leitura de ritmo',
 };
 
-const resolveOraclePresentation = (
-    _category: OracleCategory,
-    triggerType: 'app_open' | 'cron' | 'manual',
-): 'ambient_pulse' | 'info_card' => (
-    triggerType === 'manual' ? 'info_card' : 'ambient_pulse'
-);
-
-const resolveManualOracleCategory = (enabledCategories: OracleCategory[] = []): OracleCategory => {
-    const manualPool = normalizeOracleManualCategories(enabledCategories);
-    const randomIndex = Math.floor(Math.random() * manualPool.length);
-    return manualPool[randomIndex] || 'frases_inspiradoras';
-};
-
-const hasOracleStructuralNeed = (contextData: ReturnType<typeof buildOracleOperationalContext>) => (
-    !contextData.hasCycle ||
-    contextData.needsFirstArena ||
-    contextData.needsFirstAction ||
-    contextData.needsFirstTask ||
-    contextData.needsSitrepClosure
-);
-
-const resolveAutomaticOracleCategory = (
-    mode: OracleMode,
-    contextData: ReturnType<typeof buildOracleOperationalContext>,
-    messages: OracleMessage[],
+const resolveManualOracleCategory = (
     enabledCategories: OracleCategory[] = [],
-    now: Date = new Date(),
-): OracleCategory => {
-    if (hasOracleStructuralNeed(contextData)) {
-        return 'dicas_produtividade';
+    usedCategories: OracleCategory[] = [],
+    requestedCategory?: OracleCategory | null,
+): OracleCategory | null => {
+    const manualPool = normalizeOracleManualCategories(enabledCategories).filter((category) => !usedCategories.includes(category));
+    if (requestedCategory) {
+        return manualPool.includes(requestedCategory) ? requestedCategory : null;
     }
-
-    const categoryProfile = getOracleModeConfig(mode).automaticCategories;
-
-    if (contextData.cycleRisk === 'alto') {
-        return contextData.overdueActions > 0 ? categoryProfile.critical : categoryProfile.high;
-    }
-
-    const ambientPool = normalizeOracleManualCategories(enabledCategories);
-    const todayFeedMessages = getOracleFeedMessagesForOperationalDay(messages, now).filter((message) => !isManualOracleFeedMessage(message));
-    const sentAmbientCategories = new Set(
-        todayFeedMessages
-            .map((message) => message.category)
-            .filter((category): category is OracleCategory => ambientPool.includes(category as OracleCategory))
-    );
-    const nextAmbientCategory = ambientPool.find((category) => !sentAmbientCategories.has(category));
-
-    if (nextAmbientCategory) {
-        return nextAmbientCategory;
-    }
-
-    if (contextData.cycleRisk === 'medio') {
-        return categoryProfile.medium;
-    }
-
-    return categoryProfile.low;
-};
-
-const shouldSkipAutomaticOracle = (
-    mode: OracleMode,
-    triggerType: 'app_open' | 'cron' | 'manual',
-    contextData: ReturnType<typeof buildOracleOperationalContext>,
-    isCriticalTrigger: boolean,
-): boolean => {
-    if (triggerType === 'manual') return false;
-
-    const automationProfile = getOracleModeConfig(mode).automationProfile;
-    const hasStructuralNeed = hasOracleStructuralNeed(contextData);
-    const hasHighRisk = contextData.cycleRisk === 'alto';
-
-    if (automationProfile === 'proativo') {
-        return false;
-    }
-
-    if (automationProfile === 'equilibrado') {
-        return triggerType === 'cron' && !isCriticalTrigger && !hasStructuralNeed && !hasHighRisk;
-    }
-
-    if (triggerType === 'cron') {
-        return !isCriticalTrigger;
-    }
-
-    return !isCriticalTrigger && !hasStructuralNeed && !hasHighRisk;
+    return manualPool[0] || null;
 };
 
 export type GoldPackPurchaseContext = {
@@ -903,6 +827,7 @@ export interface GameContextType {
     addClanMember: (memberId: string) => Promise<void>;
     searchClans: (query: string) => Promise<Clan[]>;
     joinClan: (clanToJoin: Clan) => Promise<void>;
+    respondToClanInvite: (notificationId: string, accept: boolean) => Promise<boolean>;
     approveClanJoinRequest: (request: ClanJoinRequest) => Promise<void>;
     rejectClanJoinRequest: (request: ClanJoinRequest) => Promise<void>;
     cancelClanJoinRequest: (requestId: string) => Promise<void>;
@@ -921,7 +846,7 @@ export interface GameContextType {
     oracleMessages: OracleMessage[];
     markOracleMessageAsRead: (messageId: string) => Promise<void>;
     refreshOracleMessages: () => Promise<void>;
-    triggerOracle: (triggerType?: 'app_open' | 'cron' | 'manual') => Promise<OracleTriggerResult | null>;
+    requestOracleContentCard: (requestedCategory?: OracleCategory | null) => Promise<OracleTriggerResult | null>;
 
     // Notifications
     notifications: Notification[];
@@ -979,6 +904,7 @@ export interface GameContextType {
     endRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
     buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType) => Promise<boolean>;
     createLinkedRelationshipArena: (relationshipLinkId: string, arenaInput: { assetId: string; name: string; description?: string; icon?: string }) => Promise<Arena | null>;
+    selectMentorshipArena: (relationshipLinkId: string, arenaId: string) => Promise<Arena | null>;
     shareRelationshipArena: (relationshipLinkId: string, arenaId: string) => Promise<Arena | null>;
     removeRelationshipArenaShare: (relationshipLinkId: string, arenaId: string) => Promise<boolean>;
     createCompetitionChallenge: (relationshipLinkId: string, sourceArenaId: string) => Promise<Arena | null>;
@@ -1061,6 +987,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const lastAldeiaUpdateRef = useRef<number>(0);
 
     const loadAldeiaData = async (clanId: string) => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return;
         if (!clanId) return;
 
         // Anti-flicker: if we just updated, don't refetch immediately
@@ -1478,30 +1405,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return false;
     };
 
-    const isOracleCriticalTrigger = (userId: string) => {
-        const pendingToday = tasks.filter(t => t.date === getLocalDateString() && !t.completed).length;
-        const hasCycleClosingRisk = !!activeCycle && pendingToday > 0 && (() => {
-            const msToEnd = new Date(activeCycle.endDate).getTime() - Date.now();
-            return msToEnd > 0 && msToEnd <= (24 * 60 * 60 * 1000);
-        })();
-
-        const hasOfficeUrgentAlert = clan?.clanType === 'Office' && notifications.some(n => !n.read && n.type === 'clan_mission_update');
-
-        return hasCycleClosingRisk || hasOfficeUrgentAlert;
-    };
-
-    const maybeNotifyVillageDuty = (userId: string) => {
-        if (!clan || !aldeiaSlots.length) return;
-        const key = `glyph_village_duty_${userId}_${getLocalDateString()}`;
-        if (localStorage.getItem(key) === '1') return;
-
-        const mainSlots = aldeiaSlots.filter(s => s.slotId !== 'trono');
-        if (mainSlots.length === 0) return;
-
-        showToast('Dever cumprido: a Ordem da Aldeia esta ativa.', 'success');
-        localStorage.setItem(key, '1');
-    };
-
     // Helper for PWA Latency awareness
     const withLatencyToast = async <T,>(operation: Promise<T> | any, timeoutMs = 1500): Promise<T> => {
         let isComplete = false;
@@ -1650,7 +1553,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
-    const triggerOracle = async (triggerType: 'app_open' | 'cron' | 'manual' = 'app_open'): Promise<OracleTriggerResult | null> => {
+    const requestOracleContentCard = async (
+        requestedCategory: OracleCategory | null = null,
+    ): Promise<OracleTriggerResult | null> => {
         const userId = getSupabaseUserId();
         if (!userId || !oraclePreferences) return null;
 
@@ -1664,65 +1569,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const isPremiumUser = hasPremiumAccess(userProfile);
         const selectedMode = isPremiumUser ? (oraclePreferences.activeMode || 'neutro') : 'neutro';
 
-        if (triggerType === 'app_open') {
-            maybeNotifyVillageDuty(userId);
-        }
-
-        if (triggerType === 'manual' && !isPremiumUser) {
-            showToast('Gerar card manual e premium.', 'info');
+        if (!isPremiumUser) {
+            showToast('Os cards de conteudo fazem parte do Premium.', 'info');
             return { status: 'premium_required', ...quota };
         }
 
-        if (triggerType !== 'manual' && !oraclePreferences.notificationsEnabled) {
-            return { status: 'disabled', ...quota };
-        }
-
-        if (triggerType !== 'manual' && !oraclePreferences.dailyFocusCardEnabled) {
-            return { status: 'disabled', ...quota };
-        }
-
-        if (triggerType !== 'manual' && (oraclePreferences.presenceLevel ?? 1) <= 1) {
-            return { status: 'disabled', ...quota };
-        }
-
         if (!oraclePreferences.iaEnabled) {
-            if (triggerType === 'manual') {
-                showToast('Ative a IA do Oraculo para gerar cards.', 'info');
-            }
+            showToast('Ative a IA do Oraculo para gerar cards.', 'info');
             return { status: 'disabled', ...quota };
         }
 
-        if (triggerType !== 'manual') {
-            const currentTime = now.getHours() * 60 + now.getMinutes();
-            const [startH, startM] = (oraclePreferences.quietHoursStart || '22:00').split(':').map(Number);
-            const [endH, endM] = (oraclePreferences.quietHoursEnd || '07:00').split(':').map(Number);
-
-            const start = startH * 60 + startM;
-            const end = endH * 60 + endM;
-
-            let isQuiet = false;
-            if (start > end) {
-                isQuiet = currentTime >= start || currentTime < end;
-            } else {
-                isQuiet = currentTime >= start && currentTime < end;
-            }
-
-            if (isQuiet) {
-                return { status: 'quiet_hours', ...quota };
-            }
-        }
-
-        if (triggerType === 'manual' && quota.manualRemainingToday <= 0) {
-            showToast(`Limite manual do Oraculo atingido (${quota.manualDailyTarget}/${quota.manualDailyTarget}).`, 'info');
+        if (quota.combinedSentToday >= quota.dailyLimit || quota.remainingCategories.length === 0) {
+            showToast(`Os ${quota.dailyLimit} temas de hoje ja foram entregues.`, 'info');
             return { status: 'daily_limit', ...quota };
-        }
-
-        if (triggerType !== 'manual' && quota.autoRemainingToday <= 0) {
-            return { status: 'daily_limit', ...quota };
-        }
-
-        if (triggerType !== 'manual' && quota.autoSentToday > 0 && quota.nextAutoInMs > 0) {
-            return { status: 'cooldown', cooldownMs: quota.nextAutoInMs, ...quota };
         }
 
         const totalChests = userProfile.chests?.reduce((acc: any, c: any) => acc + c.count, 0) || 0;
@@ -1744,27 +1603,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             dailyCommitment,
             dailyProofStreak: userProfile.dailyProofStreak || null,
         });
-        const isCriticalTrigger = isOracleCriticalTrigger(userId);
+        const category = resolveManualOracleCategory(
+            oraclePreferences.enabledCategories || [],
+            quota.usedCategoriesToday,
+            requestedCategory,
+        );
 
-        if (shouldSkipAutomaticOracle(selectedMode, triggerType, contextData, isCriticalTrigger)) {
-            return { status: 'skipped', ...quota };
-        }
-
-        let category: OracleCategory = triggerType === 'manual'
-            ? resolveManualOracleCategory(oraclePreferences.enabledCategories || [])
-            : 'dicas_produtividade';
-        const enabled = oraclePreferences.enabledCategories || [];
-
-        if (triggerType !== 'manual') {
-            category = resolveAutomaticOracleCategory(selectedMode, contextData, oracleMessages, enabled, now);
-        } else if (enabled.length > 0 && !enabled.includes(category as any)) {
-            category = enabled[0];
+        if (!category) {
+            showToast('Todos os temas assinados ja foram entregues hoje.', 'info');
+            return { status: 'daily_limit', ...quota };
         }
 
         // 6. Generate Prompt
         // The selected assistant mode should stay stable across feed/chat.
         const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
-        const presentation = resolveOraclePresentation(category, triggerType);
+        const presentation = 'info_card' as const;
         const operationalState = deriveOracleOperationalState(contextData);
         const recentOracleLines = oracleMessages
             .filter((message) => message.content?.trim())
@@ -1781,9 +1634,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             '',
             voiceDirective,
         ].join('\n');
-        const isManualLibraryCard = triggerType === 'manual' && ORACLE_MANUAL_LIBRARY_CATEGORIES.includes(category);
-        const userPrompt = isManualLibraryCard
-            ? `Gere um card curto para o chat do usuario.
+        const userPrompt = `Gere um card curto para o chat do usuario.
       Categoria solicitada: ${category}
       Objetivo: entregar uma peca breve de frase, reflexao, sabedoria ou dica de vida.
       Formato obrigatorio:
@@ -1797,54 +1648,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
       - se a categoria for rituais_lifestyle, o card deve trazer uma dica de vida pratica e simples
       - nas outras categorias, o card deve soar memoravel, util e limpo
       - nao force foco operacional aqui
-      Contexto atual: ${JSON.stringify(contextData)}`
-            : triggerType === 'manual'
-                ? `Gere uma fala operacional curta para o chat do usuario.
-      Categoria solicitada: ${category}
-      Formato obrigatorio:
-      1 ou 2 frases naturais, sem cabecalho
-      Regras:
-      - sem saudacao
-      - sem PRIORIDADE, RISCO ou AJA
-      - sem bronca, placar, desafio de habito ou tom de app gamificado
-      - sem palavras soltas em ingles quando houver equivalente em portugues
-      - se existir focusArenaSignal, use essa arena como assunto principal
-      - se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa
-      - se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima
-      - se existir priorityActionName, pergunte algo como "Que tal [acao] hoje?"
-      - se cyclePace for atrasado ou critico, mencione de forma humana que o ciclo parece atrasado pelo tempo/progresso
-      - se existir nextMove, use isso como sugestao leve
-      Contexto atual: ${JSON.stringify(contextData)}`
-            : presentation === 'info_card'
-                ? `Gere uma fala curta para o feed do usuario.
-      Categoria solicitada: ${category}
-      Formato obrigatorio:
-      1 ou 2 frases naturais, sem cabecalho
-      Regras:
-      - sem PRIORIDADE, RISCO ou AJA
-      - sem bronca, placar, desafio de habito ou tom de app gamificado
-      - sem palavras soltas em ingles quando houver equivalente em portugues
-      - se existir focusArenaSignal, use essa arena como assunto principal
-      - se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa
-      - se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima
-      - se existir priorityActionName, pergunte algo como "Que tal [acao] hoje?"
-      - se cyclePace for atrasado ou critico, diga que parece atrasado olhando tempo/progresso do ciclo
-      - se estiver tudo no ritmo, sugira manter uma acao simples em vez de empilhar tarefa
-      Contexto atual: ${JSON.stringify(contextData)}`
-                : `Gere uma fala curta do Oraculo para o feed do usuario.
-      Categoria solicitada: ${category}
-      Regras:
-      - no maximo 2 frases, em portugues natural
-      - sem saudacao e sem floreio motivacional
-      - sem PRIORIDADE, RISCO ou AJA
-      - sem bronca, placar, desafio de habito ou tom de app gamificado
-      - sem palavras soltas em ingles quando houver equivalente em portugues
-      - se existir focusArenaSignal, use essa arena como assunto principal
-      - se focusArenaSignal.suggestedAdjustment for reduzir_meta, ofereca ajustar repeticoes ou reduzir meta sem culpa
-      - se focusArenaSignal.suggestedAdjustment for criar_meta_minima, explique que a arena pode ficar sem barra ou ganhar meta minima
-      - se existir priorityActionName, use uma pergunta leve: "Que tal [acao] hoje?"
-      - se cyclePace for atrasado ou critico, mencione que o ciclo parece atrasado olhando tempo/progresso
-      - se existir nextMove, transforme em sugestao humana, nao comando
       Contexto atual: ${JSON.stringify(contextData)}`;
 
         // 7. Call AI via Edge Function (server-side secret)
@@ -1853,9 +1656,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const accessToken = sessionData.session?.access_token;
             if (sessionError || !accessToken) {
                 console.error('Oracle Edge Function skipped: authenticated session missing.');
-                if (triggerType === 'manual') {
-                    showToast('Sessao indisponivel para gerar card.', 'error');
-                }
+                showToast('Sessao indisponivel para gerar card.', 'error');
                 return { status: 'error', ...quota };
             }
 
@@ -1871,18 +1672,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             if (oracleError) {
                 console.error('Oracle Edge Function failed:', oracleError);
-                if (triggerType === 'manual') {
-                    showToast('Falha do Oraculo ao gerar card.', 'error');
-                }
+                showToast('Falha do Oraculo ao gerar card.', 'error');
                 return { status: 'error', ...quota };
             }
 
             const text = String(oracleData?.text || '').trim();
             if (!text) {
                 console.error('Oracle Edge Function returned empty content.');
-                if (triggerType === 'manual') {
-                    showToast('O Oraculo voltou vazio para este card.', 'error');
-                }
+                showToast('O Oraculo voltou vazio para este card.', 'error');
                 return { status: 'error', ...quota };
             }
 
@@ -1895,14 +1692,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 mode: selectedMode,
                 deliveryType: 'feed',
                 contextSnapshot: {
-                    triggerType,
+                    triggerType: 'manual',
                     presentation,
                     categoryLabel: ORACLE_CATEGORY_LABELS[category],
-                    generatedFor: triggerType === 'manual' ? 'chat' : 'feed',
+                    generatedFor: 'chat',
+                    purpose: 'premium_content_card',
                     operationalState,
-                    summary: triggerType === 'manual'
-                        ? ORACLE_CATEGORY_LABELS[category]
-                        : 'Sinal do Oraculo',
+                    summary: ORACLE_CATEGORY_LABELS[category],
                 },
                 read: false,
                 createdAt: new Date().toISOString()
@@ -1912,26 +1708,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             await supabase.from('oracle_messages').insert(mapToSnakeCase(newMessage));
 
             console.log('Oracle generated message:', text);
-            if (triggerType === 'manual') {
-                const manualSentAfterGeneration = quota.manualSentToday + 1;
-                showToast(`Card manual do Oraculo (${manualSentAfterGeneration}/${quota.manualDailyTarget}).`, 'success');
-            }
+            showToast(`Tema entregue (${quota.combinedSentToday + 1}/${quota.dailyLimit}).`, 'success');
             return {
                 status: 'generated',
                 message: newMessage,
                 autoDailyTarget: quota.autoDailyTarget,
-                autoSentToday: quota.autoSentToday + (triggerType === 'manual' ? 0 : 1),
-                autoRemainingToday: Math.max(0, quota.autoRemainingToday - (triggerType === 'manual' ? 0 : 1)),
+                autoSentToday: quota.autoSentToday,
+                autoRemainingToday: quota.autoRemainingToday,
                 manualDailyTarget: quota.manualDailyTarget,
-                manualSentToday: quota.manualSentToday + (triggerType === 'manual' ? 1 : 0),
-                manualRemainingToday: Math.max(0, quota.manualRemainingToday - (triggerType === 'manual' ? 1 : 0)),
+                manualSentToday: quota.manualSentToday + 1,
+                manualRemainingToday: Math.max(0, quota.manualRemainingToday - 1),
+                combinedSentToday: quota.combinedSentToday + 1,
+                dailyLimit: quota.dailyLimit,
+                usedCategoriesToday: [...quota.usedCategoriesToday, category],
+                remainingCategories: quota.remainingCategories.filter((item) => item !== category),
             };
 
         } catch (error) {
             console.error('Oracle AI generation failed:', error);
-            if (triggerType === 'manual') {
-                showToast('Falha ao gerar card do Oraculo.', 'error');
-            }
+            showToast('Falha ao gerar card do Oraculo.', 'error');
             return { status: 'error', ...quota };
         }
     };
@@ -2347,14 +2142,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             // IDs definidos no LOJA.MD e items.ts
             const starterItemIds = [
-                'item_skin_1_001', // NÃ¡ufrago
+                'item_skin_1_001', // Náufrago
                 'item_skin_1_002', // Casual
                 'item_artifact_1_001', // Adaga Aprendiz
                 'item_garden_stone_1', // Pedra Serena
                 'item_garden_plant_1', // Musgo Vivo
                 'item_orb_1_002',  // Orbe de Cobre
                 'item_plate_1_001', // Placa Madeira
-                'BASIC'            // Tema BÃ¡sico
+                'BASIC'            // Tema Básico
             ];
 
             const starterItems = starterItemIds
@@ -2382,11 +2177,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     ).then(() => fetchNotifications());
 
                     // Set initial rank and exp if needed (Vagante Level 1)
-                    // O level do usuÃ¡rio Ã© a soma dos nÃ­veis dos assets.
+                    // O level do usuário é a soma dos níveis dos assets.
                     // Vamos garantir que o perfil comece com os dados corretos.
                     updateUserProfile({
                         nobility: { exp: 0, rankId: 'vagante' },
-                        level: 1 // ForÃ§ar nÃ­vel 1 inicial
+                        level: 1 // Forçar nível 1 inicial
                     });
 
                     const newItems = starterItems.map(i => ({
@@ -2780,7 +2575,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             (itemDef.category === 'aura' && userProfile.sovereign.aura === item.id) ||
             (itemDef.category === 'orb' && userProfile.sovereign.orb === item.id) ||
             (itemDef.category === 'plate' && [userProfile.sovereign.sovereignPlate, userProfile.sovereign.artifactPlate, userProfile.sovereign.glyphPlate].includes(item.id)) ||
-            (itemDef.category === 'banner' && userProfile.bannerUrl === itemDef.imageUrl)
+            (itemDef.category === 'banner' && resolveCatalogAssetUrl(userProfile.bannerUrl) === itemDef.imageUrl)
         );
 
         if (isCurrentlyEquipped) {
@@ -2867,7 +2662,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setFeed([]);
             setActiveCycle(null);
             setUpcomingCycle(null);
-            // SincronizaÃ§Ã£o inicial do Sitrep (Daily Commitment) - SerÃ¡ carregado via effect abaixo
+            // Sincronização inicial do Sitrep (Daily Commitment) - Será carregado via effect abaixo
             setDailyCommitmentState(createDefaultDailyCommitment());
             setCycleExpBonus(0);
             setLevelUnlocks(buildDefaultLevelUnlocks());
@@ -3166,6 +2961,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [enrichedClanMembers]);
 
     const fetchClanQuestParticipants = useCallback(async (questId: string, actionName: string) => {
+        if (!PRODUCT_FEATURES.clanMissions) return;
         if (!clan) return;
 
         // 1. Tentar buscar da tabela robusta primeiro
@@ -3178,7 +2974,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!dbError && dbCount !== null) {
             setClanQuestParticipants(prev => ({ ...prev, [questId]: dbCount }));
 
-            // Verificar se o usuÃ¡rio atual estÃ¡ participando
+            // Verificar se o usuário atual está participando
             const userId = getSupabaseUserId();
             if (userId) {
                 const { data: myPart } = await supabase
@@ -3194,8 +2990,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        // Fallback para o mÃ©todo antigo (contar aÃ§Ãµes) se a tabela nova estiver vazia ou der erro
-        // Contar usuÃ¡rios que tÃªm a aÃ§Ã£o correspondente
+        // Fallback para o método antigo (contar ações) se a tabela nova estiver vazia ou der erro
+        // Contar usuários que têm a ação correspondente
         const { count, error } = await supabase
             .from('actions')
             .select('user_id', { count: 'exact', head: true })
@@ -3204,13 +3000,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (!error && count !== null) {
             setClanQuestParticipants(prev => ({ ...prev, [questId]: count }));
-            // No fallback, assumimos que se tem a aÃ§Ã£o, estÃ¡ participando (aproximaÃ§Ã£o)
+            // No fallback, assumimos que se tem a ação, está participando (aproximação)
             const hasAction = actions.some(a => a.name === actionName);
             setUserMissionParticipations(prev => ({ ...prev, [questId]: hasAction }));
         }
     }, [clan, enrichedClanMembers, actions]);
 
     const joinClanMission = async (questId: string) => {
+        if (!PRODUCT_FEATURES.clanMissions) return;
         if (!clan) return;
         const userId = getSupabaseUserId();
         if (!userId) return;
@@ -3252,7 +3049,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setClanQuestParticipants(prev => ({ ...prev, [questId]: (prev[questId] || 0) + 1 }));
         }
 
-        // Garantir que o progresso da missÃ£o existe (caso tenha sido deletado manualmente)
+        // Garantir que o progresso da missão existe (caso tenha sido deletado manualmente)
         const quest = findSeasonQuestById(questId);
         const targetValue = quest?.requirements?.clanGoal || quest?.goal_value || quest?.actionTemplate?.repetitions || 1;
 
@@ -3260,11 +3057,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             clan_id: clan.id,
             mission_id: questId,
             target_value: targetValue,
-            current_value: 0 // ComeÃ§a com 0 se nÃ£o existir
-        }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true }); // Se jÃ¡ existir, NÃ’O sobrescreve (manh?tÃ©m o progresso atual)
+            current_value: 0 // Começa com 0 se não existir
+        }, { onConflict: 'clan_id,mission_id', ignoreDuplicates: true }); // Se já existir, NÃO sobrescreve (mantém o progresso atual)
     };
 
     const leaveClanMission = async (questId: string) => {
+        if (!PRODUCT_FEATURES.clanMissions) return;
         if (!clan) return;
         const userId = getSupabaseUserId();
         if (!userId) return;
@@ -3289,6 +3087,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const updateClanMissionProgress = async (questId: string, increment: number) => {
+        if (!PRODUCT_FEATURES.clanMissions) return;
         if (!clan) return;
 
         // Optimistic update
@@ -3502,7 +3301,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const clanCacheRef = useRef<{ clanId: string; timestamp: number; members: EnrichedClanMember[] } | null>(null);
     const joinClanInFlightRef = useRef<Set<string>>(new Set());
     const staleSeasonQuestCleanupKeyRef = useRef<string | null>(null);
-    const enableClanQuestProgress = true; // Always enable for now
+    const enableClanQuestProgress = PRODUCT_FEATURES.clanMissions;
     const clanQuestProgressTableReadyRef = useRef(enableClanQuestProgress);
     const pendingGuestMigrationRef = useRef<{ fromId: string; toId: string } | null>(null);
     const suspendPersistenceRef = useRef(false);
@@ -3553,7 +3352,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const mapped = mapToCamelCase(profilesData) as any[];
         return mapped.reduce((acc, profileData) => {
-            // Extrair informaÃ§Ãµes do clÃ£ se existirem
+            // Extrair informações do clã se existirem
             const clanInfo = profileData.clanMembers?.[0]?.clans;
 
             const profile = {
@@ -3579,7 +3378,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         try {
-            // Usar rate limiter para controlar nÃºmero de requisiÃ§Ãµes simultÃ¢neas
+            // Usar rate limiter para controlar número de requisições simultâneas
             const results = await rateLimiter.batchRequests([
                 () => supabase.from('friends').select('*').eq('user_id', userId),
                 () => supabase.from('friend_requests').select('*').eq('recipient_id', userId),
@@ -3868,7 +3667,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, []);
 
     useEffect(() => {
-        if (!clan) return;
+        if (!PRODUCT_FEATURES.clanMissions || !clan) return;
 
         const channel = supabase.channel(`clan-updates-${clan.id}`)
             .on(
@@ -3918,18 +3717,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // --- Aldeia System Implementation ---
     const getAldeiaSlots = async (clanId: string): Promise<AldeiaSlot[]> => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return [];
         const { data, error } = await supabase.from('clan_aldeia_slots').select('*').eq('clan_id', clanId);
         if (error) { console.error("Error fetching aldeia slots:", error.message); return []; }
         return mapToCamelCase(data) as AldeiaSlot[];
     };
 
     const updateAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId, updates: Partial<AldeiaSlot>) => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return;
         const snakeUpdates = mapToSnakeCase(updates);
         const { error } = await supabase.from('clan_aldeia_slots').update(snakeUpdates).eq('clan_id', clanId).eq('slot_id', slotId);
         if (error) console.error("Error updating aldeia slot:", error.message);
     };
 
     const getAldeiaPresence = async (clanId: string): Promise<AldeiaPresence[]> => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return [];
         const { data, error } = await supabase.from('clan_aldeia_presence').select('*').eq('clan_id', clanId);
         if (error) { console.error("Error fetching aldeia presence:", error.message); return []; }
         return mapToCamelCase(data) as AldeiaPresence[];
@@ -3991,6 +3793,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const enterAldeiaSlot = async (clanId: string, slotId: AldeiaSlotId) => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return;
         const userId = getSupabaseUserId();
         console.log(`[ENTER_ALDEIA] Starting for user ${userId}, clan ${clanId}, slot ${slotId}`);
         if (!userId) return;
@@ -4026,6 +3829,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const performAldeiaDailyUpdate = async (clanId: string) => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return;
         let slots = await getAldeiaSlots(clanId);
         const today = getLocalDateString();
         const now = new Date();
@@ -4191,6 +3995,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const { data: memberProfiles, error: profilesError } = await supabase.from('user_profiles').select('*').in('id', memberIds);
         if (profilesError || !memberProfiles) { console.error('Error fetching member profiles:', profilesError?.message); return; }
 
+        const contributionTotals = new Map<string, number>();
+        const { data: contributionRows, error: contributionError } = await supabase
+            .from('clan_xp_contributions')
+            .select('user_id, xp_amount')
+            .eq('clan_id', clanId);
+
+        if (contributionError) {
+            console.warn('Clan contribution history is not available yet:', contributionError.message);
+        } else {
+            (contributionRows || []).forEach((row: any) => {
+                const memberId = String(row.user_id || '');
+                contributionTotals.set(memberId, (contributionTotals.get(memberId) || 0) + Number(row.xp_amount || 0));
+            });
+        }
+
         const enrichedMembers: EnrichedClanMember[] = memberIds.map((memberId: string) => {
             const memberInfo = uniqueMembersData.find((m: any) => m.user_id === memberId);
             if (!memberInfo) return null;
@@ -4218,6 +4037,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     skin: 'default',
                     nobility: { exp: 0, rankId: 'vagante' },
                     mood: 50,
+                    contributionPoints: contributionTotals.get(memberId) || 0,
                     role: memberInfo.role as 'leader' | 'member',
                     joined_at: memberInfo.joined_at,
                 } as EnrichedClanMember;
@@ -4227,6 +4047,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             return {
                 ...camelCaseProfile,
+                contributionPoints: contributionTotals.get(memberId) || 0,
                 role: memberInfo.role as 'leader' | 'member',
                 joined_at: memberInfo.joined_at,
             };
@@ -4931,7 +4752,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (!userId) return;
 
         const loadDataFromSupabase = async () => {
-            // Verificar se o userId Ã© vÃ¡lido antes de fazer queries
+            // Verificar se o userId é válido antes de fazer queries
             if (!isUuid(userId)) {
                 console.error("Invalid userId for loading data from Supabase");
                 return;
@@ -5044,7 +4865,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         sequenceItems: effectiveSequenceItems,
                         wallet: resolveProfileWallet(camelProfile, prev.wallet),
                     } as UserProfile;
-                    next.visibleWidgets = Array.isArray(next.visibleWidgets) ? next.visibleWidgets : [];
+                    next.visibleWidgets = normalizeLifeAreaIdList(next.visibleWidgets);
                     next.sequenceItems = effectiveSequenceItems;
                     next.dailyProofStreak = normalizeDailyProofStreak(next.dailyProofStreak);
                     next.assetArtById = normalizeAssetKeyedRecord(next.assetArtById);
@@ -5053,6 +4874,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     next.masteryVisibility = normalizeMasteryVisibilityScope(next.masteryVisibility);
                     next.featsVisibility = normalizeFeatsVisibilityScope(next.featsVisibility);
                     next.gardenVisibility = normalizeGardenVisibilityScope(next.gardenVisibility);
+                    next.bannerUrl = resolveCatalogAssetUrl(next.bannerUrl);
                     next.gardenState = next.gardenState || DEFAULT_USER_PROFILE.gardenState;
                     const normalizedUnlockedItems = next.unlockedItems || DEFAULT_USER_PROFILE.unlockedItems;
                     next.unlockedItems = {
@@ -5149,6 +4971,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (!arenasError && arenasData) {
                 camelArenas = (mapToCamelCase(arenasData) as Arena[]).map(arena => ({
                     ...arena,
+                    assetId: normalizeLifeAreaId(arena.assetId),
                     actionIds: Array.isArray(arena.actionIds) ?arena.actionIds : [],
                     isArchived: typeof arena.isArchived === 'boolean' ?arena.isArchived : false,
                 }));
@@ -5158,23 +4981,54 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const { data: actionsData, error: actionsError } = actionsResult;
             if (!actionsError && actionsData) {
                 const normalizedActions = (actionsData || []).map(normalizeActionFromDbRow);
+                const dormantClanActionIds = new Set(
+                    normalizedActions
+                        .filter(action => !PRODUCT_FEATURES.clanMissions && (
+                            action.originCodexId?.startsWith('clan_quest:')
+                            || Boolean(action.context?.clanTask)
+                        ))
+                        .map(action => action.id),
+                );
+                const activeActions = normalizedActions.filter(action => !dormantClanActionIds.has(action.id));
+
+                if (camelArenas && !PRODUCT_FEATURES.clanMissions) {
+                    const activeActionArenaIds = new Set(activeActions.map(action => action.arenaId));
+                    const dormantActionArenaIds = new Set(
+                        normalizedActions
+                            .filter(action => dormantClanActionIds.has(action.id))
+                            .map(action => action.arenaId),
+                    );
+                    camelArenas = camelArenas.filter(arena => (
+                        !arena.name.startsWith('Clan Office')
+                        && (!dormantActionArenaIds.has(arena.id) || activeActionArenaIds.has(arena.id))
+                    ));
+                    loadedArenas = camelArenas;
+                }
+
                 if (camelArenas) {
                     const validArenaIds = new Set(camelArenas.map(a => a.id));
-                    const validActions = normalizedActions.filter(a => validArenaIds.has(a.arenaId));
+                    const validActions = activeActions.filter(a => validArenaIds.has(a.arenaId));
                     loadedActions = validActions;
                 } else {
-                    loadedActions = normalizedActions;
+                    loadedActions = activeActions;
+                }
+
+                if (!PRODUCT_FEATURES.clanMissions && dormantClanActionIds.size > 0) {
+                    const originalTasks = mapToCamelCase(tasksResult.data || []) as ScheduledTask[];
+                    loadedTasks = originalTasks.filter(task => !dormantClanActionIds.has(task.actionId));
                 }
             }
 
             const { data: tasksData, error: tasksError } = tasksResult;
             if (!tasksError && tasksData) {
                 const tasks = mapToCamelCase(tasksData) as ScheduledTask[];
-                loadedTasks = tasks;
+                const visibleActionIds = new Set(loadedActions.map(action => action.id));
+                loadedTasks = tasks.filter(task => visibleActionIds.has(task.actionId));
             }
 
             const { data: levelsData, error: levelsError } = levelsResult;
             const hasPersistedAssetLevels = !levelsError && Array.isArray(levelsData) && levelsData.length > 0;
+            const normalizedAssetLevels = collapseLifeAreaLevels(levelsData);
 
             const applyOperationalState = (
                 nextArenas: Arena[] | null,
@@ -5195,9 +5049,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         }
                         if (!levelsError && levelsData) {
                             nextAssets = nextAssets.map(asset => {
-                                const dbLevel = levelsData.find(l => l.asset_id === asset.id);
-                                if (dbLevel) {
-                                    return { ...asset, level: dbLevel.level };
+                                const dbLevel = normalizedAssetLevels[asset.id as keyof typeof normalizedAssetLevels];
+                                if (dbLevel !== undefined) {
+                                    return { ...asset, level: dbLevel };
                                 }
                                 return asset;
                             });
@@ -5224,6 +5078,84 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             };
 
             applyOperationalState(camelArenas, loadedActions, loadedTasks);
+
+            const retiredArenaIds = Array.from(new Set<string>(
+                (arenasData || [])
+                    .map((row: any) => String(row.asset_id || ''))
+                    .filter((assetId: string) => RETIRED_LIFE_AREA_IDS.includes(assetId as typeof RETIRED_LIFE_AREA_IDS[number])),
+            ));
+            if (retiredArenaIds.length > 0) {
+                void Promise.all(retiredArenaIds.map((legacyId) => (
+                    supabase
+                        .from('arenas')
+                        .update({ asset_id: normalizeLifeAreaId(legacyId) })
+                        .eq('user_id', userId)
+                        .eq('asset_id', legacyId)
+                ))).then((results) => {
+                    const failed = results.find(({ error }) => error);
+                    if (failed?.error) console.error('Failed to migrate legacy arena areas:', failed.error);
+                });
+            }
+
+            const hasRetiredLevels = (levelsData || []).some((row: any) => (
+                RETIRED_LIFE_AREA_IDS.includes(String(row.asset_id || '') as typeof RETIRED_LIFE_AREA_IDS[number])
+            ));
+            if (hasRetiredLevels) {
+                const canonicalLevels = LIFE_AREA_IDS
+                    .filter((assetId) => normalizedAssetLevels[assetId] !== undefined)
+                    .map((assetId) => ({
+                        user_id: userId,
+                        asset_id: assetId,
+                        level: normalizedAssetLevels[assetId],
+                    }));
+
+                void (async () => {
+                    const { error: upsertError } = await supabase
+                        .from('asset_levels')
+                        .upsert(canonicalLevels, { onConflict: 'user_id,asset_id' });
+                    if (upsertError) {
+                        console.error('Failed to migrate legacy mastery levels:', upsertError);
+                        return;
+                    }
+                    const { error: deleteError } = await supabase
+                        .from('asset_levels')
+                        .delete()
+                        .eq('user_id', userId)
+                        .in('asset_id', [...RETIRED_LIFE_AREA_IDS]);
+                    if (deleteError) {
+                        console.error('Failed to remove legacy mastery levels:', deleteError);
+                        return;
+                    }
+                    const { error: unlockError } = await supabase
+                        .from('user_profiles')
+                        .update({ last_level_update: null })
+                        .eq('id', userId);
+                    if (unlockError) {
+                        console.error('Failed to unlock the migrated mastery assessment:', unlockError);
+                    } else {
+                        setUserProfile((previous) => ({ ...previous, lastLevelUpdate: null }));
+                    }
+                })();
+            }
+
+            if (hasPersistedAssetLevels) {
+                const normalizedTotalLevel = LIFE_AREA_IDS.reduce(
+                    (total, assetId) => total + (normalizedAssetLevels[assetId] || 1),
+                    0,
+                );
+                setUserProfile((previous) => (
+                    previous.level === normalizedTotalLevel
+                        ? previous
+                        : { ...previous, level: normalizedTotalLevel }
+                ));
+                void supabase
+                    .from('user_profiles')
+                    .update({ level: normalizedTotalLevel })
+                    .eq('id', userId)
+                    .then(({ error }) => {
+                        if (error) console.error('Failed to sync five-area mastery total:', error);
+                    });
+            }
 
             if (!levelsError && !hasPersistedAssetLevels) {
                 setUserProfile((prev) => (
@@ -5524,7 +5456,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     await refreshOpenCycleDerivedState(cycle);
 
                     // --- AUTO FINISH CYCLE CHECK ---
-                    // Se a data de tÃ©rmino passou, finaliza automaticamente
+                    // Se a data de término passou, finaliza automaticamente
                     const endDate = new Date(cycle.endDate);
                     const now = new Date();
                     if (now >= endDate && !cycle.isFinished) {
@@ -6107,7 +6039,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (raw.includes('RELATIONSHIP_LINK_ALREADY_ENDED')) return 'Esse vinculo ja foi encerrado.';
         if (raw.includes('RELATIONSHIP_LINK_PERMISSION_DENIED')) return 'Voce nao pode encerrar esse vinculo.';
         if (raw.includes('ACTIVE_SHAREABLE_LINK_REQUIRED')) return 'Esse vinculo nao pode receber arena compartilhada agora.';
-        if (raw.includes('ACTIVE_MENTORIA_LINK_REQUIRED')) return 'So o mentor pode abrir arena nessa mentoria.';
+        if (raw.includes('ACTIVE_MENTORIA_LINK_REQUIRED')) return 'Essa mentoria nao esta ativa.';
+        if (raw.includes('MENTORSHIP_ARENA_CREATION_DISABLED')) return 'Na mentoria, o orientado escolhe uma arena propria. O mentor apenas acompanha.';
+        if (raw.includes('MENTORSHIP_PUPIL_REQUIRED')) return 'Somente o orientado pode escolher ou retirar a arena acompanhada.';
+        if (raw.includes('MENTORSHIP_OWN_ARENA_REQUIRED')) return 'Escolha uma arena sua e ativa para compartilhar com o mentor.';
         if (raw.includes('ACTIVE_PARTNERSHIP_LINK_REQUIRED')) return 'Essa parceria precisa estar ativa para compartilhar arenas.';
         if (raw.includes('ACTIVE_COMPETITION_LINK_REQUIRED')) return 'Essa competicao precisa estar ativa para lancar um desafio.';
         if (raw.includes('PARTNERSHIP_SOURCE_ARENA_REQUIRED')) return 'Escolha uma arena sua para expor nessa parceria.';
@@ -6373,19 +6308,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const createRelationshipInvite = async (recipientId: string, linkType: RelationshipLinkType): Promise<boolean> => {
-        const inviteCost = linkType === 'mentoria' ? 100 : 50;
-        if ((userProfile.wallet?.gold || 0) < inviteCost) {
-            const missingGold = Math.max(0, inviteCost - Number(userProfile.wallet?.gold || 0));
-            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para esse convite.`, 'warning');
-            promptGoldShortage({
-                requiredGold: inviteCost,
-                label: linkType === 'mentoria' ? 'enviar mentoria' : linkType === 'parceria' ? 'enviar parceria' : 'enviar competicao',
-                storeTab: 'store',
-                section: 'packs',
-            });
-            return false;
-        }
-
         const { data, error } = await supabase.rpc('create_relationship_link_invite', {
             p_recipient_id: recipientId,
             p_link_type: linkType,
@@ -6397,9 +6319,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return false;
         }
 
-        const nextGold = Number((data as any)?.new_gold ?? Math.max(0, (userProfile.wallet?.gold || 0) - inviteCost));
         const inviteId = String((data as any)?.invite?.id || '');
-        updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
 
         if (linkType === 'mentoria' || linkType === 'parceria') {
             const notificationType = linkType === 'mentoria' ? 'mentor_invite' : 'partnership_invite';
@@ -6440,9 +6360,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if (action === 'revoke') {
-            const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
-            updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
-            showToast('Convite revogado e ouro devolvido.', 'success');
+            showToast('Convite cancelado.', 'success');
         } else if (action === 'decline') {
             showToast('Convite recusado.', 'success');
         } else {
@@ -6488,95 +6406,50 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         relationshipLinkId: string,
         arenaInput: { assetId: string; name: string; description?: string; icon?: string }
     ): Promise<Arena | null> => {
-        if ((userProfile.wallet?.gold || 0) < 50) {
-            const missingGold = Math.max(0, 50 - Number(userProfile.wallet?.gold || 0));
-            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para compartilhar uma arena nesse vinculo.`, 'warning');
-            promptGoldShortage({
-                requiredGold: 50,
-                label: 'compartilhar uma arena nesse vinculo',
-                storeTab: 'store',
-                section: 'packs',
-            });
+        void relationshipLinkId;
+        void arenaInput;
+        showToast('O mentor nao cria tarefas nem arenas. O orientado escolhe uma arena propria para acompanhamento.', 'info');
+        return null;
+    };
+
+    const selectMentorshipArena = async (relationshipLinkId: string, arenaId: string): Promise<Arena | null> => {
+        if (!arenaId) {
+            showToast('Escolha uma arena sua para o mentor acompanhar.', 'warning');
             return null;
         }
 
-        const { data, error } = await supabase.rpc('create_linked_relationship_arena', {
+        const { data, error } = await supabase.rpc('select_my_mentorship_arena', {
             p_relationship_link_id: relationshipLinkId,
-            p_asset_id: arenaInput.assetId,
-            p_name: arenaInput.name,
-            p_description: arenaInput.description ?? '',
-            p_icon: arenaInput.icon ?? null,
+            p_arena_id: arenaId,
         });
 
         if (error) {
-            console.error('Error creating linked relationship arena:', error);
-            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel criar a arena vinculada.'), 'error');
+            console.error('Error selecting mentorship arena:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel compartilhar essa arena com o mentor.'), 'error');
             return null;
         }
 
-        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
-        const linkedArenaType = String((data as any)?.linked_arena?.metadata?.link_type || (data as any)?.link_type || '');
-        updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+        const nextGold = Number((data as any)?.new_gold);
+        if (Number.isFinite(nextGold)) {
+            updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+        }
 
         const arenaRow = (data as any)?.arena;
-        if (!arenaRow) {
-            showToast(linkedArenaType === 'parceria' ? 'Arena compartilhada adicionada a parceria.' : 'Arena vinculada criada.', 'success');
-            return null;
-        }
+        if (!arenaRow) return null;
 
         const mapped = mapToCamelCase(arenaRow) as Arena;
-        const sessionUserId = getSupabaseUserId();
-        const arenaOwnerId = String((arenaRow as any)?.user_id || '');
-        const nextArena: Arena = {
+        showToast((data as any)?.changed === false ? 'Essa arena ja esta sendo acompanhada.' : 'Arena compartilhada com o mentor.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+        return {
             ...mapped,
             actionIds: mapped.actionIds || [],
             isArchived: mapped.isArchived ?? false,
         };
-
-        const shouldAttachArenaToCurrentUser = Boolean(
-            linkedArenaType !== 'mentoria'
-            || !sessionUserId
-            || arenaOwnerId === sessionUserId
-        );
-
-        if (shouldAttachArenaToCurrentUser) {
-            setAssets(prevAssets => prevAssets.map(asset =>
-                asset.id === nextArena.assetId
-                    ? { ...asset, arenas: asset.arenas.some(arena => arena.id === nextArena.id) ? asset.arenas : [...asset.arenas, nextArena] }
-                    : asset
-            ));
-        } else {
-            setAssets(prevAssets => prevAssets.map(asset => ({
-                ...asset,
-                arenas: asset.arenas.filter(arena => arena.id !== nextArena.id),
-            })));
-            setActions(prevActions => prevActions.filter(action => action.arenaId !== nextArena.id));
-            setTasks(prevTasks => prevTasks.filter(task => {
-                const linkedAction = actions.find((action) => action.id === task.actionId);
-                return linkedAction?.arenaId !== nextArena.id;
-            }));
-        }
-
-        showToast(linkedArenaType === 'parceria' ? 'Arena compartilhada adicionada a parceria.' : 'Arena vinculada criada para a mentoria.', 'success');
-        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
-        return nextArena;
     };
 
     const shareRelationshipArena = async (relationshipLinkId: string, arenaId: string): Promise<Arena | null> => {
         if (!arenaId) {
             showToast('Escolha uma arena sua para expor nessa parceria.', 'warning');
-            return null;
-        }
-
-        if ((userProfile.wallet?.gold || 0) < PARTNERSHIP_LINKED_ARENA_GOLD_COST) {
-            const missingGold = Math.max(0, PARTNERSHIP_LINKED_ARENA_GOLD_COST - Number(userProfile.wallet?.gold || 0));
-            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para expor essa arena.`, 'warning');
-            promptGoldShortage({
-                requiredGold: PARTNERSHIP_LINKED_ARENA_GOLD_COST,
-                label: 'expor uma arena na parceria',
-                storeTab: 'store',
-                section: 'packs',
-            });
             return null;
         }
 
@@ -6591,8 +6464,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return null;
         }
 
-        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
-        updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
         showToast('Arena exposta na parceria.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
 
@@ -7036,10 +6907,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const template = codex.template;
         const catalogRefId = codex.catalog_id || codex.origin_codex_id || codex.id;
         const templateMeta = resolveTemplateCampaignMeta(catalogRefId, template);
-        const preferredAssetId = templateMeta.primaryAssetId || 'fisico';
+        const preferredAssetId = normalizeLifeAreaId(templateMeta.primaryAssetId || 'saude');
         const assetId =
             assets.find(a => a.id === preferredAssetId)?.id ||
-            assets.find(a => a.id === 'fisico')?.id ||
+            assets.find(a => a.id === 'saude')?.id ||
             assets[0]?.id ||
             'geral';
         const arenaIds: string[] = [];
@@ -7301,7 +7172,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return null;
 
-        // LÃ³gica especial para o BaÃº de Skin Comum (Exclusivo para Skins)
+        // Lógica especial para o Baú de Skin Comum (Exclusivo para Skins)
         if (chestType === 'Skin Comum') {
             // Filtrar apenas skins
             const allSkins = getCatalogItemsByCategory('skin').filter(i => isChestEligibleItem(i));
@@ -7334,14 +7205,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 p_item_id: selectedSkin.id
             });
 
-            // Se o RPC open_chest_specific nÃ£o existir, vamos tentar o open_chest padrÃ£o 
-            // mas o ideal Ã© que o backend suporte esse novo baÃº.
-            // Como nÃ£o podemos mudar o backend, vamos usar a lÃ³gica local e atualizar o DB manualmente se necessÃ¡rio.
-            // Mas o sistema jÃ¡ tem recycle_item e craft_item que usam RPCs.
+            // Se o RPC open_chest_specific não existir, vamos tentar o open_chest padrão
+            // mas o ideal é que o backend suporte esse novo baú.
+            // Como não podemos mudar o backend, vamos usar a lógica local e atualizar o DB manualmente se necessário.
+            // Mas o sistema já tem recycle_item e craft_item que usam RPCs.
 
             if (error) {
                 console.error("Error opening Skin Chest:", error);
-                // Fallback: Tentar usar o open_chest normal se o especÃ­fico falhar
+                // Fallback: Tentar usar o open_chest normal se o específico falhar
                 const { data: fallbackData, error: fallbackError } = await supabase.rpc('open_chest', {
                     p_chest_type: 'Comum' // Fallback para comum se der erro no custom
                 });
@@ -7902,6 +7773,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [closeDailyCommitment, dailyCommitment]);
 
     const saveSanctuaryPosition = async (payload: { clanId: string; userId: string; row: number; col: number; area: string; action: string; timestamp: string }) => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return;
         try {
             const uid = getSupabaseUserId();
             if (!uid) {
@@ -7909,7 +7781,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 return;
             }
 
-            // Usar Supabase para salvar posiÃ§Ã£o, garantindo que user_id seja o do usuÃ¡rio logado
+            // Usar Supabase para salvar posição, garantindo que user_id seja o do usuário logado
             const { error } = await supabase
                 .from('sanctuary_positions')
                 .upsert({
@@ -7933,8 +7805,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const getSanctuaryPositionsForClan = async (clanId: string): Promise<Record<string, { row: number; col: number; area: string; action: string; timestamp: string }>> => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return {};
         try {
-            // Buscar posiÃ§Ãµes do Supabase
+            // Buscar posições do Supabase
             const { data, error } = await supabase
                 .from('sanctuary_positions')
                 .select('*')
@@ -7969,6 +7842,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const getSanctuaryAreaStats = useCallback(async (clanId: string): Promise<Record<string, { totalSeconds: number; lastUpdated: string }>> => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return {};
         try {
             const currentTime = new Date().toISOString();
             const { data, error } = await supabase
@@ -8001,6 +7875,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, []);
 
     const updateSanctuaryAreaTime = async (clanId: string, area: string, seconds: number) => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return;
         try {
             const { data: currentStats, error: fetchError } = await supabase
                 .from('sanctuary_area_stats')
@@ -8036,22 +7911,23 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
 
-    // FunÃ§Ã£o para atualizar estatÃ­sticas do santuÃ¡rio baseada em tempo (Crescimento/Decaimento suave)
+    // Função para atualizar estatísticas do santuário baseada em tempo (Crescimento/Decaimento suave)
     const applySanctuaryAreaDecay = async (clanId: string, occupancy: Record<string, number>, totalMembers: number = 1) => {
+        if (!PRODUCT_FEATURES.clanSanctuary) return;
         try {
             const currentTime = new Date();
             const areas = ['meditation', 'devotion', 'rest', 'garden'];
 
             // Constantes de Balanceamento (Baseado em 28800s = 100%)
             const MAX_POINTS = 28800;
-            // Ganho de 30% (8640s) por dia (86400s) -> mais rÃ¡pido para incentivar
+            // Ganho de 30% (8640s) por dia (86400s) -> mais rápido para incentivar
             const MAX_DAILY_GROWTH = MAX_POINTS * 0.30;
             const GROWTH_RATE_PER_SECOND = MAX_DAILY_GROWTH / 86400;
 
-            // Perda de 25% (7200s) por dia (86400s) -> decaimento visÃ­vel
+            // Perda de 25% (7200s) por dia (86400s) -> decaimento visível
             const DECAY_RATE_PER_SECOND = (MAX_POINTS * 0.25) / 86400;
 
-            // Intervalo mÃ­nimo de atualizaÃ§Ã£o reduzido para 10s para ser muito fluido
+            // Intervalo mínimo de atualização reduzido para 10s para ser muito fluido
             const MIN_UPDATE_INTERVAL = 10;
 
             // OTIMIZACAO: Buscar todos de uma vez para reduzir reads
@@ -8074,21 +7950,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const currentStats = statsMap.get(area);
 
                 const lastUpdated = currentStats?.last_updated ?new Date(currentStats.last_updated) : currentTime;
-                // Se nÃ£o existir, assume 50%
+                // Se não existir, assume 50%
                 let totalSeconds = currentStats ?Number(currentStats.total_seconds) : 14400;
 
                 // Calcular tempo passado em segundos
                 const secondsPassed = (currentTime.getTime() - lastUpdated.getTime()) / 1000;
 
-                // Ignorar atualizaÃ§Ãµes muito frequentes para economizar writes
+                // Ignorar atualizações muito frequentes para economizar writes
                 if (secondsPassed < MIN_UPDATE_INTERVAL && currentStats) continue;
 
                 let change = 0;
                 const activeUsers = occupancy[area] || 0;
 
                 if (activeUsers > 0) {
-                    // Se ocupado: Cresce proporcionalmente Ã  participaÃ§Ã£o do clÃ£
-                    // Meta: 10% ao dia se 100% do clÃ£ estiver participando
+                    // Se ocupado: Cresce proporcionalmente à participação do clã
+                    // Meta: 10% ao dia se 100% do clã estiver participando
                     const participationRatio = Math.min(1, activeUsers / Math.max(1, totalMembers));
                     change = secondsPassed * GROWTH_RATE_PER_SECOND * participationRatio;
                 } else {
@@ -8100,10 +7976,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 // Clamp entre 0 e Max
                 nextTotalSeconds = Math.max(0, Math.min(MAX_POINTS, nextTotalSeconds));
 
-                // Arredondar para inteiro para evitar "dÃ­gitos quebrados"
+                // Arredondar para inteiro para evitar "dígitos quebrados"
                 const finalSeconds = Math.floor(nextTotalSeconds);
 
-                // Se nÃ£o mudou nada (devido ao arredondamento), ignora
+                // Se não mudou nada (devido ao arredondamento), ignora
                 if (finalSeconds === Math.floor(totalSeconds) && currentStats) continue;
 
                 // Atualizar no banco
@@ -8161,7 +8037,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     // Real-time Clan Mission Progress & Participants
     useEffect(() => {
-        if (!clan?.id) return;
+        if (!PRODUCT_FEATURES.clanMissions || !clan?.id) return;
 
         const channel = supabase
             .channel('public:clan_mission_data')
@@ -9005,21 +8881,26 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const isTutorialActive = window.location.search.includes('tutorial=true') || (window as any).__GOL_TUTORIAL_ACTIVE__;
 
         if (userProfile.role === 'admin' || userProfile.role === 'gm' || userProfile.role === 'admin_gm' || isTutorialActive || isGracePeriod) {
-            // Permite atualizaÃ§Ã£o imediata
+            // Permite atualização imediata
         } else if (Date.now() - lastUpdate < threeDays) {
             const remainingHours = Math.ceil((threeDays - (Date.now() - lastUpdate)) / (60 * 60 * 1000));
             showToast(`Maestria em lockdown. Disponível em ${remainingHours}h.`);
             return false;
         }
 
-        const nextTotalLevel = assets.filter(a => a.id !== 'geral').reduce((sum, asset) => {
-            const nextLevel = levels[asset.id] ?? asset.level;
-            return sum + nextLevel;
+        const normalizedLevels = Object.fromEntries(LIFE_AREA_IDS.map((assetId) => {
+            const currentLevel = assets.find((asset) => asset.id === assetId)?.level || 1;
+            const requestedLevel = Number(levels[assetId] ?? currentLevel);
+            return [assetId, Math.min(10, Math.max(1, Math.round(requestedLevel)))];
+        })) as Record<string, number>;
+
+        const nextTotalLevel = LIFE_AREA_IDS.reduce((sum, assetId) => {
+            return sum + normalizedLevels[assetId];
         }, 0);
 
         setAssets(prev => prev.map(asset => ({
             ...asset,
-            level: levels[asset.id] || asset.level,
+            level: normalizedLevels[asset.id] ?? asset.level,
             levelDescriptions: levelDescriptions ?
                 levelDescriptions[asset.id]?.reduce((acc, desc, i) => ({ ...acc, [i + 1]: desc }), {}) || asset.levelDescriptions
                 : asset.levelDescriptions
@@ -9028,7 +8909,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (userId) {
             const levelsPayload = assets.filter(a => a.id !== 'geral').map(asset => {
-                const newLevel = levels[asset.id];
+                const newLevel = normalizedLevels[asset.id];
                 if (newLevel === undefined) return null;
                 return {
                     user_id: userId,
@@ -9292,7 +9173,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
         const performanceScore = fairScoreResult.fairScore;
 
-        // Arenas e AÃ§Ãµes envolvidas (baseado nas tarefas do ciclo)
+        // Arenas e Ações envolvidas (baseado nas tarefas do ciclo)
         const actionIdsInCycle = new Set(scoredCycleTasks.map(t => t.actionId));
         const involvedActions = currentActions.filter(a => actionIdsInCycle.has(a.id));
 
@@ -9332,55 +9213,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const mostRepeatedAction = currentActions.find(a => a.id === mostRepeatedActionId)?.name || 'Nenhuma';
 
         const isPremiumUser = hasPremiumAccess(userProfile);
-        const currentOpenDayTaskIds = dailyCommitment.stage === 'judgment'
-            ? []
-            : resolveOperationalScoredTaskIds(dailyCommitment.date, cycleTasks, dailyCommitment.taskIds);
-        const currentDayCommittedTasks =
-            dailyCommitment.stage === 'judgment'
-                ? []
-                : cycleTasks.filter(task =>
-                    currentOpenDayTaskIds.includes(task.id) &&
-                    taskMatchesOperationalDate(task, dailyCommitment.date) &&
-                    (() => {
-                        if (!cycle?.arenaIds?.length) return true;
-                        const action = currentActions.find(item => item.id === task.actionId);
-                        return !!action && cycle.arenaIds.includes(action.arenaId);
-                    })()
-                );
-        const currentDayExpSnapshot = buildDailyExpSnapshot({
-            tasks: currentDayCommittedTasks,
-            actions: currentActions,
-            operationalDate: dailyCommitment.date,
-            taskIds: currentDayCommittedTasks.map(task => task.id),
-            includePremium: isPremiumUser,
-        });
-        const unbankedOpenDayExp = dailyCommitment.stage === 'judgment' ? 0 : currentDayExpSnapshot.totalExp;
-        const unbankedHistoricalSummary = Array.from(new Set(
-            cycleTasks
-                .map((task) => getTaskOperationalDateString(task))
-                .filter((date): date is string => Boolean(date))
-                .filter((date) => date >= startDate && date <= endDate)
-                .filter((date) => date < dailyCommitment.date)
-                .filter((date) => !judgedOperationalDates.includes(date))
-        )).reduce((acc, operationalDate) => {
-            const inferredTaskIds = getInitialDailyCommitmentTaskIds(cycleTasks, operationalDate, isClanQuestActionId);
-            if (inferredTaskIds.length === 0) return acc;
-
-            const summary = summarizeOperationalDayCommitment(
-                operationalDate,
-                cycleTasks,
-                inferredTaskIds,
-                0,
-            );
-
-            return {
-                exp: acc.exp + summary.expDeposited,
-                premium: acc.premium + (summary.premiumBonusExp || 0),
-            };
-        }, { exp: 0, premium: 0 });
-        const rawExp = cycleExpBonus + unbankedHistoricalSummary.exp + unbankedOpenDayExp;
+        const cycleBaseExp = completedScoredTasks.reduce((sum, task) => {
+            const action = currentActions.find(item => item.id === task.actionId);
+            return sum + getTaskBaseExp(task, action);
+        }, 0);
+        const premiumBonusExp = isPremiumUser ? Math.round(cycleBaseExp * 0.1) : 0;
+        const rawExp = cycleExpBonus + cycleBaseExp + premiumBonusExp;
         const expBoostBonus = 0;
-        const premiumBonusExp = unbankedHistoricalSummary.premium + currentDayExpSnapshot.premiumBonusExp;
         const expGained = rawExp;
 
         const identitySnapshot = {
@@ -9560,7 +9399,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }).filter(Boolean) as { asset: string; value: number }[]
         };
 
-        // Salvar relatÃ³rio e atualizar ciclo no Supabase se logado
+        // Salvar relatório e atualizar ciclo no Supabase se logado
         if (supabaseUserId) {
             const snakeCaseReport = {
                 user_id: supabaseUserId,
@@ -9586,7 +9425,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setCycleExpBonus(0);
         setFreeProgressResetMarker(new Date().toISOString(), false);
 
-        // Adicionar relatÃ³rio Ã  lista
+        // Adicionar relatório à lista
         setReports(prev => [newReport, ...prev]);
         emitAppSensoryCue('cycle_complete');
 
@@ -9667,6 +9506,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         showToast(`O ciclo "${upcomingCycle.name}" comecou hoje.`, 'success');
     }, [activeCycle, hasHydratedFromSupabase, showToast, upcomingCycle]);
 
+    const recordClanContribution = async (xpAmount: number, sourceKey?: string) => {
+        if (!clan?.id || !sourceKey?.startsWith('cycle:') || xpAmount <= 0) return;
+
+        const { data, error } = await supabase.rpc('record_my_clan_xp', {
+            p_xp_amount: Math.round(xpAmount),
+            p_source_key: sourceKey,
+        });
+
+        if (error) {
+            console.error('Error recording clan contribution:', error.message);
+            return;
+        }
+
+        if (data?.awarded) {
+            await loadClanAndMembers(clan.id, true);
+        }
+    };
+
     const applyExp = (expGained: number, options: ApplyExpOptions = {}) => {
         // This function is now mostly for immediate visual feedback or small grants.
         // Major cycle EXP is applied at endDailyBattle or endCycle.
@@ -9680,6 +9537,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const premiumExp = shouldIncludePremium && hasPremiumAccess(userProfile) ? Math.round(expGained * 0.1) : 0;
             const boostedExp = expGained + premiumExp;
             updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + boostedExp } });
+            void recordClanContribution(boostedExp, options.contributionSource);
         }
     };
 
@@ -10010,7 +9868,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         let publicProfile: UserProfile | null = null;
         if (profileRes.data) {
             publicProfile = mapToCamelCase(profileRes.data) as UserProfile;
-            publicProfile.visibleWidgets = Array.isArray(publicProfile.visibleWidgets) ? publicProfile.visibleWidgets : [];
+            publicProfile.visibleWidgets = normalizeLifeAreaIdList(publicProfile.visibleWidgets);
             publicProfile.assetArtById = normalizeAssetKeyedRecord(publicProfile.assetArtById);
             publicProfile.assetWidgetValues = normalizeAssetKeyedRecord(publicProfile.assetWidgetValues);
             publicProfile.assetsVisibility = normalizeAssetsVisibilityScope(publicProfile.assetsVisibility);
@@ -11417,6 +11275,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const activateClanQuest = async (questId: string) => {
+        if (!PRODUCT_FEATURES.clanMissions) return;
         if (!clan) return;
         const quest = findSeasonQuestById(questId);
         if (!quest || quest.type !== 'clan') return;
@@ -11478,13 +11337,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             await joinClanMission(quest.id);
         }
 
-        // 1. Verificar se a aÃ§Ã£o jÃ¡ existe
+        // 1. Verificar se a ação já existe
         const isClanQuest = quest.type === 'clan';
-        // NOME DA ARENA = TÃTULO DA MISSÃ’O
-        // O usuÃ¡rio solicitou explicitamente: "quero que cada quest de cla e de missao crie uma arena nova com o nome daquela missao"
+        // NOME DA ARENA = TÍTULO DA MISSÃO
+        // O usuário solicitou explicitamente: "quero que cada quest de cla e de missao crie uma arena nova com o nome daquela missao"
         const seasonArenaName = quest.title; // Ex: "Correr 15km", "Ler Livro X"
 
-        // 2. Buscar ou Criar Arena (EspecÃ­fica para esta missÃ£o)
+        // 2. Buscar ou Criar Arena (Específica para esta missão)
         let { arena, action: existingAction } = findSeasonQuestArenaAndAction(quest);
 
         if (existingAction) {
@@ -11500,24 +11359,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         if (!arena) {
-            // Se nÃ£o existe, cria uma nova arena dedicada
+            // Se não existe, cria uma nova arena dedicada
             const assetId = assets[0]?.id || 'geral';
             arena = await addArena(assetId, {
                 name: seasonArenaName,
                 description: quest.description || (isClanQuest ? 'Tarefa do grupo' : 'Missao de temporada'),
                 icon: quest.actionTemplate.icon || (isClanQuest ? '\u2694\uFE0F' : '\u{1F4DD}'),
-                priority: 'alta' // Destaque para missÃµes ativas
+                priority: 'alta' // Destaque para missões ativas
             });
 
-            // PersistÃªncia Manual
+            // Persistência Manual
         }
 
-        // Garantir que nÃ£o estÃ¡ arquivada
+        // Garantir que não está arquivada
         if (arena?.isArchived) {
             updateArena(arena.id, { isArchived: false });
         }
 
-        // 3. Criar a AÃ§Ã£o na Arena
+        // 3. Criar a Ação na Arena
         await addAction({
             arenaId: arena.id,
             name: quest.actionTemplate.name,
@@ -11529,11 +11388,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             difficulty: 3
         });
 
-        // ConfiguraÃ§Ã£o adicional para quests de clÃ£
+        // Configuração adicional para quests de clã
         if (isClanQuest && clan) {
-            // REMOVIDO: Upsert automÃ¡tico em clan_mission_progress. 
-            // Agora o lÃ­der deve ativar explicitamente via activateClanQuest.
-            // Apenas juntamos o membro Ã  missÃ£o.
+            // REMOVIDO: Upsert automático em clan_mission_progress.
+            // Agora o líder deve ativar explicitamente via activateClanQuest.
+            // Apenas juntamos o membro à missão.
             await joinClanMission(quest.id);
         }
 
@@ -11964,8 +11823,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         tasks,
         activeCycle,
         campaigns,
+        reports,
         dailyCommitment,
-        judgedOperationalDates,
         judgedTaskIdsByDate,
         clan,
         supabase,
@@ -12680,6 +12539,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
+    const respondToClanInvite = async (notificationId: string, accept: boolean): Promise<boolean> => {
+        const userId = getSupabaseUserId();
+        if (!userId) return false;
+
+        const result = await SupabaseService.respondToClanInvitation(notificationId, accept);
+        if (!result.ok) {
+            const message = result.reason === 'already_in_clan'
+                ? 'Voce ja participa de um grupo.'
+                : result.reason === 'clan_full'
+                    ? 'Esse grupo esta cheio.'
+                    : 'Nao foi possivel responder ao convite.';
+            showToast(message, 'warning');
+            return false;
+        }
+
+        await fetchNotifications(userId);
+        if (accept) {
+            clanCacheRef.current = null;
+            await refreshClanMembershipState(userId);
+            showToast('Convite aceito. Voce entrou no grupo.', 'success');
+        } else {
+            showToast('Convite recusado.', 'success');
+        }
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+        return true;
+    };
+
     const approveClanJoinRequest = async (request: ClanJoinRequest) => {
         if (!clan || request.clanId !== clan.id) return;
 
@@ -13224,8 +13110,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (!existingArena) {
                 console.log("Creating PVP Arena: ", arenaName);
                 try {
-                    // 'fisico' is the asset ID for physical activities
-                    const newArena = await addArena('fisico', {
+                    // 'saude' is the area for physical activities.
+                    const newArena = await addArena('saude', {
                         name: arenaName,
                         description: "Desafio PVP de corrida. Quem completar 15km primeiro vence.",
                         icon: "?",
@@ -13339,9 +13225,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             claimSeasonQuest,
             claimSeasonMission,
-            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, triggerOracle, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

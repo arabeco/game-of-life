@@ -54,22 +54,22 @@ export const CATEGORY_LABELS: Record<CampaignCategoryId, string> = {
 
 const KNOWN_CATALOG_META: Record<string, CampaignCatalogMeta> = {
   'd290f1ee-6c54-4b01-90e6-d701748f0851': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'aprendizado',
     campaignTheme: 'bem_estar',
   },
   '7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a01': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'pratica',
     campaignTheme: 'exercicio',
   },
   '7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a02': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'manutencao',
     campaignTheme: 'nutricao',
   },
   '7f31c3d8-7a9a-4d4e-9b36-4f79a5f42a03': {
-    primaryAssetId: 'espaco-mental',
+    primaryAssetId: 'proposito',
     campaignType: 'pratica',
     campaignTheme: 'produtividade',
   },
@@ -84,27 +84,27 @@ const KNOWN_CATALOG_META: Record<string, CampaignCatalogMeta> = {
     campaignTheme: 'estrategia',
   },
   '8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b01': {
-    primaryAssetId: 'espaco-mental',
+    primaryAssetId: 'proposito',
     campaignType: 'pratica',
     campaignTheme: 'produtividade',
   },
   '8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b02': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'pratica',
     campaignTheme: 'bem_estar',
   },
   '8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b03': {
-    primaryAssetId: 'espaco-mental',
+    primaryAssetId: 'proposito',
     campaignType: 'manutencao',
     campaignTheme: 'autocuidado',
   },
   '8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b04': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'pratica',
     campaignTheme: 'exercicio',
   },
   '8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b05': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'pratica',
     campaignTheme: 'exercicio',
   },
@@ -114,92 +114,92 @@ const KNOWN_CATALOG_META: Record<string, CampaignCatalogMeta> = {
     campaignTheme: 'produtividade',
   },
   '8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b07': {
-    primaryAssetId: 'consciencia',
+    primaryAssetId: 'proposito',
     campaignType: 'aprendizado',
     campaignTheme: 'psicologia',
   },
   '8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b08': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'aprendizado',
     campaignTheme: 'nutricao',
   },
   '8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b09': {
-    primaryAssetId: 'financas',
+    primaryAssetId: 'trabalho',
     campaignType: 'manutencao',
     campaignTheme: 'estrategia',
   },
   '8f31c3d8-7a9a-4d4e-9b36-4f79a5f42b10': {
-    primaryAssetId: 'conexoes',
+    primaryAssetId: 'relacoes',
     campaignType: 'pratica',
     campaignTheme: 'socializacao',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c01': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'aprendizado',
     campaignTheme: 'bem_estar',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c02': {
-    primaryAssetId: 'consciencia',
+    primaryAssetId: 'proposito',
     campaignType: 'aprendizado',
     campaignTheme: 'produtividade',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c03': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'pratica',
     campaignTheme: 'exercicio',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c04': {
-    primaryAssetId: 'financas',
+    primaryAssetId: 'trabalho',
     campaignType: 'aprendizado',
     campaignTheme: 'estrategia',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c05': {
-    primaryAssetId: 'conexoes',
+    primaryAssetId: 'relacoes',
     campaignType: 'pratica',
     campaignTheme: 'socializacao',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c06': {
-    primaryAssetId: 'espaco-mental',
+    primaryAssetId: 'proposito',
     campaignType: 'manutencao',
     campaignTheme: 'psicologia',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c07': {
-    primaryAssetId: 'conexoes',
+    primaryAssetId: 'relacoes',
     campaignType: 'pratica',
     campaignTheme: 'socializacao',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c08': {
-    primaryAssetId: 'consciencia',
+    primaryAssetId: 'proposito',
     campaignType: 'aprendizado',
     campaignTheme: 'psicologia',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c09': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'pratica',
     campaignTheme: 'exercicio',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42c10': {
-    primaryAssetId: 'consciencia',
+    primaryAssetId: 'proposito',
     campaignType: 'pratica',
     campaignTheme: 'produtividade',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d08': {
-    primaryAssetId: 'conexoes',
+    primaryAssetId: 'relacoes',
     campaignType: 'pratica',
     campaignTheme: 'socializacao',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d09': {
-    primaryAssetId: 'financas',
+    primaryAssetId: 'trabalho',
     campaignType: 'manutencao',
     campaignTheme: 'estrategia',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42d10': {
-    primaryAssetId: 'consciencia',
+    primaryAssetId: 'proposito',
     campaignType: 'pratica',
     campaignTheme: 'expressao',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e03': {
-    primaryAssetId: 'fisico',
+    primaryAssetId: 'saude',
     campaignType: 'pratica',
     campaignTheme: 'exercicio',
   },
@@ -209,7 +209,7 @@ const KNOWN_CATALOG_META: Record<string, CampaignCatalogMeta> = {
     campaignTheme: 'estrategia',
   },
   '9f31c3d8-7a9a-4d4e-9b36-4f79a5f42e05': {
-    primaryAssetId: 'financas',
+    primaryAssetId: 'trabalho',
     campaignType: 'aprendizado',
     campaignTheme: 'estrategia',
   },
@@ -236,13 +236,15 @@ export const resolveTemplateCampaignMeta = (
   template?: { primaryAssetId?: string; campaignType?: string; campaignTheme?: string } | null,
 ): CampaignCatalogMeta => {
   const fallback = KNOWN_CATALOG_META[codexId] || {};
+  const rawPrimaryAssetId =
+    typeof template?.primaryAssetId === 'string' && template.primaryAssetId.trim().length > 0
+      ? template.primaryAssetId
+      : fallback.primaryAssetId;
 
   return {
-    primaryAssetId:
-      typeof template?.primaryAssetId === 'string' && template.primaryAssetId.trim().length > 0
-        ? template.primaryAssetId
-        : fallback.primaryAssetId,
+    primaryAssetId: rawPrimaryAssetId ? normalizeLifeAreaId(rawPrimaryAssetId) : undefined,
     campaignType: isCampaignType(template?.campaignType) ? template.campaignType : fallback.campaignType,
     campaignTheme: isCampaignTheme(template?.campaignTheme) ? template.campaignTheme : fallback.campaignTheme,
   };
 };
+import { normalizeLifeAreaId } from '../constants/lifeAreas';

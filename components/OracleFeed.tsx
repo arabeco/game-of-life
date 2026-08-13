@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
-import { XIcon, SparklesIcon, MessageIcon, TrashIcon, EditIcon } from './Icons';
+import { XIcon, SparklesIcon, MessageIcon, TrashIcon } from './Icons';
 import { Notification, OracleMode } from '../types';
 import { Portal } from './Portal';
 import { CodexClaimModal } from './CodexClaimModal';
@@ -20,9 +20,6 @@ import {
 const OracleChat = lazy(() =>
     import('./OracleChat').then((module) => ({ default: module.OracleChat }))
 );
-const OracleAction = lazy(() =>
-    import('./OracleAction').then((module) => ({ default: module.OracleAction }))
-);
 
 interface OracleFeedProps {
     onClose: () => void;
@@ -32,8 +29,8 @@ interface OracleFeedProps {
 
 type Tab = 'chat' | 'action' | 'requests' | 'notifications' | 'clan' | 'dms';
 
-const resolveInitialTab = (tab: Tab): 'chat' | 'action' | 'requests' =>
-    tab === 'notifications' || tab === 'clan' || tab === 'dms' ? 'requests' : tab;
+const resolveInitialTab = (tab: Tab): 'chat' | 'requests' =>
+    tab === 'notifications' || tab === 'clan' || tab === 'dms' ? 'requests' : 'chat';
 
 export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: initialTabProp = 'chat' as Tab }) => {
     const {
@@ -46,7 +43,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
         oraclePreferences,
     } = useGame();
     const initialTab: Tab = initialTabProp;
-    const [activeTab, setActiveTab] = useState<'chat' | 'action' | 'requests'>(() => resolveInitialTab(initialTab));
+    const [activeTab, setActiveTab] = useState<'chat' | 'requests'>(() => resolveInitialTab(initialTab));
 
     useEffect(() => {
         setActiveTab(resolveInitialTab(initialTab));
@@ -126,30 +123,11 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                         {activeTab === 'chat' && (
                             <div className="absolute inset-0 animate-in slide-in-from-left-4 duration-200">
                                 <Suspense fallback={<div className="absolute inset-0 bg-black/30 animate-pulse" />}>
-                                    <OracleChat onClose={onClose} isEmbedded={true} onNavigateTab={setActiveTab} />
-                                </Suspense>
-                            </div>
-                        )}
-
-                        {activeTab === 'action' && (
-                            <div className="absolute inset-0 animate-in slide-in-from-right-4 duration-200 bg-black/20 p-2">
-                                <div className="mb-2 flex items-center justify-between rounded-2xl border border-[var(--skin-accent-color)]/16 bg-[var(--skin-accent-color)]/8 px-3 py-2">
-                                    <div className="flex items-center gap-2">
-                                        <EditIcon className="h-4 w-4 text-[var(--skin-accent-color)]" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">
-                                            Revisao de execucao
-                                        </span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveTab('chat')}
-                                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                                    >
-                                        Voltar
-                                    </button>
-                                </div>
-                                <Suspense fallback={<div className="absolute inset-0 bg-black/30 animate-pulse" />}>
-                                    <OracleAction />
+                                    <OracleChat
+                                        onClose={onClose}
+                                        isEmbedded={true}
+                                        onNavigateTab={(tab) => setActiveTab(tab === 'requests' ? 'requests' : 'chat')}
+                                    />
                                 </Suspense>
                             </div>
                         )}
@@ -550,9 +528,23 @@ const navigateFromNotification = (notification: Notification, onClose: () => voi
         return;
     }
 
+    if (notification.type === 'clan_invite') {
+        dispatchAppView({ view: 'social' });
+        window.setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('mundo-tab-request', {
+                detail: {
+                    tab: 'social',
+                    socialSection: 'people',
+                    openRequests: true,
+                },
+            }));
+        }, 80);
+        onClose();
+        return;
+    }
+
     if (
-        notification.type === 'clan_invite'
-        || notification.type === 'clan_response'
+        notification.type === 'clan_response'
         || notification.type === 'clan_join'
         || notification.type === 'clan_mission_update'
     ) {
@@ -592,10 +584,11 @@ const getNotificationActionLabel = (notification: Notification): string | null =
         case 'direct_message':
             return 'Abrir Mensagens';
         case 'clan_invite':
+            return 'Responder Convite';
         case 'clan_response':
         case 'clan_join':
         case 'clan_mission_update':
-            return 'Abrir Cla';
+            return 'Abrir Grupo';
         case 'friend_request':
         case 'friend_response':
         case 'friend_accepted':

@@ -16,7 +16,8 @@ import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../ut
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import './arena-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
-import { RelationshipHubModal } from './RelationshipHubModal';
+import { ConnectionsModal } from './ConnectionsModal';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 
 const hexToRgb = (hex: string) => {
     const trimmed = hex.trim();
@@ -215,18 +216,11 @@ export const ArenaDetailModal: React.FC<{
     );
     const effectiveRelationshipType = currentLinkType || linkedRelationshipType;
     const effectiveCollaborativeRole = currentCollaborativeRole || collaborativeRole;
-    const canCollaborateMentorship = Boolean(
-        effectiveRelationshipType === 'mentoria' &&
-        (allowLinkedMentorshipEdit || effectiveCollaborativeRole === 'mentor' || effectiveCollaborativeRole === 'pupil')
-    );
-    const isDetachedMentorshipCollab = Boolean(
-        canCollaborateMentorship &&
-        !localArenaExists
-    );
+    const isDetachedMentorshipCollab = false;
     const isMentorshipLinkedArena = effectiveRelationshipType === 'mentoria';
     const isCompetitionLinkedArena = effectiveRelationshipType === 'competicao';
     const isPupilMentorshipArena = isMentorshipLinkedArena && effectiveCollaborativeRole === 'pupil';
-    const isReadOnlyArena = readOnly || previewMode || isCompetitionLinkedArena || (!localArenaExists && !isDetachedMentorshipCollab);
+    const isReadOnlyArena = readOnly || previewMode || isCompetitionLinkedArena || !localArenaExists;
     const activeAssetId = isEditing ? editableArena.assetId : arena.assetId;
     const parentAsset = assets.find(a => a.id === activeAssetId);
     const formatAssetLabel = (assetId: string, assetName: string) => assetId === 'geral' ? 'OUTROS / SIDEQUEST' : assetName;
@@ -244,6 +238,7 @@ export const ArenaDetailModal: React.FC<{
     }, [arena, allActions, getClanQuestsForArena]);
 
     const isClanQuestArena = useMemo(() => {
+        if (!PRODUCT_FEATURES.clanMissions) return false;
         return (clanQuests && clanQuests.length > 0) || normalizedArena.includes('quests - cla');
     }, [clanQuests, normalizedArena]);
 
@@ -301,7 +296,7 @@ export const ArenaDetailModal: React.FC<{
         }, { totalProgress: 0, totalGoal: 0 });
     }, [clanQuests, getClanQuestProgress]);
 
-    const isOfficeMode = clan?.clanType === 'Office';
+    const isOfficeMode = PRODUCT_FEATURES.clanSharedActions && clan?.clanType === 'Office';
     const isLeader = enrichedClanMembers.some(member => member.id === userProfile?.id && member.role === 'leader');
     const forceSharedPool = effectiveRelationshipType ? true : (isOfficeMode ? true : undefined);
     const tasksForCounts = useMemo(() => {
@@ -334,7 +329,7 @@ export const ArenaDetailModal: React.FC<{
     const isRelationshipArena = effectiveRelationshipType === 'mentoria' || effectiveRelationshipType === 'competicao' || effectiveRelationshipType === 'parceria';
     const canUnsharePartnershipArena = effectiveRelationshipType === 'parceria' && localArenaExists;
     const allowRelationshipArenaDelete = effectiveRelationshipType === 'mentoria'
-        ? (effectiveCollaborativeRole === 'mentor' || effectiveCollaborativeRole === 'pupil')
+        ? effectiveCollaborativeRole === 'pupil'
         : effectiveRelationshipType === 'parceria'
             ? canUnsharePartnershipArena
             : false;
@@ -360,7 +355,7 @@ export const ArenaDetailModal: React.FC<{
             : effectiveRelationshipType === 'parceria'
                 ? 'Voce esta retirando esta arena da vitrine da parceria. A arena continua sua e o parceiro perde o acesso imediato.'
                 : effectiveRelationshipType === 'mentoria'
-                    ? 'Voce vai remover esta arena da mentoria. Todo o progresso registrado nela sera perdido e a mentoria continua ativa. Tem certeza?'
+                    ? 'O mentor deixara de acompanhar esta arena. A arena, as acoes e todo o progresso continuam na sua conta.'
                     : 'Tem certeza que deseja excluir esta arena? Todo o progresso registrado nela sera perdido.';
     const handleEditToggle = async () => {
         if (isReadOnlyArena) {
@@ -420,7 +415,7 @@ export const ArenaDetailModal: React.FC<{
 
                 await Promise.resolve(onLinkedArenaRefresh?.());
                 window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
-                showToast('Arena removida da mentoria. O progresso dela foi perdido.', 'success');
+                showToast('Arena retirada da mentoria. Seu progresso foi preservado.', 'success');
                 onClose();
                 return;
             } catch (error: any) {
@@ -612,7 +607,7 @@ export const ArenaDetailModal: React.FC<{
                                     </button>
                                 )}
                                 {/* Shared Arena Toggle for Leaders */}
-                                {!isReadOnlyArena && isEditing && isLeader && !isSpecialArena && (
+                                {PRODUCT_FEATURES.clanSharedActions && !isReadOnlyArena && isEditing && isLeader && !isSpecialArena && (
                                     <button
                                         onClick={() => typeof setArenaAsShared === 'function' && setArenaAsShared(arena.id, !arena.description?.includes('[SHARED]'))}
                                         className={`p-2 rounded-full transition-colors border ${arena.description?.includes('[SHARED]')
@@ -862,7 +857,7 @@ export const ArenaDetailModal: React.FC<{
                     onClose={() => setActionModalState(null)}
                 />
             )}
-            {isLinkingObserver && (
+            {PRODUCT_FEATURES.relationshipLegacyHub && isLinkingObserver && (
             <div className="arena-detail-modal fixed inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={() => setIsLinkingObserver(false)}>
                     <div className="arena-link-panel bg-black/70 border border-white/10 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center">
@@ -914,7 +909,7 @@ export const ArenaDetailModal: React.FC<{
                 </div>
             )}
             {isRelationshipHubOpen && (
-                <RelationshipHubModal
+                <ConnectionsModal
                     initialTab={selectionType}
                     onClose={() => setRelationshipHubOpen(false)}
                 />
@@ -922,6 +917,3 @@ export const ArenaDetailModal: React.FC<{
         </Portal>
     );
 };
-
-
-

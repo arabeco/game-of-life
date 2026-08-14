@@ -61,46 +61,6 @@ const isAuthUserAlreadyMissing = (message: string): boolean => {
   return normalized.includes("user not found") || normalized.includes("not found");
 };
 
-const listBucketFilesRecursively = async (
-  supabaseAdmin: ReturnType<typeof createClient>,
-  bucket: string,
-  prefix: string,
-): Promise<string[]> => {
-  const collected: string[] = [];
-  let offset = 0;
-
-  while (true) {
-    const { data, error } = await supabaseAdmin.storage.from(bucket).list(prefix, {
-      limit: 100,
-      offset,
-      sortBy: { column: "name", order: "asc" },
-    });
-
-    if (error) {
-      throw new Error(`Storage list failed for ${prefix}: ${error.message}`);
-    }
-
-    const entries = data || [];
-    for (const entry of entries) {
-      const childPath = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.id) {
-        collected.push(childPath);
-      } else {
-        const nested = await listBucketFilesRecursively(supabaseAdmin, bucket, childPath);
-        collected.push(...nested);
-      }
-    }
-
-    if (entries.length < 100) {
-      break;
-    }
-
-    offset += entries.length;
-  }
-
-  return collected;
-};
-
 serve(async (req) => {
   const origin = req.headers.get("origin");
   const isAllowedOrigin = isAllowedRequestOrigin(origin);
@@ -170,11 +130,11 @@ serve(async (req) => {
   const userId = authData.user.id;
   const userEmail = String(authData.user.email || "").trim();
   const userProvider = String(authData.user.app_metadata?.provider || authData.user.user_metadata?.provider || "").trim();
-  const blockReentry = payload.blockReentry !== false;
+  const blockReentry = payload.blockReentry === true;
   const deletionReason = typeof payload.reason === "string" && payload.reason.trim() ? payload.reason.trim() : null;
-  const storagePrefixes = [`slots/${userId}`];
   let deletionRequestId: number | null = null;
   let removedFiles: string[] = [];
+  let deletionEmailStatus = userEmail ? "pending" : "skipped_missing_email";
 
   try {
     const { data: deletionRequest, error: requestError } = await supabaseAdmin
@@ -184,7 +144,7 @@ serve(async (req) => {
         status: "started",
         metadata: {
           deleted_via: "edge_function",
-          storage_prefixes: storagePrefixes,
+          storage_cleanup: "all-owned-objects",
           block_reentry: blockReentry,
           reason: deletionReason,
         },
@@ -233,16 +193,31 @@ serve(async (req) => {
       }
     }
 
-    for (const prefix of storagePrefixes) {
-      const files = await listBucketFilesRecursively(supabaseAdmin, "user-images", prefix);
-      if (files.length === 0) continue;
+    const { data: storageObjects, error: storageListError } = await supabaseAdmin.rpc(
+      "list_account_storage_objects",
+      { p_user_id: userId },
+    );
+    if (storageListError) {
+      throw new Error(`Failed to list account storage objects: ${storageListError.message}`);
+    }
 
-      const { error: removeError } = await supabaseAdmin.storage.from("user-images").remove(files);
-      if (removeError) {
-        throw new Error(`Failed to remove storage objects: ${removeError.message}`);
+    const filesByBucket = new Map<string, string[]>();
+    for (const entry of storageObjects || []) {
+      const bucket = String(entry.bucket_id || "").trim();
+      const objectName = String(entry.object_name || "").trim();
+      if (!bucket || !objectName) continue;
+      filesByBucket.set(bucket, [...(filesByBucket.get(bucket) || []), objectName]);
+    }
+
+    for (const [bucket, files] of filesByBucket.entries()) {
+      for (let index = 0; index < files.length; index += 100) {
+        const batch = files.slice(index, index + 100);
+        const { error: removeError } = await supabaseAdmin.storage.from(bucket).remove(batch);
+        if (removeError) {
+          throw new Error(`Failed to remove storage objects from ${bucket}: ${removeError.message}`);
+        }
+        removedFiles = removedFiles.concat(batch.map((name) => `${bucket}/${name}`));
       }
-
-      removedFiles = removedFiles.concat(files);
     }
 
     const { data: cleanupData, error: cleanupError } = await supabaseAdmin.rpc("delete_account_data_for_user", {
@@ -262,6 +237,28 @@ serve(async (req) => {
       throw new Error(`Failed to delete auth user: ${deleteUserError.message}`);
     }
 
+    if (userEmail) {
+      try {
+        const { data: emailData, error: emailError } = await supabaseAdmin.functions.invoke("resend", {
+          body: {
+            type: "account_deleted",
+            content: "Sua conta e os dados associados foram excluidos permanentemente. Se voltar ao Glyph no futuro, uma nova conta comecara vazia.",
+            metadata: {
+              sendEmail: true,
+              accountDeleted: true,
+              email: userEmail,
+              dispatchKey: `account-deleted:${deletionRequestId}`,
+            },
+          },
+        });
+
+        deletionEmailStatus = emailError || emailData?.error || emailData?.skipped ? "failed" : "sent";
+      } catch (emailError) {
+        console.warn("Account deletion email failed without blocking deletion:", normalizeErrorMessage(emailError));
+        deletionEmailStatus = "failed";
+      }
+    }
+
     if (deletionRequestId !== null) {
       await supabaseAdmin
         .from("account_deletion_requests")
@@ -270,9 +267,11 @@ serve(async (req) => {
           completed_at: new Date().toISOString(),
           metadata: {
             deleted_via: "edge_function",
-            storage_prefixes: storagePrefixes,
+            storage_cleanup: "all-owned-objects",
             storage_removed_count: removedFiles.length,
             auth_deleted: true,
+            clan_outcome: cleanupData?.clan_outcome ?? null,
+            deletion_email_status: deletionEmailStatus,
             block_reentry: blockReentry,
             reason: deletionReason,
           },
@@ -281,7 +280,12 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, storageRemovedCount: removedFiles.length }),
+      JSON.stringify({
+        success: true,
+        storageRemovedCount: removedFiles.length,
+        clanOutcome: cleanupData?.clan_outcome ?? null,
+        deletionEmailStatus,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {

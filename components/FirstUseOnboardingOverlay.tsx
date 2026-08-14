@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
+import { SYSTEM_CHALLENGES } from '../constants/systemChallenges';
 
 type AppView = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
@@ -60,7 +61,7 @@ const defaultNavigation: NavigationDetail = {
 export const FirstUseOnboardingOverlay: React.FC<{
   active: boolean;
   onDismiss: () => void;
-  onComplete: () => void;
+  onComplete: (acceptedSystemChallenges: string[]) => void;
 }> = ({ active, onDismiss, onComplete }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
@@ -68,6 +69,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const [isTyping, setIsTyping] = useState(false);
   const [createdArenaId, setCreatedArenaId] = useState<string | null>(null);
   const [startStyle, setStartStyle] = useState<StartStyle | null>(null);
+  const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([]);
   const autoAdvanceStepRef = useRef<string | null>(null);
   const currentStepRef = useRef<StepDef | undefined>(undefined);
   const isTypingRef = useRef(false);
@@ -176,6 +178,12 @@ export const FirstUseOnboardingOverlay: React.FC<{
       padding: 12,
     },
     {
+      id: 'missions',
+      title: 'Quer uma missao para comecar?',
+      text: 'Escolha uma ou nenhuma. Ela apenas acompanha o que voce fizer e pode ser abandonada depois.',
+      navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
+    },
+    {
       id: 'finish',
       title: 'Tudo pronto',
       text: startStyle === 'whole'
@@ -234,6 +242,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       setIsTyping(false);
       setCreatedArenaId(null);
       setStartStyle(null);
+      setSelectedMissionIds([]);
       autoAdvanceStepRef.current = null;
       currentStepRef.current = undefined;
       isTypingRef.current = false;
@@ -379,7 +388,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     };
 
     const handleCycleCreated = () => {
-      jumpToAtLeast('finish');
+      jumpToAtLeast('missions');
     };
 
     const handleArenaModalOpened = () => {
@@ -493,7 +502,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     if (!step) return;
 
     if (step.final) {
-      onComplete();
+      onComplete(selectedMissionIds);
       return;
     }
 
@@ -512,7 +521,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     }
 
     advanceStep();
-  }, [advanceStep, isTyping, onComplete, step]);
+  }, [advanceStep, isTyping, onComplete, selectedMissionIds, step]);
 
   useEffect(() => {
     if (!active) return;
@@ -657,6 +666,40 @@ export const FirstUseOnboardingOverlay: React.FC<{
                           <span className="mt-1 block text-[8px] text-white/42 md:text-[9px]">{option.detail}</span>
                         </button>
                       ))}
+                    </div>
+                  )}
+
+                  {step.id === 'missions' && (
+                    <div className="mt-3 space-y-2">
+                      {SYSTEM_CHALLENGES.slice(0, 3).map((mission) => {
+                        const selected = selectedMissionIds.includes(mission.id);
+                        return (
+                          <button
+                            key={mission.id}
+                            type="button"
+                            onClick={() => setSelectedMissionIds(selected ? [] : [mission.id])}
+                            className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition active:scale-[0.99] ${selected
+                              ? 'border-[#f3d48a]/65 bg-[#f3d48a]/14'
+                              : 'border-white/10 bg-white/[0.035] hover:border-[#f3d48a]/30'}`}
+                          >
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black/25 text-lg">{mission.actionTemplate.icon}</span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[10px] font-black uppercase tracking-[0.08em] text-white/88">{mission.title}</span>
+                              <span className="mt-0.5 block text-[9px] text-white/48">+{mission.rewardGold || 0} ouro</span>
+                            </span>
+                            <span className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] ${selected ? 'border-[#f3d48a] bg-[#f3d48a] text-black' : 'border-white/20 text-transparent'}`}>OK</span>
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMissionIds([])}
+                        className={`w-full rounded-xl border px-3 py-2 text-[9px] font-bold uppercase tracking-[0.12em] transition ${selectedMissionIds.length === 0
+                          ? 'border-white/25 bg-white/[0.08] text-white/78'
+                          : 'border-white/8 bg-transparent text-white/38 hover:text-white/65'}`}
+                      >
+                        Nenhuma por enquanto
+                      </button>
                     </div>
                   )}
 

@@ -7,7 +7,6 @@ import { LegacyGrandPlaque } from './LegacyGrandPlaque';
 import { LegacyProjectionConfirmModal } from './LegacyProjectionConfirmModal';
 import { LegacyExportKit, type LegacyExportKitHandle } from './LegacyExportKit';
 import type { LegacyEraSummary } from './LegacyExportDocument';
-import { UserAvatar } from './UserAvatar';
 import { getGoldMechanicPrice } from '../constants/goldCatalog';
 import { DEFAULT_LEGACY_BACKDROP_SKIN_ID, getLegacyBackdropSkin, type LegacyBackdropSkinId } from '../constants/legacyBackdropSkins';
 import { useLegacyPreviewLayoutConfig } from '../hooks/useLegacyPreviewLayoutConfig';
@@ -115,9 +114,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     );
     const previewStageWidth = LEGACY_PREVIEW_STAGE_WIDTH * previewStageScale;
     const previewStageHeight = LEGACY_PREVIEW_STAGE_HEIGHT * previewStageScale;
-    const identityNickname = fallbackIdentity?.nickname || sovereignName;
-    const identityPatent = fallbackIdentity?.nobilityRankName || fallbackIdentity?.title || 'Vagante';
-    const identityClan = fallbackIdentity?.clanName || 'Sem grupo';
     const updatePreviewLayout = useCallback((patch: Partial<LegacyPreviewLayoutConfig>) => {
         setStoredLegacyPreviewLayoutConfig({ ...previewLayout, ...patch });
     }, [previewLayout]);
@@ -227,36 +223,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
         }
     }, [onToast, sovereignName]);
 
-    const renderIdentityDock = (variant: 'default' | 'hero' = 'default') => (
-        <div className={`mx-auto w-full legacy-identity-dock ${variant === 'hero' ? 'max-w-[324px]' : 'max-w-[292px]'}`}>
-            <div className={`${variant === 'hero' ? 'h-[104px] rounded-[22px] px-4 py-3' : 'h-[92px] rounded-[20px] px-3 py-2'} w-full overflow-hidden border border-white/12 bg-[linear-gradient(180deg,rgba(8,11,18,0.88),rgba(3,5,8,0.7))] shadow-[0_14px_32px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl`}>
-                <div className="flex items-center gap-2.5">
-                    <UserAvatar
-                        avatarUrl={fallbackIdentity?.avatarUrl}
-                        nickname={identityNickname}
-                        className={variant === 'hero' ? 'h-14 w-14' : 'h-12 w-12'}
-                        borderColor="var(--skin-accent-color)"
-                        level={fallbackIdentity?.level || 1}
-                    />
-                    <div className="min-w-0 flex-1 overflow-hidden">
-                        <p className="text-[8px] font-black uppercase tracking-[0.22em] text-amber-100/58">Perfil soberano</p>
-                        <h3 className={`truncate font-black tracking-[0.02em] text-white ${variant === 'hero' ? 'text-[1.12rem]' : 'text-[1.02rem]'}`} title={identityNickname}>
-                            {identityNickname}
-                        </h3>
-                        <div className="mt-1 flex flex-nowrap gap-1.5 overflow-hidden">
-                            <span className="truncate rounded-full border border-white/10 bg-white/6 px-2 py-[3px] text-[9px] font-black uppercase tracking-[0.16em] text-white/82">
-                                {identityPatent}
-                            </span>
-                            <span className="truncate rounded-full border border-white/10 bg-white/6 px-2 py-[3px] text-[9px] font-black uppercase tracking-[0.16em] text-white/72">
-                                {identityClan}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
     const renderPreviewStage = () => (
         <div className="relative flex min-h-full w-full flex-col items-center justify-start overflow-hidden bg-[linear-gradient(180deg,_#080b11,_#020304)] px-6 pb-24">
             <div
@@ -336,7 +302,14 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                 transformOrigin: 'top center',
                             }}
                         >
-                            <LegacyGrandPlaque eras={eras} sovereignName={sovereignName} compact hideSovereignName portrait />
+                            <LegacyGrandPlaque
+                                eras={eras}
+                                sovereignName={sovereignName}
+                                identity={fallbackIdentity}
+                                identityMode="current"
+                                compact
+                                portrait
+                            />
                         </div>
 
                         <div className="absolute inset-x-4 bottom-5 z-20 flex justify-center">
@@ -423,11 +396,14 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                     transformOrigin: 'top center',
                                 }}
                             >
-                                <LegacyGrandPlaque eras={eras} sovereignName={sovereignName} compact hideSovereignName portrait />
-                            </div>
-
-                            <div className="mt-4">
-                                {renderIdentityDock('hero')}
+                                <LegacyGrandPlaque
+                                    eras={eras}
+                                    sovereignName={sovereignName}
+                                    identity={fallbackIdentity}
+                                    identityMode="current"
+                                    compact
+                                    portrait
+                                />
                             </div>
 
                             <div className="mt-4 w-full max-w-[332px] rounded-[24px] border border-white/10 bg-black/34 px-4 py-4 text-center shadow-[0_18px_42px_rgba(0,0,0,0.32)] backdrop-blur-md">

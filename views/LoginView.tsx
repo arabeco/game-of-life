@@ -26,8 +26,6 @@ import { saveSessionBackup } from '../utils/sessionBackup';
 import './login-ui.css';
 
 const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
-const WELCOME_NOTIFICATION_CONTENT = 'Bem-vindo ao Oraculo! Seu Starter Pack foi entregue. Explore as Arenas e o Planner para comecar sua jornada.';
-
 type ManualSignupDraft = {
     email: string;
     password: string;
@@ -293,18 +291,6 @@ export const LoginView: React.FC = () => {
                     }]);
 
                 if (profileError) throw profileError;
-
-                await SupabaseService.sendNotificationEmail(
-                    data.user.id,
-                    'system',
-                    WELCOME_NOTIFICATION_CONTENT,
-                    {
-                        welcome: true,
-                        email: data.user.email || draft.email,
-                        recipientNickname: draft.nickname || draft.email.split('@')[0],
-                        dispatchKey: `welcome:${data.user.id}`,
-                    },
-                );
 
                 let sessionReady = Boolean(data.session);
 

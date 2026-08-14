@@ -1418,7 +1418,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         assets.forEach((asset) => {
             asset.arenas.forEach((arena) => arenaAreaById.set(arena.id, asset.id));
         });
-        const enrichAtlasAreas = (weeks: Report['metrics']['weeklyAtlas']) => (weeks || []).map((week) => ({
+        const enrichAtlasAreas = (report: Report) => {
+            const weeks = report.metrics.weeklyAtlas || [];
+            if ((report.metrics.atlasSnapshotVersion || 0) >= 2) return weeks;
+
+            return weeks.map((week) => ({
             ...week,
             days: week.days.map((day) => ({
                 ...day,
@@ -1435,7 +1439,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     areaId: item.areaId || arenaAreaById.get(item.arenaId),
                 })),
             })),
-        }));
+            }));
+        };
 
         return eraSegments.map((segment, index) => {
             const segmentReports = sortedReports.slice(segment.start, segment.end + 1);
@@ -1527,7 +1532,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     signatureAction: report.metrics.top3Actions?.[0]?.name || report.highlight?.mostRepeatedAction || 'Nenhuma',
                     plannedMetas: report.metrics.plannedMetas,
                     sealedMetas: report.metrics.sealedMetas ?? report.metrics.goalsMet ?? 0,
-                    weeklyAtlas: enrichAtlasAreas(report.metrics.weeklyAtlas),
+                    weeklyAtlas: enrichAtlasAreas(report),
                     identitySnapshot: report.identitySnapshot,
                 }));
 
@@ -1706,7 +1711,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }, [activeCycle, activeDraftEraId, draftEraSegments, draftEraSlots, eraMetadata, eraSegments, eraSummaries, isEditingEras, sortedReports.length]);
 
     const legacyFallbackIdentity = useMemo(() => ({
+        snapshotVersion: 2 as const,
         avatarUrl: userProfile.avatarUrl,
+        borderId: userProfile.border || undefined,
+        bannerUrl: userProfile.bannerUrl || undefined,
+        skinId: userProfile.skin || undefined,
+        sovereign: userProfile.sovereign ? { ...userProfile.sovereign } : undefined,
         nickname: userProfile.nickname || userProfile.username || 'Usuario',
         title: userProfile.title,
         level: userProfile.level || 1,
@@ -1714,9 +1724,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         nobilityRankName: NOBILITY_RANKS.find((rank) => rank.id === userProfile.nobility?.rankId)?.name || undefined,
         clanName: userProfile.clanName || null,
         clanIcon: userProfile.clanIcon || null,
+        clanRankId: null,
         clanRankName: null,
         capturedAt: new Date().toISOString(),
-    }), [userProfile.avatarUrl, userProfile.clanIcon, userProfile.clanName, userProfile.level, userProfile.nickname, userProfile.nobility, userProfile.title, userProfile.username]);
+    }), [userProfile.avatarUrl, userProfile.bannerUrl, userProfile.border, userProfile.clanIcon, userProfile.clanName, userProfile.level, userProfile.nickname, userProfile.nobility, userProfile.skin, userProfile.sovereign, userProfile.title, userProfile.username]);
 
     const sovereignName = userProfile.nickname || userProfile.username || 'Usuario';
     const historicalAverageScore = useMemo(
@@ -2100,6 +2111,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <LegacyGrandPlaque
                                 eras={eraSummaries}
                                 sovereignName={sovereignName}
+                                identity={legacyFallbackIdentity}
+                                identityMode="current"
                                 banner
                                 hideSovereignName
                                 compact

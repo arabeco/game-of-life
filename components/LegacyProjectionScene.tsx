@@ -6,7 +6,6 @@ import { EraRibbon, getEraRibbonSkin } from './EraRibbon';
 import { LegacyGrandPlaque } from './LegacyGrandPlaque';
 import { LegacyCycleCard } from './LegacyCycleCard';
 import { MiniCyclePlannerSnapshot } from './MiniCyclePlannerSnapshot';
-import { UserAvatar } from './UserAvatar';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 import { getLegacyBackdropSkin, type LegacyBackdropSkinId } from '../constants/legacyBackdropSkins';
 import { useLegacyLayoutConfig } from '../hooks/useLegacyLayoutConfig';
@@ -36,7 +35,12 @@ interface LegacyProjectionSceneProps {
 }
 
 const buildFallbackIdentity = (sovereignName: string, fallbackIdentity?: ReportIdentitySnapshot): ReportIdentitySnapshot => ({
+    snapshotVersion: fallbackIdentity?.snapshotVersion,
     avatarUrl: fallbackIdentity?.avatarUrl,
+    borderId: fallbackIdentity?.borderId,
+    bannerUrl: fallbackIdentity?.bannerUrl,
+    skinId: fallbackIdentity?.skinId,
+    sovereign: fallbackIdentity?.sovereign,
     nickname: fallbackIdentity?.nickname || sovereignName,
     title: fallbackIdentity?.title,
     level: fallbackIdentity?.level || 1,
@@ -44,6 +48,7 @@ const buildFallbackIdentity = (sovereignName: string, fallbackIdentity?: ReportI
     nobilityRankName: fallbackIdentity?.nobilityRankName,
     clanName: fallbackIdentity?.clanName || null,
     clanIcon: fallbackIdentity?.clanIcon || null,
+    clanRankId: fallbackIdentity?.clanRankId || null,
     clanRankName: fallbackIdentity?.clanRankName || null,
     capturedAt: fallbackIdentity?.capturedAt || new Date().toISOString(),
 });
@@ -57,28 +62,33 @@ const resolveLegacyIdentity = (
     if (!snapshot) return fallback;
 
     return {
-        ...fallback,
-        ...snapshot,
-        avatarUrl: snapshot.avatarUrl?.trim() || fallback.avatarUrl,
-        nickname: snapshot.nickname?.trim() || fallback.nickname,
-        title: snapshot.title?.trim() || fallback.title,
-        nobilityRankId: snapshot.nobilityRankId || fallback.nobilityRankId,
-        nobilityRankName: snapshot.nobilityRankName?.trim() || fallback.nobilityRankName,
-        clanName: snapshot.clanName !== undefined ? snapshot.clanName : fallback.clanName,
-        clanIcon: snapshot.clanIcon !== undefined ? snapshot.clanIcon : fallback.clanIcon,
-        clanRankName: snapshot.clanRankName !== undefined ? snapshot.clanRankName : fallback.clanRankName,
+        snapshotVersion: snapshot.snapshotVersion,
+        avatarUrl: snapshot.avatarUrl?.trim() || undefined,
+        borderId: snapshot.borderId || undefined,
+        bannerUrl: snapshot.bannerUrl || undefined,
+        skinId: snapshot.skinId || undefined,
+        sovereign: snapshot.sovereign,
+        nickname: snapshot.nickname?.trim() || 'Usuario',
+        title: snapshot.title?.trim() || undefined,
+        level: Math.max(1, Number(snapshot.level || 1)),
+        nobilityRankId: snapshot.nobilityRankId || undefined,
+        nobilityRankName: snapshot.nobilityRankName?.trim() || undefined,
+        clanName: snapshot.clanName ?? null,
+        clanIcon: snapshot.clanIcon ?? null,
+        clanRankId: snapshot.clanRankId ?? null,
+        clanRankName: snapshot.clanRankName ?? null,
         capturedAt: snapshot.capturedAt || fallback.capturedAt,
     };
 };
 
 const identityKey = (identity: ReportIdentitySnapshot) => [
-    identity.nickname || '',
+    identity.nickname,
+    identity.level,
     identity.title || '',
-    identity.level || 0,
-    identity.nobilityRankId || '',
-    identity.nobilityRankName || '',
+    identity.borderId || '',
+    identity.skinId || '',
     identity.clanName || '',
-    identity.clanRankName || '',
+    identity.clanRankId || '',
 ].join('|');
 
 const getChronologyValue = (value?: string | null) => {
@@ -194,13 +204,11 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         if (!cycleEntries.length) return '';
         return cycleEntries[0]?.cycle.id || '';
     });
-    const [identityPulse, setIdentityPulse] = useState(false);
     const [eraTransitionPulse, setEraTransitionPulse] = useState<string | null>(null);
     const [sequenceCompleted, setSequenceCompleted] = useState(false);
     const [timelineEdgePadding, setTimelineEdgePadding] = useState({ left: 24, right: 24 });
     const [layoutEditorOpen, setLayoutEditorOpen] = useState(false);
     const [layoutCopyState, setLayoutCopyState] = useState<'idle' | 'copied' | 'prompt'>('idle');
-    const previousIdentityKeyRef = useRef<string>('');
     const didCompleteRef = useRef(false);
     const timelineScrollRef = useRef<HTMLDivElement | null>(null);
     const timelineContentRef = useRef<HTMLDivElement | null>(null);
@@ -224,6 +232,8 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
 
     const activeEntry = cycleEntries.find((entry) => entry.cycle.id === activeCycleId) || cycleEntries[0];
     const activeIdentity = resolveLegacyIdentity(sovereignName, fallbackIdentity, activeEntry?.cycle.identitySnapshot);
+    const currentIdentity = buildFallbackIdentity(sovereignName, fallbackIdentity);
+    const displayedPlaqueIdentity = sequenceCompleted ? currentIdentity : activeIdentity;
     const activeIndex = cycleEntries.findIndex((entry) => entry.cycle.id === activeCycleId);
 
     const jumpToCycle = (nextIndex: number) => {
@@ -344,20 +354,6 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         return () => window.clearTimeout(timer);
     }, [activeIndex, activeCycleId, autoAdvance, cycleEntries, fallbackIdentity, onSequenceComplete, projectionActive, sequenceCompleted, sovereignName]);
 
-    useEffect(() => {
-        const currentKey = identityKey(activeIdentity);
-        if (!previousIdentityKeyRef.current) {
-            previousIdentityKeyRef.current = currentKey;
-            return;
-        }
-        if (previousIdentityKeyRef.current !== currentKey) {
-            setIdentityPulse(true);
-            const timeout = window.setTimeout(() => setIdentityPulse(false), 900);
-            previousIdentityKeyRef.current = currentKey;
-            return () => window.clearTimeout(timeout);
-        }
-    }, [activeIdentity]);
-
     React.useLayoutEffect(() => {
         if (!interactive) return;
         const scroller = timelineScrollRef.current;
@@ -427,14 +423,6 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
 
     if (!eras.length) return null;
 
-    const activePatent = activeIdentity.nobilityRankName || activeIdentity.title || 'Vagante';
-    const activeClan = activeIdentity.clanName || 'Sem grupo';
-    const displayNickname = activeIdentity.nickname || sovereignName;
-    const nicknameClass = displayNickname.length > 24
-        ? 'text-[0.82rem] tracking-[0.01em]'
-        : displayNickname.length > 18
-            ? 'text-[0.92rem] tracking-[0.015em]'
-            : 'text-[1.02rem] tracking-[0.02em]';
     const timelineVisible = !interactive || projectionActive;
     const sceneCyclesTranslateX = layout.cyclesOffsetX;
     const sceneCyclesTranslateY = layout.cyclesOffsetY + 8;
@@ -721,7 +709,6 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                                                 <LayoutSlider label="Y da placa" value={layout.plaqueOffsetY} min={-120} max={120} step={1} onChange={(value) => updateLayout({ plaqueOffsetY: value })} />
                                                 <LayoutSlider label="Zoom do ciclo" value={layout.cyclesZoom} min={0.75} max={1.8} step={0.01} onChange={(value) => updateLayout({ cyclesZoom: value })} />
                                                 <LayoutSlider label="Y do ciclo" value={layout.cyclesOffsetY} min={-360} max={140} step={1} onChange={(value) => updateLayout({ cyclesOffsetY: value })} />
-                                                <LayoutSlider label="Y do perfil" value={layout.playerOffsetY} min={-140} max={140} step={1} onChange={(value) => updateLayout({ playerOffsetY: value })} />
                                             </div>
                                             <button
                                                 type="button"
@@ -759,7 +746,14 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                                 : undefined,
                         }}
                     >
-                        <LegacyGrandPlaque eras={orderedEras} sovereignName={sovereignName} compact hideSovereignName={interactive} portrait={interactive} />
+                        <LegacyGrandPlaque
+                            eras={orderedEras}
+                            sovereignName={sovereignName}
+                            identity={displayedPlaqueIdentity}
+                            identityMode={sequenceCompleted ? 'current' : 'historical'}
+                            compact
+                            portrait={interactive}
+                        />
                     </div>
                 </div>
 
@@ -808,45 +802,6 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                         </div>
                     </div>
 
-                    <div
-                        className={`mx-auto w-full legacy-identity-dock transition-all duration-500 ${identityPulse ? 'opacity-100' : ''}`}
-                        style={{
-                            maxWidth: '272px',
-                            transform: `translate(${layout.playerOffsetX}px, ${layout.playerOffsetY}px) scale(${layout.playerZoom})`,
-                            transformOrigin: 'bottom center',
-                        }}
-                    >
-                        <div className={`h-[92px] w-full overflow-hidden rounded-[20px] border border-white/12 bg-[linear-gradient(180deg,rgba(8,11,18,0.88),rgba(3,5,8,0.7))] px-3 py-2 shadow-[0_14px_32px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition-all duration-500 ${identityPulse ? 'ring-1 ring-[var(--skin-accent-color)]/32 shadow-[0_0_20px_rgba(212,175,55,0.12),0_14px_32px_rgba(0,0,0,0.34)]' : ''}`}>
-                            <div className="flex items-center gap-2.5">
-                                <UserAvatar
-                                    avatarUrl={activeIdentity.avatarUrl}
-                                    nickname={activeIdentity.nickname || sovereignName}
-                                    className="h-12 w-12"
-                                    borderColor="var(--skin-accent-color)"
-                                    level={activeIdentity.level}
-                                />
-                                <div className="min-w-0 flex-1 overflow-hidden">
-                                    <p className="text-[8px] font-black uppercase tracking-[0.22em] text-amber-100/58">Perfil soberano</p>
-                                    <h3
-                                        className={`truncate font-black text-white transition-all duration-500 ${nicknameClass} ${identityPulse ? 'text-[var(--skin-accent-color)]' : ''}`}
-                                        title={displayNickname}
-                                    >
-                                        {displayNickname}
-                                    </h3>
-                                    <div className={`mt-1 grid ${activeIdentity.clanName ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5 overflow-hidden`}>
-                                        <span className="truncate rounded-full border border-white/10 bg-white/6 px-1.5 py-[3px] text-center text-[8px] font-black uppercase tracking-[0.08em] text-white/82" title={activePatent}>
-                                            {activePatent}
-                                        </span>
-                                        {activeIdentity.clanName && (
-                                            <span className="truncate rounded-full border border-white/10 bg-white/6 px-1.5 py-[3px] text-center text-[8px] font-black uppercase tracking-[0.08em] text-white/72" title={activeClan}>
-                                                {activeIdentity.clanIcon ? `${activeIdentity.clanIcon} ` : ''}{activeClan}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 </div>
                 </div>

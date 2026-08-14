@@ -31,9 +31,9 @@ const typeCopy: Record<VisibleConnectionType, { label: string; invite: string; d
     description: 'Duas pessoas acompanham uma arena de cada lado, sem hierarquia.',
   },
   competicao: {
-    label: 'Competicao',
-    invite: 'Desafiar alguem',
-    description: 'Uma arena vira um duelo igual para os dois. O primeiro a concluir vence.',
+    label: 'Desafio',
+    invite: 'Desafiar alguém',
+    description: 'Você escolhe a arena e o prazo. Ao aceitar, os dois recebem a mesma cópia selada.',
   },
 };
 
@@ -75,6 +75,16 @@ const getArenaProgress = (entry: LinkedRelationshipArena) => {
   };
 };
 
+const formatChallengeTime = (deadlineAt?: string | null, completedAt?: string | null) => {
+  if (completedAt) return 'Encerrado';
+  if (!deadlineAt) return 'Sem prazo registrado';
+  const remainingMs = new Date(deadlineAt).getTime() - Date.now();
+  if (remainingMs <= 0) return 'Encerrando';
+  const hours = Math.ceil(remainingMs / 3_600_000);
+  if (hours < 24) return `${hours}h restantes`;
+  return `${Math.ceil(hours / 24)} dia(s) restantes`;
+};
+
 const ArenaProgress: React.FC<{ entry: LinkedRelationshipArena; owner: string }> = ({ entry, owner }) => {
   const progress = getArenaProgress(entry);
   const name = entry.arena?.name || String(entry.metadata?.name || 'Arena');
@@ -109,12 +119,11 @@ export const ConnectionsModal: React.FC<{
   const {
     actions,
     assets,
-    createCompetitionChallenge,
+    createCompetitionInvite,
     createRelationshipInvite,
     endRelationshipLink,
     fetchRelationshipHubData,
     friends,
-    removeRelationshipArenaShare,
     respondToRelationshipInvite,
     selectMentorshipArena,
     shareRelationshipArena,
@@ -134,8 +143,9 @@ export const ConnectionsModal: React.FC<{
   const [inviteType, setInviteType] = useState<VisibleConnectionType | null>(initialRecipientId ? initialTab : null);
   const [arenaPickerLink, setArenaPickerLink] = useState<RelationshipLink | null>(null);
   const [mentorshipPickerLink, setMentorshipPickerLink] = useState<RelationshipLink | null>(null);
-  const [competitionPickerLink, setCompetitionPickerLink] = useState<RelationshipLink | null>(null);
+  const [competitionInviteFriend, setCompetitionInviteFriend] = useState<UserProfile | null>(null);
   const [selectedArenaId, setSelectedArenaId] = useState('');
+  const [competitionDurationDays, setCompetitionDurationDays] = useState(7);
 
   const visibleInvites = useMemo(
     () => invites.filter((invite) => invite.linkType === activeType),
@@ -153,6 +163,18 @@ export const ConnectionsModal: React.FC<{
     () => ownArenas.filter((arena) => actions.some((action) => action.arenaId === arena.id && action.actionType !== 'Livre')),
     [actions, ownArenas],
   );
+  const selectedCompetitionArena = useMemo(
+    () => competitionArenas.find((arena) => arena.id === selectedArenaId) || null,
+    [competitionArenas, selectedArenaId],
+  );
+  const selectedCompetitionStats = useMemo(() => {
+    if (!selectedCompetitionArena) return null;
+    const measurableActions = actions.filter((action) => action.arenaId === selectedCompetitionArena.id && action.actionType !== 'Livre');
+    const plannedTotal = measurableActions.reduce((sum, action) => sum + Math.max(1, Number(action.repetitions || 1)), 0);
+    const rewardChestType = plannedTotal >= 6 || measurableActions.length >= 4 ? 'Incomum' : 'Comum';
+    const rewardXp = measurableActions.length >= 6 || plannedTotal >= 12 ? 120 : measurableActions.length >= 4 || plannedTotal >= 6 ? 90 : 60;
+    return { actionCount: measurableActions.length, plannedTotal, rewardChestType, rewardXp };
+  }, [actions, selectedCompetitionArena]);
   const inviteCandidates = useMemo(
     () => initialRecipientId ? friends.filter((friend) => friend.id === initialRecipientId) : friends,
     [friends, initialRecipientId],
@@ -234,10 +256,33 @@ export const ConnectionsModal: React.FC<{
 
   const sendInvite = async (friendId: string) => {
     if (!inviteType) return;
+    if (inviteType === 'competicao') {
+      const friend = inviteCandidates.find((candidate) => candidate.id === friendId) || null;
+      setCompetitionInviteFriend(friend);
+      setInviteType(null);
+      setSelectedArenaId('');
+      setCompetitionDurationDays(7);
+      return;
+    }
     setBusyKey(`invite:${friendId}`);
     try {
       if (await createRelationshipInvite(friendId, inviteType)) {
         setInviteType(null);
+        await refresh();
+      }
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const sendCompetitionInvite = async () => {
+    if (!competitionInviteFriend || !selectedArenaId) return;
+    setBusyKey(`competition-invite:${competitionInviteFriend.id}`);
+    try {
+      if (await createCompetitionInvite(competitionInviteFriend.id, selectedArenaId, competitionDurationDays)) {
+        setCompetitionInviteFriend(null);
+        setSelectedArenaId('');
+        setCompetitionDurationDays(7);
         await refresh();
       }
     } finally {
@@ -257,27 +302,10 @@ export const ConnectionsModal: React.FC<{
 
   const savePartnershipArena = async () => {
     if (!arenaPickerLink || !selectedArenaId) return;
-    const currentOwnShare = arenasForLink(arenaPickerLink.id).find((entry) => (
-      entry.createdByUserId === userProfile.id
-      || entry.arena?.userId === userProfile.id
-      || String(entry.metadata?.owner_user_id || '') === userProfile.id
-    ));
-
     setBusyKey(`arena:${arenaPickerLink.id}`);
     try {
-      if (currentOwnShare && currentOwnShare.arenaId !== selectedArenaId) {
-        const removed = await removeRelationshipArenaShare(arenaPickerLink.id, currentOwnShare.arenaId);
-        if (!removed) return;
-      }
-      if (!currentOwnShare || currentOwnShare.arenaId !== selectedArenaId) {
-        const shared = await shareRelationshipArena(arenaPickerLink.id, selectedArenaId);
-        if (!shared) {
-          if (currentOwnShare && currentOwnShare.arenaId !== selectedArenaId) {
-            await shareRelationshipArena(arenaPickerLink.id, currentOwnShare.arenaId);
-          }
-          return;
-        }
-      }
+      const shared = await shareRelationshipArena(arenaPickerLink.id, selectedArenaId);
+      if (!shared) return;
       setArenaPickerLink(null);
       setSelectedArenaId('');
       await refresh();
@@ -305,21 +333,6 @@ export const ConnectionsModal: React.FC<{
     }
   };
 
-  const startCompetition = async () => {
-    if (!competitionPickerLink || !selectedArenaId) return;
-    setBusyKey(`competition:${competitionPickerLink.id}`);
-    try {
-      const created = await createCompetitionChallenge(competitionPickerLink.id, selectedArenaId);
-      if (created) {
-        setCompetitionPickerLink(null);
-        setSelectedArenaId('');
-        await refresh();
-      }
-    } finally {
-      setBusyKey(null);
-    }
-  };
-
   return (
     <Portal>
       <div className="fixed inset-0 z-[10020] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm" onClick={onClose}>
@@ -327,7 +340,7 @@ export const ConnectionsModal: React.FC<{
           <header className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div>
               <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">Social</div>
-              <h2 className="mt-0.5 text-lg font-black text-white">Conexoes</h2>
+              <h2 className="mt-0.5 text-lg font-black text-white">Conexões</h2>
             </div>
             <div className="flex items-center gap-1">
               <button type="button" onClick={() => void refresh()} className="p-2 text-white/55 hover:text-white" aria-label="Atualizar conexoes">
@@ -376,8 +389,16 @@ export const ConnectionsModal: React.FC<{
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-bold text-white">{other?.nickname || 'Aliado'}</div>
                           <div className="mt-0.5 text-[10px] text-white/45">
-                            {incoming ? 'Convidou voce para' : 'Aguardando resposta'} · {typeCopy[invite.linkType as VisibleConnectionType].label}
+                            {incoming ? 'Convidou você para' : 'Aguardando resposta'} · {typeCopy[invite.linkType as VisibleConnectionType].label}
+                            {invite.linkType === 'competicao' && invite.arenaSnapshot?.name ? `: ${invite.arenaSnapshot.name}` : ''}
                           </div>
+                          {invite.linkType === 'competicao' && (
+                            <div className="mt-1 text-[9px] font-semibold text-rose-100/65">
+                              {invite.arenaSnapshot?.durationDays || 7} dia(s) · {invite.arenaSnapshot?.plannedTotal || 0} execuções
+                              {invite.arenaSnapshot?.rewardChestType ? ` · Baú ${invite.arenaSnapshot.rewardChestType} + ${invite.arenaSnapshot.rewardXp || 0} EXP` : ''}
+                              {incoming ? ' · 50 de ouro cobrados de quem enviou ao aceitar' : ' · sem cobrança até a aceitação'}
+                            </div>
+                          )}
                         </div>
                         {incoming ? (
                           <div className="flex gap-1">
@@ -424,20 +445,49 @@ export const ConnectionsModal: React.FC<{
                         {link.linkType === 'competicao' ? (
                           <div className="mt-3 space-y-2">
                             {challengesForLink(link.id).length === 0 ? (
-                              <p className="text-[11px] leading-relaxed text-white/42">Escolha uma arena para criar uma copia igual para os dois.</p>
+                              <p className="text-[11px] leading-relaxed text-white/42">Nenhum desafio ativo. Use “Desafiar alguém” acima para escolher arena e prazo.</p>
                             ) : challengesForLink(link.id).map((challenge) => {
                               const ownDone = challenge.challengerUserId === userProfile.id ? challenge.challengerCompletedAt : challenge.opponentCompletedAt;
                               const rivalDone = challenge.challengerUserId === userProfile.id ? challenge.opponentCompletedAt : challenge.challengerCompletedAt;
+                              const ownArenaId = challenge.challengerUserId === userProfile.id ? challenge.challengerArenaId : challenge.opponentArenaId;
+                              const rivalArenaId = challenge.challengerUserId === userProfile.id ? challenge.opponentArenaId : challenge.challengerArenaId;
+                              const ownArena = relationshipArenas.find((entry) => entry.arenaId === ownArenaId);
+                              const rivalArena = relationshipArenas.find((entry) => entry.arenaId === rivalArenaId);
                               const name = String(challenge.metadata?.source_name || 'Duelo');
                               return (
                                 <div key={challenge.id} className="rounded-lg border border-rose-300/12 bg-rose-500/[0.05] p-3">
                                   <div className="flex items-center justify-between gap-3">
                                     <div className="min-w-0">
                                       <div className="truncate text-sm font-bold text-white">{name}</div>
-                                      <div className="mt-1 text-[10px] text-white/42">Voce: {ownDone ? 'concluiu' : 'em andamento'} · Rival: {rivalDone ? 'concluiu' : 'em andamento'}</div>
+                                      <div className="mt-1 text-[10px] text-white/42">Você: {ownDone ? 'concluiu' : 'em andamento'} · Rival: {rivalDone ? 'concluiu' : 'em andamento'}</div>
+                                      <div className="mt-1 text-[9px] font-semibold text-rose-100/58">{formatChallengeTime(challenge.deadlineAt, challenge.completedAt)}</div>
                                     </div>
-                                    <span className="text-[9px] font-black uppercase tracking-[0.12em] text-rose-200">{challenge.sealedAt ? 'Encerrado' : 'Ativo'}</span>
+                                    <span className="text-[9px] font-black uppercase tracking-[0.12em] text-rose-200">{challenge.completedAt ? (challenge.resultKind === 'draw' ? 'Empate' : 'Concluído') : 'Ativo'}</span>
                                   </div>
+                                  {(ownArena || rivalArena) && (
+                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                      {ownArena ? <ArenaProgress entry={ownArena} owner="Você" /> : <div />}
+                                      {rivalArena ? <ArenaProgress entry={rivalArena} owner={other?.nickname || 'Rival'} /> : <div />}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : link.linkType === 'parceria' ? (
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            {[userProfile.id, otherId].map((ownerId) => {
+                              const entry = relationshipArenas.find((candidate) => (
+                                candidate.createdByUserId === ownerId
+                                || String(candidate.metadata?.owner_user_id || '') === ownerId
+                              ));
+                              const owner = ownerId === userProfile.id ? 'Sua arena' : `Arena de ${other?.nickname || 'aliado'}`;
+                              return entry ? (
+                                <ArenaProgress key={ownerId} entry={entry} owner={owner} />
+                              ) : (
+                                <div key={ownerId} className="flex min-h-[5.6rem] flex-col justify-center rounded-lg border border-dashed border-white/12 bg-black/15 p-3">
+                                  <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/40">{owner}</div>
+                                  <div className="mt-2 text-[10px] leading-relaxed text-white/38">Ainda não escolhida.</div>
                                 </div>
                               );
                             })}
@@ -453,7 +503,7 @@ export const ConnectionsModal: React.FC<{
                         ) : (
                           <p className="mt-3 text-[11px] leading-relaxed text-white/42">
                             {link.linkType === 'mentoria'
-                              ? (isMentor ? `Aguardando ${other?.nickname || 'o orientado'} escolher uma arena.` : 'Escolha uma arena sua para receber acompanhamento. O mentor nao pode editar suas acoes.')
+                              ? (isMentor ? `Aguardando ${other?.nickname || 'o orientado'} escolher uma arena.` : 'Escolha uma arena sua para receber acompanhamento. O mentor não pode editar suas ações.')
                               : 'Escolha uma arena para acompanhar junto.'}
                           </p>
                         )}
@@ -481,16 +531,7 @@ export const ConnectionsModal: React.FC<{
                             }}
                             className="mt-3 inline-flex items-center gap-2 rounded-md border border-cyan-300/18 bg-cyan-300/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-100"
                           >
-                            <PlusIcon className="h-3.5 w-3.5" /> Escolher minha arena
-                          </button>
-                        )}
-                        {link.linkType === 'competicao' && challengesForLink(link.id).filter((challenge) => !challenge.sealedAt).length < 3 && (
-                          <button
-                            type="button"
-                            onClick={() => { setSelectedArenaId(''); setCompetitionPickerLink(link); }}
-                            className="mt-3 inline-flex items-center gap-2 rounded-md border border-rose-300/18 bg-rose-300/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-rose-100"
-                          >
-                            <TrophyIcon className="h-3.5 w-3.5" /> Novo duelo · 50 ouro
+                            <PlusIcon className="h-3.5 w-3.5" /> {relationshipArenas.some((entry) => entry.createdByUserId === userProfile.id || String(entry.metadata?.owner_user_id || '') === userProfile.id) ? 'Trocar minha arena' : 'Escolher minha arena · 50 ouro'}
                           </button>
                         )}
                       </article>
@@ -542,6 +583,71 @@ export const ConnectionsModal: React.FC<{
         </div>
       )}
 
+      {competitionInviteFriend && (
+        <div className="fixed inset-0 z-[10030] flex items-end justify-center bg-black/70 p-3 sm:items-center" onClick={() => setCompetitionInviteFriend(null)}>
+          <div className="w-full max-w-sm rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <Avatar profile={profileFromUser(competitionInviteFriend)} />
+              <div>
+                <h3 className="text-base font-black text-white">Desafiar {competitionInviteFriend.nickname}</h3>
+                <p className="mt-0.5 text-[10px] text-white/42">A pessoa verá arena, prazo e recompensa antes de aceitar.</p>
+              </div>
+            </div>
+            <select value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
+              <option value="">Escolha uma arena</option>
+              {competitionArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
+            </select>
+            {competitionArenas.length === 0 && <p className="mt-2 text-[10px] text-rose-200/70">Crie uma arena com ao menos uma ação mensurável.</p>}
+
+            <div className="mt-4 flex items-center justify-between border-y border-white/8 py-3">
+              <div>
+                <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/42">Prazo</div>
+                <div className="mt-1 text-[10px] text-white/58">Começa quando o convite for aceito</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Diminuir prazo"
+                  onClick={() => setCompetitionDurationDays((value) => Math.max(1, value - 1))}
+                  className="flex h-9 w-9 items-center justify-center rounded-md border border-white/12 text-lg font-bold text-white/70"
+                >−</button>
+                <label className="flex h-9 w-16 items-center gap-1 rounded-md border border-rose-300/20 bg-rose-300/[0.06] px-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={competitionDurationDays}
+                    onChange={(event) => setCompetitionDurationDays(Math.max(1, Math.min(30, Number(event.target.value) || 1)))}
+                    className="w-7 bg-transparent text-center text-sm font-black text-white outline-none"
+                    aria-label="Prazo do desafio em dias"
+                  />
+                  <span className="text-[9px] font-bold text-white/45">d</span>
+                </label>
+                <button
+                  type="button"
+                  aria-label="Aumentar prazo"
+                  onClick={() => setCompetitionDurationDays((value) => Math.min(30, value + 1))}
+                  className="flex h-9 w-9 items-center justify-center rounded-md border border-white/12 text-lg font-bold text-white/70"
+                >+</button>
+              </div>
+            </div>
+
+            {selectedCompetitionStats && (
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div><div className="text-sm font-black text-white">{selectedCompetitionStats.actionCount}</div><div className="text-[8px] font-bold uppercase text-white/38">Ações</div></div>
+                <div><div className="text-sm font-black text-white">{selectedCompetitionStats.plannedTotal}</div><div className="text-[8px] font-bold uppercase text-white/38">Execuções</div></div>
+                <div><div className="text-sm font-black text-amber-200">{selectedCompetitionStats.rewardXp} EXP</div><div className="text-[8px] font-bold uppercase text-white/38">Baú {selectedCompetitionStats.rewardChestType}</div></div>
+              </div>
+            )}
+            <p className="mt-3 text-[10px] leading-relaxed text-white/42">O envio é gratuito. Se o convite for aceito, 50 de ouro serão cobrados de você e as duas cópias serão seladas.</p>
+            <div className="mt-4 flex gap-2">
+              <button type="button" onClick={() => setCompetitionInviteFriend(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
+              <button type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void sendCompetitionInvite()} className="flex-1 rounded-md bg-rose-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Enviar convite</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {mentorshipPickerLink && (
         <div className="fixed inset-0 z-[10030] flex items-end justify-center bg-black/70 p-3 sm:items-center" onClick={() => setMentorshipPickerLink(null)}>
           <div className="w-full max-w-sm rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
@@ -560,23 +666,6 @@ export const ConnectionsModal: React.FC<{
         </div>
       )}
 
-      {competitionPickerLink && (
-        <div className="fixed inset-0 z-[10030] flex items-end justify-center bg-black/70 p-3 sm:items-center" onClick={() => setCompetitionPickerLink(null)}>
-          <div className="w-full max-w-sm rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
-            <h3 className="text-base font-black text-white">Criar duelo</h3>
-            <p className="mt-1 text-[11px] text-white/45">A arena escolhida sera copiada e selada para os dois. Iniciar custa 50 de ouro.</p>
-            <select value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
-              <option value="">Escolha uma arena</option>
-              {competitionArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
-            </select>
-            {competitionArenas.length === 0 && <p className="mt-2 text-[10px] text-rose-200/70">Crie ao menos uma arena com uma acao mensuravel para competir.</p>}
-            <div className="mt-4 flex gap-2">
-              <button type="button" onClick={() => setCompetitionPickerLink(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
-              <button type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void startCompetition()} className="flex-1 rounded-md bg-rose-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Iniciar</button>
-            </div>
-          </div>
-        </div>
-      )}
     </Portal>
   );
 };

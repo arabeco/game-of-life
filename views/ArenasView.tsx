@@ -2057,7 +2057,7 @@ export const ArenasView: React.FC = () => {
                         onClick={() => setRelationshipHubOpen(true)}
                         className="group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--ui-border-accent-soft)] text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--ui-border-accent)]"
                         style={premiumHeaderButtonStyle}
-                        title="Abrir vínculos"
+                        title="Mentoria, parceria e desafios"
                     >
                         <LinkIcon className="h-3.5 w-3.5 drop-shadow-[0_0_8px_var(--skin-accent-color)] transition-transform duration-200 group-hover:scale-105" />
                         <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/85 px-1 py-0.5 text-[7px] font-black leading-none text-white">
@@ -2420,7 +2420,7 @@ export const ArenasView: React.FC = () => {
                         onClick={() => setRelationshipHubOpen(true)}
                         className="group relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--ui-border-accent-soft)] text-[var(--ui-text-accent)] transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--ui-border-accent)]"
                         style={premiumHeaderButtonStyle}
-                        title="Abrir vínculos"
+                        title="Mentoria, parceria e desafios"
                     >
                         <LinkIcon className="h-3.5 w-3.5 drop-shadow-[0_0_8px_var(--skin-accent-color)] transition-transform duration-200 group-hover:scale-105" />
                         <span className="absolute -right-1 -top-1 rounded-full border border-[var(--skin-accent-color)]/18 bg-black/85 px-1 py-0.5 text-[7px] font-black leading-none text-white">

@@ -361,6 +361,11 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                     +{fragmentsGained} FRAG
                                 </p>
                             )}
+                            {(metrics.goldGained || 0) > 0 && (
+                                <p className="mt-3 text-lg font-black tracking-[0.14em] text-amber-300">
+                                    +{metrics.goldGained} OURO
+                                </p>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -461,6 +466,9 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 : null,
             ((fragmentsGained || 0) > 0)
                 ? { label: 'Fragmentos', value: `+${fragmentsGained}` }
+                : null,
+            ((report.metrics.goldGained || 0) > 0)
+                ? { label: 'Ouro', value: `+${report.metrics.goldGained}` }
                 : null,
             ...(insignias || []).slice(0, 3).map((insigniaId) => ({
                 label: 'Insignia',

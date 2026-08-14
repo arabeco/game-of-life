@@ -775,7 +775,7 @@ export const AssetsView: React.FC = () => {
                                             />
                                         </div>
 
-                                        <div className="absolute inset-0 z-10 flex min-w-0 flex-col px-[4%] pb-[13%] pt-[2%]">
+                                        <div className="absolute inset-0 z-10 flex min-w-0 flex-col px-[4%] pb-[8.5%] pt-[2%]">
                                             <div className="mx-auto flex min-h-[30px] w-[64%] items-center justify-center rounded-[10px] border border-white/22 bg-[rgba(18,21,27,0.58)] px-[4%] py-[2%] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_7px_16px_rgba(0,0,0,0.26)] backdrop-blur-[3px]">
                                                 <h2 className="asset-overview-title line-clamp-2 text-center font-black uppercase leading-[1.06] tracking-[0.04em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]">
                                                     {area.id === 'proposito' ? area.shortName : area.name}

@@ -48,6 +48,7 @@ const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
         LEVEL_UP: fallbackGlyph ?? <ZapIcon className="h-5 w-5" />,
         QUEST_COMPLETED: fallbackGlyph ?? <ArrowRightIcon className="h-5 w-5" />,
         REPORT_COMPLETED: fallbackGlyph ?? <SparklesIcon className="h-5 w-5" />,
+        COMPETITION_COMPLETED: fallbackGlyph ?? <TrophyIcon className="h-5 w-5" />,
     };
 
     switch (event.type) {
@@ -121,6 +122,15 @@ const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
                 badge: 'Quest',
                 tone: 'progress',
                 variant: 'accent',
+                icon: iconByType[event.type],
+            };
+        case 'COMPETITION_COMPLETED':
+            return {
+                title,
+                message: 'encerrou um desafio entre aliados',
+                badge: 'Desafio',
+                tone: 'social',
+                variant: 'silver',
                 icon: iconByType[event.type],
             };
         default:

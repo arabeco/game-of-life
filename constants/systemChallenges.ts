@@ -2,16 +2,74 @@ import { ChestType, ConfigSeasonQuest } from '../types';
 
 export type SystemChallenge = ConfigSeasonQuest & {
   source: 'system';
-  rewardChest: ChestType;
+  rewardChest?: ChestType;
+  rewardGold?: number;
 };
 
 export const SYSTEM_CHALLENGE_INSIGNIA_ID = 'insignia_quest_incomum';
 
 export const SYSTEM_CHALLENGES: SystemChallenge[] = [
   {
+    id: 'system-first-arena-gold',
+    source: 'system',
+    title: 'Complete sua primeira arena',
+    description: 'Conclua todas as metas de uma arena. Recompensa: 1 de ouro.',
+    type: 'individual',
+    category: 'physical',
+    actionTemplate: {
+      name: 'Primeira Arena Completa',
+      description: 'Levar uma arena a 100% de progresso.',
+      icon: '\u{1F3DF}\uFE0F',
+      duration: 0,
+      repetitions: 1,
+      isMilestone: true,
+    },
+    requirements: { totalReps: 1, milestone: true },
+    rewards: { xp: 500 },
+    rewardGold: 1,
+  },
+  {
+    id: 'system-five-day-proof-streak',
+    source: 'system',
+    title: 'Cinco dias em movimento',
+    description: 'Registre pelo menos uma acao real por cinco dias seguidos. Recompensa: 2 de ouro.',
+    type: 'individual',
+    category: 'spiritual',
+    actionTemplate: {
+      name: 'Cinco Dias em Movimento',
+      description: 'Manter cinco dias seguidos com ao menos uma acao concluida.',
+      icon: '\u{1F525}',
+      duration: 0,
+      repetitions: 5,
+      isMilestone: true,
+    },
+    requirements: { totalReps: 5, milestone: true },
+    rewards: { xp: 1000 },
+    rewardGold: 2,
+  },
+  {
+    id: 'system-twenty-actions',
+    source: 'system',
+    title: 'Conclua 20 acoes',
+    description: 'Registre vinte acoes reais concluidas. Recompensa: 2 de ouro.',
+    type: 'individual',
+    category: 'intellectual',
+    actionTemplate: {
+      name: 'Vinte Acoes Reais',
+      description: 'Concluir vinte acoes que contam para o seu progresso.',
+      icon: '\u2705',
+      duration: 0,
+      repetitions: 20,
+      isMilestone: true,
+    },
+    requirements: { totalReps: 20, milestone: true },
+    rewards: { xp: 1000 },
+    rewardGold: 2,
+  },
+  {
     id: 'tutorial-quest',
     source: 'system',
-    title: 'Concluir o Tutorial',
+    title: 'Concluir o tutorial',
     description: 'Feche a trilha inicial do sistema. Recompensa: 1 Bau Comum.',
     type: 'individual',
     category: 'intellectual',
@@ -28,28 +86,9 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
     rewardChest: 'Comum',
   },
   {
-    id: 'system-seven-day-proof-streak',
-    source: 'system',
-    title: 'Sete Dias em Movimento',
-    description: 'Registre pelo menos uma ação real por sete dias seguidos. Recompensa: 1 Baú Incomum.',
-    type: 'individual',
-    category: 'spiritual',
-    actionTemplate: {
-      name: 'Sete Dias em Movimento',
-      description: 'Manter sete dias seguidos com ao menos uma ação concluída.',
-      icon: '\u{1F525}',
-      duration: 0,
-      repetitions: 7,
-      isMilestone: true,
-    },
-    requirements: { totalReps: 7, milestone: true },
-    rewards: { xp: 2000 },
-    rewardChest: 'Incomum',
-  },
-  {
     id: 'system-first-cycle',
     source: 'system',
-    title: 'Criar o Primeiro Ciclo',
+    title: 'Criar o primeiro ciclo',
     description: 'Abra seu primeiro ciclo real. Recompensa: 1 Bau Comum.',
     type: 'individual',
     category: 'intellectual',
@@ -68,8 +107,8 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
   {
     id: 'system-first-campaign',
     source: 'system',
-    title: 'Instalar a Primeira Campanha',
-    description: 'Instale uma campanha e coloque o sistema para rodar. Recompensa: 1 Bau Comum.',
+    title: 'Instalar a primeira campanha',
+    description: 'Instale uma campanha. Recompensa: 1 Bau Comum.',
     type: 'individual',
     category: 'intellectual',
     actionTemplate: {
@@ -85,28 +124,9 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
     rewardChest: 'Comum',
   },
   {
-    id: 'system-first-arena-clear',
-    source: 'system',
-    title: 'Completar 3 Arenas',
-    description: 'Leve tres arenas diferentes a 100% de progresso. Recompensa: 1 Bau Incomum.',
-    type: 'individual',
-    category: 'physical',
-    actionTemplate: {
-      name: 'Tres Arenas Completas',
-      description: 'Levar tres arenas diferentes a 100% de progresso.',
-      icon: '\u{1F3DF}\uFE0F',
-      duration: 0,
-      repetitions: 3,
-      isMilestone: true,
-    },
-    requirements: { totalReps: 3, milestone: true },
-    rewards: { xp: 2250 },
-    rewardChest: 'Incomum',
-  },
-  {
     id: 'system-first-cycle-report',
     source: 'system',
-    title: 'Concluir o Primeiro Ciclo',
+    title: 'Concluir o primeiro ciclo',
     description: 'Feche um ciclo inteiro e gere o primeiro relatorio. Recompensa: 1 Bau Ciclo.',
     type: 'individual',
     category: 'spiritual',

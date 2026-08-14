@@ -664,7 +664,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                         className="luxe-skin-button relative inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] shadow-[0_10px_24px_rgba(0,0,0,0.18)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <LinkIcon className="h-3.5 w-3.5" />
-                        <span>Vínculos</span>
+                        <span>Conexões</span>
                         <span className="rounded-full border border-black/15 bg-black/18 px-1.5 py-0.5 text-[9px] font-black text-[var(--ui-text-on-accent)] shadow-[0_1px_0_rgba(255,255,255,0.18)]">
                             {relationshipLinks.length + relationshipInvites.length}
                         </span>

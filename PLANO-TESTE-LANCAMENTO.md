@@ -1,5 +1,7 @@
 # Plano de teste e lancamento
 
+Os passos executaveis e resultados esperados ficam centralizados em [CHECKLIST-TESTES-MANUAIS.md](CHECKLIST-TESTES-MANUAIS.md). Este arquivo mantem a direcao e os criterios gerais de lancamento.
+
 ## Visao do Glyph
 
 O **Glyph e um sistema para transformar a vida real em progresso visivel**. A pessoa organiza o que importa em cinco areas, cria arenas e acoes, escolhe um ciclo possivel e registra o que realmente fez. No centro esta o **Oraculo**, um parceiro atento que conhece seu ritmo, percebe atrasos, reconhece conquistas e oferece o toque certo na hora certa, sem controlar sua vida. O valor nao esta apenas em planejar, mas em transformar cada acao registrada em dados pessoais, reflexoes uteis, evolucao e uma memoria bonita da propria trajetoria.
@@ -49,8 +51,20 @@ Ele deve ter a simplicidade, a forca de habito e o potencial viral que fizeram d
 - Oraculo deve falar pouco e reagir a progresso real, atraso ou arena vazia.
 - Nunca mostrar dois modais importantes ao mesmo tempo.
 - Conferir Legado com ciclo curto e ciclo acima de sete dias.
+- Fazer a placa do Legado ficar realmente marcante: composicao horizontal, hierarquia forte, nickname, nivel, cla e foto bem apresentados.
+- Confirmar que cada ciclo fechado preserva uma fotografia imutavel da identidade e dos dados daquela epoca, mesmo se arenas, perfil ou cla mudarem depois.
+- Revisar a placa atual ao final do Legado e a evolucao entre placas historicas, com leitura centralizada, sem cortes e com aparencia digna do resumo da trajetoria inteira.
 - Revisar caracteres quebrados, textos, botoes pequenos e areas de toque.
 - Observar egress e erros durante o teste fechado antes de ampliar usuarios.
+
+### 5. Limpeza e medicao do Supabase
+
+- Fazer um inventario dos usuarios e separar claramente quais contas devem ser preservadas antes de excluir qualquer dado.
+- Remover de forma completa e controlada os usuarios de teste descartaveis e os dados associados, sem deixar arquivos orfaos no Storage.
+- Registrar o egress acumulado e diario imediatamente antes da limpeza para criar uma linha de base.
+- Medir por alguns dias o PostgREST Egress, Cached Egress, Storage, banco e usuarios ativos, sempre no mesmo horario.
+- Anotar quais testes e telas foram usados em cada dia para separar consumo parado, consumo de desenvolvimento e consumo real de uso.
+- Calcular o custo medio por usuario ativo e projetar capacidades conservadoras para os planos Free e Pro somente depois dessa medicao.
 
 ## Criterio de liberacao
 

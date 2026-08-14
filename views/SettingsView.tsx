@@ -1875,7 +1875,7 @@ const GeralTab: React.FC = () => {
         setIsDeletingAccount(true);
 
         const result = await SupabaseService.deleteMyAccount({
-            blockReentry: true,
+            blockReentry: false,
             reason: 'user_requested_account_deletion',
         });
         if (!result.success) {
@@ -2091,7 +2091,7 @@ const GeralTab: React.FC = () => {
             {showDeleteConfirm && (
                 <ConfirmationModal
                     title="Deletar Conta"
-                    message="Tem certeza? Esta ação é irreversível."
+                    message="Isso apaga permanentemente seu perfil, progresso, vínculos e arquivos. Não há recuperação. Depois, você ainda poderá criar uma nova conta vazia."
                     onConfirm={handleDeleteAccount}
                     onCancel={() => setShowDeleteConfirm(false)}
                 />

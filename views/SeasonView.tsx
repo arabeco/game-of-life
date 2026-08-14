@@ -132,10 +132,12 @@ export const SeasonView: React.FC = () => {
         fetchClanQuestParticipants,
         userMissionParticipations,
         showToast,
+        updateUserProfile,
     } = useGame();
     const [selectedQuest, setSelectedQuest] = useState<SelectableQuest | null>(null);
     const [isSeasonDetailOpen, setSeasonDetailOpen] = useState(false);
     const [isSeasonTransitionOpen, setSeasonTransitionOpen] = useState(false);
+    const [isMissionLibraryOpen, setMissionLibraryOpen] = useState(false);
 
     const activeSeason = resolveRuntimeActiveSeason(seasons);
     const quests = useMemo(
@@ -200,6 +202,10 @@ export const SeasonView: React.FC = () => {
         || tasks.some((task) => task.actionId === 'action_tutorial_01' && task.completed);
     const hasInstalledCampaign = allArenas.some((arena) => Boolean(arena.originCodexId));
     const hasCreatedCycle = Boolean(activeCycle) || reports.length > 0;
+    const completedRealActions = useMemo(() => {
+        const realActionIds = new Set(allActions.filter((action) => action.actionType !== 'Livre').map((action) => action.id));
+        return tasks.filter((task) => task.completed && realActionIds.has(task.actionId)).length;
+    }, [allActions, tasks]);
     const clearedArenaCount = useMemo(() => {
         return allArenas.reduce((count, arena) => {
             const arenaActions = getActionsForArena(arena.id);
@@ -215,7 +221,7 @@ export const SeasonView: React.FC = () => {
         }, 0);
     }, [allArenas, getActionsForArena, tasks, getClanQuestsForArena, getClanQuestProgress]);
     const hasCompletedCycle = reports.length > 0;
-    const currentProofStreak = Math.max(0, Math.min(7, Number(userProfile.dailyProofStreak?.current || 0)));
+    const currentProofStreak = Math.max(0, Number(userProfile.dailyProofStreak?.current || 0));
 
     const getSystemQuestProgress = (quest: SystemChallenge): number => {
         if (completedFlags.has(quest.id)) return 100;
@@ -227,10 +233,12 @@ export const SeasonView: React.FC = () => {
                 return hasInstalledCampaign ? 100 : 0;
             case 'system-first-cycle':
                 return hasCreatedCycle ? 100 : 0;
-            case 'system-seven-day-proof-streak':
-                return Math.min(100, Math.round((currentProofStreak / 7) * 100));
-            case 'system-first-arena-clear':
-                return Math.min(100, Math.round((clearedArenaCount / 3) * 100));
+            case 'system-five-day-proof-streak':
+                return Math.min(100, Math.round((currentProofStreak / 5) * 100));
+            case 'system-first-arena-gold':
+                return Math.min(100, clearedArenaCount * 100);
+            case 'system-twenty-actions':
+                return Math.min(100, Math.round((completedRealActions / 20) * 100));
             case 'system-first-cycle-report':
                 return hasCompletedCycle ? 100 : 0;
             default:
@@ -238,11 +246,29 @@ export const SeasonView: React.FC = () => {
         }
     };
 
-    const pendingSystemQuests = useMemo(
-        () => SYSTEM_CHALLENGES.filter((quest) => !completedFlags.has(quest.id)),
-        [completedFlags]
+    const acceptedSystemIds = useMemo(
+        () => new Set(userProfile.acceptedSystemChallenges || []),
+        [userProfile.acceptedSystemChallenges]
     );
-    const activeSystemQuests = useMemo(() => pendingSystemQuests.slice(0, 3), [pendingSystemQuests]);
+    const activeSystemQuests = useMemo(
+        () => SYSTEM_CHALLENGES.filter((quest) => acceptedSystemIds.has(quest.id) && !completedFlags.has(quest.id)),
+        [acceptedSystemIds, completedFlags]
+    );
+    const availableSystemQuests = useMemo(
+        () => SYSTEM_CHALLENGES.filter((quest) => !acceptedSystemIds.has(quest.id) && !completedFlags.has(quest.id)),
+        [acceptedSystemIds, completedFlags]
+    );
+
+    const acceptSystemQuest = (questId: string) => {
+        updateUserProfile({ acceptedSystemChallenges: [...new Set([...(userProfile.acceptedSystemChallenges || []), questId])] });
+        const quest = SYSTEM_CHALLENGES.find((candidate) => candidate.id === questId);
+        showToast(`Missao aceita${quest ? `: ${quest.title}` : ''}.`, 'success');
+    };
+
+    const abandonSystemQuest = (questId: string) => {
+        updateUserProfile({ acceptedSystemChallenges: (userProfile.acceptedSystemChallenges || []).filter((id) => id !== questId) });
+        showToast('Missao removida. Seu progresso foi mantido.', 'info');
+    };
 
     const individualQuests = useMemo(
         () => quests.filter((quest) => quest.type === 'individual' && !completedFlags.has(quest.id)),
@@ -284,9 +310,11 @@ export const SeasonView: React.FC = () => {
     };
 
     const selectedQuestProgress = selectedQuest
-        ? (isSystemQuest(selectedQuest) ? getSystemQuestProgress(selectedQuest) : calculateQuestProgress(selectedQuest))
+        ? (isSystemQuest(selectedQuest)
+            ? (acceptedSystemIds.has(selectedQuest.id) ? getSystemQuestProgress(selectedQuest) : 0)
+            : calculateQuestProgress(selectedQuest))
         : 0;
-    const selectedQuestIsActive = selectedQuest ? (isSystemQuest(selectedQuest) ? true : isQuestAccepted(selectedQuest)) : false;
+    const selectedQuestIsActive = selectedQuest ? (isSystemQuest(selectedQuest) ? acceptedSystemIds.has(selectedQuest.id) : isQuestAccepted(selectedQuest)) : false;
 
     return (
         <div className="space-y-8 pb-20 animate-fade-in">
@@ -333,10 +361,14 @@ export const SeasonView: React.FC = () => {
 
                     <div className="space-y-4">
                         <div className="flex items-center justify-between px-1 border-b border-white/10 pb-2">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Proximos desafios</h3>
-                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--skin-accent-color)]">
-                                {activeSystemQuests.length} de {pendingSystemQuests.length}
-                            </span>
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Minhas missoes</h3>
+                            <button
+                                type="button"
+                                onClick={() => setMissionLibraryOpen((open) => !open)}
+                                className="rounded-lg border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]"
+                            >
+                                {isMissionLibraryOpen ? 'Fechar' : 'Escolher'}
+                            </button>
                         </div>
                         <div className="space-y-2">
                             {activeSystemQuests.map((quest) => (
@@ -344,20 +376,49 @@ export const SeasonView: React.FC = () => {
                                     key={quest.id}
                                     title={quest.title}
                                     icon={quest.actionTemplate.icon}
-                                    metaLabel="Auto"
+                                    metaLabel="Em andamento"
                                     isAccepted={true}
                                     isClaimed={false}
                                     progress={getSystemQuestProgress(quest)}
-                                    progressLabel={quest.id === 'system-seven-day-proof-streak' ? `${currentProofStreak}/7 dias` : undefined}
+                                    progressLabel={quest.id === 'system-five-day-proof-streak'
+                                        ? `${Math.min(currentProofStreak, 5)}/5 dias`
+                                        : quest.id === 'system-twenty-actions'
+                                            ? `${Math.min(completedRealActions, 20)}/20 acoes`
+                                            : quest.id === 'system-first-arena-gold'
+                                                ? `${Math.min(clearedArenaCount, 1)}/1 arena`
+                                                : undefined}
                                     onClick={() => setSelectedQuest(quest)}
+                                    onAbort={() => abandonSystemQuest(quest.id)}
                                 />
                             ))}
                             {activeSystemQuests.length === 0 && (
-                                <GlassCard variant="neutral" className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-white/55">
-                                    Desafios iniciais concluidos
-                                </GlassCard>
+                                <div className="rounded-xl border border-white/8 bg-white/[0.025] px-4 py-5 text-center">
+                                    <p className="text-[11px] font-bold text-white/62">Nenhuma missao escolhida.</p>
+                                    <p className="mt-1 text-[10px] text-white/38">Use o app livremente ou escolha uma quando quiser.</p>
+                                </div>
                             )}
                         </div>
+
+                        {isMissionLibraryOpen && (
+                            <div className="space-y-2 border-t border-white/8 pt-3">
+                                <p className="px-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/42">Missoes disponiveis</p>
+                                {availableSystemQuests.map((quest) => (
+                                    <SeasonQuestCard
+                                        key={quest.id}
+                                        title={quest.title}
+                                        icon={quest.actionTemplate.icon}
+                                        metaLabel={quest.rewardGold ? `+${quest.rewardGold} ouro` : 'Opcional'}
+                                        isAccepted={false}
+                                        isClaimed={false}
+                                        progress={0}
+                                        onClick={() => setSelectedQuest(quest)}
+                                    />
+                                ))}
+                                {availableSystemQuests.length === 0 && (
+                                    <p className="py-3 text-center text-[10px] text-white/42">Voce ja escolheu todas as missoes disponiveis.</p>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-4">
@@ -429,13 +490,20 @@ export const SeasonView: React.FC = () => {
                     participants={!isSystemQuest(selectedQuest) && selectedQuest.type === 'clan' ? (clanQuestParticipants[selectedQuest.id] || 0) : undefined}
                     onClose={() => setSelectedQuest(null)}
                     onTake={() => {
-                        if (!isSystemQuest(selectedQuest)) {
+                        if (isSystemQuest(selectedQuest)) {
+                            acceptSystemQuest(selectedQuest.id);
+                            setSelectedQuest(null);
+                        } else {
                             void acceptSeasonQuest(selectedQuest.id);
                             setSelectedQuest(null);
                         }
                     }}
-                    onAbandon={!isSystemQuest(selectedQuest) && selectedQuestIsActive ? () => {
-                        void abortSeasonQuest(selectedQuest.id);
+                    onAbandon={selectedQuestIsActive ? () => {
+                        if (isSystemQuest(selectedQuest)) {
+                            abandonSystemQuest(selectedQuest.id);
+                        } else {
+                            void abortSeasonQuest(selectedQuest.id);
+                        }
                         setSelectedQuest(null);
                     } : undefined}
                     createsArena={!isSystemQuest(selectedQuest)}

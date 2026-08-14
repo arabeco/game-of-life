@@ -6,13 +6,22 @@ const reportsSource = readFileSync(new URL('../views/ReportsView.tsx', import.me
 const sealSource = readFileSync(new URL('../components/ReportGenerationModal.tsx', import.meta.url), 'utf8');
 const miniAtlasSource = readFileSync(new URL('../components/MiniCyclePlannerSnapshot.tsx', import.meta.url), 'utf8');
 const atlasBuilderSource = readFileSync(new URL('../utils/reportAtlasUtils.js', import.meta.url), 'utf8');
+const projectionSource = readFileSync(new URL('../components/LegacyProjectionScene.tsx', import.meta.url), 'utf8');
+const projectionModalSource = readFileSync(new URL('../components/LegacyProjectionModal.tsx', import.meta.url), 'utf8');
+const plaqueSource = readFileSync(new URL('../components/LegacyGrandPlaque.tsx', import.meta.url), 'utf8');
 
 assert.match(contextSource, /const endCycle = async/);
 assert.match(contextSource, /await supabase[\s\S]*?from\('cycles'\)[\s\S]*?select\('id'\)[\s\S]*?single\(\)/);
 assert.match(contextSource, /atlasSnapshotVersion: 2/);
 assert.match(contextSource, /rawMetrics\.atlasSnapshotVersion === 1 \|\| rawMetrics\.atlasSnapshotVersion === 2/);
 assert.match(contextSource, /sealedAt: new Date\(\)\.toISOString\(\)/);
+assert.match(contextSource, /snapshotVersion: 2 as const/);
+assert.match(contextSource, /borderId: userProfile\.border/);
+assert.match(contextSource, /sovereign: userProfile\.sovereign/);
+assert.match(contextSource, /clanRankId: clan\?\.rankId/);
+assert.match(contextSource, /setReports\(prev => prev\.filter\(report => report\.cycleId !== cycleId && report\.id !== cycleId\)\)/);
 assert.match(reportsSource, /await endCycleRef\.current/);
+assert.match(reportsSource, /if \(\(report\.metrics\.atlasSnapshotVersion \|\| 0\) >= 2\) return weeks/);
 assert.match(sealSource, /videoCompletionRef\.current\?\.promise/);
 assert.match(sealSource, /onCompleteRef\.current\(\)/);
 assert.doesNotMatch(miniAtlasSource, /scheduledItems\.slice\(/);
@@ -20,5 +29,13 @@ assert.doesNotMatch(miniAtlasSource, /unscheduledItems\.slice\(/);
 assert.match(atlasBuilderSource, /startTime: Number\.isFinite\(task\.startTime\) \? task\.startTime : -1/);
 assert.match(atlasBuilderSource, /areaId: arena\?\.assetId \|\| 'geral'/);
 assert.match(miniAtlasSource, /LIFE_AREA_BY_ID\[normalizedArea\]\.color/);
+assert.match(projectionSource, /snapshot\.clanName \?\? null/);
+assert.doesNotMatch(projectionSource, /snapshot\.clanName !== undefined \? snapshot\.clanName : fallback\.clanName/);
+assert.match(projectionSource, /identity=\{displayedPlaqueIdentity\}/);
+assert.doesNotMatch(projectionSource, /legacy-identity-dock/);
+assert.doesNotMatch(projectionModalSource, /legacy-identity-dock/);
+assert.match(projectionModalSource, /identityMode="current"/);
+assert.match(plaqueSource, /grid-cols-\[58px_minmax\(0,1fr\)_76px\]/);
+assert.match(plaqueSource, /Retrato do ciclo/);
 
-console.log('Cycle seal and Legacy atlas regression: persistence is awaited and the sealed mini planner keeps every task mark.');
+console.log('Cycle seal and Legacy regression: identity, arenas, actions and planner marks remain frozen until the cycle itself is deleted.');

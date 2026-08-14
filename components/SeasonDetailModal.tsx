@@ -94,6 +94,7 @@ export const QuestDetailModal: React.FC<{
 
     const rewardChest = getQuestRewardChest(quest);
     const rewardLabel = rewardChest === 'Season' ? 'Baú Temporada' : rewardChest ? `Baú ${rewardChest}` : 'Sem baú';
+    const rewardGold = Number((quest as SeasonQuest & { rewardGold?: number }).rewardGold || 0);
     const requiredCount = quest.type === 'clan'
         ? (quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1)
         : (quest.requirements?.totalReps || quest.goal_value || quest.actionTemplate?.repetitions || 1);
@@ -119,7 +120,7 @@ export const QuestDetailModal: React.FC<{
                         </div>
                     ) : (
                         <button onClick={onTake} className="w-full rounded-xl py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
-                            Aceitar desafio
+                            {createsArena ? 'Aceitar desafio' : 'Ingressar na missao'}
                         </button>
                     )
                 ) : onAbandon ? (
@@ -148,8 +149,8 @@ export const QuestDetailModal: React.FC<{
                     <div className="mt-1 text-lg font-black text-white">{requiredCount}x</div>
                 </div>
                 <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
-                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">Status</div>
-                    <div className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-white/76">{isActive ? 'Ativa' : 'Pendente'}</div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">{rewardGold > 0 ? 'Ouro' : 'Status'}</div>
+                    <div className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-white/76">{rewardGold > 0 ? `+${rewardGold}` : (isActive ? 'Ativa' : 'Pendente')}</div>
                 </div>
             </div>
             <div className="rounded-[18px] border border-[var(--skin-accent-color)]/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.28))] p-4 text-left">

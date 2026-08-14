@@ -4,9 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Oraculo <no-reply@glyph.life>";
+const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Glyph <no-reply@glyph.life>";
 
-const EMAILABLE_NOTIFICATION_TYPES = new Set(["mentor_invite", "partnership_invite", "clan_invite"]);
+const ACCOUNT_DELETED_TYPE = "account_deleted";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,28 +77,15 @@ const normalizeNotification = (payload: unknown): NormalizedNotification => {
 };
 
 const shouldSendEmail = (notification: NormalizedNotification): boolean =>
-  asBoolean(notification.metadata.sendEmail) ||
-  asBoolean(notification.metadata.welcome) ||
-  EMAILABLE_NOTIFICATION_TYPES.has(notification.type);
+  notification.type === ACCOUNT_DELETED_TYPE &&
+  asBoolean(notification.metadata.accountDeleted) &&
+  asBoolean(notification.metadata.sendEmail);
 
 const getDefaultSubject = (notification: NormalizedNotification): string => {
   const metadataSubject = asTrimmedString(notification.metadata.emailSubject);
   if (metadataSubject) return metadataSubject;
 
-  if (asBoolean(notification.metadata.welcome)) {
-    return "Glyph - Bem-vindo!";
-  }
-
-  switch (notification.type) {
-    case "mentor_invite":
-      return "Glyph - Convite de mentoria";
-    case "partnership_invite":
-      return "Glyph - Convite de parceria";
-    case "clan_invite":
-      return "Glyph - Convite de grupo";
-    default:
-      return `Novo sinal no Oraculo: ${notification.type || "system"}`;
-  }
+  return "Glyph - Conta excluida";
 };
 
 const buildDispatchKey = (notification: NormalizedNotification): string => {
@@ -109,10 +96,6 @@ const buildDispatchKey = (notification: NormalizedNotification): string => {
   const inviteId = asTrimmedString(notification.metadata.inviteId);
   if (inviteId && notification.type) {
     return `invite:${notification.type}:${inviteId}`;
-  }
-
-  if (asBoolean(notification.metadata.welcome) && notification.userId) {
-    return `welcome:${notification.userId}`;
   }
 
   return "";
@@ -270,14 +253,12 @@ serve(async (req) => {
         subject,
         html: `
           <div style="font-family: sans-serif; padding: 20px; color: #333;">
-            <h2 style="color: #6366f1;">Ola!</h2>
-            <p>Voce recebeu uma nova notificacao do sistema <strong>Glyph</strong>:</p>
+            <h2 style="color: #111827;">Conta excluida</h2>
             <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
               ${safeContent}
             </div>
-            <p style="font-size: 12px; color: #666;">Acesse o app para responder ou ver mais detalhes.</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-            <p style="font-size: 10px; color: #999;">Glyph - Oraculo de Maestria</p>
+            <p style="font-size: 10px; color: #999;">Glyph</p>
           </div>
         `,
       }),

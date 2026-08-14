@@ -24,6 +24,7 @@ const BASIC_VISIBLE_ACHIEVEMENTS: FeedEventType[] = [
     'MILESTONE_COMPLETED',
     'QUEST_COMPLETED',
     'REPORT_COMPLETED',
+    'COMPETITION_COMPLETED',
 ];
 
 const getAchievementDetails = (type: FeedEventType, data: any, isBasicMode: boolean) => {
@@ -46,6 +47,16 @@ const getAchievementDetails = (type: FeedEventType, data: any, isBasicMode: bool
         }
         case 'REPORT_COMPLETED':
             return { title: isBasicMode ? 'Relatório concluído' : 'RELATÓRIO CONCLUÍDO!', icon: '\u{1F4DC}', message: 'Você fechou seu relatório de ciclo com sucesso.' };
+        case 'COMPETITION_COMPLETED': {
+            const score = `${Number(data.selfCompleted || 0)}/${Number(data.selfTarget || 0)} contra ${Number(data.rivalCompleted || 0)}/${Number(data.rivalTarget || 0)}`;
+            if (data.result === 'winner') {
+                return { title: 'DESAFIO VENCIDO', icon: '\u{1F3C6}', message: `Você venceu "${data.challengeName || 'Desafio'}" contra @${data.opponentNickname || 'seu rival'}. ${score}.` };
+            }
+            if (data.result === 'draw') {
+                return { title: 'EMPATE', icon: '\u{2696}\uFE0F', message: `"${data.challengeName || 'Desafio'}" terminou empatado. ${score}.` };
+            }
+            return { title: 'DESAFIO ENCERRADO', icon: '\u{1F3C1}', message: `@${data.opponentNickname || 'Seu rival'} venceu "${data.challengeName || 'Desafio'}". Você chegou a ${score}.` };
+        }
         case 'CLAN_RANK_UP':
             return { title: isBasicMode ? 'Grupo avançou' : 'Patente do grupo aumentou!', icon: '\u{1F6E1}\uFE0F', message: `Seu grupo agora e um ${data.name}!` };
         default:
@@ -59,11 +70,12 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     const { title, icon, message } = getAchievementDetails(achievement.type, achievement.data, isBasicMode);
     const cardRef = useRef<HTMLDivElement>(null);
     const isArenaComplete = achievement.type === 'ARENA_COMPLETED';
+    const isCompetitionResult = achievement.type === 'COMPETITION_COMPLETED';
     const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
     const canRenderAchievement =
         achievement.type !== 'ARENA_COMPLETED' &&
         (appMode === 'GAME' || isGM || BASIC_VISIBLE_ACHIEVEMENTS.includes(achievement.type));
-    const canShareAchievement = appMode === 'GAME' || isGM;
+    const canShareAchievement = !isCompetitionResult && (appMode === 'GAME' || isGM);
 
     useEffect(() => {
         if (!canRenderAchievement) {
@@ -92,6 +104,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         : [];
     const normalizedRewards = {
         exp: rawRewards.exp,
+        gold: rawRewards.gold,
         chest: rawRewards.chest,
         ornament: rawRewards.ornament,
         items: rawRewards.items || (rawRewards.item ?[rawRewards.item] : []),
@@ -115,13 +128,17 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         if (category === 'auras') return 'Aura';
         return 'Item';
     };
-    const headingClass = isBasicMode
+    const headingClass = isCompetitionResult
+        ? 'text-xl font-black uppercase leading-tight tracking-[0.16em] text-white'
+        : isBasicMode
         ? 'text-[1.35rem] font-bold leading-tight tracking-[0.14em] text-white'
         : 'text-2xl font-black uppercase leading-tight tracking-[0.3em] text-white';
-    const messageClass = isBasicMode
+    const messageClass = isCompetitionResult
+        ? 'mx-auto max-w-[92%] text-xs font-semibold leading-relaxed text-white/72'
+        : isBasicMode
         ? 'mx-auto max-w-[85%] text-[11px] font-medium leading-relaxed tracking-[0.04em] text-gray-300/88'
         : 'mx-auto max-w-[85%] text-[10px] font-bold uppercase italic leading-relaxed tracking-[0.1em] text-gray-400 opacity-70';
-    const primaryButtonLabel = isBasicMode ? 'Continuar' : (isArenaComplete ? 'OK' : 'Prosseguir');
+    const primaryButtonLabel = achievement.data.buttonLabel || (isBasicMode || isCompetitionResult ? 'Continuar' : (isArenaComplete ? 'OK' : 'Prosseguir'));
     const primaryButtonClass = isBasicMode
         ? 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl py-4 text-[11px] font-bold tracking-[0.16em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]'
         : 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
@@ -196,6 +213,10 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                 messages.push(`\u2728 +${rewards.exp} XP computados`);
             }
 
+            if (rewards.gold && rewards.gold > 0) {
+                messages.push(`+${rewards.gold} de ouro`);
+            }
+
             if (messages.length > 0) {
                 showToast(messages.join('\n'));
             }
@@ -213,7 +234,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                 <GlassCard
                     ref={cardRef}
                     variant="neutral"
-                    className="relative flex w-full max-w-sm flex-col overflow-hidden border-x border-t bg-[#050505] shadow-[0_0_80px_rgba(0,0,0,0.9)] transition-all duration-700"
+                    className={`relative flex w-full flex-col overflow-hidden border-x border-t bg-[#050505] shadow-[0_0_80px_rgba(0,0,0,0.9)] transition-all duration-700 ${isCompetitionResult ? 'max-w-xs' : 'max-w-sm'}`}
                     style={{
                         borderColor: `${skinColor}30`,
                         boxShadow: `0 0 60px ${skinColor}10, inset 0 0 30px ${skinColor}05`,
@@ -253,7 +274,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 <div className="absolute left-0 top-0 h-1/2 w-full bg-[radial-gradient(circle_at_50%_0%,_var(--skin-accent-color)_0%,_transparent_70%)] opacity-20" />
                             </div>
 
-                            <div className="relative z-20 px-8 pb-6 pt-10 text-center">
+                            <div className={`relative z-20 px-8 text-center ${isCompetitionResult ? 'pb-3 pt-7' : 'pb-6 pt-10'}`}>
                                 {isStreakMilestone && (
                                     <p className="mb-2 text-[9px] font-black uppercase tracking-[0.24em] text-[var(--skin-accent-color)]">
                                         Bônus de sequência
@@ -268,28 +289,28 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 <div className="mx-auto mt-4 h-0.5 w-12 bg-[var(--skin-accent-color)] shadow-[0_0_10px_var(--skin-accent-color)]" />
                             </div>
 
-                            <div className="relative z-10 flex h-32 w-full items-center justify-center">
+                            <div className={`relative z-10 flex w-full items-center justify-center ${isCompetitionResult ? 'h-20' : 'h-32'}`}>
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--skin-accent-color)_0%,_transparent_70%)] opacity-10" />
                                 <div
-                                    className="group relative flex h-20 w-20 rotate-45 items-center justify-center overflow-hidden rounded-2xl border shadow-2xl transition-all duration-700"
+                                    className={`group relative flex rotate-45 items-center justify-center overflow-hidden rounded-2xl border shadow-2xl transition-all duration-700 ${isCompetitionResult ? 'h-14 w-14' : 'h-20 w-20'}`}
                                     style={{ borderColor: `${skinColor}40`, backgroundColor: `${skinColor}05` }}
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
                                     <div className="absolute inset-0 -m-1 rounded-2xl border border-white/5 animate-pulse" />
-                                    <span className="-rotate-45 text-4xl transition-transform duration-700 group-hover:scale-110 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                                    <span className={`-rotate-45 transition-transform duration-700 group-hover:scale-110 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] ${isCompetitionResult ? 'text-2xl' : 'text-4xl'}`}>
                                         {icon}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="relative z-10 space-y-6 p-6 text-center">
+                            <div className={`relative z-10 text-center ${isCompetitionResult ? 'space-y-4 p-5 pt-2' : 'space-y-6 p-6'}`}>
                                 <div className="relative py-2">
                                     <p className={messageClass}>
                                         {message}
                                     </p>
                                 </div>
 
-                                {(normalizedRewards.exp || normalizedRewards.chest || normalizedRewards.ornament || visibleRewardDetails.length > 0) && (
+                                {(normalizedRewards.exp || normalizedRewards.gold || normalizedRewards.chest || normalizedRewards.ornament || visibleRewardDetails.length > 0) && (
                                     <div className="mb-4 flex w-full justify-center gap-2">
                                         {normalizedRewards.exp && (
                                             <div className="min-w-0 flex-1 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
@@ -307,8 +328,19 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                             </div>
                                         )}
 
-                                        {(normalizedRewards.chest || normalizedRewards.ornament || visibleRewardDetails.length > 0) && (
+                                        {(normalizedRewards.gold || normalizedRewards.chest || normalizedRewards.ornament || visibleRewardDetails.length > 0) && (
                                             <div className="flex flex-[2] flex-col gap-2">
+                                                {normalizedRewards.gold > 0 && (
+                                                    <div className="min-w-0 overflow-hidden rounded-xl border border-amber-400/15 bg-amber-400/[0.04] p-2.5">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-amber-300/20 bg-amber-300/10 text-sm">G</div>
+                                                            <div className="min-w-0 text-left">
+                                                                <p className="text-[6px] font-black uppercase tracking-[0.2em] text-amber-200/55">Ouro</p>
+                                                                <p className="text-[9px] font-black text-amber-100">+{normalizedRewards.gold}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 {visibleRewardDetails.map((detail, index: number) => {
                                                     const itemId = detail.itemId || '';
                                                     const itemDef = itemId ? resolveItemDef(itemId) : undefined;

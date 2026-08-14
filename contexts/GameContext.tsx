@@ -451,7 +451,8 @@ const DEFAULT_USER_PROFILE: UserProfile = {
         insignias: {},
         ui_skins: { BASIC: true },
     },
-    completedSeasonMissions: []
+    completedSeasonMissions: [],
+    acceptedSystemChallenges: []
 };
 
 const defaultChecklistItems: ChecklistItem[] = [];
@@ -531,6 +532,7 @@ const createDefaultActions = (newUser: boolean): Action[] => {
 interface EndCycleResult {
     report: Report;
     expGained: number;
+    goldGained: number;
 }
 
 const normalizeArenasViewMode = (value: unknown): ArenasViewMode => {
@@ -902,6 +904,7 @@ export interface GameContextType {
     getRelationshipCapacitySummary: () => Promise<RelationshipCapacitySummary | null>;
     fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; competitionChallenges: RelationshipCompetitionChallenge[]; summary: RelationshipCapacitySummary | null }>;
     createRelationshipInvite: (recipientId: string, linkType: RelationshipLinkType) => Promise<boolean>;
+    createCompetitionInvite: (recipientId: string, sourceArenaId: string, durationDays: number) => Promise<boolean>;
     respondToRelationshipInvite: (inviteId: string, action: RelationshipInviteAction) => Promise<boolean>;
     endRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
     buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType) => Promise<boolean>;
@@ -2884,6 +2887,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [achievementUnlocked, setAchievementUnlockedState] = useState<{ type: FeedEventType; data: any; } | null>(null);
     const [, setAchievementQueue] = useState<{ type: FeedEventType; data: any; }[]>([]);
     const activeAchievementRef = useRef<{ type: FeedEventType; data: any; } | null>(null);
+    const competitionResultModalKeysRef = useRef<Set<string>>(new Set());
     const [feed, setFeed] = useState<FeedEvent[]>(() => []);
 
     const setAchievementUnlocked = useCallback((achievement: { type: FeedEventType; data: any; } | null) => {
@@ -2911,6 +2915,49 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         activeAchievementRef.current = achievement;
         setAchievementUnlockedState(achievement);
     }, []);
+
+    useEffect(() => {
+        const resultNotification = notifications.find((notification) => (
+            !notification.read
+            && notification.type === 'competition_result'
+            && Boolean(notification.metadata?.challengeId)
+        ));
+        if (!resultNotification) return;
+
+        const metadata = resultNotification.metadata || {};
+        const challengeId = String(metadata.challengeId || resultNotification.id);
+        if (!competitionResultModalKeysRef.current.has(challengeId)) {
+            competitionResultModalKeysRef.current.add(challengeId);
+            const winnerUserId = String(metadata.winnerUserId || '');
+            const result = String(metadata.resultKind || 'winner') === 'draw'
+                ? 'draw'
+                : winnerUserId === userProfile.id ? 'winner' : 'loss';
+            const chest = metadata.rewardChestType as ChestType | undefined;
+            const bonusXp = Number(metadata.winnerBonusXp || 0);
+
+            setAchievementUnlocked({
+                type: 'COMPETITION_COMPLETED',
+                data: {
+                    result,
+                    challengeId,
+                    challengeName: String(metadata.challengeName || 'Desafio'),
+                    opponentNickname: String(metadata.opponentNickname || 'seu rival'),
+                    selfCompleted: Number(metadata.selfCompleted || 0),
+                    selfTarget: Number(metadata.selfTarget || 0),
+                    rivalCompleted: Number(metadata.rivalCompleted || 0),
+                    rivalTarget: Number(metadata.rivalTarget || 0),
+                    ...(result === 'winner' && (chest || bonusXp > 0)
+                        ? { rewards: { chest, exp: bonusXp } }
+                        : {}),
+                },
+            });
+        }
+
+        setNotifications((previous) => previous.map((notification) => (
+            notification.id === resultNotification.id ? { ...notification, read: true } : notification
+        )));
+        void SupabaseService.markNotificationRead(resultNotification.id);
+    }, [notifications, setAchievementUnlocked, userProfile.id]);
 
     useEffect(() => {
         friendsRef.current = friends;
@@ -6044,6 +6091,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         challengerCompletedAt: row.challenger_completed_at ?? null,
         opponentCompletedAt: row.opponent_completed_at ?? null,
         sealedAt: row.sealed_at ?? null,
+        durationDays: row.duration_days == null ? null : Number(row.duration_days),
+        startsAt: row.starts_at ?? null,
+        deadlineAt: row.deadline_at ?? null,
+        resultKind: row.result_kind ?? null,
         createdAt: row.created_at,
         completedAt: row.completed_at ?? null,
         metadata: row.metadata ?? null,
@@ -6083,6 +6134,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (raw.includes('COMPETITION_CHALLENGE_ALREADY_ACTIVE')) return 'Ja existe um duelo ativo nesse vinculo.';
         if (raw.includes('COMPETITION_CHALLENGE_LIMIT_REACHED')) return 'Esse vinculo ja atingiu o limite de duelos abertos agora.';
         if (raw.includes('COMPETITION_CHALLENGE_NOT_FOUND')) return 'Esse duelo nao foi encontrado.';
+        if (raw.includes('COMPETITION_DURATION_INVALID')) return 'Escolha um prazo entre 1 e 30 dias.';
+        if (raw.includes('COMPETITION_CHALLENGER_GOLD_REQUIRED')) return 'Quem enviou o desafio nao tem mais os 50 de ouro necessarios. O convite pode ser cancelado e enviado novamente depois.';
+        if (raw.includes('COMPETITION_REWARD_COOLDOWN')) return 'Essa dupla ja recebeu uma recompensa de desafio nos ultimos 7 dias.';
+        if (raw.includes('COMPETITION_SOURCE_CHANGED')) return 'Essa arena mudou depois do convite. Cancele e envie um novo desafio com a versao atual.';
+        if (raw.includes('RELATIONSHIP_INVITE_EXPIRED')) return 'Esse convite expirou. Peca para a pessoa enviar outro.';
         if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'A forja de campanhas da mentoria agora e paga por uso. Se isso apareceu, o banco ainda esta com regra antiga.';
         if (raw.includes('RELATIONSHIP_CAPACITY_DISABLED')) return 'A camada social agora funciona so por ouro.';
         return raw;
@@ -6342,30 +6398,36 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return false;
         }
 
-        const inviteId = String((data as any)?.invite?.id || '');
+        showToast(linkType === 'mentoria' ? 'Convite de mentoria enviado.' : linkType === 'parceria' ? 'Convite de parceria enviado.' : 'Convite de competicao enviado.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+        return true;
+    };
 
-        if (linkType === 'mentoria' || linkType === 'parceria') {
-            const notificationType = linkType === 'mentoria' ? 'mentor_invite' : 'partnership_invite';
-            const senderNickname = userProfile.nickname || (linkType === 'mentoria' ? 'Mentor' : 'Aliado');
-            const notificationContent = linkType === 'mentoria'
-                ? `@${senderNickname} enviou um convite de Mentoria.`
-                : `@${senderNickname} enviou um convite de Parceria.`;
-
-            void SupabaseService.sendNotificationEmail(
-                recipientId,
-                notificationType,
-                notificationContent,
-                {
-                    sendEmail: true,
-                    inviteId,
-                    senderNickname,
-                    linkType,
-                    dispatchKey: inviteId ? `invite:${notificationType}:${inviteId}` : undefined,
-                },
-            );
+    const createCompetitionInvite = async (recipientId: string, sourceArenaId: string, durationDays: number): Promise<boolean> => {
+        if (!sourceArenaId) {
+            showToast('Escolha uma arena para o desafio.', 'warning');
+            return false;
         }
 
-        showToast(linkType === 'mentoria' ? 'Convite de mentoria enviado.' : linkType === 'parceria' ? 'Convite de parceria enviado.' : 'Convite de competicao enviado.', 'success');
+        const normalizedDuration = Math.max(1, Math.min(30, Math.round(durationDays)));
+        if (!Number.isFinite(durationDays) || normalizedDuration !== durationDays) {
+            showToast('Escolha um prazo entre 1 e 30 dias.', 'warning');
+            return false;
+        }
+
+        const { data, error } = await supabase.rpc('create_competition_invite', {
+            p_recipient_id: recipientId,
+            p_source_arena_id: sourceArenaId,
+            p_duration_days: normalizedDuration,
+        });
+
+        if (error) {
+            console.error('Error creating competition invite:', error);
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel enviar o desafio.'), 'error');
+            return false;
+        }
+
+        showToast('Convite enviado. Os 50 de ouro so serao cobrados se a pessoa aceitar.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
         return true;
     };
@@ -6487,7 +6549,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return null;
         }
 
-        showToast('Arena exposta na parceria.', 'success');
+        const nextGold = Number((data as any)?.new_gold);
+        if (Number.isFinite(nextGold)) {
+            updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+        }
+
+        showToast((data as any)?.changed === false ? 'Essa arena ja esta na parceria.' : 'Arena da parceria atualizada.', 'success');
         window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
 
         const arenaRow = (data as any)?.arena;
@@ -6632,37 +6699,46 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const rewardChestType = ((data as any)?.reward_chest_type || null) as ChestType | null;
         const winnerBonusXp = Number((data as any)?.winner_bonus_xp || 0);
         const rewardGrantedNow = Boolean((data as any)?.reward_granted_now);
-        const sealedNow = Boolean((data as any)?.sealed_now);
+        const finalizedNow = Boolean((data as any)?.finalized_now);
+        const winnerNewExp = Number((data as any)?.winner_new_exp || 0);
         const currentUserId = getSupabaseUserId();
+        const challenge = (data as any)?.challenge || {};
+        const challengeId = String(challenge.id || '');
 
-        if (status === 'winner' && currentUserId && winnerUserId === currentUserId) {
+        if (status === 'winner' && currentUserId && winnerUserId === currentUserId && rewardGrantedNow) {
             if (rewardGrantedNow && rewardChestType) {
                 await syncCompetitionChestLocally(rewardChestType);
             }
-            if (winnerBonusXp > 0) applyRelationshipBonusXp(winnerBonusXp);
+            if (winnerNewExp > 0) {
+                updateUserProfile({ nobility: { ...userProfile.nobility, exp: winnerNewExp } });
+            }
+        }
+
+        if (finalizedNow && ['winner', 'loss', 'draw'].includes(status)) {
+            const challengerProgress = (data as any)?.challenger_progress || {};
+            const opponentProgress = (data as any)?.opponent_progress || {};
+            const isChallenger = String(challenge.challenger_user_id || '') === currentUserId;
+            const selfProgress = isChallenger ? challengerProgress : opponentProgress;
+            const rivalProgress = isChallenger ? opponentProgress : challengerProgress;
+            if (challengeId) competitionResultModalKeysRef.current.add(challengeId);
+
+            setAchievementUnlocked({
+                type: 'COMPETITION_COMPLETED',
+                data: {
+                    result: status,
+                    challengeId,
+                    challengeName,
+                    opponentNickname,
+                    selfCompleted: Number(selfProgress.total_completed || 0),
+                    selfTarget: Number(selfProgress.total_planned || 0),
+                    rivalCompleted: Number(rivalProgress.total_completed || 0),
+                    rivalTarget: Number(rivalProgress.total_planned || 0),
+                    ...(status === 'winner' && rewardGrantedNow
+                        ? { rewards: { chest: rewardChestType, exp: winnerBonusXp } }
+                        : {}),
+                },
+            });
             window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
-            showToast(
-                `Parabens! Voce terminou "${challengeName}" antes de @${opponentNickname} e ganhou um Bau ${rewardChestType || 'Comum'}.`,
-                'success'
-            );
-            return;
-        }
-
-        if (status === 'already_lost') {
-            showToast(`@${opponentNickname} concluiu "${challengeName}" antes. Voce ainda pode fechar sua arena, mas sem o bonus de vencedor.`, 'info');
-            return;
-        }
-
-        if (status === 'already_won') {
-            showToast(`"${challengeName}" ja contou sua vitoria antes. O duelo segue registrado no historico.`, 'info');
-            return;
-        }
-
-        if (status === 'sealed_after_loss') {
-            window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
-            showToast(sealedNow
-                ? `Voce concluiu "${challengeName}". O bonus ja tinha ido para @${opponentNickname}, entao o duelo foi selado no historico.`
-                : `Voce concluiu "${challengeName}" sem o bonus extra.`, 'info');
         }
     };
 
@@ -8270,6 +8346,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'unlockedItems',
                 'unlockedSkins',
                 'completedSeasonMissions',
+                'acceptedSystemChallenges',
                 'role',
                 'isPremium',
                 'premiumExpiresAt',
@@ -9249,7 +9326,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const expGained = rawExp;
 
         const identitySnapshot = {
+            snapshotVersion: 2 as const,
             avatarUrl: userProfile.avatarUrl,
+            borderId: userProfile.border || undefined,
+            bannerUrl: userProfile.bannerUrl || undefined,
+            skinId: userProfile.skin || undefined,
+            sovereign: userProfile.sovereign ? { ...userProfile.sovereign } : undefined,
             nickname: userProfile.nickname || userProfile.username || 'Usuario',
             title: userProfile.title,
             level: userProfile.level || 1,
@@ -9257,6 +9339,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             nobilityRankName: NOBILITY_RANKS.find(rank => rank.id === userProfile.nobility?.rankId)?.name || undefined,
             clanName: clan?.name || userProfile.clanName || null,
             clanIcon: clan?.icon || userProfile.clanIcon || null,
+            clanRankId: clan?.rankId || null,
             clanRankName: clan ?(CLAN_RANKS.find(rank => rank.id === clan.rankId)?.name || null) : null,
             capturedAt: new Date().toISOString(),
         };
@@ -9352,6 +9435,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 questsCompleted: questsCompletedCount,
                 consistencyDays: uniqueDays,
                 expGained,
+                goldGained: 0,
                 plannedEndDate,
                 avgHoursPerDay,
                 maxStreak,
@@ -9454,6 +9538,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     console.error('Supabase cycle update error:', message);
                     throw new Error(message);
                 }
+
+                const { data: cycleGoldData, error: cycleGoldError } = await supabase.rpc('claim_cycle_completion_gold', {
+                    p_cycle_id: cycle.id,
+                });
+                if (cycleGoldError || !(cycleGoldData as any)?.success) {
+                    const message = cycleGoldError?.message || (cycleGoldData as any)?.error || 'O ouro do ciclo nao foi confirmado.';
+                    console.error('Cycle gold reward error:', message);
+                    throw new Error(message);
+                }
+
+                const goldGained = Number((cycleGoldData as any)?.gold_granted || 0);
+                const newGold = Number((cycleGoldData as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+                newReport.metrics.goldGained = goldGained;
+                updateUserProfile({ wallet: { ...userProfile.wallet, gold: newGold } });
             }
         }
 
@@ -9466,7 +9564,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setReports(prev => [newReport, ...prev]);
         emitAppSensoryCue('cycle_complete');
 
-        return { report: newReport, expGained };
+        return { report: newReport, expGained, goldGained: newReport.metrics.goldGained || 0 };
     };
 
     const getAutoFinishedCycleSeenStorageKey = (userId: string, cycleId: string) =>
@@ -11706,6 +11804,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const challenge = SYSTEM_CHALLENGES.find((candidate) => candidate.id === challengeId);
         if (!challenge || userProfile.completedSeasonMissions?.includes(challengeId)) return;
 
+        let goldGranted = 0;
+        if ((challenge.rewardGold || 0) > 0) {
+            const { data, error } = await supabase.rpc('claim_glyph_progress_gold', {
+                p_reward_id: challenge.id,
+            });
+            if (error || !(data as any)?.success) {
+                throw new Error(error?.message || (data as any)?.error || 'Nao foi possivel validar a recompensa.');
+            }
+
+            goldGranted = Number((data as any)?.gold_granted || 0);
+            const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+            updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+        }
+
         const markerMission: SeasonMission = {
             id: challenge.id,
             season_id: activeRuntimeSeasonId || 'system',
@@ -11723,7 +11835,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         await addCompletedMission(markerMission);
         applyExp(challenge.rewards.xp);
-        const chestGranted = await addChest(challenge.rewardChest);
+        const chestGranted = challenge.rewardChest ? await addChest(challenge.rewardChest) : false;
 
         setAchievementUnlocked({
             type: 'QUEST_COMPLETED',
@@ -11732,6 +11844,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 icon: challenge.actionTemplate.icon,
                 reward: {
                     exp: challenge.rewards.xp,
+                    gold: goldGranted,
                     items: [SYSTEM_CHALLENGE_INSIGNIA_ID],
                     chest: chestGranted ? challenge.rewardChest : null,
                 },
@@ -12023,7 +12136,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return false;
         });
 
-        const pendingSystemChallenges = SYSTEM_CHALLENGES.filter((challenge) => !completedIds.has(challenge.id));
+        const acceptedSystemChallengeIds = new Set(userProfile.acceptedSystemChallenges || []);
+        const pendingSystemChallenges = SYSTEM_CHALLENGES.filter((challenge) => (
+            acceptedSystemChallengeIds.has(challenge.id) && !completedIds.has(challenge.id)
+        ));
         const clearedArenaCount = allArenas.reduce((count, arena) => {
             const arenaActions = getActionsForArena(arena.id);
             const clanQuestsForArena = getClanQuestsForArena(arena, arenaActions);
@@ -12044,10 +12160,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
             if (challenge.id === 'system-first-campaign') return allArenas.some((arena) => Boolean(arena.originCodexId));
             if (challenge.id === 'system-first-cycle') return Boolean(activeCycle) || reports.length > 0;
-            if (challenge.id === 'system-seven-day-proof-streak') {
-                return normalizeDailyProofStreak(userProfile.dailyProofStreak).current >= 7;
+            if (challenge.id === 'system-five-day-proof-streak') {
+                return normalizeDailyProofStreak(userProfile.dailyProofStreak).current >= 5;
             }
-            if (challenge.id === 'system-first-arena-clear') return clearedArenaCount >= 3;
+            if (challenge.id === 'system-first-arena-gold') return clearedArenaCount >= 1;
+            if (challenge.id === 'system-twenty-actions') {
+                const realActionIds = new Set(actions.filter((action) => action.actionType !== 'Livre').map((action) => action.id));
+                return tasks.filter((task) => task.completed && realActionIds.has(task.actionId)).length >= 20;
+            }
             if (challenge.id === 'system-first-cycle-report') return reports.length > 0;
             return false;
         });
@@ -12076,6 +12196,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [
         activeCycle,
         activeRuntimeSeasonId,
+        actions,
         automaticChallengeClaimTick,
         getActionsForArena,
         getArenas,
@@ -12090,6 +12211,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         userMissionParticipations,
         userProfile.completedSeasonMissions,
         userProfile.dailyProofStreak,
+        userProfile.acceptedSystemChallenges,
     ]);
 
     const clearPendingTasksForAction = async (actionId: string) => {
@@ -13459,7 +13581,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

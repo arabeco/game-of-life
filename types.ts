@@ -497,6 +497,7 @@ export interface UserProfile {
   unlockedItems?: UserUnlocks; // Legacy support, maybe migrate later
   unlockedSkins?: Record<string, boolean>; // Legacy support
   completedSeasonMissions?: string[];
+  acceptedSystemChallenges?: string[];
   role: 'admin' | 'gm' | 'user';
   isPremium?: boolean;
   clanName?: string;
@@ -608,7 +609,12 @@ export interface ReportAtlasWeek {
 }
 
 export interface ReportIdentitySnapshot {
+  snapshotVersion?: 1 | 2;
   avatarUrl?: string;
+  borderId?: string;
+  bannerUrl?: string;
+  skinId?: string;
+  sovereign?: SovereignConfig;
   nickname: string;
   title?: string;
   level: number;
@@ -616,6 +622,7 @@ export interface ReportIdentitySnapshot {
   nobilityRankName?: string;
   clanName?: string | null;
   clanIcon?: string | null;
+  clanRankId?: string | null;
   clanRankName?: string | null;
   capturedAt: string;
 }
@@ -737,6 +744,7 @@ export interface Report {
     questsCompleted?: number;
     consistencyDays?: number;
     expGained?: number;
+    goldGained?: number;
     plannedEndDate?: string;
     avgHoursPerDay?: number;
     maxStreak?: number;
@@ -1068,7 +1076,7 @@ export interface SeasonQuest {
 }
 
 // --- Hall of Fame / Feed Types ---
-export type FeedEventType = 'MILESTONE_COMPLETED' | 'ARENA_COMPLETED' | 'CYCLE_COMPLETED' | 'PLAYER_RANK_UP' | 'CLAN_RANK_UP' | 'LEVEL_UP' | 'QUEST_COMPLETED' | 'REPORT_COMPLETED';
+export type FeedEventType = 'MILESTONE_COMPLETED' | 'ARENA_COMPLETED' | 'CYCLE_COMPLETED' | 'PLAYER_RANK_UP' | 'CLAN_RANK_UP' | 'LEVEL_UP' | 'QUEST_COMPLETED' | 'REPORT_COMPLETED' | 'COMPETITION_COMPLETED';
 
 export interface FeedEvent {
   id: string;
@@ -1097,7 +1105,15 @@ export interface RelationshipLinkInvite {
   recipientId: string;
   linkType: RelationshipLinkType;
   arenaId?: string | null;
-  arenaSnapshot?: { name: string; icon?: string } | null;
+  arenaSnapshot?: {
+    name: string;
+    icon?: string;
+    actionCount?: number;
+    plannedTotal?: number;
+    durationDays?: number;
+    rewardChestType?: ChestType;
+    rewardXp?: number;
+  } | null;
   status: RelationshipInviteStatus;
   createdAt: string;
   costGold?: number;
@@ -1172,6 +1188,10 @@ export interface RelationshipCompetitionChallenge {
   challengerCompletedAt?: string | null;
   opponentCompletedAt?: string | null;
   sealedAt?: string | null;
+  durationDays?: number | null;
+  startsAt?: string | null;
+  deadlineAt?: string | null;
+  resultKind?: 'winner' | 'draw' | null;
   createdAt: string;
   completedAt?: string | null;
   metadata?: Record<string, any> | null;

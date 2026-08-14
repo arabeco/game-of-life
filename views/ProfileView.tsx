@@ -467,7 +467,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isSovereignModalOpen, setIsSovereignModalOpen] = useState(false);
     const [isAssetsPreviewOpen, setIsAssetsPreviewOpen] = useState(false);
-    const [connectionType, setConnectionType] = useState<'mentoria' | 'parceria' | null>(null);
+    const [connectionType, setConnectionType] = useState<'mentoria' | 'parceria' | 'competicao' | null>(null);
     const [activeWidgetTab, setActiveWidgetTab] = useState<ProfileTab>('summary');
 
     const [viewedClan, setViewedClan] = useState<Clan | null>(null);
@@ -849,6 +849,9 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             </button>
                                             <button type="button" onClick={() => setConnectionType('parceria')} className="rounded-md border border-cyan-300/20 bg-black/55 px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-cyan-100 backdrop-blur-sm">
                                                 Parceria
+                                            </button>
+                                            <button type="button" onClick={() => setConnectionType('competicao')} className="rounded-md border border-rose-300/20 bg-black/55 px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-rose-100 backdrop-blur-sm">
+                                                Desafiar
                                             </button>
                                         </div>
                                     )}

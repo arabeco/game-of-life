@@ -1512,8 +1512,11 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         setFirstUseOnboardingActive(false);
     }, [updateUserProfile, userProfile]);
 
-    const handleCompleteOnboarding = useCallback(() => {
-        updateUserProfile(buildOnboardingCompletePatch(userProfile));
+    const handleCompleteOnboarding = useCallback((acceptedSystemChallenges: string[]) => {
+        updateUserProfile({
+            ...buildOnboardingCompletePatch(userProfile),
+            acceptedSystemChallenges,
+        });
         setFirstUseOnboardingActive(false);
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialNavigate', {
@@ -1524,8 +1527,11 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                     showArenaId: null,
                 },
             }));
+            if (acceptedSystemChallenges.length > 0) {
+                showToast('Missao aceita. Ela ja esta acompanhando seu progresso.', 'success');
+            }
         }, 120);
-    }, [updateUserProfile, userProfile]);
+    }, [showToast, updateUserProfile, userProfile]);
 
     useEffect(() => {
         if (!isProfileLoaded || showTerms) return;

@@ -66,66 +66,6 @@ export class SupabaseService {
     };
   }
 
-  private static getNotificationEmailSubject(
-    type: Notification['type'],
-    metadata: Notification['metadata'] = null,
-  ): string {
-    const customSubject = typeof metadata?.emailSubject === 'string' ? metadata.emailSubject.trim() : '';
-    if (customSubject) return customSubject;
-
-    if (metadata?.welcome === true) {
-      return 'Glyph - Bem-vindo!';
-    }
-
-    switch (type) {
-      case 'mentor_invite':
-        return 'Glyph - Convite de mentoria';
-      case 'partnership_invite':
-        return 'Glyph - Convite de parceria';
-      case 'clan_invite':
-        return 'Glyph - Convite de grupo';
-      default:
-        return `Novo sinal no Oraculo: ${type}`;
-    }
-  }
-
-  static async sendNotificationEmail(
-    userId: string,
-    type: Notification['type'],
-    content: string,
-    metadata: Notification['metadata'] = null,
-  ): Promise<boolean> {
-    const nextMetadata = { ...(metadata || {}) } as Notification['metadata'];
-
-    if (!nextMetadata.emailSubject) {
-      nextMetadata.emailSubject = this.getNotificationEmailSubject(type, nextMetadata);
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('resend', {
-        body: {
-          user_id: userId,
-          type,
-          content,
-          metadata: nextMetadata,
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data?.error) {
-        throw new Error(String(data.error));
-      }
-
-      return !data?.skipped;
-    } catch (error) {
-      console.error('Error sending notification email:', error);
-      return false;
-    }
-  }
-
   // --- Notifications System ---
 
   static async getNotifications(userId: string): Promise<Notification[]> {
@@ -380,6 +320,7 @@ export class SupabaseService {
           unlocked_skins: profile.unlockedSkins,
           unlocked_items: profile.unlockedItems,
           completed_season_missions: profile.completedSeasonMissions,
+          accepted_system_challenges: profile.acceptedSystemChallenges ?? [],
           last_level_update: profile.lastLevelUpdate,
           nobility: profile.nobility,
           mood: profile.mood,
@@ -674,7 +615,7 @@ export class SupabaseService {
   }
 
   static async deleteMyAccount(options?: { blockReentry?: boolean; reason?: string }): Promise<{ success: boolean; error?: string }> {
-    const blockReentry = options?.blockReentry !== false;
+    const blockReentry = options?.blockReentry === true;
     const reason = options?.reason?.trim() || null;
 
     try {
@@ -704,70 +645,12 @@ export class SupabaseService {
         (typeof functionErrorBody?.error === 'string' && functionErrorBody.error.trim())
           ? functionErrorBody.error
           : functionErrorMessage;
-      const canFallbackToRpc = this.shouldFallbackDeleteToRpc(error);
-
-      if (!canFallbackToRpc) {
-        return {
-          success: false,
-          error: contextualMessage || (responseStatus ? `Nao foi possivel excluir a conta. HTTP ${responseStatus}.` : 'Nao foi possivel excluir a conta.'),
-        };
-      }
-
-      const { data: rpcData, error: rpcError } = await supabase.rpc('delete_my_account_with_policy', {
-        p_block_reentry: blockReentry,
-        p_reason: reason,
-      });
-
-      if (rpcError) {
-        console.error('Erro ao excluir conta via RPC:', rpcError);
-        const rpcMessage = String(rpcError.message || '');
-
-        if (
-          rpcMessage.includes('Could not find the function public.delete_my_account_with_policy') ||
-          rpcMessage.includes('delete_my_account_with_policy(')
-        ) {
-          const { data: legacyRpcData, error: legacyRpcError } = await supabase.rpc('delete_my_account');
-          if (legacyRpcError) {
-            console.error('Erro ao excluir conta via RPC legada:', legacyRpcError);
-            const legacyMessage = String(legacyRpcError.message || '');
-            if (
-              legacyMessage.includes('Could not find the function public.delete_my_account') ||
-              legacyMessage.includes('delete_my_account without parameters')
-            ) {
-              return {
-                success: false,
-                error: 'A exclusao caiu no plano B, mas a RPC de suporte nao esta instalada neste projeto. Precisamos publicar a Edge Function account-delete corretamente ou rodar o SQL de suporte da exclusao.',
-              };
-            }
-
-            return { success: false, error: legacyMessage || 'Nao foi possivel excluir a conta.' };
-          }
-
-          if ((legacyRpcData as any)?.success === false) {
-            return { success: false, error: (legacyRpcData as any)?.error || 'Nao foi possivel excluir a conta.' };
-          }
-
-          return { success: true };
-        }
-
-        if (
-          rpcMessage.includes('Could not find the function public.delete_my_account') ||
-          rpcMessage.includes('delete_my_account without parameters')
-        ) {
-          return {
-            success: false,
-            error: 'A exclusao caiu no plano B, mas a RPC delete_my_account() nao esta instalada neste projeto. Precisamos publicar a Edge Function account-delete corretamente ou rodar o SQL de suporte da exclusao.',
-          };
-        }
-
-        return { success: false, error: rpcMessage || 'Nao foi possivel excluir a conta.' };
-      }
-
-      if ((rpcData as any)?.success === false) {
-        return { success: false, error: (rpcData as any)?.error || 'Nao foi possivel excluir a conta.' };
-      }
-
-      return { success: true };
+      return {
+        success: false,
+        error: contextualMessage || (responseStatus
+          ? `Nao foi possivel excluir a conta. HTTP ${responseStatus}. Nenhum dado foi removido.`
+          : 'Nao foi possivel excluir a conta. Nenhum dado foi removido.'),
+      };
     } catch (error) {
       console.error('Erro inesperado ao excluir conta:', error);
       return { success: false, error: (error as any)?.message || 'Nao foi possivel excluir a conta.' };

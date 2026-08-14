@@ -4,6 +4,10 @@ export type AppSensoryCue =
     | 'daily_panel_closed'
     | 'arena_complete'
     | 'campaign_complete'
+    | 'cycle_seal_start'
+    | 'report_chapter'
+    | 'report_verdict'
+    | 'report_reward'
     | 'cycle_complete';
 
 export interface AppSensoryCuePayload {

@@ -1,7 +1,7 @@
 {
   "name": "glyph-app",
   "private": true,
-  "version": "1.0.56",
+  "version": "1.0.57",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
     "test:launch": "node tests/launch-readiness.mjs",
     "test:launch:full": "node tests/launch-readiness.mjs --suite=full",
     "check:encoding": "node scripts/check-encoding.mjs",
+    "optimize:catalog": "node scripts/optimize-static-catalog-assets.mjs",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
     "worker:legacy-render": "node scripts/legacy-render-worker.mjs"
@@ -42,6 +43,7 @@
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "sharp": "^0.35.3",
     "supabase": "^2.76.16",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.8.2",

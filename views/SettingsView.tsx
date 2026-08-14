@@ -4,7 +4,7 @@ import { useTutorial } from '../contexts/TutorialContext';
 import { GM_CONFIG, SKINS_DATA } from '../constants';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { GOLD_PLATINUM_PRODUCT, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
-import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, ProfileVisibilityScope, Arena, Action, ScheduledTask } from '../types';
+import { SovereignConfig, RelationshipLink, RelationshipLinkInvite, LinkNotificationType, UserProfile, ProfileVisibilityScope, Arena, Action, ScheduledTask, PlannerViewMode } from '../types';
 import { ChevronRightIcon, XIcon, LightbulbIcon, TrashIcon, CheckIcon, SendIcon, CrownIcon } from '../components/Icons';
 import { GlassCard } from '../components/GlassCard';
 import { CodexLibrary } from '../components/CodexLibrary';
@@ -87,11 +87,12 @@ const UI_SKIN_SELECTOR_META: Record<string, { label: string; title: string; prev
     item_theme_nebulosa: { label: 'NEBULOSA', title: 'Nebulosa Astral', prefersLightText: true },
 };
 
-const SettingSelector: React.FC<{ label: string; value: string; onClick: () => void; }> = ({ label, value, onClick }) => (
+const SettingSelector: React.FC<{ id?: string; label: string; value: string; onClick: () => void; }> = ({ id, label, value, onClick }) => (
     <div className="settings-panel-card">
         <div className="flex justify-between items-center">
             <label className="text-sm font-semibold">{label}</label>
             <button
+                id={id}
                 onClick={onClick}
                 className="inline-flex items-center gap-2 rounded-full border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)] transition-all hover:bg-[var(--skin-accent-color)]/16 hover:border-[var(--skin-accent-color)]/38"
             >
@@ -319,6 +320,8 @@ const UiPreferencesModal: React.FC<{
     effectiveUiSkinId: string;
     oraclePreferences: { animationsEnabled?: boolean; soundsEnabled?: boolean; hapticsEnabled?: boolean } | null | undefined;
     updateOraclePreferences: (updates: Partial<{ animationsEnabled: boolean; soundsEnabled: boolean; hapticsEnabled: boolean }>) => void;
+    plannerViewMode: PlannerViewMode;
+    onPlannerViewModeChange: (mode: PlannerViewMode) => void;
     onUiSkinOptionClick: (skinId: string, unlocked: boolean, disabledByMode: boolean) => void;
     onClose: () => void;
 }> = ({
@@ -331,6 +334,8 @@ const UiPreferencesModal: React.FC<{
     effectiveUiSkinId,
     oraclePreferences,
     updateOraclePreferences,
+    plannerViewMode,
+    onPlannerViewModeChange,
     onUiSkinOptionClick,
     onClose,
 }) => {
@@ -350,7 +355,7 @@ const UiPreferencesModal: React.FC<{
                             <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Interface</div>
                             <h2 className="text-base font-black uppercase tracking-[0.14em]">Skins, tema e feedback</h2>
                         </div>
-                        <button onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-white/70 transition-colors hover:bg-black/35 hover:text-white">
+                        <button id="ui-preferences-close" aria-label="Fechar preferências de interface" onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-white/70 transition-colors hover:bg-black/35 hover:text-white">
                             <XIcon className="h-4 w-4" />
                         </button>
                     </div>
@@ -459,6 +464,27 @@ const UiPreferencesModal: React.FC<{
                             >
                                 MODO ESCURO
                             </button>
+                        </div>
+                        <div className="border-t border-white/8 pt-3">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="min-w-0">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Lista simples</div>
+                                    <div className="mt-0.5 text-[11px] text-gray-500">
+                                        {plannerViewMode === 'list' ? 'Ligada. Os horários continuam salvos.' : 'Desligada. O Planner usa a grade de horários.'}
+                                    </div>
+                                </div>
+                                <button
+                                    id="planner-view-mode-toggle"
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={plannerViewMode === 'list'}
+                                    aria-label="Usar lista simples no Planner"
+                                    onClick={() => onPlannerViewModeChange(plannerViewMode === 'list' ? 'schedule' : 'list')}
+                                    className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${plannerViewMode === 'list' ? 'border-[var(--skin-accent-color)]/55 bg-[var(--skin-accent-color)]/65' : 'border-white/15 bg-black/30'}`}
+                                >
+                                    <span className={`absolute top-0.5 h-[1.375rem] w-[1.375rem] rounded-full bg-white shadow-md transition-transform ${plannerViewMode === 'list' ? 'translate-x-[1.35rem]' : 'translate-x-0.5'}`} />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -2297,7 +2323,7 @@ const PreferenciasTab: React.FC = () => {
 
                         </GlassCard>
                     </div>
-                    <SettingSelector label="Interface & Som" value={currentUiSkinName} onClick={() => setModal('ui')} />
+                    <SettingSelector id="interface-settings-selector" label="Interface & Som" value={currentUiSkinName} onClick={() => setModal('ui')} />
                     <div id="oracle-preferences-setting">
                         <SettingSelector label="Oráculo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />
                     </div>
@@ -2329,6 +2355,8 @@ const PreferenciasTab: React.FC = () => {
                     effectiveUiSkinId={effectiveUiSkinId}
                     oraclePreferences={oraclePreferences}
                     updateOraclePreferences={updateOraclePreferences}
+                    plannerViewMode={userProfile.plannerViewMode || 'schedule'}
+                    onPlannerViewModeChange={(mode) => updateUserProfile({ plannerViewMode: mode })}
                     onUiSkinOptionClick={handleUiSkinOptionClick}
                     onClose={() => setModal(null)}
                 />

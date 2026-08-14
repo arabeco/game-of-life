@@ -34,8 +34,16 @@ const getAchievementDetails = (type: FeedEventType, data: any, isBasicMode: bool
             return { title: isBasicMode ? 'Arena concluída' : 'ARENA COMPLETA', icon: data.icon || '\u{1F3DF}\uFE0F', message: `Você concluiu a arena "${data.name}".` };
         case 'PLAYER_RANK_UP':
             return { title: isBasicMode ? 'Parabéns' : 'PARABÉNS!', icon: '\u{1F451}', message: `Você subiu de patente para ${data.name}!` };
-        case 'QUEST_COMPLETED':
-            return { title: isBasicMode ? 'Missão concluída' : 'MISSÃO CONCLUÍDA!', icon: data.icon || '\u{1F3AF}', message: `Você concluiu a missão "${data.title}".` };
+        case 'QUEST_COMPLETED': {
+            const isStreakMilestone = data.title === 'Sete Dias em Movimento';
+            return isStreakMilestone
+                ? {
+                    title: isBasicMode ? 'Sequência consolidada' : 'SETE DIAS REAIS!',
+                    icon: data.icon || '\u{1F525}',
+                    message: 'Você se manteve em movimento por sete dias seguidos. Não foi sobre perfeição: foi constância suficiente para continuar.',
+                }
+                : { title: isBasicMode ? 'Desafio concluído' : 'DESAFIO CONCLUÍDO!', icon: data.icon || '\u{1F3AF}', message: `Você concluiu o desafio "${data.title}".` };
+        }
         case 'REPORT_COMPLETED':
             return { title: isBasicMode ? 'Relatório concluído' : 'RELATÓRIO CONCLUÍDO!', icon: '\u{1F4DC}', message: 'Você fechou seu relatório de ciclo com sucesso.' };
         case 'CLAN_RANK_UP':
@@ -69,6 +77,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     const skinColor = userSkin?.color || '#ffffff';
     const isRankUp = achievement.type === 'PLAYER_RANK_UP';
     const isQuestComplete = achievement.type === 'QUEST_COMPLETED';
+    const isStreakMilestone = isQuestComplete && achievement.data.title === 'Sete Dias em Movimento';
     const isReportComplete = achievement.type === 'REPORT_COMPLETED';
     const showVideo = !isBasicMode && (isRankUp || isQuestComplete || isReportComplete);
     const { showVideoStage, showContentStage, isVideoFading, triggerReveal } = useVideoStageTransition({
@@ -222,7 +231,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 onEnd={triggerReveal}
                                 className="h-full w-full object-cover"
                                 videoClassName="scale-[1.08]"
-                                placeholderLabel={isRankUp ? 'Level Up!' : isReportComplete ? 'Relatório!' : 'Missão!'}
+                                placeholderLabel={isRankUp ? 'Nova patente!' : isReportComplete ? 'Relatório!' : 'Desafio!'}
                                 duration={4000}
                                 playbackRate={1.0}
                                 loop={false}
@@ -245,6 +254,11 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                             </div>
 
                             <div className="relative z-20 px-8 pb-6 pt-10 text-center">
+                                {isStreakMilestone && (
+                                    <p className="mb-2 text-[9px] font-black uppercase tracking-[0.24em] text-[var(--skin-accent-color)]">
+                                        Bônus de sequência
+                                    </p>
+                                )}
                                 <h2
                                     className={headingClass}
                                     style={{ textShadow: `0 0 20px ${skinColor}40` }}

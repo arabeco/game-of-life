@@ -23,6 +23,41 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'challenge-rewards',
+      label: 'Challenge reward flow regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'challenge-reward-flow.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['limita desafios visiveis', 'confere progresso de arenas', 'garante insignias acumulaveis'],
+    },
+    {
+      id: 'oracle-cycle-coach',
+      label: 'Oracle cycle coach regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'oracle-cycle-coach.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['le ritmo do ciclo localmente', 'prioriza arena em risco', 'oferece apenas navegacao segura'],
+    },
+    {
+      id: 'reward-modal-priority',
+      label: 'Reward modal priority regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'reward-modal-priority.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['nao mostra passagem antiga a conta nova', 'evita sobreposicao entre dicas, temporada e recompensas'],
+    },
+    {
+      id: 'daily-widget-execution',
+      label: 'Daily widget execution regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'daily-widget-execution.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['remove planejamento diario do widget', 'mostra acoes feitas, XP e arenas tocadas'],
+    },
+    {
+      id: 'planner-simple-list',
+      label: 'Planner simple list regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'planner-simple-list.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['preserva horarios', 'salva a ordem no banco', 'mantem conclusoes fora da baia'],
+    },
+    {
       id: 'logic-core',
       label: 'Core loop regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'core-loop.regression.mjs')]],

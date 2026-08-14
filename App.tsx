@@ -36,19 +36,23 @@ const ResetPasswordOverlay = React.lazy(() => import('./components/AppRuntimeOve
 const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
 const GOOGLE_OAUTH_RECOVERY_DELAYS_MS = [250, 350, 500, 700, 900, 1200, 1500, 1800, 2200, 2600] as const;
 
-const isNativeWidgetReportsUrl = (url: string) => {
+const getNativeWidgetRoute = (url: string): 'reports' | 'planner' | null => {
     try {
         const parsed = new URL(url);
-        return parsed.protocol === 'life.glyph.app:' && parsed.hostname === 'widget' && parsed.pathname.startsWith('/reports');
+        if (parsed.protocol !== 'life.glyph.app:' || parsed.hostname !== 'widget') return null;
+        if (parsed.pathname.startsWith('/reports')) return 'reports';
+        if (parsed.pathname.startsWith('/planner')) return 'planner';
+        return null;
     } catch {
-        return false;
+        return null;
     }
 };
 
-const routeNativeWidgetReportsUrl = () => {
+const routeNativeWidgetUrl = (route: 'reports' | 'planner') => {
     const params = new URLSearchParams(window.location.search);
     params.set('view', 'planner');
-    params.set('reports', '1');
+    if (route === 'reports') params.set('reports', '1');
+    else params.delete('reports');
     params.set('rest', '0');
     const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
     window.history.replaceState(window.history.state, '', nextUrl);
@@ -189,8 +193,9 @@ const App: React.FC = () => {
 
         const setupNativeAuthCallback = async () => {
             listenerHandle = await CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
-                if (!disposed && isNativeWidgetReportsUrl(url)) {
-                    routeNativeWidgetReportsUrl();
+                const widgetRoute = getNativeWidgetRoute(url);
+                if (!disposed && widgetRoute) {
+                    routeNativeWidgetUrl(widgetRoute);
                     return;
                 }
 
@@ -250,8 +255,9 @@ const App: React.FC = () => {
 
             try {
                 const launchUrl = await CapacitorApp.getLaunchUrl();
-                if (!disposed && launchUrl?.url && isNativeWidgetReportsUrl(launchUrl.url)) {
-                    routeNativeWidgetReportsUrl();
+                const widgetRoute = launchUrl?.url ? getNativeWidgetRoute(launchUrl.url) : null;
+                if (!disposed && widgetRoute) {
+                    routeNativeWidgetUrl(widgetRoute);
                 }
             } catch (_launchUrlError) {
                 // Optional native entry hint; ignore if unavailable.

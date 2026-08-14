@@ -30,6 +30,7 @@ export interface TaskDomainApi {
     getTasksForDate: (date: Date) => ScheduledTask[];
     rescheduleTask: (taskId: string, newDate: string, newStartTime: number) => void;
     updateTask: (taskId: string, updates: Partial<ScheduledTask>) => void;
+    setTaskExecutionOrder: (taskId: string, executionOrder: number | null) => void;
     toggleTaskCompletion: (taskId: string) => Promise<void>;
     completeTutorialMission: () => void;
 }
@@ -716,7 +717,7 @@ export const createTaskDomain = ({
         const operationalToday = getOperationalDateString(now);
         const taskOperationalDate = getTaskOperationalDateString(taskToCheck);
         if (!taskToCheck.completed && taskOperationalDate && taskOperationalDate > operationalToday) {
-            showToast('Essa acao ainda esta no futuro. Reagende para hoje se ela ja virou prova real.', 'warning');
+            showToast('Essa acao ainda esta no futuro. Reagende para hoje se ela ja aconteceu.', 'warning');
             return;
         }
         const localToday = getLocalDateString(now);
@@ -1056,7 +1057,7 @@ export const createTaskDomain = ({
                 title: 'Marco',
                 message: pickOracleLine([
                     `Marco "${action.name}" concluido. Isso muda o desenho do ciclo.`,
-                    `"${action.name}" virou prova. Boa. Esse era um ponto de passagem, nao so mais uma acao.`,
+                    `"${action.name}" foi concluida. Boa. Esse era um ponto de passagem, nao so mais uma acao.`,
                 ]),
                 tone: 'success',
                 durationMs: 5000,
@@ -1148,6 +1149,7 @@ export const createTaskDomain = ({
         if (updates.startTime !== undefined) payload.start_time = updates.startTime;
         if (updates.duration !== undefined) payload.duration = updates.duration;
         if (updates.completed !== undefined) payload.completed = updates.completed;
+        if (updates.executionOrder !== undefined) payload.execution_order = updates.executionOrder;
         if (Object.keys(payload).length === 0) return;
 
         supabase.from('scheduled_tasks')
@@ -1171,6 +1173,23 @@ export const createTaskDomain = ({
                     console.error('Retroactive judged day reconciliation error:', reconcileError?.message || reconcileError);
                     showToast('A tarefa foi atualizada, mas nao foi possivel recalcular o resumo diario.', 'error');
                 }
+            });
+    };
+
+    const setTaskExecutionOrder = (taskId: string, executionOrder: number | null) => {
+        setTasks(previous => previous.map(task => task.id === taskId ? { ...task, executionOrder } : task));
+
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+
+        supabase.from('scheduled_tasks')
+            .update({ execution_order: executionOrder })
+            .eq('id', taskId)
+            .eq('user_id', userId)
+            .then(({ error }: { error?: { message?: string } }) => {
+                if (!error) return;
+                console.error('Supabase task execution order error:', error.message);
+                showToast('Nao foi possivel salvar a ordem da lista.', 'error');
             });
     };
 
@@ -1217,6 +1236,7 @@ export const createTaskDomain = ({
             ...(normalizedDate ? { date: normalizedDate } : {}),
             startTime: -1,
             completed: false,
+            executionOrder: null,
         });
     };
 
@@ -1247,6 +1267,7 @@ export const createTaskDomain = ({
         getTasksForDate,
         rescheduleTask,
         updateTask,
+        setTaskExecutionOrder,
         toggleTaskCompletion,
         completeTutorialMission,
     };

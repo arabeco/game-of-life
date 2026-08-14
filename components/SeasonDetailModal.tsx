@@ -65,9 +65,8 @@ export const QuestDetailModal: React.FC<{
     onClose: () => void;
     onTake: () => void;
     onAbandon?: () => void;
-    onClaim?: () => void;
-    canClaim?: boolean;
-}> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, onClaim, canClaim }) => {
+    createsArena?: boolean;
+}> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, createsArena = true }) => {
     const getQuestRewardChest = (targetQuest: SeasonQuest): ChestType | null => {
         const rewardValue = typeof targetQuest.reward_value === 'string' ? targetQuest.reward_value.trim() : '';
         if (targetQuest.reward_type === 'chest' && rewardValue) {
@@ -105,14 +104,14 @@ export const QuestDetailModal: React.FC<{
             title={quest.title}
             icon={quest.actionTemplate?.icon}
             description={quest.description}
-            badge={quest.type === 'clan' ? 'Jornada de grupo' : 'Jornada pessoal'}
+            badge={quest.type === 'clan' ? 'Desafio do grupo' : 'Desafio pessoal'}
             progress={progress}
             onClose={onClose}
             footer={
-                canClaim ? (
-                    <button onClick={onClaim} className="w-full rounded-xl bg-green-600 py-3 text-xs font-black uppercase tracking-[0.2em] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-colors hover:bg-green-500">
-                        Resgatar
-                    </button>
+                progress >= 100 ? (
+                    <div className="w-full rounded-xl border border-green-500/20 bg-green-500/10 py-3 text-center text-[11px] font-black uppercase tracking-[0.14em] text-green-200">
+                        Entregando recompensa...
+                    </div>
                 ) : !isActive ? (
                     quest.type === 'clan' ? (
                         <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-[11px] font-bold uppercase tracking-[0.12em] text-white/58">
@@ -120,7 +119,7 @@ export const QuestDetailModal: React.FC<{
                         </div>
                     ) : (
                         <button onClick={onTake} className="w-full rounded-xl py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
-                            Aceitar missao
+                            Aceitar desafio
                         </button>
                     )
                 ) : onAbandon ? (
@@ -154,18 +153,20 @@ export const QuestDetailModal: React.FC<{
                 </div>
             </div>
             <div className="rounded-[18px] border border-[var(--skin-accent-color)]/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.28))] p-4 text-left">
-                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Arena gerada</div>
-                <div className="mt-2 rounded-[16px] border border-white/10 bg-black/25 p-3">
+                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">{createsArena ? 'Arena criada ao aceitar' : 'Como concluir'}</div>
+                <div className="mt-2">
                     <div className="flex items-center justify-between gap-3">
                         <div>
                             <div className="text-[11px] font-black uppercase tracking-[0.14em] text-white/88">{quest.title}</div>
-                            <div className="mt-1 text-[11px] leading-relaxed text-white/55">Ao aceitar, a jornada cria uma arena dedicada com a ação-base abaixo.</div>
+                            <div className="mt-1 text-[11px] leading-relaxed text-white/55">
+                                {createsArena ? 'Ao aceitar, o desafio cria uma arena dedicada com a acao abaixo.' : quest.actionTemplate?.description || quest.description}
+                            </div>
                         </div>
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-white/10 bg-white/8 text-lg">
                                 {quest.actionTemplate?.icon || '◦'}
                         </div>
                     </div>
-                    <div className="mt-3 rounded-[14px] border border-white/8 bg-white/[0.04] p-3">
+                    {createsArena && <div className="mt-3 border-t border-white/8 pt-3">
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/46">Ação miniatura</div>
                         <div className="mt-1 flex items-center justify-between gap-3">
                             <div className="min-w-0">
@@ -176,15 +177,15 @@ export const QuestDetailModal: React.FC<{
                                 Prévia
                             </div>
                         </div>
-                    </div>
+                    </div>}
                 </div>
             </div>
             <div className="rounded-[18px] border border-amber-400/20 bg-amber-500/10 p-4 text-left">
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">Item bonus</div>
-                        <div className="mt-1 text-sm font-black uppercase tracking-[0.12em] text-white">{rewardLabel}</div>
-                        <div className="mt-1 text-[11px] leading-relaxed text-white/65">A recompensa principal desta jornada entra no inventario no momento do resgate.</div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">Recompensas</div>
+                        <div className="mt-1 text-sm font-black uppercase tracking-[0.12em] text-white">{rewardLabel} + insignia</div>
+                        <div className="mt-1 text-[11px] leading-relaxed text-white/65">O bau e a insignia entram automaticamente no inventario assim que voce concluir.</div>
                     </div>
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] border border-amber-300/30 bg-black/20 text-2xl shadow-[0_0_18px_rgba(251,191,36,0.16)]">
                                 📦
@@ -205,19 +206,18 @@ const MissionDetailModal: React.FC<{
     progress: number;
     isCompleted: boolean;
     onClose: () => void;
-    onClaim: () => void;
-}> = ({ mission, progress, isCompleted, onClose, onClaim }) => (
+}> = ({ mission, progress, isCompleted, onClose }) => (
     <DetailModalShell
         title={mission.title}
         icon={mission.icon}
         description={mission.description}
-        badge={mission.type === 'clan' ? 'Missao de grupo' : 'Missao de temporada'}
+        badge={mission.type === 'clan' ? 'Desafio do grupo' : 'Desafio da temporada'}
         progress={progress}
         onClose={onClose}
         footer={!isCompleted && progress >= 100 ? (
-            <button onClick={onClaim} className="w-full rounded-xl bg-green-600 py-3 text-xs font-black uppercase tracking-[0.2em] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-colors hover:bg-green-500">
-                Resgatar
-            </button>
+            <div className="w-full rounded-xl border border-green-500/20 bg-green-500/10 py-3 text-center text-[11px] font-black uppercase tracking-[0.14em] text-green-200">
+                Entregando recompensa...
+            </div>
         ) : (
             <button onClick={onClose} className="w-full rounded-xl border border-white/8 bg-white/5 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-white/70 transition-colors hover:bg-white/10">
                 Voltar
@@ -483,7 +483,7 @@ const SeasonTransitionModal: React.FC<{
 };
 
 export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; onOpenTransition?: () => void }> = ({ season, onClose, onOpenTransition }) => {
-    const { claimSeasonMission, claimSeasonQuest, acceptSeasonQuest, abortSeasonQuest, userProfile, seasonMissions, seasonQuests, tasks, reports, activeCycle, getArenas, getActionsForArena, getClanQuestProgress, getClanQuestsForArena, userMissionParticipations, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
+    const { acceptSeasonQuest, abortSeasonQuest, userProfile, seasonMissions, seasonQuests, tasks, reports, activeCycle, getArenas, getActionsForArena, getClanQuestProgress, getClanQuestsForArena, userMissionParticipations, clanQuestParticipants, fetchClanQuestParticipants } = useGame();
     const [selectedMission, setSelectedMission] = useState<SeasonMission | null>(null);
     const [selectedQuest, setSelectedQuest] = useState<SeasonQuest | null>(null);
 
@@ -583,20 +583,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
     };
 
     const isMissionCompleted = (mission: SeasonMission) => completedFlags.has(mission.id);
-    const isQuestCompleted = (quest: SeasonQuest) => completedFlags.has(quest.id);
-    const canClaimMission = (mission: SeasonMission) => getMissionProgress(mission) >= 100 && !isMissionCompleted(mission);
-    const canClaimQuest = (quest: SeasonQuest) => getQuestProgress(quest) >= 100 && !isQuestCompleted(quest);
     const isQuestActive = (quest: SeasonQuest) => quest.type === 'clan' ? !!userMissionParticipations?.[quest.id] || hasQuestAction(quest.actionTemplate?.name, quest.title) : hasQuestAction(quest.actionTemplate?.name, quest.title);
-
-    const handleClaimMission = async (mission: SeasonMission) => {
-        await claimSeasonMission(mission.id);
-        setSelectedMission(null);
-    };
-
-    const handleClaimQuest = async (quest: SeasonQuest) => {
-        await claimSeasonQuest(quest.id);
-        setSelectedQuest(null);
-    };
 
     const totalTrackableIds = new Set([...missionItems, ...questItems].map((item) => item.id));
     const totalClaimed = Array.from(totalTrackableIds).filter((id) => completedFlags.has(id)).length;
@@ -734,15 +721,15 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                                 <div className="space-y-3">
                                     <SectionTitle title="Missoes da temporada" tone="white" />
                                     <div className="space-y-2">
-                                        {visibleMissionItems.map((mission) => <CompactSeasonEntryCard key={mission.id} title={mission.title} icon={mission.icon} metaLabel={mission.type === 'clan' ? 'Missao de grupo' : 'Missao de temporada'} progress={getMissionProgress(mission)} isClaimed={false} onClick={() => setSelectedMission(mission)} />)}
+                                        {visibleMissionItems.map((mission) => <CompactSeasonEntryCard key={mission.id} title={mission.title} icon={mission.icon} metaLabel={mission.type === 'clan' ? 'Desafio do grupo' : 'Desafio da temporada'} progress={getMissionProgress(mission)} isClaimed={false} onClick={() => setSelectedMission(mission)} />)}
                                     </div>
                                 </div>
                             )}
                             {visibleQuestItems.length > 0 && (
                                 <div className="space-y-3">
-                                    <SectionTitle title="Jornada" />
+                                    <SectionTitle title="Desafios" />
                                     <div className="space-y-2">
-                                        {visibleQuestItems.map((quest) => <CompactSeasonEntryCard key={quest.id} title={quest.title} icon={quest.actionTemplate?.icon} metaLabel={quest.type === 'clan' ? 'Jornada de grupo' : 'Jornada pessoal'} progress={getQuestProgress(quest)} isClaimed={false} participants={quest.type === 'clan' ? clanQuestParticipants[quest.id] : undefined} onClick={() => setSelectedQuest(quest)} />)}
+                                        {visibleQuestItems.map((quest) => <CompactSeasonEntryCard key={quest.id} title={quest.title} icon={quest.actionTemplate?.icon} metaLabel={quest.type === 'clan' ? 'Desafio do grupo' : 'Desafio pessoal'} progress={getQuestProgress(quest)} isClaimed={false} participants={quest.type === 'clan' ? clanQuestParticipants[quest.id] : undefined} onClick={() => setSelectedQuest(quest)} />)}
                                     </div>
                                 </div>
                             )}
@@ -755,8 +742,8 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                         </div>
                     </div>
                 </div>
-                {selectedMission && <MissionDetailModal mission={selectedMission} progress={getMissionProgress(selectedMission)} isCompleted={isMissionCompleted(selectedMission)} onClose={() => setSelectedMission(null)} onClaim={() => handleClaimMission(selectedMission)} />}
-                {selectedQuest && <QuestDetailModal quest={selectedQuest} progress={getQuestProgress(selectedQuest)} isActive={isQuestActive(selectedQuest)} participants={clanQuestParticipants[selectedQuest.id]} onClose={() => setSelectedQuest(null)} onTake={() => { acceptSeasonQuest(selectedQuest.id); setSelectedQuest(null); }} onAbandon={() => { abortSeasonQuest(selectedQuest.id); setSelectedQuest(null); }} onClaim={() => handleClaimQuest(selectedQuest)} canClaim={canClaimQuest(selectedQuest)} />}
+                {selectedMission && <MissionDetailModal mission={selectedMission} progress={getMissionProgress(selectedMission)} isCompleted={isMissionCompleted(selectedMission)} onClose={() => setSelectedMission(null)} />}
+                {selectedQuest && <QuestDetailModal quest={selectedQuest} progress={getQuestProgress(selectedQuest)} isActive={isQuestActive(selectedQuest)} participants={clanQuestParticipants[selectedQuest.id]} onClose={() => setSelectedQuest(null)} onTake={() => { acceptSeasonQuest(selectedQuest.id); setSelectedQuest(null); }} onAbandon={() => { abortSeasonQuest(selectedQuest.id); setSelectedQuest(null); }} />}
             </div>
         </Portal>
     );

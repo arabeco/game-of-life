@@ -12,6 +12,7 @@ import { MetalReportCard } from './MetalReportCard';
 import { exportElementAsImage, shouldPreferNativeShare } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
 import './report-ui.css';
+import { emitAppSensoryCue } from '../utils/sensoryCue';
 const ReportRadarChart = React.lazy(() => import('./ReportRadarChart').then((m) => ({ default: m.ReportRadarChart })));
 
 // Helper functions (duplicated to avoid circular dependencies)
@@ -101,6 +102,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
     const skinColor = userSkin?.color || '#ffffff';
 
     const [currentSlide, setCurrentSlide] = useState(0);
+    const previousSensorySlideRef = React.useRef<number | null>(null);
     const [autoPlayPaused, setAutoPlayPaused] = useState(false);
     const [rewardReveal, setRewardReveal] = useState(false);
     const [rewardFlashActive, setRewardFlashActive] = useState(false);
@@ -327,7 +329,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             <div className="report-panel p-4 flex flex-col items-center group hover:bg-white/[0.05] transition-all">
                                 <CrownIcon className="w-5 h-5 text-purple-500 mb-2 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
                                 <span className="text-2xl font-black text-purple-500 tabular-nums">{metrics.questsCompleted || 0}</span>
-                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Quests</span>
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">Desafios</span>
                             </div>
                         </div>
 
@@ -428,7 +430,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                             : [
                                 { label: 'Progresso', pts: metrics.scoreBreakdown!.progressPts, max: 40, opacity: 1 },
                                 { label: 'Marcos', pts: metrics.scoreBreakdown!.milestonePts, max: Math.max(metrics.scoreBreakdown!.milestonePts, 30), opacity: 0.8 },
-                                { label: 'Quests', pts: metrics.scoreBreakdown!.questPts, max: Math.max(metrics.scoreBreakdown!.questPts, 20), opacity: 0.65 },
+                                { label: 'Desafios', pts: metrics.scoreBreakdown!.questPts, max: Math.max(metrics.scoreBreakdown!.questPts, 20), opacity: 0.65 },
                                 { label: 'Consistencia', pts: metrics.scoreBreakdown!.consistencyPts, max: 20, opacity: 0.5 },
                                 { label: 'Volume', pts: metrics.scoreBreakdown!.volumePts, max: 30, opacity: 0.4 },
                                 ...((metrics.scoreBreakdown?.premiumBonusPts ?? 0) > 0 ? [{ label: 'Premium +10%', pts: metrics.scoreBreakdown!.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown!.premiumBonusPts!, 50), opacity: 1, isPremium: true }] : []),
@@ -516,6 +518,20 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 
     // If it's the reward slide, hide the standard footer and show the special action button
     const isRewardSlide = currentSlide === totalSlides - 1;
+
+    useEffect(() => {
+        const previousSlide = previousSensorySlideRef.current;
+        previousSensorySlideRef.current = currentSlide;
+        if (previousSlide === null && !isRewardSlide) return;
+
+        if (isRewardSlide) {
+            emitAppSensoryCue('report_reward');
+        } else if (currentSlide === totalSlides - 2) {
+            emitAppSensoryCue('report_verdict');
+        } else {
+            emitAppSensoryCue('report_chapter');
+        }
+    }, [currentSlide, isRewardSlide, totalSlides]);
 
     useEffect(() => {
         if (!isRewardSlide) {

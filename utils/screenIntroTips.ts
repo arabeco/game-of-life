@@ -58,7 +58,7 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
     id: 'assets',
     label: 'Ativos',
     title: 'Olha o mapa antes de correr.',
-    summary: 'Aqui eu vejo quais areas estao fortes, cansadas ou pedindo uma prova real.',
+    summary: 'Aqui eu vejo quais areas estao fortes, cansadas ou pedindo atencao.',
     items: ['abre o ativo mais fraco e escolhe um movimento pequeno.'],
   },
   arenas: {
@@ -79,7 +79,7 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
     id: 'planner',
     label: 'Planner',
     title: 'Agora o dia fica concreto.',
-    summary: 'Puxa uma acao, fecha uma prova e deixa o ciclo sentir que voce apareceu.',
+    summary: 'Puxa uma acao, conclui o que cabe e deixa o ciclo sentir que voce apareceu.',
     items: ['complete uma acao real. Uma ja muda o estado do dia.'],
   },
   action_modal: {
@@ -94,7 +94,7 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
     label: 'Descanso',
     title: 'Respira. Eu leio o agora.',
     summary: 'Essa tela reduz o ruido e mostra o que importa sem te jogar em mil botoes.',
-    items: ['se o dia ja teve prova, fecha com calma. Se nao teve, pega uma pequena.'],
+    items: ['se o dia ja teve uma conclusao, fecha com calma. Se nao teve, pega uma acao pequena.'],
   },
   social: {
     id: 'social',
@@ -233,7 +233,7 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
     id: 'reports',
     label: 'Relatorios',
     title: 'Aqui o ciclo vira memoria.',
-    summary: 'Relatorio nao e bronca: e prova guardada do que voce viveu e fechou.',
+    summary: 'Relatorio nao e bronca: e o registro do que voce viveu e fechou.',
     items: ['se estiver vazio, fecha um ciclo quando tiver material real.'],
   },
 };

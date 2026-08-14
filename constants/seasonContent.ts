@@ -1,6 +1,8 @@
 ﻿import { Season, SeasonMission, SeasonQuest } from '../types';
 
-const ROOT_IMAGES_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
+import { CATALOG_ASSET_ROOT } from './catalogAssets';
+
+const ROOT_IMAGES_URL = CATALOG_ASSET_ROOT;
 const EMPTY_SEASON_QUESTS: SeasonQuest[] = [];
 
 export interface SeasonRewardWindow {

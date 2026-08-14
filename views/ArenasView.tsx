@@ -340,11 +340,16 @@ export const ArenasView: React.FC = () => {
         ],
     };
 
-    // Assets grouping - For 'Assets' view mode, we want ALL arenas, even those in campaigns
-    const assetGroups = assets.map(asset => ({
-        ...asset,
-        arenas: allArenas.filter(a => a.assetId === asset.id) // Use allArenas instead of rootArenas
-    })).filter(group => group.arenas.length > 0);
+    // Area view always keeps the five life areas visible, even before the user
+    // creates an arena in one of them.
+    const assetGroups = LIFE_AREAS.map(area => {
+        const asset = assets.find(candidate => candidate.id === area.id);
+        return {
+            id: area.id,
+            name: asset?.name || area.name,
+            arenas: allArenas.filter(arena => arena.assetId === area.id),
+        };
+    });
     const receivedSharedArenas = useMemo(
         () => sharedLinkedArenas.filter(linkedArena => linkedArena.arenaId && !ownedArenaIds.has(linkedArena.arenaId)),
         [ownedArenaIds, sharedLinkedArenas]
@@ -2693,7 +2698,13 @@ export const ArenasView: React.FC = () => {
                                             <span className={`text-[10px] text-gray-600 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}`}>▼</span>
                                         </div>
                                         {!isCollapsed && (
-                                            arenaPresentationMode === 'list' ? (
+                                            group.arenas.length === 0 ? (
+                                                <div className="mx-2 flex min-h-14 items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-3 text-center">
+                                                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/32">
+                                                        Nenhuma arena nesta area
+                                                    </span>
+                                                </div>
+                                            ) : arenaPresentationMode === 'list' ? (
                                                 <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
                                                     {group.arenas.map(arena => renderArenaListRow(arena, {
                                                         registerNode: (node) => registerArenaCardRef(arena.id, node),

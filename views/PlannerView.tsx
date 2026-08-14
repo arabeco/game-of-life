@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, MinusIcon, SquareCheckIcon, PanelIcon, FlameIcon, ArchiveBoxIcon, PlayIcon, ZapIcon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, MinusIcon, SquareCheckIcon, PanelIcon, FlameIcon, ArchiveBoxIcon, ZapIcon } from '../components/Icons';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType, PlannerMatrixQuadrant, Report } from '../types';
 import { ChecklistModal } from '../components/ChecklistModal';
@@ -26,7 +26,6 @@ import {
 import '../components/core-ui.css';
 import { EmojiGlyph } from '../components/EmojiGlyph';
 
-type PlannerMode = 'horario' | 'execucao';
 type BayEntryPayload = { count: number; isUnlimited: boolean; taskIds?: string[]; displayCount?: number };
 type ExecutionDropTarget = { date: string; index: number } | null;
 type PlannerExpSnapshot = {
@@ -87,18 +86,6 @@ const AnimatedExpCounter: React.FC<{ snapshot: PlannerExpSnapshot }> = ({ snapsh
     );
 };
 
-const areExecutionQueuesEqual = (left: Record<string, string[]>, right: Record<string, string[]>) => {
-    const leftKeys = Object.keys(left).sort();
-    const rightKeys = Object.keys(right).sort();
-    if (leftKeys.length !== rightKeys.length) return false;
-    return leftKeys.every((key, index) => {
-        if (key !== rightKeys[index]) return false;
-        const leftIds = left[key] || [];
-        const rightIds = right[key] || [];
-        return leftIds.length === rightIds.length && leftIds.every((id, idIndex) => id === rightIds[idIndex]);
-    });
-};
-
 const compareExecutionTasks = (left: ScheduledTask, right: ScheduledTask) => {
     if (left.completed !== right.completed) return Number(left.completed) - Number(right.completed);
 
@@ -117,6 +104,20 @@ const compareExecutionTasks = (left: ScheduledTask, right: ScheduledTask) => {
     return left.id.localeCompare(right.id);
 };
 
+const getPlannerWeekDates = (anchorDate: Date) => {
+    const weekStart = new Date(anchorDate);
+    const dayOfWeek = weekStart.getDay();
+    const distanceFromMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    weekStart.setDate(weekStart.getDate() + distanceFromMonday);
+    weekStart.setHours(12, 0, 0, 0);
+
+    return Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + index);
+        return formatLocalDateString(date);
+    });
+};
+
 const PLANNER_MATRIX_LAYOUT: Array<{ key: PlannerMatrixQuadrant; label: string; title: string }> = [
     { key: 'ui', label: 'UI', title: 'Urgente + Importante' },
     { key: 'nui', label: 'NUI', title: 'Nao urgente + Importante' },
@@ -126,12 +127,13 @@ const PLANNER_MATRIX_LAYOUT: Array<{ key: PlannerMatrixQuadrant; label: string; 
 
 const DayHeader: React.FC<{
     currentDate: Date;
+    label?: string;
     canUseAdvancedPlannerMatrix?: boolean;
     isAdvancedPlannerMatrixEnabled?: boolean;
     onToggleAdvancedPlannerMatrix?: () => void;
     leftSlot?: React.ReactNode;
     rightSlot?: React.ReactNode;
-}> = ({ currentDate, canUseAdvancedPlannerMatrix = false, isAdvancedPlannerMatrixEnabled = false, onToggleAdvancedPlannerMatrix, leftSlot, rightSlot }) => {
+}> = ({ currentDate, label, canUseAdvancedPlannerMatrix = false, isAdvancedPlannerMatrixEnabled = false, onToggleAdvancedPlannerMatrix, leftSlot, rightSlot }) => {
     const day = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' });
     return (
         <div className="planner-day-header planner-header-footer relative flex items-center justify-center py-2 text-center text-[12px] font-semibold tracking-[0.04em] text-gray-300 capitalize">            {(canUseAdvancedPlannerMatrix || leftSlot) && (
@@ -154,7 +156,7 @@ const DayHeader: React.FC<{
                     {leftSlot}
                 </div>
             )}
-            {day}
+            {label || day}
             {rightSlot && (
                 <div className="absolute right-2 flex items-center gap-1">
                     {rightSlot}
@@ -431,7 +433,7 @@ const UnscheduledTaskCard: React.FC<{
     const completionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const backgroundStyle = action ?getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isScheduled = hasScheduledTime(task);
-    const stateLabel = task.completed ?'Concluida' : isScheduled ?'Com horario' : 'Execucao livre';
+    const stateLabel = task.completed ?'Concluida' : isScheduled ?'Com horario' : 'Sem horario';
     const timeLabel = isScheduled
         ? `${String(Math.floor(task.startTime / 60)).padStart(2, '0')}:${String(task.startTime % 60).padStart(2, '0')}`
         : 'sem horario';
@@ -600,66 +602,7 @@ const UnscheduledTaskCard: React.FC<{
     );
 };
 
-const VirtualExecutionCard: React.FC<{
-    action: Action;
-    count: number;
-    isUnlimited?: boolean;
-    taskId?: string;
-    onComplete: (actionId: string, taskId?: string) => void;
-    onActionClick: (action: Action) => void;
-}> = ({ action, count, isUnlimited, taskId, onComplete, onActionClick }) => {
-    const { getActionBackgroundStyle } = useGame();
-    const backgroundStyle = getActionBackgroundStyle(action.id);
-
-    return (
-        <div
-            onClick={() => onActionClick(action)}
-            className="group relative select-none overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.07),rgba(255,255,255,0.025)_45%,rgba(0,0,0,0.34))] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-white/18 active:scale-[0.99]"
-        >
-            <div className="absolute inset-x-0 top-0 h-px opacity-80" style={backgroundStyle} />
-            <div className="absolute -right-12 -top-16 h-32 w-32 rounded-full blur-3xl opacity-20" style={backgroundStyle} />
-            <div className="relative z-10 flex items-start gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/35">
-                    <EmojiGlyph symbol={action.icon || '\u{1F4DD}'} size="action" className="text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-black uppercase tracking-[0.08em] text-white">{action.name}</div>
-                    <div className="mt-1 text-[11px] leading-relaxed text-white/48">
-                        {action.description?.trim() || 'Pronta para entrar no dia.'}
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-[0.14em]">
-                        <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-white/48">{action.duration || 30} min</span>
-                        <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-white/48">{isUnlimited ?'Livre' : `${Math.max(0, count)}x hoje`}</span>
-                    </div>
-                </div>
-            </div>
-            <div className="relative z-10 mt-4 flex items-center gap-2">
-                <button
-                    type="button"
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        onComplete(action.id, taskId);
-                    }}
-                    className="flex-1 rounded-full border border-emerald-300/20 bg-emerald-300/8 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200 transition-colors hover:bg-emerald-300/14"
-                >
-                    Concluir agora
-                </button>
-                <button
-                    type="button"
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        onActionClick(action);
-                    }}
-                    className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/58 transition-colors hover:text-white"
-                >
-                    Abrir
-                </button>
-            </div>
-        </div>
-    );
-};
-
-const PlannerExecutionStack: React.FC<{
+const PlannerSimpleList: React.FC<{
     date: string;
     tasks: ScheduledTask[];
     getActionById: (id: string) => Action | undefined;
@@ -668,13 +611,14 @@ const PlannerExecutionStack: React.FC<{
     onToggleTask: (taskId: string) => void;
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
     onTaskClick: (task: ScheduledTask) => void;
-}> = ({ date, tasks, getActionById, executionDropTarget, onComplete, onToggleTask, onCustomDragStart, onTaskClick }) => {
+    compactEmpty?: boolean;
+}> = ({ date, tasks, getActionById, executionDropTarget, onComplete, onToggleTask, onCustomDragStart, onTaskClick, compactEmpty = false }) => {
     const showDropAt = (index: number) => executionDropTarget?.date === date && executionDropTarget.index === index;
 
     return (
         <div
-            className="min-h-[240px] space-y-2 rounded-[28px] border border-dashed border-white/10 bg-black/12 p-3"
-            data-testid="planner-execution-stack"
+            className={`${compactEmpty ? 'min-h-[88px] rounded-[20px] p-2' : 'min-h-[240px] rounded-[28px] p-3'} space-y-2 border border-dashed border-white/10 bg-black/12`}
+            data-testid="planner-simple-list"
             data-execution-date={date}
         >
             {tasks.length > 0 ? (
@@ -703,87 +647,64 @@ const PlannerExecutionStack: React.FC<{
                     )}
                 </>
             ) : (
-                <div className="flex min-h-[220px] flex-col items-center justify-center px-5 text-center text-white/34">
+                <div className={`flex flex-col items-center justify-center px-5 text-center text-white/34 ${compactEmpty ? 'min-h-[70px]' : 'min-h-[220px]'}`}>
                     {showDropAt(0) && (
                         <div className="mb-4 h-2 w-full rounded-full bg-[var(--skin-accent-color)]/70 shadow-[0_0_18px_rgba(250,204,21,0.22)]" />
                     )}
-                    <div className="text-3xl opacity-45">{'\u{1F4DD}'}</div>
-                    <div className="mt-3 text-[11px] font-black uppercase tracking-[0.16em]">Fila vazia</div>
-                    <p className="mt-2 max-w-[14rem] text-[11px] leading-relaxed">
-                        Arraste um card da baia para criar a ordem de execucao.
-                    </p>
+                    {!compactEmpty && <div className="text-3xl opacity-45">{'\u{1F4DD}'}</div>}
+                    <div className={`${compactEmpty ? '' : 'mt-3'} text-[11px] font-black uppercase tracking-[0.16em]`}>{compactEmpty ? 'Sem acoes' : 'Lista vazia'}</div>
+                    {!compactEmpty && (
+                        <p className="mt-2 max-w-[14rem] text-[11px] leading-relaxed">
+                            Arraste uma acao da baia para colocar na sua ordem.
+                        </p>
+                    )}
                 </div>
             )}
         </div>
     );
 };
 
-const PlannerExecutionView: React.FC<{
-    mode: 'day' | 'week';
-    currentDate: Date;
-    executionTasksByDate: Record<string, ScheduledTask[]>;
+const PlannerSimpleWeek: React.FC<{
+    dates: string[];
+    tasksByDate: Record<string, ScheduledTask[]>;
     getActionById: (id: string) => Action | undefined;
     executionDropTarget: ExecutionDropTarget;
     onComplete: (actionId: string, taskId?: string) => void;
     onToggleTask: (taskId: string) => void;
     onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void;
     onTaskClick: (task: ScheduledTask) => void;
-}> = ({ mode, currentDate, executionTasksByDate, getActionById, executionDropTarget, onComplete, onToggleTask, onCustomDragStart, onTaskClick }) => {
-    const selectedDate = formatLocalDateString(currentDate);
-    const startOfWeek = new Date(currentDate);
-    const dayOfWeek = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ?-6 : 1);
-    startOfWeek.setDate(diff);
-    const weekDates = Array.from({ length: 7 }, (_, index) => {
-        const date = new Date(startOfWeek);
-        date.setDate(startOfWeek.getDate() + index);
-        return formatLocalDateString(date);
-    });
+}> = ({ dates, tasksByDate, getActionById, executionDropTarget, onComplete, onToggleTask, onCustomDragStart, onTaskClick }) => {
+    const today = getOperationalDateString();
 
     return (
-        <div className="min-h-full px-3 py-4">
-            {mode === 'day' ? (
-                <PlannerExecutionStack
-                    date={selectedDate}
-                    tasks={executionTasksByDate[selectedDate] || []}
-                    getActionById={getActionById}
-                    executionDropTarget={executionDropTarget}
-                    onComplete={onComplete}
-                    onToggleTask={onToggleTask}
-                    onCustomDragStart={onCustomDragStart}
-                    onTaskClick={onTaskClick}
-                />
-            ) : (
-                <div className="overflow-x-auto pb-4">
-                    <div className="grid min-w-[760px] grid-cols-7 gap-2" data-testid="planner-execution-week">
-                        {weekDates.map((date) => {
-                            const labelDate = buildLocalDateFromString(date);
-                            return (
-                                <div key={date} className="space-y-2">
-                                    <div className="rounded-2xl border border-white/8 bg-black/22 px-2 py-2 text-center">
-                                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/42">
-                                            {labelDate.toLocaleDateString('pt-BR', { weekday: 'short' })}
-                                        </div>
-                                        <div className="mt-0.5 text-[10px] font-bold text-white/68">
-                                            {labelDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                        </div>
-                                    </div>
-                                    <PlannerExecutionStack
-                                        date={date}
-                                        tasks={executionTasksByDate[date] || []}
-                                        getActionById={getActionById}
-                                        executionDropTarget={executionDropTarget}
-                                        onComplete={onComplete}
-                                        onToggleTask={onToggleTask}
-                                        onCustomDragStart={onCustomDragStart}
-                                        onTaskClick={onTaskClick}
-                                    />
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
+        <div className="space-y-3" data-testid="planner-simple-week">
+            {dates.map((date) => {
+                const localDate = buildLocalDateFromString(date);
+                const dayLabel = localDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit' });
+                const isToday = date === today;
+
+                return (
+                    <section key={date} className="space-y-1.5">
+                        <div className="flex items-center justify-between px-2">
+                            <h3 className={`text-[10px] font-black uppercase tracking-[0.16em] ${isToday ? 'text-[var(--skin-accent-color)]' : 'text-white/52'}`}>
+                                {dayLabel}
+                            </h3>
+                            <span className="text-[9px] font-bold text-white/28">{tasksByDate[date]?.length || 0}</span>
+                        </div>
+                        <PlannerSimpleList
+                            date={date}
+                            tasks={tasksByDate[date] || []}
+                            getActionById={getActionById}
+                            executionDropTarget={executionDropTarget}
+                            onComplete={onComplete}
+                            onToggleTask={onToggleTask}
+                            onCustomDragStart={onCustomDragStart}
+                            onTaskClick={onTaskClick}
+                            compactEmpty
+                        />
+                    </section>
+                );
+            })}
         </div>
     );
 };
@@ -897,6 +818,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         returnTaskToPool,
         deleteTask,
         toggleTaskCompletion,
+        setTaskExecutionOrder,
         scheduleAndCompleteNow,
         scheduleAndCompleteMilestoneNow,
         addAction,
@@ -933,7 +855,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     }, [reports]);
     const [currentDate, setCurrentDate] = useState(() => buildLocalDateFromString(getOperationalDateString()));
     const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
-    const [plannerMode, setPlannerMode] = useState<PlannerMode>('horario');
+    const isSimpleList = userProfile.plannerViewMode === 'list';
     const plannerArenaOptions = useMemo(() => assets.flatMap(asset => asset.arenas || []), [assets]);
     const defaultPlannerArenaId = plannerArenaOptions.find(arena => arena.id !== 'arena_outros')?.id || plannerArenaOptions[0]?.id || '';
     const [isAdvancedPlannerMatrixEnabled, setIsAdvancedPlannerMatrixEnabled] = useState(() => {
@@ -957,6 +879,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     );
     const [isChecklistVisible, setChecklistVisible] = useState(false);
     const [isSitrepVisible, setIsSitrepVisible] = useState(false);
+    const [sitrepDate, setSitrepDate] = useState<string | null>(null);
 
     const clearRestScreenSessionForTask = useCallback((taskId: string, actionId?: string) => {
         if (!userProfile?.id) return;
@@ -972,7 +895,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     }, [userProfile?.id]);
 
     useEffect(() => {
-        const handleOpenSitrep = () => {
+        const handleOpenSitrep = (event: Event) => {
+            const detail = (event as CustomEvent<{ date?: string | null }>).detail;
+            setSitrepDate(detail?.date || null);
             setIsSitrepVisible(true);
         };
         window.addEventListener('openSitrep', handleOpenSitrep);
@@ -1384,6 +1309,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         }
     };
     const selectedOperationalDateString = formatLocalDateString(currentDate);
+    const simpleWeekDates = useMemo(() => getPlannerWeekDates(currentDate), [currentDate]);
+    const simpleWeekDateSet = useMemo(() => new Set(simpleWeekDates), [simpleWeekDates]);
+    const plannerHeaderLabel = useMemo(() => {
+        if (viewMode !== 'week') return undefined;
+        const firstDay = buildLocalDateFromString(simpleWeekDates[0]).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        const lastDay = buildLocalDateFromString(simpleWeekDates[6]).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        return `${firstDay} - ${lastDay}`;
+    }, [simpleWeekDates, viewMode]);
     const lastPointerPosRef = useRef<{ x: number; y: number } | null>(null);
     const lastScrollTopRef = useRef<number>(0);
     const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -1393,14 +1326,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const weeklyGridElRef = useRef<HTMLElement | null>(null);
     const weeklyDaysContainerRef = useRef<HTMLElement | null>(null);
     const pointerDisabledElsRef = useRef<HTMLElement[]>([]);
-    const [executionQueueByDate, setExecutionQueueByDate] = useState<Record<string, string[]>>(() => {
-        try {
-            const stored = localStorage.getItem('planner_execution_queue_v1');
-            return stored ? JSON.parse(stored) as Record<string, string[]> : {};
-        } catch {
-            return {};
-        }
-    });
     const [executionDropTarget, setExecutionDropTarget] = useState<ExecutionDropTarget>(null);
 
     // Custom Drag State
@@ -1476,7 +1401,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     }, [scaleFactor]);
 
     const resolveExecutionDropTarget = useCallback((pos: { x: number; y: number }): ExecutionDropTarget => {
-        const stacks = Array.from(scrollContainerRef.current?.querySelectorAll('[data-testid="planner-execution-stack"]') || []) as HTMLElement[];
+        const stacks = Array.from(scrollContainerRef.current?.querySelectorAll('[data-testid="planner-simple-list"]') || []) as HTMLElement[];
         for (const stack of stacks) {
             const rect = stack.getBoundingClientRect();
             if (pos.x < rect.left || pos.x > rect.right || pos.y < rect.top - 90 || pos.y > rect.bottom + 90) continue;
@@ -1497,33 +1422,36 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         return null;
     }, [selectedOperationalDateString]);
 
-    const placeExecutionTask = useCallback((taskId: string, targetDate: string, targetIndex: number) => {
-        setExecutionQueueByDate(previous => {
-            const next: Record<string, string[]> = {};
-            (Object.entries(previous) as [string, string[]][]).forEach(([date, ids]) => {
-                const filtered = ids.filter(id => id !== taskId);
-                if (filtered.length > 0) next[date] = filtered;
-            });
+    const placeExecutionTask = useCallback((taskId: string, targetDate: string, targetIndex: number, insertedTask?: ScheduledTask) => {
+        const sourceTasks = insertedTask && !tasks.some(task => task.id === insertedTask.id)
+            ? [...tasks, insertedTask]
+            : tasks;
+        const orderedIds = sourceTasks
+            .filter(task => {
+                if (task.id === taskId) return true;
+                if (!taskMatchesOperationalDate(task, targetDate)) return false;
+                return task.completed || hasScheduledTime(task) || task.executionOrder != null;
+            })
+            .sort((left, right) => {
+                const leftOrder = left.executionOrder;
+                const rightOrder = right.executionOrder;
+                if (leftOrder != null || rightOrder != null) {
+                    if (leftOrder == null) return 1;
+                    if (rightOrder == null) return -1;
+                    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+                }
+                return compareExecutionTasks(left, right);
+            })
+            .map(task => task.id)
+            .filter(id => id !== taskId);
 
-            const dateQueue = [...(next[targetDate] || [])];
-            dateQueue.splice(Math.max(0, Math.min(targetIndex, dateQueue.length)), 0, taskId);
-            next[targetDate] = dateQueue;
-            return next;
-        });
-    }, []);
+        orderedIds.splice(Math.max(0, Math.min(targetIndex, orderedIds.length)), 0, taskId);
+        orderedIds.forEach((id, index) => setTaskExecutionOrder(id, (index + 1) * 100));
+    }, [setTaskExecutionOrder, tasks]);
 
     const removeExecutionTask = useCallback((taskId: string) => {
-        setExecutionQueueByDate(previous => {
-            let changed = false;
-            const next: Record<string, string[]> = {};
-            (Object.entries(previous) as [string, string[]][]).forEach(([date, ids]) => {
-                const filtered = ids.filter(id => id !== taskId);
-                if (filtered.length !== ids.length) changed = true;
-                if (filtered.length > 0) next[date] = filtered;
-            });
-            return changed ? next : previous;
-        });
-    }, []);
+        setTaskExecutionOrder(taskId, null);
+    }, [setTaskExecutionOrder]);
 
     useEffect(() => {
         if (!dragState.isDragging) return;
@@ -1632,7 +1560,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             // Snap-back removed because overflow: hidden already prevents scroll. 
             // We rely on auto-scroll loop to update scrollTop programmatically.
 
-            if (plannerMode === 'execucao' && (dragState.item?.type === 'reschedule_task' || dragState.item?.type === 'new_action')) {
+            if (isSimpleList && (dragState.item?.type === 'reschedule_task' || dragState.item?.type === 'new_action')) {
                 setDailyDropIndicator(null);
                 setWeeklyDropIndicator(null);
                 if (isOverBayAreaCheck(bayAreaRect)) {
@@ -1764,20 +1692,29 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         });
                     }
                 }
-            } else if (plannerMode === 'execucao' && (dragState.item.type === 'reschedule_task' || dragState.item.type === 'new_action')) {
+            } else if (isSimpleList && (dragState.item.type === 'reschedule_task' || dragState.item.type === 'new_action')) {
                 const target = executionDropTarget ?? resolveExecutionDropTarget(pos);
                 if (target) {
                     const { type, payload } = dragState.item;
                     if (type === 'new_action' && payload?.actionId) {
                         void scheduleTask(payload.actionId, target.date, -1).then((task) => {
-                            if (task) placeExecutionTask(task.id, target.date, target.index);
+                            if (task) placeExecutionTask(task.id, target.date, target.index, task);
                         });
                     } else if (type === 'reschedule_task') {
                         const taskId = String(payload);
                         const task = tasksById.get(taskId);
                         const currentOperationalDate = task ? getTaskOperationalDateString(task) : null;
                         if (task && currentOperationalDate !== target.date) {
-                            rescheduleTask(taskId, target.date, hasScheduledTime(task) ? task.startTime : -1);
+                            if (hasScheduledTime(task) && currentOperationalDate) {
+                                const displayStartTime = getTaskDisplayStartTime(task, currentOperationalDate);
+                                rescheduleTask(
+                                    taskId,
+                                    getActualDateStringForOperationalMinutes(target.date, displayStartTime),
+                                    getActualStartTimeForOperationalMinutes(displayStartTime),
+                                );
+                            } else {
+                                rescheduleTask(taskId, target.date, -1);
+                            }
                         }
                         placeExecutionTask(taskId, target.date, target.index);
                     }
@@ -1839,7 +1776,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 (el as HTMLElement).style.pointerEvents = '';
             });
         };
-    }, [buildClampedDropIndicator, clearRestScreenSessionForTask, currentDate, dailyDropIndicator, dragState, getActionById, plannerMode, resolveBayQuadrantFromPosition, resolveExecutionDropTarget, resolveOperationalDropSlot, scaleFactor, selectedOperationalDateString, tasks, updateAction, viewMode, weeklyDropIndicator, executionDropTarget, placeExecutionTask, removeExecutionTask, activeCycle, returnTaskToPool, deleteTask, scheduleTask, rescheduleTask, isTutorialActive, currentStep, nextStep, refreshDragTargets]);
+    }, [buildClampedDropIndicator, clearRestScreenSessionForTask, currentDate, dailyDropIndicator, dragState, getActionById, isSimpleList, resolveBayQuadrantFromPosition, resolveExecutionDropTarget, resolveOperationalDropSlot, scaleFactor, selectedOperationalDateString, tasks, updateAction, viewMode, weeklyDropIndicator, executionDropTarget, placeExecutionTask, removeExecutionTask, activeCycle, returnTaskToPool, deleteTask, scheduleTask, rescheduleTask, isTutorialActive, currentStep, nextStep, refreshDragTargets]);
 
     useEffect(() => {
         const timerId = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -1868,7 +1805,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
     // Auto-scroll useEffects
     useEffect(() => {
-        if (plannerMode === 'horario' && viewMode === 'day' && scrollContainerRef.current) {
+        if (!isSimpleList && viewMode === 'day' && scrollContainerRef.current) {
             const isOperationalToday = formatLocalDateString(currentDate) === getOperationalDateString();
             if (isOperationalToday) {
                 setTimeout(() => {
@@ -1876,9 +1813,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 }, 200);
             }
         }
-    }, [currentDate, currentTime, plannerMode, scrollPlannerToIndicator, viewMode, zoomLevel]);
+    }, [currentDate, currentTime, isSimpleList, scrollPlannerToIndicator, viewMode, zoomLevel]);
     useEffect(() => {
-        if (plannerMode === 'horario' && viewMode === 'week' && scrollContainerRef.current) {
+        if (!isSimpleList && viewMode === 'week' && scrollContainerRef.current) {
             const startOfWeek = new Date(currentDate);
             const day = startOfWeek.getDay();
             const diff = startOfWeek.getDate() - day + (day === 0 ?-6 : 1);
@@ -1894,7 +1831,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 }, 200);
             }
         }
-    }, [currentDate, currentTime, plannerMode, scrollPlannerToIndicator, viewMode, zoomLevel]);
+    }, [currentDate, currentTime, isSimpleList, scrollPlannerToIndicator, viewMode, zoomLevel]);
 
     const plannerScopedTasks = useMemo(() => {
         if (activeCycle) {
@@ -1914,40 +1851,28 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     const tasksById = useMemo(() => new Map(tasks.map(task => [task.id, task])), [tasks]);
     const sanitizedExecutionQueueByDate = useMemo(() => {
         const next: Record<string, string[]> = {};
-        const usedTaskIds = new Set<string>();
-
-        (Object.entries(executionQueueByDate) as [string, string[]][]).forEach(([date, ids]) => {
-            const orderedIds: string[] = [];
-            ids.forEach(id => {
-                const task = tasksById.get(id);
-                if (!task || usedTaskIds.has(id)) return;
-                if (!taskMatchesOperationalDate(task, date)) return;
-
-                usedTaskIds.add(id);
-                orderedIds.push(id);
-            });
-            if (orderedIds.length > 0) next[date] = orderedIds;
+        tasks.forEach(task => {
+            if (task.executionOrder == null) return;
+            const date = getTaskOperationalDateString(task);
+            if (!date) return;
+            if (!next[date]) next[date] = [];
+            next[date].push(task.id);
         });
-
+        Object.keys(next).forEach(date => {
+            next[date].sort((leftId, rightId) => {
+                const left = tasksById.get(leftId);
+                const right = tasksById.get(rightId);
+                return (left?.executionOrder ?? Number.MAX_SAFE_INTEGER) - (right?.executionOrder ?? Number.MAX_SAFE_INTEGER);
+            });
+        });
         return next;
-    }, [executionQueueByDate, tasksById]);
-
-    useEffect(() => {
-        if (areExecutionQueuesEqual(executionQueueByDate, sanitizedExecutionQueueByDate)) return;
-        setExecutionQueueByDate(sanitizedExecutionQueueByDate);
-    }, [executionQueueByDate, sanitizedExecutionQueueByDate]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem('planner_execution_queue_v1', JSON.stringify(sanitizedExecutionQueueByDate));
-        } catch {
-            // Execution order is a UI placement cache; tasks remain the source of truth.
-        }
-    }, [sanitizedExecutionQueueByDate]);
+    }, [tasks, tasksById]);
 
     const executionQueuedTaskIds = useMemo(
-        () => new Set(Object.values(sanitizedExecutionQueueByDate).flat()),
-        [sanitizedExecutionQueueByDate]
+        () => isSimpleList
+            ? new Set(Object.values(sanitizedExecutionQueueByDate).flat())
+            : new Set<string>(),
+        [isSimpleList, sanitizedExecutionQueueByDate]
     );
 
     // Planner bay is global only inside the current cycle window.
@@ -1967,7 +1892,11 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
     const executionTasksByDate = useMemo(() => {
         const candidateTasksByDate: Record<string, ScheduledTask[]> = {};
-        plannerScopedTasks.forEach((task) => {
+        const simpleListScope = isSimpleList && viewMode === 'week' && !activeCycle
+            ? tasks.filter((task) => simpleWeekDateSet.has(getTaskOperationalDateString(task)))
+            : plannerScopedTasks;
+
+        simpleListScope.forEach((task) => {
             const isQueuedForExecution = executionQueuedTaskIds.has(task.id);
             if (isTaskInPool(task) && !isQueuedForExecution) return;
             const operationalDate = getTaskOperationalDateString(task);
@@ -2003,8 +1932,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         });
 
         return grouped;
-    }, [executionQueuedTaskIds, plannerScopedTasks, sanitizedExecutionQueueByDate]);
-    const changeDate = (amount: number) => setCurrentDate(prev => { const newDate = new Date(prev); newDate.setDate(newDate.getDate() + amount); return newDate; });
+    }, [activeCycle, executionQueuedTaskIds, isSimpleList, plannerScopedTasks, sanitizedExecutionQueueByDate, simpleWeekDateSet, tasks, viewMode]);
+    const changeDate = (amount: number) => setCurrentDate(prev => {
+        const newDate = new Date(prev);
+        newDate.setDate(newDate.getDate() + (amount * (viewMode === 'week' ? 7 : 1)));
+        return newDate;
+    });
     
     const isTaskAlreadyJudged = useCallback((task: ScheduledTask | undefined | null) => {
         return isTaskInClosedCycleScope(task);
@@ -2244,16 +2177,6 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                 ]}
                                 iconOnly
                             />
-                            <PlannerSegmentedToggle
-                                id="planner-mode-selector-hidden"
-                                value={plannerMode}
-                                onChange={(value) => setPlannerMode(value as PlannerMode)}
-                                options={[
-                                    { value: 'horario', label: 'Horario', hint: 'Quando vou fazer?', icon: <ClockIcon className="h-3.5 w-3.5" /> },
-                                    { value: 'execucao', label: 'Execucao', hint: 'O que faz sentido fazer agora?', icon: <PlayIcon className="h-3.5 w-3.5" /> },
-                                ]}
-                                iconOnly
-                            />
                         </div>
                     </div>
 
@@ -2336,21 +2259,10 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     </div>
                     <DayHeader
                         currentDate={currentDate}
+                        label={plannerHeaderLabel}
                         canUseAdvancedPlannerMatrix={canUseAdvancedPlannerMatrix}
                         isAdvancedPlannerMatrixEnabled={isAdvancedPlannerMatrixEnabled}
                         onToggleAdvancedPlannerMatrix={toggleAdvancedPlannerMatrix}
-                        leftSlot={(
-                            <PlannerSegmentedToggle
-                                id="planner-mode-selector"
-                                value={plannerMode}
-                                onChange={(value) => setPlannerMode(value as PlannerMode)}
-                                options={[
-                                    { value: 'horario', label: 'Horario', hint: 'Quando vou fazer?', icon: <ClockIcon className="h-3.5 w-3.5" /> },
-                                    { value: 'execucao', label: 'Execucao', hint: 'O que faz sentido fazer agora?', icon: <PlayIcon className="h-3.5 w-3.5" /> },
-                                ]}
-                                iconOnly
-                            />
-                        )}
                         rightSlot={(
                             <PlannerSegmentedToggle
                                 id="view-mode-selector"
@@ -2381,18 +2293,32 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         <div className="mt-1 text-[12px] leading-relaxed text-white/54">Adicione uma arena para comecar a criar acoes e organizar o dia.</div>
                             </div>
                         </div>
-                    ) : plannerMode === 'execucao' ?(
-                        <PlannerExecutionView
-                            mode={viewMode}
-                            currentDate={currentDate}
-                            executionTasksByDate={executionTasksByDate}
+                    ) : isSimpleList && viewMode === 'day' ?(
+                        <div className="min-h-full px-3 py-4">
+                            <PlannerSimpleList
+                            date={selectedOperationalDateString}
+                            tasks={executionTasksByDate[selectedOperationalDateString] || []}
                             getActionById={getActionById}
                             executionDropTarget={executionDropTarget}
                             onComplete={(actionId, taskId) => scheduleAndCompleteNow(actionId, taskId)}
                             onToggleTask={(taskId) => toggleTaskCompletion(taskId)}
                             onCustomDragStart={handleCustomDragStart}
                             onTaskClick={handleTaskClick}
-                        />
+                            />
+                        </div>
+                    ) : isSimpleList ? (
+                        <div className="min-h-full px-3 py-4">
+                            <PlannerSimpleWeek
+                                dates={simpleWeekDates}
+                                tasksByDate={executionTasksByDate}
+                                getActionById={getActionById}
+                                executionDropTarget={executionDropTarget}
+                                onComplete={(actionId, taskId) => scheduleAndCompleteNow(actionId, taskId)}
+                                onToggleTask={(taskId) => toggleTaskCompletion(taskId)}
+                                onCustomDragStart={handleCustomDragStart}
+                                onTaskClick={handleTaskClick}
+                            />
+                        </div>
                     ) : viewMode === 'day' ?(
                         <DailyView tasks={scheduledTasks} actions={actions} scaleFactor={scaleFactor} operationalDate={formatLocalDateString(currentDate)} onCustomDragStart={handleCustomDragStart} dropIndicator={dailyDropIndicator} isToday={isToday} currentTime={currentTime} timeIndicatorRef={dailyTimeIndicatorRef} />
                     ) : (
@@ -2464,7 +2390,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 <button onClick={() => setIsActionModalOpen(true)} className="w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-6 h-6 text-black" /></button>
             </div>
             {isChecklistVisible && <ChecklistModal onClose={() => setChecklistVisible(false)} />}
-            {isSitrepVisible && <SitrepModal onClose={() => setIsSitrepVisible(false)} />}
+            {isSitrepVisible && <SitrepModal selectedDate={sitrepDate} onClose={() => setIsSitrepVisible(false)} />}
             {isActionModalOpen && <ActionModal arenaId={defaultPlannerArenaId} action={null} initialMode="edit" onClose={() => setIsActionModalOpen(false)} />}
         </div>
     );

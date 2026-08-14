@@ -52,6 +52,9 @@ import { ECONOMY } from '../constants/economy';
 import { publishGlyphAndroidWidgetSnapshot } from '../utils/androidWidget';
 import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
+import { SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
+import { emitDailyCompletionPrompt } from '../utils/dailyCompletionPrompt';
+import { buildLiveDailyPraise } from '../utils/dailyInsights';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -741,11 +744,9 @@ export interface GameContextType {
     setAchievementUnlocked: (achievement: { type: FeedEventType; data: any; } | null) => void;
     updateLevelUnlocks: (next: LevelUnlocks) => void;
     grantUserUnlock: (category: UnlockCategory, itemId: string) => void;
-    addCompletedMission: (mission: SeasonMission) => void;
+    addCompletedMission: (mission: SeasonMission) => Promise<void>;
     acceptSeasonQuest: (questId: string) => void;
     abortSeasonQuest: (questId: string) => Promise<void>;
-    claimSeasonQuest: (questId: string) => Promise<void>;
-    claimSeasonMission: (missionId: string) => Promise<void>;
     addProfileFlag: (flag: string) => void;
     feed: FeedEvent[];
     addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
@@ -781,6 +782,7 @@ export interface GameContextType {
     getTasksForDate: (date: Date) => ScheduledTask[];
     rescheduleTask: (taskId: string, newDate: string, newStartTime: number) => void;
     updateTask: (taskId: string, updates: Partial<ScheduledTask>) => void;
+    setTaskExecutionOrder: (taskId: string, executionOrder: number | null) => void;
     toggleTaskCompletion: (taskId: string) => Promise<void>;
     completeTutorialMission: () => void;
     toggleChecklistItem: (id: string) => void;
@@ -805,7 +807,7 @@ export interface GameContextType {
     updateAllAssetLevels: (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>) => boolean;
     startCycle: (name: string, endDate: string, startDate?: string) => void;
     updateCycle: (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => Promise<void>;
-    endCycle: (currentAssets: Asset[], currentActions: Action[]) => EndCycleResult;
+    endCycle: (currentAssets: Asset[], currentActions: Action[]) => Promise<EndCycleResult>;
     applyExp: (expGained: number, options?: ApplyExpOptions) => void;
     addChest: (chestType: ChestType) => Promise<boolean>;
     startNewCycle: (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => void;
@@ -2800,6 +2802,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 paceDeltaPct: typeof rawMetrics.paceDeltaPct === 'number' ? rawMetrics.paceDeltaPct : undefined,
                 top3Actions: Array.isArray(rawMetrics.top3Actions) ? rawMetrics.top3Actions : [],
                 weeklyAtlas: Array.isArray(rawMetrics.weeklyAtlas) ? rawMetrics.weeklyAtlas : [],
+                atlasSnapshotVersion: rawMetrics.atlasSnapshotVersion === 1 || rawMetrics.atlasSnapshotVersion === 2
+                    ? rawMetrics.atlasSnapshotVersion
+                    : undefined,
+                sealedAt: typeof rawMetrics.sealedAt === 'string' ? rawMetrics.sealedAt : undefined,
                 scoreModelVersion: rawMetrics.scoreModelVersion,
                 fairness: rawMetrics.fairness,
                 scoreBreakdown: rawMetrics.scoreBreakdown,
@@ -3241,7 +3247,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             season_id: m.season_id
         }));
 
-        return [...quests, ...mappedMissions];
+        const availableQuests = [...quests, ...mappedMissions];
+        return PRODUCT_FEATURES.clanMissions
+            ? availableQuests
+            : availableQuests.filter((quest) => quest.type !== 'clan');
     }, [activeRuntimeSeasonConfig, activeRuntimeSeasonId, seasonMissions]);
 
     const findSeasonQuestById = useCallback((questId: string) => {
@@ -4454,6 +4463,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         let settledCount = 0;
         let settledExpTotal = 0;
         const newlyJudgedDates: string[] = [];
+        let latestSettledSummary: { date: string; score: number; expDeposited: number } | null = null;
 
         for (const operationalDate of historicalDates) {
             const existingCommitment = existingByDate.get(operationalDate);
@@ -4555,6 +4565,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             settledCount += 1;
             settledExpTotal += summary.expDeposited;
             newlyJudgedDates.push(operationalDate);
+            latestSettledSummary = {
+                date: operationalDate,
+                score: summary.score,
+                expDeposited: summary.expDeposited,
+            };
         }
 
         if (settledCount === 0) return;
@@ -4572,6 +4587,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return next;
         });
         await refreshOpenCycleDerivedState(activeCycle);
+        if (latestSettledSummary) {
+            emitDailyCompletionPrompt({
+                kind: 'sitrep',
+                date: latestSettledSummary.date,
+                score: latestSettledSummary.score,
+                expDeposited: latestSettledSummary.expDeposited,
+            });
+        }
         const expLabel = settledExpTotal > 0 ? ` +${settledExpTotal} XP no ciclo.` : '';
         showToast(
             settledCount === 1
@@ -8273,6 +8296,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'appMode',
                 'themePreference',
                 'arenasViewMode',
+                'plannerViewMode',
                 'starterRewardsPending',
                 'vanguardWelcomePending',
                 'vanguardWelcomeShownAt',
@@ -8701,7 +8725,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     };
 
-    const addCompletedMission = (mission: SeasonMission) => {
+    const addCompletedMission = async (mission: SeasonMission) => {
         const completed = userProfile.completedSeasonMissions || [];
         if (completed.includes(mission.id)) return;
 
@@ -8722,23 +8746,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const rewardCategory = rewardParts[0] as UnlockCategory | undefined;
         const rewardItemId = rewardParts[1];
 
-        // Check for Badge/Inventory Item Reward
-        if (mission.reward_type === 'item_id' && rewardCategory === 'ornament' && rewardItemId) {
-            grantInventoryItem(rewardItemId);
-        }
-
-        // NEW: Grant insignia for quest completion
-        // We grant a specific insignia if the mission has one, or a generic one if it's a season mission
-        if (mission.reward_type === 'item_id' && (rewardCategory as string === 'insignias' || rewardCategory as string === 'insignia') && rewardItemId) {
-            grantUserUnlock('insignias', rewardItemId);
-            grantInventoryItem(rewardItemId);
-        } else {
-            // Generic insignia for completing ANY season mission/quest
-            const genericInsigniaId = (mission as any).type === 'season' ?'insignia_quest_master' : 'insignia_quest_incomum';
-            grantUserUnlock('insignias', genericInsigniaId);
-            grantInventoryItem(genericInsigniaId, true); // Silent because the modal will show it
-        }
-
         const unlockedItems: UserUnlocks = userProfile.unlockedItems || {
             bodyStyles: {},
             hairStyles: {},
@@ -8752,15 +8759,34 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             auras: {},
             orbs: {},
             plates: {},
+            ornament: {},
+            insignias: {},
+            ui_skins: { BASIC: true },
         };
-        const shouldUnlock = mission.reward_type === 'item_id' && rewardCategory && rewardItemId;
-        const nextUnlockedItems = shouldUnlock ?{
-            ...unlockedItems,
-            [rewardCategory]: {
-                ...unlockedItems[rewardCategory],
-                [rewardItemId]: true,
-            },
-        } : unlockedItems;
+        let nextUnlockedItems = unlockedItems;
+
+        if (mission.reward_type === 'item_id' && rewardCategory === 'ornament' && rewardItemId) {
+            await grantInventoryItem(rewardItemId);
+            nextUnlockedItems = {
+                ...nextUnlockedItems,
+                ornament: { ...nextUnlockedItems.ornament, [rewardItemId]: true },
+            };
+        }
+
+        if (mission.reward_type === 'item_id' && (rewardCategory as string === 'insignias' || rewardCategory as string === 'insignia') && rewardItemId) {
+            await grantInventoryItem(rewardItemId);
+            nextUnlockedItems = {
+                ...nextUnlockedItems,
+                insignias: { ...nextUnlockedItems.insignias, [rewardItemId]: true },
+            };
+        } else {
+            const genericInsigniaId = (mission as any).type === 'season' ?'insignia_quest_master' : 'insignia_quest_incomum';
+            await grantInventoryItem(genericInsigniaId, true);
+            nextUnlockedItems = {
+                ...nextUnlockedItems,
+                insignias: { ...nextUnlockedItems.insignias, [genericInsigniaId]: true },
+            };
+        }
 
         updateUserProfile({
             completedSeasonMissions: [...completed, mission.id],
@@ -9083,7 +9109,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         showToast('Ciclo atualizado.', 'success');
     };
-    const endCycle = (currentAssets: Asset[], currentActions: Action[]): EndCycleResult => {
+    const endCycle = async (currentAssets: Asset[], currentActions: Action[]): Promise<EndCycleResult> => {
         const cycle = activeCycle;
         const supabaseUserId = getSupabaseUserId();
         const startDate = cycle?.startDate || '2000-01-01'; // Fallback para o primeiro ciclo sem data
@@ -9337,6 +9363,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 paceDeltaPct,
                 top3Actions,
                 weeklyAtlas,
+                atlasSnapshotVersion: 2,
+                sealedAt: new Date().toISOString(),
                 scoreModelVersion: 'fair_v2_1',
                 fairness: fairScoreResult.fairness as Report['metrics']['fairness'],
                 scoreBreakdown,
@@ -9414,9 +9442,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     performance_score: newReport.performanceScore,
                     season_id: newReport.seasonId
                 };
-                supabase.from('cycles').update(updatePayload).eq('id', cycle.id).then(({ error }) => {
-                    if (error) console.error("Supabase cycle update error:", error.message);
-                });
+                const { data: sealedCycle, error } = await supabase
+                    .from('cycles')
+                    .update(updatePayload)
+                    .eq('id', cycle.id)
+                    .select('id')
+                    .single();
+
+                if (error || !sealedCycle?.id) {
+                    const message = error?.message || 'O Supabase nao confirmou o ciclo selado.';
+                    console.error('Supabase cycle update error:', message);
+                    throw new Error(message);
+                }
             }
         }
 
@@ -9467,9 +9504,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         autoFinishingCycleRef.current = activeCycle.id;
         const expiredCycleName = activeCycle.name;
 
-        const timeoutId = window.setTimeout(() => {
+        const timeoutId = window.setTimeout(async () => {
             try {
-                const result = endCycle(assets, actions);
+                const result = await endCycle(assets, actions);
                 if (result?.report) {
                     if (typeof window !== 'undefined') {
                         const seenStorageKey = getAutoFinishedCycleSeenStorageKey(userId, activeCycle.id);
@@ -11469,7 +11506,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (def?.category === 'insignia') {
                     grantUserUnlock('insignias', itemId);
                 }
-                grantInventoryItem(itemId, true); // Silent
+                await grantInventoryItem(itemId, true); // Silent
                 earnedItemIds.push(itemId);
             }
         }
@@ -11477,7 +11514,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Grant uncommon insignia for quest completion
         const questInsigniaId = 'insignia_quest_incomum';
         grantUserUnlock('insignias', questInsigniaId);
-        grantInventoryItem(questInsigniaId, true);
+        await grantInventoryItem(questInsigniaId, true);
         earnedItemIds.push(questInsigniaId);
 
         // Check if this completion should grant a rank insignia (levelup flow)
@@ -11485,7 +11522,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (nextRank) {
             const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
             grantUserUnlock('insignias', rankInsigniaId);
-            grantInventoryItem(rankInsigniaId, true);
+            await grantInventoryItem(rankInsigniaId, true);
             earnedItemIds.push(rankInsigniaId);
         }
 
@@ -11583,7 +11620,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (def?.category === 'insignia') {
                 grantUserUnlock('insignias', itemId);
             }
-            grantInventoryItem(itemId, true); // Silent
+            await grantInventoryItem(itemId, true); // Silent
             earnedItemIds.push(itemId);
         }
         if (Array.isArray(mission.reward_item_ids)) {
@@ -11593,7 +11630,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (def?.category === 'insignia') {
                     grantUserUnlock('insignias', itemId);
                 }
-                grantInventoryItem(itemId, true);
+                await grantInventoryItem(itemId, true);
                 earnedItemIds.push(itemId);
             }
         }
@@ -11601,7 +11638,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Grant uncommon insignia for mission completion
         const questInsigniaId = 'insignia_quest_incomum';
         grantUserUnlock('insignias', questInsigniaId);
-        grantInventoryItem(questInsigniaId, true);
+        await grantInventoryItem(questInsigniaId, true);
         earnedItemIds.push(questInsigniaId);
 
         // Check if this completion should grant a rank insignia (levelup flow)
@@ -11609,7 +11646,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (nextRank) {
             const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
             grantUserUnlock('insignias', rankInsigniaId);
-            grantInventoryItem(rankInsigniaId, true);
+            await grantInventoryItem(rankInsigniaId, true);
             earnedItemIds.push(rankInsigniaId);
         }
 
@@ -11663,6 +11700,43 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
             });
         }
+    };
+
+    const claimSystemChallenge = async (challengeId: string) => {
+        const challenge = SYSTEM_CHALLENGES.find((candidate) => candidate.id === challengeId);
+        if (!challenge || userProfile.completedSeasonMissions?.includes(challengeId)) return;
+
+        const markerMission: SeasonMission = {
+            id: challenge.id,
+            season_id: activeRuntimeSeasonId || 'system',
+            title: challenge.title,
+            description: challenge.description,
+            goal_type: 'actions_completed',
+            goal_value: challenge.requirements?.totalReps || 1,
+            reward_type: 'exp',
+            reward_value: 0,
+            type: 'individual',
+            action_name: challenge.actionTemplate.name,
+            icon: challenge.actionTemplate.icon,
+            requirements: challenge.requirements,
+        };
+
+        await addCompletedMission(markerMission);
+        applyExp(challenge.rewards.xp);
+        const chestGranted = await addChest(challenge.rewardChest);
+
+        setAchievementUnlocked({
+            type: 'QUEST_COMPLETED',
+            data: {
+                title: challenge.title,
+                icon: challenge.actionTemplate.icon,
+                reward: {
+                    exp: challenge.rewards.xp,
+                    items: [SYSTEM_CHALLENGE_INSIGNIA_ID],
+                    chest: chestGranted ? challenge.rewardChest : null,
+                },
+            },
+        });
     };
 
     useEffect(() => {
@@ -11777,14 +11851,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 title: 'Sequencia',
                 message: pickOracleLine([
                     'A sequencia ficou em risco. Completa uma acao real hoje e ela volta a respirar.',
-                    'A prova de hoje saiu do tabuleiro. Se ainda fizer sentido, uma acao real recoloca a sequencia de pe.',
+                    'O registro de hoje saiu do tabuleiro. Se ainda fizer sentido, uma acao concluida recoloca a sequencia de pe.',
                 ]),
                 tone: 'warning',
             });
             return;
         }
 
-        if ((normalizedStreak.lastProofDate || normalizedStreak.lastClosedDate) === proofDate) return;
+        if (!task.completed) return;
+
+        const isFirstProofToday = (normalizedStreak.lastProofDate || normalizedStreak.lastClosedDate) !== proofDate;
 
         const cycleArenaIds = new Set(activeCycle?.arenaIds || []);
         const proofCycleId = activeCycle
@@ -11801,19 +11877,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         updateUserProfile({ dailyProofStreak: streakResult.next });
+        const completedArenaIds = new Set(
+            completedProofTasksToday
+                .map((candidate) => getActionById(candidate.actionId)?.arenaId)
+                .filter((arenaId): arenaId is string => Boolean(arenaId)),
+        );
+        const plannedTasksToday = tasksAfterChange.filter((candidate) => (
+            getTaskOperationalDateString(candidate) === proofDate
+            && Boolean(getActionById(candidate.actionId))
+        ));
+        const arenaName = getArenas().find((arena) => arena.id === action.arenaId)?.name || null;
+        const praise = buildLiveDailyPraise({
+            actionName: action.name,
+            arenaName,
+            completedCount: completedProofTasksToday.length,
+            plannedCount: plannedTasksToday.length,
+            distinctArenaCount: completedArenaIds.size,
+            streakCurrent: streakResult.next.current,
+            isFirstProofToday,
+        });
+
         if (streakResult.isNewDate) {
             window.setTimeout(() => emitAppSensoryCue('daily_streak'), 120);
+        }
+        if (praise) {
             emitOracleSpeech({
-                title: 'Sequencia',
-                message: streakResult.next.current === 1
-                    ? pickOracleLine([
-                        'Primeira prova real do dia. Agora o ciclo tem algo concreto para contar.',
-                        'Boa. Uma acao real vale mais que um plano bonito.',
-                    ])
-                    : pickOracleLine([
-                        `${streakResult.next.current} dia${streakResult.next.current === 1 ? '' : 's'} com prova real. Boa. A sequencia vive de acao, nao de intencao.`,
-                        `${streakResult.next.current} dias com prova real. Mantem pequeno, mas mantem vivo.`,
-                    ]),
+                title: isFirstProofToday && streakResult.next.current > 1 ? 'Sequencia' : 'Hoje',
+                message: praise,
                 tone: 'success',
             });
         }
@@ -11865,6 +11955,142 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         toggleTaskCompletion,
         completeTutorialMission,
     } = taskDomain;
+
+    const automaticChallengeClaimsRef = useRef<Set<string>>(new Set());
+    const automaticChallengeClaimInFlightRef = useRef(false);
+    const [automaticChallengeClaimTick, setAutomaticChallengeClaimTick] = useState(0);
+
+    useEffect(() => {
+        if (!isProfileLoaded || !hasHydratedFromSupabase || automaticChallengeClaimInFlightRef.current) return;
+
+        const completedIds = new Set(userProfile.completedSeasonMissions || []);
+        completedIds.forEach((id) => automaticChallengeClaimsRef.current.add(id));
+
+        const allArenas = getArenas();
+        const allActions = allArenas.flatMap((arena) => getActionsForArena(arena.id));
+        const completedTaskCount = (actionName?: string, fallbackTitle?: string) => {
+            const matchingActionIds = new Set(
+                allActions
+                    .filter((action) => action.name === actionName || action.name === fallbackTitle)
+                    .map((action) => action.id),
+            );
+            if (matchingActionIds.size === 0) return 0;
+            return tasks.filter((task) => task.completed && matchingActionIds.has(task.actionId)).length;
+        };
+        const hasQuestAction = (quest: SeasonQuest) => allActions.some(
+            (action) => action.name === quest.actionTemplate?.name || action.name === quest.title,
+        );
+
+        const completedSeasonQuest = seasonQuests.find((quest) => {
+            if (quest.season_id && quest.season_id !== activeRuntimeSeasonId) return false;
+            if (completedIds.has(quest.id) || automaticChallengeClaimsRef.current.has(quest.id)) return false;
+            const accepted = quest.type === 'clan'
+                ? Boolean(userMissionParticipations[quest.id]) || hasQuestAction(quest)
+                : hasQuestAction(quest);
+            if (!accepted) return false;
+            const required = quest.type === 'clan'
+                ? (quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1)
+                : (quest.requirements?.totalReps || quest.goal_value || quest.actionTemplate?.repetitions || 1);
+            const current = quest.type === 'clan'
+                ? (getClanQuestProgress(quest.id) || 0)
+                : completedTaskCount(quest.actionTemplate?.name, quest.title);
+            return current >= Math.max(1, required);
+        });
+
+        const completedSeasonMission = seasonMissions.find((mission) => {
+            if (mission.season_id && mission.season_id !== activeRuntimeSeasonId) return false;
+            if (completedIds.has(mission.id) || automaticChallengeClaimsRef.current.has(mission.id)) return false;
+            const required = Math.max(1, mission.requirements?.clanGoal || mission.goal_value || 1);
+            const goalType = String(mission.goal_type || '');
+            if ((mission.type || 'individual') === 'clan') return (getClanQuestProgress(mission.id) || 0) >= required;
+            if (goalType === 'actions_completed' || goalType === 'milestones_completed') {
+                return completedTaskCount(mission.action_name, mission.title) >= required;
+            }
+            if (goalType === 'tutorial_completed') {
+                return completedIds.has(PROFILE_FLAG_TUTORIAL_COMPLETED)
+                    || tasks.some((task) => task.actionId === TUTORIAL_ACTION_ID && task.completed);
+            }
+            if (goalType === 'cycle_created') return Boolean(activeCycle) || reports.length > 0;
+            if (goalType === 'campaign_installed') return allArenas.some((arena) => Boolean(arena.originCodexId));
+            if (goalType === 'cycle_completed' || goalType === 'report_completed') return reports.length > 0;
+            if (goalType === 'quests_claimed') {
+                const sourceIds = mission.sourceQuestIds || [];
+                const claimedCount = sourceIds.length > 0
+                    ? sourceIds.filter((id) => completedIds.has(id)).length
+                    : seasonQuests.filter((quest) => completedIds.has(quest.id)).length;
+                return claimedCount >= required;
+            }
+            return false;
+        });
+
+        const pendingSystemChallenges = SYSTEM_CHALLENGES.filter((challenge) => !completedIds.has(challenge.id));
+        const clearedArenaCount = allArenas.reduce((count, arena) => {
+            const arenaActions = getActionsForArena(arena.id);
+            const clanQuestsForArena = getClanQuestsForArena(arena, arenaActions);
+            const progress = calculateArenaProgress({
+                arena,
+                actions: arenaActions,
+                tasks,
+                clanQuests: clanQuestsForArena,
+                getClanQuestProgress,
+            });
+            return count + (progress.isCleared ? 1 : 0);
+        }, 0);
+        const completedSystemChallenge = pendingSystemChallenges.find((challenge) => {
+            if (automaticChallengeClaimsRef.current.has(challenge.id)) return false;
+            if (challenge.id === 'tutorial-quest') {
+                return completedIds.has(PROFILE_FLAG_TUTORIAL_COMPLETED)
+                    || tasks.some((task) => task.actionId === TUTORIAL_ACTION_ID && task.completed);
+            }
+            if (challenge.id === 'system-first-campaign') return allArenas.some((arena) => Boolean(arena.originCodexId));
+            if (challenge.id === 'system-first-cycle') return Boolean(activeCycle) || reports.length > 0;
+            if (challenge.id === 'system-seven-day-proof-streak') {
+                return normalizeDailyProofStreak(userProfile.dailyProofStreak).current >= 7;
+            }
+            if (challenge.id === 'system-first-arena-clear') return clearedArenaCount >= 3;
+            if (challenge.id === 'system-first-cycle-report') return reports.length > 0;
+            return false;
+        });
+
+        const candidate = completedSeasonQuest
+            ? { id: completedSeasonQuest.id, claim: () => claimSeasonQuest(completedSeasonQuest.id) }
+            : completedSeasonMission
+                ? { id: completedSeasonMission.id, claim: () => claimSeasonMission(completedSeasonMission.id) }
+                : completedSystemChallenge
+                    ? { id: completedSystemChallenge.id, claim: () => claimSystemChallenge(completedSystemChallenge.id) }
+                    : null;
+        if (!candidate) return;
+
+        automaticChallengeClaimsRef.current.add(candidate.id);
+        automaticChallengeClaimInFlightRef.current = true;
+        void candidate.claim()
+            .catch((error) => {
+                automaticChallengeClaimsRef.current.delete(candidate.id);
+                console.error('Automatic challenge reward failed:', error);
+                showToast('Nao foi possivel entregar a recompensa do desafio. Tente novamente.', 'error');
+            })
+            .finally(() => {
+                automaticChallengeClaimInFlightRef.current = false;
+                setAutomaticChallengeClaimTick((value) => value + 1);
+            });
+    }, [
+        activeCycle,
+        activeRuntimeSeasonId,
+        automaticChallengeClaimTick,
+        getActionsForArena,
+        getArenas,
+        getClanQuestProgress,
+        getClanQuestsForArena,
+        hasHydratedFromSupabase,
+        isProfileLoaded,
+        reports,
+        seasonMissions,
+        seasonQuests,
+        tasks,
+        userMissionParticipations,
+        userProfile.completedSeasonMissions,
+        userProfile.dailyProofStreak,
+    ]);
 
     const clearPendingTasksForAction = async (actionId: string) => {
         const pendingTaskIds = tasks
@@ -13201,6 +13427,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             void publishGlyphAndroidWidgetSnapshot({
                 updatedAt: new Date().toISOString(),
                 ...snapshot,
+                auth: {
+                    supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+                    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+                    accessToken: session?.access_token || '',
+                    refreshToken: session?.refresh_token || '',
+                },
             });
         }, 700);
 
@@ -13214,6 +13446,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         isProfileLoaded,
         oracleMessages,
         oraclePreferences,
+        session?.access_token,
+        session?.refresh_token,
         taskPool,
         tasks,
     ]);
@@ -13223,8 +13457,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             session,
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
             abortSeasonQuest,
-            claimSeasonQuest,
-            claimSeasonMission,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,

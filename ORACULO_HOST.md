@@ -233,7 +233,7 @@ Regra de escrita:
 
 Exemplos:
 
-> Primeira prova do dia registrada. Boa: a sequencia vive de acao, nao de intencao.
+> Primeira acao do dia concluida. Boa: a sequencia vive de acao, nao de intencao.
 
 > Seu Premium termina em 3 dias. Se for continuar, estende antes de virar uma surpresa chata.
 
@@ -308,7 +308,7 @@ Regra de escrita:
 
 Exemplo:
 
-> Sua sequencia ainda nao tem prova hoje. Fecha uma acao pequena.
+> Sua sequencia ainda nao tem uma conclusao hoje. Fecha uma acao pequena.
 
 Nao usar push para:
 
@@ -353,17 +353,17 @@ O Oraculo escolhe um estado dominante por vez.
 | --- | --- | --- |
 | `sem_direcao` | Falta ciclo, arena, acao ou tarefa clara. | Dar trilho sem bronca. |
 | `disperso` | Muitas acoes/frentes abertas. | Reduzir mapa e fechar uma coisa. |
-| `atrasado` | Tempo/pendencias passaram do ritmo. | Cortar culpa e puxar prova pequena. |
+| `atrasado` | Tempo/pendencias passaram do ritmo. | Cortar culpa e puxar uma acao pequena. |
 | `em_ritmo` | Execucao acompanha o momento. | Proteger cadencia. |
 | `em_risco` | Janela curta ou ciclo critico. | Cortar excesso e salvar entrega real. |
 | `retomando` | Pessoa voltou depois de ausencia. | Reabrir o fio sem compensacao. |
 | `proximo_compromisso` | Acao com horario chegando. | Tirar atrito e entrar. |
 | `pronto_para_fechar` | Dia ja tem material para fechamento. | Selar sem burocracia. |
-| `arena_esquecida` | Arena ficou sem prova. | Decidir se entra hoje ou sai do caminho. |
+| `arena_esquecida` | Arena ficou sem movimento. | Decidir se entra hoje ou sai do caminho. |
 | `escopo_pesado` | Ciclo/dia pesado demais. | Remover peso antes de adicionar. |
 | `oportunidade_util` | Bau, ficha, campanha ou recurso parado. | Usar valor disponivel. |
 | `primeira_acao_do_dia` | Primeira acao real concluida hoje. | Celebrar dopamina leve. |
-| `sequencia_mantida` | Sequencia mantida por prova real. | Reforcar continuidade. |
+| `sequencia_mantida` | Sequencia mantida por uma conclusao. | Reforcar continuidade. |
 | `sequencia_quebrada` | Sequencia quebrou e usuario voltou. | Retorno sem drama. |
 
 Familias de implementacao:
@@ -455,7 +455,7 @@ Nome de UI: Sequencia.
 
 Regra de produto:
 
-> Acao prova o dia. Painel fecha o dia.
+> Acao movimenta o dia. Painel registra o que aconteceu.
 
 A sequencia principal sobe na primeira acao real concluida no dia operacional.
 
@@ -463,8 +463,8 @@ Ela nao deve depender de fechar o Painel Diario.
 
 Ao completar uma acao:
 
-- se for a primeira prova real do dia, incrementa a sequencia
-- se ja houve prova hoje, nao incrementa de novo
+- se for a primeira acao concluida do dia, incrementa a sequencia
+- se ja houve conclusao hoje, nao incrementa de novo
 - se pulou um ou mais dias, reinicia em 1
 - se passar o melhor valor, atualiza o melhor
 - o Oraculo pode comentar, mas nao sempre
@@ -477,19 +477,19 @@ Sem direcao:
 
 Disperso:
 
-> O mapa esta grande demais agora. Uma arena, uma acao, uma prova.
+> O mapa esta grande demais agora. Uma arena e uma acao de cada vez.
 
 Retomando:
 
-> Voce voltou. Nao tenta pagar os dias perdidos agora. Registra uma prova real e volta para o jogo.
+> Voce voltou. Nao tenta pagar os dias perdidos agora. Conclui uma acao possivel e volta para o jogo.
 
 Primeira acao do dia:
 
-> Primeira prova do dia registrada. A sequencia continua viva.
+> Primeira acao do dia concluida. A sequencia continua viva.
 
 Sequencia mantida:
 
-> Sequencia mantida. Uma prova real segurou o dia.
+> Sequencia mantida. Uma acao concluida fez o dia contar.
 
 Host explicando:
 

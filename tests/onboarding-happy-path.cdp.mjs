@@ -193,7 +193,7 @@ async function ensureArenaModalOpen(page) {
   if (hasArenaInput) return;
 
   const currentTitle = await getOnboardingTitle(page);
-  if (['ATIVO PAI', 'NOME DA ARENA', 'META DA ARENA', 'CRIAR ARENA'].includes(currentTitle)) {
+  if (['ESCOLHA A AREA', 'DE UM NOME CLARO', 'CRIE A ARENA', 'ATIVO PAI', 'NOME DA ARENA', 'META DA ARENA', 'CRIAR ARENA'].includes(currentTitle)) {
     try {
       await page.waitFor(
         'arena modal fields',
@@ -213,9 +213,13 @@ async function ensureArenaModalOpen(page) {
     return;
   }
 
-  const onArenaEntry = await page.evaluate(onboardingTitleExpression('Crie sua primeira arena'));
+  const onArenaEntry = await page.evaluate(`(() => {
+    const title = (document.querySelector('#first-use-onboarding-title')?.textContent || '')
+      .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase().trim();
+    return title === 'SUA PRIMEIRA ARENA' || title === 'CRIE SUA PRIMEIRA ARENA';
+  })()`);
   if (onArenaEntry) {
-    await advanceOverlay(page, 'Crie sua primeira arena');
+    await advanceOverlay(page, 'Sua primeira arena');
     await sleep(450);
   } else {
     await page.clickSelector('#new-action-button');
@@ -240,7 +244,7 @@ async function ensureActionModalOpen(page) {
   if (hasActionInput) return;
 
   const currentTitle = await getOnboardingTitle(page);
-  if (['CRIE SUA PRIMEIRA ARENA', 'ATIVO PAI', 'NOME DA ARENA', 'META DA ARENA', 'CRIAR ARENA'].includes(currentTitle)) {
+  if (['SUA PRIMEIRA ARENA', 'ESCOLHA A AREA', 'DE UM NOME CLARO', 'CRIE A ARENA', 'CRIE SUA PRIMEIRA ARENA', 'ATIVO PAI', 'NOME DA ARENA', 'META DA ARENA', 'CRIAR ARENA'].includes(currentTitle)) {
     await page.waitFor(
       'transition from arena flow to action flow',
       `(() => {
@@ -250,6 +254,7 @@ async function ensureActionModalOpen(page) {
           .toUpperCase()
           .trim();
         return title === 'PRIMEIRA ACAO'
+          || title === 'O QUE VOCE VAI FAZER?'
           || title === 'TITULO DA ACAO'
           || title === 'TIPO DA ACAO'
           || document.querySelector('#add-action-button') instanceof HTMLElement
@@ -260,7 +265,7 @@ async function ensureActionModalOpen(page) {
     return ensureActionModalOpen(page);
   }
 
-  if (['TITULO DA ACAO', 'TIPO DA ACAO', 'REPETICOES', 'DURACAO BASE', 'SALVAR ACAO'].includes(currentTitle)) {
+  if (['O QUE VOCE VAI FAZER?', 'ESCOLHA UMA META LEVE', 'SALVE SUA ACAO', 'TITULO DA ACAO', 'TIPO DA ACAO', 'REPETICOES', 'DURACAO BASE', 'SALVAR ACAO'].includes(currentTitle)) {
     await page.waitFor(
       'action modal fields',
       `(() => {
@@ -335,12 +340,14 @@ async function main() {
     await holdTermsPrimary(page, 950);
     checkpoints.push('terms-accepted');
 
-    await waitForOnboardingTitle(page, 'Primeiro ciclo', 25000);
+    await waitForOnboardingTitle(page, 'Como voce quer comecar?', 25000);
     checkpoints.push('onboarding-open');
 
-    await advanceOverlay(page, 'Primeiro ciclo');
+    await page.clickSelector('#onboarding-start-focus');
+    await waitForOnboardingTitle(page, 'Sua primeira arena', 12000);
+    await advanceOverlay(page, 'Sua primeira arena');
     try {
-      await page.waitForSelector('#new-cycle-name-input', 20000);
+      await page.waitForSelector('#new-arena-name-input', 20000);
     } catch (error) {
       throw new Error([
         error instanceof Error ? error.message : String(error),
@@ -348,89 +355,56 @@ async function main() {
         JSON.stringify({ console: page.getConsoleMessages(), exceptions: page.getExceptions() }, null, 2),
       ].join('\n\n'));
     }
-    await waitForOnboardingTitle(page, 'Nomeie a fase', 12000);
-    checkpoints.push('cycle-step');
+    await waitForOnboardingTitle(page, 'Escolha a area', 12000);
+    checkpoints.push('arena-modal-open');
 
-    await page.setInputValue('#new-cycle-name-input', 'Ciclo Smoke Feliz');
+    await advanceOverlay(page, 'Escolha a area');
+
+    await waitForOnboardingTitle(page, 'De um nome claro', 12000);
+    await page.setInputValue('#new-arena-name-input', 'Arena Smoke Feliz');
     await sleep(260);
-    await advanceOverlay(page, 'Nomeie a fase');
+    await advanceOverlay(page, 'De um nome claro');
 
-    await waitForOnboardingTitle(page, 'Escolha a data final', 12000);
-    await advanceOverlay(page, 'Escolha a data final');
+    await waitForOnboardingTitle(page, 'Crie a arena', 12000);
+    await page.clickSelector('#new-arena-submit-button');
+    checkpoints.push('arena-created');
 
+    await ensureActionModalOpen(page);
+    await waitForOnboardingTitle(page, 'O que voce vai fazer?', 12000);
+    checkpoints.push('action-modal-open');
+
+    await page.setInputValue('#onboarding-action-name-input', 'Ação Smoke Feliz');
+    await sleep(260);
+    await advanceOverlay(page, 'O que voce vai fazer?');
+
+    const actionGoalStep = await waitForOneOfOnboardingTitles(page, ['Escolha uma meta leve', 'Salve sua acao'], 12000);
+    if (actionGoalStep === 'ESCOLHA UMA META LEVE') {
+      await advanceOverlay(page, 'Escolha uma meta leve');
+    }
+
+    await waitForOnboardingTitle(page, 'Salve sua acao', 12000);
+    await page.clickSelector('#onboarding-action-save-button');
+    checkpoints.push('action-created');
+
+    await waitForOnboardingTitle(page, 'Comece um ciclo curto', 20000);
+    await advanceOverlay(page, 'Comece um ciclo curto');
+    await page.waitForSelector('#new-cycle-name-input', 20000);
+    await waitForOnboardingTitle(page, 'Confira o prazo', 12000);
+    await advanceOverlay(page, 'Confira o prazo');
     await waitForOnboardingTitle(page, 'Inicie o ciclo', 12000);
     await page.clickSelector('#new-cycle-submit-button');
     await page.clickText('CONFIRMAR');
     checkpoints.push('cycle-created');
 
-    await ensureArenaModalOpen(page);
-    await waitForOnboardingTitle(page, 'Ativo pai', 12000);
-    checkpoints.push('arena-modal-open');
-
-    await advanceOverlay(page, 'Ativo pai');
-
-    await waitForOnboardingTitle(page, 'Nome da arena', 12000);
-    await page.setInputValue('#new-arena-name-input', 'Arena Smoke Feliz');
-    await sleep(260);
-    await advanceOverlay(page, 'Nome da arena');
-
-    await waitForOnboardingTitle(page, 'Meta da arena', 12000);
-    await advanceOverlay(page, 'Meta da arena');
-
-    await waitForOnboardingTitle(page, 'Criar arena', 12000);
-    await page.clickSelector('#new-arena-submit-button');
-    checkpoints.push('arena-created');
-
-    await ensureActionModalOpen(page);
-    await waitForOnboardingTitle(page, 'Titulo da acao', 12000);
-    checkpoints.push('action-modal-open');
-
-    await page.setInputValue('#onboarding-action-name-input', 'Ação Smoke Feliz');
-    await sleep(260);
-    await advanceOverlay(page, 'Titulo da acao');
-
-    await waitForOnboardingTitle(page, 'Tipo da acao', 12000);
-    await advanceOverlay(page, 'Tipo da acao');
-
-    await waitForOnboardingTitle(page, 'Repeticoes', 12000);
-    await advanceOverlay(page, 'Repeticoes');
-
-    await waitForOnboardingTitle(page, 'Duracao base', 12000);
-    await advanceOverlay(page, 'Duracao base');
-
-    await waitForOnboardingTitle(page, 'Salvar acao', 12000);
-    await page.clickSelector('#onboarding-action-save-button');
-    checkpoints.push('action-created');
-
-    let currentStep = await waitForOneOfOnboardingTitles(page, ['Planner', 'Tela de descanso', 'Resumo Diario', 'Base pronta'], 20000);
-    if (currentStep === 'PLANNER') {
-      await advanceOverlay(page, 'Planner');
-      currentStep = await waitForOneOfOnboardingTitles(page, ['Tela de descanso', 'Resumo Diario', 'Base pronta'], 12000);
-    }
-
-    if (currentStep === 'TELA DE DESCANSO') {
-      await advanceOverlay(page, 'Tela de descanso');
-      currentStep = await waitForOneOfOnboardingTitles(page, ['Resumo Diario', 'Base pronta'], 12000);
-    }
-
-    if (currentStep === 'RESUMO DIARIO') {
-      await advanceOverlay(page, 'Resumo Diario');
-      currentStep = await waitForOneOfOnboardingTitles(page, ['Base pronta'], 12000);
-    }
-
-    if (currentStep !== 'BASE PRONTA') {
-      throw new Error(`Unexpected final onboarding step: ${currentStep}\n\n${await page.bodyText()}`);
-    }
-
-    await advanceOverlay(page, 'Base pronta');
+    await waitForOnboardingTitle(page, 'Tudo pronto', 20000);
+    await advanceOverlay(page, 'Tudo pronto');
     checkpoints.push('onboarding-finished');
 
     await page.waitFor(
       'overlay dismissed',
       `(() => {
         return !(document.querySelector('#first-use-onboarding-title') instanceof HTMLElement)
-          && (document.querySelector('#sitrep-embedded-card') instanceof HTMLElement
-            || document.querySelector('#nav-planner') instanceof HTMLElement);
+          && document.querySelector('#nav-assets') instanceof HTMLElement;
       })()`,
       25000,
     );

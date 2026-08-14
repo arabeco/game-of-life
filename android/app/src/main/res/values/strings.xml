@@ -6,6 +6,6 @@
     <string name="custom_url_scheme">life.glyph.app</string>
     <string name="glyph_widget_description">Card de ciclo do GLYPH</string>
     <string name="glyph_cycle_widget_name">GLYPH Ciclo</string>
-    <string name="glyph_day_widget_name">GLYPH Dia</string>
-    <string name="glyph_day_widget_description">Resumo do dia no GLYPH</string>
+    <string name="glyph_day_widget_name">GLYPH Hoje</string>
+    <string name="glyph_day_widget_description">Execução de hoje no GLYPH</string>
 </resources>

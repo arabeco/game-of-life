@@ -411,6 +411,7 @@ export interface TutorialStep {
 
 export type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings';
 export type ProfileVisibilityScope = 'all' | 'friends' | 'nobody';
+export type PlannerViewMode = 'schedule' | 'list';
 
 export interface UserProfile {
   id: string;
@@ -465,6 +466,7 @@ export interface UserProfile {
 
   themePreference?: ThemePreference;
   arenasViewMode?: ArenasViewMode;
+  plannerViewMode?: PlannerViewMode;
   sovereign?: SovereignConfig;
   avatarUrl: string; // The circular profile picture
   border: string; // Corresponds to a Skin ID or 'default'
@@ -524,6 +526,7 @@ export interface ScheduledTask {
   completedAt?: string | null;
   userId?: string | null;
   createdAt?: string;
+  executionOrder?: number | null;
 }
 
 export interface ChecklistItem {
@@ -561,6 +564,7 @@ export interface DailyProofStreak {
 export interface ReportAtlasDayArenaBucket {
   arenaId: string;
   arenaName: string;
+  areaId?: string;
   total: number;
   completed: number;
 }
@@ -572,6 +576,7 @@ export interface ReportAtlasTaskItem {
   actionIcon: string;
   arenaId: string;
   arenaName: string;
+  areaId?: string;
   startTime: number;
   duration: number;
   completed: boolean;
@@ -743,6 +748,8 @@ export interface Report {
     paceDeltaPct?: number;
     top3Actions?: { name: string; count: number }[];
     weeklyAtlas?: ReportAtlasWeek[];
+    atlasSnapshotVersion?: 1 | 2;
+    sealedAt?: string;
     scoreModelVersion?: 'fair_v2_1';
     fairness?: FairScoreMetrics;
     scoreBreakdown?: {

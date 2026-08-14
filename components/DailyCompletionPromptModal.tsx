@@ -74,7 +74,7 @@ export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProp
                         {payload.kind === 'sitrep' && (typeof payload.score === 'number' || typeof payload.expDeposited === 'number') && (
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="rounded-2xl border border-white/8 bg-black/24 px-3 py-2 text-center">
-                                    <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/44">Score</div>
+                                    <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/44">Progresso</div>
                                     <div className="mt-1 text-lg font-black text-white">
                                         {typeof payload.score === 'number' ? `${payload.score}%` : '--'}
                                     </div>

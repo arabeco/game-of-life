@@ -9,6 +9,8 @@ import { getCycleTimingSummary } from '../utils/dateUtils';
 import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import './core-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
+import { OracleSpeakerMark } from './OracleSpeakerMark';
+import { buildHistoricalDailyInsight } from '../utils/dailyInsights';
 
 type DailyActionRow = {
     task: ScheduledTask;
@@ -117,7 +119,7 @@ const ActionSummaryCard: React.FC<{
     );
 };
 
-export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
+export const SitrepContent: React.FC<{ onClose?: () => void; selectedDateOverride?: string | null }> = ({ onClose, selectedDateOverride }) => {
     const {
         activeCycle,
         dailyCommitment,
@@ -132,7 +134,7 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     } = useGame();
 
     const [isShareChoiceOpen, setIsShareChoiceOpen] = useState(false);
-    const selectedDate = dailyCommitment?.date || getOperationalDateString();
+    const selectedDate = selectedDateOverride || dailyCommitment?.date || getOperationalDateString();
     const actionsById = useMemo(() => new Map(actions.map((action) => [action.id, action])), [actions]);
     const arenas = getArenas();
     const arenasById = useMemo(() => new Map(arenas.map((arena) => [arena.id, arena])), [arenas]);
@@ -233,9 +235,26 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
     const dateLabel = formatPanelDate(selectedDate);
     const isToday = selectedDate === getOperationalDateString();
     const title = isToday ? 'Resumo de hoje' : `Resumo de ${dateLabel}`;
-    const patternLine = cyclePattern
-        ? `${cyclePattern.perfectDays} dias perfeitos - ${cyclePattern.activeDays} dias com movimento - ${cyclePattern.totalExp} XP no ciclo`
-        : 'Sem ciclo ativo: o painel mostra o dia, mas o historico maior nasce quando houver ciclo.';
+    const historicalInsight = useMemo(() => {
+        if (isToday) return null;
+
+        const previousActiveDays = (cyclePattern?.days || [])
+            .filter((day) => day.date < selectedDate && day.completed > 0)
+            .slice(-3);
+        const previousActiveDaysAverage = previousActiveDays.length > 0
+            ? previousActiveDays.reduce((sum, day) => sum + day.completed, 0) / previousActiveDays.length
+            : null;
+
+        return buildHistoricalDailyInsight({
+            completedCount: completedRows.length,
+            plannedCount: dailyRows.length,
+            distinctArenaCount: arenaStats.filter((entry) => entry.completed > 0).length,
+            arenaNames: arenaStats.filter((entry) => entry.completed > 0).map((entry) => entry.name),
+            topArenaName: topArena?.name || null,
+            topArenaCompleted: topArena?.completed || 0,
+            previousActiveDaysAverage,
+        });
+    }, [arenaStats, completedRows.length, cyclePattern?.days, dailyRows.length, isToday, selectedDate, topArena]);
 
     const handleShareImage = () => {
         void shareElementWithFeedback(showToast, 'daily-summary-capture-area', {
@@ -267,10 +286,17 @@ export const SitrepContent: React.FC<{ onClose?: () => void }> = ({ onClose }) =
                     <div className="text-center">
                         <p className="core-label text-[var(--skin-accent-color)]">Resumo Diario</p>
                         <h3 className="mt-1 arena-title-text text-xl text-white luxe-title-shadow leading-tight">{title}</h3>
-                        <p className="mt-2 text-[11px] leading-relaxed text-gray-300">
-                            {patternLine}
-                        </p>
                     </div>
+
+                    {historicalInsight && (
+                        <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
+                            <OracleSpeakerMark tone="info" size="sm" className="mt-0.5 shrink-0" />
+                            <div className="min-w-0">
+                                <p className="core-label text-[var(--skin-accent-color)]">Leitura do Oraculo</p>
+                                <p className="mt-1 text-[11px] leading-relaxed text-white/78">{historicalInsight}</p>
+                            </div>
+                        </div>
+                    )}
 
                     {activeCycle && cyclePattern && (
                         <div className="sitrep-neutral-panel rounded-2xl p-3">

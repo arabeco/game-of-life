@@ -716,7 +716,7 @@ const buildArenaSignalReason = (signal: Omit<OracleArenaSignal, "reason">): stri
     return "A arena tem acoes livres ou sem contador, entao precisa de meta minima se a pessoa quiser medir avanco.";
   }
   if (signal.suggestedAdjustment === "pausar_arena") {
-    return "A arena ficou varios dias sem prova real dentro do ciclo.";
+    return "A arena ficou varios dias sem uma acao concluida dentro do ciclo.";
   }
   if (signal.suggestedAdjustment === "reduzir_meta") {
     return "O avanco da arena ficou abaixo do tempo ja gasto no ciclo.";

@@ -23,7 +23,7 @@ export const LEGACY_PREVIEW_LAYOUT_STORAGE_KEY = 'glyph:legacy-preview-layout-la
 export const LEGACY_LAYOUT_UPDATED_EVENT = 'glyph:legacy-layout-updated';
 export const LEGACY_PREVIEW_LAYOUT_UPDATED_EVENT = 'glyph:legacy-preview-layout-updated';
 export const LEGACY_PREVIEW_PLAQUE_BASE_WIDTH = 104;
-export const LEGACY_SCENE_PLAQUE_BASE_WIDTH = 100;
+export const LEGACY_SCENE_PLAQUE_BASE_WIDTH = 108;
 export const LEGACY_PREVIEW_PLAQUE_SCALE = 1.65;
 export const LEGACY_SCENE_PLAQUE_SCALE = 1;
 

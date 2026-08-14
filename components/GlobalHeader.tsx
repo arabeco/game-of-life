@@ -3,6 +3,7 @@ import React, { Suspense, useState, useEffect, useRef, useCallback } from 'react
 import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { getUnreadBadgeCount, getVisibleNotificationsForProfile } from '../constants/oracleNotificationPolicy';
+import { LIFE_AREA_IDS, toMasteryIndex } from '../constants/lifeAreas';
 import { SparklesIcon, LockIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import './global-header.css';
@@ -36,7 +37,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     defaultRestScreenOpen = true,
     onRestScreenVisibilityChange,
 }) => {
-    const { userProfile, oracleMessages, notifications, appMode, clan, oraclePreferences } = useGame();
+    const { userProfile, assets, oracleMessages, notifications, appMode, clan, oraclePreferences } = useGame();
     const userId = userProfile?.id || '';
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
@@ -59,6 +60,11 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const unreadVisibleNotificationsCount = visibleNotifications.filter(notification => !notification.read).length;
     const hasUnreadMessages = oracleMessages.some(m => !m.read);
     const hasUnread = hasUnreadMessages || unreadVisibleNotificationsCount > 0;
+    const masteryIndex = toMasteryIndex(
+        assets
+            .filter((asset) => LIFE_AREA_IDS.includes(asset.id as (typeof LIFE_AREA_IDS)[number]))
+            .reduce((sum, asset) => sum + Math.max(1, Number(asset.level || 1)), 0),
+    );
     
     // Time state
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -268,7 +274,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     return (
         <>
             <header
-                className="shell-header fixed left-0 right-0 z-40"
+                className="shell-header fixed left-0 right-0 z-[100]"
                 style={{ top: topOffsetPx }}
             >
                 <div className="max-w-7xl mx-auto relative flex items-center justify-between h-[64px] px-3 text-xs font-semibold text-gray-300">
@@ -339,15 +345,19 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         )}
                                     </div>
                                     <div className="shell-level-badge absolute top-[3rem] z-[60] group-hover:scale-110" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
-                                        <span className="shell-level-text text-[11px] font-black">{userProfile.level}</span>
+                                        <span data-testid="header-mastery-index" className="shell-level-text text-[11px] font-black">{masteryIndex}</span>
                                     </div>
                                 </button>
 
                                 {/* Oracle Button */}
                                 <button
                                     id="header-oracle"
-                                    onClick={handleOracleClick}
-                                    className={`shell-float-button absolute left-full ml-2 group ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
+                                    onPointerDown={(event) => event.stopPropagation()}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        handleOracleClick();
+                                    }}
+                                    className={`shell-float-button pointer-events-auto absolute left-full z-[80] ml-2 group ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
                                     aria-label="Oracle Assistant"
                                 >
                                     <SparklesIcon className={`shell-oracle-icon w-5 h-5 transition-all ${hasUnread ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'}`} />

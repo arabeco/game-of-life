@@ -61,7 +61,8 @@ export const LegacyRenderView: React.FC = () => {
                     eras={payload.eras}
                     sovereignName={payload.sovereignName}
                     projectionActive
-                    autoAdvance
+                    interactive={!captureMode}
+                    autoAdvance={captureMode}
                     fallbackIdentity={payload.fallbackIdentity}
                 />
             </div>

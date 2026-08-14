@@ -11,6 +11,12 @@ export type GlyphAndroidWidgetSnapshot = {
   updatedAt: string;
   daily: DailyWidgetSnapshot;
   oracle: OracleWidgetSnapshot;
+  auth?: {
+    supabaseUrl: string;
+    anonKey: string;
+    accessToken: string;
+    refreshToken: string;
+  };
 };
 
 export const publishGlyphAndroidWidgetSnapshot = async (

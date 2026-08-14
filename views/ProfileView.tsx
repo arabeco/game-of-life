@@ -22,8 +22,15 @@ import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { APP_NAVIGATE_EVENT } from '../utils/arenaAttention';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
+import { LIFE_AREA_IDS, toMasteryIndex } from '../constants/lifeAreas';
 import { ConnectionsModal } from '../components/ConnectionsModal';
 const AssetPentagon = React.lazy(() => import('../components/AssetPentagon').then((m) => ({ default: m.AssetPentagon })));
+
+const getMasteryIndex = (assets: Asset[]): number => toMasteryIndex(
+    assets
+        .filter((asset) => LIFE_AREA_IDS.includes(asset.id as (typeof LIFE_AREA_IDS)[number]))
+        .reduce((sum, asset) => sum + Math.max(1, Number(asset.level || 1)), 0),
+);
 
 const normalizeAssetsVisibility = (value?: UserProfile['assetsVisibility']): 'all' | 'friends' | 'nobody' => {
     if (value === 'all' || value === 'friends' || value === 'nobody') return value;
@@ -307,6 +314,7 @@ export const ShareableProfileCard: React.FC<{
     const masteryAverageLevel = masteryLevels.length > 0
         ? (masteryLevels.reduce((sum, level) => sum + level, 0) / masteryLevels.length).toFixed(1).replace('.', ',')
         : '1,0';
+    const masteryIndex = getMasteryIndex(assets);
     const visibleSlots = (userProfile.visibleWidgets || [])
         .map((assetId) => assets.find((asset) => asset.id === assetId))
         .filter((asset): asset is Asset => !!asset)
@@ -362,7 +370,7 @@ export const ShareableProfileCard: React.FC<{
 
                         {/* Level Badge */}
                         <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-50" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
-                            <span className="text-lg font-black text-white">{userProfile.level}</span>
+                            <span className="text-lg font-black text-white">{masteryIndex}</span>
                         </div>
                     </div>
 
@@ -400,7 +408,7 @@ export const ShareableProfileCard: React.FC<{
                     <div className="grid grid-cols-3 gap-1.5">
                         <div className="rounded-2xl border border-white/8 bg-black/28 px-3 py-2 text-center">
                             <div className="text-[8px] font-bold uppercase tracking-[0.22em] text-gray-500">Nível</div>
-                            <div className="mt-1 text-xl font-black text-white">{userProfile.level}</div>
+                            <div className="mt-1 text-xl font-black text-white">{masteryIndex}</div>
                         </div>
                         <div className="rounded-2xl border border-white/8 bg-black/28 px-3 py-2 text-center">
                             <div className="text-[8px] font-bold uppercase tracking-[0.22em] text-gray-500">Ativos</div>
@@ -622,6 +630,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const masteryAverageLevel = masteryLevels.length > 0
         ? masteryLevels.reduce((sum, level) => sum + level, 0) / masteryLevels.length
         : 1;
+    const masteryIndex = getMasteryIndex(profileAssets);
     const masteryAveragePercent = Math.max(0, Math.min(100, Math.round((masteryAverageLevel / 10) * 100)));
     const summaryProgressPercent = isOwnProfile ? Math.max(0, Math.min(100, Math.round(cycleProgress))) : masteryAveragePercent;
     const widgetSelectableAssets = profileAssets.filter((asset) => asset.id !== 'geral' && !!asset.slots?.[0]);
@@ -794,7 +803,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     )}
 
                                     <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-50" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
-                                        <span className="text-lg font-black text-white">{displayProfile.level}</span>
+                                        <span className="text-lg font-black text-white">{masteryIndex}</span>
                                     </div>
                                 </div>
 
@@ -943,7 +952,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             <div className="grid grid-cols-3 gap-2">
                                                 <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
                                                     <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Nivel Geral</div>
-                                                    <div className="text-2xl font-bold text-[var(--ui-text-accent)]">{displayProfile.level}</div>
+                                                    <div className="text-2xl font-bold text-[var(--ui-text-accent)]">{masteryIndex}</div>
                                                 </div>
                                                 <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
                                                     <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Ativos</div>
@@ -1064,7 +1073,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
                                                                 <div className="text-[8px] uppercase tracking-wider text-gray-500">Nível Geral</div>
-                                                                <div className="text-2xl font-bold text-[var(--skin-accent-color)]">{displayProfile.level}</div>
+                                                                <div className="text-2xl font-bold text-[var(--skin-accent-color)]">{masteryIndex}</div>
                                                             </div>
                                                             <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
                                                                 <div className="text-[8px] uppercase tracking-wider text-gray-500">Progresso</div>
@@ -1105,7 +1114,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
 
                         {!isBasicMode && canOpenAssetsPreview && (
                             <ProfileMasteryOrb
-                                level={displayProfile.level}
+                                level={masteryIndex}
                                 skinId={displayProfile.skin}
                                 onClick={() => setIsAssetsPreviewOpen(true)}
                             />

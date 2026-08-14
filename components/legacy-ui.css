@@ -253,15 +253,18 @@
 .legacy-cycle-card__header {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.18rem;
-  height: 1.46rem;
-  padding: 0 0.14rem;
+  height: 1.78rem;
+  padding: 0.48rem 0.2rem 0;
 }
 
 .legacy-cycle-card__date {
+  position: absolute;
+  left: 0.14rem;
+  top: 0.08rem;
   font-size: 0.4rem;
   font-weight: 900;
   letter-spacing: 0.12em;
@@ -273,18 +276,21 @@
 }
 
 .legacy-cycle-card__date--end {
+  left: auto;
+  right: 0.14rem;
   text-align: right;
 }
 
 .legacy-cycle-card__title {
+  width: 100%;
   margin: 0;
   text-align: center;
   font-size: 0.62rem;
-  line-height: 0.96;
-  letter-spacing: -0.01em;
+  line-height: 1;
+  letter-spacing: 0;
   font-weight: 900;
-  min-height: 1.22rem;
-  max-height: 1.22rem;
+  min-height: 1.25rem;
+  max-height: 1.25rem;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -339,6 +345,11 @@
 
 .legacy-cycle-card__metric {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   border-radius: 0.72rem;
   padding: 0.24rem 0.3rem;
   border: 1px solid color-mix(in srgb, var(--legacy-cycle-edge) 9%, transparent);
@@ -352,6 +363,8 @@
 
 .legacy-cycle-card__metric-label {
   display: block;
+  width: 100%;
+  text-align: center;
   font-size: 0.38rem;
   font-weight: 900;
   letter-spacing: 0.12em;
@@ -361,6 +374,8 @@
 
 .legacy-cycle-card__metric-value {
   display: block;
+  width: 100%;
+  text-align: center;
   margin-top: 0.08rem;
   font-size: 0.54rem;
   line-height: 1.04;
@@ -541,8 +556,9 @@
 }
 
 .legacy-cycle-card__header {
-  min-height: 0.95rem !important;
-  padding: 0 0.08rem !important;
+  height: 1.62rem !important;
+  min-height: 1.62rem !important;
+  padding: 0.42rem 0.12rem 0 !important;
 }
 
 .legacy-cycle-card__date {
@@ -550,8 +566,10 @@
 }
 
 .legacy-cycle-card__title {
-  font-size: 0.5rem !important;
-  line-height: 0.92 !important;
+  font-size: 0.53rem !important;
+  line-height: 1 !important;
+  min-height: 1.08rem !important;
+  max-height: 1.08rem !important;
 }
 
 .legacy-cycle-card__hero {
@@ -559,11 +577,14 @@
 }
 
 .legacy-cycle-card__rank {
-  font-size: 1.46rem !important;
+  font-size: 2.18rem !important;
+  line-height: 0.82 !important;
 }
 
 .legacy-cycle-card__score {
-  font-size: 0.4rem !important;
+  margin-top: 0.1rem !important;
+  font-size: 0.56rem !important;
+  line-height: 1 !important;
 }
 
 .legacy-cycle-card__metrics {
@@ -577,10 +598,11 @@
 }
 
 .legacy-cycle-card__metric-label {
-  font-size: 0.32rem !important;
+  font-size: 0.34rem !important;
+  letter-spacing: 0.08em !important;
 }
 
 .legacy-cycle-card__metric-value {
-  margin-top: 0.04rem !important;
-  font-size: 0.43rem !important;
+  margin-top: 0.06rem !important;
+  font-size: 0.48rem !important;
 }

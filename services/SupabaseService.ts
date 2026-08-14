@@ -335,6 +335,7 @@ export class SupabaseService {
           email: profile.email,
           nickname: profile.nickname,
           app_mode: profile.appMode || null,
+          planner_view_mode: profile.plannerViewMode || 'schedule',
           terms_version: profile.termsVersion || null,
           terms_accepted_at: profile.termsAcceptedAt || null,
           terms_accept_source: profile.termsAcceptSource || null,

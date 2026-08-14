@@ -31,34 +31,103 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
     hideSovereignName = false,
     portrait = false,
 }) => {
-    const { totalCycles, totalHours, totalSealedMetas, weightedAverageScore, averageGrade } = buildLegacyPlaqueSummary(eras);
+    const { totalCycles, totalHours, weightedAverageScore, averageGrade } = buildLegacyPlaqueSummary(eras);
+    const formattedHours = `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`;
+
+    if (portrait) {
+        return (
+            <section
+                className={`relative min-h-[132px] overflow-hidden rounded-[14px] px-3 pb-3 pt-3 ${className}`}
+                style={{
+                    background: [
+                        'radial-gradient(circle at 50% 0%, rgba(255,246,196,0.34), transparent 34%)',
+                        'linear-gradient(150deg, rgba(255,255,255,0.16), transparent 34%, rgba(7,24,40,0.2) 72%)',
+                        'linear-gradient(180deg, #d9edf7 0%, #91bad2 34%, #496f8b 70%, #243b50 100%)',
+                    ].join(', '),
+                    border: '1.5px solid rgba(232, 193, 101, 0.98)',
+                    boxShadow: [
+                        '0 16px 30px rgba(0,0,0,0.28)',
+                        '0 0 0 1px rgba(110,76,24,0.32)',
+                        'inset 0 1px 0 rgba(255,255,255,0.42)',
+                        'inset 0 -18px 28px rgba(7,22,36,0.3)',
+                    ].join(', '),
+                }}
+            >
+                <div className="pointer-events-none absolute inset-[4px] rounded-[11px] border border-amber-200/60" />
+                <div className="pointer-events-none absolute inset-[7px] rounded-[8px] border border-white/16" />
+                <div className="pointer-events-none absolute left-1/2 top-0 h-16 w-20 -translate-x-1/2 rounded-full bg-white/12 blur-xl" />
+
+                <div className="relative z-10">
+                    <div className="flex items-center gap-1.5">
+                        <span className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-700/55" />
+                        <span className="text-[5px] font-black uppercase tracking-[0.24em] text-amber-900/85">Legado</span>
+                        <span className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-700/55" />
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center">
+                        <div className="flex min-w-0 flex-col items-center justify-center">
+                            <span className="text-[6px] font-black uppercase tracking-[0.12em] text-amber-900/90">Média</span>
+                            <strong className="mt-1 text-[1.72rem] font-black leading-none tabular-nums text-[#13283b] drop-shadow-[0_1px_0_rgba(255,255,255,0.26)]">
+                                {weightedAverageScore}
+                            </strong>
+                        </div>
+
+                        <div className="flex flex-col items-center justify-center">
+                            <span className="h-12 w-px bg-gradient-to-b from-transparent via-amber-800/48 to-transparent" />
+                        </div>
+
+                        <div className="flex min-w-0 flex-col items-center justify-center">
+                            <span className="text-[6px] font-black uppercase tracking-[0.12em] text-amber-900/90">Patamar</span>
+                            <strong className="mt-1 text-[1.72rem] font-black leading-none text-[#13283b] drop-shadow-[0_1px_0_rgba(255,255,255,0.26)]">
+                                {averageGrade}
+                            </strong>
+                        </div>
+                    </div>
+
+                    <div className="mx-auto mt-2 h-px w-[86%] bg-gradient-to-r from-transparent via-amber-700/50 to-transparent" />
+                    <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center rounded-[8px] border border-white/12 bg-[#142a3b]/38 px-2 py-1.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                        <span className="flex flex-col items-center justify-center">
+                            <span className="text-[5px] font-black uppercase tracking-[0.12em] text-sky-100/72">Ciclos</span>
+                            <strong className="mt-0.5 text-[9px] font-black leading-none tabular-nums text-white">{totalCycles}</strong>
+                        </span>
+                        <span className="mx-1 h-5 w-px bg-gradient-to-b from-transparent via-amber-300/55 to-transparent" />
+                        <span className="flex flex-col items-center justify-center">
+                            <span className="text-[5px] font-black uppercase tracking-[0.12em] text-sky-100/72">Carga</span>
+                            <strong className="mt-0.5 text-[9px] font-black leading-none tabular-nums text-white">{formattedHours}</strong>
+                        </span>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
     const isCompact = compact;
     const showSovereignName = !(isCompact && hideSovereignName);
     const isBannerCompact = isCompact && banner && !portrait;
     const compactPaddingClass = portrait
-        ? 'rounded-[11px] px-1.5 py-3'
+        ? 'rounded-[11px] px-2 py-2.5'
         : isBannerCompact
             ? 'rounded-[10px] px-2 py-1.5'
             : 'rounded-[10px] px-2.5 py-2.5';
     const compactOuterFrameClass = portrait ? 'inset-[4px] rounded-[9px]' : 'inset-[4px] rounded-[8px]';
     const compactInnerFrameClass = portrait ? 'inset-[6px] rounded-[7px]' : isBannerCompact ? 'inset-[6px] rounded-[6px]' : 'inset-[8px] rounded-[6px]';
-    const compactGapClass = portrait ? 'gap-2' : isBannerCompact ? 'gap-1' : 'gap-1.5';
-    const compactRowsClass = portrait ? 'space-y-1.5' : isBannerCompact ? 'space-y-0.5' : 'space-y-1';
-    const compactRowClass = portrait ? 'rounded-[8px] px-1.5 py-2' : isBannerCompact ? 'rounded-[7px] px-1.5 py-1' : 'rounded-[7px] px-2 py-1.5';
+    const compactGapClass = portrait ? 'gap-1.5' : isBannerCompact ? 'gap-1' : 'gap-1.5';
+    const compactRowsClass = portrait ? 'space-y-1' : isBannerCompact ? 'space-y-0.5' : 'space-y-1';
+    const compactRowClass = portrait ? 'rounded-[8px] px-1.5 py-1.5' : isBannerCompact ? 'rounded-[7px] px-1.5 py-1' : 'rounded-[7px] px-2 py-1.5';
     const compactRowGapClass = portrait ? 'gap-1.5' : isBannerCompact ? 'gap-2' : 'gap-2.5';
-    const compactMetricMinHeight = portrait ? 'min-h-[2.7rem]' : isBannerCompact ? 'min-h-[2.05rem]' : 'min-h-[2.45rem]';
+    const compactMetricMinHeight = portrait ? 'min-h-[2.45rem]' : isBannerCompact ? 'min-h-[2.05rem]' : 'min-h-[2.45rem]';
     const compactMetricGapClass = isBannerCompact ? 'gap-0' : 'gap-0.5';
-    const compactLabelSize = portrait ? 'text-[5px]' : isBannerCompact ? 'text-[9px]' : 'text-[6.5px]';
-    const compactValueSize = portrait ? 'text-[0.82rem]' : isBannerCompact ? 'text-[1.32rem]' : 'text-[1rem]';
-    const compactDetailSize = portrait ? 'text-[0.84rem]' : isBannerCompact ? 'text-[1.08rem]' : 'text-[0.84rem]';
+    const compactLabelSize = portrait ? 'text-[6px]' : isBannerCompact ? 'text-[9px]' : 'text-[6.5px]';
+    const compactValueSize = portrait ? 'text-[0.94rem]' : isBannerCompact ? 'text-[1.32rem]' : 'text-[1rem]';
+    const compactDetailSize = portrait ? 'text-[0.9rem]' : isBannerCompact ? 'text-[1.08rem]' : 'text-[0.84rem]';
     const plaqueRows = [
         [
             { label: 'Ciclos', value: totalCycles },
-            { label: 'Carga', value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h` },
+            { label: 'Carga', value: formattedHours },
         ],
         [
-            { label: 'Metas', value: totalSealedMetas },
-            { label: 'Patamar', value: averageGrade, detail: weightedAverageScore },
+            { label: 'Média', value: weightedAverageScore },
+            { label: 'Patamar', value: averageGrade },
         ],
     ] as const;
 
@@ -134,20 +203,23 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                                     className={`flex ${isCompact ? compactMetricMinHeight : 'min-h-[2.15rem]'} ${isCompact ? compactMetricGapClass : 'gap-0.5'} flex-col items-center justify-center text-center ${itemIndex === 1 ? 'border-l pl-2' : ''}`}
                                     style={itemIndex === 1 ? { borderColor: 'rgba(216,180,112,0.18)' } : undefined}
                                 >
-                                    <p className={`${isCompact ? compactLabelSize : 'text-[6px]'} font-black uppercase leading-none tracking-[0.1em]`} style={etchedLabel}>
+                                    <p
+                                        className={`${isCompact ? compactLabelSize : 'text-[6px]'} font-black uppercase leading-none tracking-[0.1em]`}
+                                        style={{ ...etchedLabel, fontFamily: portrait ? 'Inter, system-ui, sans-serif' : undefined }}
+                                    >
                                         {item.label}
                                     </p>
                                     {item.detail !== undefined ? (
                                         <div className="flex flex-col items-center justify-center leading-none">
                                             <p
                                                 className={`${isCompact ? compactValueSize : 'text-[0.98rem]'} font-black leading-none`}
-                                                style={{ ...etchedValue, fontFamily: 'var(--font-heading)' }}
+                                                style={{ ...etchedValue, fontFamily: portrait ? 'Inter, system-ui, sans-serif' : 'var(--font-heading)' }}
                                             >
                                                 {item.value}
                                             </p>
                                             <p
                                                 className={`${isCompact ? `${isBannerCompact ? 'mt-0' : 'mt-0.5'} ${compactDetailSize}` : 'mt-0.5 text-[0.8rem]'} font-black leading-none tracking-[0.03em]`}
-                                                style={{ ...etchedValue, fontFamily: 'var(--font-heading)' }}
+                                                style={{ ...etchedValue, fontFamily: portrait ? 'Inter, system-ui, sans-serif' : 'var(--font-heading)' }}
                                             >
                                                 {item.detail}
                                             </p>
@@ -155,7 +227,7 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                                     ) : (
                                         <p
                                             className={`${isCompact ? compactValueSize : 'text-[0.98rem]'} font-black leading-none`}
-                                            style={{ ...etchedValue, fontFamily: 'var(--font-heading)' }}
+                                            style={{ ...etchedValue, fontFamily: portrait ? 'Inter, system-ui, sans-serif' : 'var(--font-heading)' }}
                                         >
                                             {item.value}
                                         </p>

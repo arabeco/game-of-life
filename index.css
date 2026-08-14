@@ -317,6 +317,37 @@ body {
   background: var(--app-background) !important;
 }
 
+.asset-overview-grid {
+  container-type: size;
+}
+
+.asset-overview-card {
+  width: 74%;
+  max-width: 396px;
+  width: min(74%, 42.24cqh, 396px);
+  aspect-ratio: 2.4 / 1;
+  height: auto;
+  container-type: inline-size;
+}
+
+.asset-overview-title {
+  font-size: clamp(0.68rem, 5.1cqw, 0.94rem);
+}
+
+.asset-overview-stats {
+  grid-template-columns: minmax(3.15rem, 22cqw) minmax(2.8rem, 19cqw) minmax(3.15rem, 22cqw);
+  gap: clamp(0.25rem, 2cqw, 0.5rem);
+}
+
+.asset-overview-stat {
+  width: min(22cqw, 4.5rem);
+}
+
+.asset-overview-emojis {
+  width: min(19cqw, 3.5rem);
+  height: min(18cqw, 3.4rem);
+}
+
 .mode-game.theme-dark .assets-view-shell,
 .mode-game.theme-dark .assets-sephirot-backdrop {
   background: transparent !important;

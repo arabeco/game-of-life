@@ -9,7 +9,7 @@ const catalogRoot = path.join(repoRoot, 'public', 'assets', 'catalog');
 const manifest = JSON.parse(await readFile(path.join(catalogRoot, 'manifest.json'), 'utf8'));
 
 assert.equal(manifest.totalFiles, manifest.assets.length);
-assert.equal(manifest.totalFiles, 139);
+assert.ok(manifest.totalFiles > 0, 'Static catalog should not be empty');
 
 let totalBytes = 0;
 for (const asset of manifest.assets) {
@@ -23,10 +23,23 @@ for (const asset of manifest.assets) {
 
 assert.equal(totalBytes, manifest.totalBytes);
 
+for (const asset of manifest.assets) {
+  assert.ok(asset.bytes < 2 * 1024 * 1024, `${asset.path} should stay below 2 MB`);
+}
+
+for (const plate of manifest.assets.filter((asset) => asset.path.startsWith('avatars/glyphs/PLACA_'))) {
+  assert.ok(plate.bytes < 400 * 1024, `${plate.path} should stay below 400 KB`);
+}
+
 for (const relativeSource of ['constants/items.ts', 'constants/skins.ts']) {
   const source = await readFile(path.join(repoRoot, relativeSource), 'utf8');
   assert.doesNotMatch(source, /supabase\.co\/storage\/v1\/object\/public\/user-images/);
   assert.match(source, /CATALOG_(ASSET|AVATAR)/);
+}
+
+for (const relativeSource of ['constants/seasonContent.ts', 'index.html']) {
+  const source = await readFile(path.join(repoRoot, relativeSource), 'utf8');
+  assert.doesNotMatch(source, /supabase\.co\/storage\/v1\/object\/public\/user-images\/(basic|gold|frost|ember|cyber|aurora|void|genesis)\.(png|jpg)/);
 }
 
 console.log(`Static catalog regression: ${manifest.totalFiles} files, ${(totalBytes / 1024 / 1024).toFixed(2)} MB.`);

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import type { ReportAtlasWeek, ReportAtlasTaskItem } from '../types';
+import { LIFE_AREA_BY_ID, normalizeLifeAreaId } from '../constants/lifeAreas';
 
 interface MiniCyclePlannerSnapshotProps {
     weeks?: ReportAtlasWeek[];
@@ -16,7 +17,10 @@ const TOTAL_MINUTES = END_MINUTE - START_MINUTE;
 
 const palette = ['#EAB308', '#22C55E', '#3B82F6', '#F97316', '#EC4899', '#14B8A6', '#A855F7', '#F43F5E'];
 
-const getArenaColor = (arenaKey: string) => {
+const getArenaColor = (arenaKey: string, areaKey?: string) => {
+    const normalizedArea = normalizeLifeAreaId(areaKey || arenaKey);
+    if (normalizedArea !== 'geral') return LIFE_AREA_BY_ID[normalizedArea].color;
+
     const input = arenaKey || 'glyph';
     let hash = 0;
     for (let index = 0; index < input.length; index += 1) {
@@ -36,8 +40,9 @@ const getTaskStyle = (item: ReportAtlasTaskItem) => {
     return {
         top: `${Math.min(top, 96)}%`,
         height: `${Math.min(height, 32)}%`,
-        backgroundColor: getArenaColor(item.arenaId || item.arenaName),
-        opacity: item.completed ? 0.7 : 1,
+        backgroundColor: getArenaColor(item.arenaId || item.arenaName, item.areaId),
+        opacity: item.completed ? 0.9 : 0.28,
+        boxShadow: item.completed ? '0 0 4px rgba(255,255,255,0.18)' : 'none',
     };
 };
 
@@ -62,6 +67,74 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
         return (
             <div className={`${compact ? 'px-1 py-1.5' : 'rounded-2xl border border-white/10 bg-black/25 p-3'} ${className}`} style={style}>
                 <p className={`${compact ? 'text-[8px] text-gray-600' : 'text-[10px] text-gray-500'} font-black uppercase tracking-[0.22em]`}>Sem planner consolidado</p>
+            </div>
+        );
+    }
+
+    if (compact) {
+        const compactRowHeight = weeks.length <= 1 ? 26 : weeks.length === 2 ? 18 : 12;
+
+        return (
+            <div className={`px-0 py-0 ${className}`} style={style}>
+                <div className="space-y-[2px] overflow-hidden rounded-[6px] border border-white/6 bg-transparent px-[2px] py-[2px]">
+                    {weeks.map((week) => (
+                        <div
+                            key={`${week.weekIndex}-${week.startDate}`}
+                            className="grid items-center gap-[2px]"
+                            style={{ gridTemplateColumns: '12px repeat(7, minmax(0, 1fr))' }}
+                        >
+                            <span className="text-center text-[5px] font-black leading-none text-gray-500">S{week.weekIndex}</span>
+                            {week.days.map((day) => {
+                                const completionRatio = day.plannedCount > 0 ? day.completedCount / day.plannedCount : 0;
+                                const items = [...day.scheduledItems, ...day.unscheduledItems];
+
+                                return (
+                                    <div
+                                        key={day.date}
+                                        className="relative min-w-0 overflow-hidden rounded-[3px] border border-white/8 bg-white/[0.015]"
+                                        style={{ height: `${compactRowHeight}px` }}
+                                        title={`${day.date} - ${day.completedCount}/${day.plannedCount}: ${items.map((item) => `${item.completed ? 'feito' : 'pendente'} ${item.actionName}`).join(', ') || 'sem acoes'}`}
+                                    >
+                                        <div
+                                            className="absolute inset-x-0 bottom-0"
+                                            style={{
+                                                height: `${Math.max(5, completionRatio * 100)}%`,
+                                                background: `linear-gradient(180deg, ${accentColor}18 0%, ${accentColor}4d 100%)`,
+                                            }}
+                                        />
+                                        {weeks.length <= 2 && (
+                                            <span className="absolute left-[1px] top-[1px] z-10 text-[4px] font-black leading-none text-white/40">
+                                                {day.date.slice(-2)}
+                                            </span>
+                                        )}
+                                        {day.scheduledItems.map((item) => (
+                                            <span
+                                                key={item.taskId}
+                                                className="absolute left-[1px] right-[1px] rounded-[1px]"
+                                                style={getTaskStyle(item)}
+                                            />
+                                        ))}
+                                        <div className="absolute inset-x-[1px] bottom-[1px] flex flex-wrap items-end justify-center gap-[1px]">
+                                            {day.unscheduledItems.map((item) => (
+                                                <span
+                                                    key={item.taskId}
+                                                    className="h-[2px] min-w-[2px] flex-1 rounded-full"
+                                                    style={{
+                                                        backgroundColor: getArenaColor(item.arenaId || item.arenaName, item.areaId),
+                                                        opacity: item.completed ? 0.95 : 0.28,
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {Array.from({ length: Math.max(0, 7 - week.days.length) }).map((_, index) => (
+                                <span key={`empty-${index}`} style={{ height: `${compactRowHeight}px` }} />
+                            ))}
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
@@ -103,13 +176,13 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
                                 <div
                                     className={`relative ${compact ? 'h-[26px] rounded-[4px]' : 'h-[88px] rounded-[10px]'} w-full overflow-hidden border border-white/6 bg-white/[0.01]`}
                                     style={{ boxShadow: day.isWeekStart ? `inset 1px 0 0 ${accentColor}` : undefined }}
-                                    title={`${day.date} - ${day.completedCount}/${day.plannedCount}`}
+                                    title={`${day.date} - ${day.completedCount}/${day.plannedCount}: ${[...day.scheduledItems, ...day.unscheduledItems].map((item) => `${item.completed ? 'feito' : 'pendente'} ${item.actionName}`).join(', ') || 'sem acoes'}`}
                                 >
                                     <div
                                         className="absolute inset-x-0 bottom-0 bg-white/5"
                                         style={{ height: `${Math.max(6, completionRatio * 100)}%`, background: `linear-gradient(180deg, ${accentColor}22 0%, ${accentColor}55 100%)` }}
                                     />
-                                    {day.scheduledItems.slice(0, 4).map((item) => (
+                                    {day.scheduledItems.map((item) => (
                                         <div
                                             key={item.taskId}
                                             className="absolute left-[2px] right-[2px] rounded-sm"
@@ -118,11 +191,14 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
                                     ))}
                                     {day.unscheduledItems.length > 0 && (
                                         <div className="absolute inset-x-[2px] bottom-[2px] flex flex-wrap justify-center gap-[2px]">
-                                            {day.unscheduledItems.slice(0, 3).map((item) => (
+                                            {day.unscheduledItems.map((item) => (
                                                 <span
                                                     key={item.taskId}
-                                                    className="h-[4px] w-[4px] rounded-full"
-                                                    style={{ backgroundColor: getArenaColor(item.arenaId || item.arenaName) }}
+                                                    className="h-[3px] min-w-[3px] flex-1 rounded-full"
+                                                    style={{
+                                                        backgroundColor: getArenaColor(item.arenaId || item.arenaName, item.areaId),
+                                                        opacity: item.completed ? 0.95 : 0.3,
+                                                    }}
                                                 />
                                             ))}
                                         </div>

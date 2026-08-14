@@ -954,9 +954,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return { ok: true, chest: chestType };
     }, []);
 
-    const performEndOfCycle = (): { ok: boolean; chest: ChestType | null } => {
+    const performEndOfCycle = async (): Promise<{ ok: boolean; chest: ChestType | null }> => {
         try {
-            const result = endCycleRef.current(assetsRef.current, actionsRef.current);
+            const result = await endCycleRef.current(assetsRef.current, actionsRef.current);
             if (!result?.report) throw new Error('Relatório inválido');
             return primePostCycleResults(result.report, result.expGained);
 
@@ -967,11 +967,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     };
 
-    const finalizeReportGeneration = () => {
-        const outcome = performEndOfCycle();
-        if (outcome.ok) {
-            setView('results');
-        }
+    const finalizeReportGeneration = async () => {
+        const outcome = await performEndOfCycle();
+        if (!outcome.ok) throw new Error('Nao foi possivel selar o ciclo.');
         return outcome;
     };
 
@@ -997,7 +995,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
             // Fallback for NO animations (Legacy behavior)
             const timer = window.setTimeout(() => {
-                finalizeReportGeneration();
+                void finalizeReportGeneration()
+                    .then(() => setView('results'))
+                    .catch(() => undefined);
             }, 3000);
             return () => window.clearTimeout(timer);
         }
@@ -1414,6 +1414,29 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return segments;
     }, [sortedReports, normalizedEraBreaks]);
     const eraSummaries = useMemo<LegacyEraSummary[]>(() => {
+        const arenaAreaById = new Map<string, string>();
+        assets.forEach((asset) => {
+            asset.arenas.forEach((arena) => arenaAreaById.set(arena.id, asset.id));
+        });
+        const enrichAtlasAreas = (weeks: Report['metrics']['weeklyAtlas']) => (weeks || []).map((week) => ({
+            ...week,
+            days: week.days.map((day) => ({
+                ...day,
+                arenaBuckets: day.arenaBuckets.map((bucket) => ({
+                    ...bucket,
+                    areaId: bucket.areaId || arenaAreaById.get(bucket.arenaId),
+                })),
+                scheduledItems: day.scheduledItems.map((item) => ({
+                    ...item,
+                    areaId: item.areaId || arenaAreaById.get(item.arenaId),
+                })),
+                unscheduledItems: day.unscheduledItems.map((item) => ({
+                    ...item,
+                    areaId: item.areaId || arenaAreaById.get(item.arenaId),
+                })),
+            })),
+        }));
+
         return eraSegments.map((segment, index) => {
             const segmentReports = sortedReports.slice(segment.start, segment.end + 1);
             const newestReport = segmentReports[0];
@@ -1429,8 +1452,24 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             const actionCounts = new Map<string, number>();
 
             segmentReports.forEach((report) => {
-                const arenaName = report.highlight?.mostFocusedArena?.trim() || 'Sem arena dominante';
-                arenaCounts.set(arenaName, (arenaCounts.get(arenaName) || 0) + 1);
+                const completedByArena = new Map<string, number>();
+                (report.metrics.weeklyAtlas || []).forEach((week) => {
+                    week.days.forEach((day) => {
+                        day.arenaBuckets.forEach((bucket) => {
+                            const arenaName = bucket.arenaName?.trim() || 'Sem arena dominante';
+                            completedByArena.set(arenaName, (completedByArena.get(arenaName) || 0) + Math.max(0, bucket.completed || 0));
+                        });
+                    });
+                });
+
+                if (completedByArena.size > 0) {
+                    completedByArena.forEach((completed, arenaName) => {
+                        arenaCounts.set(arenaName, (arenaCounts.get(arenaName) || 0) + completed);
+                    });
+                } else {
+                    const arenaName = report.highlight?.mostFocusedArena?.trim() || 'Sem arena dominante';
+                    arenaCounts.set(arenaName, (arenaCounts.get(arenaName) || 0) + 1);
+                }
 
                 const dominantActions = report.metrics.top3Actions && report.metrics.top3Actions.length > 0
                     ?report.metrics.top3Actions
@@ -1488,7 +1527,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     signatureAction: report.metrics.top3Actions?.[0]?.name || report.highlight?.mostRepeatedAction || 'Nenhuma',
                     plannedMetas: report.metrics.plannedMetas,
                     sealedMetas: report.metrics.sealedMetas ?? report.metrics.goalsMet ?? 0,
-                    weeklyAtlas: report.metrics.weeklyAtlas || [],
+                    weeklyAtlas: enrichAtlasAreas(report.metrics.weeklyAtlas),
                     identitySnapshot: report.identitySnapshot,
                 }));
 
@@ -1515,7 +1554,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 color,
             };
         });
-    }, [eraMetadata, eraSegments, sortedReports, userProfile]);
+    }, [assets, eraMetadata, eraSegments, sortedReports, userProfile]);
     const reportEraSummaryByIndex = useMemo(() => {
         const map = new Map<number, LegacyEraSummary>();
         eraSegments.forEach((segment, index) => {
@@ -2442,9 +2481,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     return (
                         <Suspense fallback={<div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20"><p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatorio...</p></div>}>
                             <ReportGenerationModal
-                                onFinish={() => {
-                                    finalizeReportGeneration();
-                                }}
+                                onFinish={finalizeReportGeneration}
+                                onComplete={() => setView('results')}
                             />
                         </Suspense>
                     );
@@ -2813,6 +2851,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <LegacyProjectionModal
                     eras={eraSummaries}
                     sovereignName={sovereignName}
+                    fallbackIdentity={legacyFallbackIdentity}
                     onToast={showToast}
                     onClose={() => setShowLegacyProjectionModal(false)}
                     isPremium={hasPremiumAccess(userProfile)}

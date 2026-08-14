@@ -70,15 +70,15 @@ export const LegacyCycleCard: React.FC<LegacyCycleCardProps> = ({
                     <span className="legacy-cycle-card__metric-value">{progress}%</span>
                 </div>
                 <div className="legacy-cycle-card__metric">
-                    <span className="legacy-cycle-card__metric-label">Horas/Ações</span>
+                    <span className="legacy-cycle-card__metric-label">Carga</span>
                     <span className="legacy-cycle-card__metric-value">{formatHours(totalHours)}h · {totalActions}</span>
                 </div>
                 <div className="legacy-cycle-card__metric">
-                    <span className="legacy-cycle-card__metric-label">Horas/dia</span>
+                    <span className="legacy-cycle-card__metric-label">Ritmo</span>
                     <span className="legacy-cycle-card__metric-value">{avgHoursPerDay.toFixed(1)}</span>
                 </div>
                 <div className="legacy-cycle-card__metric">
-                    <span className="legacy-cycle-card__metric-label">Streak/Dias</span>
+                    <span className="legacy-cycle-card__metric-label">Sequência</span>
                     <span className="legacy-cycle-card__metric-value">{maxStreak} · {activeDays}</span>
                 </div>
             </div>

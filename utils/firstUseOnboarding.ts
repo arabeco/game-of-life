@@ -1,6 +1,6 @@
 import { UserProfile } from '../types';
 
-export const FIRST_USE_ONBOARDING_VERSION = 'operational-v1';
+export const FIRST_USE_ONBOARDING_VERSION = 'simple-start-v2';
 
 export const FIRST_USE_ONBOARDING_EVENTS = {
   cycleSetupOpened: 'glyph:first-use-cycle-setup-opened',

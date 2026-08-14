@@ -32,6 +32,7 @@ import {
     getSeasonTransitionStorageKey,
     resolveRuntimeSeasonTransition,
 } from '../utils/seasonPresentation';
+import { didProfileExistBeforeSeason } from '../utils/seasonTransitionEligibility';
 import { getActiveSubscriptionTier, getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 import { getGoldMembershipProductByTier, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
@@ -298,8 +299,15 @@ const GlobalSeasonTransitionGate: React.FC<{ enabled: boolean }> = ({ enabled })
 
         if (window.localStorage.getItem(storageKey) === 'seen') return;
 
+        // Quem entrou durante a temporada atual nao viveu a passagem anterior.
+        if (!didProfileExistBeforeSeason(userProfile.createdAt, runtimeTransition.toSeason.startDate)) {
+            window.localStorage.setItem(storageKey, 'seen');
+            addProfileFlag(seenFlag);
+            return;
+        }
+
         setPendingTransition(runtimeTransition);
-    }, [enabled, pendingTransition, seasons, userProfile.completedSeasonMissions, userProfile.id]);
+    }, [addProfileFlag, enabled, pendingTransition, seasons, userProfile.completedSeasonMissions, userProfile.createdAt, userProfile.id]);
 
     const handleClose = useCallback(() => {
         if (typeof window !== 'undefined' && pendingTransition) {
@@ -323,7 +331,7 @@ const GlobalSeasonTransitionGate: React.FC<{ enabled: boolean }> = ({ enabled })
         setPendingTransition(null);
     }, [addProfileFlag, pendingTransition, showToast, userProfile.id]);
 
-    if (!pendingTransition) return null;
+    if (!enabled || !pendingTransition) return null;
 
     return (
         <Suspense fallback={null}>
@@ -336,13 +344,14 @@ const GlobalSeasonTransitionGate: React.FC<{ enabled: boolean }> = ({ enabled })
     );
 };
 
-const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTransition?: boolean; suppressScreenIntroTips?: boolean }> = ({
+const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTransition?: boolean; suppressScreenIntroTips?: boolean; onBlockingOverlayChange?: (visible: boolean) => void }> = ({
     defaultRestScreenOpen = true,
     allowSeasonTransition = true,
     suppressScreenIntroTips = false,
+    onBlockingOverlayChange,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, appMode, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, updateUserProfile } = useGame();
+    const { userProfile, appMode, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile } = useGame();
     const historyReady = useRef(false);
 
     const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
@@ -351,7 +360,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const availableViews = useMemo(() => getAvailableViews(canUseAssetsView, isBuilderMode), [canUseAssetsView, isBuilderMode]);
     const [currentView, setCurrentView] = useState<View>(() => {
         if (isBuilderMode) return 'arenas';
-        return defaultRestScreenOpen ? 'planner' : getDefaultView(canUseAssetsView, isBuilderMode);
+        return getDefaultView(canUseAssetsView, isBuilderMode);
     });
     const [isRestScreenVisible, setRestScreenVisible] = useState(defaultRestScreenOpen);
     const [viewTransitionKind, setViewTransitionKind] = useState<ViewTransitionKind>('rest');
@@ -359,7 +368,9 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
     const [dailyCompletionPrompt, setDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
+    const [pendingDailyCompletionPrompt, setPendingDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
     const [pendingSitrepOpen, setPendingSitrepOpen] = useState(false);
+    const [pendingSitrepDate, setPendingSitrepDate] = useState<string | null>(null);
     const [screenTipsEnabled, setScreenTipsEnabled] = useState(() => areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []));
     const [activeScreenTipId, setActiveScreenTipId] = useState<ScreenIntroTipId | null>(null);
     const [screenIntroContextId, setScreenIntroContextId] = useState<ScreenIntroTipId | null>(null);
@@ -367,6 +378,16 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const previousViewRef = useRef<View>(currentView);
     const previousRestVisibilityRef = useRef(isRestScreenVisible);
     const hasInitializedViewTransitionRef = useRef(false);
+
+    useEffect(() => {
+        onBlockingOverlayChange?.(Boolean(
+            isRestScreenVisible ||
+            isProfileVisible ||
+            isReportsVisible ||
+            dailyCompletionPrompt ||
+            activeScreenTipId
+        ));
+    }, [activeScreenTipId, dailyCompletionPrompt, isProfileVisible, isReportsVisible, isRestScreenVisible, onBlockingOverlayChange]);
 
     useEffect(() => {
         void updateInstalledAppBadge(unreadNotificationsCount);
@@ -661,11 +682,27 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             const customEvent = event as CustomEvent<DailyCompletionPromptPayload>;
             if (!customEvent.detail) return;
             if (customEvent.detail.kind === 'task') return;
-            setDailyCompletionPrompt(customEvent.detail);
+            setPendingDailyCompletionPrompt(customEvent.detail);
+        };
+
+        const handleDailyPanelOpened = (event: Event) => {
+            const detail = (event as CustomEvent<{ date?: string | null }>).detail;
+            setPendingDailyCompletionPrompt((pending) => {
+                setDailyCompletionPrompt(pending || {
+                    kind: 'sitrep',
+                    date: detail?.date || null,
+                    timestamp: Date.now(),
+                });
+                return null;
+            });
         };
 
         window.addEventListener(DAILY_COMPLETION_PROMPT_EVENT, handleDailyCompletionPrompt as EventListener);
-        return () => window.removeEventListener(DAILY_COMPLETION_PROMPT_EVENT, handleDailyCompletionPrompt as EventListener);
+        window.addEventListener('glyph:daily-panel-opened', handleDailyPanelOpened);
+        return () => {
+            window.removeEventListener(DAILY_COMPLETION_PROMPT_EVENT, handleDailyCompletionPrompt as EventListener);
+            window.removeEventListener('glyph:daily-panel-opened', handleDailyPanelOpened);
+        };
     }, []);
 
     useEffect(() => {
@@ -689,12 +726,15 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         if (!pendingSitrepOpen || currentView !== 'planner') return;
 
         const timer = window.setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('openSitrep'));
+            window.dispatchEvent(new CustomEvent('openSitrep', {
+                detail: { date: pendingSitrepDate },
+            }));
             setPendingSitrepOpen(false);
+            setPendingSitrepDate(null);
         }, 180);
 
         return () => window.clearTimeout(timer);
-    }, [currentView, pendingSitrepOpen]);
+    }, [currentView, pendingSitrepDate, pendingSitrepOpen]);
 
     useEffect(() => {
         if (currentView !== 'planner' || isRestScreenVisible || userProfile.id === 'placeholder_user') return;
@@ -892,10 +932,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
     useEffect(() => {
         const state = window.history.state as { view?: View } | null;
-        const initialView = sanitizeView(state?.view ?? currentView, canUseAssetsView, isBuilderMode);
-        if (initialView !== currentView) {
-            setCurrentView(initialView);
-        }
+        // Every fresh app session starts from the product home. History remains
+        // available for navigation after this initial replacement.
+        const initialView = getDefaultView(canUseAssetsView, isBuilderMode);
+        setCurrentView(initialView);
         if (state?.view !== initialView) {
             window.history.replaceState({ ...(state ?? {}), view: initialView }, '');
         }
@@ -995,12 +1035,13 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     };
 
     const handleOpenSitrepFromPrompt = useCallback(() => {
+        setPendingSitrepDate(dailyCompletionPrompt?.date || null);
         setDailyCompletionPrompt(null);
         setPendingSitrepOpen(true);
         setRestScreenVisible(false);
         window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
         handleSetView('planner');
-    }, [handleSetView]);
+    }, [dailyCompletionPrompt?.date, handleSetView]);
 
     const renderView = () => {
         if (defaultRestScreenOpen && isRestScreenVisible) {
@@ -1154,7 +1195,17 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 onRestScreenVisibilityChange={setRestScreenVisible}
             />
             <TutorialBridge />
-            <GlobalSeasonTransitionGate enabled={allowSeasonTransition} />
+            <GlobalSeasonTransitionGate
+                enabled={
+                    allowSeasonTransition &&
+                    !isRestScreenVisible &&
+                    !activeScreenTipId &&
+                    !dailyCompletionPrompt &&
+                    !isProfileVisible &&
+                    !isReportsVisible &&
+                    !achievementUnlocked
+                }
+            />
 
             <main className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ paddingTop: mainPaddingTop, paddingBottom: mainPaddingBottom }}>
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col overflow-hidden">
@@ -1178,7 +1229,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
             <Suspense fallback={null}>
                 <ScreenIntroTipOverlay
-                    open={!suppressScreenIntroTips && !!activeScreenTipId}
+                    open={!suppressScreenIntroTips && !achievementUnlocked && !!activeScreenTipId}
                     tipId={activeScreenTipId}
                     onClose={handleCloseScreenIntroTip}
                 />
@@ -1236,6 +1287,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ?true : navigator.onLine);
     const { trigger } = useSensoryFeedback();
     const [forceShowTerms, setForceShowTerms] = useState(false);
+    const [isInnerBlockingOverlayVisible, setInnerBlockingOverlayVisible] = useState(false);
     const [goldShortagePrompt, setGoldShortagePrompt] = useState<{
         requiredGold: number;
         currentGold: number;
@@ -1357,8 +1409,20 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 case 'campaign_complete':
                     trigger('level_up');
                     break;
-                case 'cycle_complete':
+                case 'cycle_seal_start':
+                    trigger('whoosh');
+                    break;
+                case 'report_chapter':
+                    trigger('click_soft');
+                    break;
+                case 'report_verdict':
+                    trigger('success');
+                    break;
+                case 'report_reward':
                     trigger('fanfare');
+                    break;
+                case 'cycle_complete':
+                    trigger('success');
                     break;
             }
         };
@@ -1454,9 +1518,9 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialNavigate', {
                 detail: {
-                    view: 'planner',
+                    view: 'assets',
                     showReports: false,
-                    showRestScreen: true,
+                    showRestScreen: false,
                     showArenaId: null,
                 },
             }));
@@ -1778,8 +1842,29 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             {!requiresTermsAcceptance && (
                 <AppWithTutorial
                     defaultRestScreenOpen={shouldOpenRestByDefault}
-                    allowSeasonTransition={shouldAllowSeasonTransition}
-                    suppressScreenIntroTips={isFirstUseOnboardingActive || onboardingShownInSession || isOnboardingPushBusy}
+                    onBlockingOverlayChange={setInnerBlockingOverlayVisible}
+                    allowSeasonTransition={
+                        shouldAllowSeasonTransition &&
+                        !claimToken &&
+                        !shouldShowVanguardWelcome &&
+                        !shouldShowPremiumReward &&
+                        !shouldShowBetaReward &&
+                        !shouldShowPremiumRenewalOffer &&
+                        !shouldShowAppBroadcast &&
+                        !goldShortagePrompt
+                    }
+                    suppressScreenIntroTips={
+                        isFirstUseOnboardingActive ||
+                        onboardingShownInSession ||
+                        isOnboardingPushBusy ||
+                        !!claimToken ||
+                        shouldShowVanguardWelcome ||
+                        shouldShowPremiumReward ||
+                        shouldShowBetaReward ||
+                        shouldShowPremiumRenewalOffer ||
+                        shouldShowAppBroadcast ||
+                        !!goldShortagePrompt
+                    }
                 />
             )}
             <Suspense fallback={null}>
@@ -1897,7 +1982,16 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             </Suspense>
             <Suspense fallback={null}>
                 <OracleSpeechOverlay />
-                {achievementUnlocked && (
+                {achievementUnlocked &&
+                    !showTerms &&
+                    !isFirstUseOnboardingActive &&
+                    !claimToken &&
+                    !shouldShowVanguardWelcome &&
+                    !shouldShowPremiumReward &&
+                    !shouldShowBetaReward &&
+                    !shouldShowPremiumRenewalOffer &&
+                    !shouldShowAppBroadcast &&
+                    !isInnerBlockingOverlayVisible && (
                     <AchievementModal
                         achievement={achievementUnlocked}
                         onClose={() => setAchievementUnlocked(null)}

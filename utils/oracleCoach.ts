@@ -1,5 +1,19 @@
+import type { OracleContext } from '../types';
+
 export type OracleCoachPace = 'adiantado' | 'no_ritmo' | 'atrasado' | 'critico' | null;
 export type OracleCoachArenaPace = OracleCoachPace | 'sem_medida';
+
+export type OracleCycleCoachAction =
+  | { id: string; label: string; kind: 'open_planner' }
+  | { id: string; label: string; kind: 'open_cycle' }
+  | { id: string; label: string; kind: 'open_arenas' }
+  | { id: string; label: string; kind: 'open_arena'; arenaId: string };
+
+export interface OracleCycleCoachBrief {
+  id: string;
+  content: string;
+  quickActions: OracleCycleCoachAction[];
+}
 
 export interface PlannerCoachContext {
   arenasCount: number;
@@ -77,8 +91,8 @@ export const buildPlannerCoachSpeech = (
 
   if (daysSinceLastProof !== null && daysSinceLastProof >= 3) {
     return pickLine([
-      `Faz ${daysSinceLastProof} dias desde sua ultima prova fechada. Talvez hoje seja dia de reduzir a carga e fechar uma acao pequena.`,
-      `A sequencia esfriou um pouco. Nao precisa voltar perfeito: uma prova real hoje ja recoloca o ciclo em movimento.`,
+      `Faz ${daysSinceLastProof} dias desde sua ultima conclusao. Talvez hoje seja dia de reduzir a carga e fechar uma acao pequena.`,
+      `A sequencia esfriou um pouco. Nao precisa voltar perfeito: uma acao concluida hoje ja recoloca o ciclo em movimento.`,
     ], random);
   }
 
@@ -125,4 +139,122 @@ export const buildPlannerCoachSpeech = (
   }
 
   return null;
+};
+
+const openFocusedArena = (context: OracleContext): OracleCycleCoachAction | null => {
+  if (!context.focusArenaSignal) return null;
+  return {
+    id: `coach-open-arena:${context.focusArenaSignal.arenaId}`,
+    label: `Abrir ${context.focusArenaSignal.arenaName}`,
+    kind: 'open_arena',
+    arenaId: context.focusArenaSignal.arenaId,
+  };
+};
+
+const compactActions = (
+  actions: Array<OracleCycleCoachAction | null>,
+): OracleCycleCoachAction[] => actions.filter((action): action is OracleCycleCoachAction => Boolean(action)).slice(0, 2);
+
+export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleCoachBrief => {
+  const focusArena = context.focusArenaSignal;
+  const progress = Math.max(0, Math.round(context.cycleCompletionPercent || 0));
+  const expected = Math.max(0, Math.round(context.expectedCycleCompletionPercent || 0));
+  const completed = Math.max(0, context.cycleCompletedActions);
+  const total = Math.max(0, context.cycleTotalActions);
+  const pending = Math.max(0, context.cyclePendingActions);
+
+  if (!context.hasArenas) {
+    return {
+      id: 'coach:first-arena',
+      content: 'Vamos comecar pequeno. Escolha uma frente importante da sua vida e crie uma arena com uma acao que realmente caiba na sua semana.',
+      quickActions: [{ id: 'coach-open-arenas', label: 'Criar primeira arena', kind: 'open_arenas' }],
+    };
+  }
+
+  if (!context.hasCycle) {
+    return {
+      id: 'coach:start-cycle',
+      content: `Voce ja tem ${context.totalArenas} arena${context.totalArenas === 1 ? '' : 's'}. Agora escolha uma rodada curta para transformar intencao em ritmo. Sete dias ja bastam para aprender o que cabe de verdade.`,
+      quickActions: [
+        { id: 'coach-open-cycle', label: 'Montar ciclo', kind: 'open_cycle' },
+        { id: 'coach-open-arenas', label: 'Rever arenas', kind: 'open_arenas' },
+      ],
+    };
+  }
+
+  if ((total > 0 && pending === 0) || progress >= 100) {
+    return {
+      id: `coach:cycle-ready:${context.cycleName || 'active'}`,
+      content: `Voce concluiu o que estava medido neste ciclo. Antes de abrir outra rodada, feche este ciclo e registre o que funcionou.`,
+      quickActions: [{ id: 'coach-open-cycle', label: 'Fechar ciclo', kind: 'open_cycle' }],
+    };
+  }
+
+  if (total === 0) {
+    return {
+      id: `coach:unmeasured:${focusArena?.arenaId || 'cycle'}`,
+      content: focusArena
+        ? `${focusArena.arenaName} ainda nao tem uma meta mensuravel neste ciclo. Se quiser acompanhar o ritmo, defina uma repeticao minima que seja honesta.`
+        : 'Este ciclo ainda nao tem uma meta mensuravel. Escolha uma acao pequena para saber o que significa avancar.',
+      quickActions: compactActions([
+        openFocusedArena(context),
+        { id: 'coach-open-arenas', label: 'Ver arenas', kind: 'open_arenas' },
+      ]),
+    };
+  }
+
+  if (context.cycleDaysRemaining === 0 && pending > 0) {
+    return {
+      id: `coach:last-day:${context.cycleName || 'active'}:${pending}`,
+      content: `O ciclo chegou ao ultimo dia com ${pending} acao${pending === 1 ? '' : 'es'} pendente${pending === 1 ? '' : 's'}. Nao precisa fingir um fechamento perfeito: faca o que ainda cabe e encerre com uma leitura honesta.`,
+      quickActions: [
+        { id: 'coach-open-planner', label: 'Ver o que ainda cabe', kind: 'open_planner' },
+        { id: 'coach-open-cycle', label: 'Rever ciclo', kind: 'open_cycle' },
+      ],
+    };
+  }
+
+  if (context.cyclePace === 'atrasado' || context.cyclePace === 'critico') {
+    const arenaLine = focusArena
+      ? ` ${focusArena.arenaName} pede mais atencao agora.`
+      : '';
+    return {
+      id: `coach:behind:${focusArena?.arenaId || 'cycle'}:${context.cycleDayNumber || 0}`,
+      content: `Seu ciclo esta em ${progress}%, enquanto o tempo percorrido aponta cerca de ${expected}%.${arenaLine} Em vez de tentar compensar tudo, escolha uma acao real ou reduza uma meta que deixou de fazer sentido.`,
+      quickActions: compactActions([
+        openFocusedArena(context),
+        { id: 'coach-open-planner', label: 'Escolher uma acao', kind: 'open_planner' },
+      ]),
+    };
+  }
+
+  if (completed === 0) {
+    return {
+      id: `coach:first-proof:${context.cycleName || 'active'}`,
+      content: `O ciclo comecou, mas ainda falta a primeira conclusao. Nao tente resolver a semana inteira agora: escolha a menor acao que coloca o ciclo em movimento hoje.`,
+      quickActions: [
+        { id: 'coach-open-planner', label: 'Escolher primeira acao', kind: 'open_planner' },
+      ],
+    };
+  }
+
+  if (context.cyclePace === 'adiantado') {
+    return {
+      id: `coach:ahead:${context.cycleDayNumber || 0}:${completed}`,
+      content: `Boa: voce concluiu ${completed} de ${total} acoes e esta adiantado no ciclo. Proteja esse ritmo sem transformar a vantagem em carga extra.`,
+      quickActions: [{ id: 'coach-open-cycle', label: 'Ver andamento', kind: 'open_cycle' }],
+    };
+  }
+
+  const priorityLine = context.priorityActionName
+    ? ` Que tal ${context.priorityActionName} hoje?`
+    : ' Escolha uma acao que mantenha o fio sem pesar o dia.';
+  return {
+    id: `coach:on-pace:${context.cycleDayNumber || 0}:${completed}`,
+    content: `Voce concluiu ${completed} de ${total} acoes e esta acompanhando o ritmo do ciclo.${priorityLine}`,
+    quickActions: [
+      { id: 'coach-open-planner', label: 'Abrir Planner', kind: 'open_planner' },
+      { id: 'coach-open-cycle', label: 'Ver ciclo', kind: 'open_cycle' },
+    ],
+  };
 };

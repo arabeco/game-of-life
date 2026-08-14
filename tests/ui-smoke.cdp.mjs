@@ -167,6 +167,23 @@ async function clickSelector(selector) {
   }
 }
 
+async function clickButtonByText(text) {
+  const ok = await evaluate(`(() => {
+    const needle = ${JSON.stringify(text)}.trim().toLowerCase();
+    const target = Array.from(document.querySelectorAll('button')).find(node => {
+      const content = (node.innerText || node.textContent || '').trim().toLowerCase();
+      return node instanceof HTMLElement && node.offsetParent !== null && content.includes(needle);
+    });
+    if (!(target instanceof HTMLButtonElement)) return false;
+    target.scrollIntoView({ block: 'center', inline: 'center' });
+    target.click();
+    return true;
+  })()`);
+  if (!ok) {
+    throw new Error(`Could not click button text: ${text}\n\n${await bodyText()}`);
+  }
+}
+
 async function setField(placeholder, value) {
   const ok = await evaluate(`(() => {
     const needle = ${JSON.stringify(placeholder)}.toLowerCase();
@@ -301,6 +318,30 @@ try {
   })()`);
   await sleep(1000);
 
+  await clickSelector('#nav-assets');
+  await waitFor('assets overview', `(() => document.querySelectorAll('[data-testid="asset-overview-card"]').length === 5)()`, 15000);
+  const assetsLayout = await evaluate(`(() => {
+    const cards = Array.from(document.querySelectorAll('[data-testid="asset-overview-card"]'));
+    return cards.map((card) => {
+      const rect = card.getBoundingClientRect();
+      return { width: rect.width, height: rect.height, ratio: rect.width / Math.max(1, rect.height) };
+    });
+  })()`);
+  if (!Array.isArray(assetsLayout) || assetsLayout.some((card) => card.ratio < 2.3 || card.ratio > 2.5)) {
+    throw new Error(`Assets cards lost their responsive aspect ratio: ${JSON.stringify(assetsLayout)}`);
+  }
+  const headerMasteryIndex = await evaluate(`document.querySelector('[data-testid="header-mastery-index"]')?.textContent?.trim()`);
+  if (headerMasteryIndex !== '10') {
+    throw new Error(`Header mastery index should use the 100-point scale: ${headerMasteryIndex}`);
+  }
+  checkpoints.push('assets-responsive-level-100');
+
+  await clickSelector('#header-oracle');
+  await waitFor('oracle feed', `(() => document.querySelector('[data-testid="oracle-feed"]') instanceof HTMLElement)()`, 10000);
+  checkpoints.push('header-oracle-open');
+  await clickSelector('#oracle-feed-backdrop');
+  await sleep(300);
+
   await clickSelector('#nav-arenas');
   await waitFor('arenas nav', `(() => document.querySelector('#new-action-button') instanceof HTMLElement)()`, 15000);
   checkpoints.push('arenas-open');
@@ -327,6 +368,43 @@ try {
   await clickSelector('#sitrep-button');
   await waitFor('sitrep modal', `(() => document.body && document.body.innerText.toUpperCase().includes('RESUMO DIARIO'))()`, 10000);
   checkpoints.push('sitrep-open');
+
+  await pressEscape();
+  await sleep(400);
+  await clickSelector('#nav-settings');
+  await waitFor('settings view', `(() => document.body && document.body.innerText.includes('Preferências'))()`, 15000);
+  await clickSelector('#settings-tab-preferencias');
+  await waitFor('preferences tab', `(() => document.body && document.body.innerText.includes('Interface & Som'))()`, 10000);
+  await clickSelector('#interface-settings-selector');
+  await waitFor('planner view preference', `(() => document.body && document.body.innerText.includes('LISTA SIMPLES'))()`, 10000);
+  await clickSelector('#planner-view-mode-toggle');
+  await sleep(800);
+  const { data: plannerProfile, error: plannerProfileError } = await user.client
+    .from('user_profiles')
+    .select('planner_view_mode')
+    .eq('id', session.user.id)
+    .single();
+  if (plannerProfileError || plannerProfile?.planner_view_mode !== 'list') {
+    throw new Error(`Planner preference was not persisted: ${plannerProfileError?.message || plannerProfile?.planner_view_mode || 'missing'}`);
+  }
+  checkpoints.push('planner-simple-list-saved');
+
+  await clickSelector('#ui-preferences-close');
+  await clickSelector('#nav-planner');
+  await waitFor(
+    'planner simple list',
+    `(() => document.querySelector('[data-testid="planner-simple-list"]') instanceof HTMLElement && !document.querySelector('[data-testid="daily-timeline"]'))()`,
+    15000,
+  );
+  checkpoints.push('planner-simple-list-open');
+
+  await clickSelector('#view-mode-selector button[aria-label="Semana"]');
+  await waitFor(
+    'planner simple week',
+    `(() => document.querySelector('[data-testid="planner-simple-week"]') instanceof HTMLElement && document.querySelectorAll('[data-testid="planner-simple-list"]').length === 7)()`,
+    15000,
+  );
+  checkpoints.push('planner-simple-week-open');
 
   console.log(JSON.stringify({ success: true, email: user?.email || null, arenaName, actionName, checkpoints }, null, 2));
 } catch (error) {

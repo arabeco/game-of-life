@@ -48,6 +48,29 @@ const buildFallbackIdentity = (sovereignName: string, fallbackIdentity?: ReportI
     capturedAt: fallbackIdentity?.capturedAt || new Date().toISOString(),
 });
 
+const resolveLegacyIdentity = (
+    sovereignName: string,
+    fallbackIdentity?: ReportIdentitySnapshot,
+    snapshot?: ReportIdentitySnapshot,
+): ReportIdentitySnapshot => {
+    const fallback = buildFallbackIdentity(sovereignName, fallbackIdentity);
+    if (!snapshot) return fallback;
+
+    return {
+        ...fallback,
+        ...snapshot,
+        avatarUrl: snapshot.avatarUrl?.trim() || fallback.avatarUrl,
+        nickname: snapshot.nickname?.trim() || fallback.nickname,
+        title: snapshot.title?.trim() || fallback.title,
+        nobilityRankId: snapshot.nobilityRankId || fallback.nobilityRankId,
+        nobilityRankName: snapshot.nobilityRankName?.trim() || fallback.nobilityRankName,
+        clanName: snapshot.clanName !== undefined ? snapshot.clanName : fallback.clanName,
+        clanIcon: snapshot.clanIcon !== undefined ? snapshot.clanIcon : fallback.clanIcon,
+        clanRankName: snapshot.clanRankName !== undefined ? snapshot.clanRankName : fallback.clanRankName,
+        capturedAt: snapshot.capturedAt || fallback.capturedAt,
+    };
+};
+
 const identityKey = (identity: ReportIdentitySnapshot) => [
     identity.nickname || '',
     identity.title || '',
@@ -68,7 +91,7 @@ const buildLegacyCycleMetrics = (cycle: LegacyEraSummary['cycles'][number]) => {
     const totalPlanned = days.reduce((sum, day) => sum + (day.plannedCount || 0), 0);
     const totalCompleted = days.reduce((sum, day) => sum + (day.completedCount || 0), 0);
     const totalMinutes = days.reduce((sum, day) => sum + (day.completedMinutes || 0), 0);
-    const activeDays = days.filter((day) => (day.completedCount || 0) > 0 || (day.plannedCount || 0) > 0).length;
+    const activeDays = days.filter((day) => (day.completedCount || 0) > 0).length;
     const progress = totalPlanned > 0 ? Math.round((totalCompleted / totalPlanned) * 100) : 100;
     const hours = totalMinutes / 60;
     const actionsPerDay = activeDays > 0 ? (totalCompleted / activeDays) : 0;
@@ -200,7 +223,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     }, [eras]);
 
     const activeEntry = cycleEntries.find((entry) => entry.cycle.id === activeCycleId) || cycleEntries[0];
-    const activeIdentity = activeEntry?.cycle.identitySnapshot || buildFallbackIdentity(sovereignName, fallbackIdentity);
+    const activeIdentity = resolveLegacyIdentity(sovereignName, fallbackIdentity, activeEntry?.cycle.identitySnapshot);
     const activeIndex = cycleEntries.findIndex((entry) => entry.cycle.id === activeCycleId);
 
     const jumpToCycle = (nextIndex: number) => {
@@ -293,8 +316,10 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         const currentIndex = activeIndex >= 0 ? activeIndex : 0;
         const currentEntry = cycleEntries[currentIndex];
         const nextEntry = cycleEntries[currentIndex + 1];
-        const currentIdentity = currentEntry?.cycle.identitySnapshot || buildFallbackIdentity(sovereignName, fallbackIdentity);
-        const nextIdentity = nextEntry?.cycle.identitySnapshot || currentIdentity;
+        const currentIdentity = resolveLegacyIdentity(sovereignName, fallbackIdentity, currentEntry?.cycle.identitySnapshot);
+        const nextIdentity = nextEntry
+            ? resolveLegacyIdentity(sovereignName, fallbackIdentity, nextEntry.cycle.identitySnapshot)
+            : currentIdentity;
         const eraChanged = !!currentEntry && !!nextEntry && currentEntry.era.key !== nextEntry.era.key;
         const identityChanged = identityKey(currentIdentity) !== identityKey(nextIdentity);
         const importantScore = (nextEntry?.cycle.score || currentEntry?.cycle.score || 0) >= 90;
@@ -465,6 +490,8 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         interactiveNode: boolean,
     ) => {
         const scoreInfo = getScoreGrade(cycle.score);
+        const persistedGrade = cycle.grade?.trim().toUpperCase();
+        const displayGrade = persistedGrade || scoreInfo.grade;
         const cycleMetrics = buildLegacyCycleMetrics(cycle);
         const isFocused = cycle.id === activeCycleId;
         const baseClass = 'shrink-0 rounded-[12px] border border-white/0 bg-transparent p-0 text-left transition-all opacity-100';
@@ -472,7 +499,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         const cycleContent = (
             <div className="flex w-[188px] flex-col items-center gap-0.5">
                 <LegacyCycleCard
-                    rank={scoreInfo.grade}
+                    rank={displayGrade}
                     score={cycle.score}
                     title={cycle.name}
                     startDate={cycle.startDate}
@@ -806,13 +833,15 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                                     >
                                         {displayNickname}
                                     </h3>
-                                    <div className="mt-1 flex flex-nowrap gap-1.5 overflow-hidden">
-                                        <span className="truncate rounded-full border border-white/10 bg-white/6 px-2 py-[3px] text-[9px] font-black uppercase tracking-[0.16em] text-white/82">
+                                    <div className={`mt-1 grid ${activeIdentity.clanName ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5 overflow-hidden`}>
+                                        <span className="truncate rounded-full border border-white/10 bg-white/6 px-1.5 py-[3px] text-center text-[8px] font-black uppercase tracking-[0.08em] text-white/82" title={activePatent}>
                                             {activePatent}
                                         </span>
-                                        <span className="truncate rounded-full border border-white/10 bg-white/6 px-2 py-[3px] text-[9px] font-black uppercase tracking-[0.16em] text-white/72">
-                                            {activeClan}
-                                        </span>
+                                        {activeIdentity.clanName && (
+                                            <span className="truncate rounded-full border border-white/10 bg-white/6 px-1.5 py-[3px] text-center text-[8px] font-black uppercase tracking-[0.08em] text-white/72" title={activeClan}>
+                                                {activeIdentity.clanIcon ? `${activeIdentity.clanIcon} ` : ''}{activeClan}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>

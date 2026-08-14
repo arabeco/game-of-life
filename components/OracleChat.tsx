@@ -1,8 +1,8 @@
 ﻿import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useGame, getLocalDateString } from '../contexts/GameContext';
+import { useGame } from '../contexts/GameContext';
 import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon, MicIcon } from './Icons';
 import { ORACLE_MODES } from '../constants/oracle';
-import { Notification, OracleCategory, OracleContext, OracleMode, OraclePremiumHint, OracleResponseKind, OracleResponsePayload, OracleStructuredContext } from '../types';
+import { Notification, OracleCategory, OracleMode, OraclePremiumHint, OracleResponseKind, OracleResponsePayload, OracleStructuredContext } from '../types';
 import { Portal } from './Portal';
 import { supabase } from '../supabaseClient';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
@@ -14,6 +14,7 @@ import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsFo
 import { buildOracleConversationMemory } from '../utils/oracleConversationMemory';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
+import { buildOracleCycleCoachBrief } from '../utils/oracleCoach';
 
 type OracleTabTarget = 'chat' | 'requests';
 interface Message {
@@ -38,8 +39,10 @@ type ChatQuickAction =
   | { id: string; label: string; kind: 'send_prompt'; prompt: string }
   | { id: string; label: string; kind: 'open_planner_create_action' }
   | { id: string; label: string; kind: 'open_sitrep' }
+  | { id: string; label: string; kind: 'open_planner' }
   | { id: string; label: string; kind: 'open_cycle' }
-  | { id: string; label: string; kind: 'open_arenas' };
+  | { id: string; label: string; kind: 'open_arenas' }
+  | { id: string; label: string; kind: 'open_arena'; arenaId: string };
 
 const normalizeOracleText = (value: string) =>
   value
@@ -252,24 +255,6 @@ const buildVoicePreview = (transcript: string) => {
   return `Entendi isso: "${transcript}". Isso parece conversa. Se estiver certo, envie e eu sigo daqui.`;
 };
 
-const shouldAttachContextLink = (content: string, actionId: string, previousMessages: Message[]) => {
-  const normalized = normalizeOracleText(content);
-
-  const matchesTopic =
-    (actionId === 'starter-open-arenas' && /\barena/.test(normalized)) ||
-    (actionId === 'starter-open-cycle' && /\bciclo/.test(normalized)) ||
-    (actionId === 'starter-open-sitrep-live' && /(painel diario|painel do dia|sitrep|dia)/.test(normalized));
-
-  if (!matchesTopic) return false;
-
-  const previousAssistant = [...previousMessages].reverse().find((message) => message.role === 'assistant' && message.quickActions?.length);
-  if (!previousAssistant?.quickActions?.some((action) => action.id === actionId)) {
-    return true;
-  }
-
-  return false;
-};
-
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
   const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -349,45 +334,38 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     dispatchAppView({ view: 'arenas' });
   }, []);
 
+  const openPlannerView = useCallback(() => {
+    dispatchAppView({ view: 'planner' });
+  }, []);
+
+  const openArena = useCallback((arenaId: string) => {
+    window.dispatchEvent(new CustomEvent('tutorialNavigate', {
+      detail: { view: 'arenas', showArenaId: arenaId },
+    }));
+  }, []);
+
+  const operationalContext = useMemo(() => buildOracleOperationalContext({
+    now: new Date(),
+    assets,
+    actions,
+    tasks,
+    activeCycle,
+    dailyCommitment,
+    dailyProofStreak: userProfile.dailyProofStreak || null,
+    cycleProgress,
+    activeMode: currentMode,
+    customModeInstructions: oraclePreferences?.customModeInstructions || null,
+    enabledCategories: oraclePreferences?.enabledCategories || [],
+    username: userProfile.nickname || 'Viajante',
+    level: userProfile.level || 1,
+    clanName: null,
+    seasonName: null,
+    pendingChests: userProfile.chests?.reduce((acc, chest) => acc + (chest.count || 0), 0) || 0,
+  }), [activeCycle, actions, assets, currentMode, cycleProgress, dailyCommitment, oraclePreferences, tasks, userProfile]);
+
   const contextualStarter = useMemo(() => {
-    const arenasCount = assets.reduce((sum, asset) => sum + asset.arenas.length, 0);
-    const pendingToday = tasks.filter((task) => {
-      if (!task.date || task.completed) return false;
-      return task.date.split('T')[0] === getLocalDateString();
-    }).length;
-    const completedToday = tasks.filter((task) => {
-      if (!task.date || !task.completed) return false;
-      return task.date.split('T')[0] === getLocalDateString();
-    }).length;
-
-    if (arenasCount === 0) {
-      return {
-        content: 'Ainda nao vejo arenas ativas. Antes de falar de execução, quero entender qual frente da sua vida voce quer colocar de pe primeiro. O que voce quer fazer hoje?',
-        quickActions: [{ id: 'starter-open-arenas', label: 'Clique aqui para abrir arenas.', kind: 'open_arenas' as const }],
-      };
-    }
-
-    if (!activeCycle) {
-      return {
-        content: `Voce ja tem ${arenasCount} arena${arenasCount === 1 ? '' : 's'}, mas ainda esta sem ciclo ativo. Posso te ajudar a dar direção para este momento ou escolher a melhor frente de hoje.`,
-        quickActions: [{ id: 'starter-open-cycle', label: 'Clique aqui para ver seu ciclo.', kind: 'open_cycle' as const }],
-      };
-    }
-
-    const cycleLine = cycleProgress > 0
-      ? `Seu ciclo esta em ${cycleProgress}%.`
-      : 'Seu ciclo esta ativo.';
-    const dayLine = completedToday > 0
-      ? `Hoje ja tem ${completedToday} acao${completedToday === 1 ? '' : 'es'} concluida${completedToday === 1 ? '' : 's'} e ${pendingToday} pendencia${pendingToday === 1 ? '' : 's'}.`
-      : pendingToday > 0
-        ? `Hoje ainda nao tem acao concluida, mas existem ${pendingToday} pendencia${pendingToday === 1 ? '' : 's'} no Planner.`
-        : 'Hoje ainda esta limpo no Planner.';
-
-    return {
-      content: `${cycleLine} ${dayLine} Em vez de te explicar tela, vou direto ao ponto: o que voce quer fazer hoje?`,
-      quickActions: [{ id: 'starter-open-sitrep-live', label: 'Clique aqui para abrir o resumo diario.', kind: 'open_sitrep' as const }],
-    };
-  }, [activeCycle, assets, cycleProgress, tasks]);
+    return buildOracleCycleCoachBrief(operationalContext);
+  }, [operationalContext]);
 
   // Update mode when preferences change
   useEffect(() => {
@@ -477,9 +455,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       if (previous.some((message) => message.systemId === 'oracle:starter')) {
         return previous;
       }
-      const quickActions = contextualStarter.quickActions.filter((action) =>
-        shouldAttachContextLink(contextualStarter.content, action.id, previous)
-      );
       return [
         ...previous,
         {
@@ -488,7 +463,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           timestamp: new Date(),
           mode: currentMode,
           systemId: 'oracle:starter',
-          quickActions,
+          quickActions: contextualStarter.quickActions,
         },
       ];
     });
@@ -553,28 +528,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // Build System Prompt based on Mode
   const systemPrompt = useMemo(() => {
     const config = ORACLE_MODES[currentMode];
-    const now = new Date();
-    const contextData: OracleContext = buildOracleOperationalContext({
-      now,
-      assets,
-      actions,
-      tasks,
-      activeCycle,
-      dailyCommitment,
-      dailyProofStreak: userProfile.dailyProofStreak || null,
-      cycleProgress,
-      activeMode: currentMode,
-      customModeInstructions: oraclePreferences?.customModeInstructions || null,
-      enabledCategories: oraclePreferences?.enabledCategories || [],
-      username: userProfile.nickname || 'Viajante',
-      level: userProfile.level || 1,
-      clanName: null,
-      seasonName: null,
-      pendingChests: userProfile.chests?.reduce((acc, c) => acc + (c.count || 0), 0) || 0,
-    });
-
-    return config.systemPromptTemplate(contextData);
-  }, [currentMode, userProfile, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences]);
+    return config.systemPromptTemplate(operationalContext);
+  }, [currentMode, operationalContext]);
 
   const buildRecoveryFastPath = useCallback((rawInput: string): string | null => {
     const normalized = rawInput
@@ -811,20 +766,32 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         return;
       case 'open_planner_create_action':
         openPlannerCreateAction();
+        onClose();
         return;
       case 'open_sitrep':
         openPlannerSitrep();
+        onClose();
+        return;
+      case 'open_planner':
+        openPlannerView();
+        onClose();
         return;
       case 'open_cycle':
         openCycleReview();
+        onClose();
         return;
       case 'open_arenas':
         openArenasView();
+        onClose();
+        return;
+      case 'open_arena':
+        openArena(action.arenaId);
+        onClose();
         return;
       default:
         return;
     }
-  }, [openArenasView, openCycleReview, openPlannerCreateAction, openPlannerSitrep]);
+  }, [onClose, openArena, openArenasView, openCycleReview, openPlannerCreateAction, openPlannerSitrep, openPlannerView]);
 
   const formatCooldownLabel = (milliseconds: number): string => {
     if (milliseconds <= 0) return 'agora';

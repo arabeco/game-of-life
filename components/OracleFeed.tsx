@@ -79,8 +79,8 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-[10000] pointer-events-none flex items-start justify-center pt-20 px-4 animate-in fade-in duration-200" onClick={onClose}>
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-auto" onClick={onClose} />
+            <div data-testid="oracle-feed" className="fixed inset-0 z-[10000] pointer-events-none flex items-start justify-center pt-20 px-4 animate-in fade-in duration-200" onClick={onClose}>
+                <div id="oracle-feed-backdrop" className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-auto" onClick={onClose} />
                 <GlassCard
                     variant="neutral"
                     className="w-full max-w-lg h-[80vh] pointer-events-auto rounded-3xl flex flex-col overflow-hidden !p-0 border border-white/10 shadow-2xl relative"

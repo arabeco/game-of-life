@@ -17,7 +17,7 @@ import { REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionSessionDetail } 
 import { showLocalNotification } from '../utils/localNotification';
 import { buildActionSessionWidgetSnapshot } from '../utils/widgetSnapshots';
 import { buildActionPoolByDate, filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
-import { buildLocalDateFromString, getOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay';
+import { buildLocalDateFromString, getOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay';
 import { isTaskInPool } from '../utils/taskDomain.js';
 import { EmojiGlyph } from './EmojiGlyph';
 import { SKINS_DATA, BORDERS_DATA } from '../constants';
@@ -113,6 +113,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const {
         activeCycle,
         dailyCommitment,
+        judgedOperationalDates,
         tasks,
         actions,
         taskPool,
@@ -471,6 +472,17 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const handleDailyPanelOpen = () => {
         if (isSitrepLocked) {
             setIsSitrepLocked(false);
+            const yesterday = shiftLocalDateString(getOperationalDateString(), -1);
+            const summarySeenKey = `glyph:daily-summary-seen:${userProfile.id}:${yesterday}`;
+            const hasYesterdaySummary = judgedOperationalDates.includes(yesterday);
+            const hasSeenYesterdaySummary = window.localStorage.getItem(summarySeenKey) === '1';
+
+            if (hasYesterdaySummary && !hasSeenYesterdaySummary) {
+                window.localStorage.setItem(summarySeenKey, '1');
+                window.dispatchEvent(new CustomEvent('glyph:daily-panel-opened', {
+                    detail: { date: yesterday },
+                }));
+            }
         }
     };
 

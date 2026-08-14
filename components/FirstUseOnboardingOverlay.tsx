@@ -24,6 +24,8 @@ type StepDef = {
   final?: boolean;
 };
 
+type StartStyle = 'focus' | 'balance' | 'whole';
+
 const getTargetElement = (selector?: string) => {
   if (!selector) return null;
   return document.querySelector(selector) as HTMLElement | null;
@@ -33,7 +35,6 @@ const AUTO_TRIGGER_TARGET_STEP_IDS = new Set([
   'cycle-entry',
   'arena-entry',
   'action-entry',
-  'rest-entry',
 ]);
 
 const shouldTriggerTargetOnNext = (step: StepDef | undefined) => {
@@ -45,7 +46,7 @@ const canAdvanceFromStep = (step: StepDef | undefined) => {
   if (!step) return false;
   const target = getTargetElement(step.targetSelector);
   if (step.targetSelector && !target) return false;
-  if (!['cycle-name', 'arena-name', 'action-name'].includes(step.id)) return true;
+  if (!['arena-name', 'action-name'].includes(step.id)) return true;
   const inputTarget = target as HTMLInputElement | HTMLTextAreaElement | null;
   return Boolean(inputTarget?.value?.trim());
 };
@@ -66,81 +67,51 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [createdArenaId, setCreatedArenaId] = useState<string | null>(null);
-  const [createdActionId, setCreatedActionId] = useState<string | null>(null);
+  const [startStyle, setStartStyle] = useState<StartStyle | null>(null);
   const autoAdvanceStepRef = useRef<string | null>(null);
   const currentStepRef = useRef<StepDef | undefined>(undefined);
   const isTypingRef = useRef(false);
 
   const steps = useMemo<StepDef[]>(() => [
     {
-      id: 'cycle-entry',
-      title: 'Primeiro ciclo',
-      text: 'Seu histórico ainda está vazio. Comece por aqui e abra o setup do seu primeiro ciclo real.',
-      targetSelector: '#start-new-cycle-button',
-      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
-      padding: 12,
-    },
-    {
-      id: 'cycle-name',
-      title: 'Nomeie a fase',
-      text: 'Dê um nome simples para essa fase. Pense em uma janela curta, clara e executável.',
-      targetSelector: '#new-cycle-name-input',
-      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
-      padding: 10,
-    },
-    {
-      id: 'cycle-date',
-      title: 'Escolha a data final',
-      text: 'Aqui você define quando esse ciclo fecha. O calendário segura o ritmo da fase.',
-      targetSelector: '#new-cycle-date-button',
-      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
-      padding: 10,
-    },
-    {
-      id: 'cycle-save',
-      title: 'Inicie o ciclo',
-      text: 'Quando estiver bom, confirme aqui. Assim o seu primeiro ciclo já nasce como dado real.',
-      targetSelector: '#new-cycle-submit-button',
-      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
+      id: 'start-style',
+      title: 'Como você quer começar?',
+      text: 'Escolha o tamanho do seu primeiro passo. Isso apenas orienta o início; você poderá mudar tudo depois.',
+      navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
       hideNext: true,
-      padding: 12,
     },
     {
       id: 'arena-entry',
-      title: 'Crie sua primeira arena',
-      text: 'Agora vamos abrir a primeira frente real da sua vida. Toque no botão + no canto inferior direito para criar uma Arena.',
+      title: 'Sua primeira arena',
+      text: startStyle === 'whole'
+        ? 'Comece por uma área, mesmo querendo cuidar de todas. Depois você adiciona as outras sem pressa.'
+        : startStyle === 'balance'
+          ? 'Escolha a primeira das suas prioridades. As próximas entram depois que esta base estiver clara.'
+          : 'Escolha a área que mais importa agora e crie uma arena simples para ela.',
       targetSelector: '#new-action-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 14,
     },
     {
       id: 'arena-asset',
-      title: 'Ativo pai',
-      text: 'Aqui você escolhe o ativo pai da arena. É uma forma de dizer em qual domínio essa frente mora.',
+      title: 'Escolha a área',
+      text: 'Em qual parte da vida essa meta vive?',
       targetSelector: '#new-arena-asset-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 10,
     },
     {
       id: 'arena-name',
-      title: 'Nome da arena',
-      text: 'Diga o nome da frente. Não precisa ser perfeito. Clareza vale mais do que sofisticação.',
+      title: 'Dê um nome claro',
+      text: 'Use algo que você reconheça de imediato, como Academia, Faculdade ou Família.',
       targetSelector: '#new-arena-name-input',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 10,
     },
     {
-      id: 'arena-description',
-      title: 'Meta da arena',
-      text: 'Se quiser, descreva a meta em uma frase. Os extras podem ser refinados depois.',
-      targetSelector: '#new-arena-description-input',
-      navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
-      padding: 10,
-    },
-    {
       id: 'arena-save',
-      title: 'Criar arena',
-      text: 'Quando fizer sentido, confirme aqui. Eu sigo sozinho assim que a arena nascer.',
+      title: 'Crie a arena',
+      text: 'Isso basta por enquanto. Os detalhes podem ser ajustados quando fizerem falta.',
       targetSelector: '#new-arena-submit-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       hideNext: true,
@@ -149,85 +120,73 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'action-entry',
       title: 'Primeira ação',
-      text: 'Perfeito. Sua arena abriu. Agora toque em Nova ação dentro dela para criar a primeira ação real.',
+      text: 'Agora transforme a arena em algo executável. Toque em Nova ação.',
       targetSelector: '#add-action-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 14,
     },
     {
       id: 'action-name',
-      title: 'Título da ação',
-      text: 'Comece pelo título. Esse é o único ponto realmente obrigatório agora. O resto pode ser ajustado sem pressa.',
+      title: 'O que você vai fazer?',
+      text: 'Escreva uma ação concreta, como Treinar, Estudar inglês ou Ligar para meus pais.',
       targetSelector: '#onboarding-action-name-input',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
-      id: 'action-type',
-      title: 'Tipo da ação',
-      text: 'Aqui você escolhe o formato da ação. Pode tocar e experimentar, ou seguir para frente quando entender a lógica.',
-      targetSelector: '#onboarding-action-type-button',
-      navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
-      padding: 10,
-    },
-    {
       id: 'action-reps',
-      title: 'Repetições',
-      text: 'Se a ação for recorrente, ajuste quantas repetições ela pede. Se não for o caso, eu pulo esse passo.',
+      title: 'Escolha uma meta leve',
+      text: 'Quantas vezes você realmente consegue fazer isso em uma semana? Começar menor ajuda a continuar.',
       targetSelector: '#onboarding-action-repetitions',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       padding: 10,
     },
     {
-      id: 'action-duration',
-      title: 'Duração base',
-      text: 'Defina uma duração base simples. Ela ajuda o planner a estimar carga sem complicar seu fluxo.',
-      targetSelector: '#onboarding-action-duration',
-      navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
-      padding: 10,
-    },
-    {
       id: 'action-save',
-      title: 'Salvar ação',
-      text: 'Quando estiver pronta, confirme aqui. Eu levo você para o planner assim que a ação for criada.',
+      title: 'Salve sua ação',
+      text: 'Pronto. Você já tem uma meta que pode cumprir.',
       targetSelector: '#onboarding-action-save-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: createdArenaId || 'first' },
       hideNext: true,
       padding: 12,
     },
     {
-      id: 'planner-pool',
-      title: 'Planner',
-      text: 'Sua primeira ação agora aparece pronta para uso. Você pode arrastar para agendar ou segurar para concluir no fluxo do dia.',
-      targetSelector: createdActionId ? `[data-action-id="${createdActionId}"]` : '#planner-pool',
-      navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
-      padding: 14,
-    },
-    {
-      id: 'rest-entry',
-      title: 'Tela de descanso',
-      text: 'Esse atalho abre a tela de descanso. Toque aqui quando quiser ver o resumo do agora.',
-      targetSelector: '#lock-icon-button',
-      navigation: { view: 'planner', showReports: false, showRestScreen: false, showArenaId: null },
-      autoAdvanceSelector: '#sitrep-embedded-card',
+      id: 'cycle-entry',
+      title: 'Comece um ciclo curto',
+      text: 'Agora dê um prazo para essa meta. Sete dias é um bom primeiro teste.',
+      targetSelector: '#start-new-cycle-button',
+      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
       padding: 12,
     },
     {
-      id: 'sitrep-card',
-      title: 'Resumo Diario',
-      text: 'Aqui voce acompanha o que foi feito no dia e como isso entra no ciclo. Nao e uma tela para travar metas; e uma leitura rapida do seu padrao.',
-      targetSelector: '#sitrep-embedded-card',
-      navigation: { view: 'planner', showReports: false, showRestScreen: true, showArenaId: null },
-      padding: 14,
+      id: 'cycle-date',
+      title: 'Confira o prazo',
+      text: 'O primeiro ciclo já vem curto. Ajuste apenas se realmente precisar.',
+      targetSelector: '#new-cycle-date-button',
+      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
+      padding: 10,
+    },
+    {
+      id: 'cycle-save',
+      title: 'Inicie o ciclo',
+      text: 'Confirme e comece. O Glyph vai acompanhar seu ritmo sem exigir dias perfeitos.',
+      targetSelector: '#new-cycle-submit-button',
+      navigation: { view: 'planner', showReports: true, showRestScreen: false, showArenaId: null },
+      hideNext: true,
+      padding: 12,
     },
     {
       id: 'finish',
-      title: 'Base pronta',
-      text: 'Sua base inicial esta pronta. Voce ja pode comecar por esta tela.\n\nEm Configuracoes > Tutoriais, os cards 1 e 2 mostram o uso principal. Em Configuracoes > Preferencias, o Modo Jogo libera tambem os cards 3 e 4 com progresso, mundo e recursos extras.',
-      navigation: { view: 'planner', showReports: false, showRestScreen: true, showArenaId: null },
+      title: 'Tudo pronto',
+      text: startStyle === 'whole'
+        ? 'Sua primeira base está viva. Quando ela estiver clara, adicione outras áreas aos poucos.'
+        : startStyle === 'balance'
+          ? 'Sua primeira prioridade está pronta. Depois você pode criar mais uma ou duas sem perder o foco.'
+          : 'Seu foco está pronto. Agora basta agir e registrar quando fizer.',
+      navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
       final: true,
     },
-  ], [createdActionId, createdArenaId]);
+  ], [createdArenaId, startStyle]);
 
   const stepIndexById = useMemo(() => {
     return steps.reduce<Record<string, number>>((accumulator, currentStep, index) => {
@@ -274,7 +233,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       setDisplayedText('');
       setIsTyping(false);
       setCreatedArenaId(null);
-      setCreatedActionId(null);
+      setStartStyle(null);
       autoAdvanceStepRef.current = null;
       currentStepRef.current = undefined;
       isTypingRef.current = false;
@@ -408,7 +367,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     if (!active) return;
 
     const handleCycleSetupOpened = () => {
-      jumpToAtLeast('cycle-name');
+      jumpToAtLeast('cycle-date');
     };
 
     const handleCycleNameCompleted = () => {
@@ -420,7 +379,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     };
 
     const handleCycleCreated = () => {
-      jumpToAtLeast('arena-entry');
+      jumpToAtLeast('finish');
     };
 
     const handleArenaModalOpened = () => {
@@ -437,7 +396,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     };
 
     const handleArenaNameCompleted = () => {
-      jumpToAtLeast('arena-description');
+      jumpToAtLeast('arena-save');
     };
 
     const handleArenaCreated = (event: Event) => {
@@ -459,7 +418,9 @@ export const FirstUseOnboardingOverlay: React.FC<{
     };
 
     const handleActionNameCompleted = () => {
-      jumpToAtLeast('action-type');
+      window.setTimeout(() => {
+        jumpToAtLeast(getTargetElement('#onboarding-action-repetitions') ? 'action-reps' : 'action-save');
+      }, 0);
     };
 
     const handleActionTypeSelected = (event: Event) => {
@@ -468,11 +429,11 @@ export const FirstUseOnboardingOverlay: React.FC<{
         jumpToAtLeast('action-reps');
         return;
       }
-      jumpToAtLeast('action-duration');
+      jumpToAtLeast('action-save');
     };
 
     const handleActionRepetitionsAdjusted = () => {
-      jumpToAtLeast('action-duration');
+      jumpToAtLeast('action-save');
     };
 
     const handleActionDurationAdjusted = () => {
@@ -480,9 +441,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     };
 
     const handleActionCreated = (event: Event) => {
-      const customEvent = event as CustomEvent<{ actionId?: string }>;
-      setCreatedActionId(customEvent.detail?.actionId || null);
-      jumpToAtLeast('planner-pool');
+      jumpToAtLeast('cycle-entry');
     };
 
     window.addEventListener(FIRST_USE_ONBOARDING_EVENTS.cycleSetupOpened, handleCycleSetupOpened as EventListener);
@@ -519,9 +478,16 @@ export const FirstUseOnboardingOverlay: React.FC<{
   }, [active, jumpToAtLeast]);
 
   const handleDismiss = useCallback(() => {
-    window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail: { ...defaultNavigation, view: 'planner' } }));
+    window.dispatchEvent(new CustomEvent('tutorialNavigate', { detail: { ...defaultNavigation, view: 'assets' } }));
     onDismiss();
   }, [onDismiss]);
+
+  const handleStartStyleSelection = useCallback((value: StartStyle) => {
+    setStartStyle(value);
+    setDisplayedText(currentStepRef.current?.text || '');
+    setIsTyping(false);
+    window.setTimeout(() => advanceStep(), 180);
+  }, [advanceStep]);
 
   const handleNext = useCallback(() => {
     if (!step) return;
@@ -576,7 +542,9 @@ export const FirstUseOnboardingOverlay: React.FC<{
       ? 'Abrir'
       : 'Próximo';
   const helperText = step.hideNext
-    ? step.id === 'arena-save'
+    ? step.id === 'start-style'
+      ? 'Não existe escolha errada. Você pode mudar de abordagem quando quiser.'
+      : step.id === 'arena-save'
       ? 'Crie a arena e eu já sigo para a próxima etapa.'
       : step.id === 'action-save'
         ? 'Salve a ação no app que eu acompanho sem te travar.'
@@ -588,9 +556,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       : step.id === 'action-entry'
         ? 'Se tocar em Abrir, eu aciono Nova ação por você.'
         : step.id === 'cycle-entry'
-          ? 'Se tocar em Abrir, eu levo você direto para o setup do ciclo.'
-          : step.id === 'rest-entry'
-            ? 'Se tocar em Abrir, eu abro a tela de descanso por você.'
+                          ? 'Se tocar em Abrir, eu levo você direto para o ciclo.'
         : step.id === 'action-name' && !canAdvance
           ? 'Preencha o título para liberar o próximo passo.'
           : 'Se você adiantar alguma etapa, eu acompanho.';
@@ -667,6 +633,32 @@ export const FirstUseOnboardingOverlay: React.FC<{
                     {displayedText}
                     {isTyping && <span className="ml-1 inline-block h-3 w-1 animate-pulse align-middle bg-[#f3d48a] opacity-80 md:h-4 md:w-1.5" />}
                   </p>
+
+                  {step.id === 'start-style' && (
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {([
+                        { id: 'focus' as const, icon: '🎯', label: 'Um foco', detail: 'Uma prioridade' },
+                        { id: 'balance' as const, icon: '⚖️', label: 'Equilibrar', detail: 'Duas ou três' },
+                        { id: 'whole' as const, icon: '🧭', label: 'Vida toda', detail: 'Cinco áreas' },
+                      ]).map(option => (
+                        <button
+                          key={option.id}
+                          id={`onboarding-start-${option.id}`}
+                          type="button"
+                          onClick={() => handleStartStyleSelection(option.id)}
+                          className={`min-w-0 rounded-xl border px-2 py-3 text-center transition-all active:scale-[0.98] ${
+                            startStyle === option.id
+                              ? 'border-[#f3d48a]/70 bg-[#f3d48a]/18 text-[#fff0c7]'
+                              : 'border-white/10 bg-white/[0.04] text-white/74 hover:border-[#f3d48a]/35 hover:bg-[#f3d48a]/8'
+                          }`}
+                        >
+                          <span className="block text-lg leading-none">{option.icon}</span>
+                          <span className="mt-2 block text-[9px] font-black uppercase tracking-[0.08em] md:text-[10px]">{option.label}</span>
+                          <span className="mt-1 block text-[8px] text-white/42 md:text-[9px]">{option.detail}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <div className="text-[9px] tracking-[0.08em] text-gray-500 md:text-[11px]">

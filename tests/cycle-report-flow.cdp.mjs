@@ -411,7 +411,7 @@ try {
   checkpoints.push('report-reward-slide');
 
   await clickSelector('#report-new-cycle-button');
-  await waitFor('new cycle setup view', `(() => { const text = (document.body?.innerText || '').toLowerCase(); return text.includes('setup de ciclo') && text.includes('iniciar novo ciclo'); })()` , 15000);
+  await waitFor('new cycle setup view', `(() => { const text = (document.body?.innerText || '').toLowerCase(); return text.includes('novo ciclo') && text.includes('iniciar novo ciclo'); })()` , 15000);
   checkpoints.push('new-cycle-setup-open');
 
   console.log(JSON.stringify({ success: true, email: user?.email || null, cycleName, checkpoints }, null, 2));

@@ -5,7 +5,7 @@ import { XIcon, LightbulbIcon } from './Icons';
 import { Portal } from './Portal';
 import { SitrepContent } from './SitrepContent';
 
-export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const SitrepModal: React.FC<{ onClose: () => void; selectedDate?: string | null }> = ({ onClose, selectedDate }) => {
     return (
         <Portal>
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in" onClick={onClose}>
@@ -18,7 +18,7 @@ export const SitrepModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <button onClick={onClose} className="absolute right-4 p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-                        <SitrepContent onClose={onClose} />
+                        <SitrepContent onClose={onClose} selectedDateOverride={selectedDate} />
                     </div>
                 </GlassCard>
             </div>

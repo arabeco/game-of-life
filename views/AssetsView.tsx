@@ -730,7 +730,7 @@ export const AssetsView: React.FC = () => {
                         </div>
 
                         <div id="assets-grid" className="absolute inset-x-0" style={{ top: assetsGridTopPx, bottom: assetsGridBottomPx }}>
-                            <div className="grid h-full grid-rows-5">
+                            <div className="asset-overview-grid grid h-full grid-rows-5">
                             {LIFE_AREAS.map(area => {
                                 const asset = assets.find(a => a.id === area.id);
                                 if (!asset) return null;
@@ -745,9 +745,10 @@ export const AssetsView: React.FC = () => {
                                 return (
                                     <button
                                         key={asset.id}
+                                        data-testid="asset-overview-card"
                                         type="button"
                                         onClick={() => handleOpenAsset(asset)}
-                                        className="group relative h-[84%] w-full max-w-[396px] place-self-center text-left transition-transform duration-200 hover:-translate-y-px"
+                                        className="asset-overview-card group relative place-self-center text-left transition-transform duration-200 hover:-translate-y-px"
                                     >
                                         <div
                                             className="absolute inset-0 overflow-hidden rounded-[11px] border"
@@ -761,7 +762,7 @@ export const AssetsView: React.FC = () => {
                                         />
 
                                         <div
-                                            className="absolute left-3 top-0 z-20 flex h-14 w-14 -translate-y-[28%] items-center justify-center"
+                                            className="absolute left-[3%] top-0 z-20 flex h-14 w-14 -translate-y-[28%] items-center justify-center"
                                         >
                                             <Sephirot
                                                 asset={asset}
@@ -774,20 +775,20 @@ export const AssetsView: React.FC = () => {
                                             />
                                         </div>
 
-                                        <div className="absolute inset-0 z-10 flex min-w-0 flex-col px-3 pb-[34px] pt-[6px]">
-                                            <div className="mx-auto flex min-h-[38px] w-[64%] items-center justify-center rounded-[10px] border border-white/22 bg-[rgba(18,21,27,0.58)] px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_7px_16px_rgba(0,0,0,0.26)] backdrop-blur-[3px]">
-                                                <h2 className="line-clamp-2 text-center text-[15px] font-black uppercase leading-[1.06] tracking-[0.04em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]">
+                                        <div className="absolute inset-0 z-10 flex min-w-0 flex-col px-[4%] pb-[13%] pt-[2%]">
+                                            <div className="mx-auto flex min-h-[30px] w-[64%] items-center justify-center rounded-[10px] border border-white/22 bg-[rgba(18,21,27,0.58)] px-[4%] py-[2%] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_7px_16px_rgba(0,0,0,0.26)] backdrop-blur-[3px]">
+                                                <h2 className="asset-overview-title line-clamp-2 text-center font-black uppercase leading-[1.06] tracking-[0.04em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]">
                                                     {area.id === 'proposito' ? area.shortName : area.name}
                                                 </h2>
                                             </div>
 
-                                            <div className="mx-auto mt-auto grid min-w-0 grid-cols-[72px_64px_72px] items-end justify-center gap-2">
-                                                <div className="flex aspect-square w-[72px] flex-col items-center justify-center rounded-[6px] border border-white/24 bg-black/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_7px_16px_rgba(0,0,0,0.34)] backdrop-blur-[2px]">
+                                            <div className="asset-overview-stats mx-auto mt-auto grid min-w-0 items-end justify-center">
+                                                <div className="asset-overview-stat flex aspect-square flex-col items-center justify-center rounded-[6px] border border-white/24 bg-black/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_7px_16px_rgba(0,0,0,0.34)] backdrop-blur-[2px]">
                                                     <span className="text-[8px] font-black uppercase leading-none tracking-[0.06em] text-white/66">Arenas</span>
                                                     <span className="mt-2 text-[25px] font-black leading-none text-white">{stats.activeCount}</span>
                                                 </div>
 
-                                                <div className="mx-auto flex h-[54px] w-[56px] min-w-0 flex-wrap content-center justify-center gap-x-1 gap-y-0.5 overflow-hidden text-[15px] [text-shadow:0_2px_7px_rgba(0,0,0,0.95)]">
+                                                <div className="asset-overview-emojis mx-auto flex min-w-0 flex-wrap content-center justify-center gap-x-1 gap-y-0.5 overflow-hidden text-[15px] [text-shadow:0_2px_7px_rgba(0,0,0,0.95)]">
                                                     {visibleArenas.length > 0
                                                         ? <>
                                                             {visibleArenas.map(arena => <span key={arena.id} className="w-4 text-center">{arena.icon || '◦'}</span>)}
@@ -796,7 +797,7 @@ export const AssetsView: React.FC = () => {
                                                         : <span className="text-[8px] font-black uppercase tracking-[0.08em] text-white/38">Vazia</span>}
                                                 </div>
 
-                                                <div className="flex aspect-square w-[72px] flex-col items-center justify-center rounded-[6px] border border-white/24 bg-black/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_7px_16px_rgba(0,0,0,0.34)] backdrop-blur-[2px]">
+                                                <div className="asset-overview-stat flex aspect-square flex-col items-center justify-center rounded-[6px] border border-white/24 bg-black/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_7px_16px_rgba(0,0,0,0.34)] backdrop-blur-[2px]">
                                                     <span className="text-[8px] font-black uppercase leading-none tracking-[0.06em] text-white/66">Acoes</span>
                                                     <span className="mt-2 text-[25px] font-black leading-none text-white">{stats.totalActions}</span>
                                                 </div>

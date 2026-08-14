@@ -32,7 +32,8 @@ const sortBuckets = (left, right) => {
 const buildAtlasTaskItem = (task, actionById, arenaById) => {
     const action = actionById.get(task.actionId);
     const arenaId = action?.arenaId || 'unknown';
-    const arenaName = arenaById.get(arenaId)?.name || 'Sem arena';
+    const arena = arenaById.get(arenaId);
+    const arenaName = arena?.name || 'Sem arena';
 
     return {
         taskId: task.id,
@@ -41,6 +42,7 @@ const buildAtlasTaskItem = (task, actionById, arenaById) => {
         actionIcon: action?.icon || '•',
         arenaId,
         arenaName,
+        areaId: arena?.assetId || 'geral',
         startTime: Number.isFinite(task.startTime) ? task.startTime : -1,
         duration: Number.isFinite(task.duration) ? task.duration : (action?.duration || 0),
         completed: !!task.completed,
@@ -54,10 +56,12 @@ const buildDayBuckets = (dayTasks, actionById, arenaById) => {
     dayTasks.forEach((task) => {
         const action = actionById.get(task.actionId);
         const arenaId = action?.arenaId || 'unknown';
-        const arenaName = arenaById.get(arenaId)?.name || 'Sem arena';
+        const arena = arenaById.get(arenaId);
+        const arenaName = arena?.name || 'Sem arena';
         const bucket = buckets.get(arenaId) || {
             arenaId,
             arenaName,
+            areaId: arena?.assetId || 'geral',
             total: 0,
             completed: 0,
         };

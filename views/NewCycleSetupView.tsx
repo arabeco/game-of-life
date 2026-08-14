@@ -69,7 +69,11 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
     const today = getLocalDateString();
     const activeSeason = resolveRuntimeActiveSeason(seasons);
     const [cycleStartDate, setCycleStartDate] = useState(today);
-    const [cycleEndDate, setCycleEndDate] = useState(activeSeason && activeSeason.end_date >= today ? activeSeason.end_date : getLocalDateString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)));
+    const sevenDayEnd = getLocalDateString(new Date(Date.now() + 6 * 24 * 60 * 60 * 1000));
+    const defaultCycleEnd = activeSeason && activeSeason.end_date >= today && activeSeason.end_date < sevenDayEnd
+        ? activeSeason.end_date
+        : sevenDayEnd;
+    const [cycleEndDate, setCycleEndDate] = useState(defaultCycleEnd);
     const [isDatePickerOpen, setDatePickerOpen] = useState(false);
     const [activeDateField, setActiveDateField] = useState<'start' | 'end'>('end');
     const cycleTiming = getCycleTimingSummary(cycleStartDate, cycleEndDate, today);
@@ -114,7 +118,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                     <div className="flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
                             <button onClick={onCancel} className="p-2 -ml-2"><ChevronLeftIcon /></button>
-                            <h1 className="text-xl font-black uppercase tracking-widest">Setup de Ciclo</h1>
+                            <h1 className="text-xl font-black uppercase tracking-widest">Novo ciclo</h1>
                         </div>
                     </div>
 
@@ -135,7 +139,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                         )}
 
                         <GlassCard variant="neutral" className="p-3">
-                            <h3 className='text-center text-xs font-bold uppercase tracking-wider text-gray-400 mb-2'>Detalhes da Campanha</h3>
+                            <h3 className='text-center text-xs font-bold uppercase tracking-wider text-gray-400 mb-2'>Seu ciclo</h3>
                             <div className="space-y-2">
                                 <input
                                     id="new-cycle-name-input"

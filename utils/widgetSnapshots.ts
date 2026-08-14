@@ -86,6 +86,25 @@ export interface DailyWidgetSnapshot {
   freeModeCompletedCount: number;
   freeModeTotalCount: number;
   potentialExpFromActions: number;
+  earnedExp: number;
+  touchedArenaCount: number;
+  openActionCount: number;
+  todayActions: Array<{
+    taskId: string;
+    actionId: string;
+    name: string;
+    icon: string;
+    arenaName: string;
+    startTime: number;
+    completed: boolean;
+  }>;
+  quickActions: Array<{
+    actionId: string;
+    name: string;
+    icon: string;
+    arenaName: string;
+    count: number;
+  }>;
   commitmentStats: CommitmentStatsSnapshot | null;
 }
 
@@ -266,12 +285,12 @@ export const buildDailyWidgetSnapshot = ({
   nowDate?: Date;
 }): DailyWidgetSnapshot => {
   const operationalDate = nowDate ? getOperationalDateString(nowDate) : getOperationalDateString();
-  const commitmentDate = dailyCommitment?.date || operationalDate;
+  const commitmentDate = operationalDate;
   const stage = dailyCommitment?.stage || 'planning';
   const checklistCompleted = checklistItems.filter((item) => item.completed).length;
   const checklistTotal = checklistItems.length;
 
-  if (!activeCycle || !dailyCommitment) {
+  if (!activeCycle) {
     const todaysTasks = tasks.filter(
       (task) => taskMatchesOperationalDate(task, commitmentDate) && (hasScheduledTime(task) || Boolean(task.completed))
     );
@@ -283,6 +302,11 @@ export const buildDailyWidgetSnapshot = ({
       const duration = Number.isFinite(task.duration) ? task.duration : action?.duration || 0;
       return sum + duration;
     }, 0);
+    const touchedArenaCount = new Set(
+      completedTasks
+        .map((task) => actions.find((action) => action.id === task.actionId)?.arenaId)
+        .filter((arenaId): arenaId is string => Boolean(arenaId))
+    ).size;
 
     return {
       hasCycle: false,
@@ -310,27 +334,78 @@ export const buildDailyWidgetSnapshot = ({
       freeModeCompletedCount: completedTasks.length,
       freeModeTotalCount: todaysTasks.length,
       potentialExpFromActions,
+      earnedExp: potentialExpFromActions,
+      touchedArenaCount,
+      openActionCount: Math.max(0, todaysTasks.length - completedTasks.length),
+      todayActions: todaysTasks
+        .sort((left, right) => left.startTime - right.startTime)
+        .slice(0, 4)
+        .map((task) => {
+          const action = actions.find((candidate) => candidate.id === task.actionId);
+          const arena = action ? arenas.find((candidate) => candidate.id === action.arenaId) : null;
+          return {
+            taskId: task.id,
+            actionId: task.actionId,
+            name: action?.name || 'Ação',
+            icon: action?.icon || '•',
+            arenaName: arena?.name || 'Sem arena',
+            startTime: task.startTime,
+            completed: Boolean(task.completed),
+          };
+        }),
+      quickActions: [],
       commitmentStats: null,
     };
   }
 
-  const commitmentStats = buildCommitmentStatsSnapshot(tasks, dailyCommitment, actions);
+  const cycleTasks = filterCycleTasksByScope(
+    tasks,
+    actions,
+    activeCycle,
+    activeCycle.startDate,
+    activeCycle.endDate,
+  );
+  const todaysTasks = cycleTasks.filter((task) => taskMatchesOperationalDate(task, operationalDate));
+  const executionCommitment: DailyCommitment = {
+    stage: dailyCommitment?.stage || 'battle',
+    score: dailyCommitment?.score ?? null,
+    expDeposited: dailyCommitment?.expDeposited ?? null,
+    sitrepBonus: dailyCommitment?.sitrepBonus ?? null,
+    relationshipBonusXp: dailyCommitment?.relationshipBonusXp ?? null,
+    operationalScratch: dailyCommitment?.operationalScratch ?? null,
+    date: operationalDate,
+    taskIds: todaysTasks.map((task) => task.id),
+  };
+  const commitmentStats = buildCommitmentStatsSnapshot(tasks, executionCommitment, actions);
   const focusArena = buildDailyArenaFocus(commitmentStats.scoredTasksWithStatus, actions, arenas);
-  const availableGroups = buildSitrepStockOptions(actions, taskPool, tasks, dailyCommitment) as Array<{
+  const availableGroups = buildSitrepStockOptions(actions, taskPool, tasks, executionCommitment) as Array<{
     count: number;
     action: Action;
     ids: string[];
   }>;
   const availableUnitCount = availableGroups.reduce((sum, group) => sum + group.count, 0);
-  const cycleTiming = getCycleTimingSummary(activeCycle.startDate, activeCycle.endDate, dailyCommitment.date);
+  const cycleTiming = getCycleTimingSummary(activeCycle.startDate, activeCycle.endDate, operationalDate);
   const cycleArenaIds = new Set(activeCycle.arenaIds || []);
   const scopedArenas = cycleArenaIds.size > 0 ? arenas.filter((arena) => cycleArenaIds.has(arena.id)) : arenas;
   const activeArenaCount = scopedArenas.filter((arena) => !arena.isArchived).length;
+  const completedTasks = commitmentStats.tasksWithStatus.filter(({ isCompleted }) => isCompleted).map(({ task }) => task);
+  const earnedExp = completedTasks.reduce((sum, task) => {
+    const action = actions.find((candidate) => candidate.id === task.actionId);
+    if (action?.actionType === 'Livre') return sum;
+    const duration = Number.isFinite(task.duration) ? Number(task.duration) : Number(action?.duration || 0);
+    return sum + Math.max(0, Math.round(duration));
+  }, 0);
+  const touchedArenaCount = new Set(
+    completedTasks
+      .map((task) => actions.find((action) => action.id === task.actionId)?.arenaId)
+      .filter((arenaId): arenaId is string => Boolean(arenaId))
+  ).size;
+  const actionArenaById = new Map(actions.map((action) => [action.id, arenas.find((arena) => arena.id === action.arenaId)?.name || 'Sem arena']));
 
   return {
     hasCycle: true,
-    date: dailyCommitment.date,
-    stage: dailyCommitment.stage,
+    date: operationalDate,
+    stage: dailyCommitment?.stage || 'battle',
     cycleName: activeCycle.name,
     cycleStartDate: activeCycle.startDate,
     cycleEndDate: activeCycle.endDate,
@@ -338,7 +413,7 @@ export const buildDailyWidgetSnapshot = ({
     cycleElapsedDays: cycleTiming.elapsedDays,
     cycleTotalDays: cycleTiming.totalDays,
     timeProgressPercent: cycleTiming.timeProgress,
-    progressPercent: commitmentStats.totalAllCount > 0 ? (commitmentStats.completedAllCount / commitmentStats.totalAllCount) * 100 : 100,
+    progressPercent: commitmentStats.totalAllCount > 0 ? (commitmentStats.completedAllCount / commitmentStats.totalAllCount) * 100 : 0,
     activeArenaCount,
     completedCount: commitmentStats.completedAllCount,
     totalCount: commitmentStats.totalAllCount,
@@ -353,6 +428,33 @@ export const buildDailyWidgetSnapshot = ({
     freeModeCompletedCount: 0,
     freeModeTotalCount: 0,
     potentialExpFromActions: 0,
+    earnedExp,
+    touchedArenaCount,
+    openActionCount: Math.max(0, commitmentStats.totalAllCount - commitmentStats.completedAllCount),
+    todayActions: todaysTasks
+      .sort((left, right) => left.startTime - right.startTime)
+      .slice(0, 4)
+      .map((task) => {
+        const action = actions.find((candidate) => candidate.id === task.actionId);
+        return {
+          taskId: task.id,
+          actionId: task.actionId,
+          name: action?.name || 'Ação',
+          icon: action?.icon || '•',
+          arenaName: actionArenaById.get(task.actionId) || 'Sem arena',
+          startTime: task.startTime,
+          completed: Boolean(task.completed),
+        };
+      }),
+    quickActions: availableGroups
+      .slice(0, 4)
+      .map((group) => ({
+        actionId: group.action.id,
+        name: group.action.name,
+        icon: group.action.icon || '•',
+        arenaName: actionArenaById.get(group.action.id) || 'Sem arena',
+        count: group.count,
+      })),
     commitmentStats,
   };
 };

@@ -130,7 +130,7 @@ serve(async (request) => {
       taskId,
       actionId,
       name: action.name,
-      icon: action.icon || "•",
+      icon: action.icon || "*",
       date,
       startTime: safeStartTime,
       completed: true,

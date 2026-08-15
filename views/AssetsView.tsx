@@ -556,7 +556,7 @@ export const AssetsView: React.FC = () => {
                         <div
                             className="overflow-hidden"
                         >
-                            <div className={`grid min-w-0 grid-cols-[56px_minmax(0,1fr)_88px] items-center gap-2 px-2 pb-4 text-center ${isEditingAssetDetail ? 'pt-1' : '-mt-8 pt-0'}`}>
+                            <div className="grid min-w-0 grid-cols-[56px_minmax(0,1fr)_56px] items-center gap-2 px-2 pb-4 pt-1 text-center">
                                 <Sephirot
                                     asset={selectedAsset}
                                     onClick={() => {}}
@@ -762,7 +762,8 @@ export const AssetsView: React.FC = () => {
                                         />
 
                                         <div
-                                            className="absolute left-[3%] top-0 z-20 flex h-14 w-14 -translate-y-[28%] items-center justify-center"
+                                            className="absolute left-[3%] top-0 z-20 flex -translate-y-[24%] items-center justify-center"
+                                            style={{ width: 'clamp(44px, 17cqw, 56px)', height: 'clamp(44px, 48cqh, 56px)' }}
                                         >
                                             <Sephirot
                                                 asset={asset}
@@ -770,13 +771,13 @@ export const AssetsView: React.FC = () => {
                                                 levelColor={isBasicMode ? basicSephirotLevelColor : undefined}
                                                 useSkinArtworkOnly={hasSephirotRasterArt}
                                                 showLabel={false}
-                                                size="56px"
+                                                size="clamp(44px, 48cqh, 56px)"
                                                 interactive={false}
                                             />
                                         </div>
 
-                                        <div className="absolute inset-0 z-10 flex min-w-0 flex-col px-[4%] pb-[8.5%] pt-[2%]">
-                                            <div className="mx-auto flex min-h-[30px] w-[64%] items-center justify-center rounded-[10px] border border-white/22 bg-[rgba(18,21,27,0.58)] px-[4%] py-[2%] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_7px_16px_rgba(0,0,0,0.26)] backdrop-blur-[3px]">
+                                        <div className="absolute inset-0 z-10 flex min-w-0 flex-col px-[4%] pb-[8%] pt-[2%]">
+                                            <div className="mx-auto flex min-h-[clamp(24px,27cqh,30px)] w-[62%] items-center justify-center rounded-[8px] border border-white/22 bg-[rgba(18,21,27,0.58)] px-[4%] py-[1.5%] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_7px_16px_rgba(0,0,0,0.26)] backdrop-blur-[3px]">
                                                 <h2 className="asset-overview-title line-clamp-2 text-center font-black uppercase leading-[1.06] tracking-[0.04em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]">
                                                     {area.id === 'proposito' ? area.shortName : area.name}
                                                 </h2>

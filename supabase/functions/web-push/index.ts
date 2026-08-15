@@ -937,8 +937,7 @@ const isNativeTokenSubscription = (row: StoredPushSubscription): boolean => {
 };
 
 const getDeliverySubscriptions = (subscriptions: StoredPushSubscription[]): StoredPushSubscription[] => {
-  const nativeSubscriptions = subscriptions.filter(isNativeTokenSubscription);
-  return nativeSubscriptions.length > 0 ? nativeSubscriptions : subscriptions;
+  return subscriptions;
 };
 
 const deliverPushToSubscription = async (
@@ -1287,8 +1286,6 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
     return jsonResponse(origin, 401, { error: "Invalid webhook secret." });
   }
 
-  configureVapid();
-
   const notification = normalizeNotification(body);
   if (!notification.id || !notification.userId) {
     return jsonResponse(origin, 400, { error: "Invalid notification payload." });
@@ -1317,7 +1314,7 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
     return jsonResponse(origin, 500, { error: subscriptionsError.message || "Could not load subscriptions." });
   }
 
-  if (!preferenceRow?.notifications_enabled) {
+  if (preferenceRow?.notifications_enabled === false) {
     return jsonResponse(origin, 200, { skipped: true, reason: "notifications_disabled" });
   }
 
@@ -1334,6 +1331,10 @@ const dispatchNotification = async (req: Request, body: JsonRecord, origin: stri
   const activeSubscriptions = getDeliverySubscriptions((subscriptions || []) as StoredPushSubscription[]);
   if (activeSubscriptions.length === 0) {
     return jsonResponse(origin, 200, { skipped: true, reason: "no_active_subscriptions" });
+  }
+
+  if (activeSubscriptions.some((subscriptionRow) => !isNativeTokenSubscription(subscriptionRow))) {
+    configureVapid();
   }
 
   let sent = 0;
@@ -1437,8 +1438,6 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
     return jsonResponse(origin, 401, { error: "Invalid webhook secret." });
   }
 
-  configureVapid();
-
   const message = normalizeOracleMessage(body);
   if (!message.id || !message.userId) {
     return jsonResponse(origin, 400, { error: "Invalid oracle message payload." });
@@ -1467,7 +1466,7 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
     return jsonResponse(origin, 500, { error: subscriptionsError.message || "Could not load subscriptions." });
   }
 
-  if (!preferenceRow?.notifications_enabled) {
+  if (preferenceRow?.notifications_enabled === false) {
     return jsonResponse(origin, 200, { skipped: true, reason: "notifications_disabled" });
   }
 
@@ -1482,6 +1481,10 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
   const activeSubscriptions = getDeliverySubscriptions((subscriptions || []) as StoredPushSubscription[]);
   if (activeSubscriptions.length === 0) {
     return jsonResponse(origin, 200, { skipped: true, reason: "no_active_subscriptions" });
+  }
+
+  if (activeSubscriptions.some((subscriptionRow) => !isNativeTokenSubscription(subscriptionRow))) {
+    configureVapid();
   }
 
   let sent = 0;

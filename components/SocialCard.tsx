@@ -4,6 +4,7 @@ import { UserProfile } from '../types';
 import { ProfileBackgroundSurface } from './ProfileBackgroundSurface';
 import { UserAvatar } from './UserAvatar';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
+import { ClanEmblem } from './ClanEmblem';
 
 export const SocialCard: React.FC<{
     profile: UserProfile;
@@ -52,7 +53,7 @@ export const SocialCard: React.FC<{
                     <div className="social-card-meta text-[10px] text-gray-300 flex items-center gap-1 opacity-90 bg-black/20 px-1.5 py-0.5 rounded-md border border-white/5">
                         {subtitle ?? (
                             <>
-                                {profile.clanIcon && <span className="text-xs">{profile.clanIcon}</span>}
+                                {profile.clanIcon && <ClanEmblem value={profile.clanIcon} className="h-4 w-4 text-xs" />}
                                 <span className="max-w-[70px] truncate font-medium">{profile.clanName || 'Sem Grupo'}</span>
                             </>
                         )}

@@ -95,6 +95,14 @@ export const QuestDetailModal: React.FC<{
     const rewardChest = getQuestRewardChest(quest);
     const rewardLabel = rewardChest === 'Season' ? 'Baú Temporada' : rewardChest ? `Baú ${rewardChest}` : 'Sem baú';
     const rewardGold = Number((quest as SeasonQuest & { rewardGold?: number }).rewardGold || 0);
+    const rewardItemCount = quest.rewards.items?.length || 0;
+    const rewardSummary = rewardGold > 0
+        ? `+${rewardGold} ouro`
+        : rewardChest
+            ? rewardLabel
+            : rewardItemCount > 0
+                ? `${rewardItemCount} ${rewardItemCount === 1 ? 'item' : 'itens'}`
+                : `+${quest.rewards.xp} XP`;
     const requiredCount = quest.type === 'clan'
         ? (quest.requirements?.clanGoal || quest.goal_value || quest.actionTemplate?.repetitions || 1)
         : (quest.requirements?.totalReps || quest.goal_value || quest.actionTemplate?.repetitions || 1);
@@ -105,7 +113,7 @@ export const QuestDetailModal: React.FC<{
             title={quest.title}
             icon={quest.actionTemplate?.icon}
             description={quest.description}
-            badge={quest.type === 'clan' ? 'Desafio do grupo' : 'Desafio pessoal'}
+            badge={quest.type === 'clan' ? 'Missão do grupo' : 'Missão'}
             progress={progress}
             onClose={onClose}
             footer={
@@ -120,7 +128,7 @@ export const QuestDetailModal: React.FC<{
                         </div>
                     ) : (
                         <button onClick={onTake} className="w-full rounded-xl py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
-                            {createsArena ? 'Aceitar desafio' : 'Ingressar na missao'}
+                            Aceitar missão
                         </button>
                     )
                 ) : onAbandon ? (
@@ -154,13 +162,14 @@ export const QuestDetailModal: React.FC<{
                 </div>
             </div>
             <div className="rounded-[18px] border border-[var(--skin-accent-color)]/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.28))] p-4 text-left">
-                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">{createsArena ? 'Arena criada ao aceitar' : 'Como concluir'}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">{createsArena ? 'Ao aceitar' : 'Como concluir'}</div>
                 <div className="mt-2">
                     <div className="flex items-center justify-between gap-3">
                         <div>
-                            <div className="text-[11px] font-black uppercase tracking-[0.14em] text-white/88">{quest.title}</div>
+                            <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/42">{createsArena ? 'Arena' : 'Objetivo'}</div>
+                            <div className="mt-1 text-[11px] font-black uppercase tracking-[0.14em] text-white/88">{quest.title}</div>
                             <div className="mt-1 text-[11px] leading-relaxed text-white/55">
-                                {createsArena ? 'Ao aceitar, o desafio cria uma arena dedicada com a acao abaixo.' : quest.actionTemplate?.description || quest.description}
+                                {createsArena ? 'Uma arena dedicada será adicionada às suas arenas.' : quest.actionTemplate?.description || quest.description}
                             </div>
                         </div>
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-white/10 bg-white/8 text-lg">
@@ -168,14 +177,11 @@ export const QuestDetailModal: React.FC<{
                         </div>
                     </div>
                     {createsArena && <div className="mt-3 border-t border-white/8 pt-3">
-                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/46">Ação miniatura</div>
+                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/46">Ação</div>
                         <div className="mt-1 flex items-center justify-between gap-3">
                             <div className="min-w-0">
                                 <div className="truncate text-[11px] font-black uppercase tracking-[0.12em] text-white/82">{quest.actionTemplate?.name || quest.title}</div>
                                 <div className="mt-1 text-[11px] text-white/58">{quest.actionTemplate?.duration || 0} min • {requiredCount} {progressLabel}</div>
-                            </div>
-                            <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/68">
-                                Prévia
                             </div>
                         </div>
                     </div>}
@@ -185,8 +191,10 @@ export const QuestDetailModal: React.FC<{
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">Recompensas</div>
-                        <div className="mt-1 text-sm font-black uppercase tracking-[0.12em] text-white">{rewardLabel} + insignia</div>
-                        <div className="mt-1 text-[11px] leading-relaxed text-white/65">O bau e a insignia entram automaticamente no inventario assim que voce concluir.</div>
+                        <div className="mt-1 text-sm font-black uppercase tracking-[0.12em] text-white">{rewardSummary}</div>
+                        {quest.rewards.xp > 0 && rewardSummary !== `+${quest.rewards.xp} XP` && (
+                            <div className="mt-1 text-[11px] font-bold text-white/55">+{quest.rewards.xp} XP</div>
+                        )}
                     </div>
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] border border-amber-300/30 bg-black/20 text-2xl shadow-[0_0_18px_rgba(251,191,36,0.16)]">
                                 📦
@@ -202,7 +210,7 @@ export const QuestDetailModal: React.FC<{
     );
 };
 
-const MissionDetailModal: React.FC<{
+export const MissionDetailModal: React.FC<{
     mission: SeasonMission;
     progress: number;
     isCompleted: boolean;

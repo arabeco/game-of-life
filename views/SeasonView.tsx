@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useGame, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { GlassCard } from '../components/GlassCard';
 import { ChevronRightIcon, UsersIcon, CheckIcon, XIcon } from '../components/Icons';
-import { SeasonQuest } from '../types';
-import { QuestDetailModal, SeasonDetailModal, SeasonTransitionModal } from '../components/SeasonDetailModal';
+import { SeasonMission, SeasonQuest } from '../types';
+import { MissionDetailModal, QuestDetailModal, SeasonDetailModal, SeasonTransitionModal } from '../components/SeasonDetailModal';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { getNextSeasonConfig, getSeasonLaunchToastStorageKey, isGenesisSeason, resolveRuntimeActiveSeason, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
 import { SYSTEM_CHALLENGES, SystemChallenge } from '../constants/systemChallenges';
+import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 
 type SelectableQuest = SeasonQuest | SystemChallenge;
 
@@ -29,21 +30,22 @@ const SeasonQuestCard: React.FC<{
     return (
         <GlassCard
             variant="neutral"
-            className="p-4 relative overflow-hidden group transition-all duration-500 cursor-pointer border-2 border-white/10 hover:border-white/30 shadow-xl hover:translate-y-[-2px] active:scale-[0.98] rounded-2xl"
+            className={`group relative cursor-pointer overflow-hidden rounded-xl border p-3 transition-all duration-200 active:scale-[0.99] ${isAccepted
+                ? 'border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/[0.055] hover:border-[var(--skin-accent-color)]/38'
+                : 'border-white/8 bg-white/[0.025] hover:border-white/16 hover:bg-white/[0.045]'}`}
             onClick={onClick}
         >
-            <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full blur-3xl opacity-10 transition-opacity group-hover:opacity-20 bg-white" />
-
+            {isAccepted && <div className="absolute inset-y-0 left-0 w-[2px] bg-[var(--skin-accent-color)]/75" />}
             <div className="flex items-start justify-between relative z-10">
-                <div className="flex-1 space-y-3">
+                <div className="min-w-0 flex-1 space-y-2.5">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-inner bg-white/10 text-white">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/25 text-lg text-white shadow-inner">
                             {icon || '📜'}
                         </div>
                         <div>
-                            <h3 className="font-black text-sm uppercase tracking-wider luxe-title-shadow leading-tight">{title}</h3>
+                            <h3 className="line-clamp-2 text-[12px] font-black uppercase leading-tight tracking-[0.06em] text-white">{title}</h3>
                             <div className="flex items-center space-x-2 mt-0.5">
-                                <span className="text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter bg-white/10 text-gray-300">
+                                <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] ${isAccepted ? 'bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)]' : 'bg-white/8 text-white/48'}`}>
                                     {metaLabel}
                                 </span>
                                 {typeof participants === 'number' && (
@@ -57,11 +59,11 @@ const SeasonQuestCard: React.FC<{
                     </div>
 
                     <div className="space-y-1.5">
-                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                            <span className="text-gray-400">{isAccepted ? 'Progresso' : 'Status'}</span>
-                            <span className="font-mono text-white">{isAccepted ? (progressLabel || `${progress}%`) : 'Pendente'}</span>
+                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.1em]">
+                            <span className="text-white/38">{isAccepted ? 'Progresso' : 'Disponível'}</span>
+                            <span className="text-white/68">{isAccepted ? (progressLabel || `${progress}%`) : 'Ver missão'}</span>
                         </div>
-                        <div className="relative w-full bg-black/40 rounded-full h-2 overflow-hidden border border-white/5 p-[1px]">
+                        <div className="relative h-1.5 w-full overflow-hidden rounded-full border border-white/5 bg-black/40">
                             <div
                                 className="h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(255,255,255,0.2)] bg-gradient-to-r from-[var(--skin-accent-color)] to-white"
                                 style={{ width: `${Math.min(100, isAccepted ? progress : 0)}%` }}
@@ -73,7 +75,7 @@ const SeasonQuestCard: React.FC<{
                     </div>
                 </div>
 
-                <div className="flex flex-col items-center justify-center h-full pt-1 space-y-2">
+                <div className="ml-2 flex h-full flex-col items-center justify-center space-y-1.5 pt-1">
                     {isClaimed ? (
                         <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/30">
                             <CheckIcon className="w-5 h-5 text-green-400" />
@@ -87,7 +89,7 @@ const SeasonQuestCard: React.FC<{
                         </div>
                     ) : (
                         <>
-                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-colors group-hover:bg-white/10">
                                 <ChevronRightIcon className="w-4 h-4 text-gray-400" />
                             </div>
                             {isAccepted && onAbort && (
@@ -96,8 +98,8 @@ const SeasonQuestCard: React.FC<{
                                         event.stopPropagation();
                                         onAbort();
                                     }}
-                                    className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 hover:bg-red-500/20 transition-colors group/abort"
-                                    title="Abandonar desafio"
+                                    className="flex h-7 w-7 items-center justify-center rounded-full border border-red-500/15 bg-red-500/5 transition-colors hover:bg-red-500/15"
+                                    title="Abandonar missão"
                                 >
                                     <XIcon className="w-4 h-4 text-red-400/50 group-hover/abort:text-red-400" />
                                 </button>
@@ -107,9 +109,6 @@ const SeasonQuestCard: React.FC<{
                 </div>
             </div>
 
-            {isCompleted && !isClaimed && (
-                <div className="absolute -left-1 -top-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping" />
-            )}
         </GlassCard>
     );
 };
@@ -121,6 +120,7 @@ export const SeasonView: React.FC = () => {
         reports,
         activeCycle,
         seasons,
+        seasonMissions,
         seasonQuests,
         acceptSeasonQuest,
         abortSeasonQuest,
@@ -135,6 +135,7 @@ export const SeasonView: React.FC = () => {
         updateUserProfile,
     } = useGame();
     const [selectedQuest, setSelectedQuest] = useState<SelectableQuest | null>(null);
+    const [selectedAutomaticMission, setSelectedAutomaticMission] = useState<SeasonMission | null>(null);
     const [isSeasonDetailOpen, setSeasonDetailOpen] = useState(false);
     const [isSeasonTransitionOpen, setSeasonTransitionOpen] = useState(false);
     const [isMissionLibraryOpen, setMissionLibraryOpen] = useState(false);
@@ -151,6 +152,21 @@ export const SeasonView: React.FC = () => {
         [allArenas, getActionsForArena]
     );
     const completedFlags = useMemo(() => new Set(userProfile.completedSeasonMissions || []), [userProfile.completedSeasonMissions]);
+    const automaticSeasonMissions = useMemo(() => {
+        if (!activeSeason) return [];
+
+        const merged = [
+            ...GM_SEASON_MISSIONS.filter((mission) => mission.season_id === activeSeason.id),
+            ...seasonMissions.filter((mission) => mission.season_id === activeSeason.id),
+        ];
+        const seen = new Set<string>();
+
+        return merged.filter((mission) => {
+            if (seen.has(mission.id) || completedFlags.has(mission.id)) return false;
+            seen.add(mission.id);
+            return mission.goal_type !== 'actions_completed' && mission.goal_type !== 'milestones_completed';
+        });
+    }, [activeSeason, seasonMissions, completedFlags]);
 
     useEffect(() => {
         quests.forEach((quest) => {
@@ -246,23 +262,52 @@ export const SeasonView: React.FC = () => {
         }
     };
 
+    const getAutomaticSeasonMissionProgress = (mission: SeasonMission): number => {
+        if (completedFlags.has(mission.id)) return 100;
+
+        const goal = Math.max(1, Number(mission.goal_value || 1));
+        switch (mission.goal_type) {
+            case 'tutorial_completed':
+                return tutorialCompleted ? 100 : 0;
+            case 'cycle_created':
+                return hasCreatedCycle ? 100 : 0;
+            case 'campaign_installed':
+                return hasInstalledCampaign ? 100 : 0;
+            case 'arena_completed':
+            case 'arena_cleared':
+                return Math.min(100, Math.round((clearedArenaCount / goal) * 100));
+            case 'cycle_completed':
+            case 'report_completed':
+                return hasCompletedCycle ? 100 : 0;
+            case 'quests_claimed': {
+                const sourceIds = mission.sourceQuestIds || [];
+                const completedCount = sourceIds.length > 0
+                    ? sourceIds.filter((id) => completedFlags.has(id)).length
+                    : quests.filter((quest) => completedFlags.has(quest.id)).length;
+                return Math.min(100, Math.round((completedCount / goal) * 100));
+            }
+            default:
+                return 0;
+        }
+    };
+
     const acceptedSystemIds = useMemo(
         () => new Set(userProfile.acceptedSystemChallenges || []),
         [userProfile.acceptedSystemChallenges]
     );
     const activeSystemQuests = useMemo(
-        () => SYSTEM_CHALLENGES.filter((quest) => acceptedSystemIds.has(quest.id) && !completedFlags.has(quest.id)),
+        () => SYSTEM_CHALLENGES.filter((quest) => acceptedSystemIds.has(quest.id) && !completedFlags.has(quest.id)).slice(0, 1),
         [acceptedSystemIds, completedFlags]
     );
     const availableSystemQuests = useMemo(
-        () => SYSTEM_CHALLENGES.filter((quest) => !acceptedSystemIds.has(quest.id) && !completedFlags.has(quest.id)),
-        [acceptedSystemIds, completedFlags]
+        () => SYSTEM_CHALLENGES.filter((quest) => quest.id !== activeSystemQuests[0]?.id && !completedFlags.has(quest.id)),
+        [activeSystemQuests, completedFlags]
     );
 
     const acceptSystemQuest = (questId: string) => {
-        updateUserProfile({ acceptedSystemChallenges: [...new Set([...(userProfile.acceptedSystemChallenges || []), questId])] });
+        updateUserProfile({ acceptedSystemChallenges: [questId] });
         const quest = SYSTEM_CHALLENGES.find((candidate) => candidate.id === questId);
-        showToast(`Missao aceita${quest ? `: ${quest.title}` : ''}.`, 'success');
+        showToast(`Missao escolhida${quest ? `: ${quest.title}` : ''}.`, 'success');
     };
 
     const abandonSystemQuest = (questId: string) => {
@@ -271,13 +316,37 @@ export const SeasonView: React.FC = () => {
     };
 
     const individualQuests = useMemo(
-        () => quests.filter((quest) => quest.type === 'individual' && !completedFlags.has(quest.id)),
+        () => quests.filter((quest) => (
+            quest.type === 'individual'
+            && !completedFlags.has(quest.id)
+            && (!quest.goal_type || quest.goal_type === 'actions_completed' || quest.goal_type === 'milestones_completed')
+        )),
         [quests, completedFlags]
+    );
+    const activeIndividualQuests = useMemo(
+        () => individualQuests.filter((quest) => isQuestAccepted(quest)),
+        [individualQuests, allActions, userMissionParticipations]
+    );
+    const availableIndividualQuests = useMemo(
+        () => individualQuests.filter((quest) => !isQuestAccepted(quest)),
+        [individualQuests, allActions, userMissionParticipations]
     );
     const clanQuests = useMemo(
         () => quests.filter((quest) => quest.type === 'clan' && !completedFlags.has(quest.id)),
         [quests, completedFlags]
     );
+    const activeClanQuests = useMemo(
+        () => clanQuests.filter((quest) => isQuestAccepted(quest)),
+        [clanQuests, allActions, userMissionParticipations]
+    );
+    const availableClanQuests = useMemo(
+        () => clanQuests.filter((quest) => !isQuestAccepted(quest)),
+        [clanQuests, allActions, userMissionParticipations]
+    );
+    const activeMissionCount = automaticSeasonMissions.length
+        + activeSystemQuests.length
+        + activeIndividualQuests.length
+        + activeClanQuests.length;
 
     const isGenesis = isGenesisSeason(activeSeason);
     const activeSeasonBackground = resolveSeasonBackgroundUrl(activeSeason);
@@ -311,10 +380,10 @@ export const SeasonView: React.FC = () => {
 
     const selectedQuestProgress = selectedQuest
         ? (isSystemQuest(selectedQuest)
-            ? (acceptedSystemIds.has(selectedQuest.id) ? getSystemQuestProgress(selectedQuest) : 0)
+            ? (activeSystemQuests[0]?.id === selectedQuest.id ? getSystemQuestProgress(selectedQuest) : 0)
             : calculateQuestProgress(selectedQuest))
         : 0;
-    const selectedQuestIsActive = selectedQuest ? (isSystemQuest(selectedQuest) ? acceptedSystemIds.has(selectedQuest.id) : isQuestAccepted(selectedQuest)) : false;
+    const selectedQuestIsActive = selectedQuest ? (isSystemQuest(selectedQuest) ? activeSystemQuests[0]?.id === selectedQuest.id : isQuestAccepted(selectedQuest)) : false;
 
     return (
         <div className="space-y-8 pb-20 animate-fade-in">
@@ -359,18 +428,39 @@ export const SeasonView: React.FC = () => {
                         </div>
                     </GlassCard>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-1 border-b border-white/10 pb-2">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Minhas missoes</h3>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-white/10 px-1 pb-2">
+                            <div className="flex items-center gap-2.5">
+                                <h3 className="text-sm font-black uppercase tracking-[0.12em] text-white/82">Minhas missões</h3>
+                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full border border-white/10 bg-white/7 px-1.5 text-[9px] font-black text-white/55">
+                                    {activeMissionCount}
+                                </span>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => setMissionLibraryOpen((open) => !open)}
-                                className="rounded-lg border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)]"
+                                className="rounded-lg border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] text-[var(--skin-accent-color)]"
                             >
                                 {isMissionLibraryOpen ? 'Fechar' : 'Escolher'}
                             </button>
                         </div>
                         <div className="space-y-2">
+                            {automaticSeasonMissions.map((mission) => {
+                                const progress = getAutomaticSeasonMissionProgress(mission);
+                                return (
+                                    <SeasonQuestCard
+                                        key={mission.id}
+                                        title={mission.title}
+                                        icon={mission.icon}
+                                        metaLabel="Temporada"
+                                        isAccepted={true}
+                                        isClaimed={false}
+                                        progress={progress}
+                                        progressLabel={`${Math.round(progress)}%`}
+                                        onClick={() => setSelectedAutomaticMission(mission)}
+                                    />
+                                );
+                            })}
                             {activeSystemQuests.map((quest) => (
                                 <SeasonQuestCard
                                     key={quest.id}
@@ -391,17 +481,51 @@ export const SeasonView: React.FC = () => {
                                     onAbort={() => abandonSystemQuest(quest.id)}
                                 />
                             ))}
-                            {activeSystemQuests.length === 0 && (
+                            {activeIndividualQuests.map((quest) => (
+                                <SeasonQuestCard
+                                    key={quest.id}
+                                    title={quest.title}
+                                    icon={quest.actionTemplate.icon}
+                                    metaLabel="Com arena"
+                                    isAccepted={true}
+                                    isClaimed={false}
+                                    progress={calculateQuestProgress(quest)}
+                                    progressLabel={`${Math.round(calculateQuestProgress(quest))}%`}
+                                    onClick={() => setSelectedQuest(quest)}
+                                    onAbort={() => { void abortSeasonQuest(quest.id); }}
+                                />
+                            ))}
+                            {activeClanQuests.map((quest) => (
+                                <SeasonQuestCard
+                                    key={quest.id}
+                                    title={quest.title}
+                                    icon={quest.actionTemplate.icon}
+                                    metaLabel="Grupo"
+                                    isAccepted={true}
+                                    isClaimed={false}
+                                    progress={calculateQuestProgress(quest)}
+                                    progressLabel={`${Math.round(calculateQuestProgress(quest))}%`}
+                                    participants={clanQuestParticipants[quest.id] || 0}
+                                    onClick={() => setSelectedQuest(quest)}
+                                    onAbort={() => { void abortSeasonQuest(quest.id); }}
+                                />
+                            ))}
+                            {activeMissionCount === 0 && (
                                 <div className="rounded-xl border border-white/8 bg-white/[0.025] px-4 py-5 text-center">
-                                    <p className="text-[11px] font-bold text-white/62">Nenhuma missao escolhida.</p>
-                                    <p className="mt-1 text-[10px] text-white/38">Use o app livremente ou escolha uma quando quiser.</p>
+                                    <p className="text-[11px] font-bold text-white/62">Nenhuma missão em andamento.</p>
+                                    <button type="button" onClick={() => setMissionLibraryOpen(true)} className="mt-3 rounded-lg border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/10 px-4 py-2 text-[9px] font-black uppercase tracking-[0.1em] text-[var(--skin-accent-color)]">
+                                        Escolher missão
+                                    </button>
                                 </div>
                             )}
                         </div>
 
                         {isMissionLibraryOpen && (
-                            <div className="space-y-2 border-t border-white/8 pt-3">
-                                <p className="px-1 text-[9px] font-black uppercase tracking-[0.18em] text-white/42">Missoes disponiveis</p>
+                            <div className="space-y-2 rounded-xl border border-white/8 bg-black/15 p-2.5">
+                                <div className="flex items-center justify-between px-1 pb-1">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/58">Missões disponíveis</p>
+                                    <span className="text-[9px] font-bold text-white/32">{availableSystemQuests.length + availableIndividualQuests.length + availableClanQuests.length}</span>
+                                </div>
                                 {availableSystemQuests.map((quest) => (
                                     <SeasonQuestCard
                                         key={quest.id}
@@ -414,72 +538,47 @@ export const SeasonView: React.FC = () => {
                                         onClick={() => setSelectedQuest(quest)}
                                     />
                                 ))}
-                                {availableSystemQuests.length === 0 && (
-                                    <p className="py-3 text-center text-[10px] text-white/42">Voce ja escolheu todas as missoes disponiveis.</p>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-1 border-b border-white/10 pb-2">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Desafios da temporada</h3>
-                        </div>
-                        <div className="space-y-2">
-                            {individualQuests.map((quest) => {
-                                const isAccepted = isQuestAccepted(quest);
-                                const progress = isAccepted ? calculateQuestProgress(quest) : 0;
-
-                                return (
+                                {availableIndividualQuests.map((quest) => (
                                     <SeasonQuestCard
                                         key={quest.id}
                                         title={quest.title}
                                         icon={quest.actionTemplate.icon}
-                                        metaLabel="Individual"
-                                        isAccepted={isAccepted}
+                                        metaLabel="Cria uma arena"
+                                        isAccepted={false}
                                         isClaimed={false}
-                                        progress={progress}
+                                        progress={0}
                                         onClick={() => setSelectedQuest(quest)}
-                                        onAbort={isAccepted ? () => { void abortSeasonQuest(quest.id); } : undefined}
                                     />
-                                );
-                            })}
-                            {individualQuests.length === 0 && (
-                                <GlassCard variant="neutral" className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-white/55">
-                                    Nada pendente por aqui
-                                </GlassCard>
-                            )}
-                        </div>
-                    </div>
-
-                    {clanQuests.length > 0 && (
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold accent-text uppercase tracking-widest px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">Desafios do grupo</h3>
-                            <div className="space-y-2">
-                                {clanQuests.map((quest) => {
-                                    const isAccepted = isQuestAccepted(quest);
-                                    const progress = isAccepted ? calculateQuestProgress(quest) : 0;
-                                    const participantsCount = clanQuestParticipants[quest.id] || 0;
-
-                                    return (
-                                        <SeasonQuestCard
-                                            key={quest.id}
-                                            title={quest.title}
-                                            icon={quest.actionTemplate.icon}
-                                            metaLabel="Grupo"
-                                            isAccepted={isAccepted}
-                                            isClaimed={false}
-                                            progress={progress}
-                                            participants={participantsCount}
-                                            onClick={() => setSelectedQuest(quest)}
-                                            onAbort={isAccepted ? () => { void abortSeasonQuest(quest.id); } : undefined}
-                                        />
-                                    );
-                                })}
+                                ))}
+                                {availableClanQuests.map((quest) => (
+                                    <SeasonQuestCard
+                                        key={quest.id}
+                                        title={quest.title}
+                                        icon={quest.actionTemplate.icon}
+                                        metaLabel="Missão do grupo"
+                                        isAccepted={false}
+                                        isClaimed={false}
+                                        progress={0}
+                                        participants={clanQuestParticipants[quest.id] || 0}
+                                        onClick={() => setSelectedQuest(quest)}
+                                    />
+                                ))}
+                                {availableSystemQuests.length === 0 && availableIndividualQuests.length === 0 && availableClanQuests.length === 0 && (
+                                    <p className="py-3 text-center text-[10px] text-white/42">Nenhuma missão disponível.</p>
+                                )}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </>
+            )}
+
+            {selectedAutomaticMission && (
+                <MissionDetailModal
+                    mission={selectedAutomaticMission}
+                    progress={getAutomaticSeasonMissionProgress(selectedAutomaticMission)}
+                    isCompleted={completedFlags.has(selectedAutomaticMission.id)}
+                    onClose={() => setSelectedAutomaticMission(null)}
+                />
             )}
 
             {selectedQuest && (
@@ -492,9 +591,11 @@ export const SeasonView: React.FC = () => {
                     onTake={() => {
                         if (isSystemQuest(selectedQuest)) {
                             acceptSystemQuest(selectedQuest.id);
+                            setMissionLibraryOpen(false);
                             setSelectedQuest(null);
                         } else {
                             void acceptSeasonQuest(selectedQuest.id);
+                            setMissionLibraryOpen(false);
                             setSelectedQuest(null);
                         }
                     }}

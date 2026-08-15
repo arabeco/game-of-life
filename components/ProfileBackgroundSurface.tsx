@@ -7,7 +7,7 @@ import {
 } from '../utils/profileBackgrounds';
 
 interface ProfileBackgroundSurfaceProps {
-    value: string;
+    value?: string | null;
     className?: string;
     alt?: string;
 }

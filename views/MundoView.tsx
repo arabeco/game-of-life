@@ -18,6 +18,7 @@ import { ConnectionsModal } from '../components/ConnectionsModal';
 import { DirectMessages } from '../components/DirectMessages';
 import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/screenIntroTips';
 import './mundo-ui.css';
+import { ClanEmblem } from '../components/ClanEmblem';
 
 const RELATION_LABELS: Record<'mentoria' | 'parceria', string> = {
     mentoria: 'Mentoria',
@@ -35,47 +36,6 @@ const JoinClanBox: React.FC<{ onCreate: () => void }> = ({ onCreate }) => {
             <h2 className="text-xl font-bold">Você não está em um grupo</h2>
             <p className="text-sm text-gray-400">Entre em um grupo para coordenar tarefas em conjunto ou crie o seu para operar em equipe.</p>
             <button onClick={onCreate} className="w-full py-2 rounded-xl luxe-skin-button">Criar Grupo</button>
-        </GlassCard>
-    );
-};
-
-const ClanInfoBox: React.FC<{ onClick: () => void }> = ({ onClick }) => {
-    const { clan, clanRanks } = useGame();
-
-    if (!clan) return null;
-
-    const currentRank = clanRanks.find(r => r.id === clan.rankId);
-    const nextRankIndex = clanRanks.findIndex(r => r.id === clan.rankId) + 1;
-    const nextRank = clanRanks[nextRankIndex];
-    const expForCurrentRank = currentRank?.expRequired || 0;
-    const expForNextRank = nextRank?.expRequired || expForCurrentRank;
-    const progressInRank = clan.exp - expForCurrentRank;
-    const expToNextRank = expForNextRank - expForCurrentRank;
-    const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
-
-    return (
-        <GlassCard variant="gold" className="mundo-clan-card p-4 space-y-2 text-center transition-all" id="clan-overview">
-            <button onClick={onClick} className="mundo-clan-card__button w-full text-left space-y-2">
-                <div className="flex items-center justify-center space-x-2">
-                    <span className="text-3xl">{clan.icon}</span>
-                    <div>
-                        <p className="mundo-clan-card__name text-sm uppercase tracking-wider">{clan.name}</p>
-                        <h2 className="mundo-clan-card__rank text-2xl font-black">{currentRank?.name || 'N/A'}</h2>
-                    </div>
-                </div>
-                <div className="mundo-clan-card__progress">
-                    <div className="mundo-clan-card__meta flex justify-between text-[10px] font-bold">
-                        <span>{progressInRank.toLocaleString('pt-BR')} EXP</span>
-                        <span>{nextRank ? `${(expToNextRank - progressInRank).toLocaleString('pt-BR')} para ${nextRank.name}` : 'Nível Máximo'}</span>
-                    </div>
-                    <div className="mundo-clan-card__track w-full rounded-full h-2 mt-1">
-                        <div
-                            className="mundo-clan-card__fill h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${progressPercentage}%` }}
-                        ></div>
-                    </div>
-                </div>
-            </button>
         </GlassCard>
     );
 };
@@ -222,7 +182,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
         getUserPublicData,
         respondToRelationshipInvite,
     } = useGame();
-    const [modal, setModal] = useState<'create' | 'clan-overview' | null>(null);
+    const [modal, setModal] = useState<'create' | null>(null);
     const [activeSection, setActiveSection] = useState<SocialSection>(initialSection);
     const [activeTab, setActiveTab] = useState<'aliados' | 'solicitacoes'>('aliados');
     const [searchResults, setSearchResults] = useState<{ players: UserProfile[], clans: Clan[] }>({ players: [], clans: [] });
@@ -380,7 +340,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                     badges={
                                         clan?.name ? (
                                             <span className="rounded-full border border-amber-400/24 bg-amber-400/12 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-amber-200">
-                                                {clan.icon || '🛡️'} Grupo
+                                                <ClanEmblem value={clan.icon} className="mr-1 h-4 w-4" /> Grupo
                                             </span>
                                         ) : undefined
                                     }
@@ -642,12 +602,9 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
             )}
 
             {activeSection === 'clan' && (
-                <div className="space-y-5">
+                <div className="flex justify-center">
                     {clan ? (
-                        <>
-                            <ClanInfoBox onClick={() => setModal('clan-overview')} />
-                            {modal === 'clan-overview' && <ClanOverviewModal onClose={() => setModal(null)} />}
-                        </>
+                        <ClanOverviewModal embedded onClose={() => undefined} />
                     ) : (
                         <JoinClanBox onCreate={() => setModal('create')} />
                     )}

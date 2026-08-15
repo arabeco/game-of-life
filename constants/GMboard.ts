@@ -175,19 +175,34 @@ export const SKIN_SEASON_UNLOCKS: Record<string, string[]> = { GOLD: ['sm_3'] };
 export const SKIN_CHEST_POOL = ['VOID'].filter(id => isItemCatalogVisible(id));
 
 export const SANCTUARY_BACKGROUND_OPTIONS = [
-  { id: 'garden', name: 'Jardim', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land1.jpg' },
-  { id: 'territory-1', name: 'Territorio I', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land01.jpg' },
-  { id: 'territory-2', name: 'Territorio II', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land02.jpg' },
-  { id: 'territory-3', name: 'Territorio III', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land03.jpg' },
-  { id: 'territory-4', name: 'Territorio IV', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land04.jpg' },
-  { id: 'territory-5', name: 'Territorio V', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/land05.jpg' },
-  { id: 'garden-aurora', name: 'Jardim Aurora', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardenaurora.jpg' },
-  { id: 'garden-cyber', name: 'Jardim Cyber', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardencyber.jpg' },
-  { id: 'garden-ember', name: 'Jardim Ember', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardenember.jpg' },
-  { id: 'garden-frost', name: 'Jardim Frost', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/gardenfrost.jpg' },
-  { id: 'office-1', name: 'Escritorio I', value: 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/office1.jpg' },
-];
+  { id: 'highlands', name: 'Planaltos', value: '/clan-backgrounds/highlands.webp' },
+  { id: 'forest-courtyard', name: 'Refugio verde', value: '/clan-backgrounds/forest-courtyard.webp' },
+  { id: 'coastal-overlook', name: 'Mirante', value: '/clan-backgrounds/coastal-overlook.webp' },
+] as const;
 export const DEFAULT_SANCTUARY_BACKGROUND = SANCTUARY_BACKGROUND_OPTIONS[0].value;
+
+export const resolveClanBackground = (value?: string | null): string => {
+  const normalized = String(value || '').trim();
+  if (SANCTUARY_BACKGROUND_OPTIONS.some(option => option.value === normalized)) return normalized;
+
+  const legacyName = normalized.toLowerCase();
+  if (legacyName.includes('garden') || legacyName.includes('aurora') || legacyName.includes('frost')) {
+    return '/clan-backgrounds/forest-courtyard.webp';
+  }
+  if (legacyName.includes('office') || legacyName.includes('land04') || legacyName.includes('land05')) {
+    return '/clan-backgrounds/coastal-overlook.webp';
+  }
+  return DEFAULT_SANCTUARY_BACKGROUND;
+};
+
+export const CLAN_EMBLEM_OPTIONS = [
+  { id: 'solar', name: 'Solar', value: '/clan-emblems/solar.svg' },
+  { id: 'verdant', name: 'Bosque', value: '/clan-emblems/verdant.svg' },
+  { id: 'forge', name: 'Forja', value: '/clan-emblems/forge.svg' },
+  { id: 'tide', name: 'Maré', value: '/clan-emblems/tide.svg' },
+  { id: 'dawn', name: 'Aurora', value: '/clan-emblems/dawn.svg' },
+  { id: 'obsidian', name: 'Obsidiana', value: '/clan-emblems/obsidian.svg' },
+] as const;
 
 export const MOODS_DATA: Mood[] = [
     { label: "Vergonha", min: 0, max: 5, color: "linear-gradient(90deg, #6b1e1e, #8b2b2b)", trackStart: "#6b1e1e", trackEnd: "#8b2b2b" },

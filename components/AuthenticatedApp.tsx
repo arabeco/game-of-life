@@ -384,10 +384,9 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             isRestScreenVisible ||
             isProfileVisible ||
             isReportsVisible ||
-            dailyCompletionPrompt ||
-            activeScreenTipId
+            dailyCompletionPrompt
         ));
-    }, [activeScreenTipId, dailyCompletionPrompt, isProfileVisible, isReportsVisible, isRestScreenVisible, onBlockingOverlayChange]);
+    }, [dailyCompletionPrompt, isProfileVisible, isReportsVisible, isRestScreenVisible, onBlockingOverlayChange]);
 
     useEffect(() => {
         void updateInstalledAppBadge(unreadNotificationsCount);
@@ -491,6 +490,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     };
 
     const handleSetView = useCallback((view: View) => {
+        setRestScreenVisible(false);
         setCurrentView((prev) => {
             const nextView = sanitizeView(view, canUseAssetsView, isBuilderMode);
             return prev === nextView ?prev : nextView;

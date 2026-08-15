@@ -74,13 +74,9 @@ export const HallOfFameView: React.FC = () => {
     return (
         <div className="space-y-4">
             <div className="rounded-[26px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-white/35">Hall of Fame</p>
-                <div className="mt-2 flex items-end justify-between gap-3">
+                <div className="flex items-end justify-between gap-3">
                     <div>
                         <h2 className="text-xl font-semibold text-white">Sinais do reino</h2>
-                        <p className="mt-1 text-sm text-white/55">
-                            Menos ruído, mais movimento importante de quem esta avançando.
-                        </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/15 px-3 py-2 text-right">
                         <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">Eventos</p>

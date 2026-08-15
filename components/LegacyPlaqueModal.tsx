@@ -2,12 +2,14 @@ import React from 'react';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
 import { exportElementAsImage, shareElementWithFeedback, shouldPreferNativeShare } from './Share';
-import { LegacyPlaqueArtifact } from './LegacyPlaqueArtifact';
+import { LegacyGrandPlaque } from './LegacyGrandPlaque';
 import type { LegacyEraSummary } from './LegacyExportDocument';
+import type { ReportIdentitySnapshot } from '../types';
 
 interface LegacyPlaqueModalProps {
     eras: LegacyEraSummary[];
     sovereignName: string;
+    identity?: ReportIdentitySnapshot;
     plaqueForged: boolean;
     shareUnlocked: boolean;
     onClose: () => void;
@@ -16,7 +18,7 @@ interface LegacyPlaqueModalProps {
 
 const PLAQUE_CAPTURE_ID = 'legacy-plaque-artifact-capture';
 
-export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sovereignName, plaqueForged, shareUnlocked, onClose, onToast }) => {
+export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sovereignName, identity, plaqueForged, shareUnlocked, onClose, onToast }) => {
     const preferNativeShare = shouldPreferNativeShare();
     const allowNativeShare = preferNativeShare && shareUnlocked;
 
@@ -77,13 +79,14 @@ export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sove
                         </div>
 
                         <div className="mt-6">
-                            <LegacyPlaqueArtifact
-                                id={PLAQUE_CAPTURE_ID}
+                            <div id={PLAQUE_CAPTURE_ID} className="rounded-[26px] bg-[#050709] p-4 sm:p-7">
+                            <LegacyGrandPlaque
                                 eras={eras}
                                 sovereignName={sovereignName}
-                                plaqueUnlocked={true}
-                                compact={false}
+                                identity={identity}
+                                identityMode="current"
                             />
+                            </div>
                         </div>
 
                         <div className="mt-5 flex gap-3">

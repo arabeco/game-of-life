@@ -4,7 +4,11 @@ import {
   Token as CapacitorPushToken,
   PermissionStatus as CapacitorPushPermissionStatus,
 } from '@capacitor/push-notifications';
-import { getLocalNotificationPermission, requestLocalNotificationPermission } from './localNotification';
+import {
+  getLocalNotificationPermission,
+  requestLocalNotificationPermission,
+  showLocalNotification,
+} from './localNotification';
 import {
   disableRemotePushSubscription,
   getRemoteWebPushSupport,
@@ -59,6 +63,7 @@ const NATIVE_PUSH_TOKEN_STORAGE_KEY = 'glyph_native_push_token';
 const NATIVE_PUSH_REMOTE_READY_STORAGE_KEY = 'glyph_native_push_remote_ready';
 const NATIVE_PUSH_DEVICE_ID_STORAGE_KEY = 'glyph_native_push_device_id';
 const SUPABASE_FUNCTIONS_URL = `${((import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() || '').replace(/\/+$/, '')}/functions/v1/web-push`;
+let nativePushEventListenersPromise: Promise<void> | null = null;
 
 type AppPushFunctionResponse = {
   ok: boolean;
@@ -106,6 +111,43 @@ const getOrCreateNativePushDeviceId = (): string => {
 
 const getNativePushDeviceLabel = (platform: string): string =>
   `glyph-${platform}-native-${getOrCreateNativePushDeviceId()}`;
+
+const navigateToPushUrl = (value: unknown) => {
+  if (typeof window === 'undefined') return;
+
+  const url = typeof value === 'string' ? value.trim() : '';
+  if (!url) return;
+
+  window.location.href = /^[a-z][a-z0-9+.-]*:/i.test(url)
+    ? url
+    : (url.startsWith('/') ? url : `/${url}`);
+};
+
+const ensureNativePushEventListeners = async () => {
+  if (!isCapacitorNativeRuntime()) return;
+
+  if (!nativePushEventListenersPromise) {
+    nativePushEventListenersPromise = (async () => {
+      await PushNotifications.addListener('pushNotificationActionPerformed', (event) => {
+        navigateToPushUrl(event.notification.data?.url);
+      });
+
+      await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        const data = notification.data || {};
+        void showLocalNotification({
+          title: notification.title || 'Glyph',
+          body: notification.body || 'Voce recebeu um novo aviso.',
+          tag: String(data.tag || notification.id || 'glyph-remote-push'),
+          url: typeof data.url === 'string' ? data.url : '/?oracle=notifications',
+          requireInteraction: String(data.requireInteraction || '') === 'true',
+          renotify: String(data.renotify || '') === 'true',
+        });
+      });
+    })();
+  }
+
+  await nativePushEventListenersPromise;
+};
 
 export const getNativePushPlatform = (): NativePushPlatform => {
   try {
@@ -342,6 +384,8 @@ export const syncAppPushRegistration = async (): Promise<AppPushSyncResult> => {
       remoteDeliveryReady: result.ok,
     };
   }
+
+  await ensureNativePushEventListeners();
 
   const permission = await requestAppPushPermission();
   if (permission !== 'granted') {

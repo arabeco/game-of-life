@@ -4,10 +4,11 @@ import { useGame } from '../contexts/GameContext';
 import { IconPickerModal } from './IconPickerModal';
 import { CheckIcon } from './Icons';
 import { RecruitmentStatus } from '../types';
-import { DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
+import { CLAN_EMBLEM_OPTIONS, DEFAULT_SANCTUARY_BACKGROUND, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
 import { GOLD_CLAN_CREATION_COST } from '../constants/goldCatalog';
 import { Portal } from './Portal';
 import { ConfirmationModal } from './ConfirmationModal';
+import { ClanEmblem } from './ClanEmblem';
 
 const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
 
@@ -15,7 +16,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const { createClan, userProfile } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [icon, setIcon] = useState('\u{1F3DB}\uFE0F');
+    const [icon, setIcon] = useState<string>(CLAN_EMBLEM_OPTIONS[0].value);
     const [recruitmentStatus, setRecruitmentStatus] = useState<RecruitmentStatus>('Aberto');
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [backgroundUrl, setBackgroundUrl] = useState(DEFAULT_SANCTUARY_BACKGROUND);
@@ -74,10 +75,27 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                             <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-yellow-300">
                                 {`Criacao institucional - ${GOLD_CLAN_CREATION_COST} ouro`}
                             </div>
-                            <button onClick={() => setIsIconPickerOpen(true)} className="flex h-24 w-24 items-center justify-center rounded-2xl bg-black/20 text-5xl">
-                                {icon}
-                            </button>
+                            <ClanEmblem value={icon} className="h-24 w-24 rounded-[26px] border border-amber-200/25 bg-black/30 p-2 text-5xl shadow-xl" />
                             <div className="w-full space-y-3">
+                                <div className="space-y-2">
+                                    <label className="block text-center text-xs font-bold uppercase text-gray-400">Emblema</label>
+                                    <div className="grid grid-cols-6 gap-2">
+                                        {CLAN_EMBLEM_OPTIONS.map((option) => (
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                onClick={() => setIcon(option.value)}
+                                                title={option.name}
+                                                className={`aspect-square rounded-xl border p-1 transition-all ${icon === option.value ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/12' : 'border-white/10 bg-black/20 opacity-65 hover:opacity-100'}`}
+                                            >
+                                                <ClanEmblem value={option.value} className="h-full w-full" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button type="button" onClick={() => setIsIconPickerOpen(true)} className="mx-auto block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 hover:text-white/75">
+                                        Usar símbolo
+                                    </button>
+                                </div>
                                 <input
                                     id="create-clan-name-input"
                                     type="text"

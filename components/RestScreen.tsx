@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { Portal } from './Portal';
 import { useGame } from '../contexts/GameContext';
-import { LockIcon, UnlockIcon, CalendarIcon, CheckCircleIcon, XCircleIcon, UsersIcon, ZapIcon, ShareIcon, XIcon, ArrowRightIcon, EyeIcon, FocusIcon } from './Icons';
+import { LockIcon, UnlockIcon, CalendarIcon, CheckCircleIcon, XCircleIcon, UsersIcon, ShareIcon, XIcon, ArrowRightIcon, EyeIcon, FocusIcon } from './Icons';
 import { handleShare } from './Share';
 import { GlassCard } from './GlassCard';
 import { SephirotFog } from './SephirotFog';
@@ -11,7 +11,7 @@ import { SitrepContent } from './SitrepContent';
 import { ClanOverviewModal } from './ClanOverviewModal';
 import { OracleFeed } from './OracleFeed';
 import { WheelPicker } from './inputs/WheelPicker';
-import { Action, ActionType, Arena, ScheduledTask, DayOfWeek } from '../types';
+import { Action, ScheduledTask } from '../types';
 import { FocusAudioPlayer } from './FocusAudioPlayer';
 import { REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionSessionDetail } from '../utils/restScreenActionSession';
 import { showLocalNotification } from '../utils/localNotification';
@@ -34,81 +34,6 @@ interface RestScreenProps {
     onClearActionSession?: () => void;
 }
 
-// Helper functions for parsing (duplicated from PlannerView for now, could be moved to utils)
-const normalizeText = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-const levenshteinDistance = (a: string, b: string): number => {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
-    const matrix = [];
-    for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
-    for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
-    for (let i = 1; i <= b.length; i++) {
-        for (let j = 1; j <= a.length; j++) {
-            if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                matrix[i][j] = matrix[i - 1][j - 1];
-            } else {
-                matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
-            }
-        }
-    }
-    return matrix[b.length][a.length];
-};
-
-const parseDurationMinutes = (text: string): number | null => {
-    const match = text.match(/\b(\d+)\s*(m|min|mins|minuto|minutos)\b/i);
-    if (match) return parseInt(match[1]);
-    const matchHours = text.match(/\b(\d+)\s*(h|hora|horas)\b/i);
-    if (matchHours) return parseInt(matchHours[1]) * 60;
-    const matchMixed = text.match(/\b(\d+)\s*(h|hora|horas)\s*(\d+)?\b/i);
-    if (matchMixed) return parseInt(matchMixed[1]) * 60 + (matchMixed[3] ? parseInt(matchMixed[3]) : 0);
-    return null;
-};
-
-const parseRepetitions = (text: string): number | null => {
-    const match = text.match(/\b(\d+)\s*(x|vez|vezes)\b/i);
-    if (match) return parseInt(match[1]);
-    return null;
-};
-
-const parseTimeMinutes = (text: string): number | null => {
-    const match = text.match(/\b(\d{1,2})[:h](\d{2})\b/i);
-    if (match) {
-        const h = parseInt(match[1]);
-        const m = parseInt(match[2]);
-        return h * 60 + m;
-    }
-    const matchH = text.match(/\b(\d{1,2})h\b/i);
-    if (matchH) return parseInt(matchH[1]) * 60;
-    const matchAt = text.match(/\bas\s*(\d{1,2})\b/i);
-    if (matchAt) return parseInt(matchAt[1]) * 60;
-
-    // Fuzzy time periods
-    if (text.match(/\b(manha|manhã)\b/i)) return 9 * 60; // 09:00
-    if (text.match(/\b(tarde)\b/i)) return 14 * 60; // 14:00
-    if (text.match(/\b(noite)\b/i)) return 19 * 60; // 19:00
-
-    return null;
-};
-
-const parseDaysOfWeek = (text: string): DayOfWeek[] => {
-    const days: DayOfWeek[] = [];
-    const normalized = normalizeText(text);
-    if (normalized.match(/\b(seg|segunda)\b/)) days.push('SEG');
-    if (normalized.match(/\b(ter|terca|terça)\b/)) days.push('TER');
-    if (normalized.match(/\b(qua|quarta)\b/)) days.push('QUA');
-    if (normalized.match(/\b(qui|quinta)\b/)) days.push('QUI');
-    if (normalized.match(/\b(sex|sexta)\b/)) days.push('SEX');
-    if (normalized.match(/\b(sab|sabado|sábado)\b/)) days.push('SAB');
-    if (normalized.match(/\b(dom|domingo)\b/)) days.push('DOM');
-
-    if (normalized.match(/\b(todos os dias|diariamente)\b/)) return ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
-    if (normalized.match(/\b(fim de semana|fds)\b/)) return ['SAB', 'DOM'];
-    if (normalized.match(/\b(semana|dias uteis)\b/)) return ['SEG', 'TER', 'QUA', 'QUI', 'SEX'];
-
-    return days;
-};
-
 export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onOpenOracle, onOpenClan, onOpenDeepWork, actionSession = null, onClearActionSession }) => {
     const {
         activeCycle,
@@ -122,11 +47,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         currentMood,
         clan,
         assets,
-        addArena,
-        addAction,
-        getArenas,
-        scheduleTask,
-        scheduleMultipleTasks,
         scheduleAndCompleteNow,
         scheduleAndCompleteMilestoneNow,
         getLocalDateString,
@@ -186,11 +106,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 : 'neutral';
     const oracleBadgeClass = 'border-red-100/80 bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.55)]';
 
-    // Quick Action Input State
-    const [showQuickActionInput, setShowQuickActionInput] = useState(false);
-    const [quickActionInput, setQuickActionInput] = useState('');
-    const quickActionInputRef = useRef<HTMLInputElement>(null);
-
     const deepWorkOptions = ['15', '20', '25', '30', '40', '45', '50', '60', '90', '120'];
     const currentActionSessionTask = actionSession?.taskId ? tasks.find(task => task.id === actionSession.taskId) : null;
     const isActionSessionCompleted = Boolean(currentActionSessionTask?.completed);
@@ -223,12 +138,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     };
 
     useEffect(() => {
-        if (showQuickActionInput && quickActionInputRef.current) {
-            quickActionInputRef.current.focus();
-        }
-    }, [showQuickActionInput]);
-
-    useEffect(() => {
         return () => {
             if (holdAnimationFrameRef.current) {
                 cancelAnimationFrame(holdAnimationFrameRef.current);
@@ -237,7 +146,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         };
     }, []);
 
-    const handleQuickActionStart = (action: 'mood' | 'oracle' | 'clan' | 'deepwork' | 'real_oracle' | 'new_action' | 'checklist') => {
+    const handleQuickActionStart = (action: 'mood' | 'clan' | 'deepwork' | 'real_oracle' | 'checklist') => {
         if (actionHoldInterval.current) return;
 
         const startTime = Date.now();
@@ -265,16 +174,13 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         setActionProgress(null);
     };
 
-    const handleQuickAction = (action: 'mood' | 'oracle' | 'clan' | 'deepwork' | 'real_oracle' | 'new_action' | 'checklist') => {
+    const handleQuickAction = (action: 'mood' | 'clan' | 'deepwork' | 'real_oracle' | 'checklist') => {
         if (action === 'mood') {
             setIsMoodOpen(true);
         } else if (action === 'checklist') {
             setIsChecklistOpen(true);
         } else if (action === 'deepwork') {
             setIsDeepWorkOpen(true);
-        } else if (action === 'new_action' || action === 'oracle') { // Handle both just in case
-            // New behavior: Open text input overlay instead of OracleFeed
-            setShowQuickActionInput(true);
         } else if (action === 'real_oracle') {
             onOpenOracle?.();
         } else {
@@ -284,151 +190,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 onClose();
                 if (action === 'clan') onOpenClan?.();
             }, 700);
-        }
-    };
-
-    const handleQuickActionSubmit = async () => {
-        if (!quickActionInput.trim()) return;
-
-        try {
-            const input = quickActionInput;
-
-            // Parsing Logic (Copied from PlannerView)
-            const splitOracleInput = (input: string) => {
-                // Support for @Arena syntax
-                const atMatch = input.match(/@(\w+)/);
-                if (atMatch) {
-                    const arenaName = atMatch[1];
-                    const base = input.replace(atMatch[0], '').trim();
-                    return { base, arenaName, description: '' };
-                }
-
-                const parts = input.split(/(?: em | no | na | para a | para o | > | -> )/i);
-                if (parts.length > 1) {
-                    const before = parts[0].trim();
-                    const after = parts.slice(1).join(' ').trim();
-
-                    // Try to extract description from after part (after parentheses or something?)
-                    // For now simple: "Action > Arena"
-                    return { base: before, arenaName: after, description: '' };
-                }
-
-                // Try to find arena by keyword if no explicit separator
-                // (Simplified for now)
-                return { base: input, arenaName: '', description: '' };
-            };
-
-            const { base, arenaName: explicitArenaName, description } = splitOracleInput(input);
-            const duration = parseDurationMinutes(base) ?? 30;
-            const repetitions = parseRepetitions(base) ?? 1;
-            const startTimeInMinutes = parseTimeMinutes(base);
-            const selectedDays = parseDaysOfWeek(base);
-
-            // Clean up name
-            const normalizedBase = base;
-            const cutPoints = [
-                normalizedBase.search(/\b\d+\s*(x|vez|vezes)\b/i),
-                normalizedBase.search(/\b(\d{1,2}\s*h\s*\d{1,2}|\d{1,2}\s*(h|hora|horas)|\d+\s*(m|min|mins|minuto|minutos))\b/i),
-                normalizedBase.search(/\b(?:as\s*\d{1,2}(?::\d{2})?|\d{1,2}[:h]\d{2}|\d{1,2}h)\b/i),
-                normalizedBase.search(/\b(seg|segunda|ter|terca|terça|qua|quarta|qui|quinta|sex|sexta|sab|sabado|sábado|dom|domingo)\b/i),
-            ].filter(i => i >= 0);
-            const nameEnd = cutPoints.length > 0 ? Math.min(...cutPoints) : normalizedBase.length;
-            const actionName = normalizedBase.slice(0, nameEnd).trim();
-            const actionDescription = description;
-
-            // Find Target Arena
-            let targetArenaId = '';
-            let arenaName = explicitArenaName;
-
-            const allArenas = assets.flatMap(asset =>
-                asset.arenas.map(arena => ({ arena, assetId: asset.id, normalizedName: normalizeText(arena.name) }))
-            );
-
-            const findArena = (name: string) => {
-                const normalizedQuery = normalizeText(name);
-                const exact = allArenas.find(a => a.normalizedName === normalizedQuery);
-                if (exact) return { arena: exact.arena, assetId: exact.assetId };
-
-                let best = null;
-                for (const candidate of allArenas) {
-                    const candName = candidate.normalizedName;
-                    const dist = levenshteinDistance(normalizedQuery, candName);
-                    const maxLen = Math.max(normalizedQuery.length, candName.length) || 1;
-                    const score = 1 - dist / maxLen;
-                    const prefixBonus = candName.startsWith(normalizedQuery) || normalizedQuery.startsWith(candName) ? 0.08 : 0;
-                    const finalScore = Math.min(1, score + prefixBonus);
-                    if (!best || finalScore > best.score) {
-                        best = { arena: candidate.arena, assetId: candidate.assetId, score: finalScore, dist };
-                    }
-                }
-
-                if (best && (best.dist <= 2 || best.score >= 0.82)) {
-                    return { arena: best.arena, assetId: best.assetId };
-                }
-                return null;
-            };
-
-            const geralAsset = assets.find(a => a.id === 'geral') || assets[0];
-
-            if (arenaName) {
-                const found = findArena(arenaName);
-                if (found) {
-                    targetArenaId = found.arena.id;
-                } else if (geralAsset) {
-                    const newArena = await addArena(geralAsset.id, {
-                        name: arenaName,
-                        icon: '🏟️',
-                        description: 'Arena criada via RestScreen'
-                    });
-                    targetArenaId = newArena.id;
-                }
-            }
-
-            if (!targetArenaId) {
-                // Try to infer arena from action name if not explicit
-                // (Skip for now to keep simple, fallback to Outros)
-                const outros = findArena('Outros');
-                if (outros) {
-                    targetArenaId = outros.arena.id;
-                } else if (geralAsset) {
-                    const newArena = await addArena(geralAsset.id, {
-                        name: 'Outros',
-                        icon: '📦',
-                        description: 'Arena padrão'
-                    });
-                    targetArenaId = newArena.id;
-                }
-            }
-
-            if (!targetArenaId || !actionName) return;
-
-            const actionType: ActionType = startTimeInMinutes !== null && selectedDays.length === 0 ? 'Compromisso' : 'Ação Recorrente';
-
-            const created = await addAction({
-                name: actionName,
-                description: actionDescription || undefined,
-                arenaId: targetArenaId,
-                icon: '📝',
-                duration,
-                difficulty: 'easy',
-                actionType,
-                repetitions: actionType === 'Ação Recorrente' ? Math.max(1, repetitions) : 1,
-            });
-
-            if (actionType === 'Compromisso' && startTimeInMinutes !== null) {
-                const dateString = getLocalDateString(new Date());
-                await scheduleTask(created, dateString, startTimeInMinutes);
-            }
-
-            if (actionType === 'Ação Recorrente' && selectedDays.length > 0 && startTimeInMinutes !== null) {
-                await scheduleMultipleTasks(created, selectedDays, startTimeInMinutes);
-            }
-
-            setQuickActionInput('');
-            setShowQuickActionInput(false);
-
-        } catch (error) {
-            console.error("Error creating action from RestScreen:", error);
         }
     };
 
@@ -1389,35 +1150,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Oráculo</span>
                         </button>
 
-                        {/* Nova Ação (Input) */}
-                        <button
-                            onMouseDown={() => handleQuickActionStart('new_action')}
-                            onMouseUp={handleQuickActionEnd}
-                            onMouseLeave={handleQuickActionEnd}
-                            onTouchStart={() => handleQuickActionStart('new_action')}
-                            onTouchEnd={handleQuickActionEnd}
-                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
-                        >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'new_action' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
-                                {actionProgress?.id === 'new_action' && (
-                                    <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none" viewBox="0 0 100 100">
-                                        <circle
-                                            cx="50"
-                                            cy="50"
-                                            r="48"
-                                            fill="none"
-                                            stroke="var(--skin-accent-color)"
-                                            strokeWidth="4"
-                                            strokeDasharray="301.6"
-                                            strokeDashoffset={301.6 - (301.6 * actionProgress.progress) / 100}
-                                        />
-                                    </svg>
-                                )}
-                                <ZapIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />
-                            </div>
-                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Nova Ação</span>
-                        </button>
-
                         {/* Deep Work Indicator */}
                         <button
                             id="deep-work-button"
@@ -1516,45 +1248,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 )}
                 {isClanOpen && clan && (
                     <ClanOverviewModal onClose={() => setIsClanOpen(false)} />
-                )}
-
-                {/* Quick Action Input Overlay */}
-                {showQuickActionInput && (
-                    <div className="fixed inset-0 z-[10002] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 animate-fade-in">
-                        <div className="w-full max-w-md relative">
-                            <button
-                                onClick={() => setShowQuickActionInput(false)}
-                                className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white"
-                            >
-                                <XIcon className="w-6 h-6" />
-                            </button>
-
-                            <div className="flex flex-col gap-4">
-                                <h3 className="text-xl font-bold text-white text-center">Nova Ação Rápida</h3>
-                                <p className="text-xs text-gray-400 text-center">
-                                    Ex: "Ler 30min", "Treino 1h as 18h", "Estudar &gt; Faculdade"
-                                </p>
-
-                                <div className="relative">
-                                    <input
-                                        ref={quickActionInputRef}
-                                        type="text"
-                                        value={quickActionInput}
-                                        onChange={(e) => setQuickActionInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleQuickActionSubmit()}
-                                        placeholder="O que você vai fazer?"
-                                        className="w-full bg-white/10 border border-white/20 rounded-2xl px-4 py-4 text-lg text-white placeholder-white/30 focus:outline-none focus:border-[var(--skin-accent-color)] focus:ring-1 focus:ring-[var(--skin-accent-color)] transition-all"
-                                    />
-                                    <button
-                                        onClick={handleQuickActionSubmit}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[var(--skin-accent-color)] rounded-xl text-black font-bold hover:scale-105 active:scale-95 transition-all"
-                                    >
-                                        <ArrowRightIcon className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 )}
 
                 {/* Deep Work Selection Modal */}

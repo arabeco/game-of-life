@@ -2887,6 +2887,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <LegacyPlaqueForgeModal
                     eras={eraSummaries}
                     sovereignName={sovereignName}
+                    identity={legacyFallbackIdentity}
                     onComplete={handleLegacyPlaqueForged}
                     onClose={() => setShowLegacyPlaqueForgeModal(false)}
                 />
@@ -2895,6 +2896,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <LegacyPlaqueModal
                     eras={eraSummaries}
                     sovereignName={sovereignName}
+                    identity={legacyFallbackIdentity}
                     plaqueForged={legacyPlaqueForged}
                     shareUnlocked={legacyShareUnlocked}
                     onToast={showToast}

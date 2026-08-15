@@ -41,8 +41,7 @@ export const ScreenIntroTipOverlay: React.FC<ScreenIntroTipOverlayProps> = ({
   return (
     <Portal>
       <div
-        className="fixed inset-0 z-[10002] bg-black/18"
-        onClick={() => onClose()}
+        className="pointer-events-none fixed inset-0 z-[10002] bg-black/18"
       >
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(78px+var(--safe-area-bottom))] flex justify-center px-4">
           <OracleSpeakerMark

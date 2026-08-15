@@ -1,6 +1,7 @@
 ﻿import React, { useMemo } from 'react';
 import type { LegacyRenderPayload } from '../types';
 import { LegacyProjectionScene } from '../components/LegacyProjectionScene';
+import { LegacyGrandPlaque } from '../components/LegacyGrandPlaque';
 
 const parseLegacyRenderPayload = (rawPayload: string | null): LegacyRenderPayload | null => {
     if (!rawPayload) return null;
@@ -39,6 +40,7 @@ export const LegacyRenderView: React.FC = () => {
     const params = useMemo(() => new URLSearchParams(window.location.search), []);
     const payload = useMemo(() => parseLegacyRenderPayload(params.get('payload')), [params]);
     const captureMode = params.get('capture') === '1';
+    const plaqueOnly = params.get('plaque') === '1';
 
     if (!payload) {
         return (
@@ -49,6 +51,21 @@ export const LegacyRenderView: React.FC = () => {
                     <p className="mt-4 text-sm leading-relaxed text-gray-400">
                         Esta rota isolada espera `?render=legacy&payload=...` com o JSON do legado serializado para o worker/headless abrir a cena sem a UI normal do app.
                     </p>
+                </div>
+            </div>
+        );
+    }
+
+    if (plaqueOnly) {
+        return (
+            <div className="flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.1),_transparent_34%),linear-gradient(180deg,_#10161d,_#030506)] p-4 text-white sm:p-8">
+                <div className="w-full max-w-[760px]">
+                    <LegacyGrandPlaque
+                        eras={payload.eras}
+                        sovereignName={payload.sovereignName}
+                        identity={payload.fallbackIdentity}
+                        identityMode="current"
+                    />
                 </div>
             </div>
         );

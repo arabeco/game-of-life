@@ -181,11 +181,12 @@ const LEGACY_BACKGROUND_ALIASES: Record<string, string> = {
     ...buildProfileBackgroundAliases(),
 };
 
-export const resolveProfileBackgroundValue = (value: string): string => {
-    return LEGACY_BACKGROUND_ALIASES[value] || value;
+export const resolveProfileBackgroundValue = (value: string | null | undefined): string => {
+    const safeValue = typeof value === 'string' ? value : '';
+    return LEGACY_BACKGROUND_ALIASES[safeValue] || safeValue;
 };
 
-export const getProfileBackgroundSources = (value: string): string[] => {
+export const getProfileBackgroundSources = (value: string | null | undefined): string[] => {
     const resolvedValue = resolveProfileBackgroundValue(value);
     const assetDefinition = PROFILE_BACKGROUND_ASSETS[resolvedValue];
 
@@ -200,18 +201,18 @@ export const getProfileBackgroundSources = (value: string): string[] => {
     return [resolvedValue];
 };
 
-export const getProfileBackgroundFallbackValue = (value: string): string | undefined => {
+export const getProfileBackgroundFallbackValue = (value: string | null | undefined): string | undefined => {
     const resolvedValue = resolveProfileBackgroundValue(value);
     return PROFILE_BACKGROUND_ASSETS[resolvedValue]?.fallbackValue;
 };
 
-export const getProfileBackgroundPrimarySource = (value: string): string => {
+export const getProfileBackgroundPrimarySource = (value: string | null | undefined): string => {
     const resolvedValue = resolveProfileBackgroundValue(value);
     const [primarySource] = getProfileBackgroundSources(resolvedValue);
     return primarySource || resolvedValue;
 };
 
-export const getProfileBackgroundBasename = (value: string): string | null => {
+export const getProfileBackgroundBasename = (value: string | null | undefined): string | null => {
     const resolvedValue = resolveProfileBackgroundValue(value);
     const assetDefinition = PROFILE_BACKGROUND_ASSETS[resolvedValue];
 
@@ -229,7 +230,7 @@ export const getProfileBackgroundBasename = (value: string): string | null => {
     }
 };
 
-export const isCssProfileBackground = (value: string): boolean => {
+export const isCssProfileBackground = (value: string | null | undefined): boolean => {
     const normalized = resolveProfileBackgroundValue(value).trim().toLowerCase();
     return (
         normalized.includes('gradient(') ||

@@ -1,4 +1,5 @@
 import React from 'react';
+import { isClanEmblemImage } from './ClanEmblem';
 import type { ReportIdentitySnapshot } from '../types';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 import { buildLegacyPlaqueSummary } from './LegacyPlaqueArtifact';
@@ -24,7 +25,7 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
     className = '',
     compact = false,
 }) => {
-    const { totalCycles, totalHours, weightedAverageScore, averageGrade } = buildLegacyPlaqueSummary(eras);
+    const { totalCycles, totalHours, totalActions, activeDays, weightedAverageScore, averageGrade } = buildLegacyPlaqueSummary(eras);
     const nickname = identity?.nickname?.trim() || sovereignName || 'Usuario';
     const patent = identity?.nobilityRankName || identity?.title || 'Vagante';
     const clanName = identity?.clanName?.trim() || '';
@@ -35,91 +36,86 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
     const capturedDate = capturedAt && !Number.isNaN(capturedAt.getTime())
         ? capturedAt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
         : '';
-    const titleSize = nickname.length > 22 ? 'text-[0.72rem]' : nickname.length > 16 ? 'text-[0.82rem]' : 'text-[0.94rem]';
+    const titleSize = nickname.length > 22 ? 'text-[0.86rem]' : nickname.length > 16 ? 'text-[0.98rem]' : 'text-[1.12rem]';
+    const metricItems = [
+        { label: 'Ciclos', value: totalCycles },
+        { label: 'Carga', value: formattedHours },
+        { label: 'Acoes', value: totalActions },
+        { label: 'Dias ativos', value: activeDays },
+    ];
 
     return (
         <section
-            className={`relative isolate min-h-[104px] w-full overflow-visible rounded-[13px] px-3 pb-2.5 pt-3 ${className}`}
+            className={`relative isolate w-full overflow-hidden rounded-[18px] border px-3 pb-3 pt-3 text-white ${compact ? 'min-h-[132px]' : 'min-h-[196px] px-5 pb-4 pt-4'} ${className}`}
             style={{
+                borderColor: 'rgba(224,185,93,0.82)',
                 background: [
-                    'radial-gradient(circle at 18% 0%, rgba(255,248,211,0.2), transparent 34%)',
-                    'linear-gradient(145deg, rgba(255,255,255,0.12), transparent 35%, rgba(4,18,31,0.24) 78%)',
-                    'linear-gradient(180deg, #bcd8e8 0%, #7196af 46%, #2d4a61 100%)',
+                    'radial-gradient(circle at 12% 0%, rgba(255,230,150,0.16), transparent 32%)',
+                    'radial-gradient(circle at 96% 100%, rgba(47,125,159,0.18), transparent 34%)',
+                    'linear-gradient(118deg, rgba(255,255,255,0.07), transparent 24%, rgba(255,255,255,0.025) 52%, transparent 74%)',
+                    'linear-gradient(160deg, #17212a 0%, #0b1118 48%, #030608 100%)',
                 ].join(', '),
-                border: '1.5px solid rgba(224, 185, 93, 0.96)',
-                boxShadow: '0 14px 28px rgba(0,0,0,0.3), 0 0 0 1px rgba(92,62,20,0.28), inset 0 1px 0 rgba(255,255,255,0.36), inset 0 -18px 26px rgba(4,18,31,0.22)',
+                boxShadow: '0 18px 36px rgba(0,0,0,0.46), 0 0 0 1px rgba(66,43,12,0.7), inset 0 1px 0 rgba(255,244,203,0.22), inset 0 -22px 38px rgba(0,0,0,0.34)',
             }}
         >
-            <div className="pointer-events-none absolute inset-[4px] rounded-[10px] border border-amber-100/45" />
-            <div className="pointer-events-none absolute inset-[7px] rounded-[8px] border border-white/12" />
+            <div className="pointer-events-none absolute inset-[4px] rounded-[14px] border border-amber-100/20" />
+            <div className="pointer-events-none absolute inset-x-5 top-[7px] h-px bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
+            <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rotate-12 border border-amber-200/10" />
+            <div className="pointer-events-none absolute bottom-0 left-[27%] h-20 w-px rotate-[28deg] bg-gradient-to-b from-transparent via-white/8 to-transparent" />
 
-            <div
-                className="absolute -left-2 -top-2 z-30 flex h-[46px] w-[46px] flex-col items-center justify-center rounded-full border-2 border-amber-200/90 bg-[radial-gradient(circle_at_34%_26%,#31536d,#101b28_66%,#05080d)] shadow-[0_8px_18px_rgba(0,0,0,0.42),0_0_0_2px_rgba(10,18,28,0.86),inset_0_1px_0_rgba(255,255,255,0.2)]"
-                aria-label={`Nivel ${level}`}
-            >
-                <span className="text-[5px] font-black uppercase tracking-[0.14em] text-amber-100/68">Nivel</span>
-                <strong className="text-[1.06rem] font-black leading-none tabular-nums text-white">{level}</strong>
-            </div>
+            <div className={`relative z-10 grid items-center ${compact ? 'grid-cols-[58px_minmax(0,1fr)_58px] gap-2' : 'grid-cols-[64px_minmax(0,1fr)_64px] gap-2 sm:grid-cols-[88px_minmax(0,1fr)_96px] sm:gap-4'}`}>
+                <div className="relative flex items-center justify-center">
+                    <div className={`absolute -bottom-1 right-0 z-20 flex flex-col items-center justify-center rounded-full border border-amber-200/85 bg-[#070a0d] shadow-[0_5px_12px_rgba(0,0,0,0.55),0_0_0_2px_rgba(8,10,12,0.88)] ${compact ? 'h-7 w-7' : 'h-8 w-8 sm:h-10 sm:w-10'}`} aria-label={`Nivel ${level}`}>
+                        <span className={`${compact ? 'text-[4px]' : 'text-[5px]'} font-black uppercase tracking-[0.08em] text-amber-200/60`}>Nivel</span>
+                        <strong className={`${compact ? 'text-[0.72rem]' : 'text-[0.86rem] sm:text-[1rem]'} font-black leading-none tabular-nums text-white`}>{level}</strong>
+                    </div>
+                    <UserAvatar
+                        avatarUrl={identity?.avatarUrl}
+                        nickname={nickname}
+                        borderId={identity?.borderId}
+                        className={compact ? 'h-[52px] w-[52px]' : 'h-[58px] w-[58px] sm:h-[78px] sm:w-[78px]'}
+                        borderColor="rgba(237,196,96,0.96)"
+                        showBorder
+                    />
+                </div>
 
-            <div className="relative z-10 grid min-h-[86px] grid-cols-[58px_minmax(0,1fr)_76px] items-center gap-2 pl-3">
-                <UserAvatar
-                    avatarUrl={identity?.avatarUrl}
-                    nickname={nickname}
-                    borderId={identity?.borderId}
-                    className="h-[54px] w-[54px]"
-                    borderColor="rgba(237,196,96,0.96)"
-                    showBorder
-                />
-
-                <div className="min-w-0 self-stretch py-1.5">
-                    <p className="text-[5px] font-black uppercase tracking-[0.22em] text-amber-100/68">
-                        {identityMode === 'historical' ? 'Retrato do ciclo' : 'Identidade atual'}
+                <div className="min-w-0 self-center">
+                    <p className={`${compact ? 'text-[5px]' : 'text-[7px]'} font-black uppercase tracking-[0.24em] text-amber-200/65`}>
+                        Placa do Legado
                     </p>
-                    <h2
-                        className={`mt-1 truncate font-black uppercase leading-none text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.38)] ${titleSize}`}
-                        title={nickname}
-                    >
+                    <h2 className={`mt-1 truncate font-black uppercase leading-none text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)] ${compact ? titleSize : 'text-[1.1rem] sm:text-[1.5rem]'}`} title={nickname}>
                         {nickname}
                     </h2>
-                    <p className="mt-1 truncate text-[7px] font-black uppercase tracking-[0.08em] text-sky-50/82" title={patent}>
+                    <div className="mt-1.5 h-px w-full bg-gradient-to-r from-amber-200/80 via-amber-100/18 to-transparent" />
+                    <p className={`${compact ? 'mt-1 text-[7px]' : 'mt-2 text-[10px]'} truncate font-black uppercase tracking-[0.08em] text-sky-50/76`} title={patent}>
                         {patent}
                     </p>
-                    <div className="mt-2 h-px w-full bg-gradient-to-r from-amber-200/70 via-white/18 to-transparent" />
-                    <p className="mt-1.5 truncate text-[7px] font-bold text-white/76" title={clanName || 'Sem cla neste ciclo'}>
-                        {clanName ? `${identity?.clanIcon ? `${identity.clanIcon} ` : ''}${clanName}${clanRank ? ` - ${clanRank}` : ''}` : 'Sem cla neste ciclo'}
+                    <p className={`${compact ? 'mt-0.5 text-[6px]' : 'mt-1 text-[9px]'} truncate font-semibold text-white/58`} title={clanName || 'Sem cla neste registro'}>
+                        {clanName ? `${identity?.clanIcon && !isClanEmblemImage(identity.clanIcon) ? `${identity.clanIcon} ` : ''}${clanName}${clanRank ? ` - ${clanRank}` : ''}` : 'Jornada individual'}
                     </p>
                 </div>
 
-                {identityMode === 'historical' ? (
-                    <div className="flex h-[72px] flex-col items-center justify-center overflow-hidden rounded-[9px] border border-white/14 bg-[#08131e]/38 px-1.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                        <span className="text-[5px] font-black uppercase tracking-[0.13em] text-amber-100/65">Registro</span>
-                        <strong className="mt-1 text-[9px] font-black leading-tight tabular-nums text-white">{capturedDate || 'Ciclo fechado'}</strong>
-                        <span className="mt-1.5 text-[5px] font-bold uppercase leading-tight tracking-[0.08em] text-sky-100/58">Identidade preservada</span>
-                    </div>
-                ) : (
-                    <div className="grid h-[72px] grid-rows-2 overflow-hidden rounded-[9px] border border-white/14 bg-[#08131e]/38 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                        <div className="flex items-center justify-center gap-1 border-b border-white/10 px-1">
-                            <span className="text-[5px] font-black uppercase tracking-[0.1em] text-amber-100/65">Patamar</span>
-                            <strong className="text-[1.05rem] font-black leading-none text-white">{averageGrade}</strong>
-                            <span className="text-[7px] font-black tabular-nums text-white/70">{weightedAverageScore}</span>
-                        </div>
-                        <div className="grid grid-cols-2 items-center divide-x divide-white/10">
-                            <span className="flex flex-col items-center justify-center">
-                                <small className="text-[4.5px] font-black uppercase tracking-[0.08em] text-sky-100/58">Ciclos</small>
-                                <strong className="text-[9px] font-black text-white">{totalCycles}</strong>
-                            </span>
-                            <span className="flex flex-col items-center justify-center">
-                                <small className="text-[4.5px] font-black uppercase tracking-[0.08em] text-sky-100/58">Carga</small>
-                                <strong className="text-[9px] font-black text-white">{formattedHours}</strong>
-                            </span>
-                        </div>
-                    </div>
-                )}
+                <div className={`relative flex flex-col items-center justify-center rounded-full border border-amber-200/55 bg-[radial-gradient(circle_at_34%_26%,rgba(255,239,181,0.14),rgba(8,14,19,0.96)_62%)] text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_20px_rgba(0,0,0,0.38)] ${compact ? 'h-[54px] w-[54px]' : 'h-[60px] w-[60px] sm:h-[86px] sm:w-[86px]'}`}>
+                    <span className={`${compact ? 'text-[4px]' : 'text-[6px]'} font-black uppercase tracking-[0.1em] text-amber-200/64`}>{identityMode === 'historical' ? 'Registro' : 'Patamar'}</span>
+                    {identityMode === 'historical' ? (
+                        <strong className={`${compact ? 'mt-1 text-[7px]' : 'mt-1.5 text-[10px]'} max-w-[80%] font-black leading-tight text-white`}>{capturedDate || 'Ciclo fechado'}</strong>
+                    ) : (
+                        <>
+                            <strong className={`${compact ? 'text-[1.45rem]' : 'text-[2.45rem]'} font-black leading-none text-white`}>{averageGrade}</strong>
+                            <span className={`${compact ? 'text-[7px]' : 'text-[10px]'} font-black tabular-nums text-amber-100/74`}>{weightedAverageScore}</span>
+                        </>
+                    )}
+                </div>
             </div>
 
-            {!compact && (
-                <div className="pointer-events-none absolute inset-x-8 bottom-1 h-px bg-gradient-to-r from-transparent via-amber-200/48 to-transparent" />
-            )}
+            <div className={`relative z-10 mt-2 grid grid-cols-4 divide-x divide-amber-100/12 border-t border-amber-100/16 ${compact ? 'pt-2' : 'mt-4 pt-3'}`}>
+                {metricItems.map((item) => (
+                    <div key={item.label} className="flex min-w-0 flex-col items-center justify-center px-1 text-center">
+                        <span className={`${compact ? 'text-[4.5px]' : 'text-[6px]'} truncate font-black uppercase tracking-[0.1em] text-amber-100/48`}>{item.label}</span>
+                        <strong className={`${compact ? 'mt-0.5 text-[9px]' : 'mt-1 text-[14px]'} font-black tabular-nums text-white/92`}>{item.value}</strong>
+                    </div>
+                ))}
+            </div>
         </section>
     );
 };

@@ -3291,7 +3291,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 xp: m.reward_type === 'exp' ?Number(m.reward_value) : 0,
                 items: m.reward_type === 'item_id' ?[String(m.reward_value)] : []
             },
-            season_id: m.season_id
+            season_id: m.season_id,
+            goal_type: m.goal_type,
+            goal_value: m.goal_value,
+            reward_type: m.reward_type,
+            reward_value: m.reward_value,
         }));
 
         const availableQuests = [...quests, ...mappedMissions];
@@ -4052,9 +4056,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (profilesError || !memberProfiles) { console.error('Error fetching member profiles:', profilesError?.message); return; }
 
         const contributionTotals = new Map<string, number>();
+        const seasonContributionTotals = new Map<string, number>();
+        const seasonStartDate = activeRuntimeSeason?.start_date || '';
+        const seasonEndDate = activeRuntimeSeason?.end_date || '';
         const { data: contributionRows, error: contributionError } = await supabase
             .from('clan_xp_contributions')
-            .select('user_id, xp_amount')
+            .select('user_id, xp_amount, created_at')
             .eq('clan_id', clanId);
 
         if (contributionError) {
@@ -4062,7 +4069,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } else {
             (contributionRows || []).forEach((row: any) => {
                 const memberId = String(row.user_id || '');
-                contributionTotals.set(memberId, (contributionTotals.get(memberId) || 0) + Number(row.xp_amount || 0));
+                const xpAmount = Number(row.xp_amount || 0);
+                const contributionDate = String(row.created_at || '').slice(0, 10);
+                contributionTotals.set(memberId, (contributionTotals.get(memberId) || 0) + xpAmount);
+                if ((!seasonStartDate || contributionDate >= seasonStartDate) && (!seasonEndDate || contributionDate <= seasonEndDate)) {
+                    seasonContributionTotals.set(memberId, (seasonContributionTotals.get(memberId) || 0) + xpAmount);
+                }
             });
         }
 
@@ -4094,6 +4106,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     nobility: { exp: 0, rankId: 'vagante' },
                     mood: 50,
                     contributionPoints: contributionTotals.get(memberId) || 0,
+                    seasonContributionPoints: seasonContributionTotals.get(memberId) || 0,
                     role: memberInfo.role as 'leader' | 'member',
                     joined_at: memberInfo.joined_at,
                 } as EnrichedClanMember;
@@ -4104,6 +4117,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return {
                 ...camelCaseProfile,
                 contributionPoints: contributionTotals.get(memberId) || 0,
+                seasonContributionPoints: seasonContributionTotals.get(memberId) || 0,
                 role: memberInfo.role as 'leader' | 'member',
                 joined_at: memberInfo.joined_at,
             };
@@ -4125,7 +4139,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } else {
             setClanJoinRequestsIncoming([]);
         }
-    }, [setClan, setEnrichedClanMembers, fetchClanQuestProgress, session?.user.id, userProfile.id, loadClanJoinRequestsIncoming]);
+    }, [setClan, setEnrichedClanMembers, fetchClanQuestProgress, session?.user.id, userProfile.id, loadClanJoinRequestsIncoming, activeRuntimeSeason?.start_date, activeRuntimeSeason?.end_date]);
 
     const refreshClanMembershipState = useCallback(async (userId: string) => {
         if (!isUuid(userId)) {
@@ -11545,7 +11559,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             await leaveClanMission(quest.id);
         }
 
-        showToast(`Tarefa "${quest.title}" abandonada.`);
+        showToast(`Missao "${quest.title}" abandonada.`);
     };
 
     const claimSeasonQuest = async (questId: string) => {
@@ -12110,7 +12124,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return current >= Math.max(1, required);
         });
 
-        const completedSeasonMission = seasonMissions.find((mission) => {
+        const seasonMissionCandidates = [
+            ...seasonMissions,
+            ...GM_CONFIG.seasonMissions.filter((mission) => !seasonMissions.some((current) => current.id === mission.id)),
+        ];
+        const completedSeasonMission = seasonMissionCandidates.find((mission) => {
             if (mission.season_id && mission.season_id !== activeRuntimeSeasonId) return false;
             if (completedIds.has(mission.id) || automaticChallengeClaimsRef.current.has(mission.id)) return false;
             const required = Math.max(1, mission.requirements?.clanGoal || mission.goal_value || 1);

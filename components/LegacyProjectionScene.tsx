@@ -439,9 +439,10 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         ? 'relative min-h-full overflow-hidden bg-black px-0 py-0 text-white'
         : 'relative overflow-hidden rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.08),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0.035),_rgba(255,255,255,0.012))] p-5 text-white shadow-[0_24px_60px_rgba(0,0,0,0.42)] w-[1720px]';
     const interactiveBackdropStyle: React.CSSProperties = {
-        backgroundImage: `url(${backdropSkin.imageUrl})`,
-        backgroundPosition: 'center 8%',
+        backgroundImage: `${backdropSkin.overlay}, url(${backdropSkin.imageUrl})`,
+        backgroundPosition: 'center top',
         backgroundSize: 'cover',
+        backgroundBlendMode: 'color, normal',
         backgroundRepeat: 'no-repeat',
         transform: `scale(${backdropScale})`,
         transformOrigin: 'center top',
@@ -605,11 +606,12 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                 className="legacy-scene-backdrop"
                 aria-hidden="true"
                 style={{
-                    backgroundImage: `url(${backdropSkin.imageUrl})`,
+                    backgroundImage: `${backdropSkin.overlay}, url(${backdropSkin.imageUrl})`,
                     borderRadius: interactive ? '0px' : '34px',
                     backgroundPosition: interactive ? 'center center' : 'center top',
                     backgroundSize: 'cover',
                     backgroundRepeat: 'no-repeat',
+                    backgroundBlendMode: 'color, normal',
                     transform: interactive ? `scale(${Math.max(backdropScale, 1.06)})` : `scale(${backdropScale})`,
                     transformOrigin: interactive ? 'center center' : 'center top',
                     filter: interactive ? 'blur(16px) saturate(0.92) brightness(0.62)' : 'none',

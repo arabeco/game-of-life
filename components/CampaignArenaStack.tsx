@@ -46,6 +46,43 @@ export const CampaignArenaStack: React.FC<CampaignArenaStackProps> = ({ arenas, 
     const hiddenCount = Math.max(0, arenas.length - visibleArenas.length);
     const actionSource = actionsOverride || actions;
 
+    if (size === 'xs') {
+        return (
+            <div className="relative grid h-[3.25rem] w-full grid-cols-3 gap-1.5 overflow-hidden">
+                {visibleArenas.length > 0 ? visibleArenas.map((arena) => {
+                    const actionCount = actionSource.filter((action) => action.arenaId === arena.id).length;
+
+                    return (
+                        <div
+                            key={arena.id}
+                            className="flex min-w-0 items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-1.5 py-1"
+                        >
+                            <span className="shrink-0 text-base leading-none" aria-hidden>{arena.icon || '\u25c7'}</span>
+                            <span className="min-w-0">
+                                <span className="block truncate text-[8px] font-black uppercase tracking-[0.06em] text-white/85">
+                                    {arena.name}
+                                </span>
+                                <span className="block text-[7px] font-bold uppercase tracking-[0.08em] text-white/45">
+                                    {actionCount} {actionCount === 1 ? 'ação' : 'ações'}
+                                </span>
+                            </span>
+                        </div>
+                    );
+                }) : (
+                    <div className="col-span-3 flex items-center justify-center text-[8px] font-black uppercase tracking-[0.14em] text-white/35">
+                        Sem arenas
+                    </div>
+                )}
+
+                {hiddenCount > 0 && (
+                    <div className="absolute bottom-0 right-0 rounded-full border border-white/15 bg-black/85 px-1.5 py-0.5 text-[7px] font-black text-white/75">
+                        +{hiddenCount}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div
             className="relative overflow-hidden"

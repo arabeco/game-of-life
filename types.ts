@@ -863,6 +863,7 @@ export type EnrichedClanMember = Omit<UserProfile, 'role'> & {
   role: 'leader' | 'member';
   joined_at: string;
   contributionPoints: number;
+  seasonContributionPoints: number;
 };
 
 // Sistema de Santuario - Posicionamento e Tempo

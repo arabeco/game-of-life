@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Portal } from './Portal';
 import { GlassCard } from './GlassCard';
-import { LegacyPlaqueArtifact } from './LegacyPlaqueArtifact';
+import { LegacyGrandPlaque } from './LegacyGrandPlaque';
 import type { LegacyEraSummary } from './LegacyExportDocument';
+import type { ReportIdentitySnapshot } from '../types';
 
 interface LegacyPlaqueForgeModalProps {
     eras: LegacyEraSummary[];
     sovereignName: string;
+    identity?: ReportIdentitySnapshot;
     onComplete: () => void;
     onClose: () => void;
 }
@@ -19,7 +21,7 @@ const PHRASES = [
     { threshold: 100, text: 'Placa do Legado pronta.' },
 ];
 
-export const LegacyPlaqueForgeModal: React.FC<LegacyPlaqueForgeModalProps> = ({ eras, sovereignName, onComplete, onClose }) => {
+export const LegacyPlaqueForgeModal: React.FC<LegacyPlaqueForgeModalProps> = ({ eras, sovereignName, identity, onComplete, onClose }) => {
     const [progress, setProgress] = useState(0);
     const [isFinalizing, setIsFinalizing] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
@@ -98,10 +100,11 @@ export const LegacyPlaqueForgeModal: React.FC<LegacyPlaqueForgeModalProps> = ({ 
                         <div className="relative flex items-center justify-center">
                             <div className="absolute inset-0 rounded-[34px] bg-[radial-gradient(circle_at_center,_rgba(212,175,55,0.18),_transparent_55%)] blur-2xl" />
                             <div className="w-full max-w-[280px] sm:max-w-[520px]">
-                                <LegacyPlaqueArtifact
+                                <LegacyGrandPlaque
                                     eras={eras}
                                     sovereignName={sovereignName}
-                                    plaqueUnlocked={true}
+                                    identity={identity}
+                                    identityMode="current"
                                     compact={true}
                                     className={`mx-auto transition-all duration-500 ${isClosing ? 'scale-[1.02] blur-[1px]' : 'scale-100'}`}
                                 />

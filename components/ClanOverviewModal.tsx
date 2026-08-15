@@ -1,15 +1,47 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import type { EnrichedClanMember } from '../types';
 import { useGame } from '../contexts/GameContext';
-import { DEFAULT_SANCTUARY_BACKGROUND } from '../constants';
+import { resolveClanBackground } from '../constants';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ClanManagementModal } from './ClanManagementModal';
-import { CrownIcon, RefreshCwIcon, UsersIcon, XIcon } from './Icons';
+import { CrownIcon, EditIcon, RefreshCwIcon, UsersIcon, XIcon } from './Icons';
 import { Portal } from './Portal';
 import { UserAvatar } from './UserAvatar';
+import { Sovereign } from './Avatar';
+import { ClanEmblem } from './ClanEmblem';
 
-type ClanOverviewTab = 'progress' | 'members';
+type ClanOverviewTab = 'headquarters' | 'members';
 
-export const ClanOverviewModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const ClanOverviewShell: React.FC<{
+    embedded: boolean;
+    onClose: () => void;
+    children: React.ReactNode;
+}> = ({ embedded, onClose, children }) => {
+    const panel = (
+        <section
+            className={`relative flex w-full max-w-xl flex-col overflow-hidden border border-white/12 bg-[#090b0e] shadow-2xl ${embedded
+                ? 'min-h-[calc(100dvh-15rem)] rounded-[20px]'
+                : 'max-h-[92dvh] rounded-[24px]'}`}
+            onClick={event => event.stopPropagation()}
+        >
+            {children}
+        </section>
+    );
+
+    if (embedded) return panel;
+
+    return (
+        <Portal>
+            <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm" onClick={onClose}>
+                <div className="flex h-full items-center justify-center p-3 sm:p-5">
+                    {panel}
+                </div>
+            </div>
+        </Portal>
+    );
+};
+
+export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boolean }> = ({ onClose, embedded = false }) => {
     const {
         clan,
         clanRanks,
@@ -18,7 +50,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void }> = ({ onClose }
         leaveClan,
         userProfile,
     } = useGame();
-    const [activeTab, setActiveTab] = useState<ClanOverviewTab>('progress');
+    const [activeTab, setActiveTab] = useState<ClanOverviewTab>('headquarters');
     const [isManaging, setIsManaging] = useState(false);
     const [isConfirmingLeave, setIsConfirmingLeave] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -45,10 +77,35 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void }> = ({ onClose }
             || left.nickname.localeCompare(right.nickname)),
         [enrichedClanMembers],
     );
+    const seasonMembers = useMemo(
+        () => [...enrichedClanMembers].sort((left, right) =>
+            Number(right.seasonContributionPoints || 0) - Number(left.seasonContributionPoints || 0)
+            || Number(right.contributionPoints || 0) - Number(left.contributionPoints || 0)
+            || left.nickname.localeCompare(right.nickname)),
+        [enrichedClanMembers],
+    );
     const totalRecordedContribution = sortedMembers.reduce(
         (sum, member) => sum + Number(member.contributionPoints || 0),
         0,
     );
+    const seasonRecordedContribution = seasonMembers.reduce(
+        (sum, member) => sum + Number(member.seasonContributionPoints || 0),
+        0,
+    );
+    const sceneBackground = resolveClanBackground(clan?.backgroundUrl);
+    const getSovereignOnlyConfig = (member: EnrichedClanMember) => member.sovereign
+        ? {
+            ...member.sovereign,
+            artifact: 'none',
+            glyph: 'none',
+            aura: 'none',
+            orb: 'none',
+            sovereignPlate: 'none',
+            artifactPlate: 'none',
+            glyphPlate: 'none',
+            primaryDisplay: 'sovereign' as const,
+        }
+        : undefined;
 
     if (!clan) return null;
 
@@ -70,20 +127,16 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void }> = ({ onClose }
 
     return (
         <>
-            <Portal>
-                <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm" onClick={onClose}>
-                    <div className="flex h-full items-center justify-center p-3 sm:p-5">
-                        <section
-                            className="relative flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-[24px] border border-white/12 bg-[#090b0e] shadow-2xl"
-                            onClick={event => event.stopPropagation()}
-                        >
-                            <div className="relative min-h-[220px] overflow-hidden border-b border-white/10">
+            <ClanOverviewShell embedded={embedded} onClose={onClose}>
+                            <div className="pointer-events-none absolute inset-x-0 top-0 h-[590px] overflow-hidden">
                                 <img
-                                    src={clan.backgroundUrl || DEFAULT_SANCTUARY_BACKGROUND}
+                                    src={sceneBackground}
                                     alt=""
                                     className="absolute inset-0 h-full w-full object-cover"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/42 to-[#090b0e]" />
+                                <div className="absolute inset-0 bg-gradient-to-b from-black/28 via-black/12 to-[#090b0e]" />
+                            </div>
+                            <div className="relative z-10 min-h-[300px] overflow-hidden border-b border-white/10">
                                 <div className="relative flex items-start justify-between p-4">
                                     <button
                                         type="button"
@@ -93,35 +146,55 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void }> = ({ onClose }
                                     >
                                         <RefreshCwIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={onClose}
-                                        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-black/45 text-white/80"
-                                        title="Fechar"
-                                    >
-                                        <XIcon className="h-5 w-5" />
-                                    </button>
-                                </div>
-                                <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 px-5 pb-4">
-                                    <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl border border-white/18 bg-black/55 text-[42px] shadow-xl">
-                                        {clan.icon || '🏛️'}
+                                    <div className="flex items-center gap-2">
+                                    {isLeader && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsManaging(true)}
+                                            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-black/45 text-white/80"
+                                            title="Editar grupo"
+                                        >
+                                            <EditIcon className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                    {!embedded && (
+                                        <button
+                                            type="button"
+                                            onClick={onClose}
+                                            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-black/45 text-white/80"
+                                            title="Fechar"
+                                        >
+                                            <XIcon className="h-5 w-5" />
+                                        </button>
+                                    )}
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <h2 className="truncate text-xl font-black uppercase tracking-[0.08em] text-white">{clan.name}</h2>
-                                        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-white/62">
-                                            {clan.description || 'Um grupo construindo progresso em conjunto.'}
-                                        </p>
+                                </div>
+                                <div className="absolute inset-x-0 bottom-0 flex flex-col items-center px-5 pb-5 text-center">
+                                    <ClanEmblem value={clan.icon} className="h-[92px] w-[92px] rounded-[26px] border border-amber-200/35 bg-black/55 p-2 text-[52px] shadow-[0_14px_40px_rgba(0,0,0,0.65),0_0_28px_rgba(212,175,55,0.13)] backdrop-blur-md" />
+                                    <h2 className="mt-3 max-w-full truncate text-2xl font-black uppercase tracking-[0.08em] text-white drop-shadow-lg">{clan.name}</h2>
+                                    <div className="mt-1 flex items-center gap-2 text-amber-200">
+                                        <CrownIcon className="h-4 w-4" />
+                                        <span className="text-[11px] font-black uppercase tracking-[0.16em]">{currentRank?.name || 'Feudo'}</span>
+                                    </div>
+                                    <div className="mt-3 w-full max-w-sm">
+                                        <div className="h-2 overflow-hidden rounded-full border border-white/14 bg-black/55">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-200 transition-all" style={{ width: `${rankProgress}%` }} />
+                                        </div>
+                                        <div className="mt-1.5 flex justify-between text-[9px] font-bold uppercase tracking-[0.08em] text-white/48">
+                                            <span>{clanExp.toLocaleString('pt-BR')} EXP</span>
+                                            <span>{nextRank ? `${Math.max(0, nextFloor - clanExp).toLocaleString('pt-BR')} para ${nextRank.name}` : 'Patente máxima'}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-1 border-b border-white/8 bg-black/20 p-1.5">
+                            <div className="relative z-10 grid grid-cols-2 gap-1 border-b border-white/8 bg-black/35 p-1.5 backdrop-blur-sm">
                                 <button
                                     type="button"
-                                    onClick={() => setActiveTab('progress')}
-                                    className={`rounded-lg py-2 text-[11px] font-black uppercase tracking-[0.12em] ${activeTab === 'progress' ? 'bg-white/10 text-white' : 'text-white/45'}`}
+                                    onClick={() => setActiveTab('headquarters')}
+                                    className={`rounded-lg py-2 text-[11px] font-black uppercase tracking-[0.12em] ${activeTab === 'headquarters' ? 'bg-white/10 text-white' : 'text-white/45'}`}
                                 >
-                                    Progresso
+                                    Sede
                                 </button>
                                 <button
                                     type="button"
@@ -132,39 +205,39 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void }> = ({ onClose }
                                 </button>
                             </div>
 
-                            <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                                {activeTab === 'progress' ? (
+                            <div className={`relative z-10 min-h-0 flex-1 overflow-y-auto p-4 ${activeTab === 'members' ? 'bg-[#090b0e]' : ''}`}>
+                                {activeTab === 'headquarters' ? (
                                     <div className="space-y-4">
-                                        <div className="rounded-lg border border-amber-200/16 bg-amber-100/6 p-4">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <div>
-                                                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/42">Patente do grupo</p>
-                                                    <div className="mt-1 flex items-center gap-2">
-                                                        <CrownIcon className="h-5 w-5 text-amber-300" />
-                                                        <span className="text-lg font-black text-white">{currentRank?.name || 'Feudo'}</span>
+                                        <div className="relative min-h-[230px] overflow-hidden rounded-xl border border-white/10 px-3">
+                                            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/55 to-transparent" />
+                                            <div className="relative flex min-h-[228px] items-end justify-center -space-x-7 overflow-hidden px-1 pb-3">
+                                                {seasonMembers.slice(0, 6).map((member, index) => (
+                                                    <div
+                                                        key={member.id}
+                                                        className={`relative flex w-[104px] shrink-0 flex-col items-center origin-bottom ${member.role === 'leader' ? 'scale-110' : ''}`}
+                                                        style={{ zIndex: member.role === 'leader' ? 20 : Math.max(1, 10 - index) }}
+                                                    >
+                                                        <div className="relative h-[178px] w-[104px] overflow-hidden drop-shadow-[0_12px_14px_rgba(0,0,0,0.85)]">
+                                                            <Sovereign
+                                                                sovereignConfig={getSovereignOnlyConfig(member)}
+                                                                className="absolute left-1/2 top-1/2 h-[142%] w-[142%] -translate-x-1/2 -translate-y-1/2 object-contain"
+                                                            />
+                                                        </div>
+                                                        <div className="relative -mt-5 max-w-[96px] rounded-full border border-white/12 bg-black/75 px-2 py-1 text-center backdrop-blur-sm">
+                                                            <p className="truncate text-[8px] font-black uppercase tracking-[0.05em] text-white/82">{member.nickname}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-xl font-black text-amber-200">{clanExp.toLocaleString('pt-BR')}</p>
-                                                    <p className="text-[9px] font-bold uppercase text-white/38">EXP conjunta</p>
-                                                </div>
-                                            </div>
-                                            <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/45">
-                                                <div className="h-full rounded-full bg-amber-300 transition-all" style={{ width: `${rankProgress}%` }} />
-                                            </div>
-                                            <div className="mt-2 flex justify-between text-[10px] text-white/42">
-                                                <span>{nextRank ? `${Math.max(0, nextFloor - clanExp).toLocaleString('pt-BR')} para ${nextRank.name}` : 'Patente máxima'}</span>
-                                                <span>{sortedMembers.length} pessoas</span>
+                                                ))}
                                             </div>
                                         </div>
 
                                         <div>
                                             <div className="mb-2 flex items-center justify-between px-1">
-                                                <h3 className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55">Maiores contribuições</h3>
-                                                <span className="text-[10px] font-bold text-white/38">{totalRecordedContribution.toLocaleString('pt-BR')} registradas</span>
+                                                <h3 className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55">Temporada atual</h3>
+                                                <span className="text-[10px] font-bold text-amber-200/70">{seasonRecordedContribution.toLocaleString('pt-BR')} EXP</span>
                                             </div>
                                             <div className="space-y-2">
-                                                {sortedMembers.slice(0, 5).map((member, index) => (
+                                                {seasonMembers.slice(0, 5).map((member, index) => (
                                                     <div key={member.id} className="grid grid-cols-[26px_40px_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-white/8 bg-white/[0.035] px-3 py-2.5">
                                                         <span className="text-center text-xs font-black text-white/35">{index + 1}</span>
                                                         <UserAvatar avatarUrl={member.avatarUrl} nickname={member.nickname} className="h-10 w-10" level={member.level} showBorder={false} />
@@ -172,9 +245,13 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void }> = ({ onClose }
                                                             <p className="truncate text-sm font-bold text-white">{member.nickname}</p>
                                                             <p className="text-[9px] uppercase text-white/35">{member.role === 'leader' ? 'Liderança' : 'Membro'}</p>
                                                         </div>
-                                                        <span className="font-mono text-sm font-black text-amber-200">{Number(member.contributionPoints || 0).toLocaleString('pt-BR')}</span>
+                                                        <span className="font-mono text-sm font-black text-amber-200">{Number(member.seasonContributionPoints || 0).toLocaleString('pt-BR')}</span>
                                                     </div>
                                                 ))}
+                                            </div>
+                                            <div className="mt-3 flex justify-between border-t border-white/8 px-1 pt-3 text-[9px] font-bold uppercase tracking-[0.08em] text-white/32">
+                                                <span>Legado total</span>
+                                                <span>{totalRecordedContribution.toLocaleString('pt-BR')} EXP</span>
                                             </div>
                                         </div>
                                     </div>
@@ -212,10 +289,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void }> = ({ onClose }
                                     </div>
                                 )}
                             </div>
-                        </section>
-                    </div>
-                </div>
-            </Portal>
+            </ClanOverviewShell>
             {isManaging && <ClanManagementModal onClose={() => setIsManaging(false)} />}
             {isConfirmingLeave && (
                 <ConfirmationModal

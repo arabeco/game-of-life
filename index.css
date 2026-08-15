@@ -319,33 +319,52 @@ body {
 
 .asset-overview-grid {
   container-type: size;
+  grid-template-rows: repeat(5, minmax(0, 1fr));
 }
 
 .asset-overview-card {
-  width: 74%;
-  max-width: 396px;
-  width: min(74%, 42.24cqh, 396px);
-  aspect-ratio: 2.4 / 1;
+  width: min(88%, 54cqh, 430px);
+  max-height: calc(100% - 6px);
+  aspect-ratio: 2.8 / 1;
   height: auto;
-  container-type: inline-size;
+  container-type: size;
 }
 
 .asset-overview-title {
-  font-size: clamp(0.68rem, 5.1cqw, 0.94rem);
+  font-size: clamp(0.62rem, 4.4cqw, 0.9rem);
 }
 
 .asset-overview-stats {
-  grid-template-columns: minmax(3.15rem, 22cqw) minmax(2.8rem, 19cqw) minmax(3.15rem, 22cqw);
-  gap: clamp(0.25rem, 2cqw, 0.5rem);
+  grid-template-columns: auto minmax(2.5rem, 18cqw) auto;
+  gap: clamp(0.3rem, 2.4cqw, 0.65rem);
 }
 
 .asset-overview-stat {
-  width: min(22cqw, 4.5rem);
+  width: min(19cqw, 48cqh, 3.65rem);
 }
 
 .asset-overview-emojis {
-  width: min(19cqw, 3.5rem);
-  height: min(18cqw, 3.4rem);
+  width: min(18cqw, 3.6rem);
+  height: min(40cqh, 3rem);
+}
+
+@container (max-height: 104px) {
+  .asset-overview-title {
+    font-size: clamp(0.58rem, 3.9cqw, 0.78rem);
+  }
+
+  .asset-overview-stat > span:first-child {
+    font-size: 0.42rem;
+  }
+
+  .asset-overview-stat > span:last-child {
+    margin-top: 0.28rem;
+    font-size: 1.15rem;
+  }
+
+  .asset-overview-emojis {
+    font-size: 0.78rem;
+  }
 }
 
 .mode-game.theme-dark .assets-view-shell,

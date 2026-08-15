@@ -1,6 +1,8 @@
 import { supabase } from '../supabaseClient';
 
-const WEB_PUSH_PUBLIC_KEY = (import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY as string | undefined)?.trim() || '';
+const DEFAULT_WEB_PUSH_PUBLIC_KEY = 'BJvkEzQKdXVn1mmRwF06onF_qO8n8xe2M6dB0CsXvZrLTmmY7m9s9qaAtOyhlrlHp6Iyp96KwBHPm5OFQcRFGuQ';
+const WEB_PUSH_PUBLIC_KEY = (import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY as string | undefined)?.trim()
+    || DEFAULT_WEB_PUSH_PUBLIC_KEY;
 const SUPABASE_FUNCTIONS_URL = `${((import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() || '').replace(/\/+$/, '')}/functions/v1/web-push`;
 
 type WebPushSyncStatus =

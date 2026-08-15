@@ -2,6 +2,7 @@ import React from 'react';
 import { Clan } from '../types';
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
+import { ClanEmblem } from './ClanEmblem';
 
 interface ClanSearchResultCardProps {
     clan: Clan;
@@ -36,7 +37,7 @@ export const ClanSearchResultCard: React.FC<ClanSearchResultCardProps> = ({ clan
     return (
         <GlassCard variant="neutral" className="p-3">
             <div className="flex items-center space-x-4">
-                <span className="text-4xl">{clan.icon}</span>
+                <ClanEmblem value={clan.icon} className="h-12 w-12 shrink-0 text-4xl" />
                 <div className="flex-grow">
                     <h4 className="font-bold text-white">{clan.name}</h4>
                     <p className="text-xs text-gray-400">{rank?.name || 'N/A'} · {clan.clanType} · Entrada {clan.recruitmentStatus}</p>

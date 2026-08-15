@@ -207,27 +207,16 @@ export const CodexStore: React.FC = () => {
     const campaignQuizFreeCredits = Math.max(0, Number(userProfile.campaignQuizFreeCredits || 0));
     const campaignQuizMediumCredits = Math.max(0, Number(userProfile.campaignQuizMediumCredits || 0));
     const totalQuizCredits = campaignQuizFreeCredits + campaignQuizMediumCredits;
-    const hasMediumQuizCredit = campaignQuizMediumCredits > 0;
-    const hasFreeQuizCredit = campaignQuizFreeCredits > 0;
-    const quizHeroTitle = hasPendingFreeQuiz
-        ? 'Seu primeiro quiz libera uma campanha recomendada'
-        : hasFreeQuizCredit
-            ? 'Você tem uma ficha grátis pronta para usar'
-        : hasMediumQuizCredit
-            ? 'Você tem uma ficha média pronta para usar'
-            : 'Escolha uma campanha pronta para instalar agora';
-    const quizHeroCopy = hasPendingFreeQuiz
-        ? 'As campanhas grátis não ficam mais espalhadas no catálogo. O quiz encontra a melhor para o seu momento e ainda mostra uma opção premium como veja também.'
-        : hasFreeQuizCredit
-            ? `Seu plano liberou ${campaignQuizFreeCredits} ficha${campaignQuizFreeCredits === 1 ? '' : 's'} grátis para usar no próximo quiz e puxar uma campanha recomendada sem custo.`
-        : hasMediumQuizCredit
-            ? `Seu plano liberou ${campaignQuizMediumCredits} ficha${campaignQuizMediumCredits === 1 ? '' : 's'} média${campaignQuizMediumCredits === 1 ? '' : 's'} para usar no próximo quiz e liberar uma campanha recomendada sem custo em ouro.`
-            : 'O catálogo aberto foca nas campanhas premium. Se quiser uma rota mais guiada, o quiz ainda recomenda a próxima campanha certa para você.';
     const quizButtonLabel = hasPendingFreeQuiz
         ? 'Fazer quiz grátis'
         : totalQuizCredits > 0
-            ? `Quiz · ${totalQuizCredits}`
-            : 'Fazer quiz';
+            ? 'Usar quiz disponível'
+            : 'Encontrar minha campanha';
+    const quizStatusLabel = hasPendingFreeQuiz
+        ? 'Grátis'
+        : totalQuizCredits > 0
+            ? `${totalQuizCredits} ${totalQuizCredits === 1 ? 'ficha' : 'fichas'}`
+            : 'Personalizado';
 
     const availableAssetFilters = useMemo(() => (
         ASSET_FILTER_ORDER.map((assetId) => ({
@@ -282,32 +271,24 @@ export const CodexStore: React.FC = () => {
     return (
         <>
             <div className="space-y-3 animate-fade-in pb-8">
-                <GlassCard variant="neutral" className="overflow-hidden border-[var(--skin-accent-color)]/18 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.14),transparent_58%),linear-gradient(180deg,rgba(22,18,12,0.96),rgba(8,8,10,0.98))] p-4">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div className="max-w-xl">
-                            <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]/82">
-                                Porta principal das campanhas
-                            </div>
-                            <h2 className="mt-2 text-lg font-black uppercase tracking-[0.05em] text-white">
-                                {quizHeroTitle}
-                            </h2>
-                            <p className="mt-2 text-sm leading-relaxed text-white/62">
-                                {quizHeroCopy}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                            <button
-                                type="button"
-                                onClick={handleQuizTeaser}
-                                className="luxe-skin-button inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em]"
-                            >
-                                <LightbulbIcon className="h-4 w-4" />
-                                {quizButtonLabel}
-                            </button>
-                        </div>
-                    </div>
-                </GlassCard>
+                <section className="overflow-hidden border-b border-[var(--skin-accent-color)]/20 px-1 pb-4 pt-1">
+                    <h1 className="text-2xl font-black uppercase tracking-[0.06em] text-white">
+                        Campanhas
+                    </h1>
+                    <button
+                        type="button"
+                        onClick={handleQuizTeaser}
+                        className="luxe-skin-button mt-4 flex min-h-[52px] w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left"
+                    >
+                        <span className="flex min-w-0 items-center gap-3">
+                            <LightbulbIcon className="h-5 w-5 shrink-0" />
+                            <span className="text-[11px] font-black uppercase tracking-[0.12em]">{quizButtonLabel}</span>
+                        </span>
+                        <span className="shrink-0 rounded-full border border-black/15 bg-black/15 px-2 py-1 text-[7px] font-black uppercase tracking-[0.1em]">
+                            {quizStatusLabel}
+                        </span>
+                    </button>
+                </section>
 
                 <GlassCard variant="neutral" className="overflow-hidden border-white/10 p-3">
                     <div className="space-y-3">
@@ -332,28 +313,11 @@ export const CodexStore: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
-                            <div className="min-w-0 flex-1">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Catálogo premium</div>
-                                <div className="mt-1 truncate text-[11px] leading-relaxed text-white/62">
-                                    {activeFilterLabel || (hasMediumQuizCredit
-                                        ? 'Ficha disponível no quiz ou compra direta por ouro.'
-                                        : 'Campanhas grátis entram pelo quiz. Compra direta fica aqui.')}
-                                </div>
+                        {activeFilterLabel && (
+                            <div className="truncate px-1 text-[9px] font-black uppercase tracking-[0.14em] text-white/45">
+                                Exibindo: {activeFilterLabel}
                             </div>
-                            <button
-                                type="button"
-                                onClick={handleQuizTeaser}
-                                className="inline-flex min-h-[42px] shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-white/78 transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white"
-                                title="Quiz de recomendação"
-                                aria-label="Quiz de recomendação"
-                            >
-                                <LightbulbIcon className="h-4 w-4" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.16em]">
-                                    {hasPendingFreeQuiz ? 'Quiz grátis' : totalQuizCredits > 0 ? `Quiz · ${totalQuizCredits}` : 'Quiz'}
-                                </span>
-                            </button>
-                        </div>
+                        )}
 
                         {areFiltersOpen && (
                             <div className="space-y-3 rounded-2xl border border-white/10 bg-black/20 p-3">
@@ -423,7 +387,7 @@ export const CodexStore: React.FC = () => {
 
                 {filteredEntries.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3">
-                        {filteredEntries.map(({ codex, preview, coverVisual, actionCount, goldPrice, isFree, primaryAssetLabel, campaignTheme }) => {
+                        {filteredEntries.map(({ codex, template, preview, coverVisual, actionCount, goldPrice, isFree }) => {
                             const ownedCodex = userCodexes.find((userCodex) => userCodex.catalog_id === codex.id || userCodex.name === codex.title) || null;
                             const isOwned = Boolean(ownedCodex);
                             const isInstalled = Boolean(ownedCodex && installedCodexIds.has(ownedCodex.id));
@@ -432,41 +396,42 @@ export const CodexStore: React.FC = () => {
                                 <GlassCard
                                     key={codex.id}
                                     variant="neutral"
-                                    className={`relative h-[17.35rem] overflow-hidden border-white/10 p-2 ${!isFree ? 'bg-[radial-gradient(circle_at_top,rgba(168,36,36,0.14),transparent_58%),linear-gradient(180deg,rgba(26,16,18,0.98),rgba(11,10,12,0.98))]' : ''}`}
+                                    className={`relative min-h-[17rem] overflow-hidden border-white/10 p-2 ${!isFree ? 'bg-[radial-gradient(circle_at_top,rgba(168,36,36,0.12),transparent_58%),linear-gradient(180deg,rgba(26,16,18,0.98),rgba(11,10,12,0.98))]' : ''}`}
                                 >
                                     <div className="relative z-10 flex h-full flex-col gap-2">
                                         <button
                                             type="button"
                                             onClick={() => setCampaignPreview(preview)}
-                                            className="flex flex-1 flex-col rounded-[1.05rem] border border-white/10 bg-black/20 px-2 py-1.5 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.05]"
+                                            className="flex flex-1 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/18 text-left transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.04]"
                                         >
-                                            <div className="relative h-12 overflow-hidden rounded-[0.95rem] border border-white/8 bg-black/30">
+                                            <div className="relative h-[4.75rem] shrink-0 overflow-hidden bg-black/30">
                                                 <SharedCodexCoverArt cover={coverVisual} title={codex.title} />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                                                <div className="absolute inset-x-2 bottom-2 line-clamp-2 text-[12px] font-black uppercase leading-tight tracking-[0.05em] text-white drop-shadow-lg">
+                                                    {codex.title}
+                                                </div>
                                             </div>
 
-                                            <div className="mt-1 line-clamp-2 min-h-[1.85rem] text-[11px] font-black uppercase tracking-[0.05em] leading-tight text-white">
-                                                {codex.title}
+                                            <div className="grid grid-cols-3 divide-x divide-white/8 border-b border-white/8 bg-black/20 py-2 text-center">
+                                                <div>
+                                                    <div className="text-[12px] font-black text-white">{codex.duration_days}</div>
+                                                    <div className="text-[7px] font-black uppercase tracking-[0.1em] text-white/40">dias</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[12px] font-black text-white">{actionCount}</div>
+                                                    <div className="text-[7px] font-black uppercase tracking-[0.1em] text-white/40">ações</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[12px] font-black text-white">{preview.arenas.length}</div>
+                                                    <div className="text-[7px] font-black uppercase tracking-[0.1em] text-white/40">arenas</div>
+                                                </div>
                                             </div>
 
-                                            <div className="mt-1 flex min-h-[2.95rem] max-h-[2.95rem] flex-wrap content-start gap-1 overflow-y-auto pr-1 hide-scrollbar">
-                                                <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/72">
-                                                    {actionCount} acoes
-                                                </span>
-                                                <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/72">
-                                                    {codex.duration_days} dias
-                                                </span>
-                                                {primaryAssetLabel && (
-                                                    <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
-                                                        {primaryAssetLabel}
-                                                    </span>
-                                                )}
-                                                <span className="rounded-full border border-white/10 bg-white/6 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-white/68">
-                                                    {CATEGORY_LABELS[campaignTheme]}
-                                                </span>
+                                            <div className="line-clamp-2 min-h-[2.4rem] px-2 pt-2 text-[9px] leading-relaxed text-white/55">
+                                                {codex.description || template.description}
                                             </div>
 
-                                            <div className="mt-auto flex items-center justify-center rounded-[0.95rem] border border-white/8 bg-black/20 px-1 py-0.5">
+                                            <div className="mt-auto px-2 pb-2 pt-1">
                                                 <CampaignArenaStack arenas={preview.arenas} size="xs" actions={preview.actions} />
                                             </div>
                                         </button>

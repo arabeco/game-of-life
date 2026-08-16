@@ -65,8 +65,9 @@ export const QuestDetailModal: React.FC<{
     onClose: () => void;
     onTake: () => void;
     onAbandon?: () => void;
+    onOpenArena?: () => void;
     createsArena?: boolean;
-}> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, createsArena = true }) => {
+}> = ({ quest, progress, isActive, participants, onClose, onTake, onAbandon, onOpenArena, createsArena = true }) => {
     const getQuestRewardChest = (targetQuest: SeasonQuest): ChestType | null => {
         const rewardValue = typeof targetQuest.reward_value === 'string' ? targetQuest.reward_value.trim() : '';
         if (targetQuest.reward_type === 'chest' && rewardValue) {
@@ -147,6 +148,20 @@ export const QuestDetailModal: React.FC<{
                 )
             }
         >
+            {onOpenArena && (
+                <button
+                    type="button"
+                    onClick={onOpenArena}
+                    className="flex w-full items-center justify-between rounded-[16px] border border-[var(--ui-border-accent-soft)] bg-[var(--ui-core-pill-bg)] px-4 py-3 text-left transition-colors hover:border-[var(--ui-border-accent)]"
+                >
+                    <span className="min-w-0">
+                        <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-[var(--ui-core-label-color)]">Onde se faz</span>
+                        <span className="mt-0.5 block truncate text-[12px] font-bold text-[var(--ui-card-text)]">Abrir a arena desta missão</span>
+                    </span>
+                    <span className="ml-3 shrink-0 text-[var(--ui-text-accent)]">&rsaquo;</span>
+                </button>
+            )}
+
             <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-3 text-center">
                     <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/48">XP</div>

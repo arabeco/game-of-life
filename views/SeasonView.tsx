@@ -66,110 +66,68 @@ const SeasonQuestCard: React.FC<{
     progress: number;
     progressLabel?: string;
     participants?: number;
-    reward?: string;
     onClick: () => void;
-    onAbort?: () => void;
-    onOpenArena?: () => void;
-}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, reward, onClick, onAbort, onOpenArena }) => {
+}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, onClick }) => {
     const isCompleted = progress >= 100;
 
     return (
         <GlassCard
             variant="neutral"
             className={`group relative cursor-pointer overflow-hidden rounded-xl border p-3 transition-all duration-200 active:scale-[0.99] ${isAccepted
-                ? 'border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/[0.055] hover:border-[var(--skin-accent-color)]/38'
-                : 'border-white/8 bg-white/[0.025] hover:border-white/16 hover:bg-white/[0.045]'}`}
+                ? 'border-[var(--ui-border-accent-soft)] bg-[var(--skin-accent-color)]/[0.055] hover:border-[var(--ui-border-accent)]'
+                : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] hover:border-[var(--ui-border-accent-soft)]'}`}
             onClick={onClick}
         >
             {isAccepted && <div className="absolute inset-y-0 left-0 w-[2px] bg-[var(--skin-accent-color)]/75" />}
-            <div className="flex items-start justify-between relative z-10">
-                <div className="min-w-0 flex-1 space-y-2.5">
-                    <div className="flex items-center space-x-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/25 text-lg text-white shadow-inner">
-                            {icon || '📜'}
-                        </div>
-                        <div>
-                            <h3 className="line-clamp-2 text-[12px] font-black uppercase leading-tight tracking-[0.06em] text-white">{title}</h3>
-                            <div className="flex items-center space-x-2 mt-0.5">
-                                <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] ${isAccepted ? 'bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)]' : 'bg-white/8 text-white/48'}`}>
-                                    {metaLabel}
-                                </span>
-                                {typeof participants === 'number' && (
-                                    <div className="flex items-center space-x-1 text-[9px] text-gray-400 font-bold">
-                                        <UsersIcon className="w-3 h-3" />
-                                        <span>{participants} ativos</span>
-                                    </div>
-                                )}
+            <div className="relative z-10 flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-pill-bg)] text-xl shadow-inner">
+                    {icon || '📜'}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-[13px] font-bold leading-tight text-[var(--ui-card-text)]" title={title}>{title}</h3>
+
+                    <div className="mt-1 flex items-center gap-2">
+                        {/* "Aceitar" is an invitation and should pull the eye; "Aceito" is
+                            just a state, so it stays quiet and lets the progress bar lead. */}
+                        <span className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] ${isCompleted
+                            ? 'bg-green-500/15 text-green-300'
+                            : isAccepted
+                                ? 'bg-[var(--ui-core-pill-bg)] text-[var(--ui-core-label-color)]'
+                                : 'bg-[var(--skin-accent-color)]/16 text-[var(--ui-text-accent)]'}`}>
+                            {isCompleted ? 'Concluída' : isAccepted ? 'Aceito' : 'Aceitar'}
+                        </span>
+                        <span className="truncate text-[9px] font-bold uppercase tracking-[0.06em] text-[var(--ui-core-caption-color)]">{metaLabel}</span>
+                        {typeof participants === 'number' && (
+                            <span className="flex shrink-0 items-center gap-1 text-[9px] font-bold text-[var(--ui-core-caption-color)]">
+                                <UsersIcon className="h-3 w-3" />
+                                {participants}
+                            </span>
+                        )}
+                    </div>
+
+                    {isAccepted && !isCompleted && (
+                        <div className="mt-1.5 flex items-center gap-2">
+                            <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-[var(--ui-core-pill-bg)]">
+                                <div
+                                    className="h-full rounded-full bg-[var(--skin-accent-color)] transition-all duration-700 ease-out"
+                                    style={{ width: `${Math.min(100, progress)}%` }}
+                                />
                             </div>
+                            <span className="shrink-0 text-[9px] font-black tabular-nums text-[var(--ui-card-text-soft)]">
+                                {progressLabel || `${progress}%`}
+                            </span>
                         </div>
-                    </div>
-
-                    {reward && (
-                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-amber-200/72">
-                            <span aria-hidden="true">🏅</span>
-                            <span className="truncate">{reward}</span>
-                        </div>
-                    )}
-
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.1em]">
-                            <span className="text-white/38">{isAccepted ? 'Progresso' : 'Disponível'}</span>
-                            <span className="text-white/68">{isAccepted ? (progressLabel || `${progress}%`) : 'Ver missão'}</span>
-                        </div>
-                        <div className="relative h-1.5 w-full overflow-hidden rounded-full border border-white/5 bg-black/40">
-                            <div
-                                className="h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(255,255,255,0.2)] bg-gradient-to-r from-[var(--skin-accent-color)] to-white"
-                                style={{ width: `${Math.min(100, isAccepted ? progress : 0)}%` }}
-                            />
-                            {isCompleted && (
-                                <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                            )}
-                        </div>
-                    </div>
-
-                    {onOpenArena && (
-                        <button
-                            type="button"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                onOpenArena();
-                            }}
-                            className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-white/62 transition-colors hover:bg-white/10 hover:text-white"
-                        >
-                            Ir para a arena
-                            <ChevronRightIcon className="h-3 w-3" />
-                        </button>
                     )}
                 </div>
 
-                <div className="ml-2 flex h-full flex-col items-center justify-center space-y-1.5 pt-1">
-                    {isCompleted ? (
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-green-500 blur-md animate-ping opacity-30 rounded-full" />
-                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.5)] relative z-10">
-                                <CheckIcon className="w-5 h-5 text-white" />
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-colors group-hover:bg-white/10">
-                                <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-                            </div>
-                            {isAccepted && onAbort && (
-                                <button
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        onAbort();
-                                    }}
-                                    className="flex h-7 w-7 items-center justify-center rounded-full border border-red-500/15 bg-red-500/5 transition-colors hover:bg-red-500/15"
-                                    title="Abandonar missão"
-                                >
-                                    <XIcon className="w-4 h-4 text-red-400/50 group-hover/abort:text-red-400" />
-                                </button>
-                            )}
-                        </>
-                    )}
-                </div>
+                {isCompleted ? (
+                    <CheckIcon className="h-5 w-5 shrink-0 text-green-400" />
+                ) : (
+                    <span className="shrink-0 rounded-lg border border-[var(--ui-border-accent-soft)] px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.1em] text-[var(--ui-text-accent-soft)] transition-colors group-hover:border-[var(--ui-border-accent)]">
+                        Ver
+                    </span>
+                )}
             </div>
 
         </GlassCard>
@@ -617,7 +575,6 @@ export const SeasonView: React.FC = () => {
                                                         : undefined}
                                             reward={formatQuestReward(quest)}
                                             onClick={() => setSelectedQuest(quest)}
-                                            onAbort={() => setPendingAbandon({ id: quest.id, title: quest.title, kind: 'system' })}
                                         />
                                     ))}
                                     {activeIndividualQuests.map((quest) => (
@@ -630,7 +587,6 @@ export const SeasonView: React.FC = () => {
                                             progress={calculateQuestProgress(quest)}
                                             reward={formatQuestReward(quest)}
                                             onClick={() => setSelectedQuest(quest)}
-                                            onAbort={() => setPendingAbandon({ id: quest.id, title: quest.title, kind: 'season' })}
                                             onOpenArena={(() => {
                                                 const arenaId = arenaIdForQuest(quest);
                                                 return arenaId ? () => openArena(arenaId) : undefined;
@@ -653,7 +609,6 @@ export const SeasonView: React.FC = () => {
                                             participants={clanQuestParticipants[quest.id] || 0}
                                             reward={formatQuestReward(quest)}
                                             onClick={() => setSelectedQuest(quest)}
-                                            onAbort={() => setPendingAbandon({ id: quest.id, title: quest.title, kind: 'season' })}
                                         />
                                     ))}
                                 </MissionSection>
@@ -807,13 +762,18 @@ export const SeasonView: React.FC = () => {
                         }
                     }}
                     onAbandon={selectedQuestIsActive ? () => {
-                        if (isSystemQuest(selectedQuest)) {
-                            abandonSystemQuest(selectedQuest.id);
-                        } else {
-                            void abortSeasonQuest(selectedQuest.id);
-                        }
+                        setPendingAbandon({
+                            id: selectedQuest.id,
+                            title: selectedQuest.title,
+                            kind: isSystemQuest(selectedQuest) ? 'system' : 'season',
+                        });
                         setSelectedQuest(null);
                     } : undefined}
+                    onOpenArena={(() => {
+                        if (isSystemQuest(selectedQuest) || !selectedQuestIsActive) return undefined;
+                        const arenaId = arenaIdForQuest(selectedQuest);
+                        return arenaId ? () => { openArena(arenaId); setSelectedQuest(null); } : undefined;
+                    })()}
                     createsArena={!isSystemQuest(selectedQuest)}
                 />
             )}

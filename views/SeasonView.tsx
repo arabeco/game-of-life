@@ -69,7 +69,8 @@ const SeasonQuestCard: React.FC<{
     reward?: string;
     onClick: () => void;
     onAbort?: () => void;
-}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, reward, onClick, onAbort }) => {
+    onOpenArena?: () => void;
+}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, reward, onClick, onAbort, onOpenArena }) => {
     const isCompleted = progress >= 100;
 
     return (
@@ -125,6 +126,20 @@ const SeasonQuestCard: React.FC<{
                             )}
                         </div>
                     </div>
+
+                    {onOpenArena && (
+                        <button
+                            type="button"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onOpenArena();
+                            }}
+                            className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-white/62 transition-colors hover:bg-white/10 hover:text-white"
+                        >
+                            Ir para a arena
+                            <ChevronRightIcon className="h-3 w-3" />
+                        </button>
+                    )}
                 </div>
 
                 <div className="ml-2 flex h-full flex-col items-center justify-center space-y-1.5 pt-1">
@@ -188,6 +203,7 @@ export const SeasonView: React.FC = () => {
     const [isSeasonTransitionOpen, setSeasonTransitionOpen] = useState(false);
     const [isMissionLibraryOpen, setMissionLibraryOpen] = useState(false);
     const [pendingAbandon, setPendingAbandon] = useState<{ id: string; title: string; kind: 'system' | 'season' } | null>(null);
+    const [isCompletedOpen, setCompletedOpen] = useState(false);
 
     const activeSeason = resolveRuntimeActiveSeason(seasons);
     // Clan missions are switched off at the product level. Nothing can activate one
@@ -240,6 +256,16 @@ export const SeasonView: React.FC = () => {
     };
 
     const hasQuestAction = (quest: SeasonQuest): boolean => actionsForQuest(quest).length > 0;
+
+    // Accepting a quest builds a whole arena, but nothing led the player back to it
+    // afterwards beyond a toast. This closes that gap.
+    const arenaIdForQuest = (quest: SeasonQuest): string | undefined => actionsForQuest(quest)[0]?.arenaId;
+
+    const openArena = (arenaId: string) => {
+        window.dispatchEvent(new CustomEvent('tutorialNavigate', {
+            detail: { view: 'arenas', showArenaId: arenaId },
+        }));
+    };
 
     const countCompletedTasksForQuest = (quest: SeasonQuest): number => {
         const matchingActionIds = new Set(actionsForQuest(quest).map((action) => action.id));
@@ -408,6 +434,43 @@ export const SeasonView: React.FC = () => {
         () => clanQuests.filter((quest) => !isQuestAccepted(quest)),
         [clanQuests, allActions, userMissionParticipations]
     );
+    // Finishing a mission used to just delete its card: it dropped out of every list
+    // the moment its id landed in completedSeasonMissions, so the screen showed no
+    // trace of the work. This keeps the record on the page.
+    const completedEntries = useMemo(() => {
+        const entries: { id: string; title: string; icon?: string; reward?: string }[] = [];
+        const seen = new Set<string>();
+
+        const push = (entry: { id: string; title: string; icon?: string; reward?: string }) => {
+            if (seen.has(entry.id)) return;
+            seen.add(entry.id);
+            entries.push(entry);
+        };
+
+        SYSTEM_CHALLENGES.forEach((quest) => {
+            if (completedFlags.has(quest.id)) {
+                push({ id: quest.id, title: quest.title, icon: quest.actionTemplate.icon, reward: formatQuestReward(quest) });
+            }
+        });
+        quests.forEach((quest) => {
+            if (completedFlags.has(quest.id)) {
+                push({ id: quest.id, title: quest.title, icon: quest.actionTemplate.icon, reward: formatQuestReward(quest) });
+            }
+        });
+        if (activeSeason) {
+            [
+                ...GM_SEASON_MISSIONS.filter((mission) => mission.season_id === activeSeason.id),
+                ...seasonMissions.filter((mission) => mission.season_id === activeSeason.id),
+            ].forEach((mission) => {
+                if (completedFlags.has(mission.id)) {
+                    push({ id: mission.id, title: mission.title, icon: mission.icon, reward: formatMissionReward(mission) });
+                }
+            });
+        }
+
+        return entries;
+    }, [completedFlags, quests, activeSeason, seasonMissions]);
+
     // Counts only what the player actually took on; season missions are assigned, not chosen.
     const chosenMissionCount = activeSystemQuests.length
         + activeIndividualQuests.length
@@ -568,6 +631,10 @@ export const SeasonView: React.FC = () => {
                                             reward={formatQuestReward(quest)}
                                             onClick={() => setSelectedQuest(quest)}
                                             onAbort={() => setPendingAbandon({ id: quest.id, title: quest.title, kind: 'season' })}
+                                            onOpenArena={(() => {
+                                                const arenaId = arenaIdForQuest(quest);
+                                                return arenaId ? () => openArena(arenaId) : undefined;
+                                            })()}
                                         />
                                     ))}
                                 </MissionSection>
@@ -601,6 +668,39 @@ export const SeasonView: React.FC = () => {
                                 </div>
                             )}
                         </div>
+
+                        {completedEntries.length > 0 && (
+                            <div className="rounded-xl border border-white/8 bg-white/[0.02]">
+                                <button
+                                    type="button"
+                                    onClick={() => setCompletedOpen((open) => !open)}
+                                    className="flex w-full items-center justify-between px-3 py-2.5"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <CheckIcon className="h-3.5 w-3.5 text-green-400/80" />
+                                        <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/58">Concluídas</span>
+                                        <span className="text-[9px] font-bold text-white/32">{completedEntries.length}</span>
+                                    </div>
+                                    <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-white/38">
+                                        {isCompletedOpen ? 'Ocultar' : 'Ver'}
+                                    </span>
+                                </button>
+                                {isCompletedOpen && (
+                                    <div className="space-y-1 px-2.5 pb-2.5">
+                                        {completedEntries.map((entry) => (
+                                            <div key={entry.id} className="flex items-center gap-2.5 rounded-lg border border-white/6 bg-black/20 px-2.5 py-2">
+                                                <span className="text-sm" aria-hidden="true">{entry.icon || '📜'}</span>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-[11px] font-bold text-white/72">{entry.title}</p>
+                                                    {entry.reward && <p className="truncate text-[9px] text-amber-200/50">{entry.reward}</p>}
+                                                </div>
+                                                <CheckIcon className="h-4 w-4 shrink-0 text-green-400/70" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {isMissionLibraryOpen && (
                             <div className="space-y-2 rounded-xl border border-white/8 bg-black/15 p-2.5">

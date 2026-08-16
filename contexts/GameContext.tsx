@@ -3318,6 +3318,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             || null;
     }, [seasonMissions]);
 
+
     const findClanQuestByActionName = useCallback((actionName?: string) => {
         if (!actionName) return null;
         const normalized = normalizeDomainLabel(actionName);
@@ -4059,22 +4060,22 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const seasonContributionTotals = new Map<string, number>();
         const seasonStartDate = activeRuntimeSeason?.start_date || '';
         const seasonEndDate = activeRuntimeSeason?.end_date || '';
+        // Aggregated in Postgres: pulling the whole ledger to sum it in the browser
+        // grew without bound and silently came back short once the row cap bit.
         const { data: contributionRows, error: contributionError } = await supabase
-            .from('clan_xp_contributions')
-            .select('user_id, xp_amount, created_at')
-            .eq('clan_id', clanId);
+            .rpc('get_clan_contribution_totals', {
+                p_clan_id: clanId,
+                p_season_start: seasonStartDate || null,
+                p_season_end: seasonEndDate || null,
+            });
 
         if (contributionError) {
             console.warn('Clan contribution history is not available yet:', contributionError.message);
         } else {
             (contributionRows || []).forEach((row: any) => {
-                const memberId = String(row.user_id || '');
-                const xpAmount = Number(row.xp_amount || 0);
-                const contributionDate = String(row.created_at || '').slice(0, 10);
-                contributionTotals.set(memberId, (contributionTotals.get(memberId) || 0) + xpAmount);
-                if ((!seasonStartDate || contributionDate >= seasonStartDate) && (!seasonEndDate || contributionDate <= seasonEndDate)) {
-                    seasonContributionTotals.set(memberId, (seasonContributionTotals.get(memberId) || 0) + xpAmount);
-                }
+                const memberId = String(row.member_id || '');
+                contributionTotals.set(memberId, Number(row.total_xp || 0));
+                seasonContributionTotals.set(memberId, Number(row.season_xp || 0));
             });
         }
 
@@ -4392,6 +4393,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const isClanQuestActionId = useCallback((actionId: string) => isClanQuestAction(actionId, actions, allArenas), [actions, allArenas]);
 
+    // Grants that are not daily judgment deposits have nowhere else to be recorded,
+    // so they go onto the cycle row. Fire-and-forget: the local optimistic update
+    // already moved the UI, this is what makes it survive a reload.
+    const bankCycleExp = useCallback((cycleId: string | undefined | null, amount: number) => {
+        const rounded = Math.round(amount);
+        if (!cycleId || !rounded) return;
+
+        void supabase
+            .rpc('increment_cycle_banked_exp', { p_cycle_id: cycleId, p_amount: rounded })
+            .then(({ error }) => {
+                if (error) console.error('Failed to bank cycle exp:', error.message);
+            });
+    }, []);
+
     const refreshOpenCycleDerivedState = useCallback(async (cycle: Cycle | null) => {
         const userId = getSupabaseUserId();
         if (!userId || !cycle) {
@@ -4401,7 +4416,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         try {
-            const [sitrepsResult, commitmentsResult] = await Promise.all([
+            const [sitrepsResult, commitmentsResult, bankedResult] = await Promise.all([
                 supabase
                     .from('sitrep_reports')
                     .select('completed_tasks_count, total_tasks_count')
@@ -4413,6 +4428,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     .eq('stage', 'judgment')
                     .gte('date', cycle.startDate)
                     .lte('date', cycle.endDate),
+                supabase
+                    .from('cycles')
+                    .select('banked_exp_bonus')
+                    .eq('id', cycle.id)
+                    .maybeSingle(),
             ]);
 
             if (sitrepsResult.error) throw sitrepsResult.error;
@@ -4425,7 +4445,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
             const judgedRows = commitmentsResult.data || [];
             const totalExpDeposited = judgedRows.reduce((sum, row) => sum + Number(row.exp_deposited || 0), 0);
-            setCycleExpBonus(totalExpDeposited);
+
+            // Mission rewards and applyExp grants live on the cycle row; daily judgment
+            // deposits live in daily_commitments. Summing both is what makes the banked
+            // total survive a reload instead of being recomputed away.
+            if (bankedResult.error) {
+                console.error('Failed to read banked cycle exp:', bankedResult.error.message);
+            }
+            const bankedBonus = Number(bankedResult.data?.banked_exp_bonus || 0);
+            setCycleExpBonus(totalExpDeposited + bankedBonus);
         } catch (error) {
             console.error('Failed to refresh open cycle derived state:', error);
         }
@@ -8825,6 +8853,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const xpAmount = Number(mission.reward_value);
             if (!isNaN(xpAmount) && xpAmount > 0) {
                 setCycleExpBonus(prev => prev + xpAmount);
+                bankCycleExp(activeCycle?.id, xpAmount);
                 addFeedEvent({
                     type: 'LEVEL_UP',
                     content: { title: `Miss\u00E3o Conclu\u00EDda: ${mission.title} (+${xpAmount} XP)`, icon: '\u{1F4DD}' }
@@ -9682,6 +9711,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // Check if we should bank it for the cycle instead of immediate apply
         if (activeCycle && !options.forceProfile) {
             setCycleExpBonus(prev => prev + expGained);
+            bankCycleExp(activeCycle.id, expGained);
         } else {
             const shouldIncludePremium = options.includePremium ?? true;
             const premiumExp = shouldIncludePremium && hasPremiumAccess(userProfile) ? Math.round(expGained * 0.1) : 0;
@@ -11404,7 +11434,68 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
+    // One-time backfill for actions created before source_quest_id existed. It reuses
+    // the old name heuristic, which means actions the user already renamed cannot be
+    // recovered: nothing links them to a quest any more. Those stay unlinked.
+    const questLinkBackfillRef = useRef(false);
+    useEffect(() => {
+        if (questLinkBackfillRef.current || !hasHydratedFromSupabase) return;
+        if (actions.length === 0 || seasonQuests.length === 0) return;
+
+        const userId = getSupabaseUserId();
+        if (!userId || !isUuid(userId)) return;
+
+        questLinkBackfillRef.current = true;
+
+        const matches: { actionId: string; questId: string }[] = [];
+        actions.forEach(action => {
+            if (action.sourceQuestId) return;
+            const normalized = normalizeDomainLabel(action.name || '');
+            if (!normalized) return;
+
+            const quest = seasonQuests.find(candidate =>
+                normalizeDomainLabel(candidate.actionTemplate?.name || '') === normalized
+                || normalizeDomainLabel(candidate.title || '') === normalized
+            );
+            if (quest) matches.push({ actionId: action.id, questId: quest.id });
+        });
+
+        if (matches.length === 0) return;
+
+        const questByActionId = new Map(matches.map(match => [match.actionId, match.questId]));
+        setActions(prev => prev.map(action => (
+            questByActionId.has(action.id)
+                ? { ...action, sourceQuestId: questByActionId.get(action.id) }
+                : action
+        )));
+
+        void (async () => {
+            for (const match of matches) {
+                const { error } = await supabase
+                    .from('actions')
+                    .update({ source_quest_id: match.questId })
+                    .eq('id', match.actionId)
+                    .eq('user_id', userId);
+
+                if (error) {
+                    console.error('Failed to backfill action quest link:', error.message);
+                    return;
+                }
+            }
+        })();
+    }, [actions, seasonQuests, hasHydratedFromSupabase, getSupabaseUserId]);
+
     const findSeasonQuestArenaAndAction = useCallback((quest: SeasonQuest) => {
+        // The durable link wins: it keeps working after the user renames the action
+        // or its arena. Name matching stays as the fallback for older actions.
+        const linkedAction = actions.find(candidate => candidate.sourceQuestId === quest.id);
+        if (linkedAction) {
+            return {
+                arena: getArenas().find(candidate => candidate.id === linkedAction.arenaId),
+                action: linkedAction,
+            };
+        }
+
         const normalizedArenaName = normalizeDomainLabel(quest.title || '');
         const normalizedActionName = normalizeDomainLabel(quest.actionTemplate?.name || '');
         const arena = getArenas().find(candidate => normalizeDomainLabel(candidate.name || '') === normalizedArenaName);
@@ -11485,6 +11576,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         // 3. Criar a Ação na Arena
         await addAction({
             arenaId: arena.id,
+            sourceQuestId: quest.id,
             name: quest.actionTemplate.name,
             description: quest.actionTemplate.description,
             icon: isClanQuest ? '\u2694\uFE0F' : (quest.actionTemplate.icon || '\u{1F4DD}'),

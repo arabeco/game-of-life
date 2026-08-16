@@ -114,6 +114,10 @@ export interface Action {
   scheduledDays?: DayOfWeek[]; // Days to automatically schedule
   scheduledStartTime?: number; // Time in minutes to automatically schedule
 
+  // Season quest / system challenge this action was created for. Survives the
+  // user renaming the action, which name matching alone did not.
+  sourceQuestId?: string;
+
   // Codex / Rich Content Fields
   originCodexId?: string; // If injected from a Codex
   briefing?: string; // The "Why"

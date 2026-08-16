@@ -224,16 +224,18 @@ export const SeasonView: React.FC = () => {
         });
     }, [quests, fetchClanQuestParticipants]);
 
-    const hasQuestAction = (quest: SeasonQuest): boolean => (
-        allActions.some((action) => action.name === quest.actionTemplate.name || action.name === quest.title)
-    );
+    // The stored link is authoritative; name matching only covers actions created
+    // before it existed, and breaks the moment the user renames one.
+    const actionsForQuest = (quest: SeasonQuest) => {
+        const linked = allActions.filter((action) => action.sourceQuestId === quest.id);
+        if (linked.length > 0) return linked;
+        return allActions.filter((action) => action.name === quest.actionTemplate.name || action.name === quest.title);
+    };
+
+    const hasQuestAction = (quest: SeasonQuest): boolean => actionsForQuest(quest).length > 0;
 
     const countCompletedTasksForQuest = (quest: SeasonQuest): number => {
-        const matchingActionIds = new Set(
-            allActions
-                .filter((action) => action.name === quest.actionTemplate.name || action.name === quest.title)
-                .map((action) => action.id)
-        );
+        const matchingActionIds = new Set(actionsForQuest(quest).map((action) => action.id));
 
         if (matchingActionIds.size === 0) return 0;
         return tasks.filter((task) => matchingActionIds.has(task.actionId) && task.completed).length;

@@ -18,13 +18,12 @@ const SeasonQuestCard: React.FC<{
     icon?: string;
     metaLabel: string;
     isAccepted: boolean;
-    isClaimed: boolean;
     progress: number;
     progressLabel?: string;
     participants?: number;
     onClick: () => void;
     onAbort?: () => void;
-}> = ({ title, icon, metaLabel, isAccepted, isClaimed, progress, progressLabel, participants, onClick, onAbort }) => {
+}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, onClick, onAbort }) => {
     const isCompleted = progress >= 100;
 
     return (
@@ -68,7 +67,7 @@ const SeasonQuestCard: React.FC<{
                                 className="h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(255,255,255,0.2)] bg-gradient-to-r from-[var(--skin-accent-color)] to-white"
                                 style={{ width: `${Math.min(100, isAccepted ? progress : 0)}%` }}
                             />
-                            {isCompleted && !isClaimed && (
+                            {isCompleted && (
                                 <div className="absolute inset-0 bg-white/20 animate-pulse" />
                             )}
                         </div>
@@ -76,11 +75,7 @@ const SeasonQuestCard: React.FC<{
                 </div>
 
                 <div className="ml-2 flex h-full flex-col items-center justify-center space-y-1.5 pt-1">
-                    {isClaimed ? (
-                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/30">
-                            <CheckIcon className="w-5 h-5 text-green-400" />
-                        </div>
-                    ) : isCompleted ? (
+                    {isCompleted ? (
                         <div className="relative">
                             <div className="absolute inset-0 bg-green-500 blur-md animate-ping opacity-30 rounded-full" />
                             <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.5)] relative z-10">
@@ -454,9 +449,7 @@ export const SeasonView: React.FC = () => {
                                         icon={mission.icon}
                                         metaLabel="Temporada"
                                         isAccepted={true}
-                                        isClaimed={false}
                                         progress={progress}
-                                        progressLabel={`${Math.round(progress)}%`}
                                         onClick={() => setSelectedAutomaticMission(mission)}
                                     />
                                 );
@@ -468,7 +461,6 @@ export const SeasonView: React.FC = () => {
                                     icon={quest.actionTemplate.icon}
                                     metaLabel="Em andamento"
                                     isAccepted={true}
-                                    isClaimed={false}
                                     progress={getSystemQuestProgress(quest)}
                                     progressLabel={quest.id === 'system-five-day-proof-streak'
                                         ? `${Math.min(currentProofStreak, 5)}/5 dias`
@@ -488,9 +480,7 @@ export const SeasonView: React.FC = () => {
                                     icon={quest.actionTemplate.icon}
                                     metaLabel="Com arena"
                                     isAccepted={true}
-                                    isClaimed={false}
                                     progress={calculateQuestProgress(quest)}
-                                    progressLabel={`${Math.round(calculateQuestProgress(quest))}%`}
                                     onClick={() => setSelectedQuest(quest)}
                                     onAbort={() => { void abortSeasonQuest(quest.id); }}
                                 />
@@ -502,9 +492,7 @@ export const SeasonView: React.FC = () => {
                                     icon={quest.actionTemplate.icon}
                                     metaLabel="Grupo"
                                     isAccepted={true}
-                                    isClaimed={false}
                                     progress={calculateQuestProgress(quest)}
-                                    progressLabel={`${Math.round(calculateQuestProgress(quest))}%`}
                                     participants={clanQuestParticipants[quest.id] || 0}
                                     onClick={() => setSelectedQuest(quest)}
                                     onAbort={() => { void abortSeasonQuest(quest.id); }}
@@ -533,7 +521,6 @@ export const SeasonView: React.FC = () => {
                                         icon={quest.actionTemplate.icon}
                                         metaLabel={quest.rewardGold ? `+${quest.rewardGold} ouro` : 'Opcional'}
                                         isAccepted={false}
-                                        isClaimed={false}
                                         progress={0}
                                         onClick={() => setSelectedQuest(quest)}
                                     />
@@ -545,7 +532,6 @@ export const SeasonView: React.FC = () => {
                                         icon={quest.actionTemplate.icon}
                                         metaLabel="Cria uma arena"
                                         isAccepted={false}
-                                        isClaimed={false}
                                         progress={0}
                                         onClick={() => setSelectedQuest(quest)}
                                     />
@@ -557,7 +543,6 @@ export const SeasonView: React.FC = () => {
                                         icon={quest.actionTemplate.icon}
                                         metaLabel="Missão do grupo"
                                         isAccepted={false}
-                                        isClaimed={false}
                                         progress={0}
                                         participants={clanQuestParticipants[quest.id] || 0}
                                         onClick={() => setSelectedQuest(quest)}
@@ -570,6 +555,13 @@ export const SeasonView: React.FC = () => {
                         )}
                     </div>
                 </>
+            )}
+
+            {!activeSeason && (
+                <div className="rounded-xl border border-white/8 bg-white/[0.025] px-4 py-8 text-center">
+                    <p className="text-[11px] font-bold text-white/62">Nenhuma temporada ativa no momento.</p>
+                    <p className="mt-1.5 text-[10px] text-white/38">As missões aparecem aqui assim que a próxima temporada começar.</p>
+                </div>
             )}
 
             {selectedAutomaticMission && (

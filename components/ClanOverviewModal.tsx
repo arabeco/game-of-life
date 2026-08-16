@@ -92,6 +92,15 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
         (sum, member) => sum + Number(member.seasonContributionPoints || 0),
         0,
     );
+    // The stage highlights the leader, so they always hold a spot even when their
+    // season contribution would leave them outside the top slots.
+    const stageMembers = useMemo(() => {
+        const leader = seasonMembers.find(member => member.role === 'leader');
+        const others = seasonMembers.filter(member => member.id !== leader?.id).slice(0, leader ? 5 : 6);
+        if (!leader) return others;
+        const middle = Math.floor(others.length / 2);
+        return [...others.slice(0, middle), leader, ...others.slice(middle)];
+    }, [seasonMembers]);
     const sceneBackground = resolveClanBackground(clan?.backgroundUrl);
     const getSovereignOnlyConfig = (member: EnrichedClanMember) => member.sovereign
         ? {
@@ -211,7 +220,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                         <div className="relative min-h-[230px] overflow-hidden rounded-xl border border-white/10 px-3">
                                             <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/55 to-transparent" />
                                             <div className="relative flex min-h-[228px] items-end justify-center -space-x-7 overflow-hidden px-1 pb-3">
-                                                {seasonMembers.slice(0, 6).map((member, index) => (
+                                                {stageMembers.map((member, index) => (
                                                     <div
                                                         key={member.id}
                                                         className={`relative flex w-[104px] shrink-0 flex-col items-center origin-bottom ${member.role === 'leader' ? 'scale-110' : ''}`}

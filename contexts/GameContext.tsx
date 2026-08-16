@@ -8856,7 +8856,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
         let nextUnlockedItems = unlockedItems;
 
-        if (mission.reward_type === 'item_id' && rewardCategory === 'ornament' && rewardItemId) {
+        const isItemReward = mission.reward_type === 'item_id' && Boolean(rewardItemId);
+        const rewardsOrnament = isItemReward && rewardCategory === 'ornament';
+        const rewardsInsignia = isItemReward
+            && (rewardCategory as string === 'insignias' || rewardCategory as string === 'insignia');
+
+        if (rewardsOrnament) {
             await grantInventoryItem(rewardItemId);
             nextUnlockedItems = {
                 ...nextUnlockedItems,
@@ -8864,20 +8869,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             };
         }
 
-        if (mission.reward_type === 'item_id' && (rewardCategory as string === 'insignias' || rewardCategory as string === 'insignia') && rewardItemId) {
-            await grantInventoryItem(rewardItemId);
-            nextUnlockedItems = {
-                ...nextUnlockedItems,
-                insignias: { ...nextUnlockedItems.insignias, [rewardItemId]: true },
-            };
-        } else {
-            const genericInsigniaId = (mission as any).type === 'season' ?'insignia_quest_master' : 'insignia_quest_incomum';
-            await grantInventoryItem(genericInsigniaId, true);
-            nextUnlockedItems = {
-                ...nextUnlockedItems,
-                insignias: { ...nextUnlockedItems.insignias, [genericInsigniaId]: true },
-            };
-        }
+        // Every mission awards an insignia: the one it names, or the generic badge
+        // for its tier when the reward is XP or an ornament.
+        const insigniaId = rewardsInsignia
+            ? rewardItemId
+            : ((mission as any).type === 'season' ? 'insignia_quest_master' : 'insignia_quest_incomum');
+        await grantInventoryItem(insigniaId, !rewardsInsignia);
+        nextUnlockedItems = {
+            ...nextUnlockedItems,
+            insignias: { ...nextUnlockedItems.insignias, [insigniaId]: true },
+        };
 
         updateUserProfile({
             completedSeasonMissions: [...completed, mission.id],
@@ -10228,61 +10229,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const getActionById = (actionId: string) => actions.find(a => a.id === actionId);
 
-    const getClanQuestProgress = (questId: string) => {
+    const getClanQuestProgress = useCallback((questId: string) => {
         if (!clan) return 0;
         return clanQuestProgress[clan.id]?.[questId] || 0;
-    };
+    }, [clan?.id, clanQuestProgress]);
 
-    const updateClanQuestProgress = async (questId: string, delta: number) => {
-        if (!clan || !enableClanQuestProgress) return;
-
-        // Optimistic update
-        setClanQuestProgress(prev => {
-            const clanProgress = prev[clan.id] || {};
-            const currentValue = clanProgress[questId] || 0;
-            const nextValue = Math.max(0, currentValue + delta);
-            return { ...prev, [clan.id]: { ...clanProgress, [questId]: nextValue } };
-        });
-
-        const userId = getSupabaseUserId();
-        if (userId && clanQuestProgressTableReadyRef.current) {
-            // Fetch current value from DB to avoid race conditions
-            const { data: currentData, error: fetchError } = await supabase
-                .from('clan_mission_progress')
-                .select('current_value')
-                .eq('clan_id', clan.id)
-                .eq('mission_id', questId)
-                .maybeSingle();
-
-            if (fetchError) {
-                console.error("Error fetching clan quest progress for update:", fetchError.message);
-                // Fallback to blind update if fetch fails?Better to stop to avoid corruption.
-                return;
-            }
-
-            const dbValue = currentData?.current_value || 0;
-            const nextValue = Math.max(0, dbValue + delta);
-
-            supabase.from('clan_mission_progress').upsert({
-                clan_id: clan.id,
-                mission_id: questId,
-                current_value: nextValue,
-                last_updated: new Date().toISOString()
-            }, { onConflict: 'clan_id,mission_id' }).then(({ error }) => {
-                if (!error) {
-                    // Update local state with the confirmed DB value
-                    setClanQuestProgress(prev => {
-                        const clanProgress = prev[clan.id] || {};
-                        return { ...prev, [clan.id]: { ...clanProgress, [questId]: nextValue } };
-                    });
-                    return;
-                }
-                if (isClanQuestProgressMissing(error)) {
-                    clanQuestProgressTableReadyRef.current = false;
-                }
-            });
-        }
-    };
 
     const toggleChecklistItem = (id: string) => {
         setChecklistItems(prev => prev.map(item => item.id === id ?{ ...item, completed: !item.completed } : item));
@@ -10364,7 +10315,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setSequenceItems(prev => prev.filter(item => item.id !== id));
     };
 
-    const getArenas = () => allArenas;
+    const getArenas = useCallback(() => allArenas, [allArenas]);
     const addArena = async (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb: boolean = false): Promise<Arena> => {
         const willStartArchived = arenaData.isArchived ?? false;
         const capacity = getArenaCapacitySummary(assetsRef.current, userProfile);
@@ -11101,7 +11052,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         showToast('Arena excluida definitivamente.', 'success');
     };
-    const getActionsForArena = (arenaId: string) => actions.filter(a => a.arenaId === arenaId);
+    // Memoised so consumers can safely list it as an effect/memo dependency; a fresh
+    // identity every render was invalidating downstream memos such as SeasonView's
+    // per-arena progress sweep.
+    const getActionsForArena = useCallback(
+        (arenaId: string) => actions.filter(a => a.arenaId === arenaId),
+        [actions],
+    );
     const getAssetForAction = (actionId: string): Asset | undefined => {
         const action = actions.find(a => a.id === actionId);
         if (!action) return undefined;

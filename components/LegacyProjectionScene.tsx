@@ -440,11 +440,12 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         : 'relative overflow-hidden rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.08),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0.035),_rgba(255,255,255,0.012))] p-5 text-white shadow-[0_24px_60px_rgba(0,0,0,0.42)] w-[1720px]';
     const interactiveBackdropStyle: React.CSSProperties = {
         backgroundImage: `${backdropSkin.overlay}, url(${backdropSkin.imageUrl})`,
-        backgroundPosition: 'center top',
+        backgroundPosition: backdropSkin.focus,
         backgroundSize: 'cover',
         backgroundBlendMode: 'color, normal',
         backgroundRepeat: 'no-repeat',
-        transform: `scale(${backdropScale})`,
+        filter: backdropSkin.filter,
+        transform: `scale(${backdropScale * backdropSkin.zoom})`,
         transformOrigin: 'center top',
     };
 
@@ -544,9 +545,9 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         const isLastEra = eraIndex === orderedEras.length - 1;
 
         return (
-            <div key={era.key || era.label} className="relative flex shrink-0 items-start gap-2.5 pt-5 pb-5">
+            <div key={era.key || era.label} className="relative flex shrink-0 items-start gap-2.5 pb-5 pt-8">
                 {eraIndex > 0 && (
-                    <div className="pointer-events-none absolute -left-4 bottom-0 top-5 flex w-8 flex-col items-center">
+                    <div className="pointer-events-none absolute -left-4 bottom-0 top-8 flex w-8 flex-col items-center">
                         <div className="h-7 w-px" style={{ background: `${skin.edge}66` }} />
                         <div className="mt-1 h-2.5 w-2.5 rotate-45 border" style={{ borderColor: `${skin.edge}66`, background: `${skin.baseTop}22` }} />
                         <div className="mt-1 w-px flex-1 bg-white/10" />
@@ -556,19 +557,27 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                 <button
                     type="button"
                     onClick={() => onOpenEra?.(era)}
-                    className={`group flex shrink-0 flex-col items-center gap-1.5 pt-1 ${onOpenEra ? 'cursor-pointer' : 'cursor-default'}`}
+                    className={`group absolute left-0 top-0.5 z-20 ${onOpenEra ? 'cursor-pointer' : 'cursor-default'}`}
                     title={onOpenEra ? `Abrir ${era.label}` : era.label}
                 >
                     <span
-                        className="rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] shadow-[0_8px_18px_rgba(0,0,0,0.18)] transition-colors group-hover:text-white"
+                        className="block whitespace-nowrap rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] shadow-[0_8px_18px_rgba(0,0,0,0.18)] backdrop-blur-sm transition-colors group-hover:text-white"
                         style={{
                             borderColor: `${skin.edge}40`,
                             color: skin.edge,
-                            background: 'linear-gradient(180deg, rgba(3,5,8,0.72), rgba(3,5,8,0.5))',
+                            background: 'linear-gradient(180deg, rgba(3,5,8,0.82), rgba(3,5,8,0.62))',
                         }}
                     >
                         {era.label}
                     </span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => onOpenEra?.(era)}
+                    className={`group flex shrink-0 flex-col items-center gap-1.5 pt-1 ${onOpenEra ? 'cursor-pointer' : 'cursor-default'}`}
+                    title={onOpenEra ? `Abrir ${era.label}` : era.label}
+                >
                     <div className="h-[72px] w-[10px] overflow-hidden rounded-sm">
                         <EraRibbon label="" skinId={era.skinId} className="h-full w-full" />
                     </div>
@@ -608,13 +617,13 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                 style={{
                     backgroundImage: `${backdropSkin.overlay}, url(${backdropSkin.imageUrl})`,
                     borderRadius: interactive ? '0px' : '34px',
-                    backgroundPosition: interactive ? 'center center' : 'center top',
+                    backgroundPosition: interactive ? 'center center' : backdropSkin.focus,
                     backgroundSize: 'cover',
                     backgroundRepeat: 'no-repeat',
                     backgroundBlendMode: 'color, normal',
-                    transform: interactive ? `scale(${Math.max(backdropScale, 1.06)})` : `scale(${backdropScale})`,
+                    transform: interactive ? `scale(${Math.max(backdropScale, 1.06)})` : `scale(${backdropScale * backdropSkin.zoom})`,
                     transformOrigin: interactive ? 'center center' : 'center top',
-                    filter: interactive ? 'blur(16px) saturate(0.92) brightness(0.62)' : 'none',
+                    filter: interactive ? `blur(16px) brightness(0.62) ${backdropSkin.filter}` : backdropSkin.filter,
                     opacity: interactive ? 0.56 : 1,
                 }}
             />
@@ -764,8 +773,14 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                         <div
                             ref={timelineScrollRef}
                             onScroll={handleTimelineScroll}
-                            className={`${interactive ? 'overflow-x-auto pb-1 hide-scrollbar' : 'overflow-visible'}`}
-                            style={{ transform: `translate(${sceneCyclesTranslateX}px, ${sceneCyclesTranslateY}px) scale(${layout.cyclesZoom})`, transformOrigin: 'top center' }}
+                            className={`${interactive ? 'mx-auto overflow-x-auto pb-1 hide-scrollbar' : 'overflow-visible'}`}
+                            style={{
+                                transform: `translate(${sceneCyclesTranslateX}px, ${sceneCyclesTranslateY}px) scale(${layout.cyclesZoom})`,
+                                transformOrigin: 'top center',
+                                // Keep the scaled box inside the stage: scaling from the centre would
+                                // otherwise bleed past both edges and clip the era labels.
+                                width: interactive ? `${(LEGACY_STAGE_WIDTH - 24) / Math.max(layout.cyclesZoom, 0.01)}px` : undefined,
+                            }}
                         >
                             <div
                                 ref={timelineContentRef}

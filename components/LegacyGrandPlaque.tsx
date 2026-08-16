@@ -46,22 +46,41 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
 
     return (
         <section
-            className={`relative isolate w-full overflow-hidden rounded-[18px] border px-3 pb-3 pt-3 text-white ${compact ? 'min-h-[132px]' : 'min-h-[196px] px-5 pb-4 pt-4'} ${className}`}
+            className={`relative isolate w-full overflow-hidden rounded-[18px] px-3 pb-3 pt-3 text-white ${compact ? 'min-h-[132px]' : 'min-h-[196px] px-5 pb-4 pt-4'} ${className}`}
             style={{
-                borderColor: 'rgba(224,185,93,0.82)',
+                border: '1.5px solid transparent',
                 background: [
-                    'radial-gradient(circle at 12% 0%, rgba(255,230,150,0.16), transparent 32%)',
-                    'radial-gradient(circle at 96% 100%, rgba(47,125,159,0.18), transparent 34%)',
-                    'linear-gradient(118deg, rgba(255,255,255,0.07), transparent 24%, rgba(255,255,255,0.025) 52%, transparent 74%)',
-                    'linear-gradient(160deg, #17212a 0%, #0b1118 48%, #030608 100%)',
+                    'radial-gradient(circle at 12% 0%, rgba(255,230,150,0.16), transparent 32%) padding-box',
+                    'radial-gradient(circle at 96% 100%, rgba(47,125,159,0.18), transparent 34%) padding-box',
+                    'linear-gradient(118deg, rgba(255,255,255,0.07), transparent 24%, rgba(255,255,255,0.025) 52%, transparent 74%) padding-box',
+                    'linear-gradient(160deg, #17212a 0%, #0b1118 48%, #030608 100%) padding-box',
+                    'linear-gradient(147deg, #f7e7b0 0%, #c9a34e 15%, #705523 34%, #e4cd88 52%, #7d6029 72%, #c6a052 88%, #f7e7b0 100%) border-box',
                 ].join(', '),
-                boxShadow: '0 18px 36px rgba(0,0,0,0.46), 0 0 0 1px rgba(66,43,12,0.7), inset 0 1px 0 rgba(255,244,203,0.22), inset 0 -22px 38px rgba(0,0,0,0.34)',
+                boxShadow: '0 18px 36px rgba(0,0,0,0.46), 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,244,203,0.24), inset 0 -22px 38px rgba(0,0,0,0.34)',
             }}
         >
-            <div className="pointer-events-none absolute inset-[4px] rounded-[14px] border border-amber-100/20" />
-            <div className="pointer-events-none absolute inset-x-5 top-[7px] h-px bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
+            <div
+                className="pointer-events-none absolute inset-[5px] rounded-[13px]"
+                style={{
+                    border: '1px solid rgba(238,214,150,0.24)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,246,214,0.14), 0 1px 0 rgba(0,0,0,0.55)',
+                }}
+            />
+            <div
+                className="pointer-events-none absolute inset-0 opacity-[0.14] mix-blend-overlay"
+                style={{ background: 'repeating-linear-gradient(101deg, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0) 2px, rgba(255,255,255,0) 5px)' }}
+            />
+            <div className="pointer-events-none absolute inset-x-5 top-[8px] h-px bg-gradient-to-r from-transparent via-amber-200/75 to-transparent" />
             <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rotate-12 border border-amber-200/10" />
             <div className="pointer-events-none absolute bottom-0 left-[27%] h-20 w-px rotate-[28deg] bg-gradient-to-b from-transparent via-white/8 to-transparent" />
+            {([
+                'left-[9px] top-[9px] border-l border-t',
+                'right-[9px] top-[9px] border-r border-t',
+                'left-[9px] bottom-[9px] border-b border-l',
+                'right-[9px] bottom-[9px] border-b border-r',
+            ]).map((corner) => (
+                <div key={corner} className={`pointer-events-none absolute h-2.5 w-2.5 border-amber-100/45 ${corner}`} />
+            ))}
 
             <div className={`relative z-10 grid items-center ${compact ? 'grid-cols-[58px_minmax(0,1fr)_58px] gap-2' : 'grid-cols-[64px_minmax(0,1fr)_64px] gap-2 sm:grid-cols-[88px_minmax(0,1fr)_96px] sm:gap-4'}`}>
                 <div className="relative flex items-center justify-center">
@@ -95,7 +114,17 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                     </p>
                 </div>
 
-                <div className={`relative flex flex-col items-center justify-center rounded-full border border-amber-200/55 bg-[radial-gradient(circle_at_34%_26%,rgba(255,239,181,0.14),rgba(8,14,19,0.96)_62%)] text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_8px_20px_rgba(0,0,0,0.38)] ${compact ? 'h-[54px] w-[54px]' : 'h-[60px] w-[60px] sm:h-[86px] sm:w-[86px]'}`}>
+                <div
+                    className={`relative flex flex-col items-center justify-center rounded-full text-center ${compact ? 'h-[54px] w-[54px]' : 'h-[60px] w-[60px] sm:h-[86px] sm:w-[86px]'}`}
+                    style={{
+                        border: '1.5px solid transparent',
+                        background: [
+                            'radial-gradient(circle at 34% 26%, rgba(255,239,181,0.16), rgba(8,14,19,0.96) 62%) padding-box',
+                            'linear-gradient(150deg, #f2dda0 0%, #b8934a 26%, #6a5122 52%, #ddc17f 78%, #f2dda0 100%) border-box',
+                        ].join(', '),
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -6px 12px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.38)',
+                    }}
+                >
                     <span className={`${compact ? 'text-[4px]' : 'text-[6px]'} font-black uppercase tracking-[0.1em] text-amber-200/64`}>{identityMode === 'historical' ? 'Registro' : 'Patamar'}</span>
                     {identityMode === 'historical' ? (
                         <strong className={`${compact ? 'mt-1 text-[7px]' : 'mt-1.5 text-[10px]'} max-w-[80%] font-black leading-tight text-white`}>{capturedDate || 'Ciclo fechado'}</strong>
@@ -108,7 +137,14 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                 </div>
             </div>
 
-            <div className={`relative z-10 mt-2 grid grid-cols-4 divide-x divide-amber-100/12 border-t border-amber-100/16 ${compact ? 'pt-2' : 'mt-4 pt-3'}`}>
+            <div
+                className={`relative z-10 mt-2 grid grid-cols-4 divide-x divide-amber-100/12 overflow-hidden rounded-[9px] ${compact ? 'py-1.5' : 'mt-4 py-2'}`}
+                style={{
+                    background: 'linear-gradient(180deg, rgba(0,0,0,0.34), rgba(0,0,0,0.12))',
+                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,244,203,0.09)',
+                }}
+            >
+                <div className="pointer-events-none absolute inset-x-2 top-0 h-px bg-gradient-to-r from-transparent via-amber-200/45 to-transparent" />
                 {metricItems.map((item) => (
                     <div key={item.label} className="flex min-w-0 flex-col items-center justify-center px-1 text-center">
                         <span className={`${compact ? 'text-[4.5px]' : 'text-[6px]'} truncate font-black uppercase tracking-[0.1em] text-amber-100/48`}>{item.label}</span>

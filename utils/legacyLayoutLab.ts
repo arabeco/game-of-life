@@ -18,7 +18,7 @@ export interface LegacyPreviewLayoutConfig {
   plaqueZoom: number;
 }
 
-export const LEGACY_LAYOUT_STORAGE_KEY = 'glyph:legacy-layout-lab-v12';
+export const LEGACY_LAYOUT_STORAGE_KEY = 'glyph:legacy-layout-lab-v13';
 export const LEGACY_PREVIEW_LAYOUT_STORAGE_KEY = 'glyph:legacy-preview-layout-lab-v4';
 export const LEGACY_LAYOUT_UPDATED_EVENT = 'glyph:legacy-layout-updated';
 export const LEGACY_PREVIEW_LAYOUT_UPDATED_EVENT = 'glyph:legacy-preview-layout-updated';
@@ -29,13 +29,13 @@ export const LEGACY_SCENE_PLAQUE_SCALE = 1;
 
 export const DEFAULT_LEGACY_LAYOUT: LegacyLayoutConfig = {
   backdropZoom: 1.02,
-  plaqueOffsetX: -4,
-  plaqueOffsetY: -5,
-  plaqueZoom: 1,
-  plaqueWidth: 0.98,
+  plaqueOffsetX: 0,
+  plaqueOffsetY: 52,
+  plaqueZoom: 1.12,
+  plaqueWidth: 1,
   cyclesOffsetX: 0,
-  cyclesOffsetY: -218,
-  cyclesZoom: 1.71,
+  cyclesOffsetY: -206,
+  cyclesZoom: 1.2,
   playerOffsetX: 1,
   playerOffsetY: -12,
   playerZoom: 1.14,

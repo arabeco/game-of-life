@@ -9,6 +9,7 @@ import { calculateArenaProgress } from '../utils/progressUtils';
 import { getNextSeasonConfig, getSeasonLaunchToastStorageKey, isGenesisSeason, resolveRuntimeActiveSeason, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
 import { SYSTEM_CHALLENGES, SystemChallenge } from '../constants/systemChallenges';
 import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 
 type SelectableQuest = SeasonQuest | SystemChallenge;
 
@@ -189,8 +190,14 @@ export const SeasonView: React.FC = () => {
     const [pendingAbandon, setPendingAbandon] = useState<{ id: string; title: string; kind: 'system' | 'season' } | null>(null);
 
     const activeSeason = resolveRuntimeActiveSeason(seasons);
+    // Clan missions are switched off at the product level. Nothing can activate one
+    // for a clan any more, so listing them only leads the player to a dead end.
+    // Filtering here keeps every downstream list, count and section consistent.
     const quests = useMemo(
-        () => seasonQuests.filter((quest) => !activeSeason || !quest.season_id || quest.season_id === activeSeason.id),
+        () => seasonQuests.filter((quest) => (
+            (PRODUCT_FEATURES.clanMissions || quest.type !== 'clan')
+            && (!activeSeason || !quest.season_id || quest.season_id === activeSeason.id)
+        )),
         [seasonQuests, activeSeason?.id]
     );
 

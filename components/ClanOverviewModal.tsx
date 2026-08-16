@@ -246,7 +246,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                 <span className="text-[10px] font-bold text-amber-200/70">{seasonRecordedContribution.toLocaleString('pt-BR')} EXP</span>
                                             </div>
                                             <div className="space-y-2">
-                                                {seasonMembers.slice(0, 5).map((member, index) => (
+                                                {seasonMembers.slice(0, 6).map((member, index) => (
                                                     <div key={member.id} className="grid grid-cols-[26px_40px_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-white/8 bg-white/[0.035] px-3 py-2.5">
                                                         <span className="text-center text-xs font-black text-white/35">{index + 1}</span>
                                                         <UserAvatar avatarUrl={member.avatarUrl} nickname={member.nickname} className="h-10 w-10" level={member.level} showBorder={false} />
@@ -259,7 +259,7 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                 ))}
                                             </div>
                                             <div className="mt-3 flex justify-between border-t border-white/8 px-1 pt-3 text-[9px] font-bold uppercase tracking-[0.08em] text-white/32">
-                                                <span>Legado total</span>
+                                                <span>Legado do grupo (desde sempre)</span>
                                                 <span>{totalRecordedContribution.toLocaleString('pt-BR')} EXP</span>
                                             </div>
                                         </div>
@@ -285,7 +285,10 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                         <p className="truncate text-sm font-bold text-white">{member.nickname}</p>
                                                         {member.role === 'leader' && <CrownIcon className="h-3.5 w-3.5 shrink-0 text-amber-300" />}
                                                     </div>
-                                                    <p className="text-[10px] text-white/38">Contribuiu {Number(member.contributionPoints || 0).toLocaleString('pt-BR')} EXP</p>
+                                                    <p className="text-[10px] text-white/38">
+                                                        {Number(member.contributionPoints || 0).toLocaleString('pt-BR')} EXP desde sempre
+                                                        <span className="text-white/24"> · {Number(member.seasonContributionPoints || 0).toLocaleString('pt-BR')} nesta temporada</span>
+                                                    </p>
                                                 </div>
                                                 <span className="text-xs font-black text-white/45">Nv. {member.level}</span>
                                             </div>

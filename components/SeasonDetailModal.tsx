@@ -12,13 +12,14 @@ import { calculateArenaProgress } from '../utils/progressUtils';
 const DetailModalShell: React.FC<{
     title: string;
     icon?: string;
+    artUrl?: string;
     description: string;
     badge: string;
     progress: number;
     onClose: () => void;
     children?: React.ReactNode;
     footer: React.ReactNode;
-}> = ({ title, icon, description, badge, progress, onClose, children, footer }) => (
+}> = ({ title, icon, artUrl, description, badge, progress, onClose, children, footer }) => (
     <Portal>
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
             <div className="relative flex max-h-[80vh] w-full max-w-sm flex-col overflow-hidden rounded-[20px] border border-[var(--skin-accent-color)]/20 bg-[linear-gradient(180deg,rgba(14,14,14,0.98),rgba(4,4,4,0.99))] shadow-[0_0_50px_rgba(0,0,0,0.8)]" onClick={(event) => event.stopPropagation()}>
@@ -29,9 +30,16 @@ const DetailModalShell: React.FC<{
                 </div>
                 <div className="custom-scrollbar flex-1 overflow-y-auto px-5 pb-5 pt-4">
                     <div className="space-y-4 text-center">
-                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[16px] border border-[var(--skin-accent-color)]/35 bg-white/5 text-3xl shadow-[0_0_20px_var(--sephirot-glow-color)]">
-                            {icon || 'o'}
-                        </div>
+                        {artUrl ? (
+                            <div className="relative -mx-5 -mt-4 mb-1 h-36 overflow-hidden">
+                                <img src={artUrl} alt="" className="h-full w-full object-cover" />
+                                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,4,4,0.25),rgba(4,4,4,0.55)_58%,rgba(4,4,4,0.99))]" />
+                            </div>
+                        ) : (
+                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[16px] border border-[var(--skin-accent-color)]/35 bg-white/5 text-3xl shadow-[0_0_20px_var(--sephirot-glow-color)]">
+                                {icon || 'o'}
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/68">
                                 {badge}
@@ -113,6 +121,7 @@ export const QuestDetailModal: React.FC<{
         <DetailModalShell
             title={quest.title}
             icon={quest.actionTemplate?.icon}
+            artUrl={quest.artUrl}
             description={quest.description}
             badge={quest.type === 'clan' ? 'Missão do grupo' : 'Missão'}
             progress={progress}
@@ -234,6 +243,7 @@ export const MissionDetailModal: React.FC<{
     <DetailModalShell
         title={mission.title}
         icon={mission.icon}
+        artUrl={mission.artUrl}
         description={mission.description}
         badge={mission.type === 'clan' ? 'Desafio do grupo' : 'Desafio da temporada'}
         progress={progress}

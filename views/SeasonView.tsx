@@ -66,8 +66,9 @@ const SeasonQuestCard: React.FC<{
     progress: number;
     progressLabel?: string;
     participants?: number;
+    artUrl?: string;
     onClick: () => void;
-}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, onClick }) => {
+}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, artUrl, onClick }) => {
     const isCompleted = progress >= 100;
 
     return (
@@ -78,10 +79,28 @@ const SeasonQuestCard: React.FC<{
                 : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] hover:border-[var(--ui-border-accent-soft)]'}`}
             onClick={onClick}
         >
-            {isAccepted && <div className="absolute inset-y-0 left-0 w-[2px] bg-[var(--skin-accent-color)]/75" />}
+            {artUrl && (
+                <>
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-40 transition-opacity duration-300 group-hover:opacity-55"
+                        style={{ backgroundImage: `url('${artUrl}')` }}
+                    />
+                    {/* Scrim: the art sits behind live text, so legibility cannot depend on
+                        which image the mission happens to carry. */}
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0"
+                        style={{ background: 'linear-gradient(100deg, rgba(0,0,0,0.92) 22%, rgba(0,0,0,0.72) 52%, rgba(0,0,0,0.42) 100%)' }}
+                    />
+                </>
+            )}
+            {isAccepted && <div className="absolute inset-y-0 left-0 z-10 w-[2px] bg-[var(--skin-accent-color)]/75" />}
             <div className="relative z-10 flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-pill-bg)] text-xl shadow-inner">
-                    {icon || '📜'}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-pill-bg)] text-xl shadow-inner">
+                    {artUrl
+                        ? <img src={artUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+                        : (icon || '📜')}
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -542,6 +561,7 @@ export const SeasonView: React.FC = () => {
                                             key={mission.id}
                                             title={mission.title}
                                             icon={mission.icon}
+                                            artUrl={mission.artUrl}
                                             metaLabel="Temporada"
                                             isAccepted={true}
                                             progress={getAutomaticSeasonMissionProgress(mission)}
@@ -563,6 +583,7 @@ export const SeasonView: React.FC = () => {
                                             key={quest.id}
                                             title={quest.title}
                                             icon={quest.actionTemplate.icon}
+                                            artUrl={quest.artUrl}
                                             metaLabel="Desafio"
                                             isAccepted={true}
                                             progress={getSystemQuestProgress(quest)}
@@ -582,6 +603,7 @@ export const SeasonView: React.FC = () => {
                                             key={quest.id}
                                             title={quest.title}
                                             icon={quest.actionTemplate.icon}
+                                            artUrl={quest.artUrl}
                                             metaLabel="Com arena"
                                             isAccepted={true}
                                             progress={calculateQuestProgress(quest)}
@@ -603,6 +625,7 @@ export const SeasonView: React.FC = () => {
                                             key={quest.id}
                                             title={quest.title}
                                             icon={quest.actionTemplate.icon}
+                                            artUrl={quest.artUrl}
                                             metaLabel="Grupo"
                                             isAccepted={true}
                                             progress={calculateQuestProgress(quest)}
@@ -668,6 +691,7 @@ export const SeasonView: React.FC = () => {
                                         key={quest.id}
                                         title={quest.title}
                                         icon={quest.actionTemplate.icon}
+                                        artUrl={quest.artUrl}
                                         metaLabel={activeSystemQuests.length > 0 ? 'Substitui a atual' : 'Desafio'}
                                         isAccepted={false}
                                         progress={0}
@@ -680,6 +704,7 @@ export const SeasonView: React.FC = () => {
                                         key={quest.id}
                                         title={quest.title}
                                         icon={quest.actionTemplate.icon}
+                                        artUrl={quest.artUrl}
                                         metaLabel="Cria uma arena"
                                         isAccepted={false}
                                         progress={0}
@@ -692,6 +717,7 @@ export const SeasonView: React.FC = () => {
                                         key={quest.id}
                                         title={quest.title}
                                         icon={quest.actionTemplate.icon}
+                                        artUrl={quest.artUrl}
                                         metaLabel="Missão do grupo"
                                         isAccepted={false}
                                         progress={0}

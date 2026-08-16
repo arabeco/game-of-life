@@ -1022,6 +1022,8 @@ export interface SeasonMission {
   type?: 'individual' | 'clan';
   action_name?: string;
   icon?: string;
+  /** Background art, e.g. "/mission-art/forja.webp". Falls back to the icon when absent. */
+  artUrl?: string;
   requirements?: any;
   reward_item_ids?: string[];
   sourceQuestIds?: string[];
@@ -1078,6 +1080,8 @@ export interface SeasonQuest {
   reward_value?: number | string;
   maxParticipants?: number;
   tutorialLevel?: number;
+  /** Background art, e.g. "/mission-art/forja.webp". Falls back to the icon when absent. */
+  artUrl?: string;
 }
 
 // --- Hall of Fame / Feed Types ---

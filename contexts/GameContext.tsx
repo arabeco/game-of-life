@@ -29,6 +29,7 @@ import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, fil
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
+import { pickOracleCard } from '../constants/oracleCardLibrary';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
@@ -1619,72 +1620,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return { status: 'daily_limit', ...quota };
         }
 
-        // 6. Generate Prompt
-        // The selected assistant mode should stay stable across feed/chat.
-        const modeConfig = ORACLE_MODES[selectedMode] || ORACLE_MODES['neutro'];
         const presentation = 'info_card' as const;
+        // Kept in the stored snapshot so past cards stay comparable with the ones
+        // written before the library replaced generation.
         const operationalState = deriveOracleOperationalState(contextData);
-        const recentOracleLines = oracleMessages
-            .filter((message) => message.content?.trim())
-            .slice(0, 5)
-            .map((message) => message.content.trim());
-        const voiceDirective = buildOracleVoiceDirective(
-            contextData,
-            presentation === 'info_card' ? 'card' : 'push',
-            selectedMode,
-            recentOracleLines,
-        );
-        const systemPrompt = [
-            modeConfig.systemPromptTemplate(contextData),
-            '',
-            voiceDirective,
-        ].join('\n');
-        const userPrompt = `Gere um card curto para o chat do usuario.
-      Categoria solicitada: ${category}
-      Objetivo: entregar uma peca breve de frase, reflexao, sabedoria ou dica de vida.
-      Formato obrigatorio:
-      TITULO: ate 4 palavras
-      CARD: 2 a 4 linhas curtas
-      FECHO: 1 linha final breve
-      Regras:
-      - sem saudacao
-      - sem PRIORIDADE, RISCO ou AJA
-      - sem linguagem corporativa
-      - se a categoria for rituais_lifestyle, o card deve trazer uma dica de vida pratica e simples
-      - nas outras categorias, o card deve soar memoravel, util e limpo
-      - nao force foco operacional aqui
-      Contexto atual: ${JSON.stringify(contextData)}`;
 
-        // 7. Call AI via Edge Function (server-side secret)
+        // 7. Draw from the written stock. These cards carry no player data, so there is
+        // nothing to compute: a local pick costs nothing, works offline, and delivers
+        // only text that was reviewed before shipping.
         try {
-            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-            const accessToken = sessionData.session?.access_token;
-            if (sessionError || !accessToken) {
-                console.error('Oracle Edge Function skipped: authenticated session missing.');
-                showToast('Sessao indisponivel para gerar card.', 'error');
-                return { status: 'error', ...quota };
-            }
+            const deliveredContents = oracleMessages
+                .filter((message) => message.category === category)
+                .map((message) => String(message.content || ''))
+                .filter(Boolean);
 
-            const { data: oracleData, error: oracleError } = await supabase.functions.invoke('oracle', {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: {
-                    systemPrompt,
-                    userPrompt
-                }
-            });
-
-            if (oracleError) {
-                console.error('Oracle Edge Function failed:', oracleError);
-                showToast('Falha do Oraculo ao gerar card.', 'error');
-                return { status: 'error', ...quota };
-            }
-
-            const text = String(oracleData?.text || '').trim();
+            const text = pickOracleCard({ category, deliveredContents });
             if (!text) {
-                console.error('Oracle Edge Function returned empty content.');
-                showToast('O Oraculo voltou vazio para este card.', 'error');
+                console.error('Oracle card library has no stock for category:', category);
+                showToast('Ainda nao ha cards para este tema.', 'info');
                 return { status: 'error', ...quota };
             }
 

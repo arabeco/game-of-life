@@ -1,60 +1,60 @@
 # Launch Readiness Report
 
-- Generated at: 2026-08-17T02:20:56.565Z
+- Generated at: 2026-08-17T02:30:31.225Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (14.5s)
+- Build: PASS (20.0s)
 
 ## Checks
 
-### FAIL - Challenge reward flow regression
+### PASS - Challenge reward flow regression (0.2s)
 - Kind: `logic`
 - Simulates: limita desafios visiveis
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
-- Error: Challenge reward flow regression failed with exit 1
 
-### PLANNED - Oracle cycle coach regression
+### PASS - Oracle cycle coach regression (0.2s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PLANNED - Reward modal priority regression
+### PASS - Reward modal priority regression (0.2s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
 
-### PLANNED - Daily widget execution regression
+### PASS - Daily widget execution regression (0.1s)
 - Kind: `logic`
 - Simulates: remove planejamento diario do widget
 - Simulates: mostra acoes feitas, XP e arenas tocadas
 
-### PLANNED - Planner simple list regression
+### PASS - Planner simple list regression (0.1s)
 - Kind: `logic`
 - Simulates: preserva horarios
 - Simulates: salva a ordem no banco
 - Simulates: mantem conclusoes fora da baia
 
-### PLANNED - Core loop regression
+### PASS - Core loop regression (0.2s)
 - Kind: `logic`
 - Simulates: recalcula o core loop
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PLANNED - Onboarding happy path
+### PASS - Onboarding happy path (17.2s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PLANNED - Campaign quiz flow
+### FAIL - Campaign quiz flow
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
+- Error: Campaign quiz flow failed with exit 1
 
 ### PLANNED - Cycle report flow
 - Kind: `browser`

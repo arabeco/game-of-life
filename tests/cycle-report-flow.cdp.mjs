@@ -55,8 +55,25 @@ await new Promise((resolve, reject) => {
 
 let messageId = 0;
 const pending = new Map();
+// The app swallows failures into a generic toast, so without the console the report
+// step just reads as "timeout" with no cause. Keep the last errors around.
+const consoleErrors = [];
+const describeArg = (arg) => {
+  if (!arg) return '';
+  if (typeof arg.value !== 'undefined') return String(arg.value);
+  return arg.description || arg.className || arg.type || '';
+};
 ws.addEventListener('message', (event) => {
   const message = JSON.parse(event.data.toString());
+  if (message.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(message.params?.type)) {
+    consoleErrors.push(`[${message.params.type}] ${(message.params.args || []).map(describeArg).join(' ')}`.trim());
+    if (consoleErrors.length > 40) consoleErrors.shift();
+  }
+  if (message.method === 'Runtime.exceptionThrown') {
+    const detail = message.params?.exceptionDetails;
+    consoleErrors.push(`[exception] ${detail?.exception?.description || detail?.text || 'unknown'}`);
+    if (consoleErrors.length > 40) consoleErrors.shift();
+  }
   if (!message.id) return;
   const entry = pending.get(message.id);
   if (!entry) return;
@@ -420,6 +437,7 @@ try {
     success: false,
     checkpoints,
     error: error instanceof Error ? error.message : String(error),
+    consoleErrors: consoleErrors.slice(-15),
     bodyText: await bodyText(),
   }, null, 2));
   process.exitCode = 1;

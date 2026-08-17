@@ -357,6 +357,8 @@ export const ConnectionsModal: React.FC<{
               {(Object.keys(typeCopy) as VisibleConnectionType[]).map((type) => (
                 <button
                   key={type}
+                  id={`connections-tab-${type}`}
+                  data-active={activeType === type ? 'true' : 'false'}
                   type="button"
                   onClick={() => setActiveType(type)}
                   className={`min-h-10 rounded-md px-2 py-2 text-center text-[10px] font-black uppercase tracking-[0.08em] transition-colors ${activeType === type ? 'bg-white/12 text-white' : 'text-white/42 hover:text-white/72'}`}
@@ -384,7 +386,7 @@ export const ConnectionsModal: React.FC<{
                     const incoming = invite.recipientId === userProfile.id;
                     const other = profileFor(incoming ? invite.senderId : invite.recipientId);
                     return (
-                      <div key={invite.id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/24 p-3">
+                      <div key={invite.id} data-connection-invite={invite.id} data-invite-type={invite.linkType} className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/24 p-3">
                         <Avatar profile={other} />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-bold text-white">{other?.nickname || 'Aliado'}</div>
@@ -402,8 +404,8 @@ export const ConnectionsModal: React.FC<{
                         </div>
                         {incoming ? (
                           <div className="flex gap-1">
-                            <button type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'accept')} className="rounded-md bg-emerald-400/15 p-2 text-emerald-200" aria-label="Aceitar convite"><CheckIcon className="h-4 w-4" /></button>
-                            <button type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'decline')} className="rounded-md bg-white/5 p-2 text-white/55" aria-label="Recusar convite"><XIcon className="h-4 w-4" /></button>
+                            <button id={`connections-invite-accept-${invite.id}`} data-invite-accept={invite.linkType} type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'accept')} className="rounded-md bg-emerald-400/15 p-2 text-emerald-200" aria-label="Aceitar convite"><CheckIcon className="h-4 w-4" /></button>
+                            <button id={`connections-invite-decline-${invite.id}`} type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'decline')} className="rounded-md bg-white/5 p-2 text-white/55" aria-label="Recusar convite"><XIcon className="h-4 w-4" /></button>
                           </div>
                         ) : (
                           <button type="button" disabled={Boolean(busyKey)} onClick={() => void respond(invite, 'revoke')} className="p-2 text-white/45 hover:text-rose-200" aria-label="Cancelar convite"><TrashIcon className="h-4 w-4" /></button>
@@ -420,16 +422,16 @@ export const ConnectionsModal: React.FC<{
               {loading ? (
                 <div className="mt-3 h-24 animate-pulse rounded-lg bg-white/5" />
               ) : visibleLinks.length === 0 ? (
-                <div className="mt-2 rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/42">Nenhuma conexao ativa.</div>
+                <div id="connections-active-empty" className="mt-2 rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/42">Nenhuma conexao ativa.</div>
               ) : (
-                <div className="mt-2 space-y-3">
+                <div id="connections-active-list" data-active-count={visibleLinks.length} className="mt-2 space-y-3">
                   {visibleLinks.map((link) => {
                     const otherId = otherIdFor(link);
                     const other = profileFor(otherId);
                     const relationshipArenas = arenasForLink(link.id);
                     const isMentor = link.linkType === 'mentoria' && link.mentorId === userProfile.id;
                     return (
-                      <article key={link.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
+                      <article key={link.id} data-connection-link={link.id} data-link-type={link.linkType} className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
                         <div className="flex items-center gap-3">
                           <Avatar profile={other} />
                           <div className="min-w-0 flex-1">
@@ -523,6 +525,7 @@ export const ConnectionsModal: React.FC<{
 
                         {link.linkType === 'parceria' && (
                           <button
+                            id={`connections-partnership-pick-arena-${link.id}`}
                             type="button"
                             onClick={() => {
                               const ownShare = relationshipArenas.find((entry) => entry.arena?.userId === userProfile.id || entry.createdByUserId === userProfile.id || String(entry.metadata?.owner_user_id || '') === userProfile.id);

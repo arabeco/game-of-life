@@ -66,10 +66,13 @@ const gameContext = readFileSync(new URL('../contexts/GameContext.tsx', import.m
 const seasonView = readFileSync(new URL('../views/SeasonView.tsx', import.meta.url), 'utf8');
 const achievementModal = readFileSync(new URL('../components/AchievementModal.tsx', import.meta.url), 'utf8');
 
-assert.match(gameContext, /system-seven-day-proof-streak[\s\S]*?dailyProofStreak\)\.current >= 7/);
-assert.match(seasonView, /system-seven-day-proof-streak[\s\S]*?currentProofStreak \/ 7/);
-assert.match(seasonView, /`\$\{currentProofStreak\}\/7 dias`/);
+// The streak challenge went from seven days to five in 1.0.57/1.0.58. The claim
+// threshold and the progress bar have to read the same number as its id.
+assert.match(gameContext, /system-five-day-proof-streak[\s\S]*?dailyProofStreak\)\.current >= 5/);
+assert.match(seasonView, /system-five-day-proof-streak[\s\S]*?currentProofStreak \/ 5/);
+// Clamped so the label cannot read "7/5 dias" once the streak passes the goal.
+assert.match(seasonView, /`\$\{Math\.min\(currentProofStreak, 5\)\}\/5 dias`/);
 assert.match(achievementModal, /Bônus de sequência/);
 assert.match(achievementModal, /SETE DIAS REAIS!/);
 
-console.log('Daily insights regression: praise, historical reading, and seven-day reward are wired.');
+console.log('Daily insights regression: praise, historical reading, and five-day streak reward are wired.');

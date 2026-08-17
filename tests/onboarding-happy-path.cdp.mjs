@@ -396,6 +396,12 @@ async function main() {
     await page.clickText('CONFIRMAR');
     checkpoints.push('cycle-created');
 
+    // 1.0.58 added an optional mission step between the cycle and the finish. Taking
+    // none is a valid answer, so the happy path just moves past it.
+    await waitForOnboardingTitle(page, 'Quer uma missao para comecar?', 20000);
+    await advanceOverlay(page, 'Quer uma missao para comecar?');
+    checkpoints.push('mission-step-skipped');
+
     await waitForOnboardingTitle(page, 'Tudo pronto', 20000);
     await advanceOverlay(page, 'Tudo pronto');
     checkpoints.push('onboarding-finished');

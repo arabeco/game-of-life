@@ -1,4 +1,4 @@
-import { createTempUser, DEFAULT_SMOKE_URL } from './_smoke.supabase.mjs';
+import { createTempUser, DEFAULT_SMOKE_URL, findActionByName, findArenaByName } from './_smoke.supabase.mjs';
 import { sleep, withBrowser } from './_smoke.browser.mjs';
 
 const baseUrl = process.env.SMOKE_URL || DEFAULT_SMOKE_URL;
@@ -384,6 +384,16 @@ async function main() {
 
     await waitForOnboardingTitle(page, 'Salve sua acao', 12000);
     await page.clickSelector('#onboarding-action-save-button');
+    checkpoints.push('action-save-clicked');
+
+    // Clicking save is not the same as having an action. handleSave refuses on a few
+    // validations and only reports them through a toast the overlay can cover, which
+    // matches the report that the tutorial's arena shows up but its action does not.
+    await sleep(1200);
+    const savedAction = await findActionByName(user.client, { userId: user.userId, name: 'Ação Smoke Feliz' });
+    if (!savedAction) {
+      throw new Error(`Onboarding action was not persisted after saving.\n\n${await page.bodyText()}`);
+    }
     checkpoints.push('action-created');
 
     await waitForOnboardingTitle(page, 'Comece um ciclo curto', 20000);

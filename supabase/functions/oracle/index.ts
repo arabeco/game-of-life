@@ -16,8 +16,12 @@ import {
 } from "../_shared/oracle-host-voice.ts";
 
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
-const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") || "google/gemini-2.0-flash-001";
-const OPENROUTER_FALLBACK_MODEL = Deno.env.get("OPENROUTER_FALLBACK_MODEL") || "google/gemini-2.0-flash-lite-001";
+// OpenRouter dropped the gemini-2.0-flash ids from its catalogue. Both the primary and
+// the fallback pointed at them, so every generation failed and the function answered
+// with its canned "Nao consegui gerar uma fala" text — the Oracle looked broken rather
+// than unavailable. Verified against openrouter.ai/api/v1/models on 2026-08-17.
+const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") || "google/gemini-3.7-flash";
+const OPENROUTER_FALLBACK_MODEL = Deno.env.get("OPENROUTER_FALLBACK_MODEL") || "google/gemini-3.5-flash-lite";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";

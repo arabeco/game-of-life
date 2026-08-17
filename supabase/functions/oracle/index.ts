@@ -14,6 +14,7 @@ import {
   ORACLE_MODE_PROMPT_BLOCKS,
   type OracleHostOperationalState,
 } from "../_shared/oracle-host-voice.ts";
+import { buildContextualOracleLine } from "../_shared/oracle-lines.ts";
 
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
 // OpenRouter dropped the gemini-2.0-flash ids from its catalogue. Both the primary and
@@ -1471,18 +1472,18 @@ const createAutomaticOracleMessage = async (
   const presentation: OraclePresentation = "info_card";
   const recentOracleLines = oracleMessages.map((message) => message.content).filter(Boolean).slice(0, 5);
   const operationalState = deriveOracleOperationalState(contextData, now);
-  const systemPrompt = buildSystemPrompt(preferences.activeMode, contextData, {
-    surface: presentation === "info_card" ? "card" : "push",
+  // Written line instead of a model call: these speak about the player's own numbers,
+  // so a template filled from context cannot invent them, costs nothing per delivery,
+  // and does not disappear when the provider is unreachable.
+  const text = buildContextualOracleLine({
+    state: operationalState,
+    context: contextData,
     recentLines: recentOracleLines,
-    now,
   });
-  const userPrompt = buildAutomaticContentCardPrompt({ category, triggerType });
-  const { text } = await callOpenRouter({
-    systemPrompt,
-    userPrompt,
-    models: [OPENROUTER_MODEL, OPENROUTER_FALLBACK_MODEL],
-    referer: origin || SITE_URL,
-  });
+
+  // No line fits the current state with the data available. Staying quiet is better
+  // than delivering something generic that ignores what is happening.
+  if (!text) return { status: "skipped", reason: "no_line_for_state" };
 
   const messageId = crypto.randomUUID();
   const { error: insertError } = await supabaseAdmin

@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-08-17T21:35:31.335Z
+- Generated at: 2026-08-17T21:41:18.439Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (10.8s)
+- Build: PASS (10.7s)
 
 ## Checks
 
@@ -13,7 +13,7 @@
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.2s)
+### PASS - Oracle cycle coach regression (0.1s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
@@ -41,33 +41,33 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (20.4s)
+### PASS - Onboarding happy path (19.3s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### FAIL - Campaign quiz flow
+### PASS - Campaign quiz flow (16.6s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
-- Error: Campaign quiz flow failed with exit 1
 
-### PLANNED - Cycle report flow
+### PASS - Cycle report flow (17.5s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PLANNED - UI shell smoke
+### FAIL - UI shell smoke
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais
 - Simulates: garante que a casca da app sobe sem overlay travando
+- Error: UI shell smoke failed with exit 1
 
 ### PLANNED - Onboarding + oracle + delete
 - Kind: `browser`

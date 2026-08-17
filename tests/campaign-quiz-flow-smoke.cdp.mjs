@@ -98,7 +98,7 @@ async function navigateToCampaignStore(page) {
     'campaign quiz entry button',
     `(() => {
       const body = (document.body?.innerText || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
-      return body.includes('FAZER QUIZ GRATIS') || body.includes('FAZER QUIZ') || body.includes('QUIZ GRATIS') || body.includes('QUIZ');
+      return body.includes('FAZER QUIZ') || body.includes('USAR QUIZ DISPONIVEL') || body.includes('ENCONTRAR MINHA CAMPANHA') || body.includes('QUIZ');
     })()`,
     30000,
   );
@@ -110,7 +110,7 @@ async function openQuiz(page) {
       .filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
     const target = buttons.find((node) => {
       const text = (node.innerText || node.textContent || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
-      return text.includes('FAZER QUIZ GRATIS') || text.includes('FAZER QUIZ') || text.trim() === 'QUIZ GRATIS' || text.trim() === 'QUIZ';
+      return text.includes('FAZER QUIZ') || text.includes('USAR QUIZ DISPONIVEL') || text.includes('ENCONTRAR MINHA CAMPANHA') || text.trim() === 'QUIZ';
     });
     if (!(target instanceof HTMLElement)) return false;
     target.click();

@@ -1,13 +1,13 @@
 # Launch Readiness Report
 
-- Generated at: 2026-08-17T02:30:31.225Z
+- Generated at: 2026-08-17T21:35:31.335Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (20.0s)
+- Build: PASS (10.8s)
 
 ## Checks
 
-### PASS - Challenge reward flow regression (0.2s)
+### PASS - Challenge reward flow regression (0.1s)
 - Kind: `logic`
 - Simulates: limita desafios visiveis
 - Simulates: confere progresso de arenas
@@ -19,7 +19,7 @@
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.2s)
+### PASS - Reward modal priority regression (0.1s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -35,13 +35,13 @@
 - Simulates: salva a ordem no banco
 - Simulates: mantem conclusoes fora da baia
 
-### PASS - Core loop regression (0.2s)
+### PASS - Core loop regression (0.1s)
 - Kind: `logic`
 - Simulates: recalcula o core loop
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (17.2s)
+### PASS - Onboarding happy path (20.4s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding

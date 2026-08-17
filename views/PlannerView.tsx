@@ -792,8 +792,14 @@ const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot; cycleEx
                     </div>
                 </div>
                 {cycleExpBanked > 0 && (
-                    <div className="mt-1 truncate text-center text-[7px] font-black uppercase tracking-[0.12em] text-white/38">
-                        Ciclo +{cycleExpBanked}
+                    // Banked, not credited: this EXP only reaches the profile when the
+                    // cycle closes. Reading as "Ciclo +150" made it look already earned,
+                    // so a permanent badge plus an unchanged profile read as lost EXP.
+                    <div
+                        className="mt-1 truncate text-center text-[7px] font-black uppercase tracking-[0.12em] text-white/38"
+                        title={`${cycleExpBanked} EXP guardada para quando o ciclo fechar`}
+                    >
+                        +{cycleExpBanked} ao fechar
                     </div>
                 )}
                 </div>

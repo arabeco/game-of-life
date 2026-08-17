@@ -269,6 +269,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     );
 
     const [mode, setMode] = useState(isNew && !isPreview ?'edit' : initialMode);
+    const [saveError, setSaveError] = useState<string | null>(null);
     const [editableAction, setEditableAction] = useState<Partial<Action>>(
         action
             ? { ...action, difficulty: normalizeActionDifficulty(action.difficulty) }
@@ -410,9 +411,18 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const isOfficeMode = PRODUCT_FEATURES.clanSharedActions && clan?.clanType === 'Office';
     const enrichedMembers = enrichedClanMembers;
 
+    // A refused save only surfaced as a toast, which the onboarding overlay can cover.
+    // The player then saw the modal accept the click and the action never appear, with
+    // nothing on screen explaining why. Keep the reason inside the modal too.
+    const refuseSave = (message: string) => {
+        setSaveError(message);
+        showToast(message, 'warning');
+    };
+
     const handleSave = () => {
+        setSaveError(null);
         if (!isEditingTaskInstance && !editableAction.name?.trim()) {
-            showToast('Dê um título para a ação antes de salvar.', 'warning');
+            refuseSave('Dê um título para a ação antes de salvar.');
             window.setTimeout(() => nameInputRef.current?.focus(), 40);
             return;
         }
@@ -429,7 +439,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             scheduledStartTime !== undefined &&
             selectedDays.length === 0
         ) {
-            showToast('Escolha pelo menos um dia para programar essa ação recorrente.', 'warning');
+            refuseSave('Escolha pelo menos um dia para programar essa ação recorrente.');
             return;
         }
 
@@ -445,11 +455,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
         if (!isEditingTaskInstance && !resolvedArenaId) {
             if (arenas.length === 0) {
-                showToast('Crie uma arena antes de criar uma ação.', 'warning');
+                refuseSave('Crie uma arena antes de criar uma ação.');
                 onClose();
                 return;
             }
-            showToast('Escolha uma arena para essa ação antes de salvar.', 'warning');
+            refuseSave('Escolha uma arena para essa ação antes de salvar.');
             setIsArenaPickerOpen(true);
             return;
         }
@@ -1383,6 +1393,16 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             OK
                         </button>
                     </div>
+
+                    {saveError && (
+                        <div
+                            id="action-save-error"
+                            role="alert"
+                            className="mx-4 mb-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11px] font-bold leading-snug text-amber-100"
+                        >
+                            {saveError}
+                        </div>
+                    )}
 
                     {/* Assignment field for Office Mode */}
                     {isOfficeMode && isEditingActionBase && (

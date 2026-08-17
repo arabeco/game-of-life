@@ -3,7 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';
 import { GlassCard } from '../components/GlassCard';
 import { CreateClanModal } from '../components/CreateClanModal';
-import { Clan, RelationshipLink, RelationshipLinkInvite, UserProfile } from '../types';
+import { Clan, RelationshipLink, RelationshipLinkInvite, RelationshipLinkType, UserProfile } from '../types';
 import { ClanOverviewModal } from '../components/ClanOverviewModal';
 import { SocialCard } from '../components/SocialCard';
 import { PlusIcon, CheckIcon, XIcon, TrophyIcon, ShoppingBagIcon, CalendarIcon, UsersIcon, ArchiveBoxIcon, LinkIcon } from '../components/Icons';
@@ -20,15 +20,24 @@ import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/
 import './mundo-ui.css';
 import { ClanEmblem } from '../components/ClanEmblem';
 
-const RELATION_LABELS: Record<'mentoria' | 'parceria', string> = {
+// Must cover every RelationshipLinkType. 'competicao' was missing, so the lookup
+// returned undefined and calling .toLowerCase() on it threw during render, blanking
+// the whole screen — that is what a pending challenge invite did.
+// 'Desafio' is the name the live UI uses for competicao.
+const RELATION_LABELS: Record<RelationshipLinkType, string> = {
     mentoria: 'Mentoria',
     parceria: 'Parceria',
+    competicao: 'Desafio',
 };
 
-const relationBadgeClass = (type: 'mentoria' | 'parceria') =>
-    type === 'mentoria'
-        ? 'border-[var(--skin-accent-color)]/26 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)]'
-        : 'border-cyan-400/24 bg-cyan-400/12 text-cyan-200';
+const relationLabel = (type: RelationshipLinkType | string | undefined) =>
+    RELATION_LABELS[type as RelationshipLinkType] || 'Vinculo';
+
+const relationBadgeClass = (type: RelationshipLinkType | string | undefined) => {
+    if (type === 'mentoria') return 'border-[var(--skin-accent-color)]/26 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)]';
+    if (type === 'competicao') return 'border-rose-400/24 bg-rose-400/12 text-rose-200';
+    return 'border-cyan-400/24 bg-cyan-400/12 text-cyan-200';
+};
 
 const JoinClanBox: React.FC<{ onCreate: () => void }> = ({ onCreate }) => {
     return (
@@ -245,13 +254,13 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                 key={`${profileId}-${type}`}
                 className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(type)}`}
             >
-                {RELATION_LABELS[type]}
+                {relationLabel(type)}
             </span>
         ));
     };
 
     const relationshipSubtitleForProfile = (profileId: string) => {
-        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => RELATION_LABELS[link.linkType])));
+        const activeTypes = Array.from(new Set(activeRelationshipsForProfile(profileId).map(link => relationLabel(link.linkType))));
         return activeTypes.length > 0 ? activeTypes.join(' • ') : undefined;
     };
 
@@ -387,11 +396,11 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                 <SocialCard
                                     key={invite.id}
                                     profile={senderProfile}
-                                    subtitle={`Convite de ${RELATION_LABELS[invite.linkType].toLowerCase()}`}
+                                    subtitle={`Convite de ${relationLabel(invite.linkType).toLowerCase()}`}
                                     badges={
                                         <>
                                             <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(invite.linkType)}`}>
-                                                {RELATION_LABELS[invite.linkType]}
+                                                {relationLabel(invite.linkType)}
                                             </span>
                                             {relationshipBadgesForProfile(senderProfile.id)}
                                         </>
@@ -468,11 +477,11 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                 <SocialCard
                                     key={invite.id}
                                     profile={recipientProfile}
-                                    subtitle={`${RELATION_LABELS[invite.linkType]} aguardando aceite`}
+                                    subtitle={`${relationLabel(invite.linkType)} aguardando aceite`}
                                     badges={
                                         <>
                                             <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${relationBadgeClass(invite.linkType)}`}>
-                                                {RELATION_LABELS[invite.linkType]}
+                                                {relationLabel(invite.linkType)}
                                             </span>
                                             {relationshipBadgesForProfile(recipientProfile.id)}
                                         </>
@@ -803,7 +812,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                                 <SocialCard
                                                     key={invite.id}
                                                     profile={senderProfile}
-                                                    subtitle={`Convite de ${RELATION_LABELS[invite.linkType].toLowerCase()}`}
+                                                    subtitle={`Convite de ${relationLabel(invite.linkType).toLowerCase()}`}
                                                     badges={relationshipBadgesForProfile(senderProfile.id)}
                                                     onClick={() => setSelectedProfile(senderProfile)}
                                                     actions={
@@ -862,7 +871,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                                 <SocialCard
                                                     key={invite.id}
                                                     profile={recipientProfile}
-                                                    subtitle={`Aguardando ${RELATION_LABELS[invite.linkType].toLowerCase()}`}
+                                                    subtitle={`Aguardando ${relationLabel(invite.linkType).toLowerCase()}`}
                                                     badges={relationshipBadgesForProfile(recipientProfile.id)}
                                                     onClick={() => setSelectedProfile(recipientProfile)}
                                                     actions={

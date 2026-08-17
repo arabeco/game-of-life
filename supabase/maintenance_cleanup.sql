@@ -26,24 +26,32 @@ truncate cron.job_run_details;
 
 
 -- ---------------------------------------------------------------------------
--- BLOCO 3 — respostas antigas do pg_net
--- ---------------------------------------------------------------------------
-delete from net._http_response where created < now() - interval '1 day';
-vacuum full net._http_response;
-
-
--- ---------------------------------------------------------------------------
--- BLOCO 4 — bloat das tabelas quentes
--- Estas são atualizadas com muita frequência pelo app (updateUserProfile roda o
--- tempo todo), então acumulam linhas mortas.
+-- BLOCO 3 — respostas do pg_net
 --
--- ATENÇÃO: VACUUM FULL trava a tabela enquanto roda. Nessas tabelas, com o volume
--- atual, são segundos — mas evite horário de pico.
+-- O app chama net.http_post com PERFORM (web push), descartando o id do request.
+-- Ninguém nunca lê _http_response — as linhas são inalcançáveis por construção.
+--
+-- TRUNCATE em vez de DELETE + VACUUM FULL: devolve o espaço na hora e funciona
+-- dentro de transação, que é o que o SQL Editor do Supabase exige.
 -- ---------------------------------------------------------------------------
-vacuum full analyze public.user_profiles;
-vacuum full analyze public.scheduled_tasks;
-vacuum full analyze public.user_inventory;
-vacuum full analyze public.app_runtime_events;
+truncate net._http_response;
+
+
+-- ---------------------------------------------------------------------------
+-- BLOCO 4 — bloat das tabelas quentes  [OPCIONAL — não roda no SQL Editor]
+--
+-- VACUUM não pode rodar dentro de transação, e o SQL Editor envolve tudo em uma.
+-- Só funciona por conexão direta (psql, DBeaver, TablePlus) com a connection
+-- string de Database Settings:
+--
+--   vacuum full analyze public.user_profiles;
+--   vacuum full analyze public.scheduled_tasks;
+--   vacuum full analyze public.user_inventory;
+--   vacuum full analyze public.app_runtime_events;
+--
+-- Vale pouco: essas quatro somam ~4 MB, contra os 76 MB dos blocos 2 e 3. O
+-- autovacuum reaproveita esse espaço sozinho conforme o app grava. Só encare
+-- isso se o banco voltar a incomodar depois de crescer de verdade.
 
 
 -- ---------------------------------------------------------------------------

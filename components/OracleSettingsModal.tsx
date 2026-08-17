@@ -4,7 +4,6 @@ import { OracleCategory, OracleMode, OraclePreferences, OraclePresenceLevel } fr
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, CheckIcon } from './Icons';
-import { ORACLE_MODES } from '../constants/oracle';
 import {
     disableAppPushRegistration,
     getAppPushPermission,
@@ -17,6 +16,7 @@ import {
     type AppPushSyncResult,
 } from '../utils/pushRuntime';
 import { hasPremiumAccess } from '../utils/premiumAccess';
+import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
 
 interface OracleSettingsModalProps {
     onClose: () => void;
@@ -24,7 +24,6 @@ interface OracleSettingsModalProps {
     variant?: 'preferences' | 'assistant';
 }
 
-type SettingsTab = 'modos' | 'categorias';
 type ToggleKey = 'dailyFocusCardEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
 
 const ORACLE_PRESENCE_LEVELS: Array<{
@@ -32,16 +31,13 @@ const ORACLE_PRESENCE_LEVELS: Array<{
     label: string;
     caption: string;
 }> = [
+    // Above silent the app delivers one automatic card a day at any level, so the
+    // captions describe when it speaks rather than promising a different volume.
     { value: 0, label: 'Silencioso', caption: 'O Oraculo so responde quando voce o chama.' },
-    { value: 2, label: 'Equilibrado', caption: 'Um toque relevante por dia, quando houver algo que ajude.' },
-    { value: 3, label: 'Presente', caption: 'Ate dois toques relevantes por dia, sem falar a cada entrada.' },
+    { value: 2, label: 'Equilibrado', caption: 'Um toque por dia, apenas quando houver algo que ajude.' },
+    { value: 3, label: 'Presente', caption: 'Um toque por dia, aproveitando mais oportunidades de falar.' },
 ];
 
-const SIMPLE_ORACLE_MODES: Array<{ id: OracleMode; label: string; description: string }> = [
-    { id: 'neutro', label: 'Neutro', description: 'Claro, direto e sem carregar no tom.' },
-    { id: 'calmo', label: 'Acolhedor', description: 'Mais gentil quando o ritmo apertar.' },
-    { id: 'tatico', label: 'Direto', description: 'Vai ao ponto e destaca a proxima decisao.' },
-];
 
 const PUSH_PERMISSION_LABEL: Record<AppPushPermission, string> = {
     prompt: 'Aguardando permissao',
@@ -135,16 +131,11 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     variant = 'preferences',
 }) => {
     const { oraclePreferences, updateOraclePreferences, userProfile, showToast } = useGame();
-    const [activeTab, setActiveTab] = useState<SettingsTab>('modos');
     const [pushPermission, setPushPermission] = useState<AppPushPermission>('default');
 
     if (!oraclePreferences) return null;
 
     const isPremium = hasPremiumAccess(userProfile);
-    const visibleMode = SIMPLE_ORACLE_MODES.some((mode) => mode.id === oraclePreferences.activeMode)
-        ? oraclePreferences.activeMode
-        : 'neutro';
-    const activeModeConfig = ORACLE_MODES[visibleMode] || ORACLE_MODES.neutro;
     const pushSupport = getAppPushSupport();
 
     useEffect(() => {
@@ -217,9 +208,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         showToast('Push no aparelho ativado.', 'success');
     };
 
-    const handleModeSelect = (mode: OracleMode) => {
-        updateOraclePreferences({ activeMode: mode });
-    };
 
     const handlePresenceChange = (level: OraclePresenceLevel) => {
         updateOraclePreferences({
@@ -268,16 +256,9 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         </div>
     );
 
-    const renderModeSummaryCard = () => (
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5">
-            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Jeito de falar</div>
-            <div className="mt-1 text-sm font-bold text-white">{normalizeOracleCopy(activeModeConfig.name)}</div>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-gray-400">{normalizeOracleCopy(activeModeConfig.description)}</p>
-        </div>
-    );
 
     const renderPresenceSlider = () => {
-        const storedLevel = oraclePreferences.presenceLevel ?? 1;
+        const storedLevel = oraclePreferences.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL;
         const currentLevel: OraclePresenceLevel = storedLevel <= 0 ? 0 : storedLevel >= 3 ? 3 : 2;
         const current = ORACLE_PRESENCE_LEVELS.find((level) => level.value === currentLevel) || ORACLE_PRESENCE_LEVELS[1];
 
@@ -309,49 +290,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
             </div>
         );
     };
-
-    const renderModes = () => (
-        <div className="space-y-3.5">
-            {renderModeSummaryCard()}
-
-            <div className="grid grid-cols-1 gap-1">
-                {SIMPLE_ORACLE_MODES.map((mode) => {
-                    const isSelected = visibleMode === mode.id;
-                    const isLocked = !isPremium && mode.id !== 'neutro';
-
-                    return (
-                        <button
-                            key={mode.id}
-                            onClick={() => !isLocked && handleModeSelect(mode.id)}
-                            className={`relative overflow-hidden rounded-[14px] border px-3 py-2 text-left transition-all ${
-                                isSelected
-                                    ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/10'
-                                    : 'border-white/5 bg-black/20 hover:bg-white/5'
-                            } ${isLocked ? 'cursor-not-allowed opacity-50' : ''}`}
-                        >
-                            <div className="flex items-start gap-2.5">
-                                <div className={`mt-1 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-[var(--skin-accent-color)]' : 'border-gray-500'}`}>
-                                    {isSelected && <div className="h-2 w-2 rounded-full bg-[var(--skin-accent-color)]" />}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-300'}`}>{mode.label}</span>
-                                        {isLocked && (
-                                            <span className="rounded border border-amber-500/20 bg-black/40 px-2 py-0.5 text-[10px] text-amber-500">
-                                                PREMIUM
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="mt-0.5 text-[10px] leading-relaxed text-gray-500">{mode.description}</p>
-                                </div>
-                            </div>
-                        </button>
-                    );
-                })}
-            </div>
-
-        </div>
-    );
 
     const renderManualLibraryCategories = () => (
             <div className="space-y-3">
@@ -402,33 +340,11 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         </button>
                     </div>
 
-                    {variant === 'assistant' && (
-                        <div className="flex flex-shrink-0 gap-1 border-b border-white/5 bg-black/20 p-2">
-                            {(['modos', 'categorias'] as const).map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`flex-1 rounded-lg py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
-                                        activeTab === tab
-                                            ? 'border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)] shadow-[0_0_12px_var(--sephirot-glow-color-soft)]'
-                                            : 'text-gray-500 hover:text-gray-300'
-                                    }`}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
-                    )}
 
                     <div className="custom-scrollbar flex-1 overflow-y-auto p-4">
                         {variant === 'preferences' ? (
                             <div className="space-y-4">
                                 {renderPresenceSlider()}
-
-                                <div className="space-y-2">
-                                    <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Modo do Oráculo</h3>
-                                    {renderModes()}
-                                </div>
 
                                 <div className="space-y-2 pt-1">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Temas dos cards</h3>
@@ -489,10 +405,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                 </div>}
                             </div>
                         ) : (
-                            <>
-                                {activeTab === 'modos' && renderModes()}
-                                {activeTab === 'categorias' && renderManualLibraryCategories()}
-                            </>
+                            renderManualLibraryCategories()
                         )}
                     </div>
 

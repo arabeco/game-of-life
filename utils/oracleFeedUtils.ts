@@ -4,6 +4,9 @@ import { getOperationalDateString as getOperationalDateStringValue } from './ope
 const MAX_ORACLE_DAILY_TARGET = 5;
 const MAX_ORACLE_AUTOMATIC_DAILY_TARGET = 1;
 const DAY_MINUTES = 24 * 60;
+// The settings screen offers 0, 2 and 3 — level 1 exists in the type but has no
+// option, so defaulting to it left new accounts on a setting they could not see.
+export const DEFAULT_ORACLE_PRESENCE_LEVEL = 2;
 export const ORACLE_MANUAL_DAILY_TARGET = 5;
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
@@ -40,8 +43,11 @@ export const resolveOracleAutoDailyTarget = (
   _appMode: AppMode = 'GAME',
 ): number => {
   const enabledCount = preferences?.enabledCategories?.length ?? 0;
-  const presenceLevel = preferences?.presenceLevel ?? 1;
+  const presenceLevel = preferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL;
   if (presenceLevel <= 0 || enabledCount === 0) return 0;
+  // Deliberate since 1.0.56 and pinned by oracle-presence.regression: every level
+  // above silent delivers exactly one automatic card a day. The levels choose whether
+  // the Oracle speaks at all, not how often.
   return MAX_ORACLE_AUTOMATIC_DAILY_TARGET;
 };
 

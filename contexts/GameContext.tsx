@@ -28,7 +28,7 @@ import { useQuestSharedDomain } from './gameDomains/questSharedDomain';
 import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, filterCycleTasksByScope, getInitialDailyCommitmentTaskIds, getTaskBaseExp, mergeTasksIntoCommitment } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
-import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
+import { DEFAULT_ORACLE_PRESENCE_LEVEL, getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
@@ -1979,7 +1979,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             latestMessage,
             appMode === 'BASIC' ? 'BASIC' : 'GAME',
             Boolean(oraclePreferences?.dailyFocusCardEnabled),
-            oraclePreferences?.presenceLevel ?? 1,
+            oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL,
         )) {
             return;
         }

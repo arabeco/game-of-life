@@ -289,7 +289,8 @@ const DEFAULT_ORACLE_PREFERENCES = {
   iaEnabled: true,
   notificationsEnabled: true,
   dailyFocusCardEnabled: false,
-  presenceLevel: 1,
+  // Matches the settings screen, which offers 0, 2 and 3. Level 1 has no option.
+  presenceLevel: 2,
   enabledCategories: [...ORACLE_MANUAL_LIBRARY_CATEGORIES],
   activeMode: "neutro" as OracleMode,
   customModeInstructions: null,
@@ -620,6 +621,7 @@ const resolveOracleAutoDailyTarget = (
   _appMode: AppMode,
 ): number => {
   if (preferences.presenceLevel <= 0 || preferences.enabledCategories.length === 0) return 0;
+  // Deliberate since 1.0.56: one automatic card a day at every level above silent.
   return 1;
 };
 

@@ -8,6 +8,7 @@ import { CodexBuilderProvider, useCodexBuilder } from '../contexts/CodexBuilderC
 import { TutorialProvider, useTutorial } from '../contexts/TutorialContext';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
 import { updateInstalledAppBadge } from '../utils/appBadge';
+import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
 import { buildPremiumRewardsToast } from '../utils/premiumRewards';
 import { buildVanguardRewardsToast } from '../utils/vanguardRewards';
 import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
@@ -119,7 +120,7 @@ const OracleSpeechOverlay: React.FC = () => {
             const detail = (event as CustomEvent<OracleSpeechPayload>).detail;
             if (!detail?.message?.trim()) return;
 
-            const presenceLevel = oraclePreferences?.presenceLevel ?? 1;
+            const presenceLevel = oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL;
             if (presenceLevel <= 0) return;
 
             const today = getOperationalDateString(new Date());
@@ -796,7 +797,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         if (!message) return;
 
         localStorage.setItem(speechKey, today);
-        const presenceLevel = oraclePreferences?.presenceLevel ?? 1;
+        const presenceLevel = oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL;
         if (!shouldShowPlannerCoach(presenceLevel)) return;
 
         const timer = window.setTimeout(() => {

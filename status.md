@@ -1,46 +1,77 @@
-# GLYPH STATUS: 1.0.38 (FINAL HARDENING)
-**Data:** 20/05/2026 | **Fase:** FUNDACAO -> PEDIDO DE PRODUCAO | **Soberano:** Zee
+# GLYPH STATUS: 1.0.60
+
+**Data:** 17/08/2026 | **Fase:** PRODUCAO -> ESTABILIZACAO | **Soberano:** Zee
 
 ## 1. ESTADO REAL
-- **Closed test Google Play:** aceito. O gargalo deixou de ser "passar no teste" e virou fechar a versao final com confianca.
-- **Release local atual:** `versionCode 38`, `versionName 1.0.38`.
-- **Postura de agora:** patch pequeno, verificavel, sem refatoracao ampla por ansiedade.
 
-## 2. SCORECARD DE AUDITORIA
-- **EXECUCAO REAL: 8.9** - loop central esta vivo, beta aceito, Android sincronizado em rodadas recentes; ainda precisa passada final em localhost/aparelho para os pontos abaixo.
-- **ID VISUAL: 8.6** - Planner, widget, Assets e barras de ciclo melhoraram; miniaturas de arena receberam reforco visual por parecerem transparentes demais.
-- **FLUXO USUARIO: 8.5** - ciclo, Planner, Painel Diario, campanhas e social existem; medo atual esta concentrado em bordas de Clan/Premium/Campanhas e notificacao duplicada.
-- **RETENCAO: 8.7** - Oraculo, checklist noturno, EXP diaria, ciclos e relatorio sustentam retorno; Oraculo recebeu ajuste de voz para soar menos robotico.
+- **Release local:** `versionCode 60`, `versionName 1.0.60`. O AAB gerado hoje ainda e anterior a otimizacao do catalogo; regerar antes de enviar.
+- **Banco:** 29 MB depois da limpeza. 73% do que ocupava era historico de `pg_cron`/`pg_net` sem poda, nao dado de usuario. Poda diaria agendada as 4h.
+- **Download do app:** catalogo de arte caiu de 17 MB para 6,3 MB por quantizacao de paleta. AAB deve sair perto de 14 MB.
+- **IA:** o app nao faz nenhuma chamada de modelo. Custo de IA por usuario e zero.
+- **Postura de agora:** fechar o que foi relatado por usuario real, com teste que verifique em vez de afirmar.
 
-## 3. FECHADO AGORA
-[x] Teste fechado aceito pela Google Play.
-[x] Projeto Android em `targetSdkVersion 36`.
-[x] Versao local em `1.0.38 / 38`.
-[x] Widget/cabecalho do ciclo aprovado visualmente no localhost.
-[x] Historico de ciclo no Planner isolado na direita; ferramentas do dia ficam na esquerda.
-[x] Checklist so ganha relevo depois das 20:00 quando ainda ha pendencias.
-[x] Confirmacao generica subiu para camada `z-[21000]` para nao aparecer atras de modais de ciclo.
-[x] Miniaturas compactas de arena ficaram mais opacas, saturadas e legiveis.
-[x] Placar discreto de EXP entrou no Planner: antes do fechamento mostra estimativa do dia; depois mostra EXP depositada.
-[x] Oraculo recebeu regra de voz mais humana e menos template no prompt backend.
+## 2. O QUE ESTAVA QUEBRADO E FOI FECHADO
 
-## 4. ATENCAO ANTES DE PRODUCAO
-[!] **EXP diaria:** completar acao nao deposita direto na nobreza. A acao marca tarefa e atualiza estimativa; a EXP entra no ciclo quando o Painel Diario fecha. Dias passados sem julgamento sao reconciliados automaticamente quando o app hidrata o ciclo.
-[!] **Notificacao duplicada:** se o mesmo usuario habilitou push no navegador e no app, pode receber nos dois destinos. Precisa validar preferencia por dispositivo antes de tratar como bug de todos.
-[!] **Clan/Premium/Campanhas:** nao ha novo bug comprovado neste passe, mas seguem como trilha de smoke final por risco de lancamento.
-[!] **Billing/Premium real:** manter como promessa controlada ate validar reconciliacao ponta a ponta.
-[!] **Encoding/mojibake:** ainda existe residuo historico; limpar so onde aparecer para usuario.
+- **Fechar ciclo falhava para todos.** `claim_cycle_completion_gold` gravava `product_type = 'cycle_completion_reward'` (23 caracteres) numa coluna `varchar(20)`. O insert estourava e `endCycle` morria antes de devolver relatorio, virando o toast generico "Nao foi possivel analisar o ciclo". Corrigido por migration; confirmado ponta a ponta.
+- **Convite de desafio derrubava a tela social.** `RELATION_LABELS` nao tinha `competicao`, entao `undefined.toLowerCase()` estourava no render e apagava a arvore inteira.
+- **Parceria aceita sumia da lista.** Dois refreshes concorrentes sem ordenacao: o que partia antes do vinculo existir podia responder por ultimo e sobrescrever.
+- **Missao de cla era oferecida com a feature desligada.** `PRODUCT_FEATURES.clanMissions` e `false` e nenhuma UI ativa a missao, mas a tela de missoes nao checava o flag.
+- **EXP bancada parecia perdida.** O selo dizia "Ciclo +150" sem indicar que so entra no perfil ao fechar. Agora diz "+150 ao fechar".
+- **Save de acao recusado em silencio.** As tres validacoes avisavam so por toast, que o overlay do tutorial cobre. Agora o motivo aparece dentro do modal.
+
+## 3. ATENCAO ANTES DE PRODUCAO
+
+- [!] **Regerar o AAB.** O atual nao tem a arte otimizada nem nenhuma correcao de hoje.
+- [!] **Exclusao de conta:** cinco tabelas referenciam `auth.users` com `NO ACTION` (`cycles`, `daily_commitments`, `clan_custom_quests` x2, `shared_action_completions`). A varredura de exclusao cobre quatro; `clan_custom_quests` foi coberta por migration hoje. Exclusao de conta e exigencia da Play — vale um teste real.
+- [!] **Quiz de campanha:** ficha e ouro ainda liberam campanha no codigo. So o texto e a apresentacao foram simplificados. Decidir se a economia sai ou fica.
+- [!] **Notificacao duplicada:** push no navegador e no app podem entregar nos dois destinos.
+- [!] **Billing/Premium real:** manter como promessa controlada ate validar reconciliacao ponta a ponta.
+- [!] **`tsconfig` sem `strict`:** `noImplicitAny` desligado. `npm run type-check` passa em coisas que quebram em producao — foi assim que o `RELATION_LABELS` passou.
+- [!] **`supabase/functions` fora do `tsconfig`:** mudanca em edge function nao e coberta pelo check padrao.
+
+## 4. ESTADO DOS TESTES
+
+- 11 regressoes de logica passam. Duas estavam vermelhas desde a 1.0.57 por descreverem um desenho antigo, nao por bug.
+- A suite `test:launch:full` e fail-fast: enquanto o check 01 estava quebrado, os outros 19 nunca rodaram. Foi por isso que o fechamento de ciclo ficou quebrado sem ninguem saber.
+- **Os smoke sociais miram em telas mortas.** `partnership-mutual-arenas`, `competition-race` e os de mentoria dirigem o `RelationshipHubModal`, que nao e montado. A tela viva e o `ConnectionsModal`, que hoje ganhou ganchos de teste.
+- `createTempUser` nunca apaga o que cria. Cada rodada da suite deixa contas `codex-*@example.com` permanentes.
+- `cycle-report-flow` agora despeja erros de console na falha. Foi isso que entregou a causa do fechamento de ciclo em um minuto. Vale espalhar para os outros.
 
 ## 5. ORDEM DE FECHAMENTO
-1. Rodar `npm run build`.
-2. Conferir localhost focando: deletar ciclo, miniaturas de arena, Planner EXP, Clan, Premium e Campanhas.
-3. Se aprovado visualmente, decidir se esta rodada merece `cap sync android` e novo envio.
-4. Antes de producao, fazer smoke manual curto em aparelho real: login, criar/fechar dia, historico, campanha instalada, premium/paywall, cla e notificacao.
+
+1. `npm run build`
+2. Conferir no aparelho: fechar ciclo, aceitar parceria e desafio, EXP do ciclo, arte do catalogo depois da quantizacao.
+3. `npx cap sync android && cd android && ./gradlew bundleRelease`
+4. Smoke manual pelo `CHECKLIST-TESTES-MANUAIS.md` (36 itens).
 
 ## 6. NOTA DE CONFIANCA
+
 O medo de lancar e esperado: o produto e grande e voce esta segurando varias superficies sozinho. O estado correto nao e "sem medo"; e "P0/P1 conhecidos fechados, riscos nomeados e smoke final curto".
 
-## 7. BLUEPRINT DE MATURIDADE BECO'S LAB / GLYPH
+O padrao que mais custou ate aqui nao foi codigo novo com bug. Foi corte pela metade: a tela nova entrou, a antiga ficou, e o teste continuou apontando para a morta. Ao revisar qualquer remocao, a pergunta util e "saiu da interface, ou so do lugar onde eu olhei?".
+
+## 7. O QUE FOI CORTADO
+
+Registro do conceito, nao do codigo. O codigo o git guarda; o motivo, nao.
+
+| Corte | O que era | Situacao no codigo |
+|---|---|---|
+| 10 areas -> 5 | Areas da vida como eixo do progresso | Feito. `proposito`, `relacoes`, `trabalho`, `lazer`, `saude` + `geral` |
+| Chat livre do Oraculo | Conversa aberta com o modelo | Removido da UI. Endpoint ainda vivo no servidor |
+| Modos de tom do Oraculo | Neutro/Acolhedor/Direto/Reflexivo | Removido hoje. Continuava sendo oferecido e vendido como Premium |
+| Oraculo cria coisas pelo usuario | Acao rapida por interpretacao de texto | Feito. `oracle-command-parser` e a funcao `oracle-command` estao orfaos |
+| Resgate manual de missao | Botao "Resgatar recompensa" | Feito. Conclusao e automatica |
+| Missoes prontas de cla | Missoes coletivas com progresso compartilhado | Flag `clanMissions: false`. Tabelas, RPC e canais continuam |
+| Santuario / jardim do cla | Espaco coletivo com presenca | Flags off. `ClanSlotModal` e `SanctuaryAreaStats` nao montados |
+| Acoes compartilhadas / mentor cria tarefa | Mentor agindo na arena do orientado | Flag off. `SharedArenaView` nao montado |
+| Dia julgado | Vocabulario de julgamento do dia | Saiu da interface. O mecanismo continua: `daily_commitments.stage = 'judgment'` e o que deposita EXP no ciclo |
+| Ouro/ficha do quiz | Economia para liberar campanha | **Nao removido.** So o texto foi simplificado |
+
+**Telas nao montadas, candidatas a apagar:** `ClanDetailModal`, `ClanSlotModal`, `RelationshipHubModal`, `SharedArenaView`, `SanctuaryAreaStats`. Nao entram no bundle, entao nao pesam no download. Mas ja estao desatualizadas em relacao as vivas — o `RelationshipHubModal` dirige um fluxo de arena vinculada que nao existe mais. Ressuscitar exigiria reescrever, entao o que se perde ao apagar e referencia, nao codigo aproveitavel. O git guarda.
+
+**Tabelas do banco das features desligadas:** deixar quietas. Guardam dado, custam pouco depois da limpeza, e dropar tem risco real.
+
+## 8. BLUEPRINT DE MATURIDADE BECO'S LAB / GLYPH
 
 ### Nivel 1: Ideia
 - [x] Manifesto do projeto e definicao do "Superpoder" escrito
@@ -126,3 +157,4 @@ O medo de lancar e esperado: o produto e grande e voce esta segurando varias sup
 - Para o lancamento, a decisao correta e monitorar `egress`, `database size`, `storage` e `disk IO` nos primeiros dias de uso real.
 - O Jardim Zen salva `garden_state` manualmente por botao e em JSON leve; nao deve ser o vetor principal de egress.
 - Se o uso real de usuarios comuns mantiver crescimento baixo, o plano atual pode aguentar a validacao inicial. Se o egress voltar a subir sem smoke test, revisar cache de imagens/storage e considerar upgrade de plano antes de trafego pago.
+

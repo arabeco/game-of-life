@@ -1,526 +1,526 @@
 {
   "totalFiles": 139,
-  "totalBytes": 16582638,
+  "totalBytes": 6240944,
   "assets": [
     {
       "path": "aurora.png",
-      "bytes": 434725,
-      "sha256": "d53b73ae3f11425a23dfffab62f700c216cd53167bf721131cbf60346daaa746"
+      "bytes": 149179,
+      "sha256": "52ddd0a0a05de7dc034a2e56c7c7533a6d5921fe6d528159921698900ce7c9db"
     },
     {
       "path": "avatars/artefato_t1_adagaaprendiz.png",
-      "bytes": 64276,
-      "sha256": "a2920083ee814fcd7ecad0a6819126a1e17fb09685d67675414269ead4b19285"
+      "bytes": 21572,
+      "sha256": "9ef993f59a6c6c35bc76d538bca04dafd39d1515206132f19eb9940548e7120a"
     },
     {
       "path": "avatars/artefato_t1_cachorrobeagle.png",
-      "bytes": 223483,
-      "sha256": "e1fa1631a6b85509dcb1271e02034e12784d19ee1ac3372d73abf27d8a888e38"
+      "bytes": 78034,
+      "sha256": "3369026bf06ad1fe2f5df7be2ade49bdb44fd6b79bedf1a257478500134696cb"
     },
     {
       "path": "avatars/artefato_t1_gatolaranja.png",
-      "bytes": 131307,
-      "sha256": "7e3fe04912b35184df0163b9430315cd76e5ea8d975960a062e784d0a09dffca"
+      "bytes": 43785,
+      "sha256": "e0c6765096951cfd37af11cbaa15139ee48886cd47517d05be295a4cd527e3c5"
     },
     {
       "path": "avatars/artefato_t1_halterespar.png",
-      "bytes": 174526,
-      "sha256": "148984a2c0040cc0a8f673f5353dc45f029f9a47a481d07c2aabf57f9d04b395"
+      "bytes": 60314,
+      "sha256": "75898c9fdd2e6c107699d19355b3228e07bfa4ee7f92ee40b37309f7f76478ad"
     },
     {
       "path": "avatars/artefato_t1_triocafe.png",
-      "bytes": 132515,
-      "sha256": "774863ffd17382bdb3624021139185ca12b02ffbb210f45f39d9fb7560902bf1"
+      "bytes": 45251,
+      "sha256": "4fd953c9191b97ac2deee349a8975ef8355499bae33c0ee16be11c7dacf21309"
     },
     {
       "path": "avatars/artefato_t2_cachorrohusky.png",
-      "bytes": 105208,
-      "sha256": "9d838d55db1f061e060dba707b17950f9cadaa86675416ab79a466fcbf7f166f"
+      "bytes": 37075,
+      "sha256": "9de7d62e79dce0ce8c3c3205e0a45c1f6c5749192ad20ce4e0966bb07f833426"
     },
     {
       "path": "avatars/artefato_t2_gatosiames.png",
-      "bytes": 77213,
-      "sha256": "8a3db62455459472d7247cdc7fbdf8d40b14190a87045f7d8d15f472d1fca634"
+      "bytes": 28585,
+      "sha256": "7f9d62f0e60f27948ac678dbd9cb33abcf983aeaa0fa674b2ed5563740563756"
     },
     {
       "path": "avatars/artefato_t2_setup.png",
-      "bytes": 98780,
-      "sha256": "686656b96b7055d7f959cf15fad560559d056cee84515bb3f4edca36ef24aab6"
+      "bytes": 32606,
+      "sha256": "8e97c0e4ab2b5d8f561050190c655a94838e9f4a20b380835c1e9b2663542679"
     },
     {
       "path": "avatars/artefato_t3_cachorrojack.png",
-      "bytes": 115087,
-      "sha256": "3fdd1c45134767cae7817d33cc3942cf60ca1952261ab17222d42d424c3eec97"
+      "bytes": 45884,
+      "sha256": "b37c4851c7f68d5c9540c7b0d0ead63c13c3631fcf71f45b977f97da868ba714"
     },
     {
       "path": "avatars/ARTEFATO_T3_caixamagica.png",
-      "bytes": 132725,
-      "sha256": "329d2074faeb8729e04ccea3a301daf7fe02383bb0befb0b2a57f99d61f62ec4"
+      "bytes": 43326,
+      "sha256": "fe0b26945c69764aa555bcb40b26b0c39f793e992cb7ddd1eb25af3b4f97141d"
     },
     {
       "path": "avatars/ARTEFATO_T3_cetroesmeralda.png",
-      "bytes": 62430,
-      "sha256": "7fa91df727776159800b89da7a754cb5dad7fec6bf1e03f889a1b3e32fa097b7"
+      "bytes": 19252,
+      "sha256": "031a88bab3572522ca3ae8afedb75ac06b603391099c1ca15fbc1486c9f5c349"
     },
     {
       "path": "avatars/ARTEFATO_T3_coroaprata.png",
-      "bytes": 168347,
-      "sha256": "7a6b3fd9d1916ac3f80b9f68f186f0c94d226194d00a805e2bf58363f56a32e3"
+      "bytes": 60419,
+      "sha256": "8745b8a938c26f724bd0293d685e4f6119fbbed2ca2a5db341118a3ef767433c"
     },
     {
       "path": "avatars/artefato_t3_DivineScepter.png",
-      "bytes": 111950,
-      "sha256": "0ea0f89883b7fb64aa371614165ae6b6ad1e7620fefb0c7a93523320033b8b8f"
+      "bytes": 32417,
+      "sha256": "7c542b050a6ae90574ca0fa6f53a3ffe0f2b07ffed2c5d8923c6a89176266394"
     },
     {
       "path": "avatars/ARTEFATO_T3_espadarunas.png",
-      "bytes": 26070,
-      "sha256": "d4b6c2ab095967be4d4dd0d5259741afe03d54258b57f84ac38f03507ea7b2ab"
+      "bytes": 8405,
+      "sha256": "7285d237b295596c363f071565831d720bd7221e6f9963f10793edf3ef12407f"
     },
     {
       "path": "avatars/ARTEFATO_T4_COROA_ESPINHOS.png",
-      "bytes": 145688,
-      "sha256": "6ed2bc9dac501b59d2c253b02b88ba0e8a593f92559898be14f83a6ab686051d"
+      "bytes": 45950,
+      "sha256": "05864685079f64582fc67e284f2be25897966e983a48dafbff85ef7c0f6f1f9a"
     },
     {
       "path": "avatars/ARTEFATO_T4_DRAGAO_BEBE.png",
-      "bytes": 136260,
-      "sha256": "989a9aedbade39a92065b71baff35de21b472a01c01d6a4833bdc75024405795"
+      "bytes": 47237,
+      "sha256": "22e8f6877633012f86266cdbc1bcd4b4ce831e1c0fe489114186aac73d7fa3e1"
     },
     {
       "path": "avatars/ARTEFATO_T4_GRIMORIO_ARCANO.png",
-      "bytes": 155677,
-      "sha256": "ecfffe9767f1dbee80e69c7842b3eda6fa8eeeaa812ccc766d5a97f2101e7d4c"
+      "bytes": 54202,
+      "sha256": "90dd188f33d855276410857b687a03f4fc194f4c7d251e42ea77210179e925d1"
     },
     {
       "path": "avatars/artefato_t4_manta.png",
-      "bytes": 43807,
-      "sha256": "733c1374e1b2cbf8148619b0db7eb28d63c4507bff29113311422b59176c6741"
+      "bytes": 15855,
+      "sha256": "eb07bef5af8cd75ebee60aefe4c48612db0183a511119e84dac28b69645876d4"
     },
     {
       "path": "avatars/ARTEFATO_T5_FENIX_COSMICO.png",
-      "bytes": 229556,
-      "sha256": "03a90447e885bc9e23f57a1ae15b1d23c219f231c927882440fa2c58e1222c1d"
+      "bytes": 72596,
+      "sha256": "aa27a2522c9596de405e57fb7c09e5ffb5ec633ee9a434ac50636cace55f0ff6"
     },
     {
       "path": "avatars/ARTEFATO_T5_tessaract.png",
-      "bytes": 175914,
-      "sha256": "04855a10a4ecb31eb7e86fb7cfe8232efb1c157f702482513361335f6d9d8e84"
+      "bytes": 54407,
+      "sha256": "b5ccbc488427b925207f4f292097a5cb7ee4c46eb33cc58ba896738850055dfa"
     },
     {
       "path": "avatars/body_fem_1.png",
-      "bytes": 55194,
-      "sha256": "c2506847d2515796d8ad7c03769ea85b04b791b522e296aa0368fbf2993d49f3"
+      "bytes": 21731,
+      "sha256": "58ed07a8e61d4ca986c7cfe506551027ffcc8aeeac481876913ba047ad787fa9"
     },
     {
       "path": "avatars/body_fem_2.png",
-      "bytes": 57439,
-      "sha256": "15cae9a36126d722248c94573045f4b79f8ebc02d6fe215dea1aa271762622af"
+      "bytes": 22470,
+      "sha256": "e8c1a01c4f5ec57f90eb94fe548a73f84de2590e3cfa1b430e7fbbb2c1551b97"
     },
     {
       "path": "avatars/body_fem_3.png",
-      "bytes": 57741,
-      "sha256": "5185b957bb35042873969aed7dd07b4313a632b49525c53b09f316c055cf0469"
+      "bytes": 21783,
+      "sha256": "378d2abb04add45e43b8ac92c7e7ee44a20cb6bc061f57933638523cb574cffe"
     },
     {
       "path": "avatars/body_masc_1.png",
-      "bytes": 65676,
-      "sha256": "198db68b38bdd831fa5b03ba7535f7b7247d536dc55643b65299f5087dd42794"
+      "bytes": 27117,
+      "sha256": "17f554fa6e4e87af894599b0ca7b04d85774ef56dc931ad7128956c11de4401f"
     },
     {
       "path": "avatars/body_masc_2.png",
-      "bytes": 67052,
-      "sha256": "46674c9bdbb35642a9452c804ad31ef2ed1d7e56aa045d196116af6388af71fc"
+      "bytes": 26941,
+      "sha256": "1f95f763018ffd32f447220a574fca5119147652c5d1b6c112c2d4e62d77800d"
     },
     {
       "path": "avatars/body_masc_3.png",
-      "bytes": 65351,
-      "sha256": "f7aa68f28a25b268cb51560fe18f81346f43d8bbd03a525188fd2d8dc22172a0"
+      "bytes": 24290,
+      "sha256": "286440b6f27226469043c5955d02dbd120991b0e8c77a2fccaee99473b96c9ff"
     },
     {
       "path": "avatars/glyphs/MOLDE_T1_LAJOTA_CALCARIO.png",
-      "bytes": 107869,
-      "sha256": "cc4a2f28f623aefc5e75476edd0141a13ec2b6d5f938e4df6995ad5ad7b83b38"
+      "bytes": 44602,
+      "sha256": "7faf19f549b99815a8f601a1228863fb937a8ad107bff810a49a28df8f69fda5"
     },
     {
       "path": "avatars/glyphs/MOLDE_T1_MANUSCRITO_HOD.png",
-      "bytes": 222821,
-      "sha256": "7a7d5ace955ac55a8f51ce6ef602ce9277e3002b083ffef97b31c59205ca5864"
+      "bytes": 97402,
+      "sha256": "258819e09f4512fe2996b1193b00a432f03b773b99305f30682aef1f47619157"
     },
     {
       "path": "avatars/glyphs/MOLDE_T1_TABUA_APRENDIZ.png",
-      "bytes": 186305,
-      "sha256": "c6d9f7cd599349d5d94ae23217b7f45558887edeac7e5e66418f50bfeb3a45c4"
+      "bytes": 80076,
+      "sha256": "b525136c9461f05949ebcf57298fceb7dde76d393b129f24eb3a8d3fb701d18c"
     },
     {
       "path": "avatars/glyphs/MOLDE_T2_GRANITO_RUNICO.png",
-      "bytes": 202838,
-      "sha256": "0f1ef370453df8b9590239537a3a72be902ffb823eab95c01cddc188bce48f39"
+      "bytes": 79539,
+      "sha256": "12340d58027f38757d396283391ce462ba9a5656d10f63c2ddee2f456b772e95"
     },
     {
       "path": "avatars/glyphs/MOLDE_T3_MECANISMO_BRONZE.png",
-      "bytes": 260234,
-      "sha256": "ca85f77486c336954a1f5e1283811d1b369e6f76f304381eb2013f3ff888eb9b"
+      "bytes": 92584,
+      "sha256": "170fe6db58c118fcd0ba264b1ec3689e6e55ad6e8b66e2d55a0360adbf496b67"
     },
     {
       "path": "avatars/glyphs/MOLDE_T3_MECANISMO_RUNICO.png",
-      "bytes": 203770,
-      "sha256": "0aa549ea5143fc2e13930998a8cf1b40b4e19936f345e87138799cbd41a15cf1"
+      "bytes": 80676,
+      "sha256": "a7a3f8342fe342f514010379dfee591b0cbc45299d14cb5c81ff183a63b29721"
     },
     {
       "path": "avatars/glyphs/MOLDE_T4_CRISOL_GEOMANTICO.png",
-      "bytes": 178846,
-      "sha256": "1533927a3c216311e885b1e226f7f119449220539f61aa5e578c9ea3c4a09c94"
+      "bytes": 58405,
+      "sha256": "13edbd7cfe49be03b18d76f19529d2f198c655a46435680ae633e0049046d25f"
     },
     {
       "path": "avatars/glyphs/MOLDE_T4_CRISTAL_BRANCO.png",
-      "bytes": 186879,
-      "sha256": "589487c16bdbfb46efd1253a94538a5d58bd2d20796169097174bd7ab51f2e32"
+      "bytes": 79910,
+      "sha256": "1fb61594d2752cda4cf26561b9949816f096599bab77fc1d0f3f173f3baa62b5"
     },
     {
       "path": "avatars/glyphs/MOLDE_T5_A_FORJA.png",
-      "bytes": 90892,
-      "sha256": "dd16a7d269b8743b3101d385f9c47615baa015a8ccb41fa68902d7e62bb2ea4d"
+      "bytes": 35860,
+      "sha256": "d0a504158bdaddbea8c71eabbe44103db6a348fea279cba2ea668bf4ab96f169"
     },
     {
       "path": "avatars/glyphs/MOLDE_T5_ARTEFATO_SOMBRIO.png",
-      "bytes": 248964,
-      "sha256": "28906339e901185fe8343c24d834269970d3234eabb11ba9cfed76f8ef7701e9"
+      "bytes": 82953,
+      "sha256": "f52afe51586100cb7e2962a096a6c3fb44efbd8609ddbcc62086d679bd90d184"
     },
     {
       "path": "avatars/glyphs/ORBE_T1_COBRE.png",
-      "bytes": 28346,
-      "sha256": "71f2367e46cc49d399b27e99096a00ccfe3555ef52e972e0da161525b16e587a"
+      "bytes": 8269,
+      "sha256": "936385c2c9113e1061770297bd072c47429ec20dba24537dbf993ebafef63cd2"
     },
     {
       "path": "avatars/glyphs/ORBE_T2_SOMBRIO.png",
-      "bytes": 24399,
-      "sha256": "c0f11a6e9db9effe5266acc28fa3f1a36a951f24d7903427a4c0dac0974b062e"
+      "bytes": 5528,
+      "sha256": "77b7caabf8893806745b78c7cb28b24fa1a4d8f8ec933d7e8e4a5c3695d4786f"
     },
     {
       "path": "avatars/glyphs/ORBE_T2_TEMPESTADE.png",
-      "bytes": 28688,
-      "sha256": "48b78ed8da2935ff39e0907824b2574278b6ceabcdf8581703928849f8fe078a"
+      "bytes": 7510,
+      "sha256": "d1479ccac779c5184a5602da3c6a54f3801b55b88df75ed1f897500ec65954ef"
     },
     {
       "path": "avatars/glyphs/ORBE_T3_OURO.png",
-      "bytes": 34616,
-      "sha256": "315372ae757a74eabceede3b5eac73cdffee1eeba99554052d169273f7a964c4"
+      "bytes": 12441,
+      "sha256": "3331d550fb8390955394fc57229d4fb823b70b51ff49afe495fc4381fc2ba61e"
     },
     {
       "path": "avatars/glyphs/ORBE_T4_DIAMANTE.png",
-      "bytes": 35658,
-      "sha256": "f0be01892e3a6710dbc4405a52fc8495c88a6243a28c51d2fdf33b8f937f1951"
+      "bytes": 11455,
+      "sha256": "1df88794ea157bba964f1d0141beb22c40d5cb3438d6effa4cf2c70f3a50a406"
     },
     {
       "path": "avatars/glyphs/ORBE_T5_GENESE.png",
-      "bytes": 30639,
-      "sha256": "cb841f527893928447ef96729431e8b5affb6e8e6e3c11626a0eb5474467bf63"
+      "bytes": 10738,
+      "sha256": "1fe68f89ff1fa5710a30dc1e6f82f19711696b38e926b25c6e1f97a7e993b097"
     },
     {
       "path": "avatars/glyphs/ORBE_T5_SOBERANO.png",
-      "bytes": 29607,
-      "sha256": "28d690d449254cf13b797822632c832fee33ba002808f3748763a85d9d4db031"
+      "bytes": 9562,
+      "sha256": "21e7c32f260b7d8dbcc780d7f01f4b6cb9810210a563e4f7a75721569404c8d7"
     },
     {
       "path": "avatars/glyphs/PLACA_GELO.png",
-      "bytes": 313685,
-      "sha256": "ebe1b22b5bf0dbf5cde29666c6472415645c3de433417cf49add28e6ddfd7043"
+      "bytes": 111371,
+      "sha256": "9e16d185138f097bd8b42fbde4c43dcb56f29247c77878293d9824385b3a81af"
     },
     {
       "path": "avatars/glyphs/PLACA_MADEIRA.png",
-      "bytes": 191661,
-      "sha256": "6a8b84175777cfa972341a97638f17bb4b26cf9e586eee1bfd6d932bbeeb9085"
+      "bytes": 83330,
+      "sha256": "fa2b2d700d59476cf921e1e14760b6f8024f9d40fe642f9908cdcc5eae897123"
     },
     {
       "path": "avatars/glyphs/PLACA_OURO.png",
-      "bytes": 228985,
-      "sha256": "041a53fd42ee8ecb9e9b0965523b8a6ed556d95c7232d6574120805ac7350690"
+      "bytes": 74322,
+      "sha256": "43e3936b2e6c08d6c2ea961669e31612ae019afd5100d61b267d4be240bacb9d"
     },
     {
       "path": "avatars/glyphs/PLACA_PEDRA.png",
-      "bytes": 89280,
-      "sha256": "df7454801e1cd673d7aa737af59fee8fce2e34115340909deaabee8192f3ba63"
+      "bytes": 45123,
+      "sha256": "aa80ca87614049151dab9615ca15ac70d594cd733f0a00832c4d1c625db03aeb"
     },
     {
       "path": "avatars/glyphs/PLACA_PRATA.png",
-      "bytes": 339676,
-      "sha256": "41cfd0b9269cd256ec71a2faab3f6d22abd3390f838fc18f096e3f62a1168ad5"
+      "bytes": 142626,
+      "sha256": "0ef0f150ad2b639e9d5dfd1b15015199cb2688b83c8a51c8cebe5c691ed18539"
     },
     {
       "path": "avatars/glyphs/PLACA_ROXA.png",
-      "bytes": 307070,
-      "sha256": "9f65014ba293154ed39c190df78167abdaa8005085cf34da4038c59c2ce0c53d"
+      "bytes": 144117,
+      "sha256": "96520c95f998d9b91f49115bad05e12e594daa1788e8715241408f478b4b3fe2"
     },
     {
       "path": "avatars/hair/CABELO_T1_CACHOS_cast.png",
-      "bytes": 14752,
-      "sha256": "6b7db3adb579e4f4a25b3768ac185c9af5a8fbf57b46fe85683b8faf5632c139"
+      "bytes": 3360,
+      "sha256": "aa9e596950cb18efb00c5594ae4103a5b32d1dcf4d92f91eb50b17aee5a465c1"
     },
     {
       "path": "avatars/hair/CABELO_T1_CACHOS_preto.png",
-      "bytes": 12113,
-      "sha256": "8882b8db84c8bdbcf0073a50be4874a94e3aaf5bbbb9f335903dbfab6f37ecd1"
+      "bytes": 2528,
+      "sha256": "e9b218f2ad873206d7a1e3e01a38a48309571e728df6f583016a6742efb56f15"
     },
     {
       "path": "avatars/hair/CABELO_T1_MEDIO_RETO_bran.png",
-      "bytes": 4671,
-      "sha256": "47483bdca3353ef4477f49f3d1dbd98fbb842bf6eb82e43868deb6268859e6ab"
+      "bytes": 1080,
+      "sha256": "7405d91fc832fbf0cb09cf5f74c83cc5d2630ee5943cb4144d18a9d454eb9cb7"
     },
     {
       "path": "avatars/hair/CABELO_T1_MEDIO_RETO_cast.png",
-      "bytes": 5765,
-      "sha256": "c6b0509cfc3e38749ecdab7d902e1ccd5b006d34e05121b622db76608067c5a5"
+      "bytes": 1120,
+      "sha256": "c4a7c2157c27ed38fd647893a918d9313343212c920241e7b8fc4ecb7139a646"
     },
     {
       "path": "avatars/hair/CABELO_T1_MEDIO_RETO_pre.png",
-      "bytes": 5444,
-      "sha256": "b16da9c6b724e0bc7bd49103bafe5247f06903c68b828409983e419a512e702a"
+      "bytes": 1128,
+      "sha256": "155a24eb559cd975da11803b191369bb502d88858ad6d0dd9aa071394f0747bb"
     },
     {
       "path": "avatars/hair/CABELO_T2_TEXTURED_CROP_bran.png",
-      "bytes": 9385,
-      "sha256": "8d8f1c5762b2ad86a218ce533a5058c75309d6c5afa9760375665d7a6f733767"
+      "bytes": 2256,
+      "sha256": "26e78398137e47542cc9aaad73255799f8ea66a8abc58cb7d941b4dca9d7d6f4"
     },
     {
       "path": "avatars/hair/CABELO_T2_TEXTURED_CROP_pre.png",
-      "bytes": 7804,
-      "sha256": "ed42c6e97631714ca8d60c260cd2de20e031a823feda56a5d1cabbf3e91cd481"
+      "bytes": 1651,
+      "sha256": "a112b32c973a7cc66dc9d73d578735ab42a6cdd2a019bf5b0c68451aeb904df4"
     },
     {
       "path": "avatars/hair/CABELO_T2_TEXTURED_CROP_ver.png",
-      "bytes": 12950,
-      "sha256": "91385defaf9da2f2b388ebc307833724bd62bae3f71d70dc6e82b5ca8bd4609e"
+      "bytes": 2900,
+      "sha256": "b2f882841317be4dca8caf3e3a26f3e7f1802af61ba555ef2c18f868b5c13520"
     },
     {
       "path": "avatars/hair/CABELO_T3_DREADS_bran.png",
-      "bytes": 17434,
-      "sha256": "c624c86bd08e6c3c3ae671ce648ed658e5ea2b22dba27fdeffd6d9faa90725c5"
+      "bytes": 4681,
+      "sha256": "d2296cd9588d09d48bee98a7adb3265adb6ca2772d01cb52d157956a2754feb8"
     },
     {
       "path": "avatars/hair/CABELO_T3_DREADS_cast.png",
-      "bytes": 18602,
-      "sha256": "da86a23cffbb9a94e62470fa1336efc7b2134928bfcb34d9dc88e0162b01150e"
+      "bytes": 4494,
+      "sha256": "7ea6ad9987798080d0e0551331af446bd977fc436b12d5cddcabac46efccbcb7"
     },
     {
       "path": "avatars/hair/CABELO_T3_DREADS_pre.png",
-      "bytes": 16913,
-      "sha256": "cde5ea8ef383421e97074ce803d707bd4568f14e3bede9f3b777ddb00485d1e6"
+      "bytes": 4126,
+      "sha256": "271411ce8557347cc2ace39e9b45e95d16a92145345ea54898041d6841c318e1"
     },
     {
       "path": "avatars/hair/CABELO_T3_MULLET_TOPETE_ama.png",
-      "bytes": 8239,
-      "sha256": "9f19f2450975a6740ae119113269102856ed76a22c8a4a9b7a6177a2149798b7"
+      "bytes": 1904,
+      "sha256": "a30eab0f6b11fa167883e9cf383e1b827bc88aed4b866ab79dc968ff48b3f05f"
     },
     {
       "path": "avatars/hair/CABELO_T3_MULLET_TOPETE_bra.png",
-      "bytes": 7816,
-      "sha256": "628dd1441824e089fa7a72c8fdfe081ce863be76768c353212959e31af436063"
+      "bytes": 1867,
+      "sha256": "82015d64e10d15ac69cd0cc991cd975770c7c63918b7427eaf3b412e0005d70e"
     },
     {
       "path": "avatars/hair/CABELO_T3_MULLET_TOPETE_cast.png",
-      "bytes": 7960,
-      "sha256": "0791c820e5a672943528e630294e28f8e542c059fc5e8cb6a164fc83122fa8b7"
+      "bytes": 1674,
+      "sha256": "8c06369330603d4c7ba349647632810a49d8798f7a351ce4ff8aa36e19d906fd"
     },
     {
       "path": "avatars/hair/CABELO_T3_MULLET_TOPETE_verm.png",
-      "bytes": 8087,
-      "sha256": "c4297e5b480e1fca36d610c1cde61e5b005a5a870d9b82e475010b1c70cfd81b"
+      "bytes": 1887,
+      "sha256": "1799d604aa33576feb3717ae03a4f9ca58d142c50b97b7ef011aadbefa5ee9cc"
     },
     {
       "path": "avatars/hair/CABELO_T4_ANIME_SPIKES_ama.png",
-      "bytes": 11296,
-      "sha256": "7f8ad7bc99e5bb2d6a737df87584724ba5f2b0bcfc7de7dfacb1287e3bfe7709"
+      "bytes": 2967,
+      "sha256": "59932f30989a05d6bd382ccf4e56d99be54ebdd118fa633b4d305c04226fe711"
     },
     {
       "path": "avatars/hair/CABELO_T4_ANIME_SPIKES_bran.png",
-      "bytes": 9266,
-      "sha256": "f058a1f4ab3c9e773a10edb6c294377b7f99ad24448ce9368a3dc038191b6457"
+      "bytes": 2360,
+      "sha256": "2e471f2334217495fabfa49abe31e337085ff6369de76ed57271b8c3e11b9931"
     },
     {
       "path": "avatars/hair/CABELO_T4_ANIME_SPIKES_cast.png",
-      "bytes": 11344,
-      "sha256": "757dbf88d94cc46251217b76b918d1c7fd39c09e1995ff2c542ab98a1547947f"
+      "bytes": 2526,
+      "sha256": "a7dbe5e62765d807ad60936cf88ee75afd41e73352839bfb556bcb3e52e59234"
     },
     {
       "path": "avatars/hair/CABELO_T4_ANIME_SPIKES_pre.png",
-      "bytes": 8761,
-      "sha256": "0cb6a968cdd605c3269446bcfbffb4b277fdb61afee67f3bcba9e13f410136b0"
+      "bytes": 1922,
+      "sha256": "3531441f5dce2ae07fe075d98cb9993f89cc04943697450dc11e2cd235bb96db"
     },
     {
       "path": "avatars/hair/CABELO_T4_PRINCESA_bran.png",
-      "bytes": 12327,
-      "sha256": "b409ebc644fd100b563779d9cede89734e17e5273e9f43689ac1feb5a3c67ebc"
+      "bytes": 3206,
+      "sha256": "51f50f85f5909422bb3eae1289d901ad5614728a12f784e338fe76229b2846ff"
     },
     {
       "path": "avatars/hair/CABELO_T4_PRINCESA_cast.png",
-      "bytes": 14019,
-      "sha256": "c37ca6ff5463ad8c303da9dbbd79cbcfa7545c160614d5e8155cccfed5148938"
+      "bytes": 3369,
+      "sha256": "aa53b141ea812197818efc971b264aabaeb86137f1cdc3ad648b7e3ef43187b7"
     },
     {
       "path": "avatars/hair/CABELO_T4_PRINCESA_preto.png",
-      "bytes": 13844,
-      "sha256": "d82f2c2384ce423fbf0a679721ce15dc924c70863cbd517f5af1c161f8925a4b"
+      "bytes": 3183,
+      "sha256": "7d5e1aa4b5cfd11e3af70acf5b18d0d93de7f28725bb34df7826d55ff7f8ec15"
     },
     {
       "path": "avatars/hair/CABELO_T5_FLUXO_ESPIRITUAL_ama.png",
-      "bytes": 24636,
-      "sha256": "4bcc5f4394450bcea8cfc77d8ba3ef3d40a2f0f763463831edc5b443788a1d03"
+      "bytes": 8157,
+      "sha256": "e7b6673a646fd57825b87cba5fdcf314695c647657b02cb1a50db5eb44253586"
     },
     {
       "path": "avatars/hair/CABELO_T5_FLUXO_ESPIRITUAL_bran.png",
-      "bytes": 20070,
-      "sha256": "f51289f643a5b46a3d55709def80c61b1e3c2663b3c798c8844efe868994eba4"
+      "bytes": 5946,
+      "sha256": "65483135431945da0aae5739318f0e6cdc42f545acb9e005683fac1caaaa6127"
     },
     {
       "path": "avatars/hair/CABELO_T5_FLUXO_ESPIRITUAL_rosa.png",
-      "bytes": 23351,
-      "sha256": "200ef15c57f8f1c379b21e1d38437c00055878f297b2c203df33d8d7d3c02f55"
+      "bytes": 7295,
+      "sha256": "912280c4a336431881c2c2847f497d7dd74a582e2cd0e1f613ddc97d3959b7f6"
     },
     {
       "path": "avatars/hair/CABELO_T5_FLUXO_ESPIRITUAL_verm.png",
-      "bytes": 28697,
-      "sha256": "b5424f425ed486d1d4d4d9c8735b9169c385da6d7abb7ec637405754bf51eba9"
+      "bytes": 10208,
+      "sha256": "8d8e409471e71121fd9feece2bdaaff86329e2bf6703671a051c7b18360c3d1c"
     },
     {
       "path": "avatars/JARDIM_BAMBU_JOVEM.png",
-      "bytes": 26354,
-      "sha256": "c3be2a332399956839a877a84e60c72cbf5f0110421d253fe4ec1c00457c1613"
+      "bytes": 9535,
+      "sha256": "d6a85f6d6c10e5dafe5964e39c23fefac122757ae4f61d9873fdb273352b7763"
     },
     {
       "path": "avatars/JARDIM_ESTATUA_MEDITACAO.png",
-      "bytes": 36364,
-      "sha256": "a2dcdd05f3217722d62dfcbcbbec11c30d7f2d005f4dbb6b89a83e19762234e3"
+      "bytes": 15695,
+      "sha256": "46864031273d02142ef3b21773a49d4da8d3b1fdb36e7af84d3a10d5b2a1a3f1"
     },
     {
       "path": "avatars/JARDIM_GARFO_3_DENTES.png",
-      "bytes": 21373,
-      "sha256": "c4396dffe54de7dd2287674cdcc9c8bd078da0464683fc7addb4dd594608a4c5"
+      "bytes": 8278,
+      "sha256": "714faff6f6fe89bf212f0176629df008b5f6dd9de7027b7b585949daee647cac"
     },
     {
       "path": "avatars/JARDIM_LANTERNA_PEDRA.png",
-      "bytes": 35124,
-      "sha256": "56622612d6c2426aa120dbe92b033fa0c4debb9be4c94ab411e9b486f672b41b"
+      "bytes": 13663,
+      "sha256": "7bfbb4e560bb65534c715e10f9aa9a590a47af6030a4690415d89bb016634ec8"
     },
     {
       "path": "avatars/JARDIM_MUSGO_VIVO.png",
-      "bytes": 33542,
-      "sha256": "ba29580a7219046eef5198cd37ff8c54d9598094ff4214d384e302a4f655abad"
+      "bytes": 12198,
+      "sha256": "9a03fa6f09463e78f322f4e3113c165d0e57878df8ff452cb9cae53be461ed6a"
     },
     {
       "path": "avatars/JARDIM_PEDRA_LUNAR.png",
-      "bytes": 23906,
-      "sha256": "b4833bcfc15df67a882edd114e67d58cea4bf51075468489b57e55407b4f1534"
+      "bytes": 11719,
+      "sha256": "58aaf0c1d92ecb270f2267ffe29a1cdbf2d360e83e3b6cee4fbf06a4c647a71e"
     },
     {
       "path": "avatars/JARDIM_PEDRA_OBSIDIANA.png",
-      "bytes": 24859,
-      "sha256": "ab85498b59b12ebe0bdf44617a1f1a12572b59db208e5926e1fd2a9a6879048a"
+      "bytes": 8238,
+      "sha256": "f4cb010441236341fb552d270c8d71f6b96c14e264730a4bd8eb7e60ad1447c5"
     },
     {
       "path": "avatars/JARDIM_PEDRA_SERENA.png",
-      "bytes": 26016,
-      "sha256": "6943ca42f2d1381fa49c1c24385ed6e468caa88e3907a3200de9b34314c3ba56"
+      "bytes": 12986,
+      "sha256": "49d3ff5777beffe03742d8127edf9082af10b586951ba439210fd4878e75773e"
     },
     {
       "path": "avatars/JARDIM_PONTE_MADEIRA.png",
-      "bytes": 33256,
-      "sha256": "c0c7d662314be77be6b8a0ff7470270a30a94ff497a0af5d588a8687e06cd775"
+      "bytes": 12010,
+      "sha256": "16d77245d2e839d36cbd8fb0112df596932f8e7f51d91634536d368af1cd1f4a"
     },
     {
       "path": "avatars/SKIN_QUEST_GUARDIAO_AURORA.png",
-      "bytes": 95351,
-      "sha256": "18921b1fb9de4607936e5fb67c9bb51fd90198af0d6eb2cef71ad84f6631f3bb"
+      "bytes": 31978,
+      "sha256": "f5c7fd28a4a4be194a34a6a80eacb149fac1308775ec52d5462b7d4194d46731"
     },
     {
       "path": "avatars/SKIN_SEASON_CRIADOR.png",
-      "bytes": 106405,
-      "sha256": "dcc5505199f57ca78ac7355c4805438de15dfc5d46ef987d38e9620893e96fa6"
+      "bytes": 36153,
+      "sha256": "368aacabe1691e632cb153b2e36767b5b20e977e4f8f422287f3948e6d7af5de"
     },
     {
       "path": "avatars/SKIN_T1_CACADOR.png",
-      "bytes": 38442,
-      "sha256": "db3ba27192698ec6de9f5f9e30ea4e2786ceddd4331a11ebcbef8f69d1cbc6d1"
+      "bytes": 14368,
+      "sha256": "aad333d5acae911c163844d1ce81a87b308b83587a8ee6f1519cfcbe15604343"
     },
     {
       "path": "avatars/SKIN_T1_CASUAL_2.png",
-      "bytes": 44478,
-      "sha256": "03442d489d50582109279fb07978738ec3e7baccf397104892d913fad9a13910"
+      "bytes": 16192,
+      "sha256": "fdff6e864faa6ae6fd03962176a789987aa800e6709e15af4afd8d17d3d6814f"
     },
     {
       "path": "avatars/SKIN_T1_CASUAL.png",
-      "bytes": 59858,
-      "sha256": "95161b665ea6507dcf62c543130c4b9335c2b9ff2996ad4b652d06d7b26dfd7a"
+      "bytes": 24561,
+      "sha256": "2c4b4318858ec38eb70e4ce42d15868841c043a445710bfa6b20638acf8d7b01"
     },
     {
       "path": "avatars/SKIN_T1_GYM_RAT.png",
-      "bytes": 42773,
-      "sha256": "86d3624a37554aa94d3f6ca7f4385c38412a141fe07e0918c54459d74bc08fed"
+      "bytes": 17759,
+      "sha256": "1833bd0b8aad9fba090f1cf5a40e2358c94c03b1138b9e2d249a0d9ae65248a1"
     },
     {
       "path": "avatars/SKIN_T1_NAUFRAGO.png",
-      "bytes": 57523,
-      "sha256": "4e5634540d4fba871ad7bb4acdf6f01ba769c149cded981efc4487dcba642fe7"
+      "bytes": 20505,
+      "sha256": "03b71c1bef6207f50cb297e5f629dfc7fc8588e33d8033dc82efe7f4e31263c9"
     },
     {
       "path": "avatars/SKIN_T1_STREET.png",
-      "bytes": 87085,
-      "sha256": "c7b5b7f0f6894c9ab0b24a66f04ca47378518bf6336c453517cf1b9635adfa99"
+      "bytes": 30885,
+      "sha256": "9a24565b529c5f1d0fbf6eb28690fbde26aac43d199cb29d6e742b782053419e"
     },
     {
       "path": "avatars/SKIN_T2_ACADEMICO.png",
-      "bytes": 66624,
-      "sha256": "804d9cba93576e117062d7e14b0e963b8a06455ffcd352661679e6c76f15a16e"
+      "bytes": 23513,
+      "sha256": "b271332aa96081b13fe868e0a11e320e3edee92029b7d370e23ab0b5183fdc3e"
     },
     {
       "path": "avatars/SKIN_T2_EXECUTIVO.png",
-      "bytes": 65953,
-      "sha256": "c78ce9fbd3a7496e5a8b3721142c4b34105e95107b24b9e988f97b9b2dced993"
+      "bytes": 23034,
+      "sha256": "b143f2b149a1d776fb5baed23c108c899fd5624c3ca27e3c669582a7770e4b46"
     },
     {
       "path": "avatars/SKIN_T2_MILITAR.png",
-      "bytes": 44159,
-      "sha256": "f223ee9f62e94fbd1182a5518fa5fb20fd74bd0822a8601abb2acc91f6f45c0a"
+      "bytes": 13739,
+      "sha256": "ee6fdff99c1b49a314b38d91575481fb9ca81d2f40da36ca8621ca5ad5b8ad55"
     },
     {
       "path": "avatars/SKIN_T2_TATICO.png",
-      "bytes": 92513,
-      "sha256": "ee9ea4bd70724a9a3d80b8d3ba13f5657df55e8a4c7ee77a90c9d95438f6f5ab"
+      "bytes": 33337,
+      "sha256": "11add4a02442664171eddf8de21546ad901122abd98ea1cc0e101ebcb80b4eac"
     },
     {
       "path": "avatars/SKIN_T3_ALQUIMISTA.png",
-      "bytes": 109116,
-      "sha256": "47f7117f666c56e4f081d880051e390995bc21dfc9bd6ddb5d3b069a958c35ab"
+      "bytes": 35012,
+      "sha256": "fb834bc5503143cf8a34ae1d81b26ad689b3107a6262c2238ae4bc8eccda8456"
     },
     {
       "path": "avatars/SKIN_T3_HIBRIDO.png",
-      "bytes": 113982,
-      "sha256": "2373aea05078a896ac1d64b313760089445acb679681cd011011e69272b997c5"
+      "bytes": 39946,
+      "sha256": "3302a3c24a7f011cce2fb1d82e480008bc3c8abedd5ae825d152b03444bd6033"
     },
     {
       "path": "avatars/SKIN_T3_NOMADE.png",
-      "bytes": 110120,
-      "sha256": "4597a56d8100cf53a48ac1cb1d5f82f62cd4b760a33c85e5d819b0c4959283fa"
+      "bytes": 36985,
+      "sha256": "cbb7f867c76418d9af4bb3baa7a482b712d3e23c357470247285618c117d591f"
     },
     {
       "path": "avatars/SKIN_T4_ARMADURA_PLACA.png",
-      "bytes": 117214,
-      "sha256": "65d68397de6dd1e728a8d7f8f37e9305500031efd5252b9d74d40fca38e66b8a"
+      "bytes": 40568,
+      "sha256": "6ebd46760f4421c73651a60a207bacc43955224f045b232ad29705d5fde5fd6b"
     },
     {
       "path": "avatars/SKIN_T4_MAGO_CIRCULO.png",
-      "bytes": 118825,
-      "sha256": "55a10debc711c2cbfeefd98d7bae20694350c4b89d98a864794a591c4501ada4"
+      "bytes": 41580,
+      "sha256": "adda92ea8769e2f668d4ddf34c31f633f67e064ae8e185b1685dae1341ec56de"
     },
     {
       "path": "avatars/SKIN_T5_VESTIDO_REAL.png",
-      "bytes": 75626,
-      "sha256": "d5ddc38fd8f289ef965fe62e888c69f623f8f0e8a1ca86f0855926e5ad57a22a"
+      "bytes": 26192,
+      "sha256": "128683b6ba51a444dd6e3967d1021775db56f03c9ca7374dbb20170027567ceb"
     },
     {
       "path": "basic.png",
-      "bytes": 1418079,
-      "sha256": "175c7e713423fc09883a4382ac2483516488420f54befadaf9cc04676fbbcbc1"
+      "bytes": 718373,
+      "sha256": "305b147ffcd62c0aa6d0d59d7eac97ba2206562b6a49ab8c7b7a79e7d272c723"
     },
     {
       "path": "cyber.jpg",
@@ -529,173 +529,173 @@
     },
     {
       "path": "ember.png",
-      "bytes": 416755,
-      "sha256": "0cbc8b2fc968e590cd1bc5d6c4dea08dfde7390ff824d5011234dc48f6473492"
+      "bytes": 139889,
+      "sha256": "637c9ff3e0cd62ea17e6826ea515a8712bd58fb37c964b6193e0d73c5f790d60"
     },
     {
       "path": "frost.png",
-      "bytes": 479774,
-      "sha256": "2e87f4c3b9a8dd8c133e6b1233618ad3a8cfe329cf68032947564f23dcd374e0"
+      "bytes": 157041,
+      "sha256": "34a950f80d5113213ccfbce40507bb195a0f32cd132b07d443157f2c6428867f"
     },
     {
       "path": "genesis.png",
-      "bytes": 379120,
-      "sha256": "374d6d88ce30f59656bef0b809b3a644290d31c7b0ba39ebe553ba12056e4f27"
+      "bytes": 122549,
+      "sha256": "09327664f82690a648c1025143762ecc7280ea99a7967e61e5701a8f695a42e6"
     },
     {
       "path": "gold.png",
-      "bytes": 447930,
-      "sha256": "65f980aacea6003378f5216ba95e6e19ac9ac32adef1a34c832384ded5c10d9e"
+      "bytes": 151272,
+      "sha256": "411a2ed8a1a7f9796e11ed6c1073d4eaea8861f39fee954c1a27c1db017e219d"
     },
     {
       "path": "interface/banner_disciplinado.png",
-      "bytes": 92003,
-      "sha256": "8c001200ac5e4fa093c060b858f36b656380b979b28777ceb4bad521e7dab6c1"
+      "bytes": 34244,
+      "sha256": "014222302ba0ffefab2569466c5efc77b3fd08129674832540e57717dd36d0bc"
     },
     {
       "path": "interface/banner_gm.png",
-      "bytes": 206585,
-      "sha256": "8879b662a6565b85f675674ca3493ed6c742cd54b27dd3ba64b9733895db9228"
+      "bytes": 68252,
+      "sha256": "9fea55d926fac634ab41ccd3a8b6bca4b8990fc27ddd4bbf41516e70a73d0990"
     },
     {
       "path": "interface/banner_imparavel.png",
-      "bytes": 103404,
-      "sha256": "7f1723b4884e946c378a78c6b585fd06b7fb38b734e4525e54e8a8003f7dd00b"
+      "bytes": 36028,
+      "sha256": "aad570e56c5932f22e349c374ac2cd2401c6b61e469d8b48bc124a89fad00747"
     },
     {
       "path": "interface/banner_lendaviva.png",
-      "bytes": 85132,
-      "sha256": "a6765ae64011e65198b0762bb353eb920dd7ba42707833bb74b5fc1c86af4ebe"
+      "bytes": 29497,
+      "sha256": "93a71fb8272514a0ec894f4cd2bda4467aa5e9dd7447731bfd7aea0c818d9868"
     },
     {
       "path": "interface/banner_origem.png",
-      "bytes": 104253,
-      "sha256": "0b1e106cd42e79120a56e202246bf01a1f4aee6a0d2f9cf2544ed85eff8561ce"
+      "bytes": 37104,
+      "sha256": "602775f6aff343a520b84a2c112c9394ffb1639a0f0aa73a525e80c173e5dcc3"
     },
     {
       "path": "interface/banner_popular.png",
-      "bytes": 89336,
-      "sha256": "451b31e737f953d42a15feb81b3b105e815901c14988fd6716e52ac3cabe788a"
+      "bytes": 30011,
+      "sha256": "a06187c644921ebef83abfa18d2dbac38af565a0d7a7f8b80da6c6af79f9fcdf"
     },
     {
       "path": "interface/banner_t1_aprendiz.png",
-      "bytes": 90878,
-      "sha256": "d6494500fcd2f6e526ed841c23728b014591aab88ee3a787307cb7c53b23a255"
+      "bytes": 40068,
+      "sha256": "ee25854e66b6b9502bf203830653be83a4b4f611ebd9a1802e3952d13bbcfb5e"
     },
     {
       "path": "interface/banner_t2_veterano.png",
-      "bytes": 119731,
-      "sha256": "604ce116d61252133862839efb87691bd708d5b55a1838ee12ed1f050136a7e6"
+      "bytes": 43481,
+      "sha256": "86a1ffd7dddeb32e5859d6186de51eb1c8443caaccdedb22c2500c0d56f1d052"
     },
     {
       "path": "interface/banner_t3_mistico.png",
-      "bytes": 97026,
-      "sha256": "34de2e0978f0168dd79374cfb2d60f21f521f515188ef23dc239b70b1575a6c5"
+      "bytes": 40637,
+      "sha256": "508b53ae057033c2d4f5b148dd4d8a981d695c071e2ce26380eebb9fc9d64eec"
     },
     {
       "path": "interface/banner_t4_celestial.png",
-      "bytes": 137691,
-      "sha256": "4b922c7d736c6d0490831d71eaf6a1c3f04177c688ec3cda2ba544661ebce58b"
+      "bytes": 47698,
+      "sha256": "912238a2e35a16c2f58cd6b53d64a6c515f8fa0028051497abf9677888fc418b"
     },
     {
       "path": "interface/banner_t4_guardia.png",
-      "bytes": 106222,
-      "sha256": "40b91d3a1c7d227047b09e0d73419c16da556b783598ae4db37d1b6b04d80dd9"
+      "bytes": 40979,
+      "sha256": "4c8c4467f5793abb04c5fc0d38fe744ffb1ed77aa2512f521f0a8efa867fa003"
     },
     {
       "path": "interface/banner_t4_oraculo.png",
-      "bytes": 93755,
-      "sha256": "92daa980ccf26953d67418a80182a36aae75006e30f42292ca78eeeae738e8e2"
+      "bytes": 32658,
+      "sha256": "658c42d7bd76ed36540462951cad1afa7a81685fae0e89a787bffefade7867ba"
     },
     {
       "path": "interface/banner_t4_transcendente.png",
-      "bytes": 115595,
-      "sha256": "00fc06dc41042cd299ed2a9a622221a021c4b55ce0f61e97236512a165a8ea4a"
+      "bytes": 36202,
+      "sha256": "2d1c802d2ac07a01c2400867831a32f03b57991ab39a08dcfe4b30feb33f5224"
     },
     {
       "path": "interface/banner_t5_genesis.png",
-      "bytes": 275935,
-      "sha256": "17043c879b4934abdc940c0db861019b2596160d177428b5435e52e611a66da9"
+      "bytes": 114054,
+      "sha256": "0f1f2895bad4108434c5076a9575fbff090f07d3973c644b9b4e804721fe920a"
     },
     {
       "path": "interface/banner_vanguarda.png",
-      "bytes": 79757,
-      "sha256": "60279ff84e9386bcba2d46e1a472f363cb253bfebf8e6e75c03ba38ac4295b7d"
+      "bytes": 31040,
+      "sha256": "fe90b499af350d4a00b8f6538d55f43a70a4beac7daed865b8590e6e98c7bd21"
     },
     {
       "path": "interface/borda_disciplinado.png",
-      "bytes": 40706,
-      "sha256": "12c5d9d4987e11c3e95d2f26c94f6d5762867376c7e72a2145743ccc5b3638da"
+      "bytes": 14396,
+      "sha256": "9f585c83be2ade586e59d3a523d12b7bec3555c6e2c6b281fd1e0b1b93693690"
     },
     {
       "path": "interface/borda_gm.png",
-      "bytes": 306084,
-      "sha256": "91bdf8769cf67f5fd2b05815692e007a307ff1aae1301c243d4da7b079bbf2cd"
+      "bytes": 97310,
+      "sha256": "be96e6b4d2585d281a5c79842b9c4af08cfd76700a9d481b0bbe050575340032"
     },
     {
       "path": "interface/borda_imparavel.png",
-      "bytes": 88143,
-      "sha256": "c82c7e2aae99faf3dff9051d6e4235fbde80a2dcd8873f68909fa684fcb774ea"
+      "bytes": 30485,
+      "sha256": "70486e274a47a5cef343fd86d4c15e08421fa9e1570d00ff39d0ff7fca788744"
     },
     {
       "path": "interface/borda_lendaviva.png",
-      "bytes": 41630,
-      "sha256": "1a2e4997cee8346f9b944eecaabba722725a5883eb2cc23f48ad1fe44fb29371"
+      "bytes": 14061,
+      "sha256": "71d6e35ba2d199fc256b2b38a8ec9c5696e79a8160b06618f2b3bcab8461fc68"
     },
     {
       "path": "interface/borda_popular.png",
-      "bytes": 189317,
-      "sha256": "5a00ca5620ea6a2ea68cc2892a236da1b16400a8ebe7647fe40741c7fa704928"
+      "bytes": 61120,
+      "sha256": "e22cd3ba55af0f138b783ef95ae8e211c2572e2e8931234bbf3b2341f77bb639"
     },
     {
       "path": "interface/borda_t1_aprendiz.png",
-      "bytes": 208889,
-      "sha256": "4044b3056441f81a77fc757113e64346434df623a99af9b6d61a8b6b2ec3fdb2"
+      "bytes": 74100,
+      "sha256": "4f18380e22ff028f57229806634c129be35c2b1cc21fe708bab2d4b254f6ff61"
     },
     {
       "path": "interface/borda_t2_veterano.png",
-      "bytes": 193716,
-      "sha256": "8c1b0aa691ddaea1f359856c3e486d69da871cb0e34db6d306b25e37c4671352"
+      "bytes": 75699,
+      "sha256": "e8b609ceeffb28dd4d0f4f58839935ac70f00d15f0fe136c2b041ad82f1e373a"
     },
     {
       "path": "interface/borda_t3_mistico.png",
-      "bytes": 221600,
-      "sha256": "3ffe20051af5dff18e9d08f787222905a4ae94ea494201f7b8ebca6374502f5c"
+      "bytes": 89930,
+      "sha256": "644657fed5da928cfbec9a492f97a5a308db6740d8242254e4a33ed7e3cfbaa4"
     },
     {
       "path": "interface/borda_t3_transcendente.png",
-      "bytes": 141103,
-      "sha256": "06a36bfdacec4ac2b69ab2080e97928422c87a15a1ebb97dca589fdd0a3ef59f"
+      "bytes": 57119,
+      "sha256": "ef6b011a009d71ac2aac94d958ba1fb38ddc76efcca051461d8cccdbf6127226"
     },
     {
       "path": "interface/borda_t4_celestial.png",
-      "bytes": 236093,
-      "sha256": "7ff5fd47db665653da0be5f2c25ce9f8ca35d4b8bfbc7fb53ccd9d16a113a460"
+      "bytes": 80269,
+      "sha256": "9a14fb14c2a2e8e59e6a8e44ac115f48392363de012ceacb03a5e12c6d548659"
     },
     {
       "path": "interface/borda_t4_guardia.png",
-      "bytes": 164682,
-      "sha256": "cb9cc238596e58cb132e7338ede36726ce95b01b0176c72956e823f53ba72ee3"
+      "bytes": 69750,
+      "sha256": "aa3ddfeeed5d3ba9eb09d9397fdd9b07ab0cfa2287353c295ba05e7fab8b299e"
     },
     {
       "path": "interface/borda_t4_oraculo.png",
-      "bytes": 136681,
-      "sha256": "5c00663a74ebe90363298b291b1d49ef583d761bae47cdebd24463bf9b827676"
+      "bytes": 59509,
+      "sha256": "49312dafb26aed04d865cfc854717fbb99308e720e48eb3cbe09d0179eb836da"
     },
     {
       "path": "interface/borda_t5_genesis.png",
-      "bytes": 161429,
-      "sha256": "0e95afca12f06fdce56d498a2c40c6cda705c1a08d2b8780a6fb16bbaec79f2e"
+      "bytes": 75475,
+      "sha256": "c721b62ca4aca1253340e47cfa559b166f9a171059734c8ff3e718ceb9dd2906"
     },
     {
       "path": "interface/borda_vanguarda.png",
-      "bytes": 192627,
-      "sha256": "ebd03629b6ab04443fde4636d94de29b5336cf390ecb65badcf5865d3d53a106"
+      "bytes": 82852,
+      "sha256": "d2679a19200384ba2f9d0a081088d185183b2266c1ccec5d975c06b34e98e0b8"
     },
     {
       "path": "void.png",
-      "bytes": 311928,
-      "sha256": "dd14246a3ce2d9d15b0be03dc7666323269f27464a6abbb8b11a9f59e8526e11"
+      "bytes": 89349,
+      "sha256": "84d502ae75b2cad476b4a7d634c3e724abef11fd25f730397b149f9815bc35fd"
     }
   ]
 }

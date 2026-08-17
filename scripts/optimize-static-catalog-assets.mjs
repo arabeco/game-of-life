@@ -37,8 +37,11 @@ for (const filePath of imagePaths.filter((candidate) => candidate.toLowerCase().
     pipeline = pipeline.resize({ width: 512, height: 512, fit: 'inside', withoutEnlargement: true });
   }
 
+  // Palette quantisation rather than lossless recompression. Catalog art is flat,
+  // low-gradient illustration, which quantises well; keeping the .png extension means
+  // no reference anywhere has to change.
   const output = await pipeline
-    .png({ compressionLevel: 9, adaptiveFiltering: true })
+    .png({ compressionLevel: 9, adaptiveFiltering: true, palette: true, quality: 82, effort: 10 })
     .toBuffer();
 
   bytesBefore += input.length;

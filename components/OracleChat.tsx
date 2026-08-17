@@ -1115,41 +1115,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                 {manualQuotaLabel}
               </div>
             </div>
-            <div className="relative min-w-0 flex-1">
-              <div className="pointer-events-none absolute inset-0 rounded-[20px] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0))]" />
-              <div className="relative flex items-center rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(13,17,24,0.96),rgba(6,9,14,0.94))] pl-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_26px_rgba(0,0,0,0.18)]">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Consulte o Oráculo..."
-                  disabled={isLoading}
-                  className="h-12 w-full bg-transparent pl-3 pr-2 text-sm text-white placeholder:text-white/34 focus:outline-none"
-                />
-                {isSpeechAvailable && (
-                  <button
-                    onClick={handleVoiceToggle}
-                    disabled={isLoading}
-                    className={`mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all ${
-                      isListening
-                        ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-200'
-                        : 'border-[var(--skin-accent-color)]/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.02))] text-[var(--skin-accent-color)] hover:border-[var(--skin-accent-color)]/35'
-                    } disabled:opacity-30`}
-                    title={isListening ? 'Gravando...' : 'Comando de voz'}
-                  >
-                    <MicIcon className="w-4 h-4" />
-                  </button>
-                )}
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!input.trim() || isLoading}
-                  className="mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] text-[var(--skin-accent-color)] shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))] disabled:opacity-30 disabled:hover:border-[var(--skin-accent-color)]/22 disabled:hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))]"
-                >
-                  <SendIcon className="w-4 h-4" />
-                </button>
-              </div>
+            {/* Free-form chat removed: it called the model for every user with no
+                premium gate, so its cost grew with signups rather than revenue. The
+                Oracle now speaks through cards and contextual lines only. */}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] font-bold text-[color:var(--ui-card-text)]">{manualGenerateLabel}</p>
+              <p className="mt-0.5 text-[10px] leading-snug text-[color:var(--ui-card-text-soft)]">{oracleInputHint}</p>
             </div>
           </div>
         </div>

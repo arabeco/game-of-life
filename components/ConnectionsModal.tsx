@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import type {
   Arena,
@@ -180,10 +180,22 @@ export const ConnectionsModal: React.FC<{
     [friends, initialRecipientId],
   );
 
+  // Accepting an invite triggers two refreshes: respond() awaits one, and
+  // respondToRelationshipInvite dispatches glyph:relationships-updated, whose listener
+  // fires another. Whichever started first can resolve last, overwriting the list that
+  // already had the new link — the partnership appeared and then vanished. Only the
+  // newest request is allowed to write.
+  const refreshRequestIdRef = useRef(0);
+
   const refresh = useCallback(async (initial = false) => {
+    const requestId = refreshRequestIdRef.current + 1;
+    refreshRequestIdRef.current = requestId;
+    const isStale = () => requestId !== refreshRequestIdRef.current;
+
     initial ? setLoading(true) : setRefreshing(true);
     try {
       const hub = await fetchRelationshipHubData();
+      if (isStale()) return;
       const nextInvites = hub.invites || [];
       const nextLinks = hub.links || [];
       const seeded: Record<string, ProfileLite> = {
@@ -209,26 +221,38 @@ export const ConnectionsModal: React.FC<{
         });
       }
 
+      if (isStale()) return;
+
       setInvites(nextInvites);
       setLinks(nextLinks);
       setLinkedArenas(hub.linkedArenas || []);
       setCompetitionChallenges(hub.competitionChallenges || []);
       setProfiles(seeded);
     } catch (error) {
+      if (isStale()) return;
       console.error('Connections load failed:', error);
       showToast('Nao foi possivel carregar suas conexoes.', 'error');
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (!isStale()) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [fetchRelationshipHubData, friends, showToast, userProfile]);
 
+  // refresh is rebuilt on every provider render because fetchRelationshipHubData is
+  // not memoised. Depending on it here re-ran the initial load continuously, and with
+  // the request guard each in-flight load was invalidated by the next one, so nothing
+  // ever rendered. Go through a ref: load once, and keep one stable listener.
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+
   useEffect(() => {
-    void refresh(true);
-    const handleUpdate = () => void refresh();
+    void refreshRef.current(true);
+    const handleUpdate = () => void refreshRef.current();
     window.addEventListener('glyph:relationships-updated', handleUpdate);
     return () => window.removeEventListener('glyph:relationships-updated', handleUpdate);
-  }, [refresh]);
+  }, []);
 
   const profileFor = (id: string) => profiles[id] || null;
   const otherIdFor = (link: RelationshipLink) => link.mentorId === userProfile.id ? link.pupilId : link.mentorId;

@@ -7,6 +7,7 @@ import { GameProvider, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TERMS_PENDING, 
 import { CodexBuilderProvider, useCodexBuilder } from '../contexts/CodexBuilderContext';
 import { TutorialProvider, useTutorial } from '../contexts/TutorialContext';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
+import { ArenaConfetti } from './ArenaConfetti';
 import { updateInstalledAppBadge } from '../utils/appBadge';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
 import { buildPremiumRewardsToast } from '../utils/premiumRewards';
@@ -1283,6 +1284,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         hideToast,
         isProfileLoaded,
         showToast,
+        oraclePreferences,
     } = useGame();
     const { isTutorialCompleted } = useTutorial();
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ?true : navigator.onLine);
@@ -1307,6 +1309,9 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const [sessionDismissedBroadcastIds, setSessionDismissedBroadcastIds] = useState<string[]>([]);
     const lastToastSignatureRef = useRef('');
     const toastSensorySuppressedUntilRef = useRef(0);
+    const [confettiBurst, setConfettiBurst] = useState<{ key: number; intense: boolean }>({ key: 0, intense: false });
+    // Mesma seccao de Configuracoes que liga som e vibracao controla o confete.
+    const animationsEnabled = oraclePreferences?.animationsEnabled !== false;
     const effectiveUiSkin = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
 
     useEffect(() => {
@@ -1404,11 +1409,19 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                     trigger('success');
                     break;
                 case 'daily_panel_closed':
+                    trigger('success');
+                    break;
                 case 'arena_complete':
                     trigger('success');
+                    if (animationsEnabled) {
+                        setConfettiBurst({ key: detail.timestamp, intense: false });
+                    }
                     break;
                 case 'campaign_complete':
                     trigger('level_up');
+                    if (animationsEnabled) {
+                        setConfettiBurst({ key: detail.timestamp, intense: true });
+                    }
                     break;
                 case 'cycle_seal_start':
                     trigger('whoosh');
@@ -1430,7 +1443,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
 
         window.addEventListener(APP_SENSORY_CUE_EVENT, handleAppSensoryCue as EventListener);
         return () => window.removeEventListener(APP_SENSORY_CUE_EVENT, handleAppSensoryCue as EventListener);
-    }, [trigger]);
+    }, [trigger, animationsEnabled]);
 
     useEffect(() => {
         const handleGoldShortage = (event: Event) => {
@@ -2004,6 +2017,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         onClose={() => setAchievementUnlocked(null)}
                     />
                 )}
+                <ArenaConfetti burstKey={confettiBurst.key} intense={confettiBurst.intense} />
                 {toast.visible && (
                     <GoldenToast
                         message={toast.message}

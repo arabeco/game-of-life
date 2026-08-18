@@ -299,7 +299,6 @@ serve(async (req) => {
           completed_at: new Date().toISOString(),
           metadata: {
             deleted_via: "edge_function",
-            storage_prefixes: storagePrefixes,
             storage_removed_count: removedFiles.length,
             block_reentry: blockReentry,
             reason: deletionReason,

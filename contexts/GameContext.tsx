@@ -41,6 +41,7 @@ import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
+import { ORACLE_FREE_TONE, ORACLE_PREMIUM_TONES, type OracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
 import { FREE_PROGRESS_RESET_FLAG_PREFIX, buildFreeProgressResetFlag, filterTasksAfterFreeProgressReset, getFreeProgressResetAt } from '../utils/freeProgressScope';
@@ -12042,6 +12043,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
     };
 
+    const oracleTone: OracleSpeechTone = (() => {
+        if (!hasPremiumAccess(userProfile)) return ORACLE_FREE_TONE;
+        const saved = oraclePreferences?.speechTone;
+        return saved && ORACLE_PREMIUM_TONES.includes(saved) ? saved : ORACLE_FREE_TONE;
+    })();
+
     const taskDomain = createTaskDomain({
         tasks,
         activeCycle,
@@ -12060,6 +12067,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         getSupabaseUserId,
         isClanQuestActionId,
         showToast,
+        oracleTone,
         updateClanMissionProgress,
         updateCustomClanMissionProgress,
         handleCompetitionArenaCompletion: resolveCompetitionChallengeOutcome,

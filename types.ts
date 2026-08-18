@@ -1219,6 +1219,8 @@ export interface LinkNotificationLog {
 
 // --- Oracle System ---
 
+import type { OracleSpeechTone } from './constants/oracleSpeechLibrary';
+
 export type OracleMode = 'calmo' | 'reflexivo' | 'tatico' | 'estrategico' | 'coach' | 'personalizado' | 'neutro';
 export type OraclePresenceLevel = 0 | 1 | 2 | 3;
 
@@ -1248,6 +1250,9 @@ export interface OraclePreferences {
   // Local-only policy for proactive oracle notifications (not persisted in Supabase schema).
   sentinelMode?: 'soberano_ativo' | 'apenas_necessarias' | 'nao_ia';
   enabledCategories: OracleCategory[];
+  // Tom das falas do Oraculo (oracleSpeechLibrary). Beneficio Premium;
+  // sem assinatura o app resolve para 'neutro' independente do que estiver salvo.
+  speechTone?: OracleSpeechTone;
   activeMode: OracleMode;
   customModeInstructions?: string;
   quietHoursStart: string;

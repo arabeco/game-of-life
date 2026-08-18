@@ -8,6 +8,7 @@ import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../
 import { emitArenaAttention } from '../../utils/arenaAttention';
 import { emitAppSensoryCue } from '../../utils/sensoryCue';
 import { emitOracleSpeech } from '../../utils/oracleSpeech';
+import { pickOracleSpeech, ORACLE_FREE_TONE, type OracleSpeechTone } from '../../constants/oracleSpeechLibrary';
 import { PRODUCT_FEATURES } from '../../constants/featureFlags';
 
 type ToastTone = 'success' | 'error' | 'info' | 'warning';
@@ -17,7 +18,6 @@ type CompletionAttentionResult = 'arena' | 'campaign' | null;
 
 const DAY_MAP: DayOfWeek[] = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 
-const pickOracleLine = (lines: string[]) => lines[Math.floor(Math.random() * lines.length)] || lines[0] || '';
 
 export interface TaskDomainApi {
     scheduleMultipleTasks: (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => Promise<void>;
@@ -53,6 +53,7 @@ interface CreateTaskDomainParams {
     getSupabaseUserId: () => string | null | undefined;
     isClanQuestActionId: (actionId: string) => boolean;
     showToast: (message: string, tone: ToastTone) => void;
+    oracleTone?: OracleSpeechTone;
     updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
     updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
     handleCompetitionArenaCompletion?: (arenaId: string) => Promise<void>;
@@ -89,6 +90,7 @@ export const createTaskDomain = ({
     getSupabaseUserId,
     isClanQuestActionId,
     showToast,
+    oracleTone = ORACLE_FREE_TONE,
     updateClanMissionProgress,
     updateCustomClanMissionProgress,
     handleCompetitionArenaCompletion,
@@ -309,14 +311,8 @@ export const createTaskDomain = ({
         emitOracleSpeech({
             title: campaignJustCleared ? 'Campanha' : 'Arena',
             message: campaignJustCleared && parentCampaign
-                ? pickOracleLine([
-                    `Campanha "${parentCampaign.title}" fechada. Boa. Agora deixa esse marco assentar antes de abrir outra frente grande.`,
-                    `"${parentCampaign.title}" concluiu. Isso ja e um bloco inteiro de vida organizado, nao so uma tarefa.`,
-                ])
-                : pickOracleLine([
-                    `Arena "${arena.name}" concluida. Muito bem. Essa frente ganhou forma real.`,
-                    `"${arena.name}" fechou. Boa. Agora vale registrar o que funcionou antes de empilhar outra coisa.`,
-                ]),
+                ? pickOracleSpeech('campaign_completed', oracleTone, { campaign: parentCampaign.title })
+                : pickOracleSpeech('arena_completed', oracleTone, { arena: arena.name }),
             tone: 'success',
             durationMs: campaignJustCleared ? 5600 : 5000,
         });
@@ -364,20 +360,10 @@ export const createTaskDomain = ({
         const crossedThreshold = [3, 5, 8].find((threshold) => previousCount < threshold && nextCount >= threshold);
         if (!crossedThreshold) return;
 
-        const message = crossedThreshold >= 8
-            ? pickOracleLine([
-                `${crossedThreshold} acoes reais hoje. Muito bem; agora protege o fechamento.`,
-                `${crossedThreshold} acoes reais no dia. Bom ritmo. Agora nao precisa provar mais nada, precisa fechar limpo.`,
-            ])
-            : crossedThreshold >= 5
-                ? pickOracleLine([
-                    `${crossedThreshold} acoes reais hoje. O dia ganhou corpo.`,
-                    `${crossedThreshold} entregas reais. Boa. Agora escolhe a proxima sem inflar o dia.`,
-                ])
-                : pickOracleLine([
-                    `${crossedThreshold} acoes reais hoje. Muito bem.`,
-                    `Tres acoes reais ja mudam o dia. Continua com calma.`,
-                ]);
+        const repsEvent = crossedThreshold >= 8
+            ? 'daily_reps_high'
+            : crossedThreshold >= 5 ? 'daily_reps_mid' : 'daily_reps_low';
+        const message = pickOracleSpeech(repsEvent, oracleTone, { count: crossedThreshold });
 
         emitOracleSpeech({
             title: crossedThreshold >= 8 ? 'Fechamento' : 'Ritmo',
@@ -416,25 +402,17 @@ export const createTaskDomain = ({
         const cappedCount = Math.min(nextCount, target);
         const remaining = Math.max(0, target - cappedCount);
         const actionName = action.name || 'essa acao';
-        const message = remaining === 0
-            ? pickOracleLine([
-                `${actionName}: ${cappedCount}/${target} no ciclo. Fechou a meta dessa acao.`,
-                `${actionName} completou o combinado do ciclo: ${cappedCount}/${target}. Boa.`,
-            ])
+        const goalEvent = remaining === 0
+            ? 'cycle_goal_met'
             : remaining === 1
-                ? pickOracleLine([
-                    `${actionName}: ${cappedCount}/${target} no ciclo. Falta so 1 para fechar essa meta.`,
-                    `Boa. ${actionName} esta quase la: ${cappedCount}/${target}.`,
-                ])
-                : cappedCount === 1
-                    ? pickOracleLine([
-                        `${actionName} entrou no ciclo: 1/${target}. Agora e so manter sem inflar.`,
-                        `Primeira de ${actionName} registrada neste ciclo. Faltam ${remaining}.`,
-                    ])
-                    : pickOracleLine([
-                        `${actionName}: ${cappedCount}/${target} no ciclo. Faltam ${remaining}.`,
-                        `Boa. ${actionName} ja tem ${cappedCount} entregas no ciclo; restam ${remaining}.`,
-                    ]);
+                ? 'cycle_goal_last_one'
+                : cappedCount === 1 ? 'cycle_goal_first' : 'cycle_goal_progress';
+        const message = pickOracleSpeech(goalEvent, oracleTone, {
+            action: actionName,
+            count: cappedCount,
+            target,
+            remaining,
+        });
 
         emitOracleSpeech({
             title: remaining === 0 ? 'Meta' : 'Progresso',
@@ -1055,10 +1033,7 @@ export const createTaskDomain = ({
             emitAppSensoryCue('task_complete');
             emitOracleSpeech({
                 title: 'Marco',
-                message: pickOracleLine([
-                    `Marco "${action.name}" concluido. Isso muda o desenho do ciclo.`,
-                    `"${action.name}" foi concluida. Boa. Esse era um ponto de passagem, nao so mais uma acao.`,
-                ]),
+                message: pickOracleSpeech('milestone_completed', oracleTone, { action: action.name }),
                 tone: 'success',
                 durationMs: 5000,
             });

@@ -15,6 +15,12 @@ import {
     type AppPushPermission,
     type AppPushSyncResult,
 } from '../utils/pushRuntime';
+import {
+    ORACLE_FREE_TONE,
+    ORACLE_PREMIUM_TONES,
+    ORACLE_TONE_LABELS,
+    type OracleSpeechTone,
+} from '../constants/oracleSpeechLibrary';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
 
@@ -216,6 +222,11 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         });
     };
 
+    const handleToneChange = (tone: OracleSpeechTone) => {
+        if (tone !== ORACLE_FREE_TONE && !isPremium) return;
+        updateOraclePreferences({ speechTone: tone });
+    };
+
     const handleCategoryToggle = (category: OracleCategory) => {
         const current = oraclePreferences.enabledCategories || [];
         const next = current.includes(category)
@@ -256,6 +267,55 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         </div>
     );
 
+
+    // Jeito de falar: muda so o texto que o Oraculo solta no momento do evento.
+    // Nao mexe nos cards de conteudo nem nos avisos de sistema.
+    const renderToneChooser = () => {
+        const saved = oraclePreferences.speechTone;
+        const current: OracleSpeechTone = saved && (saved === ORACLE_FREE_TONE || (isPremium && ORACLE_PREMIUM_TONES.includes(saved)))
+            ? saved
+            : ORACLE_FREE_TONE;
+        const tones: OracleSpeechTone[] = [ORACLE_FREE_TONE, ...ORACLE_PREMIUM_TONES];
+
+        return (
+            <div className="rounded-2xl border border-white/10 bg-black/24 p-3">
+                <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Jeito de falar</div>
+                        <div className="mt-1 text-sm font-black text-white">{ORACLE_TONE_LABELS[current].name}</div>
+                    </div>
+                    {!isPremium && (
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/12 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-amber-200">
+                            Premium
+                        </span>
+                    )}
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-gray-400">{ORACLE_TONE_LABELS[current].hint}</p>
+                <div className="mt-3 grid grid-cols-2 gap-1 text-center">
+                    {tones.map((tone) => {
+                        const locked = tone !== ORACLE_FREE_TONE && !isPremium;
+                        return (
+                            <button
+                                key={tone}
+                                type="button"
+                                onClick={() => handleToneChange(tone)}
+                                disabled={locked}
+                                className={`rounded-lg px-1 py-1.5 text-[9px] font-black uppercase tracking-[0.08em] transition-colors ${
+                                    current === tone
+                                        ? 'bg-[var(--skin-accent-color)]/16 text-white'
+                                        : locked
+                                            ? 'cursor-not-allowed bg-white/[0.02] text-white/20'
+                                            : 'bg-white/[0.035] text-white/38 hover:text-white/70'
+                                }`}
+                            >
+                                {ORACLE_TONE_LABELS[tone].name}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
 
     const renderPresenceSlider = () => {
         const storedLevel = oraclePreferences.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL;
@@ -345,6 +405,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         {variant === 'preferences' ? (
                             <div className="space-y-4">
                                 {renderPresenceSlider()}
+                                {renderToneChooser()}
 
                                 <div className="space-y-2 pt-1">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Temas dos cards</h3>
@@ -379,7 +440,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     })}
                                 </div>
 
-                                {false && <div className="space-y-2">
+                                <div className="space-y-2">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Sensorial</h3>
                                     {renderSwitchRow({
                                         icon: '✨',
@@ -402,7 +463,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                         enabled: Boolean(oraclePreferences.hapticsEnabled),
                                         onToggle: () => handleToggle('hapticsEnabled'),
                                     })}
-                                </div>}
+                                </div>
                             </div>
                         ) : (
                             renderManualLibraryCategories()

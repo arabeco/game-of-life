@@ -130,8 +130,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     },
     {
         category: 'MUNDO',
-        title: '11. ORACULO E ACAO',
-        text: 'O Oraculo le o contexto da sua jornada. Quando voce quiser ajuda, ele pode sugerir o proximo passo ou criar estrutura com voce.',
+        title: '11. ORACULO',
+        text: 'O Oraculo comenta o que acontece: arena fechada, meta batida, dia que ganhou corpo. Voce escolhe o quanto ele aparece e, no Premium, em que tom ele fala.',
         view: 'assets',
         targetId: 'header-oracle',
     },

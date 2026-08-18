@@ -148,7 +148,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         };
     }, []);
 
-    const handleQuickActionStart = (action: 'mood' | 'clan' | 'deepwork' | 'real_oracle' | 'checklist') => {
+    const handleQuickActionStart = (action: 'mood' | 'deepwork' | 'real_oracle' | 'checklist') => {
         if (actionHoldInterval.current) return;
 
         const startTime = Date.now();
@@ -176,22 +176,15 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         setActionProgress(null);
     };
 
-    const handleQuickAction = (action: 'mood' | 'clan' | 'deepwork' | 'real_oracle' | 'checklist') => {
+    const handleQuickAction = (action: 'mood' | 'deepwork' | 'real_oracle' | 'checklist') => {
         if (action === 'mood') {
             setIsMoodOpen(true);
         } else if (action === 'checklist') {
             setIsChecklistOpen(true);
         } else if (action === 'deepwork') {
             setIsDeepWorkOpen(true);
-        } else if (action === 'real_oracle') {
-            onOpenOracle?.();
         } else {
-            // For others, close RestScreen and then open the modal via callback
-            setIsClosing(true);
-            setTimeout(() => {
-                onClose();
-                if (action === 'clan') onOpenClan?.();
-            }, 700);
+            onOpenOracle?.();
         }
     };
 

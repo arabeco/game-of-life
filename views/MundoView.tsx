@@ -461,7 +461,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                     subtitle="Pedido de entrada enviado"
                                     badges={
                                         <span className="rounded-full border border-amber-400/24 bg-amber-400/12 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-amber-200">
-                                            {request.clanProfile?.icon || '🛡️'} Grupo
+                                            <ClanEmblem value={request.clanProfile?.icon} className="mr-1 h-4 w-4" /> Grupo
                                         </span>
                                     }
                                     actions={
@@ -692,7 +692,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                     return (
                                         <GlassCard key={c.id} variant="neutral" className="p-3">
                                             <div className="flex items-center space-x-4">
-                                                <span className="text-4xl">{c.icon}</span>
+                                                <ClanEmblem value={c.icon} className="h-12 w-12 shrink-0 text-4xl" />
                                                 <div className="flex-grow">
                                                     <h4 className="font-bold text-white">{c.name}</h4>
                                                     <p className="text-xs text-gray-400">{rank?.name || 'N/A'} · {c.clanType} · Entrada {c.recruitmentStatus}</p>

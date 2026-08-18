@@ -152,7 +152,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         if (actionHoldInterval.current) return;
 
         const startTime = Date.now();
-        const duration = action === 'real_oracle' ? 140 : 600; // Oraculo abre como toque; os outros continuam com segurada.
+        const duration = 600;
 
         actionHoldInterval.current = window.setInterval(() => {
             const elapsed = Date.now() - startTime;
@@ -1111,11 +1111,15 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                         {/* ORACLE INDICATOR */}
                         <button
                             type="button"
-                            onClick={() => handleQuickAction('real_oracle')}
+                            onMouseDown={() => handleQuickActionStart('real_oracle')}
+                            onMouseUp={handleQuickActionEnd}
+                            onMouseLeave={handleQuickActionEnd}
+                            onTouchStart={() => handleQuickActionStart('real_oracle')}
+                            onTouchEnd={handleQuickActionEnd}
                             className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
                             aria-label="Abrir Oraculo"
                         >
-                            <div className="relative flex h-12 w-12 items-center justify-center overflow-visible">
+                            <div className={`relative flex h-10 w-10 items-center justify-center overflow-visible rounded-full border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg transition-colors group-hover:border-[var(--skin-accent-color)]/50 ${actionProgress?.id === 'real_oracle' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
                                 {actionProgress?.id === 'real_oracle' && (
                                     <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none" viewBox="0 0 100 100">
                                         <circle

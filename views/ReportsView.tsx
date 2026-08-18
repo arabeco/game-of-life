@@ -922,6 +922,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         let chestType: ChestType | null = null;
 
+        // Lendario voltou a ser bau proprio, com T5 em 60%, e nao mais apelido
+        // do bau de temporada. Ciclo excepcional rende lendario; item de
+        // temporada continua so na missao de temporada.
         if (awardedExp >= 25000 && score >= 90) chestType = 'Lendário';
         else if (awardedExp >= 12000 && score >= 80) chestType = 'Épico';
         else if (awardedExp >= 5000 && score >= 70) chestType = 'Raro';

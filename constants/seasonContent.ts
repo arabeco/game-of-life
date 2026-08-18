@@ -448,9 +448,9 @@ export const GM_SEASONS: Season[] = Object.values(SEASONS).map((season) => ({
 }));
 
 export const GM_SEASON_MISSIONS: SeasonMission[] = [
-  { id: 'sm_1', season_id: 'season-genesis-0', title: 'O Peregrino', description: 'Correr um total de 50km. (Recompensa: 1 Bau Comum)', goal_type: 'km_run', goal_value: 50, reward_type: 'exp', reward_value: 2250 },
-  { id: 'sm_2', season_id: 'season-genesis-0', title: 'O Sabio', description: 'Ler 1 livro completo. (Recompensa: 1 Bau Comum)', goal_type: 'books_read', goal_value: 1, reward_type: 'exp', reward_value: 1125 },
-  { id: 'sm_3', season_id: 'season-genesis-0', title: 'O Monge', description: 'Meditar por 20 dias. (Recompensa: 1 Bau Comum)', goal_type: 'meditation_days', goal_value: 20, reward_type: 'exp', reward_value: 1800 },
+  { id: 'sm_1', season_id: 'season-genesis-0', title: 'O Peregrino', description: 'Correr um total de 50km. (Recompensa: 1 Bau Season)', goal_type: 'km_run', goal_value: 50, reward_type: 'chest', reward_value: 'Season', reward_exp: 2250 },
+  { id: 'sm_2', season_id: 'season-genesis-0', title: 'O Sabio', description: 'Ler 1 livro completo. (Recompensa: 1 Bau Season)', goal_type: 'books_read', goal_value: 1, reward_type: 'chest', reward_value: 'Season', reward_exp: 1125 },
+  { id: 'sm_3', season_id: 'season-genesis-0', title: 'O Monge', description: 'Meditar por 20 dias. (Recompensa: 1 Bau Season)', goal_type: 'meditation_days', goal_value: 20, reward_type: 'chest', reward_value: 'Season', reward_exp: 1800 },
   {
     id: 'sm_aurora_meta_1',
     season_id: 'season-aurora-1-2026',

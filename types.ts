@@ -1015,8 +1015,11 @@ export interface SeasonMission {
     | 'report_completed'
     | 'quests_claimed';
   goal_value: number;
-  reward_type: 'exp' | 'item_id';
+  reward_type: 'exp' | 'item_id' | 'chest';
   reward_value: number | string;
+  /** EXP paga junto do bau ou do item. Missao com reward_type 'exp' usa
+   *  reward_value e ignora este campo. */
+  reward_exp?: number;
   type?: 'individual' | 'clan';
   action_name?: string;
   icon?: string;

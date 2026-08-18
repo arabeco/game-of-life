@@ -8781,9 +8781,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const completed = userProfile.completedSeasonMissions || [];
         if (completed.includes(mission.id)) return;
 
+        // O bau que a descricao promete. O EXP continua vindo junto por
+        // reward_exp, entao trocar de 'exp' para 'chest' nao tira nada.
+        if (mission.reward_type === 'chest' && typeof mission.reward_value === 'string') {
+            void addChest(mission.reward_value as ChestType);
+        }
+
         // Handle XP Reward - Adds to Cycle Bonus to be computed at Cycle End
-        if (mission.reward_type === 'exp') {
-            const xpAmount = Number(mission.reward_value);
+        if (mission.reward_type === 'exp' || mission.reward_exp) {
+            const xpAmount = Number(mission.reward_type === 'exp' ? mission.reward_value : mission.reward_exp);
             if (!isNaN(xpAmount) && xpAmount > 0) {
                 setCycleExpBonus(prev => prev + xpAmount);
                 bankCycleExp(activeCycle?.id, xpAmount);

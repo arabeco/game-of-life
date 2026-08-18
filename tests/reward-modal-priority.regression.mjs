@@ -37,6 +37,9 @@ assert.doesNotMatch(appSource, /setDailyCompletionPrompt\(customEvent\.detail\)/
 assert.match(reportsSource, /ensurePostCycleRewardsGranted/);
 assert.match(reportsSource, /ReportResultCarousel/);
 assert.match(reportsSource, /RewardPackModal/);
-assert.match(achievementSource, /DESAFIO CONCLUÍDO/);
+// A copia gritada saiu junto com o modo do app: hoje existe um texto so,
+// sobrio, para todo mundo. O que importa aqui e o modal ainda tratar o
+// desafio como caso proprio, nao o tom da frase.
+assert.match(achievementSource, /COMPETITION_COMPLETED/);
 
 console.log('Reward modal regression: daily summary, season, cycle, challenge and rank flows are wired and gated.');

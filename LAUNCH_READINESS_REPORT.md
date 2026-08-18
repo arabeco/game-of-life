@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-08-18T13:59:30.758Z
+- Generated at: 2026-08-18T21:35:50.645Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (14.8s)
+- Build: PASS (10.3s)
 
 ## Checks
 
@@ -19,7 +19,7 @@
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.2s)
+### PASS - Reward modal priority regression (0.1s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -41,21 +41,21 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (17.7s)
+### PASS - Onboarding happy path (20.6s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (15.1s)
+### PASS - Campaign quiz flow (16.2s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (16.7s)
+### PASS - Cycle report flow (18.0s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas

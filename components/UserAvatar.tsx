@@ -44,6 +44,9 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
                         referrerPolicy="no-referrer"
                         {...imgProps}
                         onError={(event) => {
+                            // Sem isto a queda para as iniciais e silenciosa e nao da
+                            // para distinguir "nao tem foto" de "a foto nao carregou".
+                            console.error(`Failed to load avatar: ${normalizedAvatarUrl}`);
                             setFailedAvatarUrl(normalizedAvatarUrl);
                             imgProps?.onError?.(event);
                         }}

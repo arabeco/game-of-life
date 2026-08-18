@@ -43,6 +43,13 @@ const LEGACY_PREVIEW_BACKDROP_URL = '/legacy-skins/10.jpg';
 const LEGACY_SCENE_GOLD_COST = getGoldMechanicPrice('legacy_projection_scene', 50);
 const LEGACY_PREVIEW_STAGE_WIDTH = 390;
 const LEGACY_PREVIEW_STAGE_HEIGHT = 844;
+// A cena vive num palco de tamanho fixo e e reduzida para caber na tela.
+// O desconto abaixo e o cromo do modal em volta do palco. Sem ele a conta usa
+// a tela inteira, o palco sai maior que a caixa que o segura e o overflow-hidden
+// come o rodape - era a "cena cortada". Os dois estagios tem cromo diferente.
+const LEGACY_STAGE_INSET_X = 60;         // px-6 (48) + p-1.5 (12)
+const LEGACY_PREVIEW_INSET_Y = 108;      // pb-24 (96) + p-1.5 (12)
+const LEGACY_COMPLETION_INSET_Y = 172;   // py-20 (160) + p-1.5 (12)
 
 const LayoutSlider: React.FC<{
     label: string;
@@ -108,12 +115,16 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     const previewPlaqueWidth = LEGACY_PREVIEW_PLAQUE_BASE_WIDTH;
     const previewPlaqueScale = getLegacyPreviewPlaqueScale(previewLayout);
     const selectedBackdropSkin = useMemo(() => getLegacyBackdropSkin(selectedBackdropSkinId), [selectedBackdropSkinId]);
-    const previewStageScale = Math.min(
-        Math.max((viewportSize.width - 10) / LEGACY_PREVIEW_STAGE_WIDTH, 0.1),
-        Math.max((viewportSize.height - 10) / LEGACY_PREVIEW_STAGE_HEIGHT, 0.1),
+    const fitStageScale = (insetY: number) => Math.min(
+        Math.max((viewportSize.width - LEGACY_STAGE_INSET_X) / LEGACY_PREVIEW_STAGE_WIDTH, 0.1),
+        Math.max((viewportSize.height - insetY) / LEGACY_PREVIEW_STAGE_HEIGHT, 0.1),
     );
+    const previewStageScale = fitStageScale(LEGACY_PREVIEW_INSET_Y);
     const previewStageWidth = LEGACY_PREVIEW_STAGE_WIDTH * previewStageScale;
     const previewStageHeight = LEGACY_PREVIEW_STAGE_HEIGHT * previewStageScale;
+    const completionStageScale = fitStageScale(LEGACY_COMPLETION_INSET_Y);
+    const completionStageWidth = LEGACY_PREVIEW_STAGE_WIDTH * completionStageScale;
+    const completionStageHeight = LEGACY_PREVIEW_STAGE_HEIGHT * completionStageScale;
     const updatePreviewLayout = useCallback((patch: Partial<LegacyPreviewLayoutConfig>) => {
         setStoredLegacyPreviewLayoutConfig({ ...previewLayout, ...patch });
     }, [previewLayout]);
@@ -229,17 +240,20 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                 className="pointer-events-none absolute inset-0 opacity-100"
                 style={{
                     backgroundImage: `url(${LEGACY_PREVIEW_BACKDROP_URL})`,
-                    backgroundPosition: 'center 12%',
+                    // 'cover' + zoom + overflow-hidden do pai: a arte enche a tela do
+                    // aparelho e o que sobra e cortado. Nao encolhe para caber, porque
+                    // cada aparelho tem uma proporcao e encaixar deixava faixa vazia.
+                    // Em tablet o corte vertical e grande - e aceito de proposito.
+                    backgroundPosition: 'center center',
                     backgroundSize: 'cover',
                     backgroundRepeat: 'no-repeat',
-                    transform: `scale(${Math.max(previewLayout.backdropZoom, 1.04)})`,
+                    transform: `scale(${previewLayout.backdropZoom})`,
                     transformOrigin: 'center center',
-                    filter: 'blur(16px) saturate(0.92) brightness(0.62)',
-                    opacity: 0.58,
+                    filter: 'saturate(0.96) brightness(0.82)',
                 }}
             />
 
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.06),rgba(0,0,0,0.2)_100%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.30),rgba(0,0,0,0.12)_38%,rgba(0,0,0,0.52)_100%)]" />
 
             {showLayoutEditors && (
                 <div className="absolute right-20 top-4 z-20 flex flex-col items-end gap-2">
@@ -278,20 +292,6 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                         className="relative flex h-full w-full flex-col overflow-hidden px-6 pb-24 pt-5 text-white"
                         style={{ width: `${LEGACY_PREVIEW_STAGE_WIDTH}px`, height: `${LEGACY_PREVIEW_STAGE_HEIGHT}px`, transform: `scale(${previewStageScale})`, transformOrigin: 'top left' }}
                     >
-                        <div
-                            aria-hidden="true"
-                            className="pointer-events-none absolute inset-0"
-                            style={{
-                                backgroundImage: `url(${LEGACY_PREVIEW_BACKDROP_URL})`,
-                                backgroundPosition: 'center 12%',
-                                backgroundSize: 'cover',
-                                backgroundRepeat: 'no-repeat',
-                                transform: `scale(${previewLayout.backdropZoom})`,
-                                transformOrigin: 'center top',
-                            }}
-                        />
-                        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02),rgba(0,0,0,0.15)_100%)]" />
-
                         <div
                             className="relative z-10 mx-auto w-full"
                             style={{
@@ -347,41 +347,26 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                 className="pointer-events-none absolute inset-0 opacity-100"
                 style={{
                     backgroundImage: `url(${LEGACY_PREVIEW_BACKDROP_URL})`,
-                    backgroundPosition: 'center 12%',
+                    backgroundPosition: 'center center',
                     backgroundSize: 'cover',
                     backgroundRepeat: 'no-repeat',
                     transform: 'scale(1.08)',
-                    transformOrigin: 'center top',
-                    filter: 'blur(14px) saturate(0.92) brightness(0.6)',
-                    opacity: 0.58,
+                    transformOrigin: 'center center',
+                    filter: 'saturate(0.96) brightness(0.78)',
                 }}
             />
 
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.16),rgba(0,0,0,0.32)_100%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.34),rgba(0,0,0,0.16)_38%,rgba(0,0,0,0.56)_100%)]" />
 
             <div className="relative z-10 flex min-h-full w-full items-center justify-center p-1.5">
                 <div
                     className="relative overflow-hidden"
-                    style={{ width: `${previewStageWidth}px`, height: `${previewStageHeight}px` }}
+                    style={{ width: `${completionStageWidth}px`, height: `${completionStageHeight}px` }}
                 >
                     <div
                         className="relative flex h-full w-full flex-col overflow-hidden px-6 pb-14 pt-5 text-white"
-                        style={{ width: `${LEGACY_PREVIEW_STAGE_WIDTH}px`, height: `${LEGACY_PREVIEW_STAGE_HEIGHT}px`, transform: `scale(${previewStageScale})`, transformOrigin: 'top left' }}
+                        style={{ width: `${LEGACY_PREVIEW_STAGE_WIDTH}px`, height: `${LEGACY_PREVIEW_STAGE_HEIGHT}px`, transform: `scale(${completionStageScale})`, transformOrigin: 'top left' }}
                     >
-                        <div
-                            aria-hidden="true"
-                            className="pointer-events-none absolute inset-0"
-                            style={{
-                                backgroundImage: `url(${LEGACY_PREVIEW_BACKDROP_URL})`,
-                                backgroundPosition: 'center 12%',
-                                backgroundSize: 'cover',
-                                backgroundRepeat: 'no-repeat',
-                                transform: 'scale(1.06)',
-                                transformOrigin: 'center top',
-                            }}
-                        />
-                        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.04),rgba(0,0,0,0.18)_100%)]" />
-
                         <div className="relative z-10 flex h-full flex-col items-center">
                             <div className="mt-[92px] rounded-full border border-[var(--skin-accent-color)]/24 bg-black/42 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-amber-200/90 backdrop-blur-xl">
                                 Sequencia concluida

@@ -4,9 +4,16 @@
 Gerar um background vertical para a cena do `Legado`, pensado para mobile, com composicao cinematografica e espaco real para a UI do app.
 
 ## Formato
-- proporcao: `9:16`
-- resolucao alvo: `1080 x 1920`
+- proporcao: `9:19.5`
+- resolucao alvo: `1080 x 2340`
 - orientacao: `vertical`
+
+> Corrigido em 18/08/2026. Antes pedia `9:16` / `1080x1920`, e por isso as artes
+> antigas nunca enquadraram. O palco do app e 390x844 (proporcao 0.462), nao
+> 0.5625. Com `background-size: cover`, uma arte 9:16 e escalada pela altura e
+> perde cerca de 18% da largura, 9% em cada lado - antes de qualquer zoom.
+> Com o `backdropZoom` padrao de 1.1 a perda passa de 25%. Ou seja: um quarto
+> da arte nunca chega na tela, e sempre pelas beiradas.
 
 ## Composicao obrigatoria
 - cenario tipo santuario / sala ritual / altar de memoria
@@ -46,11 +53,22 @@ Gerar um background vertical para a cena do `Legado`, pensado para mobile, com c
 - nenhum frame decorativo exagerado ocupando a tela toda
 
 ## Safe areas
-- deixar o centro da imagem relativamente limpo
-- evitar detalhes muito fortes nestas zonas:
-  - `x: 18% -> 82% / y: 8% -> 44%` (placa principal)
-  - `x: 10% -> 90% / y: 54% -> 92%` (cards de ciclo)
-- detalhes mais fortes podem viver nas laterais e bordas
+
+Medidas do codigo, nao estimadas. Palco de 390x844, placa com `marginTop 102`
+e `plaqueOffsetY 120`, largura base 312 com `plaqueZoom 0.98`, botao em
+`bottom-5`. Ver `utils/legacyLayoutLab.ts` e `components/LegacyProjectionModal.tsx`.
+
+Tela anterior a cena (o que se ve antes de gerar):
+
+- `x: 11% -> 89% / y: 26% -> 48%` - placa do legado, area mais protegida
+- `x: 18% -> 82% / y: 90% -> 98%` - botao de gerar a cena
+- `y: 0% -> 26%` - respiro acima da placa, aguenta arquitetura e luz
+- `y: 48% -> 90%` - vazio hoje, e onde a composicao pode trabalhar
+
+Cuidado com as bordas laterais: sao elas que o `cover` corta primeiro.
+Nada essencial nos 12% de cada lado.
+
+Detalhes fortes podem viver no topo e na base central.
 
 ## Mood
 - serio

@@ -614,7 +614,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                             <div className="text-[10px] font-black tracking-[0.28em] text-white/45 uppercase">Guias</div>
                             <h2 className="text-base font-black uppercase tracking-[0.14em] text-center">Aprender o app</h2>
                             <p className="text-[11px] text-white/55 leading-snug">
-                                Aqui voce reabre os cards guiados do app. No basico voce revisita os cards 1 e 2. Ativando o Modo Jogo em Preferencias, entram os cards 3 e 4 com progresso, mundo e recursos extras.
+                                Aqui voce reabre os cards guiados do app. Todos ficam disponiveis, na ordem que quiser.
                             </p>
                         </div>
                     </div>

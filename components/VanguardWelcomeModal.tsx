@@ -64,7 +64,7 @@ export const VanguardWelcomeModal: React.FC<VanguardWelcomeModalProps> = ({
       itemSectionTitle: basePayload.itemSectionTitle || 'Itens da Vanguarda',
       emptyMessage:
         basePayload.emptyMessage ||
-        'Seu pacote da Vanguarda ja foi entregue ao Arsenal. Entre no modo Jogo quando quiser ver e equipar cada recompensa.',
+        'Seu pacote da Vanguarda ja foi entregue ao Arsenal. Abra o inventario quando quiser ver e equipar cada recompensa.',
       rewardHighlightsTitle: basePayload.rewardHighlightsTitle || 'Entregue agora',
       rewardHighlights:
         hasHighlights
@@ -102,7 +102,7 @@ export const VanguardWelcomeModal: React.FC<VanguardWelcomeModalProps> = ({
       fallbackSummary="Seu acesso foi selado pelo convite ouro. O pacote real da Vanguarda ja foi integrado ao seu perfil."
       fallbackButtonLabel="Entrar na Vanguarda"
       fallbackItemSectionTitle="Itens da Vanguarda"
-      fallbackEmptyMessage="Seu pacote da Vanguarda ja foi entregue ao Arsenal. Entre no modo Jogo quando quiser ver e equipar cada item recebido."
+      fallbackEmptyMessage="Seu pacote da Vanguarda ja foi entregue ao Arsenal. Abra o inventario quando quiser ver e equipar cada item recebido."
       fallbackMetricCards={fallbackMetricCards}
     />
   );

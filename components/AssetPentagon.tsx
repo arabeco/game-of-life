@@ -1,6 +1,6 @@
 import React from 'react';
 import { Asset } from '../types';
-import { LIFE_AREAS, MASTERY_AREA_MAX_LEVEL, MASTERY_TOTAL_MAX_LEVEL, toMasteryIndex } from '../constants/lifeAreas';
+import { LIFE_AREAS, MASTERY_AREA_MAX_LEVEL, MASTERY_TOTAL_MAX_LEVEL, getMasteryIndexFromLevels } from '../constants/lifeAreas';
 import { SvgRadarChart } from './SvgRadarChart';
 
 interface AssetPentagonProps {
@@ -20,7 +20,7 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
     .map((area) => ({ area, asset: assets.find((asset) => asset.id === area.id) }))
     .filter((entry): entry is { area: typeof LIFE_AREAS[number]; asset: Asset } => Boolean(entry.asset));
   const levels = chartAreas.map(({ asset }) => tempLevels?.[asset.id] ?? Math.max(1, asset.level || 1));
-  const masteryIndex = toMasteryIndex(levels.reduce((sum, level) => sum + Number(level || 0), 0));
+  const masteryIndex = getMasteryIndexFromLevels(levels);
   const labels = chartAreas.map(({ area }) => area.shortName);
 
   const goldMetallic = '#705E43';

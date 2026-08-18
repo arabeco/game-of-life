@@ -19,7 +19,7 @@ import { SupabaseService } from '../services/SupabaseService';
 import { ConnectionsModal } from '../components/ConnectionsModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
-import { MASTERY_TOTAL_MAX_LEVEL, toMasteryIndex } from '../constants/lifeAreas';
+import { MASTERY_TOTAL_MAX_LEVEL, getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess, isStaffRole } from '../utils/premiumAccess';
 import { getMoneyCheckoutSalesCopy } from '../utils/billingRuntime';
@@ -1905,10 +1905,7 @@ const GeralTab: React.FC = () => {
     const expToNextRank = expForNextRank - expForCurrentRank;
     const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
 
-    const masteryTotalLevel = assets
-        .filter(a => a.id !== 'geral')
-        .reduce((sum, a) => sum + (a.level === 0 ? 1 : (a.level || 1)), 0);
-    const masteryIndex = toMasteryIndex(masteryTotalLevel);
+    const masteryIndex = getMasteryIndexFromAssets(assets);
 
     useEffect(() => {
         // Listener for Tutorial Mastery Quiz Trigger (Step 11)

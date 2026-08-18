@@ -22,15 +22,11 @@ import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { APP_NAVIGATE_EVENT } from '../utils/arenaAttention';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
-import { LIFE_AREA_IDS, toMasteryIndex } from '../constants/lifeAreas';
+import { getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { ConnectionsModal } from '../components/ConnectionsModal';
 const AssetPentagon = React.lazy(() => import('../components/AssetPentagon').then((m) => ({ default: m.AssetPentagon })));
 
-const getMasteryIndex = (assets: Asset[]): number => toMasteryIndex(
-    assets
-        .filter((asset) => LIFE_AREA_IDS.includes(asset.id as (typeof LIFE_AREA_IDS)[number]))
-        .reduce((sum, asset) => sum + Math.max(1, Number(asset.level || 1)), 0),
-);
+const getMasteryIndex = (assets: Asset[]): number => getMasteryIndexFromAssets(assets);
 
 const normalizeAssetsVisibility = (value?: UserProfile['assetsVisibility']): 'all' | 'friends' | 'nobody' => {
     if (value === 'all' || value === 'friends' || value === 'nobody') return value;

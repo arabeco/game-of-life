@@ -2,7 +2,7 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
-import { MASTERY_TOTAL_MAX_LEVEL, toMasteryIndex } from '../constants/lifeAreas';
+import { MASTERY_TOTAL_MAX_LEVEL, getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { GlassCard } from '../components/GlassCard';
 import { ShareIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
 import { shareElementWithFeedback } from '../components/Share';
@@ -46,14 +46,12 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
         }
     }, [currentAsset, tempLevels]);
 
-    const totalLevel = useMemo(
-        () =>
-            Object.entries(tempLevels)
-                .filter(([assetId]) => assetId !== 'geral')
-                .reduce((sum, [, level]) => sum + (level === 0 ? 1 : Number(level || 1)), 0),
+    const masteryIndex = useMemo(
+        () => getMasteryIndexFromAssets(
+            Object.entries(tempLevels).map(([id, level]) => ({ id, level: Number(level) })),
+        ),
         [tempLevels],
     );
-    const masteryIndex = toMasteryIndex(totalLevel);
 
     const currentDescriptions = useMemo(
         () => (currentAsset ? (MASTERY_LEVEL_DESCRIPTIONS[currentAsset.id] || []) : []),

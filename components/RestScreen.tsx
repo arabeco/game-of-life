@@ -9,6 +9,7 @@ import { MoodModal } from './MoodModal';
 import { ChecklistModal } from './ChecklistModal';
 import { SitrepContent } from './SitrepContent';
 import { ClanOverviewModal } from './ClanOverviewModal';
+import { getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { OracleFeed } from './OracleFeed';
 import { WheelPicker } from './inputs/WheelPicker';
 import { Action, ScheduledTask } from '../types';
@@ -57,6 +58,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         activeTheme,
         showToast
     } = useGame();
+    const masteryIndex = getMasteryIndexFromAssets(assets);
     const [isClosing, setIsClosing] = useState(false);
     const [holdProgress, setHoldProgress] = useState(0);
     const holdAnimationFrameRef = useRef<number | null>(null);
@@ -898,9 +900,9 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                 }
                             />
 
-                            {/* Level Badge - Bolinha Estilo Header */}
+                            {/* Bolinha estilo header: mostra o mesmo Indice Glyph (0-100) que o header. */}
                             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gray-900/90 rounded-full w-5 h-5 flex items-center justify-center border shadow-lg z-50" style={{ borderColor: 'var(--skin-accent-color)' }}>
-                                <span className="text-[10px] font-black text-white">{userProfile.level}</span>
+                                <span className="text-[10px] font-black text-white">{masteryIndex}</span>
                             </div>
                         </div>
                         <div className="text-center">

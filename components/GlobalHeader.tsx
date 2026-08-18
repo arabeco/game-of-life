@@ -3,7 +3,7 @@ import React, { Suspense, useState, useEffect, useRef, useCallback } from 'react
 import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { getUnreadBadgeCount, getVisibleNotificationsForProfile } from '../constants/oracleNotificationPolicy';
-import { LIFE_AREA_IDS, toMasteryIndex } from '../constants/lifeAreas';
+import { getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { SparklesIcon, LockIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import './global-header.css';
@@ -60,11 +60,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const unreadVisibleNotificationsCount = visibleNotifications.filter(notification => !notification.read).length;
     const hasUnreadMessages = oracleMessages.some(m => !m.read);
     const hasUnread = hasUnreadMessages || unreadVisibleNotificationsCount > 0;
-    const masteryIndex = toMasteryIndex(
-        assets
-            .filter((asset) => LIFE_AREA_IDS.includes(asset.id as (typeof LIFE_AREA_IDS)[number]))
-            .reduce((sum, asset) => sum + Math.max(1, Number(asset.level || 1)), 0),
-    );
+    const masteryIndex = getMasteryIndexFromAssets(assets);
     
     // Time state
     const [currentDate, setCurrentDate] = useState(new Date());

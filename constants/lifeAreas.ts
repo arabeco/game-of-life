@@ -25,6 +25,24 @@ export const MASTERY_INDEX_MULTIPLIER = 2;
 export const toMasteryIndex = (rawTotal: number): number =>
   Math.min(MASTERY_TOTAL_MAX_LEVEL, Math.max(0, Math.round(rawTotal * MASTERY_INDEX_MULTIPLIER)));
 
+// Cada nivel de area vale 2 pontos no Indice Glyph, que vai de 0 a 100.
+// Area sem nivel conta como 1: o piso vale para as duas funcoes abaixo.
+// Toda tela que mostra o indice usa uma destas - ninguem recalcula na mao.
+const sumAreaLevels = (levels: readonly (number | null | undefined)[]): number =>
+  levels.reduce<number>((sum, level) => sum + Math.max(1, Number(level || 1)), 0);
+
+export const getMasteryIndexFromLevels = (levels: readonly (number | null | undefined)[]): number =>
+  toMasteryIndex(sumAreaLevels(levels));
+
+export const getMasteryIndexFromAssets = (
+  assets: readonly { id: string; level?: number | null }[],
+): number =>
+  getMasteryIndexFromLevels(
+    assets
+      .filter((asset) => LIFE_AREA_IDS.includes(asset.id as LifeAreaId))
+      .map((asset) => asset.level),
+  );
+
 export const LEGACY_LIFE_AREA_IDS = [
   'consciencia',
   'espiritualidade',

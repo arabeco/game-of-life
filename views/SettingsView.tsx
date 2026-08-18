@@ -520,10 +520,9 @@ const UiPreferencesModal: React.FC<{
     );
 };
 
-const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () => void }> = ({ onStart, onRequestModeGame }) => {
+const TutorialSettings: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
     const { startTutorialLevel, isFlagCompleted } = useTutorial();
-    const { appMode } = useGame();
-    const isBasicMode = appMode !== 'GAME';
+    // Sem modo do app, nao ha tutorial trancado: todos abrem para todo mundo.
     const levels = TUTORIAL_SECTIONS;
 
     return (
@@ -557,30 +556,18 @@ const TutorialSettings: React.FC<{ onStart?: () => void; onRequestModeGame?: () 
                                 <p className="text-[10px] text-white/72 mt-1 truncate">
                                     {lvl.subtitle}
                                 </p>
-                                {lvl.gameOnly && (
-                                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] mt-1 text-[var(--skin-accent-color)]/80">
-                                        Modo Jogo
-                                    </p>
-                                )}
                                 <p className={`text-[9px] font-bold uppercase tracking-[0.18em] mt-2 ${isCompleted ? 'text-green-300' : 'text-white/55'}`}>
-                                    {isCompleted ? 'Concluido' : (isBasicMode && lvl.gameOnly ? 'Bloqueado' : 'Disponivel')}
+                                    {isCompleted ? 'Concluido' : 'Disponivel'}
                                 </p>
                             </div>
                             <button
                                 onClick={() => {
-                                    if (isBasicMode && lvl.gameOnly) {
-                                        onRequestModeGame?.();
-                                        return;
-                                    }
                                     onStart?.();
                                     startTutorialLevel(lvl.id);
                                 }}
-                                className={`shrink-0 rounded-full border px-2.25 py-0.75 text-[7px] font-bold uppercase tracking-[0.18em] transition-all ${isBasicMode && lvl.gameOnly
-                                    ? 'border-[var(--skin-accent-color)]/24 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)] hover:bg-[var(--skin-accent-color)]/16'
-                                    : 'border-white/12 bg-black/18 text-white/48 hover:text-white hover:bg-white/10'
-                                    }`}
+                                className="shrink-0 rounded-full border border-white/12 bg-black/18 px-2.25 py-0.75 text-[7px] font-bold uppercase tracking-[0.18em] text-white/48 transition-all hover:bg-white/10 hover:text-white"
                             >
-                                {isBasicMode && lvl.gameOnly ? 'Ativar' : 'Reabrir'}
+                                Reabrir
                             </button>
                         </div>
                     </div>
@@ -616,14 +603,6 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                 : 'Dicas iniciais desligadas.',
             'info',
         );
-    };
-
-    const handleRequestModeGame = () => {
-        onClose();
-        window.dispatchEvent(new CustomEvent('tutorialTabChange', { detail: { tab: 'Preferências' } }));
-        window.setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tutorialFocusModeGame'));
-        }, 70);
     };
 
     return (
@@ -712,7 +691,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                             ))}
                         </div>
 
-                        <TutorialSettings onStart={onClose} onRequestModeGame={handleRequestModeGame} />
+                        <TutorialSettings onStart={onClose} />
                     </div>
                 </GlassCard>
             </div>
@@ -2111,8 +2090,6 @@ const PreferenciasTab: React.FC = () => {
     const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | 'primer' | 'redeem' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
-    const [highlightModeGame, setHighlightModeGame] = useState(false);
-    const modeGameRef = useRef<HTMLDivElement | null>(null);
     const normalizeAssetsVisibilityOption = (value?: ProfileVisibilityScope): ProfileVisibilityOption => {
         if (value === 'all' || value === 'friends' || value === 'nobody') return value;
         return 'nobody';
@@ -2186,9 +2163,6 @@ const PreferenciasTab: React.FC = () => {
         return selectedSkin.name.replace(/^Tema:\s*/i, '').replace(/^Interface\s*/i, '');
     }, [appMode, effectiveUiSkinId, uiSkinCatalog]);
     const uiPreferencesSummary = `${currentUiSkinName} · ${activeTheme === 'LIGHT' ? 'Claro' : 'Escuro'}`;
-    const modeGameSummary = appMode === 'GAME'
-        ? 'Itens, missões, grupo casual e temas de UI.'
-        : 'Apenas o necessário para produtividade.';
 
     useEffect(() => {
         setAssetsVisibility(normalizeAssetsVisibilityOption(userProfile.assetsVisibility));
@@ -2196,17 +2170,6 @@ const PreferenciasTab: React.FC = () => {
         setFeatsVisibility(normalizeFeatsVisibilityOption(userProfile.featsVisibility));
         setGardenVisibility(normalizeGardenVisibilityOption(userProfile.gardenVisibility));
     }, [userProfile.assetsVisibility, userProfile.masteryVisibility, userProfile.featsVisibility, userProfile.gardenVisibility]);
-
-    useEffect(() => {
-        const handleFocusModeGame = () => {
-            modeGameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            setHighlightModeGame(true);
-            window.setTimeout(() => setHighlightModeGame(false), 1800);
-        };
-
-        window.addEventListener('tutorialFocusModeGame', handleFocusModeGame);
-        return () => window.removeEventListener('tutorialFocusModeGame', handleFocusModeGame);
-    }, []);
 
     const handleAssetsVisibilityChange = (value: ProfileVisibilityOption) => {
         setAssetsVisibility(value);
@@ -2284,42 +2247,6 @@ const PreferenciasTab: React.FC = () => {
             <section className="space-y-4">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Preferências</h2>
                 <div className="space-y-2">
-                    <div
-                        id="mode-game-toggle"
-                        ref={modeGameRef}
-                        className={`transition-all duration-300 ${highlightModeGame ? 'scale-[1.01]' : ''}`}
-                    >
-                        <GlassCard
-                            variant="neutral"
-                            className={`p-4 space-y-3 ${highlightModeGame ? 'ring-1 ring-[var(--skin-accent-color)] shadow-[0_0_24px_var(--sephirot-glow-color-soft)]' : ''}`}
-                        >
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Modo Jogo</h3>
-                                <div className={`text-[10px] px-2 py-0.5 rounded font-mono ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-white/10 text-gray-300'}`}>{appMode === 'GAME' ? 'LIGADO' : 'DESLIGADO'}</div>
-                            </div>
-
-                            <div className="flex gap-2 p-1 bg-black/20 rounded-lg">
-                                <button
-                                    onClick={() => setAppMode('BASIC')}
-                                    className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${appMode === 'BASIC' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                                >
-                                    MODO BÁSICO
-                                </button>
-
-                                <button
-                                    onClick={() => setAppMode('GAME')}
-                                    className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)] text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                                >
-                                    MODO JOGO
-                                </button>
-                            </div>
-
-                            <p className="text-[11px] leading-relaxed text-gray-400">
-                                {modeGameSummary}
-                            </p>
-
-                        </GlassCard>
-                    </div>
                     <SettingSelector id="interface-settings-selector" label="Interface & Som" value={currentUiSkinName} onClick={() => setModal('ui')} />
                     <div id="oracle-preferences-setting">
                         <SettingSelector label="Oráculo & Alertas" value={activeModeName} onClick={() => setModal('oracle')} />

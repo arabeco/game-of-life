@@ -435,13 +435,11 @@ export const shouldShowNotificationForProfile = (
   oracleMode: OracleMode,
 ): boolean => {
   void oracleMode;
-  const policy = getPolicy(type);
-
-  if (appMode === 'BASIC') {
-    return policy.basicVisible;
-  }
-
-  return policy.gameVisible;
+  void appMode;
+  // O modo do app morreu: seis tipos de aviso ficavam invisiveis no BASIC
+  // (amizade aceita, entrada em cla, ciclo fechado, nivel, titulo e prompt do
+  // oraculo). Nada mais some por modo - quem nao quer aviso desliga o aviso.
+  return getPolicy(type).gameVisible;
 };
 
 export const shouldPushNotificationForProfile = (

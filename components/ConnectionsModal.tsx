@@ -120,6 +120,7 @@ export const ConnectionsModal: React.FC<{
     actions,
     assets,
     createCompetitionInvite,
+    cancelCompetitionChallenge,
     createRelationshipInvite,
     endRelationshipLink,
     fetchRelationshipHubData,
@@ -292,6 +293,20 @@ export const ConnectionsModal: React.FC<{
     try {
       if (await createRelationshipInvite(friendId, inviteType)) {
         setInviteType(null);
+        await refresh();
+      }
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  // Desistir encerra o duelo sem declarar vencedor. Fica atras de confirmacao
+  // porque o ouro nao volta e a dupla so libera depois disso.
+  const desistChallenge = async (challengeId: string) => {
+    if (!window.confirm('Desistir encerra este duelo sem vencedor, e os 50 de ouro nao voltam. Continuar?')) return;
+    setBusyKey(`challenge-cancel:${challengeId}`);
+    try {
+      if (await cancelCompetitionChallenge(challengeId)) {
         await refresh();
       }
     } finally {
@@ -488,7 +503,19 @@ export const ConnectionsModal: React.FC<{
                                       <div className="mt-1 text-[10px] text-white/42">Você: {ownDone ? 'concluiu' : 'em andamento'} · Rival: {rivalDone ? 'concluiu' : 'em andamento'}</div>
                                       <div className="mt-1 text-[9px] font-semibold text-rose-100/58">{formatChallengeTime(challenge.deadlineAt, challenge.completedAt)}</div>
                                     </div>
-                                    <span className="text-[9px] font-black uppercase tracking-[0.12em] text-rose-200">{challenge.completedAt ? (challenge.resultKind === 'draw' ? 'Empate' : 'Concluído') : 'Ativo'}</span>
+                                    <div className="flex flex-shrink-0 items-center gap-2">
+                                      <span className="text-[9px] font-black uppercase tracking-[0.12em] text-rose-200">{challenge.completedAt ? (challenge.resultKind === 'draw' ? 'Empate' : 'Concluído') : 'Ativo'}</span>
+                                      {!challenge.completedAt && (
+                                        <button
+                                          type="button"
+                                          disabled={Boolean(busyKey)}
+                                          onClick={() => void desistChallenge(challenge.id)}
+                                          className="rounded-md border border-white/12 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white/45 transition-colors hover:border-rose-300/30 hover:text-rose-200 disabled:opacity-40"
+                                        >
+                                          Desistir
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                   {(ownArena || rivalArena) && (
                                     <div className="mt-3 grid grid-cols-2 gap-2">

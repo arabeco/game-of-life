@@ -540,7 +540,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                                         : 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
                                                                     }`}
                                                             >
-                                                                {isBasicMode ? 'Devolver' : 'Cancelar'}
+                                                                {'Devolver'}
                                                             </button>
                                                         )}
 
@@ -685,7 +685,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                                                                 }}
                                                                 className="mx-auto block rounded-lg border border-red-500/20 bg-transparent px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-red-300/80 hover:bg-red-500/10"
                                                             >
-                                                                {isBasicMode ? 'Devolver' : 'Cancelar'}
+                                                                {'Devolver'}
                                                             </button>
                                                         ) : (
                                                             <div className="w-full rounded-xl border border-white/8 bg-black/15 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-white/35">

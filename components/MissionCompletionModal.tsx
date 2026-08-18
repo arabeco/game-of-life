@@ -113,7 +113,7 @@ export const MissionCompletionModal: React.FC<MissionCompletionModalProps> = ({ 
                                     className={headingClass}
                                     style={{ textShadow: `0 0 20px ${skinColor}40` }}
                                 >
-                                    {isBasicMode ? 'Missão concluída' : 'MISSAO CONCLUIDA!'}
+                                    {'Missão concluída'}
                                 </h2>
                                 <div className="mx-auto mt-4 h-0.5 w-12 bg-[var(--skin-accent-color)] shadow-[0_0_10px_var(--skin-accent-color)]" />
                             </div>

@@ -30,23 +30,23 @@ const BASIC_VISIBLE_ACHIEVEMENTS: FeedEventType[] = [
 const getAchievementDetails = (type: FeedEventType, data: any, isBasicMode: boolean) => {
     switch (type) {
         case 'MILESTONE_COMPLETED':
-            return { title: isBasicMode ? 'Marco concluído' : 'Marco concluído!', icon: data.icon || '\u{1F3C1}', message: `Você concluiu o marco "${data.name}".` };
+            return { title: 'Marco concluído', icon: data.icon || '\u{1F3C1}', message: `Você concluiu o marco "${data.name}".` };
         case 'ARENA_COMPLETED':
-            return { title: isBasicMode ? 'Arena concluída' : 'ARENA COMPLETA', icon: data.icon || '\u{1F3DF}\uFE0F', message: `Você concluiu a arena "${data.name}".` };
+            return { title: 'Arena concluída', icon: data.icon || '\u{1F3DF}\uFE0F', message: `Você concluiu a arena "${data.name}".` };
         case 'PLAYER_RANK_UP':
-            return { title: isBasicMode ? 'Parabéns' : 'PARABÉNS!', icon: '\u{1F451}', message: `Você subiu de patente para ${data.name}!` };
+            return { title: 'Parabéns', icon: '\u{1F451}', message: `Você subiu de patente para ${data.name}!` };
         case 'QUEST_COMPLETED': {
             const isStreakMilestone = data.title === 'Sete Dias em Movimento';
             return isStreakMilestone
                 ? {
-                    title: isBasicMode ? 'Sequência consolidada' : 'SETE DIAS REAIS!',
+                    title: 'Sequência consolidada',
                     icon: data.icon || '\u{1F525}',
                     message: 'Você se manteve em movimento por sete dias seguidos. Não foi sobre perfeição: foi constância suficiente para continuar.',
                 }
-                : { title: isBasicMode ? 'Desafio concluído' : 'DESAFIO CONCLUÍDO!', icon: data.icon || '\u{1F3AF}', message: `Você concluiu o desafio "${data.title}".` };
+                : { title: 'Desafio concluído', icon: data.icon || '\u{1F3AF}', message: `Você concluiu o desafio "${data.title}".` };
         }
         case 'REPORT_COMPLETED':
-            return { title: isBasicMode ? 'Relatório concluído' : 'RELATÓRIO CONCLUÍDO!', icon: '\u{1F4DC}', message: 'Você fechou seu relatório de ciclo com sucesso.' };
+            return { title: 'Relatório concluído', icon: '\u{1F4DC}', message: 'Você fechou seu relatório de ciclo com sucesso.' };
         case 'COMPETITION_COMPLETED': {
             const score = `${Number(data.selfCompleted || 0)}/${Number(data.selfTarget || 0)} contra ${Number(data.rivalCompleted || 0)}/${Number(data.rivalTarget || 0)}`;
             if (data.result === 'winner') {
@@ -58,9 +58,9 @@ const getAchievementDetails = (type: FeedEventType, data: any, isBasicMode: bool
             return { title: 'DESAFIO ENCERRADO', icon: '\u{1F3C1}', message: `@${data.opponentNickname || 'Seu rival'} venceu "${data.challengeName || 'Desafio'}". Você chegou a ${score}.` };
         }
         case 'CLAN_RANK_UP':
-            return { title: isBasicMode ? 'Grupo avançou' : 'Patente do grupo aumentou!', icon: '\u{1F6E1}\uFE0F', message: `Seu grupo agora e um ${data.name}!` };
+            return { title: 'Grupo avançou', icon: '\u{1F6E1}\uFE0F', message: `Seu grupo agora e um ${data.name}!` };
         default:
-            return { title: isBasicMode ? 'Concluído' : 'Conquista!', icon: '\u2728', message: 'Você realizou um feito notável.' };
+            return { title: 'Concluído', icon: '\u2728', message: 'Você realizou um feito notável.' };
     }
 };
 

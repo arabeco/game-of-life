@@ -98,11 +98,11 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     '1 baú da Temporada + 1 baú raro por ativação',
     ]), []);
     const visiblePremiumBenefits = useMemo(
-        () => (isBasicMode && !showAllPremiumBenefits ? premiumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : premiumBenefits),
+        () => premiumBenefits,
         [isBasicMode, premiumBenefits, showAllPremiumBenefits],
     );
     const visiblePlatinumBenefits = useMemo(
-        () => (isBasicMode && !showAllPlatinumBenefits ? platinumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : platinumBenefits),
+        () => platinumBenefits,
         [isBasicMode, platinumBenefits, showAllPlatinumBenefits],
     );
     const hiddenPremiumCount = Math.max(0, premiumBenefits.length - visiblePremiumBenefits.length);

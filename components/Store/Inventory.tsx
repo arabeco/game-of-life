@@ -45,21 +45,9 @@ export const Inventory: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<{ def: ItemDef, instanceId: string } | null>(null);
     const [inventoryRewardPayload, setInventoryRewardPayload] = useState<RewardModalPayload | null>(null);
 
-    // Filter Tabs based on App Mode
-    const visibleTabs = useMemo(() => {
-        if (appMode === 'BASIC') {
-            // Hide cosmetic tabs and chests in BASIC mode (Focus on productivity)
-            return TABS.filter(t => !['sovereign', 'glyph', 'interface', 'honors', 'chests'].includes(t.id));
-        }
-        return TABS;
-    }, [appMode]);
-
-    // Reset active tab if it becomes invisible
-    useEffect(() => {
-        if (appMode === 'BASIC' && ['sovereign', 'glyph', 'interface', 'honors', 'chests'].includes(activeTab)) {
-            setActiveTab('all');
-        }
-    }, [appMode, activeTab]);
+    // Toda aba aparece para todo mundo. Quem nao liga para cosmetico simplesmente
+    // nao entra nelas - esconder dava trabalho e nao devolvia nada.
+    const visibleTabs = TABS;
 
     const isEquipped = (itemId: string, category: string, imageUrl?: string) => {
         if (category === 'skin') return userProfile.sovereign.outfit === itemId;

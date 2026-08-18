@@ -2179,7 +2179,7 @@ const PreferenciasTab: React.FC = () => {
         inventory.forEach((item) => unlocked.add(item.id));
         return unlocked;
     }, [inventory, userProfile.skin, userProfile.unlockedItems]);
-    const effectiveUiSkinId = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
+    const effectiveUiSkinId = userProfile.skin || 'BASIC';
     const currentUiSkinName = useMemo(() => {
         const selectedSkin = uiSkinCatalog.find((skin) => skin.id === effectiveUiSkinId);
         if (!selectedSkin) return appMode === 'BASIC' ? 'Basica' : 'Tema atual';

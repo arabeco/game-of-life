@@ -1543,7 +1543,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                                     className="h-full transition-all duration-500"
                                                                     style={{
                                                                         width: `${health}%`,
-                                                                        background: isBasicMode ? 'var(--skin-accent-color)' : 'var(--metal-gold)',
+                                                                        background: 'var(--metal-gold)',
                                                                         opacity: 0.9
                                                                     }}
                                                                 />

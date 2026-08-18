@@ -230,7 +230,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
         
         try {
             const isAssigned = questType === 'individual' && assignToOccupant && occupant;
-            const targetSlotId = (isBasicMode && questType === 'clan') ? 'fogueira' : slotId;
+            const targetSlotId = slotId;
             
             const { error } = await supabase.from('clan_custom_quests').insert({
                 clan_id: clanId,

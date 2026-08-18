@@ -117,7 +117,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         nowMs: Date.now(),
     }), [actionSession, currentActionSessionTask, actionSessionTimeLeft]);
     const sitrepStatusLabel = isSitrepLocked ? 'Resumo' : 'Aberto';
-    const isBasicMode = appMode === 'BASIC';
+    // Fundo calmo era exclusivo do modo BASIC; agora e quem desliga animacoes.
+    const softVisuals = oraclePreferences?.animationsEnabled === false;
     const isLightTheme = activeTheme === 'LIGHT';
     const unlockHint = isUnlocked ? 'Saindo...' : 'Segure 1s para desbloquear';
     const shouldShowUnlockHint = isUnlocked || showUnlockHint;
@@ -809,25 +810,25 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     return (
         <Portal>
             <div
-                className={`restscreen-root fixed inset-0 z-[150] flex flex-col items-center justify-start gap-2 transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y ${isBasicMode ? 'border-[var(--ui-core-surface-border)]' : 'border-[var(--skin-accent-color)]/20'} ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`restscreen-root fixed inset-0 z-[150] flex flex-col items-center justify-start gap-2 transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y ${softVisuals ? 'border-[var(--ui-core-surface-border)]' : 'border-[var(--skin-accent-color)]/20'} ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
                 style={{ touchAction: 'none', background: 'var(--app-background)' }} // Prevent scrolling
             >
                 {/* Sephirot Fog Background */}
-                <div className="absolute inset-0 z-0 pointer-events-none" style={{ opacity: isBasicMode ? (isLightTheme ? 0.1 : 0.18) : 0.42 }}>
+                <div className="absolute inset-0 z-0 pointer-events-none" style={{ opacity: softVisuals ? (isLightTheme ? 0.1 : 0.18) : 0.42 }}>
                     <SephirotFog
                         points={[{ x: 50, y: 52, level: 8 }]}
-                        color={isBasicMode ? (isLightTheme ? 'rgba(108, 125, 146, 0.55)' : 'rgba(176, 194, 214, 0.36)') : (currentMood?.color || 'var(--skin-accent-color)')}
+                        color={softVisuals ? (isLightTheme ? 'rgba(108, 125, 146, 0.55)' : 'rgba(176, 194, 214, 0.36)') : (currentMood?.color || 'var(--skin-accent-color)')}
                         mode="arena"
-                        alphaMaxOverride={isBasicMode ? 0.12 : 0.2}
+                        alphaMaxOverride={softVisuals ? 0.12 : 0.2}
                     />
                 </div>
 
                 {/* Ambient Smoke Layer */}
-                <div className={`absolute inset-0 overflow-hidden pointer-events-none z-0 ${isBasicMode ? 'opacity-45' : ''}`}>
+                <div className={`absolute inset-0 overflow-hidden pointer-events-none z-0 ${softVisuals ? 'opacity-45' : ''}`}>
                     <div
                         className="absolute inset-0 animate-smoke-slow"
                         style={{
-                            background: isBasicMode
+                            background: softVisuals
                                 ? (isLightTheme
                                     ? 'linear-gradient(180deg, transparent 0%, rgba(121, 139, 160, 0.08) 48%, transparent 100%)'
                                     : 'linear-gradient(180deg, transparent 0%, rgba(176, 192, 212, 0.07) 48%, transparent 100%)')
@@ -837,7 +838,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     <div
                         className="absolute inset-0 animate-smoke-slow-reverse"
                         style={{
-                            background: isBasicMode
+                            background: softVisuals
                                 ? (isLightTheme
                                     ? 'linear-gradient(90deg, transparent 0%, rgba(103, 120, 141, 0.07) 48%, transparent 100%)'
                                     : 'linear-gradient(90deg, transparent 0%, rgba(166, 182, 203, 0.06) 48%, transparent 100%)')
@@ -846,8 +847,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     />
 
                     {/* Floating Blur Layers */}
-                    <div className={`absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[96px] animate-float ${isBasicMode ? 'w-56 h-56' : 'w-64 h-64 bg-[var(--skin-accent-color)]/8'}`} style={isBasicMode ? { background: isLightTheme ? 'rgba(145, 161, 181, 0.10)' : 'rgba(173, 189, 208, 0.07)' } : undefined} />
-                    <div className={`absolute left-1/2 top-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px] animate-float-delayed ${isBasicMode ? 'w-64 h-64' : 'w-72 h-72 bg-[var(--skin-accent-color)]/7'}`} style={isBasicMode ? { background: isLightTheme ? 'rgba(130, 146, 166, 0.08)' : 'rgba(160, 177, 198, 0.06)' } : undefined} />
+                    <div className={`absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[96px] animate-float ${softVisuals ? 'w-56 h-56' : 'w-64 h-64 bg-[var(--skin-accent-color)]/8'}`} style={softVisuals ? { background: isLightTheme ? 'rgba(145, 161, 181, 0.10)' : 'rgba(173, 189, 208, 0.07)' } : undefined} />
+                    <div className={`absolute left-1/2 top-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px] animate-float-delayed ${softVisuals ? 'w-64 h-64' : 'w-72 h-72 bg-[var(--skin-accent-color)]/7'}`} style={softVisuals ? { background: isLightTheme ? 'rgba(130, 146, 166, 0.08)' : 'rgba(160, 177, 198, 0.06)' } : undefined} />
 
                     {/* Texture Overlay */}
                     <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]" />

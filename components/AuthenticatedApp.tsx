@@ -1312,7 +1312,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const [confettiBurst, setConfettiBurst] = useState<{ key: number; intense: boolean }>({ key: 0, intense: false });
     // Mesma seccao de Configuracoes que liga som e vibracao controla o confete.
     const animationsEnabled = oraclePreferences?.animationsEnabled !== false;
-    const effectiveUiSkin = appMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC');
+    const effectiveUiSkin = userProfile.skin || 'BASIC';
 
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {

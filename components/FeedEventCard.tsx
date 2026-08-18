@@ -221,15 +221,11 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                             {presentation.icon}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-[11px] uppercase tracking-[0.22em] text-white/35">{presentation.badge}</p>
-                            <p className={`mt-1 text-base font-semibold leading-tight ${palette.title}`}>{presentation.title}</p>
+                            <p className={`text-base font-semibold leading-tight ${palette.title}`}>{presentation.title}</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-3 border-t border-white/8 pt-1">
-                        <p className="truncate text-xs text-white/35">
-                            {presentation.message}{authorClanName ? ` · ${authorClanName}` : ''}
-                        </p>
+                    <div className="flex items-center justify-end gap-3 border-t border-white/8 pt-1">
                         <div className="flex items-center gap-1">
                             <button
                                 className="rounded-full p-2 text-white/35 transition-colors hover:bg-white/5 hover:text-[var(--skin-accent-color)]"

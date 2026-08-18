@@ -7218,6 +7218,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [assets, hasHydratedFromSupabase, isProfileLoaded, session?.user.id, userCodexes]);
 
     const addFeedEvent = (eventData: Pick<FeedEvent, 'type' | 'content'>) => {
+        // O feito so sai do aparelho se o jogador permitiu em Configuracoes > Arenas do ativo.
+        // 'nobody' nao publica nada; 'friends' e 'all' definem quem le (aplicado pela RLS).
+        if (userProfile.featsVisibility === 'nobody') return;
+
         const localEvent: FeedEvent = {
             id: `feed_${Date.now()}`,
             userId: userProfile.id,

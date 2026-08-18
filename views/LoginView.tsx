@@ -257,7 +257,6 @@ export const LoginView: React.FC = () => {
                         id: newProfile.id,
                         email: newProfile.email,
                         nickname: newProfile.nickname,
-                        app_mode: null,
                         avatar_url: newProfile.avatarUrl,
                         border: newProfile.border,
                         level: newProfile.level,
@@ -399,7 +398,6 @@ export const LoginView: React.FC = () => {
                     const userProfileForState: UserProfile = {
                         id: profile.id,
                         email: profile.email,
-                        appMode: profile.app_mode,
                         themePreference: profile.theme_preference,
                         sovereign: profile.sovereign,
                         avatarUrl: profile.avatar_url,

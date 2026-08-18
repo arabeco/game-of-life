@@ -15,7 +15,6 @@ export const buildClosedBetaProfilePayload = (session: Session) => {
     id: session.user.id,
     email: session.user.email || '',
     nickname: fallbackNickname,
-    app_mode: null,
     avatar_url: session.user.user_metadata?.avatar_url || '',
     border: 'default',
     level: 1,

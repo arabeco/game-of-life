@@ -2,7 +2,6 @@ import React from 'react';
 import { Megaphone, ExternalLink } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
-import type { AppMode } from '../types';
 
 export type AppBroadcast = {
   id: string;
@@ -21,18 +20,15 @@ export type AppBroadcast = {
 
 interface AppBroadcastModalProps {
   broadcast: AppBroadcast;
-  mode?: AppMode;
   onClose: () => void;
   onCta?: (broadcast: AppBroadcast) => void;
 }
 
 export const AppBroadcastModal: React.FC<AppBroadcastModalProps> = ({
   broadcast,
-  mode,
   onClose,
   onCta,
 }) => {
-  const isBasic = mode === 'BASIC';
   const hasCta = !!broadcast.ctaType && broadcast.ctaType !== 'none' && !!broadcast.ctaTarget;
   const primaryLabel = broadcast.buttonLabel || (hasCta ? 'Abrir agora' : 'Entendido');
 
@@ -51,7 +47,7 @@ export const AppBroadcastModal: React.FC<AppBroadcastModalProps> = ({
         onClick={broadcast.dismissible === false ? undefined : onClose}
       >
         <GlassCard
-          variant={isBasic ? 'neutral' : 'gold'}
+          variant="gold"
           className="relative w-full max-w-sm overflow-hidden rounded-[28px] border-white/12 bg-[#050505] p-0 shadow-[0_0_56px_rgba(0,0,0,0.72)]"
           onClick={(event) => event.stopPropagation()}
         >

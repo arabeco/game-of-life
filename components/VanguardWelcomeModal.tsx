@@ -1,18 +1,16 @@
 import React, { useMemo } from 'react';
 import { resolveItemDef } from '../constants/items';
-import type { AppMode, RewardMetricCard, VanguardWelcomePayload } from '../types';
+import type { RewardMetricCard, VanguardWelcomePayload } from '../types';
 import { RewardPackModal } from './RewardPackModal';
 
 interface VanguardWelcomeModalProps {
   open: boolean;
-  mode?: AppMode;
   payload?: VanguardWelcomePayload | null;
   onClose: () => void;
 }
 
 export const VanguardWelcomeModal: React.FC<VanguardWelcomeModalProps> = ({
   open,
-  mode,
   payload,
   onClose,
 }) => {
@@ -97,7 +95,6 @@ export const VanguardWelcomeModal: React.FC<VanguardWelcomeModalProps> = ({
   return (
     <RewardPackModal
       open={open}
-      mode={mode}
       payload={effectivePayload}
       onClose={onClose}
       fallbackEyebrow="Convite dourado"

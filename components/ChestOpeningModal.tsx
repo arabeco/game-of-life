@@ -84,19 +84,9 @@ const buildRewardFromResult = (result: ChestOpenResult | null, chestType: ChestT
 };
 
 export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType, onClose, predefinedReward }) => {
-    const { userProfile, appMode, oraclePreferences, openChest } = useGame();
+    const { userProfile, oraclePreferences, openChest } = useGame();
     const [reward, setReward] = useState<Reward | null>(null);
     const [isResolvingReward, setIsResolvingReward] = useState(false);
-
-    useEffect(() => {
-        const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
-        if (appMode !== 'GAME' && !isGM) {
-            onClose();
-        }
-    }, [appMode, onClose, userProfile.role]);
-
-    const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
-    if (appMode !== 'GAME' && !isGM) return null;
 
     const chestVisual = getChestVisual(chestType);
     const rarityColor = chestVisual.hex;

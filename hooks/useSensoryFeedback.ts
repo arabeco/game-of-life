@@ -17,7 +17,7 @@ type FeedbackType =
     | 'level_up';
 
 export const useSensoryFeedback = () => {
-    const { oraclePreferences, appMode } = useGame();
+    const { oraclePreferences } = useGame();
     const audioContextRef = useRef<AudioContext | null>(null);
     const sampleBufferRef = useRef<AudioBuffer | null>(null);
     const sampleLoadPromiseRef = useRef<Promise<AudioBuffer | null> | null>(null);
@@ -112,48 +112,37 @@ export const useSensoryFeedback = () => {
     }, [loadMetalReference, playMetalSlice]);
 
     const trigger = useCallback((type: FeedbackType) => {
-        const sensoryProfile: 'sovereign' | 'basic' = appMode === 'BASIC' ? 'basic' : 'sovereign';
-
         if (getHapticsEnabled()) {
-            if (sensoryProfile === 'basic') {
-                const basicPattern: number | number[] =
-                    type === 'error' ? 16 :
-                    type === 'warning' ? 10 :
-                    type === 'level_up' || type === 'fanfare' ? [8, 24, 10] :
-                    8;
-                safeVibrate(basicPattern);
-            } else {
-                switch (type) {
-                    case 'click':
-                    case 'click_soft':
-                    case 'click_crisp':
-                    case 'click_metal':
-                        safeVibrate(8);
-                        break;
-                    case 'success':
-                        safeVibrate([12, 24, 12]);
-                        break;
-                    case 'error':
-                        safeVibrate([50, 50, 50]);
-                        break;
-                    case 'warning':
-                        safeVibrate([24, 40]);
-                        break;
-                    case 'impact':
-                        safeVibrate(18);
-                        break;
-                    case 'whoosh':
-                        safeVibrate(12);
-                        break;
-                    case 'notification':
-                        safeVibrate([25, 25]);
-                        break;
-                    case 'fanfare':
-                    case 'level_up':
-                        // Soberano: pulso crescente para milestones.
-                        safeVibrate([120, 40, 180, 40, 240]);
-                        break;
-                }
+            switch (type) {
+                case 'click':
+                case 'click_soft':
+                case 'click_crisp':
+                case 'click_metal':
+                    safeVibrate(8);
+                    break;
+                case 'success':
+                    safeVibrate([12, 24, 12]);
+                    break;
+                case 'error':
+                    safeVibrate([50, 50, 50]);
+                    break;
+                case 'warning':
+                    safeVibrate([24, 40]);
+                    break;
+                case 'impact':
+                    safeVibrate(18);
+                    break;
+                case 'whoosh':
+                    safeVibrate(12);
+                    break;
+                case 'notification':
+                    safeVibrate([25, 25]);
+                    break;
+                case 'fanfare':
+                case 'level_up':
+                    // Soberano: pulso crescente para milestones.
+                    safeVibrate([120, 40, 180, 40, 240]);
+                    break;
             }
         }
 
@@ -226,7 +215,7 @@ export const useSensoryFeedback = () => {
                     filter.frequency.linearRampToValueAtTime(100, now + 0.3);
 
                     const gain = ctx.createGain();
-                    gain.gain.setValueAtTime(sensoryProfile === 'basic' ? 0.03 : 0.05, now);
+                    gain.gain.setValueAtTime(0.05, now);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
 
                     noise.connect(filter);
@@ -246,7 +235,7 @@ export const useSensoryFeedback = () => {
                     osc.frequency.setValueAtTime(600, now);
                     osc.frequency.setValueAtTime(800, now + 0.1);
 
-                    gain.gain.setValueAtTime(sensoryProfile === 'basic' ? 0.03 : 0.05, now);
+                    gain.gain.setValueAtTime(0.05, now);
                     gain.gain.linearRampToValueAtTime(0, now + 0.2);
 
                     osc.start(now);
@@ -267,7 +256,7 @@ export const useSensoryFeedback = () => {
                         osc.type = 'triangle';
 
                         gain.gain.setValueAtTime(0, startTime);
-                        gain.gain.linearRampToValueAtTime(sensoryProfile === 'basic' ? 0.06 : 0.1, startTime + 0.05);
+                        gain.gain.linearRampToValueAtTime(0.1, startTime + 0.05);
                         gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
 
                         osc.start(startTime);
@@ -277,7 +266,7 @@ export const useSensoryFeedback = () => {
                 }
             }
         }
-    }, [appMode, getAudioContext, oraclePreferences]);
+    }, [getAudioContext, oraclePreferences]);
 
     return { trigger };
 };

@@ -116,7 +116,7 @@ const buildCycleActionTotal = (cycleActions: Action[], scheduledTaskCount: numbe
 };
 
 export const AssetsView: React.FC = () => {
-    const { assets, userProfile, updateUserProfile, showToast, appMode, activeCycle, freeProgressResetAt, dailyCommitment, getArenas, actions, tasks } = useGame();
+    const { assets, userProfile, updateUserProfile, showToast, activeCycle, freeProgressResetAt, dailyCommitment, getArenas, actions, tasks } = useGame();
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
     const [isEditingAssetDetail, setIsEditingAssetDetail] = useState(false);
     const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
@@ -131,8 +131,6 @@ export const AssetsView: React.FC = () => {
     const [hasSephirotRasterArt, setHasSephirotRasterArt] = useState(false);
     const overviewLayout = useAssetsOverviewLayoutConfig();
 
-    const isBasicMode = appMode === 'BASIC';
-    const basicSephirotLevelColor = '#d9bd82';
     const selectedAsset = assets.find(a => a.id === selectedAssetId) || null;
     const assetWidgetValues = userProfile.assetWidgetValues || {};
     const assetArtById = userProfile.assetArtById || {};
@@ -160,7 +158,7 @@ export const AssetsView: React.FC = () => {
         : '#4b5563';
     const selectedAssetLevel = selectedAsset ? Math.max(1, Number(selectedAsset.level || 1)) : 1;
     const selectedAssetMasteryPhrase = selectedAsset?.levelDescriptions?.[selectedAssetLevel] || '';
-    const canShowSelectedAssetWidget = Boolean(!isBasicMode && selectedAssetPrimarySlot);
+    const canShowSelectedAssetWidget = Boolean(selectedAssetPrimarySlot);
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
     const cycleAccentRgb = hexToRgb(userProfile.skinColor || '#d4af37');
     const cycleLabelColor = lightenToward(cycleAccentRgb, [168, 182, 201], 0.52);
@@ -294,7 +292,7 @@ export const AssetsView: React.FC = () => {
         const styles = getComputedStyle(target);
         const sephirotBackground = styles.getPropertyValue('--sephirot-bg-image').trim();
         setHasSephirotRasterArt(hasRasterSephirotBackground(sephirotBackground));
-    }, [userProfile.skin, appMode]);
+    }, [userProfile.skin]);
 
     useLayoutEffect(() => {
         const container = containerRef.current;
@@ -560,7 +558,6 @@ export const AssetsView: React.FC = () => {
                                 <Sephirot
                                     asset={selectedAsset}
                                     onClick={() => {}}
-                                    levelColor={isBasicMode ? basicSephirotLevelColor : undefined}
                                     useSkinArtworkOnly={hasSephirotRasterArt}
                                     showLabel={false}
                                     size="56px"
@@ -648,9 +645,7 @@ export const AssetsView: React.FC = () => {
                 style={assetsShellStyle}
             >
                 <div ref={containerRef} className="relative h-full min-h-0 w-full overflow-hidden">
-                    {!isBasicMode && (
-                        <div className="assets-sephirot-backdrop absolute inset-0 z-0" />
-                    )}
+                    <div className="assets-sephirot-backdrop absolute inset-0 z-0" />
 
                     <div className="relative z-10 h-full w-full">
                         <div className="absolute inset-x-0 z-20 flex justify-center px-3" style={{ top: cycleSummaryTop }}>
@@ -768,7 +763,6 @@ export const AssetsView: React.FC = () => {
                                             <Sephirot
                                                 asset={asset}
                                                 onClick={() => handleOpenAsset(asset)}
-                                                levelColor={isBasicMode ? basicSephirotLevelColor : undefined}
                                                 useSkinArtworkOnly={hasSephirotRasterArt}
                                                 showLabel={false}
                                                 size="clamp(44px, 48cqh, 56px)"
@@ -820,7 +814,7 @@ export const AssetsView: React.FC = () => {
                             })}
                             </div>
                         </div>
-                        {!isBasicMode && PRODUCT_FEATURES.personalGarden && (
+                        {PRODUCT_FEATURES.personalGarden && (
                             <button
                                 type="button"
                                 onClick={() => setGardenOpen(true)}

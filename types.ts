@@ -395,7 +395,6 @@ export interface ClanMissionState {
   completedAt?: string;
 }
 
-export type AppMode = 'GAME' | 'BASIC';
 export type ThemePreference = 'LIGHT' | 'DARK';
 export type ArenasViewMode = 'free' | 'priorities' | 'assets';
 
@@ -466,7 +465,6 @@ export interface UserProfile {
   competitionSlotsPurchased?: number;
   mentorSlotsPurchased?: number;
   linkedArenaSlotsPurchased?: number;
-  appMode?: AppMode;
 
   themePreference?: ThemePreference;
   arenasViewMode?: ArenasViewMode;

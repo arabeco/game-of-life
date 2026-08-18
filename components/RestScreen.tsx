@@ -54,7 +54,6 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         oraclePreferences,
         oracleMessages,
         notifications,
-        appMode,
         activeTheme,
         showToast
     } = useGame();

@@ -242,7 +242,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     disableAnimatedBackground = false,
     tasks: propTasks
 }) => {
-    const { appMode, tasks: contextTasks, activeCycle, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction, userCodexes } = useGame();
+    const { tasks: contextTasks, activeCycle, freeProgressResetAt, getActionBackgroundStyle, getClanQuestProgress, getArenas, clanQuestParticipants, fetchClanQuestParticipants, getClanQuestsForArena, getSharedActionPoolProgress, oraclePreferences, reorderAction, userCodexes } = useGame();
     const tasks = (propTasks || contextTasks) as any[];
     const tasksForCounts = useMemo(() => {
         if (propTasks) return tasks;

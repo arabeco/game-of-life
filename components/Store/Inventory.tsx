@@ -37,7 +37,7 @@ const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
 ];
 
 export const Inventory: React.FC = () => {
-    const { inventory, userProfile, updateUserProfile, appMode, openChest } = useGame();
+    const { inventory, userProfile, updateUserProfile, openChest } = useGame();
     const [activeTab, setActiveTab] = useState<InventoryTab>('all');
     
     // --- Editors State ---

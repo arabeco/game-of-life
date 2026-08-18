@@ -301,8 +301,7 @@ export const ShareableProfileCard: React.FC<{
     clanName: string;
     clanRank: ClanRank | undefined;
     assets: Asset[];
-    isBasicMode?: boolean;
-}> = ({ id, userProfile, clanName, clanRank, assets, isBasicMode = false }) => {
+}> = ({ id, userProfile, clanName, clanRank, assets }) => {
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
     const activeAssetCount = assets.filter((asset) => asset.id !== 'geral').length;
     const totalArenas = assets.reduce((sum, asset) => sum + asset.arenas.length, 0);
@@ -422,7 +421,7 @@ export const ShareableProfileCard: React.FC<{
                 </div>
             </div>
 
-            {!isBasicMode && visibleSlots.length > 0 && (
+            {visibleSlots.length > 0 && (
                 <div className="relative z-10 px-4 pb-4">
                     <div className="grid grid-cols-2 gap-1.5">
                         {visibleSlots.map((slot) => (
@@ -433,7 +432,7 @@ export const ShareableProfileCard: React.FC<{
             )}
 
             {/* UNIFIED POSITIONING: Match the Live Profile View */}
-            {userProfile.sovereign && !isBasicMode && (
+            {userProfile.sovereign && (
                 <UnifiedSovereignDisplay
                     sovereignConfig={userProfile.sovereign}
                     className="absolute top-[60px] right-4 w-[70px] h-[95px]"
@@ -445,12 +444,11 @@ export const ShareableProfileCard: React.FC<{
 }
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
-    const { userProfile, assets, friends, updateUserProfile, clan, clanRanks, getUserPublicData, appMode, cycleProgress, showToast } = useGame();
+    const { userProfile, assets, friends, updateUserProfile, clan, clanRanks, getUserPublicData, cycleProgress, showToast } = useGame();
     type ProfileTab = 'widgets' | 'summary' | 'mastery';
 
     const isOwnProfile = !profile || profile.id === userProfile.id;
     const baseProfile = profile || userProfile;
-    const isBasicMode = appMode === 'BASIC';
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
 
     const [isEditing, setIsEditing] = useState(false);
@@ -635,8 +633,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
         .filter((asset): asset is Asset => !!asset)
         .map((asset) => getPrimaryAssetSlot(asset, displayProfile))
         .filter((slot): slot is Slot => !!slot && !isWidgetValueEmpty(slot.value));
-    const hasVisibleAssetWidgets = !isBasicMode && canViewAssetsPreview && visibleProfileSlots.length > 0;
-    const hasMeaningfulMastery = !isBasicMode && canViewMastery && masteryLevels.some((level) => level > 1 && level < 10);
+    const hasVisibleAssetWidgets = canViewAssetsPreview && visibleProfileSlots.length > 0;
+    const hasMeaningfulMastery = canViewMastery && masteryLevels.some((level) => level > 1 && level < 10);
     const defaultProfileTab: ProfileTab = hasVisibleAssetWidgets
         ? 'widgets'
         : hasMeaningfulMastery
@@ -646,16 +644,6 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     useEffect(() => {
         setActiveWidgetTab(defaultProfileTab);
     }, [defaultProfileTab, isOwnProfile, profile?.id]);
-
-    const getSlotById = (slotId: string): Slot | null => {
-        for (const asset of profileAssets) {
-            const baseSlot = asset.slots.find((slot) => slot.id === slotId);
-            if (baseSlot) {
-                return getPrimaryAssetSlot(asset, displayProfile);
-            }
-        }
-        return null;
-    };
 
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === displayProfile.border);
 
@@ -690,7 +678,6 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                     clanName={clanName}
                     clanRank={currentClanRank}
                     assets={profileAssets}
-                    isBasicMode={isBasicMode}
                 />
             </div>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
@@ -711,7 +698,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             <div className="absolute top-4 left-4 right-4 z-30 flex justify-between items-start">
                                 <div className="flex flex-col space-y-2">
                                     {isOwnProfile && (
-                                        <button onClick={isEditing ? cancelEdit : () => { setIsEditing(true); if (!isBasicMode) setActiveWidgetTab('widgets'); }} className={`p-2 rounded-full transition-colors border ${isEditing ? 'border-red-500/50 bg-red-500/50 backdrop-blur-sm' : 'border-white/20 bg-black/50 backdrop-blur-sm'}`}>
+                                        <button onClick={isEditing ? cancelEdit : () => { setIsEditing(true); setActiveWidgetTab('widgets'); }} className={`p-2 rounded-full transition-colors border ${isEditing ? 'border-red-500/50 bg-red-500/50 backdrop-blur-sm' : 'border-white/20 bg-black/50 backdrop-blur-sm'}`}>
                                             {isEditing ? <XIcon className="w-5 h-5 text-red-300" /> : <EditIcon className="w-5 h-5 text-gray-300" />}
                                         </button>
                                     )}
@@ -743,7 +730,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     <button onClick={isEditing ? handleSave : onClose} className="px-4 py-1.5 text-xs font-bold rounded-lg luxe-skin-button">
                                         {isEditing ? 'SALVAR' : 'OK'}
                                     </button>
-                                    {!isEditing && !isBasicMode && (
+                                    {!isEditing && (
                                         <button
                                             type="button"
                                             onClick={openExistingAchievements}
@@ -779,24 +766,22 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         </div>
                                     </button>
 
-                                    {!isBasicMode && (
-                                        <div
-                                            className="absolute -inset-1 pointer-events-none z-40"
-                                            style={
-                                                selectedBorder?.imageUrl
-                                                    ? {
-                                                        backgroundImage: `url(${selectedBorder.imageUrl})`,
-                                                        backgroundSize: 'contain',
-                                                        backgroundPosition: 'center',
-                                                        backgroundRepeat: 'no-repeat',
-                                                    }
-                                                    : {
-                                                        border: `4px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
-                                                        borderRadius: '50%',
-                                                    }
-                                            }
-                                        />
-                                    )}
+                                    <div
+                                        className="absolute -inset-1 pointer-events-none z-40"
+                                        style={
+                                            selectedBorder?.imageUrl
+                                                ? {
+                                                    backgroundImage: `url(${selectedBorder.imageUrl})`,
+                                                    backgroundSize: 'contain',
+                                                    backgroundPosition: 'center',
+                                                    backgroundRepeat: 'no-repeat',
+                                                }
+                                                : {
+                                                    border: `4px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
+                                                    borderRadius: '50%',
+                                                }
+                                        }
+                                    />
 
                                     <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-50" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
                                         <span className="text-lg font-black text-white">{masteryIndex}</span>
@@ -855,7 +840,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                             </div>
 
                             <div className="px-4 pb-0 w-full">
-                                {!isBasicMode && displayProfile.bannerUrl ? (
+                                {displayProfile.bannerUrl ? (
                                     <div className="relative group mb-0 -my-1 px-4 flex items-center justify-center">
                                         <img src={resolveCatalogAssetUrl(displayProfile.bannerUrl)} alt="Banner" className="mx-auto h-16 object-contain scale-115" crossOrigin="anonymous" />
                                         {isEditing && isOwnProfile && (
@@ -864,7 +849,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             </div>
                                         )}
                                     </div>
-                                ) : !isBasicMode && isEditing && isOwnProfile ? (
+                                ) : isEditing && isOwnProfile ? (
                                     <div className="mb-1 w-full cursor-pointer group" onClick={() => setBannerModalOpen(true)}>
                                         <div className="border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center p-4 group-hover:bg-white/5 group-hover:border-white/40 transition-all">
                                             <PlusIcon className="w-6 h-6 text-gray-400 mb-1 group-hover:text-white" />
@@ -875,14 +860,12 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
 
                                 <div className="space-y-1">
                                     <div className="flex bg-black/30 backdrop-blur-sm rounded-xl p-0.5 border border-white/5 mb-1 relative z-20">
-                                        {!isBasicMode && (
-                                            <button
-                                                onClick={() => setActiveWidgetTab('widgets')}
-                                                className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'widgets' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                                            >
-                                                Widgets
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => setActiveWidgetTab('widgets')}
+                                            className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'widgets' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                        >
+                                            Widgets
+                                        </button>
                                         <button
                                             onClick={() => setActiveWidgetTab('summary')}
                                             className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'summary' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
@@ -897,7 +880,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         </button>
                                     </div>
 
-                                    {!isBasicMode && activeWidgetTab === 'widgets' && (
+                                    {activeWidgetTab === 'widgets' && (
                                         <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full space-y-2">
                                             {hasVisibleAssetWidgets ? (
                                                 <div className="grid grid-cols-2 gap-1.5">
@@ -1024,109 +1007,26 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             </div>
                                         )
                                     )}
-
-                                    {false && (
-                                        <>
-                                    {/* Tab Content */}
-                                    {activeWidgetTab === 'summary' || isBasicMode ? (
-                                        isEditing && isOwnProfile ? (
-                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
-                                                <div className="flex justify-between items-center mb-1.5">
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Widgets Visíveis ({editableProfile.visibleWidgets?.length || 0}/6)</span>
-                                                </div>
-                                                <div className="grid grid-cols-6 gap-1.5">
-                                                    {assets.flatMap(a => a.slots).map(slot => {
-                                                        const isSelected = editableProfile.visibleWidgets?.includes(slot.id);
-                                                        return (
-                                                            <button
-                                                                key={slot.id}
-                                                                onClick={() => handleWidgetToggle(slot.id)}
-                                                                className={`col-span-2 aspect-square rounded-xl border flex flex-col items-center justify-center p-1.5 gap-1 transition-all ${isSelected
-                                                                    ? 'bg-white/10 border-[var(--skin-accent-color)] text-white'
-                                                                    : 'bg-black/20 border-white/5 text-gray-500 hover:bg-white/5'
-                                                                    }`}
-                                                            >
-                                                                <span className="text-[8px] font-bold uppercase tracking-wider">{slot.label}</span>
-                                                                {isSelected && <div className="w-2 h-2 rounded-full bg-[var(--skin-accent-color)] shadow-[0_0_5px_var(--skin-accent-color)]" />}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ) : !isOwnProfile && !canViewAssetsPreview && !isBasicMode ? (
-                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
-                                                <p className="py-4 text-center text-sm text-gray-500">Ativos privados.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full">
-                                                {displayProfile.visibleWidgets.length > 0 && !isBasicMode ? (
-                                                    <div className="grid grid-cols-6 gap-0.5">
-                                                        {displayProfile.visibleWidgets.map(slotId => {
-                                                            const slot = getSlotById(slotId);
-                                                            if (!slot) return null;
-                                                            return <ProfileSlotWidget key={slotId} slot={slot} />
-                                                        })}
-                                                    </div>
-                                                ) : isBasicMode ? (
-                                                    <div className="space-y-2">
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                                <div className="text-[8px] uppercase tracking-wider text-gray-500">Nível Geral</div>
-                                                                <div className="text-2xl font-bold text-[var(--skin-accent-color)]">{masteryIndex}</div>
-                                                            </div>
-                                                            <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                                <div className="text-[8px] uppercase tracking-wider text-gray-500">Progresso</div>
-                                                                <div className="text-2xl font-bold text-white">{isOwnProfile ? `${cycleProgress.toFixed(0)}%` : '94%'}</div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="bg-black/20 p-2 rounded-xl border border-white/5">
-                                                            <div className="flex justify-between items-center mb-1">
-                                                                <span className="text-[10px] font-bold text-gray-400">Progresso do Ciclo</span>
-                                                                <span className="text-[10px] font-bold text-white">12/30 dias</span>
-                                                            </div>
-                                                            <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
-                                                                <div className="h-full bg-[var(--skin-accent-color)] w-[40%]"></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <p className="text-center text-sm text-gray-500 py-4">Nenhum widget visível.</p>
-                                                )}
-                                            </div>
-                                        )
-                                    ) : (
-                                        <div className="bg-black/30 backdrop-blur-sm p-1 rounded-2xl border border-white/5 w-full flex items-center justify-center">
-                                            <Suspense fallback={<div className="w-[220px] h-[220px]" />}>
-                                                <AssetPentagon
-                                                    assets={assets}
-                                                    tempLevels={profilePentagonLevels}
-                                                    size={220}
-                                                />
-                                            </Suspense>
-                                        </div>
-                                    )}
-                                        </>
-                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        {!isBasicMode && canOpenAssetsPreview && (
+                        {canOpenAssetsPreview && (
                             <ProfileMasteryOrb
                                 level={masteryIndex}
                                 skinId={displayProfile.skin}
                                 onClick={() => setIsAssetsPreviewOpen(true)}
                             />
                         )}
-                        {!isBasicMode && PRODUCT_FEATURES.personalGarden && canViewGarden && (
+                        {PRODUCT_FEATURES.personalGarden && canViewGarden && (
                             <ProfileGardenOrb
                                 onClick={() => setGardenOpen(true)}
                                 title={isOwnProfile ? 'Meu jardim' : `Jardim de ${displayProfile.nickname || 'jogador'}`}
                             />
                         )}
 
-                        {/* Unified Sovereign Display - Hidden in Basic Mode */}
-                        {!isBasicMode && displayProfile.sovereign && (
+                        {/* Unified Sovereign Display */}
+                        {displayProfile.sovereign && (
                             <UnifiedSovereignDisplay
                                 sovereignConfig={displayProfile.sovereign}
                                 onClick={() => setIsSovereignModalOpen(true)}

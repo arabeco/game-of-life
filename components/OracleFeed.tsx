@@ -39,7 +39,6 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
         deleteNotification,
         oracleMessages,
         markOracleMessageAsRead,
-        appMode,
         oraclePreferences,
     } = useGame();
     const initialTab: Tab = initialTabProp;
@@ -50,8 +49,8 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
     }, [initialTab]);
 
     const activeOracleMode = oraclePreferences?.activeMode || 'neutro';
-    const chatNotifications = getOracleChatNotificationsForProfile(notifications, appMode, activeOracleMode);
-    const requestNotifications = getOracleRequestNotificationsForProfile(notifications, appMode, activeOracleMode);
+    const chatNotifications = getOracleChatNotificationsForProfile(notifications, activeOracleMode);
+    const requestNotifications = getOracleRequestNotificationsForProfile(notifications, activeOracleMode);
     const unreadRequests = requestNotifications.filter((notification) => !notification.read).length;
     const unreadChat = oracleMessages.some((message) => !message.read) || chatNotifications.some((notification) => !notification.read);
 

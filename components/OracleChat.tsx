@@ -278,13 +278,12 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       oracleMessages,
       oraclePreferences,
       new Date(),
-      userProfile.appMode === 'BASIC' ? 'BASIC' : 'GAME',
     ),
-    [oracleMessages, oraclePreferences, userProfile.appMode],
+    [oracleMessages, oraclePreferences],
   );
   const oracleSignalNotifications = useMemo(
-    () => getOracleChatNotificationsForProfile(notifications, userProfile.appMode === 'BASIC' ? 'BASIC' : 'GAME', currentMode),
-    [currentMode, notifications, userProfile.appMode],
+    () => getOracleChatNotificationsForProfile(notifications, currentMode),
+    [currentMode, notifications],
   );
 
   const availableTaskPool = useMemo(() => buildActionPoolByDate(actions, taskPool, tasks, null), [actions, taskPool, tasks]);

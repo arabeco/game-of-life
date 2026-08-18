@@ -20,14 +20,7 @@ type AchievementRewardDetail = {
     name?: string;
 };
 
-const BASIC_VISIBLE_ACHIEVEMENTS: FeedEventType[] = [
-    'MILESTONE_COMPLETED',
-    'QUEST_COMPLETED',
-    'REPORT_COMPLETED',
-    'COMPETITION_COMPLETED',
-];
-
-const getAchievementDetails = (type: FeedEventType, data: any, isBasicMode: boolean) => {
+const getAchievementDetails = (type: FeedEventType, data: any) => {
     switch (type) {
         case 'MILESTONE_COMPLETED':
             return { title: 'Marco concluído', icon: data.icon || '\u{1F3C1}', message: `Você concluiu o marco "${data.name}".` };
@@ -65,20 +58,16 @@ const getAchievementDetails = (type: FeedEventType, data: any, isBasicMode: bool
 };
 
 export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement, onClose }) => {
-    const { addFeedEvent, userProfile, showToast, appMode, oraclePreferences } = useGame();
+    const { addFeedEvent, userProfile, showToast, oraclePreferences } = useGame();
     // Quem desliga as telas de comemoracao nao perde nada: a recompensa continua
     // entrando e o aviso vira toast. So a tela cheia deixa de tomar o aparelho.
     const celebrationScreensEnabled = oraclePreferences?.celebrationScreensEnabled !== false;
-    const isBasicMode = appMode === 'BASIC';
-    const { title, icon, message } = getAchievementDetails(achievement.type, achievement.data, isBasicMode);
+    const { title, icon, message } = getAchievementDetails(achievement.type, achievement.data);
     const cardRef = useRef<HTMLDivElement>(null);
     const isArenaComplete = achievement.type === 'ARENA_COMPLETED';
     const isCompetitionResult = achievement.type === 'COMPETITION_COMPLETED';
-    const isGM = userProfile.role === 'gm' || userProfile.role === 'admin';
-    const canRenderAchievement =
-        achievement.type !== 'ARENA_COMPLETED' &&
-        (appMode === 'GAME' || isGM || BASIC_VISIBLE_ACHIEVEMENTS.includes(achievement.type));
-    const canShareAchievement = !isCompetitionResult && (appMode === 'GAME' || isGM);
+    const canRenderAchievement = achievement.type !== 'ARENA_COMPLETED';
+    const canShareAchievement = !isCompetitionResult;
 
     useEffect(() => {
         if (!canRenderAchievement) {
@@ -103,7 +92,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     const isQuestComplete = achievement.type === 'QUEST_COMPLETED';
     const isStreakMilestone = isQuestComplete && achievement.data.title === 'Sete Dias em Movimento';
     const isReportComplete = achievement.type === 'REPORT_COMPLETED';
-    const showVideo = !isBasicMode && (isRankUp || isQuestComplete || isReportComplete);
+    const showVideo = isRankUp || isQuestComplete || isReportComplete;
     const { showVideoStage, showContentStage, isVideoFading, triggerReveal } = useVideoStageTransition({
         enabled: showVideo,
         revealDelayMs: 4500,
@@ -142,18 +131,12 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     };
     const headingClass = isCompetitionResult
         ? 'text-xl font-black uppercase leading-tight tracking-[0.16em] text-white'
-        : isBasicMode
-        ? 'text-[1.35rem] font-bold leading-tight tracking-[0.14em] text-white'
         : 'text-2xl font-black uppercase leading-tight tracking-[0.3em] text-white';
     const messageClass = isCompetitionResult
         ? 'mx-auto max-w-[92%] text-xs font-semibold leading-relaxed text-white/72'
-        : isBasicMode
-        ? 'mx-auto max-w-[85%] text-[11px] font-medium leading-relaxed tracking-[0.04em] text-gray-300/88'
         : 'mx-auto max-w-[85%] text-[10px] font-bold uppercase italic leading-relaxed tracking-[0.1em] text-gray-400 opacity-70';
-    const primaryButtonLabel = achievement.data.buttonLabel || (isBasicMode || isCompetitionResult ? 'Continuar' : (isArenaComplete ? 'OK' : 'Prosseguir'));
-    const primaryButtonClass = isBasicMode
-        ? 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl py-4 text-[11px] font-bold tracking-[0.16em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]'
-        : 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
+    const primaryButtonLabel = achievement.data.buttonLabel || (isCompetitionResult ? 'Continuar' : (isArenaComplete ? 'OK' : 'Prosseguir'));
+    const primaryButtonClass = 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
 
     const handlePostToFeed = () => {
         if (!canShareAchievement) return;

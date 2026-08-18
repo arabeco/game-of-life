@@ -37,7 +37,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     defaultRestScreenOpen = true,
     onRestScreenVisibilityChange,
 }) => {
-    const { userProfile, assets, oracleMessages, notifications, appMode, clan, oraclePreferences } = useGame();
+    const { userProfile, assets, oracleMessages, notifications, clan, oraclePreferences } = useGame();
     const userId = userProfile?.id || '';
     const [isMoodModalOpen, setMoodModalOpen] = useState(false);
     const [isOracleOpen, setOracleOpen] = useState(false);
@@ -49,11 +49,9 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
     const [restScreenActionSession, setRestScreenActionSession] = useState<RestScreenActionSessionDetail | null>(null);
     const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
     const hiddenAtRef = useRef<number | null>(null);
-    const isBasicMode = appMode === 'BASIC';
-    
+
     const visibleNotifications = getVisibleNotificationsForProfile(
         notifications,
-        appMode,
         oraclePreferences?.activeMode || 'neutro',
     );
     const unreadNotificationsCount = getUnreadBadgeCount(visibleNotifications);
@@ -321,8 +319,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         </div>
 
                                         {/* Border as Overlay */}
-                                        {!isBasicMode && (
-                                        <div 
+                                        <div
                                             className="absolute inset-0 w-full h-full pointer-events-none z-40"
                                             style={
                                                 selectedBorder?.imageUrl
@@ -338,7 +335,6 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                                 }
                                             }
                                         />
-                                        )}
                                     </div>
                                     <div className="shell-level-badge absolute top-[3rem] z-[60] group-hover:scale-110" style={{borderColor: 'var(--skin-accent-color)'}} id="oracle-pro-badge">
                                         <span data-testid="header-mastery-index" className="shell-level-text text-[11px] font-black">{masteryIndex}</span>

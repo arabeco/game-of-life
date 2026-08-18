@@ -4,23 +4,20 @@ import { GoldStore } from '../components/Store/GoldStore';
 import { TheForge } from '../components/Store/TheForge';
 import { CodexStore } from '../components/Store/CodexStore';
 import { ItemsStore } from '../components/Store/ItemsStore';
-import { useGame } from '../contexts/GameContext';
 import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/screenIntroTips';
 
+const ALLOWED_TABS: readonly StoreTab[] = ['codexes', 'items', 'forge', 'store'];
+
 export const StoreView: React.FC = () => {
-  const { appMode } = useGame();
   const [activeTab, setActiveTab] = useState<StoreTab>('codexes');
   const [scrollRequest, setScrollRequest] = useState<{ section: string; nonce: number } | null>(null);
-  const allowedTabs: readonly StoreTab[] = appMode === 'BASIC'
-    ? ['codexes', 'store']
-    : ['codexes', 'items', 'forge', 'store'];
 
   const sanitizeTab = React.useCallback((tab?: StoreTab | null): StoreTab => {
-    if (!tab || !allowedTabs.includes(tab)) {
+    if (!tab || !ALLOWED_TABS.includes(tab)) {
       return 'codexes';
     }
     return tab;
-  }, [allowedTabs]);
+  }, []);
 
   React.useEffect(() => {
     const safeTab = sanitizeTab(activeTab);

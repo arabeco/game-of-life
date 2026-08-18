@@ -17,25 +17,18 @@ interface MissionCompletionModalProps {
 }
 
 export const MissionCompletionModal: React.FC<MissionCompletionModalProps> = ({ mission, onOk, onClose, insignia }) => {
-    const { userProfile, showToast, appMode } = useGame();
+    const { userProfile, showToast } = useGame();
     const { trigger } = useSensoryFeedback();
     const userSkin = SKINS_DATA.find((skin) => skin.id === userProfile.skin);
     const skinColor = userSkin?.color || '#ffffff';
-    const isBasicMode = appMode === 'BASIC';
     const { showVideoStage, showContentStage, isVideoFading, triggerReveal } = useVideoStageTransition({
-        enabled: !isBasicMode,
+        enabled: true,
         revealDelayMs: 4500,
         fadeDurationMs: 320,
     });
-    const headingClass = isBasicMode
-        ? 'text-[1.35rem] font-bold leading-tight tracking-[0.14em] text-white'
-        : 'text-2xl font-black uppercase leading-tight tracking-[0.3em] text-white';
-    const descriptionClass = isBasicMode
-        ? 'mx-auto max-w-[85%] text-[11px] font-medium leading-relaxed tracking-[0.04em] text-gray-300/88'
-        : 'mx-auto max-w-[85%] text-[10px] font-bold uppercase italic leading-relaxed tracking-[0.1em] text-gray-400 opacity-70';
-    const primaryButtonClass = isBasicMode
-        ? 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl py-4 text-[11px] font-bold tracking-[0.16em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]'
-        : 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
+    const headingClass = 'text-2xl font-black uppercase leading-tight tracking-[0.3em] text-white';
+    const descriptionClass = 'mx-auto max-w-[85%] text-[10px] font-bold uppercase italic leading-relaxed tracking-[0.1em] text-gray-400 opacity-70';
+    const primaryButtonClass = 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
 
     useEffect(() => {
         trigger('fanfare');

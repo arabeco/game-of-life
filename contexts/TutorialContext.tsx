@@ -17,8 +17,7 @@ interface TutorialContextType {
     tooltipContent: TooltipContent | null;
     tutorialSteps: TutorialStep[];
     activeLevel: number | null;
-    didForceGameMode: boolean;
-    originalMode: 'BASIC' | 'GAME' | null;
+    // Mantido apenas porque a MundoView ainda le esta flag; hoje e sempre false.
     startedFromSettings: boolean;
     startTutorial: (startIndex?: number | null, levelIndicator?: number | null, fromSettings?: boolean) => void;
     startTutorialLevel: (level: number) => void;
@@ -42,11 +41,9 @@ const getTutorialSection = (level: number | null) => {
 };
 
 export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { userProfile, completeTutorialMission, appMode, setAppMode, addProfileFlag, updateUserProfile } = useGame();
+    const { userProfile, completeTutorialMission, addProfileFlag, updateUserProfile } = useGame();
     const [isTutorialActive, setIsTutorialActive] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
-    const [didForceGameMode, setDidForceGameMode] = useState(false);
-    const [originalMode, setOriginalMode] = useState<'BASIC' | 'GAME' | null>(null);
     const [activeLevel, setActiveLevel] = useState<number | null>(null);
     const [startedFromSettings, setStartedFromSettings] = useState(false);
 
@@ -72,19 +69,6 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
     const endTutorial = useCallback((completed: boolean = false) => {
         setIsTutorialActive(false);
 
-        // Restore original mode if we forced it or saved it
-        if (didForceGameMode || originalMode) {
-            const modeToRestore = originalMode || 'BASIC';
-            console.log(`Tutorial Engine: Restoring original mode (${modeToRestore})`);
-
-            // Small delay to let the overlay unmount before the whole app re-renders
-            setTimeout(() => {
-                setAppMode(modeToRestore);
-                setDidForceGameMode(false);
-                setOriginalMode(null);
-            }, 100);
-        }
-
         const finishedLevel = activeLevel;
         setActiveLevel(null);
         setCurrentStep(0);
@@ -99,23 +83,18 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
                 updateUserProfile({ tutorialCompletedAt: Date.now() });
             }
         }
-    }, [completeTutorialMission, activeLevel, addProfileFlag, originalMode, setAppMode, didForceGameMode, startedFromSettings, updateUserProfile]);
+    }, [completeTutorialMission, activeLevel, addProfileFlag, startedFromSettings, updateUserProfile]);
 
     const startTutorial = useCallback((startIndex: number | null = null, levelIndicator: number | null = null, fromSettings: boolean = false) => {
         const index = startIndex !== null ? startIndex : 0;
         setStartedFromSettings(fromSettings);
 
-        // Save original mode before starting
-        console.log(`Tutorial Engine: Saving original mode (${appMode})`);
-        setOriginalMode(appMode as 'BASIC' | 'GAME');
-
         setActiveLevel(levelIndicator !== null ? levelIndicator : null);
         console.log(`Tutorial Engine: Jump to Index ${index} (Target: ${TUTORIAL_STEPS[index]?.title})`);
         setCurrentStep(index);
         setIsTutorialActive(true);
-    }, [appMode]);
+    }, []);
 
-    // Real mode switching based on current step
     useEffect(() => {
         if (!isTutorialActive) {
             (window as any).__GOL_TUTORIAL_ACTIVE__ = false;
@@ -123,28 +102,13 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
 
         (window as any).__GOL_TUTORIAL_ACTIVE__ = true;
-        const step = TUTORIAL_STEPS[currentStep];
-        const activeSection = getTutorialSection(activeLevel);
-        const isGameStep = activeSection ? activeSection.gameOnly : !!(step && (step.category === 'IDENTIDADE' || step.category === 'MUNDO' || step.category === 'ARQUITETO'));
-
-        if (isGameStep && appMode === 'BASIC') {
-            console.log(`Tutorial Engine: Forcing GAME Mode for step ${currentStep}`);
-            // If we don't have an original mode yet, save it
-            if (!originalMode) setOriginalMode('BASIC');
-            setDidForceGameMode(true);
-            setAppMode('GAME');
-        } else if (!isGameStep && didForceGameMode && appMode === 'GAME') {
-            console.log(`Tutorial Engine: Reverting to original mode (${originalMode || 'BASIC'})`);
-            setAppMode(originalMode || 'BASIC');
-            setDidForceGameMode(false);
-        }
 
         // Open the mastery sliders whenever the focused tutorial step points there.
         if (TUTORIAL_STEPS[currentStep]?.targetId === 'mastery-sliders-button') {
             console.log('Tutorial Engine: Triggering Mastery Quiz Event');
             window.dispatchEvent(new CustomEvent('tutorialOpenMasteryQuiz'));
         }
-    }, [currentStep, isTutorialActive, appMode, didForceGameMode, setAppMode, originalMode]);
+    }, [currentStep, isTutorialActive]);
 
     const nextStep = useCallback(() => {
         const activeSection = getTutorialSection(activeLevel);
@@ -199,8 +163,6 @@ export const TutorialProvider: React.FC<{ children: ReactNode }> = ({ children }
             tooltipContent: null,
             tutorialSteps,
             activeLevel,
-            didForceGameMode,
-            originalMode,
             startedFromSettings,
             startTutorial,
             startTutorialLevel,

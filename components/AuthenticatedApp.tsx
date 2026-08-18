@@ -237,12 +237,8 @@ const isBroadcastCompatibleWithVersion = (row: AppBroadcastRow) => {
     return true;
 };
 
-const isBroadcastCompatibleWithMode = (row: AppBroadcastRow, appMode: string) => {
-    if (row.audience === 'all' || row.audience === 'beta') return true;
-    if (row.audience === 'basic') return appMode === 'BASIC';
-    if (row.audience === 'game') return appMode !== 'BASIC';
-    return false;
-};
+// Sem modo basico, o publico 'basic' ficou sem ninguem para receber o comunicado.
+const isBroadcastCompatibleWithMode = (row: AppBroadcastRow) => row.audience !== 'basic';
 
 const mapBroadcastRow = (row: AppBroadcastRow): AppBroadcast => ({
     id: row.id,
@@ -353,11 +349,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     onBlockingOverlayChange,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, appMode, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile } = useGame();
+    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile } = useGame();
     const historyReady = useRef(false);
 
-    const activeUIMode = appMode === 'GAME' ?'GAME' : 'BASIC';
-    const effectiveUiSkin = resolveUiSkinId(activeUIMode === 'BASIC' ? 'BASIC' : (userProfile.skin || 'BASIC'));
+    const effectiveUiSkin = resolveUiSkinId(userProfile.skin || 'BASIC');
     const canUseAssetsView = !isBuilderMode;
     const availableViews = useMemo(() => getAvailableViews(canUseAssetsView, isBuilderMode), [canUseAssetsView, isBuilderMode]);
     const [currentView, setCurrentView] = useState<View>(() => {
@@ -1104,9 +1099,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const mainPaddingBottom = currentView === 'assets'
         ?'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
-    const themeClass = activeUIMode === 'BASIC'
-        ? `mode-office theme-${(activeTheme || 'DARK').toLowerCase()}`
-        : `mode-game theme-${(activeTheme || 'DARK').toLowerCase()}`;
+    const themeClass = `mode-game theme-${(activeTheme || 'DARK').toLowerCase()}`;
 
     useLayoutEffect(() => {
         const skin = effectiveUiSkin || 'BASIC';
@@ -1222,7 +1215,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
             {dailyCompletionPrompt && (
                 <DailyCompletionPromptModal
-                    mode={activeUIMode}
+                    mode="GAME"
                     payload={dailyCompletionPrompt}
                     onClose={() => setDailyCompletionPrompt(null)}
                     onOpenSitrep={handleOpenSitrepFromPrompt}
@@ -1238,7 +1231,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             </Suspense>
 
             <footer
-                className={`auth-footer safe-area-bottom ${activeUIMode === 'BASIC' ?'auth-footer--basic' : 'auth-footer--game'}`}
+                className="auth-footer safe-area-bottom auth-footer--game"
                 style={{ paddingBottom: 'var(--safe-area-bottom)' }}
             >
                 <div
@@ -1275,7 +1268,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         achievementUnlocked,
         setAchievementUnlocked,
         userProfile,
-        appMode,
         updateUserProfile,
         updateOraclePreferences,
         addProfileFlag,
@@ -1364,7 +1356,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
 
                 const completedFlags = userProfile.completedSeasonMissions || [];
                 const nextBroadcast = (data as AppBroadcastRow[]).find((row) => {
-                    if (!isBroadcastCompatibleWithMode(row, appMode)) return false;
+                    if (!isBroadcastCompatibleWithMode(row)) return false;
                     if (!isBroadcastCompatibleWithVersion(row)) return false;
                     if (sessionDismissedBroadcastIds.includes(row.id)) return false;
                     const seenFlag = `${APP_BROADCAST_SEEN_FLAG_PREFIX}${row.id}`;
@@ -1384,7 +1376,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             cancelled = true;
         };
     }, [
-        appMode,
         isProfileLoaded,
         pendingAppBroadcast,
         sessionDismissedBroadcastIds,
@@ -1905,7 +1896,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 {shouldShowVanguardWelcome && (
                     <VanguardWelcomeModal
                         open={shouldShowVanguardWelcome}
-                        mode={userProfile.appMode}
                         payload={userProfile.vanguardWelcomePayload}
                         onClose={handleCloseVanguardWelcome}
                     />
@@ -1913,7 +1903,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 {shouldShowPremiumReward && (
                     <RewardPackModal
                         open={shouldShowPremiumReward}
-                        mode={userProfile.appMode}
                         payload={userProfile.premiumRewardPayload}
                         onClose={handleClosePremiumReward}
                         fallbackEyebrow="Premium 30 dias"
@@ -1927,7 +1916,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 {shouldShowBetaReward && (
                     <RewardPackModal
                         open={shouldShowBetaReward}
-                        mode={userProfile.appMode}
                         payload={userProfile.betaRewardPayload}
                         onClose={handleCloseBetaReward}
                         fallbackEyebrow="Beta 14 de 14"
@@ -1951,7 +1939,6 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 {shouldShowAppBroadcast && pendingAppBroadcast && (
                     <AppBroadcastModal
                         broadcast={pendingAppBroadcast}
-                        mode={userProfile.appMode}
                         onClose={() => handleCloseAppBroadcast(pendingAppBroadcast)}
                         onCta={handleAppBroadcastCta}
                     />

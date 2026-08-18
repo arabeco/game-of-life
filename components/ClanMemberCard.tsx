@@ -13,8 +13,7 @@ interface ClanMemberCardProps {
 }
 
 export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeaderView, onKick }) => {
-    const { nobilityRanks, userProfile, clan, appMode } = useGame();
-    const isBasicMode = appMode === 'BASIC';
+    const { nobilityRanks, userProfile, clan } = useGame();
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
     const rank = nobilityRanks.find(r => r.id === member.nobility.rankId);
     const isSelf = member.id === userProfile.id;

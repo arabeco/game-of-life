@@ -1,5 +1,5 @@
 ﻿import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, AppMode, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
+import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
@@ -669,8 +669,6 @@ export type GoldPackPurchaseContext = {
 
 const shouldPushOracleFeedMessage = (
     message: OracleMessage,
-    appMode: AppMode = 'GAME',
-    dailyFocusCardEnabled = false,
     presenceLevel = 1,
 ): boolean => {
     const modeConfig = getOracleModeConfig(message.mode);
@@ -683,10 +681,6 @@ const shouldPushOracleFeedMessage = (
 
     if (presenceLevel < 3) {
         return false;
-    }
-
-    if (appMode === 'BASIC' && dailyFocusCardEnabled) {
-        return true;
     }
 
     if (modeConfig.pushProfile === 'essencial') {
@@ -934,9 +928,7 @@ export interface GameContextType {
     deleteCampaign: (id: string) => Promise<void>;
 
     // App Mode & Theme
-    appMode: AppMode;
     isProfileLoaded: boolean;
-    setAppMode: (mode: AppMode) => void;
     activeTheme: ThemePreference;
     toggleTheme: () => void;
     getSharedActionPoolProgress?: (arenaId: string, actionId: string) => number;
@@ -1262,22 +1254,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     // App Mode & Theme Implementation
-    const [appMode, setAppModeState] = useState<AppMode>(() => {
-        const userId = session?.user.id;
-        if (userId) {
-            try {
-                const saved = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${userId}`);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    const val = parsed.appMode;
-                    if (val === 'GAME' || val === 'BASIC') return val;
-                    if (val === 'OFFICE') return 'BASIC';
-                    return 'BASIC';
-                }
-            } catch (e) { }
-        }
-        return 'BASIC';
-    });
 
     const [activeTheme, setActiveTheme] = useState<ThemePreference>(() => {
         const userId = session?.user.id;
@@ -1294,27 +1270,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     });
 
     useEffect(() => {
-        setAppModeState(userProfile?.appMode === 'GAME' ? 'GAME' : 'BASIC');
         if (userProfile?.themePreference) {
             setActiveTheme(userProfile.themePreference);
         }
-    }, [userProfile?.appMode, userProfile?.themePreference]);
+    }, [userProfile?.themePreference]);
 
-    const setAppMode = useCallback(async (mode: AppMode) => {
-        setAppModeState(mode);
-        if (userProfile) {
-            // Optimistic update
-            updateUserProfile({ appMode: mode });
-
-            // Persist
-            const { error } = await supabase
-                .from('user_profiles')
-                .update({ app_mode: mode })
-                .eq('id', userProfile.id);
-
-            if (error) console.error('Error updating app mode:', error);
-        }
-    }, [userProfile]);
 
     const toggleTheme = useCallback(async () => {
         const newTheme = activeTheme === 'DARK' ?'LIGHT' : 'DARK';
@@ -1571,7 +1531,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             oracleMessages,
             oraclePreferences,
             now,
-            userProfile.appMode === 'BASIC' ? 'BASIC' : 'GAME',
         );
         const isPremiumUser = hasPremiumAccess(userProfile);
         const selectedMode = isPremiumUser ? (oraclePreferences.activeMode || 'neutro') : 'neutro';
@@ -1831,8 +1790,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const activeOracleMode = oraclePreferences.activeMode || 'neutro';
         const dmNotificationsEnabled = oraclePreferences.dmNotificationsEnabled ?? true;
-        const visibleNotifications = getVisibleNotificationsForProfile(unseenNotifications, appMode, activeOracleMode)
-            .filter((notification) => shouldPushNotificationForProfile(notification, appMode, activeOracleMode))
+        const visibleNotifications = getVisibleNotificationsForProfile(unseenNotifications, activeOracleMode)
+            .filter((notification) => shouldPushNotificationForProfile(notification, activeOracleMode))
             .filter((notification) => dmNotificationsEnabled || notification.type !== 'direct_message')
             .filter((notification) => notification.type !== 'action_reminder');
 
@@ -1892,7 +1851,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 });
             }
         })();
-    }, [appMode, notifications, oraclePreferences?.activeMode, oraclePreferences?.dmNotificationsEnabled, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id, showToast]);
+    }, [notifications, oraclePreferences?.activeMode, oraclePreferences?.dmNotificationsEnabled, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id, showToast]);
 
 
     useEffect(() => {
@@ -1931,8 +1890,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (!latestMessage || !shouldPushOracleFeedMessage(
             latestMessage,
-            appMode === 'BASIC' ? 'BASIC' : 'GAME',
-            Boolean(oraclePreferences?.dailyFocusCardEnabled),
             oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL,
         )) {
             return;
@@ -1945,7 +1902,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             tag: `glyph-oracle-${latestMessage.id}`,
             url: '/?oracle=chat',
         });
-    }, [appMode, oracleMessages, oraclePreferences?.dailyFocusCardEnabled, oraclePreferences?.notificationsEnabled, oraclePreferences?.presenceLevel, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id]);
+    }, [oracleMessages, oraclePreferences?.dailyFocusCardEnabled, oraclePreferences?.notificationsEnabled, oraclePreferences?.presenceLevel, oraclePreferences?.pushEnabled, remotePushRegistered, session?.user.id]);
 
     useEffect(() => {
         const userId = session?.user.id;
@@ -8196,8 +8153,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
 
     useEffect(() => {
-        document.body.setAttribute('data-skin', resolveUiSkinId(appMode === 'BASIC' ? 'BASIC' : userProfile.skin));
-    }, [appMode, userProfile.skin]);
+        document.body.setAttribute('data-skin', resolveUiSkinId(userProfile.skin));
+    }, [userProfile.skin]);
 
     useEffect(() => {
         const supabaseUserId = getSupabaseUserId();
@@ -8269,16 +8226,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         }
                     });
 
-                    if (appMode === 'BASIC') {
-                        showToast(`Patente ${newRank.name} alcançada.`, 'success');
-                    } else if (rewardNames.length > 0) {
+                    if (rewardNames.length > 0) {
                         showToast(`Patente ${newRank.name} alcançada. Itens de legado integrados ao Arsenal: ${rewardNames.join(', ')}.`, 'success');
                     }
                 }
             }
             updateUserProfile({ nobility: { ...userProfile.nobility, rankId: newRankId } });
         }
-    }, [userProfile.nobility.exp, userProfile.nobility.rankId, hasHydratedFromSupabase, appMode]);
+    }, [userProfile.nobility.exp, userProfile.nobility.rankId, hasHydratedFromSupabase]);
 
     const updateUserProfile = (profileData: Partial<UserProfile>) => {
         if (profileData.avatarUrl) {
@@ -8286,7 +8241,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         setUserProfile(prev => ({ ...prev, ...profileData }));
         if (profileData.skin) {
-            document.body.setAttribute('data-skin', appMode === 'BASIC' ? 'BASIC' : profileData.skin);
+            document.body.setAttribute('data-skin', profileData.skin);
         }
         const supabaseUserId = getSupabaseUserId();
         if (supabaseUserId) {
@@ -8370,7 +8325,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'expBoostMultiplier',
                 'expBoostExpiresAt',
                 'expBoostProductId',
-                'appMode',
                 'themePreference',
                 'arenasViewMode',
                 'plannerViewMode',
@@ -13613,7 +13567,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, appMode, isProfileLoaded, setAppMode, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
         }}>

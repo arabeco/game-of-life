@@ -65,7 +65,7 @@ const AppBootScreen: React.FC<{ accentColor?: string; mode?: 'GAME' | 'BASIC'; t
     theme = 'DARK',
 }) => (
     <div
-        className={`relative flex h-full min-h-0 items-center justify-center overflow-hidden text-white ${mode === 'BASIC' ? `mode-office theme-${(theme || 'DARK').toLowerCase()}` : ''}`}
+        className="relative flex h-full min-h-0 items-center justify-center overflow-hidden text-white"
         style={{
             ['--skin-accent-color' as string]: accentColor,
             background: 'radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 28%), linear-gradient(180deg, #050505 0%, #000000 100%)',
@@ -115,7 +115,7 @@ const App: React.FC = () => {
     const bootMetricSentRef = useRef(false);
     const bootErrorSignatureRef = useRef('');
     const bootEntryModeRef = useRef<AppRuntimeEntryMode>('unknown');
-    const [bootVisuals, setBootVisuals] = useState<{ skin: string; mode: 'GAME' | 'BASIC'; theme: 'LIGHT' | 'DARK' | null }>({
+    const [bootVisuals, setBootVisuals] = useState<{ skin: string; theme: 'LIGHT' | 'DARK' | null }>({
         skin: 'BASIC',
         mode: 'BASIC',
         theme: 'DARK',
@@ -160,7 +160,6 @@ const App: React.FC = () => {
             userId,
             durationMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()) - bootStartedAtRef.current,
             entryMode: bootEntryModeRef.current,
-            appMode: bootVisualsRef.current.mode,
             renderMode: renderModeRef.current,
             errorName,
             errorMessage,
@@ -179,7 +178,6 @@ const App: React.FC = () => {
             userId,
             durationMs: (typeof performance !== 'undefined' ? performance.now() : Date.now()) - bootStartedAtRef.current,
             entryMode: bootEntryModeRef.current,
-            appMode: bootVisualsRef.current.mode,
             renderMode: renderModeRef.current,
             theme: bootVisualsRef.current.theme,
         });
@@ -465,7 +463,6 @@ const App: React.FC = () => {
                 const parsed = JSON.parse(cached);
                 setBootVisuals({
                     skin: parsed?.skin || 'BASIC',
-                    mode: parsed?.appMode === 'GAME' ? 'GAME' : 'BASIC',
                     theme: parsed?.themePreference === 'LIGHT' ? 'LIGHT' : 'DARK',
                 });
             } catch (storageError) {
@@ -969,7 +966,7 @@ const App: React.FC = () => {
     }, [captureBootError]);
 
     useLayoutEffect(() => {
-        const skin = resolveUiSkinId(bootVisuals.mode === 'BASIC' ? 'default' : bootVisuals.skin);
+        const skin = resolveUiSkinId(bootVisuals.skin);
         document.body.setAttribute('data-skin', skin);
         document.documentElement.setAttribute('data-skin', skin);
     }, [bootVisuals]);
@@ -1024,9 +1021,9 @@ const App: React.FC = () => {
             ) : (
                 <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-transparent font-sans text-white">
                     {showFullScreenBoot ? (
-                        <AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />
+                        <AppBootScreen theme={bootVisuals.theme} />
                     ) : (
-                        <Suspense fallback={<AppBootScreen accentColor={bootVisuals.mode === 'BASIC' ? '#ffffff' : undefined} mode={bootVisuals.mode} theme={bootVisuals.theme} />}>
+                        <Suspense fallback={<AppBootScreen theme={bootVisuals.theme} />}>
                             {session ? <AuthenticatedApp session={session} onReady={handleAuthenticatedAppReady} /> : <LoginView />}
                         </Suspense>
                     )}

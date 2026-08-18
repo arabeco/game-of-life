@@ -3,11 +3,10 @@ import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { resolveItemDef } from '../constants/items';
 import { Check, Gift } from 'lucide-react';
-import type { AppMode, RewardHighlightLine, RewardMetricCard, RewardModalPayload } from '../types';
+import type { RewardHighlightLine, RewardMetricCard, RewardModalPayload } from '../types';
 
 interface RewardPackModalProps {
   open: boolean;
-  mode?: AppMode;
   payload?: RewardModalPayload | null;
   onClose: () => void;
   fallbackEyebrow: string;

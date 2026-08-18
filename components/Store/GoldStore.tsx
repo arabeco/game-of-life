@@ -21,7 +21,6 @@ type MembershipCheckoutState = {
 
 const GOLD_SYMBOL = '\u{1FA99}';
 const formatBrl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const BASIC_MEMBERSHIP_BENEFIT_LIMIT = 4;
 
 const splitBenefitsIntoColumns = (benefits: readonly string[]) => {
     const midpoint = Math.ceil(benefits.length / 2);
@@ -34,12 +33,9 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     const [selectedPack, setSelectedPack] = useState<{ amount: number; goldAmount: number; internalProductId: string } | null>(null);
     const [selectedMembership, setSelectedMembership] = useState<MembershipCheckoutState | null>(null);
     const [confirmState, setConfirmState] = useState<GoldConfirmState | null>(null);
-    const [showAllPremiumBenefits, setShowAllPremiumBenefits] = useState(false);
-    const [showAllPlatinumBenefits, setShowAllPlatinumBenefits] = useState(false);
     const isStaffAccess = isStaffRole(userProfile.role);
     const isPremium = hasPremiumAccess(userProfile);
     const isPlatinum = hasPlatinumAccess(userProfile);
-    const isBasicMode = (userProfile.appMode || 'GAME') !== 'GAME';
     const activeMembershipTier = getActiveSubscriptionTier(userProfile);
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
     const premiumExpiresLabel = userProfile.premiumExpiresAt
@@ -97,18 +93,8 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     'Todos os planos de fundo e aparências premium',
     '1 baú da Temporada + 1 baú raro por ativação',
     ]), []);
-    const visiblePremiumBenefits = useMemo(
-        () => premiumBenefits,
-        [isBasicMode, premiumBenefits, showAllPremiumBenefits],
-    );
-    const visiblePlatinumBenefits = useMemo(
-        () => platinumBenefits,
-        [isBasicMode, platinumBenefits, showAllPlatinumBenefits],
-    );
-    const hiddenPremiumCount = Math.max(0, premiumBenefits.length - visiblePremiumBenefits.length);
-    const hiddenPlatinumCount = Math.max(0, platinumBenefits.length - visiblePlatinumBenefits.length);
-    const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(visiblePremiumBenefits), [visiblePremiumBenefits]);
-    const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(visiblePlatinumBenefits), [visiblePlatinumBenefits]);
+    const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(premiumBenefits), [premiumBenefits]);
+    const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(platinumBenefits), [platinumBenefits]);
 
     const handleBuyPack = async (packId: string) => {
         const pack = GOLD_PACK_CATALOG.find((entry) => entry.id === packId);
@@ -174,18 +160,6 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                 </div>
                             ))}
                         </div>
-                        {isBasicMode && (
-                            <div className="flex justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAllPremiumBenefits((current) => !current)}
-                                    className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/45 hover:bg-[var(--skin-accent-color)]/10"
-                                >
-                                    {showAllPremiumBenefits ? 'Menos' : `Mais${hiddenPremiumCount > 0 ? ` +${hiddenPremiumCount}` : ''}`}
-                                </button>
-                            </div>
-                        )}
-
                         <div className="flex min-w-[176px] flex-col items-stretch gap-2">
                             <button
                                 onClick={() => setSelectedMembership({
@@ -251,18 +225,6 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                 </div>
                             ))}
                         </div>
-                        {isBasicMode && (
-                            <div className="flex justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAllPlatinumBenefits((current) => !current)}
-                                    className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-amber-100 transition-all hover:border-amber-200/35 hover:bg-amber-200/10"
-                                >
-                                    {showAllPlatinumBenefits ? 'Menos' : `Mais${hiddenPlatinumCount > 0 ? ` +${hiddenPlatinumCount}` : ''}`}
-                                </button>
-                            </div>
-                        )}
-
                         <div className="flex min-w-[176px] flex-col items-stretch gap-2">
                             <button
                                 onClick={() => setSelectedMembership({

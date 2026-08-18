@@ -104,7 +104,7 @@ const Sparkles: React.FC = () => (
 );
 
 const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () => void }> = ({ member, onClose }) => {
-    const { isBasicMode, clan } = useGame();
+    const { clan } = useGame();
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
     if (!member.sovereign) return null;
     return (
@@ -344,7 +344,7 @@ const AldeiaStats: React.FC<{ slots: AldeiaSlot[], slotsConfig?: typeof ALDEIA_S
 // --- Main Modal ---
 
 export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void; }> = ({ clanName, onClose }) => {
-    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, updateArena, addAction, updateAction, deleteAction, deleteArena, scheduleTask, loadClanAndMembers, acceptSeasonQuest, showToast, activateClanQuest, clanQuestProgress, userMissionParticipations, isBasicMode, clan, getAldeiaSlots, getAldeiaPresence, updateAldeiaSlot, performAldeiaDailyUpdate, enterAldeiaSlot, appMode, friends, notifications, deleteNotification } = useGame();
+    const { userProfile, enrichedClanMembers, clanJoinRequestsIncoming, approveClanJoinRequest, rejectClanJoinRequest, leaveClan, kickClanMember, transferLeadershipAndLeave, deleteClan, clanRanks, seasons, seasonQuests, getClanQuestProgress, clanQuestParticipants, updateClan, tasks, assets, getArenas, getActionsForArena, addArena, updateArena, addAction, updateAction, deleteAction, deleteArena, scheduleTask, loadClanAndMembers, acceptSeasonQuest, showToast, activateClanQuest, clanQuestProgress, userMissionParticipations, clan, getAldeiaSlots, getAldeiaPresence, updateAldeiaSlot, performAldeiaDailyUpdate, enterAldeiaSlot, friends, notifications, deleteNotification } = useGame();
     const [now, setNow] = useState(new Date());
     useEffect(() => {
         const interval = setInterval(() => setNow(new Date()), 30000); // Update 'now' every 30 seconds
@@ -891,13 +891,6 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
     const todayString = getLocalDateString();
     const canEditBackground = !!activeSeason && activeSeason.start_date === todayString;
 
-    // Background Image Handling
-    const [bgError, setBgError] = useState(false);
-
-    useEffect(() => {
-        setBgError(false);
-    }, [clan?.rankId, isBasicMode]);
-
     const backgroundUrl = useMemo(() => {
         const url = getClanBackgroundUrl(rankIndex !== -1 ? rankIndex : 0, isOfficeClan, clan?.backgroundUrl);
         if (isOfficeClan) {
@@ -908,7 +901,6 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
 
     const handleBgError = () => {
         console.log(`[BG_ERROR] Failed to load background: ${backgroundUrl}`);
-        setBgError(true);
     };
 
     const handleLeaveRequest = () => {
@@ -1308,25 +1300,13 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                     <div className="relative w-full h-full rounded-3xl overflow-hidden border border-white/10 flex flex-col isolate bg-black">
                         {/* Background Image Layer */}
                         <div className="absolute inset-0 z-0 select-none pointer-events-none">
-                            {isBasicMode && bgError ? (
-                                <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 flex items-center justify-center border-4 border-dashed border-white/10">
-                                    <div className="text-white/20 text-4xl font-black uppercase tracking-widest rotate-[-15deg] select-none text-center">
-                                        <div>Modo Básico</div>
-                                        <div className="text-xs mt-2 tracking-normal opacity-50 font-mono">office{Math.ceil(Math.max(1, rankIndex + 1) / 2)}.jpg not found</div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <img
-                                    src={backgroundUrl}
-                                    alt="Clan Background"
-                                    className="w-full h-full object-cover transition-opacity duration-500"
-                                    onError={handleBgError}
-                                />
-                            )}
-                            {/* Overlay only for Casual mode */}
-                            {!isBasicMode && (
-                                <div className={`absolute inset-0 mix-blend-overlay ${tierInfo.tier === 1 ? 'bg-amber-900/30' : tierInfo.tier === 2 ? 'bg-emerald-900/30' : 'bg-purple-900/30'}`} />
-                            )}
+                            <img
+                                src={backgroundUrl}
+                                alt="Clan Background"
+                                className="w-full h-full object-cover transition-opacity duration-500"
+                                onError={handleBgError}
+                            />
+                            <div className={`absolute inset-0 mix-blend-overlay ${tierInfo.tier === 1 ? 'bg-amber-900/30' : tierInfo.tier === 2 ? 'bg-emerald-900/30' : 'bg-purple-900/30'}`} />
                         </div>
 
                         {/* Header Section */}

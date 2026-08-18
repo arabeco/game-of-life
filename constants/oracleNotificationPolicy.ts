@@ -1,4 +1,4 @@
-import { AppMode, Notification, NotificationType, OracleMode } from '../types';
+import { Notification, NotificationType, OracleMode } from '../types';
 
 export type NotificationLane = 'essential' | 'progress' | 'feed';
 export type NotificationPriority = 'critical' | 'actionable' | 'progress' | 'ambient';
@@ -8,7 +8,6 @@ interface NotificationPolicy {
   lane: NotificationLane;
   priority: NotificationPriority;
   badge: boolean;
-  basicVisible: boolean;
   gameVisible: boolean;
   icon: string;
   label: string;
@@ -19,7 +18,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'critical',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'M',
     label: 'Mentor',
@@ -28,7 +26,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'actionable',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'D',
     label: 'DM',
@@ -37,7 +34,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'critical',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'F',
     label: 'Amizade',
@@ -46,7 +42,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'actionable',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'F',
     label: 'Resposta',
@@ -55,7 +50,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'feed',
     priority: 'ambient',
     badge: false,
-    basicVisible: false,
     gameVisible: true,
     icon: 'F',
     label: 'Aliado',
@@ -64,7 +58,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'critical',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'C',
     label: 'Cla',
@@ -73,7 +66,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'actionable',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'C',
     label: 'Resposta',
@@ -82,7 +74,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'feed',
     priority: 'ambient',
     badge: false,
-    basicVisible: false,
     gameVisible: true,
     icon: 'C',
     label: 'Cla',
@@ -91,7 +82,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'critical',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'M',
     label: 'Missao',
@@ -100,7 +90,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'critical',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'C',
     label: 'Ciclo',
@@ -109,7 +98,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'progress',
     priority: 'progress',
     badge: false,
-    basicVisible: false,
     gameVisible: true,
     icon: 'R',
     label: 'Relatorio',
@@ -118,7 +106,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'critical',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'S',
     label: 'Temporada',
@@ -127,7 +114,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'actionable',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'R',
     label: 'Recompensa',
@@ -136,7 +122,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'actionable',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'R',
     label: 'Resgate',
@@ -145,7 +130,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'progress',
     priority: 'progress',
     badge: false,
-    basicVisible: false,
     gameVisible: true,
     icon: 'L',
     label: 'Patente',
@@ -154,7 +138,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'progress',
     priority: 'progress',
     badge: false,
-    basicVisible: false,
     gameVisible: true,
     icon: 'T',
     label: 'Titulo',
@@ -163,7 +146,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'feed',
     priority: 'ambient',
     badge: false,
-    basicVisible: false,
     gameVisible: true,
     icon: 'O',
     label: 'Oraculo',
@@ -172,7 +154,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'actionable',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'C',
     label: 'Campanha',
@@ -181,7 +162,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'critical',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'P',
     label: 'Parceria',
@@ -190,7 +170,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'progress',
     priority: 'actionable',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'A',
     label: 'Arena',
@@ -199,7 +178,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'critical',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: 'T',
     label: 'Duelo',
@@ -208,7 +186,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'actionable',
     badge: false,
-    basicVisible: true,
     gameVisible: true,
     icon: 'R',
     label: 'Lembrete',
@@ -217,7 +194,6 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     lane: 'essential',
     priority: 'critical',
     badge: true,
-    basicVisible: true,
     gameVisible: true,
     icon: '!',
     label: 'Sistema',
@@ -431,25 +407,21 @@ const PUSH_PRIORITIES: NotificationPriority[] = ['critical', 'actionable'];
 
 export const shouldShowNotificationForProfile = (
   type: NotificationType,
-  appMode: AppMode,
   oracleMode: OracleMode,
 ): boolean => {
   void oracleMode;
-  void appMode;
-  // O modo do app morreu: seis tipos de aviso ficavam invisiveis no BASIC
-  // (amizade aceita, entrada em cla, ciclo fechado, nivel, titulo e prompt do
-  // oraculo). Nada mais some por modo - quem nao quer aviso desliga o aviso.
+  // O modo do app morreu: nada mais some por modo - quem nao quer aviso desliga
+  // o aviso.
   return getPolicy(type).gameVisible;
 };
 
 export const shouldPushNotificationForProfile = (
   notification: Notification,
-  appMode: AppMode,
   oracleMode: OracleMode,
 ): boolean => {
   void oracleMode;
   if (notification.read) return false;
-  if (!shouldShowNotificationForProfile(notification.type, appMode, oracleMode)) return false;
+  if (!shouldShowNotificationForProfile(notification.type, oracleMode)) return false;
 
   const policy = getPolicy(notification.type);
   return PUSH_PRIORITIES.includes(policy.priority);
@@ -457,11 +429,10 @@ export const shouldPushNotificationForProfile = (
 
 export const getVisibleNotificationsForProfile = (
   notifications: Notification[],
-  appMode: AppMode,
   oracleMode: OracleMode,
 ): Notification[] => {
   return notifications
-    .filter((notification) => shouldShowNotificationForProfile(notification.type, appMode, oracleMode))
+    .filter((notification) => shouldShowNotificationForProfile(notification.type, oracleMode))
     .sort((left, right) => {
       const leftPolicy = getPolicy(left.type);
       const rightPolicy = getPolicy(right.type);
@@ -480,18 +451,16 @@ export const getVisibleNotificationsForProfile = (
 
 export const getOracleChatNotificationsForProfile = (
   notifications: Notification[],
-  appMode: AppMode,
   oracleMode: OracleMode,
 ): Notification[] =>
-  getVisibleNotificationsForProfile(notifications, appMode, oracleMode)
+  getVisibleNotificationsForProfile(notifications, oracleMode)
     .filter((notification) => isOracleChatNotificationType(notification.type));
 
 export const getOracleRequestNotificationsForProfile = (
   notifications: Notification[],
-  appMode: AppMode,
   oracleMode: OracleMode,
 ): Notification[] =>
-  getVisibleNotificationsForProfile(notifications, appMode, oracleMode)
+  getVisibleNotificationsForProfile(notifications, oracleMode)
     .filter((notification) => !isOracleChatNotificationType(notification.type));
 
 export const getUnreadBadgeCount = (notifications: Notification[]): number =>

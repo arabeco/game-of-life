@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { useTutorial } from '../contexts/TutorialContext';
 import { GlassCard } from '../components/GlassCard';
 import { CreateClanModal } from '../components/CreateClanModal';
 import { Clan, RelationshipLink, RelationshipLinkInvite, RelationshipLinkType, UserProfile } from '../types';
@@ -906,13 +905,10 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
 // --- Main View ---
 
 const MundoView: React.FC = () => {
-    const { appMode } = useGame();
-    const { didForceGameMode } = useTutorial();
     const [activeTab, setActiveTab] = useState<'social' | 'hall' | 'loja' | 'temporada' | 'arsenal'>('social');
     const [socialSection, setSocialSection] = useState<SocialSection>('people');
     const [socialParticipantId, setSocialParticipantId] = useState<string | null>(null);
     const [socialRequestsRevision, setSocialRequestsRevision] = useState(0);
-    const isBasicMode = appMode === 'BASIC' && !didForceGameMode;
 
     const tabs = useMemo(() => {
         const allTabs = [
@@ -923,11 +919,8 @@ const MundoView: React.FC = () => {
             { id: 'temporada', label: 'Temporada', icon: <CalendarIcon className="w-5 h-5" />, tutorialId: 'season-quests' },
         ] as const;
 
-        if (isBasicMode) {
-            return allTabs.filter(t => t.id === 'social' || t.id === 'loja');
-        }
         return allTabs;
-    }, [isBasicMode]);
+    }, []);
 
     useEffect(() => {
         if (!tabs.some((tab) => tab.id === activeTab)) {

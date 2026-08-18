@@ -72,7 +72,6 @@ const splitBenefitsIntoColumns = (benefits: readonly string[]) => {
     return [benefits.slice(0, midpoint), benefits.slice(midpoint)];
 };
 const formatBrl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const BASIC_MEMBERSHIP_BENEFIT_LIMIT = 4;
 
 const UI_SKIN_SELECTOR_ORDER = ['BASIC', 'GOLD', 'FROST', 'EMBER', 'CYBER', 'AURORA', 'VOID', 'GENESIS', 'item_theme_nebulosa'] as const;
 const UI_SKIN_SELECTOR_META: Record<string, { label: string; title: string; previewSkinId?: string; prefersLightText?: boolean; }> = {
@@ -312,7 +311,6 @@ const PrivacyPreferencesModal: React.FC<{
 
 const UiPreferencesModal: React.FC<{
     open: boolean;
-    appMode: 'BASIC' | 'GAME';
     activeTheme: 'LIGHT' | 'DARK';
     toggleTheme: () => void;
     uiSkinCatalog: UiSettingsSkinOption[];
@@ -322,11 +320,10 @@ const UiPreferencesModal: React.FC<{
     updateOraclePreferences: (updates: Partial<{ animationsEnabled: boolean; soundsEnabled: boolean; hapticsEnabled: boolean }>) => void;
     plannerViewMode: PlannerViewMode;
     onPlannerViewModeChange: (mode: PlannerViewMode) => void;
-    onUiSkinOptionClick: (skinId: string, unlocked: boolean, disabledByMode: boolean) => void;
+    onUiSkinOptionClick: (skinId: string, unlocked: boolean) => void;
     onClose: () => void;
 }> = ({
     open,
-    appMode,
     activeTheme,
     toggleTheme,
     uiSkinCatalog,
@@ -364,10 +361,10 @@ const UiPreferencesModal: React.FC<{
                         <div className="flex items-center justify-between gap-3">
                             <div className="space-y-1">
                                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Skins UI</div>
-                                <div className="text-[11px] text-gray-500">No modo básico, a interface fica fixa no corte essencial.</div>
+                                <div className="text-[11px] text-gray-500">Escolha a skin que veste toda a interface.</div>
                             </div>
                             <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">
-                                {appMode === 'BASIC' ? 'Básico fixo' : 'Tema livre'}
+                                Tema livre
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
@@ -378,24 +375,22 @@ const UiPreferencesModal: React.FC<{
                                 };
                                 const unlocked = unlockedUiSkinIds.has(skin.id);
                                 const selected = effectiveUiSkinId === skin.id;
-                                const disabledByMode = appMode === 'BASIC' && skin.id !== 'BASIC';
                                 const previewSkinId = skinMeta.previewSkinId || resolveUiSkinId(skin.id);
                                 const previewTokens = buildUiSkinTokens(previewSkinId, activeTheme === 'LIGHT' ? 'light' : 'dark');
                                 return (
                                     <button
                                         key={skin.id}
                                         type="button"
-                                        disabled={disabledByMode}
-                                        onClick={() => onUiSkinOptionClick(skin.id, unlocked, disabledByMode)}
+                                        onClick={() => onUiSkinOptionClick(skin.id, unlocked)}
                                         title={skinMeta.title}
                                         aria-pressed={selected}
                                         className={`group inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-left text-[9px] font-black uppercase tracking-[0.14em] transition-all ${
                                             selected
                                                 ? 'shadow-[0_0_16px_var(--ui-button-primary-glow)]'
-                                                : unlocked && !disabledByMode
+                                                : unlocked
                                                     ? 'hover:-translate-y-0.5 hover:brightness-[1.04]'
                                                     : ''
-                                        } ${disabledByMode ? 'cursor-default' : ''}`}
+                                        }`}
                                         style={{
                                             background: isLightTheme
                                                 ? selected
@@ -411,7 +406,7 @@ const UiPreferencesModal: React.FC<{
                                                 : selected
                                                     ? 'var(--ui-border-accent)'
                                                     : previewTokens.borderSoftColor,
-                                            opacity: disabledByMode ? 0.42 : unlocked ? 1 : 0.72,
+                                            opacity: unlocked ? 1 : 0.72,
                                             boxShadow: selected
                                                 ? isLightTheme
                                                     ? `0 10px 26px color-mix(in srgb, ${previewTokens.accentHex} 24%, rgba(37,99,235,0.08))`
@@ -1906,63 +1901,6 @@ const GeralTab: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            {/* Legacy mode-game block removed
-            <GlassCard variant="neutral" className="p-4 space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Modo Jogo</h3>
-                    <div className={`text-[10px] px-2 py-0.5 rounded font-mono ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)]/15 text-[var(--ui-text-accent)]' : 'bg-white/10 text-gray-300'}`}>{appMode === 'GAME' ? 'LIGADO' : 'DESLIGADO'}</div>
-                </div>
-                <p className="text-[11px] leading-relaxed text-gray-500">O uso principal fica sempre ligado. O Modo Jogo adiciona missoes, patentes, baus, inventario, Hall da Fama e camadas extras.</p>
-
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setAppMode('BASIC')}
-                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden group ${appMode === 'BASIC' ? 'bg-white text-black shadow-lg ring-1 ring-white/50' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
-                    >
-                        <div className="relative z-10 flex flex-col items-center">
-                            <span className="text-xl mb-1">🎮</span>
-                            <span className="text-xs tracking-widest">DESLIGADO</span>
-                        </div>
-                        {appMode === 'BASIC' && <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />}
-                    </button>
-
-                    <button
-                        onClick={() => setAppMode('GAME')}
-                        className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all relative overflow-hidden ${appMode === 'GAME' ? 'bg-[var(--skin-accent-color)] text-black shadow-[0_0_15px_var(--sephirot-glow-color)] ring-1 ring-white/20' : 'bg-black/40 text-gray-500 hover:bg-white/5 border border-white/5'}`}
-                    >
-                        <div className="relative z-10 flex flex-col items-center">
-                            <span className="text-xl mb-1">💼</span>
-                            <span className="text-xs tracking-widest">LIGADO</span>
-                        </div>
-                        {appMode === 'GAME' && <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none" />}
-                    </button>
-                </div>
-
-                <div className="pt-3 border-t border-white/5 animate-fade-in">
-                    <div className="flex justify-between items-center mb-2">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">Tema Visual</h4>
-                        <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
-                            {activeTheme === 'LIGHT' ? 'Modo claro' : 'Modo escuro'}
-                        </span>
-                    </div>
-                    <div className="flex gap-2 p-1 bg-black/20 rounded-lg mb-4">
-                        <button
-                            onClick={() => activeTheme !== 'LIGHT' && toggleTheme()}
-                            className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'LIGHT' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                        >
-                            MODO CLARO
-                        </button>
-                        <button
-                            onClick={() => activeTheme !== 'DARK' && toggleTheme()}
-                            className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${activeTheme === 'DARK' ? 'bg-slate-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-                        >
-                            MODO ESCURO
-                        </button>
-                    </div>
-                </div>
-            </GlassCard>
-            */}
-
             <button
                 type="button"
                 id="mastery-sliders-button"
@@ -2087,7 +2025,7 @@ const GeralTab: React.FC = () => {
 };
 
 const PreferenciasTab: React.FC = () => {
-    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, appMode, setAppMode, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast } = useGame();
+    const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | 'primer' | 'redeem' | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
     const normalizeAssetsVisibilityOption = (value?: ProfileVisibilityScope): ProfileVisibilityOption => {
@@ -2159,9 +2097,9 @@ const PreferenciasTab: React.FC = () => {
     const effectiveUiSkinId = userProfile.skin || 'BASIC';
     const currentUiSkinName = useMemo(() => {
         const selectedSkin = uiSkinCatalog.find((skin) => skin.id === effectiveUiSkinId);
-        if (!selectedSkin) return appMode === 'BASIC' ? 'Basica' : 'Tema atual';
+        if (!selectedSkin) return 'Tema atual';
         return selectedSkin.name.replace(/^Tema:\s*/i, '').replace(/^Interface\s*/i, '');
-    }, [appMode, effectiveUiSkinId, uiSkinCatalog]);
+    }, [effectiveUiSkinId, uiSkinCatalog]);
     const uiPreferencesSummary = `${currentUiSkinName} · ${activeTheme === 'LIGHT' ? 'Claro' : 'Escuro'}`;
 
     useEffect(() => {
@@ -2232,8 +2170,7 @@ const PreferenciasTab: React.FC = () => {
         showToast(result.rewardSummary || `Codigo "${result.code}" resgatado.`, 'success');
     };
 
-    const handleUiSkinOptionClick = (skinId: string, unlocked: boolean, disabledByMode: boolean) => {
-        if (disabledByMode) return;
+    const handleUiSkinOptionClick = (skinId: string, unlocked: boolean) => {
         if (!unlocked) {
             window.dispatchEvent(new CustomEvent('navigate-to-store', { detail: { tab: 'items' } }));
             return;
@@ -2271,7 +2208,6 @@ const PreferenciasTab: React.FC = () => {
             {modal === 'ui' && (
                 <UiPreferencesModal
                     open
-                    appMode={appMode}
                     activeTheme={activeTheme}
                     toggleTheme={toggleTheme}
                     uiSkinCatalog={uiSkinCatalog}
@@ -2434,12 +2370,9 @@ const PremiumTab: React.FC = () => {
         name: string;
         equivalentGold: number;
     } | null>(null);
-    const [showAllPremiumBenefits, setShowAllPremiumBenefits] = useState(false);
-    const [showAllPlatinumBenefits, setShowAllPlatinumBenefits] = useState(false);
     const isStaffAccess = isStaffRole(userProfile.role);
     const isPremium = hasPremiumAccess(userProfile);
     const isPlatinum = hasPlatinumAccess(userProfile);
-    const isBasicMode = (userProfile.appMode || 'GAME') !== 'GAME';
     const activeMembershipTier = getActiveSubscriptionTier(userProfile);
     const premiumLabel = isPremium ? 'ATIVO' : 'DISPONÍVEL';
     const premiumDaysRemaining = getPremiumDaysRemaining(userProfile);
@@ -2459,18 +2392,8 @@ const PremiumTab: React.FC = () => {
         'Todos os planos de fundo e aparências premium',
         '1 baú da Temporada + 1 baú raro por ativação',
     ];
-    const visiblePremiumBenefits = useMemo(
-        () => (isBasicMode && !showAllPremiumBenefits ? premiumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : premiumBenefits),
-        [isBasicMode, premiumBenefits, showAllPremiumBenefits],
-    );
-    const visiblePlatinumBenefits = useMemo(
-        () => (isBasicMode && !showAllPlatinumBenefits ? platinumBenefits.slice(0, BASIC_MEMBERSHIP_BENEFIT_LIMIT) : platinumBenefits),
-        [isBasicMode, platinumBenefits, showAllPlatinumBenefits],
-    );
-    const hiddenPremiumCount = Math.max(0, premiumBenefits.length - visiblePremiumBenefits.length);
-    const hiddenPlatinumCount = Math.max(0, platinumBenefits.length - visiblePlatinumBenefits.length);
-    const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(visiblePremiumBenefits), [visiblePremiumBenefits]);
-    const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(visiblePlatinumBenefits), [visiblePlatinumBenefits]);
+    const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(premiumBenefits), [premiumBenefits]);
+    const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(platinumBenefits), [platinumBenefits]);
     const premiumExpiresLabel = userProfile.premiumExpiresAt
         ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(userProfile.premiumExpiresAt))
         : null;
@@ -2539,18 +2462,6 @@ const PremiumTab: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                        {isBasicMode && (
-                            <div className="flex justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAllPremiumBenefits((current) => !current)}
-                                    className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent)] transition-all hover:border-[var(--skin-accent-color)]/45 hover:bg-[var(--skin-accent-color)]/10"
-                                >
-                                    {showAllPremiumBenefits ? 'Menos' : `Mais${hiddenPremiumCount > 0 ? ` +${hiddenPremiumCount}` : ''}`}
-                                </button>
-                            </div>
-                        )}
-
                         <div className="flex min-w-[176px] flex-col items-stretch gap-1.5">
                             <button
                                 onClick={() => setSelectedMembership({
@@ -2609,18 +2520,6 @@ const PremiumTab: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                        {isBasicMode && (
-                            <div className="flex justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAllPlatinumBenefits((current) => !current)}
-                                    className="rounded-full border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-amber-100 transition-all hover:border-amber-200/35 hover:bg-amber-200/10"
-                                >
-                                    {showAllPlatinumBenefits ? 'Menos' : `Mais${hiddenPlatinumCount > 0 ? ` +${hiddenPlatinumCount}` : ''}`}
-                                </button>
-                            </div>
-                        )}
-
                         <div className="flex min-w-[176px] flex-col items-stretch gap-1.5">
                             <button
                                 onClick={() => setSelectedMembership({

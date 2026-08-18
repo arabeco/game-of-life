@@ -25,7 +25,6 @@ type ShellReadyPayload = {
     userId: string;
     durationMs: number;
     entryMode: AppRuntimeEntryMode;
-    appMode: 'GAME' | 'BASIC';
     renderMode: string | null;
     theme: 'LIGHT' | 'DARK' | null;
 };
@@ -34,7 +33,6 @@ type BootErrorPayload = {
     userId: string;
     durationMs: number;
     entryMode: AppRuntimeEntryMode;
-    appMode: 'GAME' | 'BASIC';
     renderMode: string | null;
     errorName: string;
     errorMessage: string;
@@ -162,7 +160,6 @@ export class AppRuntimeMetricsService {
             duration_ms: this.sanitizeDuration(payload.durationMs),
             entry_mode: payload.entryMode,
             metadata: this.sanitizeMetadata({
-                app_mode: payload.appMode,
                 render_mode: payload.renderMode || 'default',
                 theme: payload.theme || 'DARK',
             }),
@@ -177,7 +174,6 @@ export class AppRuntimeMetricsService {
             duration_ms: this.sanitizeDuration(payload.durationMs),
             entry_mode: payload.entryMode,
             metadata: this.sanitizeMetadata({
-                app_mode: payload.appMode,
                 render_mode: payload.renderMode || 'default',
                 error_name: payload.errorName,
                 error_message: payload.errorMessage,

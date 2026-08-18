@@ -217,9 +217,9 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                             <div className={`relative z-10 min-h-0 flex-1 overflow-y-auto p-4 ${activeTab === 'members' ? 'bg-[#090b0e]' : ''}`}>
                                 {activeTab === 'headquarters' ? (
                                     <div className="space-y-4">
-                                        <div className="relative min-h-[230px] overflow-hidden rounded-xl border border-white/10 px-3">
+                                        <div className="relative min-h-[246px] overflow-hidden rounded-xl border border-white/10 px-3">
                                             <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/55 to-transparent" />
-                                            <div className="relative flex min-h-[228px] items-end justify-center -space-x-7 overflow-hidden px-1 pb-3">
+                                            <div className="relative flex min-h-[244px] items-end justify-center -space-x-7 overflow-hidden px-1 pb-3">
                                                 {stageMembers.map((member, index) => (
                                                     <div
                                                         key={member.id}
@@ -235,6 +235,9 @@ export const ClanOverviewModal: React.FC<{ onClose: () => void; embedded?: boole
                                                         <div className="relative -mt-5 max-w-[96px] rounded-full border border-white/12 bg-black/75 px-2 py-1 text-center backdrop-blur-sm">
                                                             <p className="truncate text-[8px] font-black uppercase tracking-[0.05em] text-white/82">{member.nickname}</p>
                                                         </div>
+                                                        <p className="relative mt-1 font-mono text-[9px] font-bold text-amber-200/80">
+                                                            {Number(member.seasonContributionPoints || 0).toLocaleString('pt-BR')} exp
+                                                        </p>
                                                     </div>
                                                 ))}
                                             </div>

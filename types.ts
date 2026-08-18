@@ -823,8 +823,8 @@ export interface Clan {
   backgroundUrl?: string;
   leaderId: string;
   rankId: ClanRankId;
-  level: number;
-  experience: number;
+  // exp e o unico contador vivo: alimentado por record_my_clan_xp no fecho de ciclo
+  // e traduzido em patente por CLAN_RANKS. Nao existe nivel numerico de cla.
   exp: number;
   bannerUrl?: string;
   clanType: ClanType;

@@ -1245,6 +1245,9 @@ export interface OraclePreferences {
   animationsEnabled: boolean;
   soundsEnabled: boolean;
   hapticsEnabled: boolean;
+  // Telas cheias de comemoracao (feito, missao). Desligado, o aviso vira toast
+  // e a recompensa entra igual - nenhuma aba ou item deixa de existir.
+  celebrationScreensEnabled?: boolean;
   // Local/device policy for how proactive the Oracle feels in the app.
   presenceLevel?: OraclePresenceLevel;
   // Local-only policy for proactive oracle notifications (not persisted in Supabase schema).

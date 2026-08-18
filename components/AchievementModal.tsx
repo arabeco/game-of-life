@@ -65,7 +65,10 @@ const getAchievementDetails = (type: FeedEventType, data: any, isBasicMode: bool
 };
 
 export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement, onClose }) => {
-    const { addFeedEvent, userProfile, showToast, appMode } = useGame();
+    const { addFeedEvent, userProfile, showToast, appMode, oraclePreferences } = useGame();
+    // Quem desliga as telas de comemoracao nao perde nada: a recompensa continua
+    // entrando e o aviso vira toast. So a tela cheia deixa de tomar o aparelho.
+    const celebrationScreensEnabled = oraclePreferences?.celebrationScreensEnabled !== false;
     const isBasicMode = appMode === 'BASIC';
     const { title, icon, message } = getAchievementDetails(achievement.type, achievement.data, isBasicMode);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -80,10 +83,19 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     useEffect(() => {
         if (!canRenderAchievement) {
             onClose();
+            return;
         }
-    }, [canRenderAchievement, onClose]);
+        if (!celebrationScreensEnabled) {
+            // Sem tela cheia o feito ainda se anuncia, e handleClose entrega os
+            // toasts de recompensa antes de fechar. Nada se perde por desligar.
+            showToast(`${title} - ${message}`, 'success');
+            handleClose();
+        }
+        // handleClose e recriado a cada render; entrar na lista repetiria o anuncio.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [canRenderAchievement, celebrationScreensEnabled, onClose]);
 
-    if (!canRenderAchievement) return null;
+    if (!canRenderAchievement || !celebrationScreensEnabled) return null;
 
     const userSkin = SKINS_DATA.find((skin) => skin.id === userProfile.skin);
     const skinColor = userSkin?.color || '#ffffff';

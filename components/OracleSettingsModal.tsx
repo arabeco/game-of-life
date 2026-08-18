@@ -457,6 +457,15 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                         onToggle: () => handleToggle('soundsEnabled'),
                                     })}
                                     {renderSwitchRow({
+                                        icon: '🎉',
+                                        label: 'Telas de comemoracao',
+                                        description: 'Desligado, o feito vira toast e a recompensa entra do mesmo jeito.',
+                                        enabled: oraclePreferences.celebrationScreensEnabled !== false,
+                                        onToggle: () => updateOraclePreferences({
+                                            celebrationScreensEnabled: oraclePreferences.celebrationScreensEnabled === false,
+                                        }),
+                                    })}
+                                    {renderSwitchRow({
                                         icon: '📳',
                                         label: 'Vibracao',
                                         description: 'Usa resposta tatil em eventos importantes, quando suportado.',

@@ -37,7 +37,6 @@ export const Sephirot: React.FC<SephirotProps> = ({
         ? '#d7b684'
         : undefined;
   const resolvedLevelColor = levelColor ?? skinSpecificLevelColor ?? 'var(--sephirot-text-color)';
-  const useDarkerNumeralTreatment = Boolean(levelColor ?? skinSpecificLevelColor);
   const sphereSize = size || 'var(--sephirot-size-standard, 54px)';
   const titleMargin = '-mb-4';
   const sphereShadow = useSkinArtworkOnly ? 'none' : `0 0 7px 0.75px var(--sephirot-glow-color)`;
@@ -95,10 +94,10 @@ export const Sephirot: React.FC<SephirotProps> = ({
                 className="pointer-events-none relative z-[1] text-[1.82rem] font-black leading-none tracking-[-0.02em]" 
                 style={{ 
                     color: resolvedLevelColor,
-                    textShadow: useDarkerNumeralTreatment
-                      ? '0 1px 0 rgba(255,255,255,0.12), 0 0 2px rgba(0,0,0,0.18), 0 2px 4px rgba(0,0,0,0.78)'
-                      : '0 1px 0 rgba(255,255,255,0.14), 0 0 4px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.85)',
-                    WebkitTextStroke: useDarkerNumeralTreatment ? '1.15px rgba(8, 8, 10, 0.96)' : '1.32px rgba(8, 8, 10, 0.98)',
+                    // Um contorno so para todas as skins: variar por skin fazia o
+                    // numeral pesar diferente de uma esfera para outra.
+                    textShadow: '0 1px 0 rgba(255,255,255,0.13), 0 0 3px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.82)',
+                    WebkitTextStroke: '1.25px rgba(8, 8, 10, 0.97)',
                     transform: 'translateY(-0.07em)',
                 }}
             >

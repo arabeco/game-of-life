@@ -44,6 +44,9 @@ export interface EraCalendarYear {
 
 export interface SeasonConfig {
   id: string;
+  /** Chave que amarra os itens da colecao a esta temporada (items.seasonKey).
+   *  Nao e derivavel do id: 'season-genesis-0' usa 'genesis_legacy'. */
+  seasonKey?: string;
   name: string;
   startDate: string;
   endDate: string;
@@ -126,6 +129,7 @@ export const ERA_CALENDAR: EraCalendarYear[] = [
 export const SEASONS: Record<string, SeasonConfig> = {
   'season-genesis-0': {
     id: 'season-genesis-0',
+    seasonKey: 'genesis_legacy',
     name: 'Temporada 0 - Genesis',
     description: 'A primeira abertura do GLYPH. Quem entrou a tempo carregou a marca da Primeira Era.',
     backgroundUrl: `${ROOT_IMAGES_URL}/season_genesis.jpg`,
@@ -182,6 +186,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
   },
   'season-aurora-1-2026': {
     id: 'season-aurora-1-2026',
+    seasonKey: 'aurora_1_2026',
     name: 'Aurora I',
     description: 'Primeiro corte oficial da Primeira Era. Abertura de jornadas, recompensas e novos simbolos da linha principal.',
     backgroundUrl: `${ROOT_IMAGES_URL}/aurora.png`,

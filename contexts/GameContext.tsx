@@ -7312,7 +7312,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const { data, error } = await supabase.rpc('open_chest', {
-            p_chest_type: chestType
+            p_chest_type: chestType,
+            // O bau Mitico so entrega itens da temporada corrente; quem sabe qual
+            // e ela e o cliente, que resolve por data.
+            p_season_key: activeRuntimeSeasonConfig?.seasonKey ?? null,
         });
 
         if (error) {

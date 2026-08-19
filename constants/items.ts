@@ -527,20 +527,18 @@ export const XP_BOOSTS = GOLD_BOOST_PRODUCTS.map((boost) => ({
 // === Premium Genesis Pack ===
 const GENESIS_BORDER: ItemDef = interfaceCatalogItem('border', {
     id: 'item_border_genesis_01', name: 'Borda Gênesis',
-    tier: 4, rarity: 'epic', icon: '✨',
+    tier: 6, rarity: 'mythic', icon: '✨',
     description: 'Recompensa de Temporada e Quest de alto valor.',
     isSeasonExclusive: true,
-    isLegacyRetired: true,
     seasonKey: 'genesis_legacy',
     seasonSlot: 'border',
     asset: 'borda_t5_genesis.png',
 });
 const GENESIS_BANNER: ItemDef = interfaceCatalogItem('banner', {
     id: 'item_banner_origin_01', name: 'Banner Origem',
-    tier: 4, rarity: 'epic', icon: '🧿',
+    tier: 6, rarity: 'mythic', icon: '🧿',
     description: 'Recompensa de Temporada e Quest de alto valor.',
     isSeasonExclusive: true,
-    isLegacyRetired: true,
     seasonKey: 'genesis_legacy',
     seasonSlot: 'banner',
     asset: 'banner_origem.png',

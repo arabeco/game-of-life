@@ -15,6 +15,7 @@ export const RARITY_VISUALS: Record<VisualRarity, RarityVisual> = {
     rare: { key: 'rare', label: 'Raro', hex: '#3B82F6', rgb: '59,130,246' },
     epic: { key: 'epic', label: 'Epico', hex: '#A855F7', rgb: '168,85,247' },
     legendary: { key: 'legendary', label: 'Lendario', hex: '#F59E0B', rgb: '245,158,11' },
+    mythic: { key: 'mythic', label: 'Mitico', hex: '#7B61FF', rgb: '123,97,255' },
     quest: { key: 'quest', label: 'Temporada', hex: '#14B8A6', rgb: '20,184,166' },
 };
 
@@ -28,6 +29,7 @@ export const normalizeVisualRarity = (value?: string | null): VisualRarity | und
     if (lower === 'rare' || lower === 'raro' || lower === 'radiante') return 'rare';
     if (lower === 'epic' || lower === 'epico') return 'epic';
     if (lower === 'legendary' || lower === 'lendario') return 'legendary';
+    if (lower === 'mythic' || lower === 'mitico') return 'mythic';
     if (lower === 'quest' || lower.includes('clan') || lower.includes('season')) return 'quest';
     return undefined;
 };

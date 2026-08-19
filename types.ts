@@ -360,7 +360,9 @@ export interface SovereignConfig {
 
 export type UnlockCategory = 'bodyStyles' | 'hairStyles' | 'outfits' | 'artifacts' | 'codexes' | 'skins' | 'borders' | 'banners' | 'glyphs' | 'auras' | 'orbs' | 'plates' | 'ornament' | 'insignias' | 'ui_skins';
 
-export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+// 'mythic' e exclusiva de temporada: nenhum bau normal sorteia nela, e nenhum
+// item de temporada usa outra. E o tier 6, fora da escada de 1 a 5.
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 export interface ChestOpenResult {
   success: boolean;

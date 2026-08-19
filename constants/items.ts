@@ -19,7 +19,8 @@ export interface ItemDef {
     id: string;
     name: string;
     category: ItemCategory;
-    tier: 1 | 2 | 3 | 4 | 5;
+    /** 1 a 5 e a escada normal. 6 e Mitico: so temporada, so o bau Mitico. */
+    tier: 1 | 2 | 3 | 4 | 5 | 6;
     rarity: ItemRarity;
     icon?: string; // Emoji
     imageUrl?: string; // JPG/PNG URL
@@ -157,7 +158,7 @@ export const ITEMS_DB: ItemDef[] = [
 
     // Season
     { id: 'item_skin_season_001', name: 'O Criador', category: 'skin', tier: 4, rarity: 'epic', icon: '🛠️', isGmExclusive: true, imageUrl: avatarPngAsset('SKIN_SEASON_CRIADOR') },
-    { id: 'item_skin_aurora_1_2026', name: 'Guardião Aurora', category: 'skin', tier: 4, rarity: 'epic', icon: '\uD83C\uDF0C', imageUrl: avatarPngAsset('SKIN_QUEST_GUARDIAO_AURORA'), isQuestExclusive: true, isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'skin' },
+    { id: 'item_skin_aurora_1_2026', name: 'Guardião Aurora', category: 'skin', tier: 6, rarity: 'mythic', icon: '\uD83C\uDF0C', imageUrl: avatarPngAsset('SKIN_QUEST_GUARDIAO_AURORA'), isQuestExclusive: true, isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'skin' },
 
     // --- ARTIFACTS (Ferramentas, Armas, Relíquias, Companions) ---
     // T1
@@ -249,7 +250,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png`, isGmExclusive: true },
     // Novos T5
     { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 5, rarity: 'legendary', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
-    catalogItem('border', { id: 'item_border_aurora_1_2026', name: 'Aurora I', tier: 4, rarity: 'epic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border' }),
+    catalogItem('border', { id: 'item_border_aurora_1_2026', name: 'Aurora I', tier: 6, rarity: 'mythic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border' }),
 
     // --- BANNERS ---
     // T1
@@ -275,7 +276,7 @@ export const ITEMS_DB: ItemDef[] = [
     // T5
     { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png`, isGmExclusive: true },
     { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 5, rarity: 'legendary', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
-    catalogItem('banner', { id: 'item_banner_aurora_1_2026', name: 'Aurora I', tier: 4, rarity: 'epic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner' }),
+    catalogItem('banner', { id: 'item_banner_aurora_1_2026', name: 'Aurora I', tier: 6, rarity: 'mythic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner' }),
 
     // --- GLIFOS ---
     // T1
@@ -370,7 +371,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'insignia_report_comum', name: 'Bronze: Relatório de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: '📜', description: "Relatório de Bronze: Concedida por concluir um ciclo e selar o relatório final.", isReportExclusive: true },
     { id: 'insignia_quest_incomum', name: 'Prata: Missão Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🎖️', description: "Missão de Prata: Concedida ao concluir uma missão da temporada.", isQuestExclusive: true },
     { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência.", isRankExclusive: true },
-    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 4, rarity: 'epic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia' },
+    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia' },
 ];
 
 const LEGACY_ITEM_ID_ALIASES: Record<string, string> = {

@@ -922,20 +922,19 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         let chestType: ChestType | null = null;
 
-        // Lendario voltou a ser bau proprio, com T5 em 60%, e nao mais apelido
-        // do bau de temporada. Ciclo excepcional rende lendario; item de
-        // temporada continua so na missao de temporada.
-        if (awardedExp >= 25000 && score >= 90) chestType = 'Lendário';
-        else if (awardedExp >= 12000 && score >= 80) chestType = 'Épico';
-        else if (awardedExp >= 5000 && score >= 70) chestType = 'Raro';
-        else if (awardedExp >= 2250 && score >= 60) chestType = 'Incomum';
+        // A regua e ancorada em horas reais: 1 minuto executado vale ~1 EXP.
+        // 7 dias a 6h/dia alcancam Raro, 15 dias a 8h/dia o Epico, e o Lendario
+        // pede 30 dias a 8h/dia com nota quase perfeita. Incomum saiu da escada
+        // do ciclo - continua existindo no Starter Pack e em missao.
+        if (awardedExp >= 14400 && score >= 90 && durationDays >= 30) chestType = 'Lendário';
+        else if (awardedExp >= 7200 && score >= 80) chestType = 'Épico';
+        else if (awardedExp >= 2500 && score >= 70) chestType = 'Raro';
         else if (awardedExp >= 750) chestType = 'Comum';
 
         if (chestType && chestType !== 'Lendário') {
             const roll = Math.random();
             if (roll < 0.05) {
-                if (chestType === 'Comum') chestType = 'Incomum';
-                else if (chestType === 'Incomum') chestType = 'Raro';
+                if (chestType === 'Comum') chestType = 'Raro';
                 else if (chestType === 'Raro') chestType = 'Épico';
                 else if (chestType === 'Épico') chestType = 'Lendário';
             }

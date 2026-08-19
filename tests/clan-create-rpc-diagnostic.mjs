@@ -18,7 +18,7 @@ async function getClanMembership(client, userId) {
 }
 
 try {
-  const user = await createTempUser({ label: 'clan-rpc', isPremium: true, appMode: 'GAME', gold: 100 });
+  const user = await createTempUser({ label: 'clan-rpc', isPremium: true, gold: 100 });
   const clanName = `RPC Grupo ${Date.now()}`;
   const response = await user.client.rpc('create_clan_with_gold', {
     p_name: clanName,

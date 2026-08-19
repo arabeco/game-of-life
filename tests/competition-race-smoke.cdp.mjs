@@ -176,8 +176,8 @@ async function getCompetitionNotifications(client, userId) {
 }
 
 try {
-  const leader = await createTempUser({ label: 'competition-race-leader', isPremium: false, appMode: 'GAME', gold: 150 });
-  const friend = await createTempUser({ label: 'competition-race-friend', isPremium: false, appMode: 'GAME', gold: 50 });
+  const leader = await createTempUser({ label: 'competition-race-leader', isPremium: false, gold: 150 });
+  const friend = await createTempUser({ label: 'competition-race-friend', isPremium: false, gold: 50 });
   await createFriendship(leader, friend);
 
   const inviteResult = await leader.client.rpc('create_relationship_link_invite', {

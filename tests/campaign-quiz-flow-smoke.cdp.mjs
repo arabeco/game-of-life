@@ -219,7 +219,6 @@ try {
   const user = await createTempUser({
     label: 'campaign-quiz',
     isPremium: true,
-    appMode: 'GAME',
     gold: 2000,
   });
 

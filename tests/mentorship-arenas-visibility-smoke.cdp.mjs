@@ -131,8 +131,8 @@ async function openArenasTab(page) {
 }
 
 try {
-  const mentor = await createTempUser({ label: 'mentorship-arenas-mentor', isPremium: true, appMode: 'GAME', gold: 500 });
-  const pupil = await createTempUser({ label: 'mentorship-arenas-pupil', isPremium: false, appMode: 'GAME', gold: 50 });
+  const mentor = await createTempUser({ label: 'mentorship-arenas-mentor', isPremium: true, gold: 500 });
+  const pupil = await createTempUser({ label: 'mentorship-arenas-pupil', isPremium: false, gold: 50 });
   await createFriendship(mentor, pupil);
 
   const arenaName = `Arena Diretiva ${Date.now()}`;

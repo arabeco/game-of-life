@@ -40,7 +40,7 @@ export function createAnonClient() {
   });
 }
 
-function buildProfilePayload({ userId, email, nickname, isPremium = true, appMode = 'GAME', gold = 0, fragments = 0 }) {
+function buildProfilePayload({ userId, email, nickname, isPremium = true, gold = 0, fragments = 0 }) {
   return {
     id: userId,
     email,
@@ -82,14 +82,13 @@ function buildProfilePayload({ userId, email, nickname, isPremium = true, appMod
     chests: [],
     role: 'user',
     is_premium: isPremium,
-    app_mode: appMode,
     theme_preference: 'dark',
     arenas_view_mode: 'free',
     wallet: { gold, fragments },
   };
 }
 
-export async function createTempUser({ label, isPremium = true, appMode = 'GAME', gold = 0, fragments = 0 }) {
+export async function createTempUser({ label, isPremium = true, gold = 0, fragments = 0 }) {
   const client = createAnonClient();
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const nickname = `${label}-${suffix.slice(-6)}`;
@@ -111,7 +110,6 @@ export async function createTempUser({ label, isPremium = true, appMode = 'GAME'
     email,
     nickname,
     isPremium,
-    appMode,
     gold,
     fragments,
   });
@@ -119,7 +117,7 @@ export async function createTempUser({ label, isPremium = true, appMode = 'GAME'
   const profileUpsert = await client
     .from('user_profiles')
     .upsert(profile)
-    .select('id,nickname,is_premium,app_mode')
+    .select('id,nickname,is_premium')
     .single();
 
   if (profileUpsert.error) {
@@ -459,8 +457,8 @@ export async function waitForDb(description, loader, { timeoutMs = 15000, interv
 }
 
 export async function setupClanFixture({ label = 'clan-smoke' } = {}) {
-  const leader = await createTempUser({ label: `${label}-leader`, isPremium: true, appMode: 'GAME' });
-  const member = await createTempUser({ label: `${label}-member`, isPremium: true, appMode: 'GAME' });
+  const leader = await createTempUser({ label: `${label}-leader`, isPremium: true });
+  const member = await createTempUser({ label: `${label}-member`, isPremium: true });
   await createFriendship(leader, member);
   const clan = await createClan(leader, { name: `Smoke Clan ${label} ${Date.now()}` });
   await addClanMember(member, clan.id);
@@ -470,8 +468,8 @@ export async function setupClanFixture({ label = 'clan-smoke' } = {}) {
 }
 
 export async function setupFriendFixture({ label = 'friends-smoke' } = {}) {
-  const leader = await createTempUser({ label: `${label}-leader`, isPremium: true, appMode: 'GAME' });
-  const friend = await createTempUser({ label: `${label}-friend`, isPremium: true, appMode: 'GAME' });
+  const leader = await createTempUser({ label: `${label}-leader`, isPremium: true });
+  const friend = await createTempUser({ label: `${label}-friend`, isPremium: true });
   await createFriendship(leader, friend);
   return { leader, friend };
 }

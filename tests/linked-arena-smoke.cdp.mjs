@@ -15,8 +15,8 @@ const baseUrl = process.env.SMOKE_URL || DEFAULT_SMOKE_URL;
 const checkpoints = [];
 
 try {
-  const mentor = await createTempUser({ label: 'linked-arena-mentor', isPremium: true, appMode: 'GAME', gold: 300 });
-  const pupil = await createTempUser({ label: 'linked-arena-pupil', isPremium: false, appMode: 'GAME', gold: 50 });
+  const mentor = await createTempUser({ label: 'linked-arena-mentor', isPremium: true, gold: 300 });
+  const pupil = await createTempUser({ label: 'linked-arena-pupil', isPremium: false, gold: 50 });
   await createFriendship(mentor, pupil);
 
   const inviteResult = await mentor.client.rpc('create_relationship_link_invite', {

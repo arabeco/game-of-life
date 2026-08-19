@@ -172,7 +172,7 @@ async function seedGmProfileCache(page, userId) {
 
 async function runScenario() {
   const checkpoints = [];
-  const user = await createTempUser({ label: 'notif-lab', isPremium: true, appMode: 'GAME' });
+  const user = await createTempUser({ label: 'notif-lab', isPremium: true });
   await promoteToGm(user.userId);
   await waitForGmProfile(user.userId);
   const session = await getSession(user.client);

@@ -37,8 +37,8 @@ const openConnections = async (page, tab) => {
 };
 
 const runCase = async ({ linkType, label, debugPort }, checkpoints) => {
-  const inviter = await createTempUser({ label: `${label}-accept-a`, isPremium: false, appMode: 'GAME', gold: 150 });
-  const joiner = await createTempUser({ label: `${label}-accept-b`, isPremium: false, appMode: 'GAME', gold: 150 });
+  const inviter = await createTempUser({ label: `${label}-accept-a`, isPremium: false, gold: 150 });
+  const joiner = await createTempUser({ label: `${label}-accept-b`, isPremium: false, gold: 150 });
   await createFriendship(inviter, joiner);
   checkpoints.push(`${label}:accounts-seeded`);
 

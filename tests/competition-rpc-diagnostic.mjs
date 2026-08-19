@@ -46,8 +46,8 @@ async function insertSourceArenaWithAction(client, { userId, arenaName }) {
 }
 
 try {
-  const leader = await createTempUser({ label: 'competition-rpc-leader', isPremium: false, appMode: 'GAME', gold: 150 });
-  const friend = await createTempUser({ label: 'competition-rpc-friend', isPremium: false, appMode: 'GAME', gold: 50 });
+  const leader = await createTempUser({ label: 'competition-rpc-leader', isPremium: false, gold: 150 });
+  const friend = await createTempUser({ label: 'competition-rpc-friend', isPremium: false, gold: 50 });
   await createFriendship(leader, friend);
 
   const inviteResult = await leader.client.rpc('create_relationship_link_invite', {

@@ -14,8 +14,8 @@ const checkpoints = [];
 const normalizeForMatch = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
 
 try {
-  const mentor = await createTempUser({ label: 'linked-readonly-mentor', isPremium: true, appMode: 'GAME', gold: 500 });
-  const pupil = await createTempUser({ label: 'linked-readonly-pupil', isPremium: false, appMode: 'GAME', gold: 50 });
+  const mentor = await createTempUser({ label: 'linked-readonly-mentor', isPremium: true, gold: 500 });
+  const pupil = await createTempUser({ label: 'linked-readonly-pupil', isPremium: false, gold: 50 });
   await createFriendship(mentor, pupil);
 
   const inviteResult = await mentor.client.rpc('create_relationship_link_invite', {

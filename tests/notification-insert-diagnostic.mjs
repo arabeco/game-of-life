@@ -4,14 +4,12 @@ async function main() {
   const sender = await createTempUser({
     label: 'notification-insert-sender',
     isPremium: false,
-    appMode: 'GAME',
     gold: 0,
     fragments: 0,
   });
   const recipient = await createTempUser({
     label: 'notification-insert-recipient',
     isPremium: false,
-    appMode: 'GAME',
     gold: 0,
     fragments: 0,
   });

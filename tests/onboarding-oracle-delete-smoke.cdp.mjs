@@ -163,7 +163,7 @@ async function waitForOracleResponse(page, promptText) {
 
 async function runOnboardingScenario() {
   const checkpoints = [];
-  const user = await createTempUser({ label: 'onboarding-smoke', isPremium: true, appMode: 'GAME' });
+  const user = await createTempUser({ label: 'onboarding-smoke', isPremium: true });
   const session = await getSession(user.client);
 
   await withBrowser({ baseUrl, debugPort: 9331 }, async (page) => {
@@ -262,7 +262,7 @@ async function runOnboardingScenario() {
 
 async function runOracleScenario() {
   const checkpoints = [];
-  const user = await createTempUser({ label: 'oracle-smoke', isPremium: true, appMode: 'GAME' });
+  const user = await createTempUser({ label: 'oracle-smoke', isPremium: true });
   const completedAt = new Date().toISOString();
 
   await updateProfile(user.client, user.userId, {
@@ -306,7 +306,7 @@ async function runOracleScenario() {
 
 async function runDeleteScenario() {
   const checkpoints = [];
-  const user = await createTempUser({ label: 'delete-smoke', isPremium: true, appMode: 'GAME' });
+  const user = await createTempUser({ label: 'delete-smoke', isPremium: true });
   const completedAt = new Date().toISOString();
 
   await updateProfile(user.client, user.userId, {

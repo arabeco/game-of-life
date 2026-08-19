@@ -7,8 +7,8 @@ import {
 } from './_smoke.supabase.mjs';
 
 async function seedMentorshipFixture() {
-  const mentor = await createTempUser({ label: 'relationship-delete-rpc-mentor', isPremium: true, appMode: 'GAME', gold: 800 });
-  const pupil = await createTempUser({ label: 'relationship-delete-rpc-pupil', isPremium: false, appMode: 'GAME', gold: 50 });
+  const mentor = await createTempUser({ label: 'relationship-delete-rpc-mentor', isPremium: true, gold: 800 });
+  const pupil = await createTempUser({ label: 'relationship-delete-rpc-pupil', isPremium: false, gold: 50 });
   await createFriendship(mentor, pupil);
 
   const invite = await mentor.client.rpc('create_relationship_link_invite', {

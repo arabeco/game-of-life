@@ -346,7 +346,6 @@ try {
   user = await createTempUser({
     label: 'cycle-report',
     isPremium: false,
-    appMode: 'BASIC',
     gold: 0,
     fragments: 0,
   });

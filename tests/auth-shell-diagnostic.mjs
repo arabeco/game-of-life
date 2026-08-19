@@ -8,7 +8,6 @@ try {
   const user = await createTempUser({
     label: 'auth-shell-diagnostic',
     isPremium: false,
-    appMode: 'GAME',
     gold: 50,
   });
 

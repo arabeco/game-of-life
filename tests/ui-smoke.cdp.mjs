@@ -288,7 +288,6 @@ try {
   user = await createTempUser({
     label: 'ui-shell',
     isPremium: false,
-    appMode: 'BASIC',
     gold: 0,
     fragments: 0,
   });

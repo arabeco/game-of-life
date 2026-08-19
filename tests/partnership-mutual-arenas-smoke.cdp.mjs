@@ -61,8 +61,8 @@ async function createArenaFromPartnership(page, arenaName) {
 }
 
 try {
-  const leader = await createTempUser({ label: 'partnership-mutual-a', isPremium: false, appMode: 'GAME', gold: 150 });
-  const friend = await createTempUser({ label: 'partnership-mutual-b', isPremium: false, appMode: 'GAME', gold: 150 });
+  const leader = await createTempUser({ label: 'partnership-mutual-a', isPremium: false, gold: 150 });
+  const friend = await createTempUser({ label: 'partnership-mutual-b', isPremium: false, gold: 150 });
   await createFriendship(leader, friend);
 
   const inviteResult = await leader.client.rpc('create_relationship_link_invite', {

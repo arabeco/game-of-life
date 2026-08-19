@@ -4,7 +4,6 @@ async function main() {
   const user = await createTempUser({
     label: 'grant-chest-rpc',
     isPremium: false,
-    appMode: 'GAME',
     gold: 0,
     fragments: 0,
   });

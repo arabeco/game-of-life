@@ -1,7 +1,7 @@
 import { createTempUser } from './_smoke.supabase.mjs';
 
 try {
-  const user = await createTempUser({ label: 'user-chests-insert', isPremium: false, appMode: 'GAME', gold: 0 });
+  const user = await createTempUser({ label: 'user-chests-insert', isPremium: false, gold: 0 });
 
   const insert = await user.client.from('user_chests').insert({
     user_id: user.userId,

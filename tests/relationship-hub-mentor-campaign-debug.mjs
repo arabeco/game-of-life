@@ -171,8 +171,8 @@ async function allowNativeConfirm(page) {
 }
 
 try {
-  const mentor = await createTempUser({ label: 'relationship-hub-mentor', isPremium: true, appMode: 'GAME', gold: 600 });
-  const pupil = await createTempUser({ label: 'relationship-hub-pupil', isPremium: false, appMode: 'GAME', gold: 50 });
+  const mentor = await createTempUser({ label: 'relationship-hub-mentor', isPremium: true, gold: 600 });
+  const pupil = await createTempUser({ label: 'relationship-hub-pupil', isPremium: false, gold: 50 });
   await createFriendship(mentor, pupil);
   checkpoints.push('users-created');
 

@@ -38,8 +38,8 @@ async function getClanMembership(client, userId) {
 }
 
 try {
-  const richUser = await createTempUser({ label: 'clan-create-rich', isPremium: true, appMode: 'GAME', gold: 100 });
-  const poorUser = await createTempUser({ label: 'clan-create-poor', isPremium: false, appMode: 'GAME', gold: 40 });
+  const richUser = await createTempUser({ label: 'clan-create-rich', isPremium: true, gold: 100 });
+  const poorUser = await createTempUser({ label: 'clan-create-poor', isPremium: false, gold: 40 });
   const clanName = `Smoke Grupo ${Date.now()}`;
 
   await withBrowser({ baseUrl, debugPort: 9244 }, async (page) => {

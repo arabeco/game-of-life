@@ -295,7 +295,6 @@ async function main() {
   const user = await createTempUser({
     label: 'onboarding-happy',
     isPremium: false,
-    appMode: 'BASIC',
     gold: 0,
     fragments: 0,
   });
@@ -312,7 +311,6 @@ async function main() {
     premium_reward_pending: false,
     premium_reward_payload: {},
     is_premium: false,
-    app_mode: 'BASIC',
   });
 
   const session = await getSession(user.client);

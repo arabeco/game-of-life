@@ -153,7 +153,6 @@ try {
   const user = await createTempUser({
     label: 'action-session',
     isPremium: true,
-    appMode: 'GAME',
     gold: 500,
   });
 

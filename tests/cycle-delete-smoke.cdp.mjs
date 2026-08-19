@@ -151,7 +151,6 @@ try {
   fixture = await createTempUser({
     label: 'cycle-delete',
     isPremium: true,
-    appMode: 'GAME',
     gold: 0,
     fragments: 0,
   });

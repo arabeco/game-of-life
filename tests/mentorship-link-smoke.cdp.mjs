@@ -14,8 +14,8 @@ const baseUrl = process.env.SMOKE_URL || DEFAULT_SMOKE_URL;
 const checkpoints = [];
 
 try {
-  const mentor = await createTempUser({ label: 'mentorship-premium', isPremium: true, appMode: 'GAME', gold: 200 });
-  const pupil = await createTempUser({ label: 'mentorship-free', isPremium: false, appMode: 'GAME', gold: 50 });
+  const mentor = await createTempUser({ label: 'mentorship-premium', isPremium: true, gold: 200 });
+  const pupil = await createTempUser({ label: 'mentorship-free', isPremium: false, gold: 50 });
   await createFriendship(mentor, pupil);
 
   await withBrowser({ baseUrl, debugPort: 9238 }, async (page) => {

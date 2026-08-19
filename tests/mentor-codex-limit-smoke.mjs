@@ -21,8 +21,8 @@ const mentorTemplate = {
 };
 
 try {
-  const mentor = await createTempUser({ label: 'mentor-codex-limit-mentor', isPremium: true, appMode: 'GAME', gold: 1000 });
-  const pupil = await createTempUser({ label: 'mentor-codex-limit-pupil', isPremium: false, appMode: 'GAME', gold: 50 });
+  const mentor = await createTempUser({ label: 'mentor-codex-limit-mentor', isPremium: true, gold: 1000 });
+  const pupil = await createTempUser({ label: 'mentor-codex-limit-pupil', isPremium: false, gold: 50 });
   await createFriendship(mentor, pupil);
   checkpoints.push('users-created');
 

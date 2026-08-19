@@ -7,6 +7,8 @@ import { GlassCard } from './GlassCard';
 import { SephirotFog } from './SephirotFog';
 import { MoodModal } from './MoodModal';
 import { ChecklistModal } from './ChecklistModal';
+import { GardenZenModal } from './GardenZenModal';
+import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { SitrepContent } from './SitrepContent';
 import { ClanOverviewModal } from './ClanOverviewModal';
 import { getMasteryIndexFromAssets } from '../constants/lifeAreas';
@@ -68,6 +70,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [showUnlockHint, setShowUnlockHint] = useState(false);
     const [isChecklistOpen, setIsChecklistOpen] = useState(false);
+    const [isGardenOpen, setGardenOpen] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isMoodOpen, setIsMoodOpen] = useState(false);
     const [isOracleOpen, setIsOracleOpen] = useState(false);
@@ -148,7 +151,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         };
     }, []);
 
-    const handleQuickActionStart = (action: 'mood' | 'deepwork' | 'real_oracle' | 'checklist') => {
+    const handleQuickActionStart = (action: 'mood' | 'deepwork' | 'real_oracle' | 'checklist' | 'garden') => {
         if (actionHoldInterval.current) return;
 
         const startTime = Date.now();
@@ -176,11 +179,13 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         setActionProgress(null);
     };
 
-    const handleQuickAction = (action: 'mood' | 'deepwork' | 'real_oracle' | 'checklist') => {
+    const handleQuickAction = (action: 'mood' | 'deepwork' | 'real_oracle' | 'checklist' | 'garden') => {
         if (action === 'mood') {
             setIsMoodOpen(true);
         } else if (action === 'checklist') {
             setIsChecklistOpen(true);
+        } else if (action === 'garden') {
+            setGardenOpen(true);
         } else if (action === 'deepwork') {
             setIsDeepWorkOpen(true);
         } else {
@@ -1039,6 +1044,37 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                     {/* Quick Indicators Row */}
                     <div className="flex items-center justify-center gap-4 animate-fade-in delay-500">
+                        {PRODUCT_FEATURES.personalGarden && (
+                        <button
+                            onMouseDown={() => handleQuickActionStart('garden')}
+                            onMouseUp={handleQuickActionEnd}
+                            onMouseLeave={handleQuickActionEnd}
+                            onTouchStart={() => handleQuickActionStart('garden')}
+                            onTouchEnd={handleQuickActionEnd}
+                            className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
+                            aria-label="Abrir jardim"
+                        >
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg group-hover:border-[var(--skin-accent-color)]/50 transition-colors relative overflow-hidden ${actionProgress?.id === 'garden' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
+                                {actionProgress?.id === 'garden' && (
+                                    <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r="48"
+                                            fill="none"
+                                            stroke="var(--skin-accent-color)"
+                                            strokeWidth="4"
+                                            strokeDasharray="301.6"
+                                            strokeDashoffset={301.6 - (301.6 * actionProgress.progress) / 100}
+                                        />
+                                    </svg>
+                                )}
+                                <span className="text-[1.05rem] leading-none">🌿</span>
+                            </div>
+                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-tighter group-hover:text-white transition-colors">Jardim</span>
+                        </button>
+                        )}
+
                         <button
                             onMouseDown={() => handleQuickActionStart('checklist')}
                             onMouseUp={handleQuickActionEnd}
@@ -1239,6 +1275,9 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 )}
                 {isChecklistOpen && (
                     <ChecklistModal onClose={() => setIsChecklistOpen(false)} />
+                )}
+                {PRODUCT_FEATURES.personalGarden && isGardenOpen && (
+                    <GardenZenModal onClose={() => setGardenOpen(false)} />
                 )}
                 {isOracleOpen && (
                     <div className="fixed inset-0 z-[10001]">

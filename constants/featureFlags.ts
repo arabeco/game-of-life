@@ -3,7 +3,7 @@ export const PRODUCT_FEATURES = {
   clanSanctuary: false,
   clanSharedActions: false,
   clanChat: false,
-  personalGarden: false,
+  personalGarden: true,
   relationshipCompetition: true,
   relationshipLegacyHub: false,
 } as const;

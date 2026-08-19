@@ -2109,6 +2109,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     }));
                     setInventory(newItems);
                     return;
+                } else if (insertError.code === '23505') {
+                    // Outra passada ja entregou o pacote. Nao e falha, e nao pode
+                    // conceder os baus de novo - por isso nao caimos no ramo de cima.
+                    console.info('Starter pack ja havia sido entregue por outra passada.');
                 } else {
                     console.error("Error granting starter pack:", insertError);
                 }
@@ -4805,7 +4809,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 ] = await Promise.all([
                     rateLimiter.addRequest(() => supabase.from('arenas').select('id', { count: 'exact', head: true }).eq('user_id', userId)),
                     rateLimiter.addRequest(() => supabase.from('actions').select('id', { count: 'exact', head: true }).eq('user_id', userId)),
-                    rateLimiter.addRequest(() => supabase.from('asset_levels').select('id', { count: 'exact', head: true }).eq('user_id', userId)),
+                    rateLimiter.addRequest(() => supabase.from('asset_levels').select('user_id', { count: 'exact', head: true }).eq('user_id', userId)),
                     rateLimiter.addRequest(() => supabase.from('clan_members').select('id', { count: 'exact', head: true }).eq('user_id', userId)),
                 ]);
 

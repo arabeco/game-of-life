@@ -1,73 +1,73 @@
 # Launch Readiness Report
 
-- Generated at: 2026-08-18T21:35:50.645Z
+- Generated at: 2026-08-19T12:05:09.884Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (10.3s)
+- Build: PASS (343.7s)
 
 ## Checks
 
-### PASS - Challenge reward flow regression (0.1s)
+### PASS - Challenge reward flow regression (14.9s)
 - Kind: `logic`
 - Simulates: limita desafios visiveis
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.1s)
+### PASS - Oracle cycle coach regression (5.0s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.1s)
+### PASS - Reward modal priority regression (6.6s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
 
-### PASS - Daily widget execution regression (0.1s)
+### PASS - Daily widget execution regression (10.1s)
 - Kind: `logic`
 - Simulates: remove planejamento diario do widget
 - Simulates: mostra acoes feitas, XP e arenas tocadas
 
-### PASS - Planner simple list regression (0.1s)
+### PASS - Planner simple list regression (8.0s)
 - Kind: `logic`
 - Simulates: preserva horarios
 - Simulates: salva a ordem no banco
 - Simulates: mantem conclusoes fora da baia
 
-### PASS - Core loop regression (0.1s)
+### PASS - Core loop regression (10.2s)
 - Kind: `logic`
 - Simulates: recalcula o core loop
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (20.6s)
+### FAIL - Onboarding happy path
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
+- Error: Onboarding happy path failed with exit 1
 
-### PASS - Campaign quiz flow (16.2s)
+### PLANNED - Campaign quiz flow
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (18.0s)
+### PLANNED - Cycle report flow
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### FAIL - UI shell smoke
+### PLANNED - UI shell smoke
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais
 - Simulates: garante que a casca da app sobe sem overlay travando
-- Error: UI shell smoke failed with exit 1
 
 ### PLANNED - Onboarding + oracle + delete
 - Kind: `browser`

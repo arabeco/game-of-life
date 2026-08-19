@@ -8637,7 +8637,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     };
 
     const formatMembershipChestLabel = (chestType: ChestType): string => {
-        if (chestType === 'Season') return 'Temporada';
+        // O valor gravado segue 'Season' para nao invalidar bau ja guardado.
+        if (chestType === 'Season') return 'Mitico';
         return chestType;
     };
 

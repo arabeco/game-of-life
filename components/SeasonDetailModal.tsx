@@ -102,7 +102,7 @@ export const QuestDetailModal: React.FC<{
     };
 
     const rewardChest = getQuestRewardChest(quest);
-    const rewardLabel = rewardChest === 'Season' ? 'Baú Temporada' : rewardChest ? `Baú ${rewardChest}` : 'Sem baú';
+    const rewardLabel = rewardChest === 'Season' ? 'Baú Mítico' : rewardChest ? `Baú ${rewardChest}` : 'Sem baú';
     const rewardGold = Number((quest as SeasonQuest & { rewardGold?: number }).rewardGold || 0);
     const rewardItemCount = quest.rewards.items?.length || 0;
     const rewardSummary = rewardGold > 0

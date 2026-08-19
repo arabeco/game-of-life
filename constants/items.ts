@@ -486,7 +486,7 @@ export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
             orb: null,
             plate: null,
             insignia: null,
-            ui_skin: 'item_theme_nebulosa',
+            ui_skin: null,
         },
     },
 };
@@ -544,17 +544,10 @@ const GENESIS_BANNER: ItemDef = interfaceCatalogItem('banner', {
     seasonSlot: 'banner',
     asset: 'banner_origem.png',
 });
-const GENESIS_THEME: ItemDef = catalogItem('ui_skin', {
-    id: 'item_theme_nebulosa', name: 'Tema: Nebulosa Astral',
-    tier: 4, rarity: 'epic', icon: '🌌',
-    description: 'Interface visual de camadas cósmicas.',
-    isRankExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'ui_skin',
-});
-
 export const PREMIUM_PACK_GENESIS = [GENESIS_BORDER, GENESIS_BANNER];
 
 // Add Genesis items to main DB
-ITEMS_DB.push(GENESIS_BORDER, GENESIS_BANNER, GENESIS_THEME);
+ITEMS_DB.push(GENESIS_BORDER, GENESIS_BANNER);
 
 const PNG_REQUIRED_CATEGORIES = new Set<ItemCategory>([
     'skin',

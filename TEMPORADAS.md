@@ -221,11 +221,11 @@ dela na lista.
 ### Baú Épico e Lendário estavam entregando tier 1
 
 Desde a migração de 16/04/2026 os dois ramos acentuados do `case` que normaliza
-o tipo do baú estão com **UTF-8 codificado duas vezes**. O arquivo guarda
-`Ã©pico` onde deveria haver `épico`.
+o tipo do baú estão com **UTF-8 codificado duas vezes**: o arquivo guarda a
+forma corrompida no lugar de `épico` e `lendário`.
 
 O cliente manda `'Épico'` — é o valor do `ChestType` em `types.ts`. Em SQL,
-`lower('Épico')` dá `épico`, que nunca iguala `Ã©pico`. O ramo cai no `else`, e
+`lower('Épico')` dá `épico`, que nunca iguala a forma corrompida. O ramo cai no `else`, e
 `v_chest_type` vira `épico` — que também não bate em nenhum ramo do `case` de
 tier. Resultado:
 

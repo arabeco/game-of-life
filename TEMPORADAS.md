@@ -244,6 +244,26 @@ puro, então não tem como apodrecer de novo.
 Toda migração de baú de 20260416 em diante carrega o defeito. A de 20260309 está
 correta.
 
+### O pool do baú ignorava metade das exclusões
+
+O sorteio só recusava `is_gold_exclusive` e `is_season_exclusive`. De **122
+itens** no pool de baú comum, **42 não deviam estar lá**:
+
+| quantos | motivo | efeito |
+|---|---|---|
+| 31 | `is_rank_exclusive` | recompensa de patente entregue sem a patente |
+| 9 | `category = 'hair'` | o inventário esconde cabelo, o item some |
+| 2 | `is_legacy_retired` | item aposentado voltando a circular |
+| 0 | `is_premium_only` | zerado hoje, filtrado para não voltar |
+
+Um quarto de tudo que um baú entregava era recompensa de patente. O cabelo era
+pior que inútil: entrava em `user_inventory`, aparecia no modal e sumia da tela
+do inventário, que filtra a categoria na linha 106 de `Inventory.tsx`.
+
+Fechado em `20260820140000_chest_pool_respects_every_exclusion.sql`. O baú
+Mítico fica fora da regra — mantém tier 6 mais `season_key`, porque item de
+temporada pode carregar flag de legado sem deixar de ser o prêmio combinado.
+
 ### Insígnia não cai de baú comum
 
 O sorteio nunca filtrou por categoria: escolhe um tier e pega qualquer item vivo

@@ -1,0 +1,296 @@
+-- O sorteio so recusava is_gold_exclusive e is_season_exclusive. Tres outras
+-- colunas que a tabela tem ficavam de fora, e a categoria 'hair' tambem.
+--
+-- De 122 itens no pool de bau comum, 42 nao deviam estar la:
+--
+--   31  is_rank_exclusive  recompensa de patente entregue sem a patente
+--    9  category = 'hair'  o inventario esconde cabelo, entao o item some
+--    2  is_legacy_retired  item aposentado voltando a circular
+--    0  is_premium_only    zerado hoje, filtrado para nao voltar
+--
+-- Um quarto de tudo que um bau entregava era recompensa de patente. E o cabelo
+-- era pior que inutil: entrava em user_inventory, aparecia no modal e sumia da
+-- tela do inventario, que filtra a categoria.
+--
+-- O cliente ja recusava os quatro em isChestEligibleItem. Quem decide o drop e
+-- esta funcao; o cliente so desenha o que veio.
+--
+-- Tudo isso vale so fora do bau Mitico. O 'season' continua com a regra que ja
+-- tinha - tier 6 mais season_key - porque os itens de temporada podem carregar
+-- flags de legado sem deixar de ser o premio combinado.
+
+drop function if exists public.open_chest(character varying);
+
+create or replace function public.open_chest(
+  p_chest_type character varying,
+  p_season_key text default null
+)
+returns jsonb
+language plpgsql
+security definer
+as $function$
+declare
+  v_user_id uuid;
+  v_chest_id bigint;
+  v_input_chest_type varchar(20);
+  v_chest_type varchar(20);
+  v_pity_counter int default 0;
+  v_guaranteed_tier int default 0;
+  v_bonus_fragments int;
+  v_dropped_tier int;
+  v_dropped_item_id text;
+  v_is_duplicate boolean;
+  v_recycle_value int;
+  v_fragments_gained int default 0;
+  v_item_name text;
+begin
+  v_user_id := auth.uid();
+  v_input_chest_type := trim(p_chest_type);
+
+  -- Sem literal acentuado. As duas linhas que existiam aqui vinham com UTF-8
+  -- codificado duas vezes desde 20260416: o ramo comparava com uma sequencia corrompida,
+  -- que 'Epico' nunca igualava. Casar por padrao nao depende de encoding.
+  v_chest_type := case
+    when lower(v_input_chest_type) = 'comum' then 'comum'
+    when lower(v_input_chest_type) = 'incomum' then 'incomum'
+    when lower(v_input_chest_type) in ('raro', 'radiante') then 'radiante'
+    when lower(v_input_chest_type) like '%pico' then 'epico'
+    when lower(v_input_chest_type) like 'lend%rio' then 'lendario'
+    when lower(v_input_chest_type) = 'season' then 'season'
+    when lower(v_input_chest_type) = 'ciclo' then 'ciclo'
+    else lower(v_input_chest_type)
+  end;
+
+  select id
+  into v_chest_id
+  from user_chests
+  where user_id = v_user_id
+    and chest_type in (v_input_chest_type, v_chest_type)
+    and is_opened = false
+  limit 1;
+
+  if v_chest_id is null then
+    raise exception 'Chest not found or already opened';
+  end if;
+
+  if v_chest_type in ('ciclo', 'radiante', 'epico', 'lendario', 'season') then
+    select coalesce(counter, 0)
+    into v_pity_counter
+    from user_pity_counters
+    where user_id = v_user_id
+      and chest_type = v_chest_type;
+
+    if v_pity_counter is null then
+      insert into user_pity_counters (user_id, chest_type, counter)
+      values (v_user_id, v_chest_type, 0);
+      v_pity_counter := 0;
+    end if;
+
+    v_pity_counter := v_pity_counter + 1;
+
+    v_guaranteed_tier := case
+      when v_chest_type = 'ciclo' and v_pity_counter >= 15 then 3
+      when v_chest_type = 'radiante' and v_pity_counter >= 10 then 3
+      when v_chest_type = 'epico' and v_pity_counter >= 8 then 4
+      when v_chest_type = 'lendario' and v_pity_counter >= 6 then 5
+      when v_chest_type = 'season' and v_pity_counter >= 5 then 6
+      else 0
+    end;
+  end if;
+
+  declare
+    v_rand float := random() * 100;
+  begin
+    if v_guaranteed_tier > 0 then
+      v_dropped_tier := v_guaranteed_tier;
+    else
+      case v_chest_type
+        when 'comum' then
+          if v_rand < 80 then v_dropped_tier := 1;
+          elsif v_rand < 95 then v_dropped_tier := 2;
+          elsif v_rand < 98 then v_dropped_tier := 3;
+          else v_dropped_tier := 4; end if;
+        when 'incomum' then
+          if v_rand < 70 then v_dropped_tier := 1;
+          elsif v_rand < 95 then v_dropped_tier := 2;
+          else v_dropped_tier := 3; end if;
+        when 'ciclo' then
+          if v_rand < 40 then v_dropped_tier := 1;
+          elsif v_rand < 75 then v_dropped_tier := 2;
+          elsif v_rand < 95 then v_dropped_tier := 3;
+          else v_dropped_tier := 4; end if;
+        when 'radiante' then
+          if v_rand < 40 then v_dropped_tier := 2;
+          elsif v_rand < 85 then v_dropped_tier := 3;
+          else v_dropped_tier := 4; end if;
+        when 'epico' then
+          if v_rand < 50 then v_dropped_tier := 3;
+          elsif v_rand < 85 then v_dropped_tier := 4;
+          else v_dropped_tier := 5; end if;
+        when 'lendario' then
+          if v_rand < 40 then v_dropped_tier := 4;
+          else v_dropped_tier := 5; end if;
+        when 'season' then
+          v_dropped_tier := 6;
+        else
+          v_dropped_tier := 1;
+      end case;
+    end if;
+  end;
+
+  select i.id, i.name, i.recycle_value
+  into v_dropped_item_id, v_item_name, v_recycle_value
+  from items i
+  where i.tier = v_dropped_tier
+    and coalesce(i.is_live_in_game, true) = true
+    and (v_chest_type = 'season' or (
+          i.category not in ('insignia', 'insignias')
+      and i.category <> 'hair'
+      and i.is_rank_exclusive is not true
+      and i.is_premium_only is not true
+      and i.is_legacy_retired is not true
+    ))
+    and (i.is_gold_exclusive = false or i.is_gold_exclusive is null)
+    and (i.is_season_exclusive = (v_chest_type = 'season'))
+    and (v_chest_type <> 'season' or p_season_key is null or i.season_key = p_season_key)
+    and not exists (
+      select 1
+      from user_inventory ui
+      where ui.user_id = v_user_id
+        and ui.item_id = i.id
+    )
+  order by random()
+  limit 1;
+
+  if v_dropped_item_id is null then
+    select i.id, i.name, i.recycle_value
+    into v_dropped_item_id, v_item_name, v_recycle_value
+    from items i
+    where i.tier = v_dropped_tier
+      and coalesce(i.is_live_in_game, true) = true
+      and (v_chest_type = 'season' or (
+            i.category not in ('insignia', 'insignias')
+        and i.category <> 'hair'
+        and i.is_rank_exclusive is not true
+        and i.is_premium_only is not true
+        and i.is_legacy_retired is not true
+      ))
+      and (i.is_gold_exclusive = false or i.is_gold_exclusive is null)
+      and (i.is_season_exclusive = (v_chest_type = 'season'))
+      and (v_chest_type <> 'season' or p_season_key is null or i.season_key = p_season_key)
+    order by random()
+    limit 1;
+  end if;
+
+  if v_dropped_item_id is null and v_chest_type <> 'season' then
+    select i.id, i.name, i.recycle_value
+    into v_dropped_item_id, v_item_name, v_recycle_value
+    from items i
+    where i.tier = v_dropped_tier
+      and coalesce(i.is_live_in_game, true) = true
+      and (v_chest_type = 'season' or (
+            i.category not in ('insignia', 'insignias')
+        and i.category <> 'hair'
+        and i.is_rank_exclusive is not true
+        and i.is_premium_only is not true
+        and i.is_legacy_retired is not true
+      ))
+      and not exists (
+        select 1
+        from user_inventory ui
+        where ui.user_id = v_user_id
+          and ui.item_id = i.id
+      )
+    order by random()
+    limit 1;
+  end if;
+
+  if v_dropped_item_id is null and v_chest_type <> 'season' then
+    select i.id, i.name, i.recycle_value
+    into v_dropped_item_id, v_item_name, v_recycle_value
+    from items i
+    where i.tier = v_dropped_tier
+      and coalesce(i.is_live_in_game, true) = true
+      and (v_chest_type = 'season' or (
+            i.category not in ('insignia', 'insignias')
+        and i.category <> 'hair'
+        and i.is_rank_exclusive is not true
+        and i.is_premium_only is not true
+        and i.is_legacy_retired is not true
+      ))
+    order by random()
+    limit 1;
+  end if;
+
+  if v_dropped_item_id is null then
+    raise exception 'No live item available for tier %', v_dropped_tier;
+  end if;
+
+  select exists(
+    select 1
+    from user_inventory
+    where user_id = v_user_id
+      and item_id = v_dropped_item_id
+  )
+  into v_is_duplicate;
+
+  if v_is_duplicate then
+    v_fragments_gained := v_recycle_value;
+  else
+    insert into user_inventory (user_id, item_id)
+    values (v_user_id, v_dropped_item_id);
+  end if;
+
+  v_bonus_fragments := case v_chest_type
+    when 'incomum' then floor(random() * (15 - 5 + 1) + 5)
+    when 'ciclo' then floor(random() * (30 - 10 + 1) + 10)
+    when 'radiante' then floor(random() * (80 - 30 + 1) + 30)
+    when 'epico' then floor(random() * (200 - 80 + 1) + 80)
+    when 'season' then floor(random() * (500 - 200 + 1) + 200)
+    else 0
+  end;
+
+  v_fragments_gained := v_fragments_gained + v_bonus_fragments;
+
+  update user_profiles
+  set fragments = coalesce(fragments, 0) + v_fragments_gained
+  where id = v_user_id;
+
+  if v_chest_type in ('ciclo', 'radiante', 'epico', 'lendario', 'season') then
+    if v_dropped_tier >= v_guaranteed_tier and v_guaranteed_tier > 0 then
+      update user_pity_counters
+      set counter = 0, last_reset = now()
+      where user_id = v_user_id
+        and chest_type = v_chest_type;
+    else
+      update user_pity_counters
+      set counter = v_pity_counter
+      where user_id = v_user_id
+        and chest_type = v_chest_type;
+    end if;
+  end if;
+
+  update user_chests
+  set is_opened = true, opened_at = now()
+  where id = v_chest_id;
+
+  insert into transactions (user_id, type, currency, amount, description)
+  values (
+    v_user_id,
+    'open_chest',
+    'fragments',
+    v_fragments_gained,
+    'Opened ' || v_input_chest_type || ' chest. Got ' || v_item_name || (case when v_is_duplicate then ' (Duplicate)' else '' end)
+  );
+
+  return jsonb_build_object(
+    'success', true,
+    'item_id', v_dropped_item_id,
+    'item_name', v_item_name,
+    'tier', v_dropped_tier,
+    'is_duplicate', v_is_duplicate,
+    'fragments_gained', v_fragments_gained,
+    'bonus_fragments', v_bonus_fragments
+  );
+end;
+$function$;

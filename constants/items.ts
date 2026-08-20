@@ -361,7 +361,8 @@ export const ITEMS_DB: ItemDef[] = [
     // NOVAS INSÍGNIAS (Recompensas Automáticas)
     { id: 'insignia_report_comum', name: 'Bronze: Relatório de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: '📜', description: "Relatório de Bronze: Concedida por concluir um ciclo e selar o relatório final.", isReportExclusive: true },
     { id: 'insignia_quest_incomum', name: 'Prata: Missão Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🎖️', description: "Missão de Prata: Concedida ao concluir uma missão da temporada.", isQuestExclusive: true },
-    { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência." },
+    { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência.", isRankExclusive: true },
+    { id: 'insignia_season_genesis', name: 'Gênesis', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca de quem esteve na Temporada Zero, antes da Primeira Era começar.", isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'insignia' },
     { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia' },
 ];
 
@@ -448,6 +449,10 @@ export const isChestEligibleItem = (itemOrId?: ItemDef | string): boolean => {
     );
 };
 
+// Entregue a cada patente conquistada, ao lado da insignia unica daquela
+// patente. Esta acumula; as dez de patente sao uma de cada.
+export const RANK_UP_INSIGNIA_ID = 'insignia_levelup_rara';
+
 export const SEASON_COLLECTION_SLOTS: ItemSeasonSlot[] = ['skin', 'border', 'banner', 'glyph', 'orb', 'plate', 'insignia', 'ui_skin'];
 export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
     aurora_1_2026: {
@@ -471,14 +476,14 @@ export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
         retired: true,
         premiumLegacy: true,
         slots: {
-            skin: null,
-            border: 'item_border_genesis_01',
-            banner: 'item_banner_origin_01',
+            skin: 'item_skin_5_002',
+            border: 'item_border_t5_genesis',
+            banner: 'item_banner_t5_genesis',
             glyph: null,
             orb: null,
             plate: null,
-            insignia: null,
-            ui_skin: null,
+            insignia: 'insignia_season_genesis',
+            ui_skin: 'GENESIS',
         },
     },
 };

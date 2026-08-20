@@ -1,7 +1,7 @@
 ﻿import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
-import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
+import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, RANK_UP_INSIGNIA_ID, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import {
@@ -8219,6 +8219,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     grantUserUnlock('insignias', rankInsigniaId);
                     grantInventoryItem(rankInsigniaId, true);
 
+                    // A de subida, que acumula, vem junto da unica daquela patente.
+                    grantUserUnlock('insignias', RANK_UP_INSIGNIA_ID);
+                    grantInventoryItem(RANK_UP_INSIGNIA_ID, true);
+
                     // Grant Rank Rewards (Escalada do Soberano 5.0)
                     const rewardNames: string[] = [];
                     rankRewardDetails.forEach(reward => {
@@ -8997,9 +9001,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return sum + normalizedLevels[assetId];
         }, 0);
 
-        const previousTotalLevel = LIFE_AREA_IDS.reduce((sum, assetId) => {
-            return sum + (assets.find((asset) => asset.id === assetId)?.level || 1);
-        }, 0);
 
         setAssets(prev => prev.map(asset => ({
             ...asset,
@@ -9037,16 +9038,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } else {
             updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
         }
-        // Uma insignia por subida, nao por nivel ganho. A maestria e auto-avaliada:
-        // quem preenche a primeira vez pode saltar de 7 para 40 de uma vez, e pagar
-        // por nivel entregaria 33 insignias numa tacada. O lockdown de 3 dias limita
-        // o resto.
-        if (nextTotalLevel > previousTotalLevel) {
-            const levelUpInsigniaId = 'insignia_levelup_rara';
-            grantUserUnlock('insignias', levelUpInsigniaId);
-            void grantInventoryItem(levelUpInsigniaId, true);
-        }
-
         showToast('Maestria atualizada.', 'success');
         return true;
     };
@@ -11651,6 +11642,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             grantUserUnlock('insignias', rankInsigniaId);
             await grantInventoryItem(rankInsigniaId, true);
             earnedItemIds.push(rankInsigniaId);
+
+            // A de subida, que acumula, vem junto da unica daquela patente.
+            grantUserUnlock('insignias', RANK_UP_INSIGNIA_ID);
+            await grantInventoryItem(RANK_UP_INSIGNIA_ID, true);
+            earnedItemIds.push(RANK_UP_INSIGNIA_ID);
         }
 
         // Update Profile (Removing gold)
@@ -11775,6 +11771,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             grantUserUnlock('insignias', rankInsigniaId);
             await grantInventoryItem(rankInsigniaId, true);
             earnedItemIds.push(rankInsigniaId);
+
+            // A de subida, que acumula, vem junto da unica daquela patente.
+            grantUserUnlock('insignias', RANK_UP_INSIGNIA_ID);
+            await grantInventoryItem(RANK_UP_INSIGNIA_ID, true);
+            earnedItemIds.push(RANK_UP_INSIGNIA_ID);
         }
 
         // Update Profile

@@ -75,7 +75,15 @@ Por isso a `SeasonConfig` declara `seasonKey` explicitamente.
 | border | `item_border_t5_genesis` | — removido, sem arte |
 | banner | `item_banner_t5_genesis` | — removido, sem arte |
 | ui_skin | `GENESIS` | — nunca existiu |
-| insignia | — falta criar | `insignia_season_aurora_1` |
+| insignia | `insignia_season_genesis` | `insignia_season_aurora_1` |
+
+Genesis fecha 5/5 no código. Falta a arte das insígnias dos dois lados e a
+linha do Genesis no banco — migração
+`20260820120000_genesis_season_insignia.sql`.
+
+O mapa `SEASON_COLLECTIONS.genesis_legacy` apontava para `item_border_genesis_01`
+e `item_banner_origin_01` — o par **Origin**, que não é Genesis — e ainda tinha
+`skin: null`. Corrigido para os itens realmente marcados `genesis_legacy`.
 
 ---
 
@@ -206,13 +214,15 @@ resto de honra empilha por padrão. Assim uma insígnia nova de ciclo ou missão
 nasce acumulando, em vez de virar fragmento porque esqueceram de somar o prefixo
 dela na lista.
 
-### A insígnia de nível
+### A insígnia de subida
 
-`insignia_levelup_rara` existia no catálogo e **ninguém a entregava** — nenhum
-código fora do catálogo a citava. Além disso vinha marcada `isRankExclusive`, a
-flag das patentes, que são uma de cada.
+`insignia_levelup_rara` — "Ouro: Patente Rara" — é de **subida de patente**, não
+tem relação com o nível de maestria dos ativos. Ela existia no catálogo e
+**ninguém a entregava**: nenhum código fora de `items.ts` citava o id.
 
-Agora sai de `updateAllAssetLevels`, quando a soma dos níveis dos ativos sobe.
-**Uma por subida, não por nível ganho:** a maestria é auto-avaliada, então quem
-preenche a primeira vez pode saltar de 7 para 40 numa tacada — pagar por nível
-entregaria 33 insígnias de uma vez. O lockdown de 3 dias segura o resto.
+Agora sai junto da insígnia única daquela patente, nos dois caminhos que já
+detectam a subida. São duas por subida, com papéis diferentes: a da patente é
+uma de cada, esta acumula.
+
+Segue marcada `isRankExclusive` — a flag é lida por `isChestEligibleItem` e é o
+que a mantém fora do sorteio dos baús. Ela se ganha subindo, não abrindo.

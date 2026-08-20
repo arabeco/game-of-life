@@ -249,7 +249,7 @@ export const ITEMS_DB: ItemDef[] = [
     // T5
     { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png`, isGmExclusive: true },
     // Novos T5
-    { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 5, rarity: 'legendary', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
+    { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
     catalogItem('border', { id: 'item_border_aurora_1_2026', name: 'Aurora I', tier: 6, rarity: 'mythic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border' }),
 
     // --- BANNERS ---
@@ -275,7 +275,7 @@ export const ITEMS_DB: ItemDef[] = [
 
     // T5
     { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png`, isGmExclusive: true },
-    { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 5, rarity: 'legendary', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
+    { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
     catalogItem('banner', { id: 'item_banner_aurora_1_2026', name: 'Aurora I', tier: 6, rarity: 'mythic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner' }),
 
     // --- GLIFOS ---
@@ -527,8 +527,9 @@ export const XP_BOOSTS = GOLD_BOOST_PRODUCTS.map((boost) => ({
 // === Premium Genesis Pack ===
 const GENESIS_BORDER: ItemDef = interfaceCatalogItem('border', {
     id: 'item_border_genesis_01', name: 'Borda Gênesis',
-    tier: 6, rarity: 'mythic', icon: '✨',
+    tier: 4, rarity: 'epic', icon: '✨',
     description: 'Recompensa de Temporada e Quest de alto valor.',
+    isLegacyRetired: true,
     isSeasonExclusive: true,
     seasonKey: 'genesis_legacy',
     seasonSlot: 'border',
@@ -536,8 +537,9 @@ const GENESIS_BORDER: ItemDef = interfaceCatalogItem('border', {
 });
 const GENESIS_BANNER: ItemDef = interfaceCatalogItem('banner', {
     id: 'item_banner_origin_01', name: 'Banner Origem',
-    tier: 6, rarity: 'mythic', icon: '🧿',
+    tier: 4, rarity: 'epic', icon: '🧿',
     description: 'Recompensa de Temporada e Quest de alto valor.',
+    isLegacyRetired: true,
     isSeasonExclusive: true,
     seasonKey: 'genesis_legacy',
     seasonSlot: 'banner',

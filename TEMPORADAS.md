@@ -77,6 +77,10 @@ Por isso a `SeasonConfig` declara `seasonKey` explicitamente.
 | ui_skin | `GENESIS` | — nunca existiu |
 | insignia | `insignia_season_genesis` | `insignia_season_aurora_1` |
 
+**`sql/items_catalog_seed.sql` divergiu do banco:** cita `is_gm_exclusive`,
+`is_quest_exclusive` e `is_report_exclusive`, três colunas que a tabela não tem.
+Qualquer SQL escrito a partir desse seed falha.
+
 Genesis fecha 5/5 no código. Falta a arte das insígnias dos dois lados e a
 linha do Genesis no banco — migração
 `20260820120000_genesis_season_insignia.sql`.
@@ -213,6 +217,25 @@ A regra é escrita **pelo lado que não acumula** — patente e temporada. Todo 
 resto de honra empilha por padrão. Assim uma insígnia nova de ciclo ou missão já
 nasce acumulando, em vez de virar fragmento porque esqueceram de somar o prefixo
 dela na lista.
+
+### Insígnia não cai de baú comum
+
+O sorteio nunca filtrou por categoria: escolhe um tier e pega qualquer item vivo
+daquele tier. Insígnias têm tier como qualquer outro item, então um baú Raro
+podia devolver a insígnia de ciclo e um Épico a de patente. O cliente já recusava
+isso em `isChestEligibleItem`, mas quem decide o drop é a RPC — o cliente só
+desenha o resultado.
+
+O acúmulo piorou o estrago: antes a cópia repetida virava fragmento e o
+vazamento passava por dano leve; agora ela empilha, e o baú seria uma segunda
+via de coisa que era pra ser merecida.
+
+Corrigido em `20260820130000_honor_insignias_are_earned_not_dropped.sql`, nas
+quatro consultas do pool. O baú **Mítico é a exceção** — é justamente por ele
+que a insígnia da temporada chega.
+
+`is_quest_exclusive` e `is_report_exclusive` **não existem na tabela `items`** —
+só no catálogo do cliente. Filtrar por categoria é o que dá para fazer no banco.
 
 ### A insígnia de subida
 

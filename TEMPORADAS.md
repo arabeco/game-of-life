@@ -77,9 +77,11 @@ Por isso a `SeasonConfig` declara `seasonKey` explicitamente.
 | ui_skin | `GENESIS` | — nunca existiu |
 | insignia | `insignia_season_genesis` | `insignia_season_aurora_1` |
 
-**`sql/items_catalog_seed.sql` divergiu do banco:** cita `is_gm_exclusive`,
-`is_quest_exclusive` e `is_report_exclusive`, três colunas que a tabela não tem.
-Qualquer SQL escrito a partir desse seed falha.
+**O catálogo não tem seed.** `sql/items_catalog_seed.sql` foi apagado: estava 5
+meses atrasado, sem `mythic` e sem tier 6, e tinha `on conflict do update` — se
+alguém o rodasse, rebaixaria a coleção inteira e quebraria o baú Mítico em
+silêncio. A fonte de verdade do catálogo é
+[`constants/items.ts`](constants/items.ts); as migrações constroem o banco.
 
 Genesis fecha 5/5 no código. Falta a arte das insígnias dos dois lados e a
 linha do Genesis no banco — migração

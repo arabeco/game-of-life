@@ -8536,13 +8536,18 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return Number(ECONOMY.recycle_values[recycleKey] || ECONOMY.recycle_values.tier_1 || 0);
     };
 
+    // A regra e por familia, e listada pelo lado que NAO acumula: patente tem uma
+    // por patente, temporada tem uma por temporada. Todo o resto de honra empilha.
+    // Listar assim faz uma insignia nova de ciclo, missao ou nivel ja nascer
+    // acumulando, em vez de virar fragmento por esquecerem de um prefixo aqui.
     const isStackableHonorItem = (itemId: string): boolean => {
         const itemDef = resolveItemDef(itemId);
         const isInsignia = itemDef?.category === 'insignia' || itemDef?.category === 'insignias';
         if (!isInsignia) return false;
-        return Boolean(itemDef?.isQuestExclusive || itemDef?.isReportExclusive)
-            || itemId.startsWith('insignia_quest_')
-            || itemId.startsWith('insignia_report_');
+        const isOneOfEach = Boolean(itemDef?.isSeasonExclusive)
+            || itemId.startsWith('insignia_rank_')
+            || itemId.startsWith('insignia_season_');
+        return !isOneOfEach;
     };
 
     const grantInventoryItem = async (itemId: string, silent: boolean = false) => {
@@ -8992,6 +8997,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return sum + normalizedLevels[assetId];
         }, 0);
 
+        const previousTotalLevel = LIFE_AREA_IDS.reduce((sum, assetId) => {
+            return sum + (assets.find((asset) => asset.id === assetId)?.level || 1);
+        }, 0);
+
         setAssets(prev => prev.map(asset => ({
             ...asset,
             level: normalizedLevels[asset.id] ?? asset.level,
@@ -9028,6 +9037,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         } else {
             updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
         }
+        // Uma insignia por subida, nao por nivel ganho. A maestria e auto-avaliada:
+        // quem preenche a primeira vez pode saltar de 7 para 40 de uma vez, e pagar
+        // por nivel entregaria 33 insignias numa tacada. O lockdown de 3 dias limita
+        // o resto.
+        if (nextTotalLevel > previousTotalLevel) {
+            const levelUpInsigniaId = 'insignia_levelup_rara';
+            grantUserUnlock('insignias', levelUpInsigniaId);
+            void grantInventoryItem(levelUpInsigniaId, true);
+        }
+
         showToast('Maestria atualizada.', 'success');
         return true;
     };

@@ -34,6 +34,18 @@ tempo de execução é por data, em `resolveRuntimeActiveSeason`.
 
 ---
 
+## Ver o catálogo
+
+Folha de contato com todos os itens, em abas por categoria e com a aba
+Míticos separada por temporada e slot:
+
+<https://claude.ai/code/artifact/5b198da3-a14f-43bc-b9df-270dccd654ca>
+
+Slot vazio aparece tracejado, então dá para ver de relance o que cada coleção
+ainda pede.
+
+---
+
 ## A coleção de cada temporada
 
 Cinco slots, definidos em `ItemSeasonSlot`:
@@ -179,7 +191,28 @@ Cinco tipos, com regras diferentes de acumulação:
 | nível | uma, a cada subida | **sim** |
 | temporada | uma por temporada | não |
 
-**Pendência conhecida:** a entrega usa `grantInventoryItem`, e o inventário
-guarda um registro por item. Ganhar a mesma insígnia de ciclo duas vezes hoje
-vira duplicata e converte em fragmento — não acumula. Acumular exige contador,
-não segunda cópia.
+### Como o acúmulo funciona
+
+Três camadas, todas já no lugar:
+
+| camada | onde |
+|---|---|
+| banco aceita cópias | migração `allow_stackable_honor_inventory` derruba o único `(user_id, item_id)` |
+| entrega não converte | `isStackableHonorItem` em [`GameContext.tsx`](contexts/GameContext.tsx) faz a cópia pular a troca por fragmento |
+| tela soma | [`Inventory.tsx`](components/Store/Inventory.tsx) agrupa por id e mostra `x3` |
+
+A regra é escrita **pelo lado que não acumula** — patente e temporada. Todo o
+resto de honra empilha por padrão. Assim uma insígnia nova de ciclo ou missão já
+nasce acumulando, em vez de virar fragmento porque esqueceram de somar o prefixo
+dela na lista.
+
+### A insígnia de nível
+
+`insignia_levelup_rara` existia no catálogo e **ninguém a entregava** — nenhum
+código fora do catálogo a citava. Além disso vinha marcada `isRankExclusive`, a
+flag das patentes, que são uma de cada.
+
+Agora sai de `updateAllAssetLevels`, quando a soma dos níveis dos ativos sobe.
+**Uma por subida, não por nível ganho:** a maestria é auto-avaliada, então quem
+preenche a primeira vez pode saltar de 7 para 40 numa tacada — pagar por nível
+entregaria 33 insígnias de uma vez. O lockdown de 3 dias segura o resto.

@@ -361,7 +361,7 @@ export const ITEMS_DB: ItemDef[] = [
     // NOVAS INSÍGNIAS (Recompensas Automáticas)
     { id: 'insignia_report_comum', name: 'Bronze: Relatório de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: '📜', description: "Relatório de Bronze: Concedida por concluir um ciclo e selar o relatório final.", isReportExclusive: true },
     { id: 'insignia_quest_incomum', name: 'Prata: Missão Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🎖️', description: "Missão de Prata: Concedida ao concluir uma missão da temporada.", isQuestExclusive: true },
-    { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência.", isRankExclusive: true },
+    { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência." },
     { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia' },
 ];
 

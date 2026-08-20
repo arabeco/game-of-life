@@ -46,17 +46,17 @@ begin
   v_user_id := auth.uid();
   v_input_chest_type := trim(p_chest_type);
 
-  v_chest_type := case lower(v_input_chest_type)
-    when 'comum' then 'comum'
-    when 'incomum' then 'incomum'
-    when 'raro' then 'radiante'
-    when 'radiante' then 'radiante'
-    when 'Ã©pico' then 'epico'
-    when 'epico' then 'epico'
-    when 'lendÃ¡rio' then 'lendario'
-    when 'lendario' then 'lendario'
-    when 'season' then 'season'
-    when 'ciclo' then 'ciclo'
+  -- Sem literal acentuado. As duas linhas que existiam aqui vinham com UTF-8
+  -- codificado duas vezes desde 20260416: o ramo comparava com uma sequencia corrompida,
+  -- que 'Epico' nunca igualava. Casar por padrao nao depende de encoding.
+  v_chest_type := case
+    when lower(v_input_chest_type) = 'comum' then 'comum'
+    when lower(v_input_chest_type) = 'incomum' then 'incomum'
+    when lower(v_input_chest_type) in ('raro', 'radiante') then 'radiante'
+    when lower(v_input_chest_type) like '%pico' then 'epico'
+    when lower(v_input_chest_type) like 'lend%rio' then 'lendario'
+    when lower(v_input_chest_type) = 'season' then 'season'
+    when lower(v_input_chest_type) = 'ciclo' then 'ciclo'
     else lower(v_input_chest_type)
   end;
 

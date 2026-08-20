@@ -218,6 +218,32 @@ resto de honra empilha por padrão. Assim uma insígnia nova de ciclo ou missão
 nasce acumulando, em vez de virar fragmento porque esqueceram de somar o prefixo
 dela na lista.
 
+### Baú Épico e Lendário estavam entregando tier 1
+
+Desde a migração de 16/04/2026 os dois ramos acentuados do `case` que normaliza
+o tipo do baú estão com **UTF-8 codificado duas vezes**. O arquivo guarda
+`Ã©pico` onde deveria haver `épico`.
+
+O cliente manda `'Épico'` — é o valor do `ChestType` em `types.ts`. Em SQL,
+`lower('Épico')` dá `épico`, que nunca iguala `Ã©pico`. O ramo cai no `else`, e
+`v_chest_type` vira `épico` — que também não bate em nenhum ramo do `case` de
+tier. Resultado:
+
+| efeito | Épico e Lendário |
+|---|---|
+| tier sorteado | **1**, o `else` do case |
+| fragmentos de bônus | **0**, mesmo motivo |
+| pity | não conta, o tipo não está na lista |
+
+Os dois baús mais caros do jogo entregavam item de tier 1 e nenhum fragmento.
+
+Corrigido junto de `20260820130000`, e agora **sem literal acentuado**:
+`like '%pico'` e `like 'lend%rio'` não dependem de encoding. O arquivo é ASCII
+puro, então não tem como apodrecer de novo.
+
+Toda migração de baú de 20260416 em diante carrega o defeito. A de 20260309 está
+correta.
+
 ### Insígnia não cai de baú comum
 
 O sorteio nunca filtrou por categoria: escolhe um tier e pega qualquer item vivo

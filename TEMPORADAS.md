@@ -77,11 +77,23 @@ Por isso a `SeasonConfig` declara `seasonKey` explicitamente.
 | ui_skin | `GENESIS` | — nunca existiu |
 | insignia | `insignia_season_genesis` | `insignia_season_aurora_1` |
 
-**O catálogo não tem seed.** `sql/items_catalog_seed.sql` foi apagado: estava 5
-meses atrasado, sem `mythic` e sem tier 6, e tinha `on conflict do update` — se
-alguém o rodasse, rebaixaria a coleção inteira e quebraria o baú Mítico em
-silêncio. A fonte de verdade do catálogo é
-[`constants/items.ts`](constants/items.ts); as migrações constroem o banco.
+**Reconstruir o catálogo do zero:**
+
+```bash
+node tools/generate-items-sql.mjs
+```
+
+Sai em `sql/items_catalog_seed.sql`, que **não é versionado** — está no
+`.gitignore`. Commitado, ele apodrecia em silêncio: a cópia anterior tinha 5
+meses, nenhum `mythic`, nenhum tier 6, e um `on conflict do update` que
+rebaixaria a coleção inteira e deixaria o baú Mítico sem nada para sortear.
+Gerado na hora, ele nunca diverge de [`constants/items.ts`](constants/items.ts),
+que é a fonte de verdade.
+
+O gerador emitia `is_gm_exclusive`, `is_quest_exclusive` e `is_report_exclusive`
+— três colunas que existem no catálogo do cliente e **não** na tabela `items`.
+Isso fazia o SQL gerado falhar na primeira instrução. São regras que o app
+aplica sozinho; no banco, quem filtra baú é a categoria, dentro de `open_chest`.
 
 Genesis fecha 5/5 no código. Falta a arte das insígnias dos dois lados e a
 linha do Genesis no banco — migração

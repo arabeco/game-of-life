@@ -5,6 +5,10 @@ import ts from 'typescript';
 const root = process.cwd();
 const itemsPath = path.join(root, 'constants', 'items.ts');
 const goldPath = path.join(root, 'constants', 'goldCatalog.ts');
+// is_gm_exclusive, is_quest_exclusive e is_report_exclusive existem no catalogo
+// do cliente e NAO na tabela items. Emiti-las fazia o SQL gerado falhar na
+// primeira instrucao. Sao regras que o app aplica sozinho - o banco filtra bau
+// por categoria, em open_chest.
 const outputPath = path.join(root, 'sql', 'items_catalog_seed.sql');
 
 const BASE_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images/avatars';
@@ -160,9 +164,6 @@ const normalizeItem = (raw) => {
     is_premium_only: Boolean(raw.isPremiumOnly),
     is_chest_exclusive: Boolean(raw.isChestExclusive),
     is_legacy_retired: Boolean(raw.isLegacyRetired),
-    is_gm_exclusive: Boolean(raw.isGmExclusive),
-    is_quest_exclusive: Boolean(raw.isQuestExclusive),
-    is_report_exclusive: Boolean(raw.isReportExclusive),
     season_key: raw.seasonKey ?? null,
     season_slot: raw.seasonSlot ?? null,
   };
@@ -285,9 +286,6 @@ const valuesSql = deduped
   ${sqlBool(item.is_premium_only)},
   ${sqlBool(item.is_chest_exclusive)},
   ${sqlBool(item.is_legacy_retired)},
-  ${sqlBool(item.is_gm_exclusive)},
-  ${sqlBool(item.is_quest_exclusive)},
-  ${sqlBool(item.is_report_exclusive)},
   ${sqlString(item.season_key)},
   ${sqlString(item.season_slot)}
 )`)
@@ -313,9 +311,6 @@ insert into public.items (
   is_premium_only,
   is_chest_exclusive,
   is_legacy_retired,
-  is_gm_exclusive,
-  is_quest_exclusive,
-  is_report_exclusive,
   season_key,
   season_slot
 )
@@ -339,9 +334,6 @@ set
   is_premium_only = excluded.is_premium_only,
   is_chest_exclusive = excluded.is_chest_exclusive,
   is_legacy_retired = excluded.is_legacy_retired,
-  is_gm_exclusive = excluded.is_gm_exclusive,
-  is_quest_exclusive = excluded.is_quest_exclusive,
-  is_report_exclusive = excluded.is_report_exclusive,
   season_key = excluded.season_key,
   season_slot = excluded.season_slot;
 

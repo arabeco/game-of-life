@@ -40,3 +40,7 @@ temp/
 /android/keystore.properties
 /android/app/*.jks
 /android/app/*.keystore
+
+# Saida do tools/generate-items-sql.mjs. Gerar sob demanda, nunca versionar:
+# commitado, ele apodrece em silencio e o "on conflict do update" rebaixa o catalogo.
+sql/items_catalog_seed.sql

@@ -28,21 +28,24 @@ interface Reward {
 }
 
 const CHEST_VIDEOS: Record<string, string> = {
+    // Com o Incomum fora da escada do ciclo, o prateado desceu para o Raro e
+    // cada bau do ciclo passou a ter video proprio. O Mitico fica com o roxo
+    // e azul do antigo epico; o Lendario mantem o dourado que sempre teve.
     comum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_normal.mp4`,
-    incomum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_silver.mp4`,
-    raro: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_gold.mp4`,
-    epico: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
+    incomum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_normal.mp4`,
+    raro: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_silver.mp4`,
+    ciclo: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_silver.mp4`,
+    epico: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_gold.mp4`,
     lendario: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
-    season: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
-    ciclo: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    season: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
     ['skin comum']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_normal.mp4`,
     Comum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_normal.mp4`,
-    Incomum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_silver.mp4`,
-    Raro: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_gold.mp4`,
-    ['\u00C9pico']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
-    ['Lend\u00E1rio']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
-    Season: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
-    Ciclo: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    Incomum: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_normal.mp4`,
+    Raro: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_silver.mp4`,
+    Ciclo: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_silver.mp4`,
+    ['Épico']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_gold.mp4`,
+    ['Lendário']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_legendary.mp4`,
+    Season: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_epic.mp4`,
     ['Skin Comum']: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_normal.mp4`,
 };
 

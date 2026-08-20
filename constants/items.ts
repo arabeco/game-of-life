@@ -154,7 +154,7 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_skin_4_002', name: 'Mago Círculo', category: 'skin', tier: 4, rarity: 'epic', icon: '🧙', imageUrl: avatarPngAsset('SKIN_T4_MAGO_CIRCULO'), isRankExclusive: true },
     // T5 (Lendário)
     catalogItem('skin', { id: 'item_skin_5_001', name: 'Entidade de Luz', tier: 5, rarity: 'legendary', icon: '✨', isRankExclusive: true }),
-    avatarItem('skin', { id: 'item_skin_5_002', name: 'Vestido Real', tier: 5, rarity: 'legendary', icon: '\uD83D\uDC57', asset: 'SKIN_T5_VESTIDO_REAL.png', isChestExclusive: true, description: 'Traje lendário reservado aos baús mais raros do inventário.' }),
+    avatarItem('skin', { id: 'item_skin_5_002', name: 'Vestido Real', tier: 6, rarity: 'mythic', icon: '\uD83D\uDC57', asset: 'SKIN_T5_VESTIDO_REAL.png', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'skin', description: 'Traje lendário reservado aos baús mais raros do inventário.' }),
 
     // Season
     { id: 'item_skin_season_001', name: 'O Criador', category: 'skin', tier: 4, rarity: 'epic', icon: '🛠️', isGmExclusive: true, imageUrl: avatarPngAsset('SKIN_SEASON_CRIADOR') },
@@ -217,22 +217,17 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- BORDAS ---
     // T1
-    { id: 'item_border_1_001', name: 'Pupilo (Beta)', category: 'border', tier: 1, rarity: 'common', icon: '🔰' },
     { id: 'item_border_1_002', name: 'Disciplinado', category: 'border', tier: 1, rarity: 'common', icon: '📘', imageUrl: `${INTERFACE_BASE_URL}/borda_disciplinado.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_1_002 },
-    { id: 'item_border_1_003', name: 'Vanguardista', category: 'border', tier: 1, rarity: 'common', icon: '🚀' },
-    { id: 'item_border_1_004', name: 'Rústico', category: 'border', tier: 1, rarity: 'common', icon: '🪵' },
     // Novos T1
     { id: 'item_border_t1_aprendiz', name: 'Aprendiz', category: 'border', tier: 1, rarity: 'common', icon: '🎓', imageUrl: `${INTERFACE_BASE_URL}/borda_t1_aprendiz.png`, isRankExclusive: true },
 
     // T2
     { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 2, rarity: 'uncommon', icon: '🌟', imageUrl: `${INTERFACE_BASE_URL}/borda_popular.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_2_001 },
-    { id: 'item_border_2_002', name: 'Protetor', category: 'border', tier: 2, rarity: 'uncommon', icon: '🛡️' },
     // Novos T2
     { id: 'item_border_t2_veterano', name: 'Veterano', category: 'border', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: `${INTERFACE_BASE_URL}/borda_t2_veterano.png`, isRankExclusive: true },
 
     // T3
     { id: 'item_border_3_001', name: 'Imparável', category: 'border', tier: 3, rarity: 'rare', icon: '🚀', imageUrl: `${INTERFACE_BASE_URL}/borda_imparavel.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_3_001 },
-    { id: 'item_border_3_002', name: 'Arquétipo', category: 'border', tier: 3, rarity: 'rare', icon: '🧩' },
     // Novos T3
     { id: 'item_border_t3_mistico', name: 'Místico', category: 'border', tier: 3, rarity: 'rare', icon: '🔮', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_mistico.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t3_mistico },
     { id: 'item_border_t3_transcendente', name: 'Transcendente', category: 'border', tier: 3, rarity: 'rare', icon: '✨', imageUrl: `${INTERFACE_BASE_URL}/borda_t3_transcendente.png`, costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_t3_transcendente },
@@ -250,7 +245,6 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png`, isGmExclusive: true },
     // Novos T5
     { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
-    catalogItem('border', { id: 'item_border_aurora_1_2026', name: 'Aurora I', tier: 6, rarity: 'mythic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border' }),
 
     // --- BANNERS ---
     // T1
@@ -276,7 +270,6 @@ export const ITEMS_DB: ItemDef[] = [
     // T5
     { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png`, isGmExclusive: true },
     { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
-    catalogItem('banner', { id: 'item_banner_aurora_1_2026', name: 'Aurora I', tier: 6, rarity: 'mythic', icon: '🌠', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner' }),
 
     // --- GLIFOS ---
     // T1
@@ -341,13 +334,11 @@ export const ITEMS_DB: ItemDef[] = [
     themeCatalogItem({ id: 'AURORA', name: 'Tema: Aurora Boreal', tier: 4, rarity: 'epic', icon: '\uD83C\uDF0C', asset: 'aurora.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.AURORA }),
     // T5
     themeCatalogItem({ id: 'VOID', name: 'Tema: Vazio Primordial', tier: 5, rarity: 'legendary', icon: '\uD83D\uDD2E', asset: 'void.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.VOID }),
-    themeCatalogItem({ id: 'GENESIS', name: 'Tema: Genesis', tier: 5, rarity: 'legendary', icon: '\u2726', asset: 'genesis.png' }),
+    themeCatalogItem({ id: 'GENESIS', name: 'Tema: Genesis', tier: 6, rarity: 'mythic', icon: '\u2726', asset: 'genesis.png', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'ui_skin' }),
 
     // --- EXCLUSIVOS (Store) ---
     // Itens legacy preservados para inventarios antigos, fora do catalogo ativo de ouro.
     catalogItem('skin', { id: 'item_skin_exclusive_001', name: 'Empreendedor', tier: 4, rarity: 'epic', icon: '💼' }),
-    catalogItem('aura', { id: 'item_aura_exclusive_001', name: 'Fênix Dourada', tier: 5, rarity: 'legendary', icon: '🔥', isGoldExclusive: true }),
-    catalogItem('border', { id: 'item_border_exclusive_001', name: 'Fundador', tier: 4, rarity: 'epic', icon: '🛡️' }),
 
     // --- INSÍGNIAS ---
     // NOBREZA (Ouro)
@@ -465,8 +456,8 @@ export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
         storeMode: 'seasonal_high',
         slots: {
             skin: 'item_skin_aurora_1_2026',
-            border: 'item_border_aurora_1_2026',
-            banner: 'item_banner_aurora_1_2026',
+            border: null,
+            banner: null,
             glyph: null,
             orb: null,
             plate: null,

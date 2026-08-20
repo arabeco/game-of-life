@@ -80,7 +80,7 @@ export const AURORA_I_LAUNCH_HIGHLIGHTS: SeasonLaunchHighlights = {
   title: 'Assinatura visual de Aurora I',
   summary: 'Aurora I estreia com sua propria identidade visual. A nova borda, o novo banner e Guardiao Aurora registram a abertura da Primeira Era.',
   itemLabels: ['Guardiao Aurora', 'Borda Aurora I', 'Banner Aurora I'],
-  itemIds: ['item_skin_aurora_1_2026', 'item_border_aurora_1_2026', 'item_banner_aurora_1_2026'],
+  itemIds: ['item_skin_aurora_1_2026'],
 };
 
 export const ERA_CALENDAR: EraCalendarYear[] = [
@@ -464,8 +464,8 @@ export const GM_SEASON_MISSIONS: SeasonMission[] = [
     goal_type: 'quests_claimed',
     goal_value: 3,
     reward_type: 'item_id',
-    reward_value: 'item_border_aurora_1_2026',
-    reward_item_ids: ['item_skin_aurora_1_2026', 'item_border_aurora_1_2026', 'item_banner_aurora_1_2026', 'insignia_season_aurora_1'],
+    reward_value: 'item_skin_aurora_1_2026',
+    reward_item_ids: ['item_skin_aurora_1_2026', 'insignia_season_aurora_1'],
     sourceQuestIds: ['aurora-quest-caminhante', 'aurora-quest-leitor', 'aurora-quest-monge'],
     type: 'individual',
     icon: '🌆',

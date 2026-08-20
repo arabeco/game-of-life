@@ -49,6 +49,8 @@ export const getTierVisual = (tier?: number): RarityVisual => {
             return RARITY_VISUALS.epic;
         case 5:
             return RARITY_VISUALS.legendary;
+        case 6:
+            return RARITY_VISUALS.mythic;
         default:
             return RARITY_VISUALS.common;
     }

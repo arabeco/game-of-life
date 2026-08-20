@@ -113,6 +113,7 @@ export const TheForge: React.FC = () => {
             case 3: return ECONOMY.craft_costs.tier_3;
             case 4: return ECONOMY.craft_costs.tier_4;
             case 5: return ECONOMY.craft_costs.tier_5;
+            case 6: return ECONOMY.craft_costs.tier_6;
             default: return 0;
         }
     };
@@ -124,6 +125,7 @@ export const TheForge: React.FC = () => {
             case 3: return ECONOMY.recycle_values.tier_3;
             case 4: return ECONOMY.recycle_values.tier_4;
             case 5: return ECONOMY.recycle_values.tier_5;
+            case 6: return ECONOMY.recycle_values.tier_6;
             default: return 0;
         }
     };

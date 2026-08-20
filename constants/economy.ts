@@ -9,6 +9,8 @@
     tier_3: 100,
     tier_4: 300,
     tier_5: 1000,
+    // Mitico: so temporada, fora da escada normal.
+    tier_6: 3000,
   },
 
   craft_costs: {
@@ -17,6 +19,7 @@
     tier_3: 400,
     tier_4: 1200,
     tier_5: 4000,
+    tier_6: 12000,
   },
 
   chest_bonus_fragments: {

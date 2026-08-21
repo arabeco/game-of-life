@@ -75,12 +75,11 @@ export interface CodexSharePreview {
 
 export type SlotInputType = 'text' | 'textarea' | 'wheelpick' | 'slider' | 'image';
 export type SlotLayoutType = 1 | 2 | 3 | 4; // 1: wide, 2: square, 3: rect, 4: centered-wide
-// Respostas do primeiro uso. Guardadas no perfil porque nao sao so decoracao do
-// onboarding: a presenca do Oraculo governa quanto ele fala, e as outras duas
-// dizem para quem o app esta falando.
+// Respostas do primeiro uso guardadas no perfil. A presenca do Oraculo NAO esta
+// aqui: ela ja vive em OraclePreferences.presenceLevel, que o portao de fala e o
+// modal de ajustes leem. Duplicar viraria duas verdades sobre a mesma coisa.
 export type OnboardingAgeRange = 'ate_17' | '18_24' | '25_34' | '35_49' | '50_mais';
 export type OnboardingPurpose = 'organizar' | 'habitos' | 'objetivo' | 'retomar';
-export type OraclePresence = 'discreta' | 'equilibrada' | 'presente';
 
 export type ChestType = 'Comum' | 'Incomum' | 'Raro' | '\u00C9pico' | 'Lend\u00E1rio' | 'Season' | 'Ciclo' | 'Skin Comum';
 
@@ -511,7 +510,6 @@ export interface UserProfile {
   acceptedSystemChallenges?: string[];
   onboardingAgeRange?: OnboardingAgeRange | null;
   onboardingPurpose?: OnboardingPurpose | null;
-  oraclePresence?: OraclePresence | null;
   role: 'admin' | 'gm' | 'user';
   isPremium?: boolean;
   clanName?: string;

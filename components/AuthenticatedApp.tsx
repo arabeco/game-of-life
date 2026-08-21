@@ -1525,8 +1525,12 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             acceptedSystemChallenges,
             onboardingAgeRange: answers.ageRange,
             onboardingPurpose: answers.purpose,
-            oraclePresence: answers.oraclePresence,
         });
+        // A presenca vai para onde o app ja a le: o portao de fala em cima deste
+        // arquivo e o modal de ajustes leem presenceLevel, nao o perfil.
+        if (answers.oraclePresenceLevel !== null) {
+            void updateOraclePreferences({ presenceLevel: answers.oraclePresenceLevel });
+        }
         setFirstUseOnboardingActive(false);
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialNavigate', {
@@ -1541,7 +1545,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 showToast('Missao aceita. Ela ja esta acompanhando seu progresso.', 'success');
             }
         }, 120);
-    }, [showToast, updateUserProfile, userProfile]);
+    }, [showToast, updateOraclePreferences, updateUserProfile, userProfile]);
 
     useEffect(() => {
         if (!isProfileLoaded || showTerms) return;

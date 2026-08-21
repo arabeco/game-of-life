@@ -456,8 +456,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     completedSeasonMissions: [],
     acceptedSystemChallenges: [],
     onboardingAgeRange: null,
-    onboardingPurpose: null,
-    oraclePresence: null
+    onboardingPurpose: null
 };
 
 const defaultChecklistItems: ChecklistItem[] = [];
@@ -8339,7 +8338,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'acceptedSystemChallenges',
                 'onboardingAgeRange',
                 'onboardingPurpose',
-                'oraclePresence',
                 'role',
                 'isPremium',
                 'premiumExpiresAt',

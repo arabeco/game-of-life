@@ -3,7 +3,7 @@ import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { SYSTEM_CHALLENGES } from '../constants/systemChallenges';
-import type { OnboardingAgeRange, OnboardingPurpose, OraclePresence } from '../types';
+import type { OnboardingAgeRange, OnboardingPurpose, OraclePresenceLevel } from '../types';
 
 type AppView = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
@@ -29,7 +29,7 @@ type StepDef = {
 export type OnboardingAnswers = {
   ageRange: OnboardingAgeRange | null;
   purpose: OnboardingPurpose | null;
-  oraclePresence: OraclePresence | null;
+  oraclePresenceLevel: OraclePresenceLevel | null;
 };
 
 // As tres perguntas de primeiro uso. Nenhuma delas muda so texto: as respostas
@@ -50,9 +50,9 @@ const PURPOSES = [
 ];
 
 const ORACLE_PRESENCES = [
-  { id: 'discreta' as const, icon: '\u{1F311}', label: 'Discreta', detail: 'So no que importa' },
-  { id: 'equilibrada' as const, icon: '\u{1F313}', label: 'Equilibrada', detail: 'Marca os momentos' },
-  { id: 'presente' as const, icon: '\u{1F315}', label: 'Presente', detail: 'Acompanha de perto' },
+  { id: 1 as const, icon: '\u{1F311}', label: 'Discreta', detail: 'So no que importa' },
+  { id: 2 as const, icon: '\u{1F313}', label: 'Equilibrada', detail: 'Marca os momentos' },
+  { id: 3 as const, icon: '\u{1F315}', label: 'Presente', detail: 'Acompanha de perto' },
 ];
 
 const getTargetElement = (selector?: string) => {
@@ -98,7 +98,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const [createdArenaId, setCreatedArenaId] = useState<string | null>(null);
   const [ageRange, setAgeRange] = useState<OnboardingAgeRange | null>(null);
   const [purpose, setPurpose] = useState<OnboardingPurpose | null>(null);
-  const [oraclePresence, setOraclePresence] = useState<OraclePresence | null>(null);
+  const [oraclePresenceLevel, setOraclePresenceLevel] = useState<OraclePresenceLevel | null>(null);
   const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([]);
   const autoAdvanceStepRef = useRef<string | null>(null);
   const currentStepRef = useRef<StepDef | undefined>(undefined);
@@ -291,7 +291,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       setCreatedArenaId(null);
       setAgeRange(null);
       setPurpose(null);
-      setOraclePresence(null);
+      setOraclePresenceLevel(null);
       setSelectedMissionIds([]);
       autoAdvanceStepRef.current = null;
       currentStepRef.current = undefined;
@@ -554,7 +554,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     if (!step) return;
 
     if (step.final) {
-      onComplete(selectedMissionIds, { ageRange, purpose, oraclePresence });
+      onComplete(selectedMissionIds, { ageRange, purpose, oraclePresenceLevel });
       return;
     }
 
@@ -573,7 +573,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     }
 
     advanceStep();
-  }, [advanceStep, ageRange, isTyping, onComplete, oraclePresence, purpose, selectedMissionIds, step]);
+  }, [advanceStep, ageRange, isTyping, onComplete, oraclePresenceLevel, purpose, selectedMissionIds, step]);
 
   useEffect(() => {
     if (!active) return;
@@ -744,9 +744,9 @@ export const FirstUseOnboardingOverlay: React.FC<{
                           key={option.id}
                           id={`onboarding-oracle-${option.id}`}
                           type="button"
-                          onClick={() => handleAnswerAndAdvance(() => setOraclePresence(option.id))}
+                          onClick={() => handleAnswerAndAdvance(() => setOraclePresenceLevel(option.id))}
                           className={`min-w-0 rounded-xl border px-2 py-3 text-center transition-all active:scale-[0.98] ${
-                            oraclePresence === option.id
+                            oraclePresenceLevel === option.id
                               ? 'border-[#f3d48a]/70 bg-[#f3d48a]/18 text-[#fff0c7]'
                               : 'border-white/10 bg-white/[0.04] text-white/74 hover:border-[#f3d48a]/35 hover:bg-[#f3d48a]/8'
                           }`}

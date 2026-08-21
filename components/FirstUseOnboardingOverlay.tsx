@@ -3,6 +3,7 @@ import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { SYSTEM_CHALLENGES } from '../constants/systemChallenges';
+import type { OnboardingAgeRange, OnboardingPurpose, OraclePresence } from '../types';
 
 type AppView = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
@@ -25,7 +26,34 @@ type StepDef = {
   final?: boolean;
 };
 
-type StartStyle = 'focus' | 'balance' | 'whole';
+export type OnboardingAnswers = {
+  ageRange: OnboardingAgeRange | null;
+  purpose: OnboardingPurpose | null;
+  oraclePresence: OraclePresence | null;
+};
+
+// As tres perguntas de primeiro uso. Nenhuma delas muda so texto: as respostas
+// vao para o perfil, e a presenca do Oraculo governa quanto ele fala depois.
+const AGE_RANGES = [
+  { id: 'ate_17' as const, label: 'Ate 17' },
+  { id: '18_24' as const, label: '18 a 24' },
+  { id: '25_34' as const, label: '25 a 34' },
+  { id: '35_49' as const, label: '35 a 49' },
+  { id: '50_mais' as const, label: '50+' },
+];
+
+const PURPOSES = [
+  { id: 'organizar' as const, icon: '\u{1F5C2}', label: 'Organizar a vida', detail: 'Por ordem no que ja existe' },
+  { id: 'habitos' as const, icon: '\u{1F331}', label: 'Criar habitos', detail: 'Firmar o que ainda nao pegou' },
+  { id: 'objetivo' as const, icon: '\u{1F3AF}', label: 'Perseguir um objetivo', detail: 'Uma coisa que importa agora' },
+  { id: 'retomar' as const, icon: '\u{1F9ED}', label: 'Retomar o controle', detail: 'Voltar a um rumo que se perdeu' },
+];
+
+const ORACLE_PRESENCES = [
+  { id: 'discreta' as const, icon: '\u{1F311}', label: 'Discreta', detail: 'So no que importa' },
+  { id: 'equilibrada' as const, icon: '\u{1F313}', label: 'Equilibrada', detail: 'Marca os momentos' },
+  { id: 'presente' as const, icon: '\u{1F315}', label: 'Presente', detail: 'Acompanha de perto' },
+];
 
 const getTargetElement = (selector?: string) => {
   if (!selector) return null;
@@ -61,14 +89,16 @@ const defaultNavigation: NavigationDetail = {
 export const FirstUseOnboardingOverlay: React.FC<{
   active: boolean;
   onDismiss: () => void;
-  onComplete: (acceptedSystemChallenges: string[]) => void;
+  onComplete: (acceptedSystemChallenges: string[], answers: OnboardingAnswers) => void;
 }> = ({ active, onDismiss, onComplete }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [createdArenaId, setCreatedArenaId] = useState<string | null>(null);
-  const [startStyle, setStartStyle] = useState<StartStyle | null>(null);
+  const [ageRange, setAgeRange] = useState<OnboardingAgeRange | null>(null);
+  const [purpose, setPurpose] = useState<OnboardingPurpose | null>(null);
+  const [oraclePresence, setOraclePresence] = useState<OraclePresence | null>(null);
   const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([]);
   const autoAdvanceStepRef = useRef<string | null>(null);
   const currentStepRef = useRef<StepDef | undefined>(undefined);
@@ -76,20 +106,36 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
   const steps = useMemo<StepDef[]>(() => [
     {
-      id: 'start-style',
-      title: 'Como você quer começar?',
-      text: 'Escolha o tamanho do seu primeiro passo. Isso apenas orienta o início; você poderá mudar tudo depois.',
+      id: 'age-range',
+      title: 'Qual sua faixa etária?',
+      text: 'Ajuda a calibrar o ritmo e a linguagem. Fica só no seu perfil.',
+      navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
+      hideNext: true,
+    },
+    {
+      id: 'purpose',
+      title: 'Pra que você quer usar o app?',
+      text: 'Não existe resposta errada, e dá pra mudar depois.',
+      navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
+      hideNext: true,
+    },
+    {
+      id: 'oracle-presence',
+      title: 'Quanta presença você quer do Oráculo?',
+      text: 'Ele comenta o que você faz. Você decide o quanto.',
       navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
       hideNext: true,
     },
     {
       id: 'arena-entry',
       title: 'Sua primeira arena',
-      text: startStyle === 'whole'
-        ? 'Comece por uma área, mesmo querendo cuidar de todas. Depois você adiciona as outras sem pressa.'
-        : startStyle === 'balance'
-          ? 'Escolha a primeira das suas prioridades. As próximas entram depois que esta base estiver clara.'
-          : 'Escolha a área que mais importa agora e crie uma arena simples para ela.',
+      text: purpose === 'organizar'
+        ? 'Comece por uma área só, mesmo querendo organizar tudo. As outras entram depois, sem pressa.'
+        : purpose === 'habitos'
+          ? 'Escolha a área onde o hábito precisa pegar. Uma de cada vez firma mais rápido.'
+          : purpose === 'retomar'
+            ? 'Escolha por onde recomeçar. Um ponto claro vale mais que um plano inteiro.'
+            : 'Escolha a área que mais importa agora e crie uma arena simples para ela.',
       targetSelector: '#new-action-button',
       navigation: { view: 'arenas', showReports: false, showRestScreen: false, showArenaId: null },
       padding: 14,
@@ -186,15 +232,17 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'finish',
       title: 'Tudo pronto',
-      text: startStyle === 'whole'
+      text: purpose === 'organizar'
         ? 'Sua primeira base está viva. Quando ela estiver clara, adicione outras áreas aos poucos.'
-        : startStyle === 'balance'
-          ? 'Sua primeira prioridade está pronta. Depois você pode criar mais uma ou duas sem perder o foco.'
-          : 'Seu foco está pronto. Agora basta agir e registrar quando fizer.',
+        : purpose === 'habitos'
+          ? 'O hábito tem onde morar agora. O resto é aparecer e registrar.'
+          : purpose === 'retomar'
+            ? 'O primeiro ponto está de pé. Recomeçar é isso: um lugar por vez.'
+            : 'Seu foco está pronto. Agora basta agir e registrar quando fizer.',
       navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
       final: true,
     },
-  ], [createdArenaId, startStyle]);
+  ], [createdArenaId, purpose]);
 
   const stepIndexById = useMemo(() => {
     return steps.reduce<Record<string, number>>((accumulator, currentStep, index) => {
@@ -241,7 +289,9 @@ export const FirstUseOnboardingOverlay: React.FC<{
       setDisplayedText('');
       setIsTyping(false);
       setCreatedArenaId(null);
-      setStartStyle(null);
+      setAgeRange(null);
+      setPurpose(null);
+      setOraclePresence(null);
       setSelectedMissionIds([]);
       autoAdvanceStepRef.current = null;
       currentStepRef.current = undefined;
@@ -491,8 +541,10 @@ export const FirstUseOnboardingOverlay: React.FC<{
     onDismiss();
   }, [onDismiss]);
 
-  const handleStartStyleSelection = useCallback((value: StartStyle) => {
-    setStartStyle(value);
+  // Escolher ja avanca: sao perguntas de uma resposta so, e um botao Proximo
+  // depois da escolha seria um clique a mais sem nada para decidir nele.
+  const handleAnswerAndAdvance = useCallback((apply: () => void) => {
+    apply();
     setDisplayedText(currentStepRef.current?.text || '');
     setIsTyping(false);
     window.setTimeout(() => advanceStep(), 180);
@@ -502,7 +554,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     if (!step) return;
 
     if (step.final) {
-      onComplete(selectedMissionIds);
+      onComplete(selectedMissionIds, { ageRange, purpose, oraclePresence });
       return;
     }
 
@@ -521,7 +573,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     }
 
     advanceStep();
-  }, [advanceStep, isTyping, onComplete, selectedMissionIds, step]);
+  }, [advanceStep, ageRange, isTyping, onComplete, oraclePresence, purpose, selectedMissionIds, step]);
 
   useEffect(() => {
     if (!active) return;
@@ -643,20 +695,58 @@ export const FirstUseOnboardingOverlay: React.FC<{
                     {isTyping && <span className="ml-1 inline-block h-3 w-1 animate-pulse align-middle bg-[#f3d48a] opacity-80 md:h-4 md:w-1.5" />}
                   </p>
 
-                  {step.id === 'start-style' && (
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {([
-                        { id: 'focus' as const, icon: '🎯', label: 'Um foco', detail: 'Uma prioridade' },
-                        { id: 'balance' as const, icon: '⚖️', label: 'Equilibrar', detail: 'Duas ou três' },
-                        { id: 'whole' as const, icon: '🧭', label: 'Vida toda', detail: 'Cinco áreas' },
-                      ]).map(option => (
+                  {step.id === 'age-range' && (
+                    <div className="mt-3 grid grid-cols-5 gap-1.5">
+                      {AGE_RANGES.map(option => (
                         <button
                           key={option.id}
-                          id={`onboarding-start-${option.id}`}
+                          id={`onboarding-age-${option.id}`}
                           type="button"
-                          onClick={() => handleStartStyleSelection(option.id)}
+                          onClick={() => handleAnswerAndAdvance(() => setAgeRange(option.id))}
+                          className={`min-w-0 rounded-xl border px-1 py-3 text-center transition-all active:scale-[0.98] ${
+                            ageRange === option.id
+                              ? 'border-[#f3d48a]/70 bg-[#f3d48a]/18 text-[#fff0c7]'
+                              : 'border-white/10 bg-white/[0.04] text-white/74 hover:border-[#f3d48a]/35 hover:bg-[#f3d48a]/8'
+                          }`}
+                        >
+                          <span className="block text-[9px] font-black uppercase tracking-[0.04em] md:text-[10px]">{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {step.id === 'purpose' && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {PURPOSES.map(option => (
+                        <button
+                          key={option.id}
+                          id={`onboarding-purpose-${option.id}`}
+                          type="button"
+                          onClick={() => handleAnswerAndAdvance(() => setPurpose(option.id))}
+                          className={`min-w-0 rounded-xl border px-2 py-3 text-left transition-all active:scale-[0.98] ${
+                            purpose === option.id
+                              ? 'border-[#f3d48a]/70 bg-[#f3d48a]/18 text-[#fff0c7]'
+                              : 'border-white/10 bg-white/[0.04] text-white/74 hover:border-[#f3d48a]/35 hover:bg-[#f3d48a]/8'
+                          }`}
+                        >
+                          <span className="block text-lg leading-none">{option.icon}</span>
+                          <span className="mt-2 block text-[9px] font-black uppercase tracking-[0.08em] md:text-[10px]">{option.label}</span>
+                          <span className="mt-1 block text-[8px] text-white/42 md:text-[9px]">{option.detail}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {step.id === 'oracle-presence' && (
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {ORACLE_PRESENCES.map(option => (
+                        <button
+                          key={option.id}
+                          id={`onboarding-oracle-${option.id}`}
+                          type="button"
+                          onClick={() => handleAnswerAndAdvance(() => setOraclePresence(option.id))}
                           className={`min-w-0 rounded-xl border px-2 py-3 text-center transition-all active:scale-[0.98] ${
-                            startStyle === option.id
+                            oraclePresence === option.id
                               ? 'border-[#f3d48a]/70 bg-[#f3d48a]/18 text-[#fff0c7]'
                               : 'border-white/10 bg-white/[0.04] text-white/74 hover:border-[#f3d48a]/35 hover:bg-[#f3d48a]/8'
                           }`}

@@ -454,7 +454,10 @@ const DEFAULT_USER_PROFILE: UserProfile = {
         ui_skins: { BASIC: true },
     },
     completedSeasonMissions: [],
-    acceptedSystemChallenges: []
+    acceptedSystemChallenges: [],
+    onboardingAgeRange: null,
+    onboardingPurpose: null,
+    oraclePresence: null
 };
 
 const defaultChecklistItems: ChecklistItem[] = [];
@@ -8334,6 +8337,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'unlockedSkins',
                 'completedSeasonMissions',
                 'acceptedSystemChallenges',
+                'onboardingAgeRange',
+                'onboardingPurpose',
+                'oraclePresence',
                 'role',
                 'isPremium',
                 'premiumExpiresAt',

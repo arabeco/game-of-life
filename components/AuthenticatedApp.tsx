@@ -78,6 +78,8 @@ const AchievementModal = React.lazy(() => import('./AchievementModal').then((m) 
 const GoldenToast = React.lazy(() => import('./GoldenToast').then((m) => ({ default: m.GoldenToast })));
 const TermsOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.TermsOverlay })));
 const OfflineOverlay = React.lazy(() => import('./AppRuntimeOverlays').then((m) => ({ default: m.OfflineOverlay })));
+import type { OnboardingAnswers } from './FirstUseOnboardingOverlay';
+
 const FirstUseOnboardingOverlay = React.lazy(() => import('./FirstUseOnboardingOverlay').then((m) => ({ default: m.FirstUseOnboardingOverlay })));
 const CodexClaimModal = React.lazy(() => import('./CodexClaimModal').then((m) => ({ default: m.CodexClaimModal })));
 const RewardPackModal = React.lazy(() => import('./RewardPackModal').then((m) => ({ default: m.RewardPackModal })));
@@ -1396,7 +1398,8 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                     trigger('impact');
                     break;
                 case 'daily_streak':
-                    trigger('success');
+                    // Um dia de streak fica um degrau abaixo de arena concluida.
+                    trigger('impact');
                     break;
                 case 'daily_panel_closed':
                     trigger('success');
@@ -1516,10 +1519,13 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         setFirstUseOnboardingActive(false);
     }, [updateUserProfile, userProfile]);
 
-    const handleCompleteOnboarding = useCallback((acceptedSystemChallenges: string[]) => {
+    const handleCompleteOnboarding = useCallback((acceptedSystemChallenges: string[], answers: OnboardingAnswers) => {
         updateUserProfile({
             ...buildOnboardingCompletePatch(userProfile),
             acceptedSystemChallenges,
+            onboardingAgeRange: answers.ageRange,
+            onboardingPurpose: answers.purpose,
+            oraclePresence: answers.oraclePresence,
         });
         setFirstUseOnboardingActive(false);
         window.setTimeout(() => {

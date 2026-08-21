@@ -1215,7 +1215,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
             {dailyCompletionPrompt && (
                 <DailyCompletionPromptModal
-                    mode="GAME"
                     payload={dailyCompletionPrompt}
                     onClose={() => setDailyCompletionPrompt(null)}
                     onOpenSitrep={handleOpenSitrepFromPrompt}

@@ -3,25 +3,13 @@ import { Portal } from './Portal';
 import type { DailyCompletionPromptPayload } from '../utils/dailyCompletionPrompt';
 
 interface DailyCompletionPromptModalProps {
-    mode: 'GAME' | 'BASIC';
     payload: DailyCompletionPromptPayload;
     onOpenSitrep: () => void;
     onClose: () => void;
 }
 
-const buildPromptCopy = (
-    mode: 'GAME' | 'BASIC',
-    payload: DailyCompletionPromptPayload,
-) => {
+const buildPromptCopy = (payload: DailyCompletionPromptPayload) => {
     if (payload.kind === 'sitrep') {
-        if (mode === 'BASIC') {
-            return {
-                eyebrow: 'Resumo Diario',
-                title: 'Resumo atualizado',
-                message: 'Seu resumo do dia foi atualizado. Quer abrir a leitura do progresso agora?',
-            };
-        }
-
         return {
             eyebrow: 'Resumo Diario',
             title: 'Progresso consolidado',
@@ -39,20 +27,18 @@ const buildPromptCopy = (
 };
 
 export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProps> = ({
-    mode,
     payload,
     onOpenSitrep,
     onClose,
 }) => {
-    const copy = buildPromptCopy(mode, payload);
-    const isGame = mode === 'GAME';
+    const copy = buildPromptCopy(payload);
 
     return (
         <Portal>
             <div className="ui-modal-backdrop" onClick={onClose}>
                 <div
                     onClick={(event) => event.stopPropagation()}
-                    className={`ui-modal-panel max-w-sm ${isGame ? '' : 'border-white/12'}`}
+                    className={"ui-modal-panel max-w-sm"}
                 >
                     <div className="ui-modal-panel-content ui-modal-stack">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/30 bg-[var(--skin-accent-color)]/12 text-[var(--skin-accent-color)] shadow-[0_0_18px_rgba(0,0,0,0.25)]">
@@ -60,10 +46,10 @@ export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProp
                         </div>
 
                         <div className="ui-modal-header">
-                            <p className={`ui-modal-eyebrow ${isGame ? '' : 'text-white/58'}`}>
+                            <p className={"ui-modal-eyebrow"}>
                                 {copy.eyebrow}
                             </p>
-                            <h2 className={`ui-modal-title ${isGame ? 'luxe-title-shadow' : ''}`}>
+                            <h2 className={"ui-modal-title luxe-title-shadow"}>
                                 {copy.title}
                             </h2>
                             <p className="ui-modal-copy max-w-[18rem]">
@@ -91,22 +77,14 @@ export const DailyCompletionPromptModal: React.FC<DailyCompletionPromptModalProp
                         <div className="ui-modal-actions">
                             <button
                                 onClick={onClose}
-                                className={`ui-modal-button ${
-                                    isGame
-                                        ? 'luxe-button-secondary'
-                                        : 'border border-white/10 bg-white/6 text-white/84 hover:bg-white/10'
-                                }`}
+                                className="ui-modal-button luxe-button-secondary"
                             >
                                 OK
                             </button>
                             {payload.kind === 'sitrep' && (
                                 <button
                                     onClick={onOpenSitrep}
-                                    className={`ui-modal-button ${
-                                        isGame
-                                            ? 'luxe-skin-button'
-                                            : 'border border-[var(--skin-accent-color)]/22 bg-[var(--skin-accent-color)]/14 text-white hover:bg-[var(--skin-accent-color)]/20'
-                                    }`}
+                                    className="ui-modal-button luxe-skin-button"
                                 >
                                     Abrir resumo
                                 </button>

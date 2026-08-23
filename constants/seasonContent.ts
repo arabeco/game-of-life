@@ -132,7 +132,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
     seasonKey: 'genesis_legacy',
     name: 'Temporada 0 - Genesis',
     description: 'A primeira abertura do GLYPH. Quem entrou a tempo carregou a marca da Primeira Era.',
-    backgroundUrl: `${ROOT_IMAGES_URL}/season_genesis.jpg`,
+    backgroundUrl: `${ROOT_IMAGES_URL}/genesis.png`,
     startDate: '2025-12-21',
     endDate: '2026-09-22',
     theme: 'genesis',

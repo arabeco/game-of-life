@@ -4,7 +4,7 @@ import { Season } from '../types';
 const ROOT_IMAGES_URL = 'https://klmsdcncmhtgnlcejzdi.supabase.co/storage/v1/object/public/user-images';
 const GENESIS_SEASON_IDS = new Set(['season-genesis-0', 'season_0']);
 
-export const GENESIS_SEASON_IMAGE_URL = `${ROOT_IMAGES_URL}/season_genesis.jpg`;
+export const GENESIS_SEASON_IMAGE_URL = `${ROOT_IMAGES_URL}/genesis.png`;
 
 type SeasonLike = Pick<Season, 'id' | 'name' | 'background_png_url' | 'lore_text' | 'start_date' | 'end_date'> | null | undefined;
 

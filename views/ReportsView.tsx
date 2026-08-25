@@ -633,6 +633,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
     const [showConfirmEndCycle, setShowConfirmEndCycle] = useState(false);
+
+
+    // A trilha abre no ciclo mais recente: ela le da esquerda para a direita e
+    // termina no agora, entao o ponto de chegada e onde a pessoa esta.
+    const cycleStripRef = useRef<HTMLDivElement>(null);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const [selectedReportStartsAtEnd, setSelectedReportStartsAtEnd] = useState(false);
     const [reportsToCompare, setReportsToCompare] = useState<[Report, Report] | null>(null);
@@ -1665,6 +1670,47 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         });
         return map;
     }, [activeDraftEraId, draftEraSlots, draftReportEraIds, eraSegments, eraSummaries, isEditingEras, sortedReports]);
+
+    /**
+     * As faixas de era da trilha horizontal.
+     *
+     * Agrupa ciclos CONSECUTIVOS da mesma era na ordem cronologica — a mesma da
+     * trilha, do mais antigo para o atual. Consecutivos importa: se uma era
+     * reaparecer depois de outra, ela vira duas faixas, porque no tempo foram
+     * dois periodos e nao um so partido ao meio.
+     */
+    const eraStripBands = useMemo(() => {
+        const cronologico = [...sortedReports].reverse();
+        const bands: Array<{ key: string; label: string; skinId?: string; count: number }> = [];
+
+        cronologico.forEach((report, indexFromStart) => {
+            const era = displayedEraByReportIndex.get(sortedReports.length - 1 - indexFromStart);
+            const label = era?.label || 'Sem era';
+            const skinId = era?.skinId;
+            const anterior = bands[bands.length - 1];
+
+            if (anterior && anterior.label === label && anterior.skinId === skinId) {
+                anterior.count += 1;
+                return;
+            }
+            bands.push({ key: `${label}-${indexFromStart}`, label, skinId, count: 1 });
+        });
+
+        return bands;
+    }, [displayedEraByReportIndex, sortedReports]);
+
+    /**
+     * A trilha abre no fim, onde esta o ciclo atual.
+     *
+     * Ela le da esquerda para a direita e termina no agora; abrir no comeco
+     * faria a pessoa arrastar a jornada inteira para chegar onde ela esta. Sem
+     * animacao de proposito: rolagem animada na montagem parece bug, nao brinde.
+     */
+    useEffect(() => {
+        const strip = cycleStripRef.current;
+        if (!strip) return;
+        strip.scrollLeft = strip.scrollWidth;
+    }, [sortedReports.length]);
     const displayedEraBands = useMemo(() => {
         if (isEditingEras) {
             return draftEraSegments.map((segment, index) => {
@@ -2604,17 +2650,109 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     );
                                 })}
                             </div>
+                        ) : sortedReports.length > 0 && !isEditingEras && !isEditingHistoryCycles ? (
+                            /*
+                             * A trilha horizontal.
+                             *
+                             * Empilhado na vertical, cada ciclo parecia um item de lista e a
+                             * ordem lia de tras para a frente: o mais novo em cima, o comeco
+                             * da jornada la embaixo. Na horizontal a cronologia le como se
+                             * lê — da esquerda para a direita — e termina no ciclo atual.
+                             *
+                             * O encaixe centraliza um card por vez ao arrastar, entao a
+                             * "aproximacao" acontece sozinha: o que esta no meio e o que voce
+                             * esta olhando, e o toque nele abre o relatorio. Os vizinhos ficam
+                             * espiando nas bordas para a faixa nao parecer uma tela so.
+                             */
+                            <div className="relative mt-6">
+                                <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                                <div
+                                    ref={cycleStripRef}
+                                    className="scrollbar-hide relative flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2"
+                                    style={{ scrollPaddingLeft: '9%', scrollPaddingRight: '9%' }}
+                                >
+                                    {[...sortedReports].reverse().map((report, indexFromStart) => {
+                                        const isCurrent = indexFromStart === sortedReports.length - 1;
+                                        return (
+                                            <div
+                                                key={`strip-${report.id}`}
+                                                className="w-[82%] shrink-0 snap-center sm:w-[46%] lg:w-[32%]"
+                                            >
+                                                <TimelineCard
+                                                    report={report}
+                                                    isLatest={isCurrent}
+                                                    showTimelineMarker={false}
+                                                    onClick={() => handleViewReport(report)}
+                                                    seasonName={seasons.find((season) => season.id === report.seasonId)?.name}
+                                                    eraLabel={displayedEraByReportIndex.get(sortedReports.length - 1 - indexFromStart)?.label}
+                                                    eraSkinId={displayedEraByReportIndex.get(sortedReports.length - 1 - indexFromStart)?.skinId}
+                                                    onDelete={() => { void handleDeleteReportCycle(report); }}
+                                                />
+                                                <p className={`mt-1.5 text-center text-[9px] font-black uppercase tracking-[0.18em] ${isCurrent ? 'text-[var(--skin-accent-color)]' : 'text-white/28'}`}>
+                                                    {isCurrent ? 'mais recente' : `ciclo ${indexFromStart + 1}`}
+                                                </p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/*
+                                 * As eras, embaixo: elas sao o chao sob os ciclos, nao um titulo
+                                 * sobre eles. Cada faixa cobre exatamente os cards do periodo, e
+                                 * usa a mesma pele da fita vertical (getEraRibbonSkin) para as
+                                 * duas leituras do mesmo dado nao parecerem coisas diferentes.
+                                 *
+                                 * A largura acompanha a dos cards: n cards mais os vaos entre
+                                 * eles. Enquanto os cards tiverem largura igual, a faixa alinha
+                                 * sozinha sem medir nada em tempo de execucao.
+                                 */}
+                                {eraStripBands.length > 0 && (
+                                    <div
+                                        className="scrollbar-hide -mt-1 flex gap-3 overflow-x-hidden"
+                                        style={{ paddingLeft: 0 }}
+                                        aria-hidden
+                                    >
+                                        {eraStripBands.map((band) => {
+                                            const skin = getEraRibbonSkin(band.skinId);
+                                            return (
+                                                <div
+                                                    key={`era-band-${band.key}`}
+                                                    className="shrink-0"
+                                                    style={{ width: `calc(${band.count} * 82% + ${band.count - 1} * 0.75rem)` }}
+                                                >
+                                                    <div
+                                                        className="h-[3px] w-full rounded-full"
+                                                        style={{ background: `linear-gradient(90deg, ${skin.edge} 0%, ${skin.glow} 50%, ${skin.metal} 100%)` }}
+                                                    />
+                                                    <p
+                                                        className="mt-1 truncate text-[9px] font-black uppercase tracking-[0.2em]"
+                                                        style={{ color: skin.glow }}
+                                                    >
+                                                        {band.label}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         ) : sortedReports.length > 0 && (
                             <div className="relative mt-6">
-                                <div className={`grid ${isEditingEras ? 'grid-cols-[16px_minmax(0,1fr)_18px]' : 'grid-cols-[16px_minmax(0,1fr)]'} gap-x-1`}>
+                                {/* A primeira coluna de 16px era uma calha vazia: o card ja
+                                    desenha o proprio marcador e a linha (pl-4 + marcador em
+                                    left-0), e a fita de era mora na terceira coluna, que so
+                                    existe na edicao. A calha so empurrava tudo para a direita
+                                    e deixava a espinha desalinhada do nada. */}
+                                <div className={`grid ${isEditingEras ? 'grid-cols-[minmax(0,1fr)_18px]' : 'grid-cols-[minmax(0,1fr)]'} gap-x-1`}>
                                     {items.map((item, rowIndex) => {
                                         if (item.type === 'report') {
                                             const eraDisplay = displayedEraByReportIndex.get(item.reportIndex);
                                             return (
                                                 <React.Fragment key={item.report.id}>
-                                                    <div className="relative py-3"></div>
                                                     <div className="relative py-3">
-                                                        <div className="absolute left-[6px] top-0 bottom-0 w-px bg-white/10"></div>
+                                                        {/* A espinha passa por tras do marcador do card, que tem
+                                                            20px e fica em left-0: 9px centraliza o fio nele. */}
+                                                        <div className="absolute left-[9px] top-0 bottom-0 w-px bg-white/10"></div>
                                                         <TimelineCard
                                                             report={item.report}
                                                             isLatest={item.reportIndex === 0}
@@ -2654,7 +2792,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         return (
                                             <div
                                                 key={`era-${band.key}-${band.start}-${band.end}`}
-                                                className="col-start-3 flex justify-center"
+                                                className="col-start-2 flex justify-center"
                                                 style={{ gridRow: `${rowStart + 1} / ${rowEnd + 2}`, marginTop: band.eraIndex === 0 ?0 : 8, marginBottom: band.eraIndex === displayedEraBands.length - 1 ?0 : 8 }}
                                             >
                                                 <div className="relative h-full">

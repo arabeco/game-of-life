@@ -104,6 +104,7 @@ export interface DailyWidgetSnapshot {
     icon: string;
     arenaName: string;
     count: number;
+    scheduledToday?: boolean;
   }>;
   commitmentStats: CommitmentStatsSnapshot | null;
 }
@@ -446,14 +447,22 @@ export const buildDailyWidgetSnapshot = ({
           completed: Boolean(task.completed),
         };
       }),
+    // A baia inteira, nao as quatro primeiras. O widget desenhava linhas fixas e
+    // por isso o corte aqui nunca doeu; com lista rolavel, cortar em 4 esconderia
+    // a maior parte de quem tem uma baia cheia. O teto de 30 existe so para o
+    // snapshot nao virar payload gigante em conta fora do comum.
     quickActions: availableGroups
-      .slice(0, 4)
+      .slice(0, 30)
       .map((group) => ({
         actionId: group.action.id,
         name: group.action.name,
         icon: group.action.icon || '•',
         arenaName: actionArenaById.get(group.action.id) || 'Sem arena',
         count: group.count,
+        // Ja tem horario marcado hoje. Vira um ponto no canto da linha em vez de
+        // uma lista separada: agendada NAO esta na baia, entao separar duplicaria
+        // ou sumiria com ela — quem agenda e quem so conclui usam a mesma lista.
+        scheduledToday: todaysTasks.some((task) => task.actionId === group.action.id),
       })),
     commitmentStats,
   };

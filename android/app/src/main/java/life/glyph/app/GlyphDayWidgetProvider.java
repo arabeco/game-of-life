@@ -86,32 +86,56 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
         views.setTextColor(R.id.glyph_day_tab_do, showDo ? 0xFFF6D65B : 0xFF8E8878);
         views.setTextViewText(R.id.glyph_day_footer, data.footer);
 
-        bindRow(context, views, appWidgetId, 0, rows, showDo, R.id.glyph_day_row_1, R.id.glyph_day_row_1_text, R.id.glyph_day_row_1_action);
-        bindRow(context, views, appWidgetId, 1, rows, showDo, R.id.glyph_day_row_2, R.id.glyph_day_row_2_text, R.id.glyph_day_row_2_action);
-        bindRow(context, views, appWidgetId, 2, rows, showDo, R.id.glyph_day_row_3, R.id.glyph_day_row_3_text, R.id.glyph_day_row_3_action);
-        // O app ja mandava quatro acoes da baia e o widget so desenhava tres:
-        // a quarta era descartada em silencio.
-        bindRow(context, views, appWidgetId, 3, rows, showDo, R.id.glyph_day_row_4, R.id.glyph_day_row_4_text, R.id.glyph_day_row_4_action);
+        if (showDo) {
+            // A baia vem da colecao rolavel; o planner segue em linhas fixas porque
+            // e leitura curta do dia, nao uma lista para agir.
+            Intent adapter = new Intent(context, GlyphBayWidgetService.class);
+            adapter.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            adapter.setData(Uri.parse(adapter.toUri(Intent.URI_INTENT_SCHEME)));
+            views.setRemoteAdapter(R.id.glyph_day_list, adapter);
+
+            // Item de colecao nao carrega PendingIntent proprio: ele preenche este
+            // template com o action_id do que foi tocado.
+            Intent template = new Intent(context, GlyphDayWidgetProvider.class);
+            template.setAction(ACTION_COMPLETE);
+            template.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            views.setPendingIntentTemplate(R.id.glyph_day_list, PendingIntent.getBroadcast(
+                    context, appWidgetId, template,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE));
+
+            views.setViewVisibility(R.id.glyph_day_list, View.VISIBLE);
+            views.setViewVisibility(R.id.glyph_day_empty, rows.isEmpty() ? View.VISIBLE : View.GONE);
+            views.setTextViewText(R.id.glyph_day_empty, "NADA NA BAIA AGORA.");
+        } else {
+            views.setViewVisibility(R.id.glyph_day_list, View.GONE);
+            views.setViewVisibility(R.id.glyph_day_empty, View.VISIBLE);
+            views.setTextViewText(R.id.glyph_day_empty, buildTodaySummary(rows));
+        }
 
         views.setOnClickPendingIntent(R.id.glyph_day_tab_today, providerIntent(context, appWidgetId, ACTION_TAB_TODAY, 10, null));
         views.setOnClickPendingIntent(R.id.glyph_day_tab_do, providerIntent(context, appWidgetId, ACTION_TAB_DO, 20, null));
         views.setOnClickPendingIntent(R.id.glyph_day_open_planner, plannerIntent(context, appWidgetId));
         manager.updateAppWidget(appWidgetId, views);
+        // A colecao nao recarrega sozinha quando o snapshot muda: updateAppWidget
+        // redesenha a moldura, nao os itens. Sem este aviso a baia congela no que
+        // foi lido da primeira vez.
+        manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.glyph_day_list);
     }
 
-    private static void bindRow(Context context, RemoteViews views, int widgetId, int index, List<RowData> rows, boolean showDo, int rowId, int textId, int actionId) {
-        if (index >= rows.size()) {
-            views.setViewVisibility(rowId, View.GONE);
-            return;
+    /**
+     * O planner em uma linha. A aba de hoje e leitura curta — quem quer agir usa a
+     * baia, que e a aba de abertura e tem a lista rolavel.
+     */
+    private static String buildTodaySummary(List<RowData> rows) {
+        if (rows.isEmpty()) return "NADA AGENDADO PARA HOJE.";
+        StringBuilder resumo = new StringBuilder();
+        int limite = Math.min(rows.size(), 3);
+        for (int index = 0; index < limite; index++) {
+            if (index > 0) resumo.append("  ·  ");
+            resumo.append(trim(rows.get(index).text, 24));
         }
-        RowData row = rows.get(index);
-        views.setViewVisibility(rowId, View.VISIBLE);
-        views.setTextViewText(textId, row.text);
-        views.setViewVisibility(actionId, showDo && row.actionable ? View.VISIBLE : View.GONE);
-        if (showDo && row.actionable) {
-            views.setTextViewText(actionId, "FEITO");
-            views.setOnClickPendingIntent(actionId, providerIntent(context, widgetId, ACTION_COMPLETE, 100 + index, row.actionId));
-        }
+        if (rows.size() > limite) resumo.append("  +").append(rows.size() - limite);
+        return resumo.toString();
     }
 
     private static PendingIntent providerIntent(Context context, int widgetId, String action, int offset, String actionId) {

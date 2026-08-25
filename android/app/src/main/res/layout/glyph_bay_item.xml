@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/glyph_bay_item_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/glyph_widget_pill_dark"
+    android:gravity="center_vertical"
+    android:layout_marginBottom="4dp"
+    android:orientation="horizontal"
+    android:paddingLeft="10dp"
+    android:paddingRight="8dp"
+    android:paddingTop="7dp"
+    android:paddingBottom="7dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/glyph_bay_item_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#E8E2D4"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/glyph_bay_item_arena"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#8E8878"
+            android:textSize="8sp" />
+    </LinearLayout>
+
+    <!-- Ponto de agendada. Fica antes do botao para nao competir com ele. -->
+    <TextView
+        android:id="@+id/glyph_bay_item_dot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="6dp"
+        android:text="●"
+        android:textColor="#6FC2C4"
+        android:textSize="9sp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/glyph_bay_item_action"
+        android:layout_width="wrap_content"
+        android:layout_height="28dp"
+        android:background="@drawable/glyph_widget_pill_gold"
+        android:gravity="center"
+        android:minWidth="52dp"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:text="FEITO"
+        android:textColor="#211B0A"
+        android:textSize="8sp"
+        android:textStyle="bold" />
+</LinearLayout>

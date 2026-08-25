@@ -29,7 +29,9 @@ public class GlyphBayWidgetService extends RemoteViewsService {
 
     @Override
     public RemoteViewsFactory onGetViewFactory(Intent intent) {
-        return new BayFactory(getApplicationContext());
+        int widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
+                AppWidgetManager.INVALID_APPWIDGET_ID);
+        return new BayFactory(getApplicationContext(), widgetId);
     }
 
     static class BayItem {
@@ -42,10 +44,13 @@ public class GlyphBayWidgetService extends RemoteViewsService {
 
     static class BayFactory implements RemoteViewsService.RemoteViewsFactory {
         private final Context context;
+        private final int widgetId;
         private final List<BayItem> items = new ArrayList<>();
+        private String selectedId = "";
 
-        BayFactory(Context context) {
+        BayFactory(Context context, int widgetId) {
             this.context = context;
+            this.widgetId = widgetId;
         }
 
         @Override
@@ -63,6 +68,7 @@ public class GlyphBayWidgetService extends RemoteViewsService {
             try {
                 SharedPreferences prefs = context.getSharedPreferences(
                         GlyphWidgetPlugin.PREFS_GROUP, Context.MODE_PRIVATE);
+                selectedId = prefs.getString("glyph_widget_selected_" + widgetId, "");
                 JSONObject root = new JSONObject(prefs.getString(GlyphWidgetPlugin.SNAPSHOT_KEY, "{}"));
                 JSONObject daily = root.optJSONObject("daily");
                 if (daily == null) return;
@@ -112,6 +118,13 @@ public class GlyphBayWidgetService extends RemoteViewsService {
             // ela, porque acao agendada sai da baia.
             views.setViewVisibility(R.id.glyph_bay_item_dot,
                     item.scheduledToday ? View.VISIBLE : View.GONE);
+
+            // O item escolhido troca o botao por um marcador: quem age agora e a
+            // barra de baixo, entao deixar "FEITO" aqui ofereceria dois caminhos
+            // para a mesma coisa.
+            boolean isSelected = !selectedId.isEmpty() && selectedId.equals(item.actionId);
+            views.setTextViewText(R.id.glyph_bay_item_action, isSelected ? "ESCOLHIDA" : "FEITO");
+            views.setTextColor(R.id.glyph_bay_item_text, isSelected ? 0xFFF6D65B : 0xFFE8E2D4);
 
             Intent fill = new Intent();
             fill.putExtra("action_id", item.actionId);

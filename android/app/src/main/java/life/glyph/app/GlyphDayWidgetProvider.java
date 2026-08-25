@@ -35,6 +35,8 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
     private static final String ACTION_TAB_TODAY = "life.glyph.app.widget.TAB_TODAY";
     private static final String ACTION_TAB_DO = "life.glyph.app.widget.TAB_DO";
     private static final String ACTION_COMPLETE = "life.glyph.app.widget.COMPLETE";
+    private static final String ACTION_SELECT = "life.glyph.app.widget.SELECT";
+    private static final String SELECTED_KEY_PREFIX = "glyph_widget_selected_";
     private static final String EXTRA_ACTION_ID = "action_id";
     private static final String TAB_KEY_PREFIX = "glyph_day_widget_tab_";
     private static final Set<String> ACTIONS_IN_FLIGHT = Collections.synchronizedSet(new HashSet<>());
@@ -52,6 +54,21 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
 
         if (ACTION_TAB_TODAY.equals(action) || ACTION_TAB_DO.equals(action)) {
             saveTab(context, appWidgetId, ACTION_TAB_DO.equals(action) ? "do" : "today");
+            updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
+            return;
+        }
+
+        if (ACTION_SELECT.equals(action)) {
+            // Tocar na lista escolhe; quem age e a barra de baixo. Widget nao tem
+            // long-press nem menu, entao selecionar e o unico jeito de oferecer
+            // duas acoes para o mesmo item.
+            String selectedId = intent.getStringExtra(EXTRA_ACTION_ID);
+            SharedPreferences prefs = context.getSharedPreferences(GlyphWidgetPlugin.PREFS_GROUP, Context.MODE_PRIVATE);
+            String current = prefs.getString(SELECTED_KEY_PREFIX + appWidgetId, "");
+            // Tocar de novo no mesmo item desmarca: sem isso nao havia como sair
+            // da selecao sem agir.
+            String next = selectedId != null && selectedId.equals(current) ? "" : (selectedId == null ? "" : selectedId);
+            prefs.edit().putString(SELECTED_KEY_PREFIX + appWidgetId, next).apply();
             updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
             return;
         }
@@ -97,17 +114,48 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
             // Item de colecao nao carrega PendingIntent proprio: ele preenche este
             // template com o action_id do que foi tocado.
             Intent template = new Intent(context, GlyphDayWidgetProvider.class);
-            template.setAction(ACTION_COMPLETE);
+            template.setAction(ACTION_SELECT);
             template.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
             views.setPendingIntentTemplate(R.id.glyph_day_list, PendingIntent.getBroadcast(
                     context, appWidgetId, template,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE));
 
             views.setViewVisibility(R.id.glyph_day_list, View.VISIBLE);
+
+            // A barra de acao so existe com algo escolhido. Dois botoes soltos sem
+            // alvo confundem mais do que ajudam.
+            String selectedId = context.getSharedPreferences(GlyphWidgetPlugin.PREFS_GROUP, Context.MODE_PRIVATE)
+                    .getString(SELECTED_KEY_PREFIX + appWidgetId, "");
+            RowData selected = null;
+            for (RowData row : rows) {
+                if (row.actionId != null && row.actionId.equals(selectedId)) { selected = row; break; }
+            }
+
+            if (selected != null) {
+                views.setViewVisibility(R.id.glyph_day_selection_bar, View.VISIBLE);
+                views.setTextViewText(R.id.glyph_day_selection_name, trim(selected.text, 26));
+
+                Intent concluir = new Intent(context, GlyphDayWidgetProvider.class);
+                concluir.setAction(ACTION_COMPLETE);
+                concluir.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+                concluir.putExtra(EXTRA_ACTION_ID, selected.actionId);
+                int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+                views.setOnClickPendingIntent(R.id.glyph_day_selection_complete,
+                        PendingIntent.getBroadcast(context, appWidgetId + 60000, concluir, flags));
+
+                // Agendar abre o planner naquela acao. A viagem e de ida: o widget
+                // nao tem como trazer a pessoa de volta depois de entrar no app.
+                views.setOnClickPendingIntent(R.id.glyph_day_selection_schedule,
+                        plannerIntentForAction(context, appWidgetId, selected.actionId));
+            } else {
+                views.setViewVisibility(R.id.glyph_day_selection_bar, View.GONE);
+            }
             views.setViewVisibility(R.id.glyph_day_empty, rows.isEmpty() ? View.VISIBLE : View.GONE);
             views.setTextViewText(R.id.glyph_day_empty, "NADA NA BAIA AGORA.");
         } else {
             views.setViewVisibility(R.id.glyph_day_list, View.GONE);
+            views.setViewVisibility(R.id.glyph_day_selection_bar, View.GONE);
             views.setViewVisibility(R.id.glyph_day_empty, View.VISIBLE);
             views.setTextViewText(R.id.glyph_day_empty, buildTodaySummary(rows));
         }
@@ -146,6 +194,16 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
         return PendingIntent.getBroadcast(context, widgetId * 1000 + offset, intent, flags);
+    }
+
+    private static PendingIntent plannerIntentForAction(Context context, int widgetId, String actionId) {
+        Intent intent = new Intent(Intent.ACTION_VIEW,
+                Uri.parse("life.glyph.app://widget/planner?action=" + Uri.encode(actionId == null ? "" : actionId)));
+        intent.setPackage(context.getPackageName());
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+        return PendingIntent.getActivity(context, widgetId + 70000, intent, flags);
     }
 
     private static PendingIntent plannerIntent(Context context, int widgetId) {
@@ -202,6 +260,10 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
                 // Concluida a acao, o widget vira para o planner e mostra onde ela
                 // caiu. Sem isso a linha some da baia e a pessoa fica sem retorno
                 // de onde aquilo foi parar.
+                // Concluida, a selecao perde o alvo: manter marcada uma acao que
+                // saiu da baia deixaria a barra apontando para o nada.
+                context.getSharedPreferences(GlyphWidgetPlugin.PREFS_GROUP, Context.MODE_PRIVATE)
+                        .edit().remove(SELECTED_KEY_PREFIX + widgetId).apply();
                 saveTab(context, widgetId, "today");
                 updateWidget(context, manager, widgetId);
             } catch (Exception error) {

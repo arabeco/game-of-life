@@ -94,6 +94,63 @@
         android:dividerHeight="0dp"
         android:scrollbars="none" />
 
+    <!-- Barra de acao da selecao. Fica FORA da lista de proposito: item de colecao
+         nao carrega PendingIntent proprio, mas botao aqui carrega. E o que
+         permite dois comandos por acao sem depender de gesto que widget nao tem. -->
+    <LinearLayout
+        android:id="@+id/glyph_day_selection_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/glyph_widget_pill_dark"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="4dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/glyph_day_selection_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingLeft="8dp"
+            android:paddingRight="6dp"
+            android:textColor="#E8E2D4"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/glyph_day_selection_schedule"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/glyph_widget_pill_dark"
+            android:gravity="center"
+            android:minWidth="60dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:text="AGENDAR"
+            android:textColor="#E8E2D4"
+            android:textSize="8sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/glyph_day_selection_complete"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:background="@drawable/glyph_widget_pill_gold"
+            android:gravity="center"
+            android:minWidth="60dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:text="CONCLUIR"
+            android:textColor="#211B0A"
+            android:textSize="8sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/glyph_day_empty"
         android:layout_width="match_parent"

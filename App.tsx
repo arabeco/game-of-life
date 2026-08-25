@@ -36,23 +36,33 @@ const ResetPasswordOverlay = React.lazy(() => import('./components/AppRuntimeOve
 const STORAGE_KEY_PROFILE = 'gol_user_profile_v2';
 const GOOGLE_OAUTH_RECOVERY_DELAYS_MS = [250, 350, 500, 700, 900, 1200, 1500, 1800, 2200, 2600] as const;
 
-const getNativeWidgetRoute = (url: string): 'reports' | 'planner' | null => {
+type NativeWidgetRoute = { view: 'reports' | 'planner'; actionId?: string };
+
+const getNativeWidgetRoute = (url: string): NativeWidgetRoute | null => {
     try {
         const parsed = new URL(url);
         if (parsed.protocol !== 'life.glyph.app:' || parsed.hostname !== 'widget') return null;
-        if (parsed.pathname.startsWith('/reports')) return 'reports';
-        if (parsed.pathname.startsWith('/planner')) return 'planner';
+        if (parsed.pathname.startsWith('/reports')) return { view: 'reports' };
+        if (parsed.pathname.startsWith('/planner')) {
+            // O widget manda a acao escolhida quando o toque foi em "agendar". A
+            // viagem e de ida: ele nao tem como trazer a pessoa de volta depois,
+            // entao o minimo e o planner abrir ja apontando para a acao certa.
+            const actionId = parsed.searchParams.get('action') || undefined;
+            return { view: 'planner', actionId: actionId || undefined };
+        }
         return null;
     } catch {
         return null;
     }
 };
 
-const routeNativeWidgetUrl = (route: 'reports' | 'planner') => {
+const routeNativeWidgetUrl = (route: NativeWidgetRoute) => {
     const params = new URLSearchParams(window.location.search);
     params.set('view', 'planner');
-    if (route === 'reports') params.set('reports', '1');
+    if (route.view === 'reports') params.set('reports', '1');
     else params.delete('reports');
+    if (route.actionId) params.set('action', route.actionId);
+    else params.delete('action');
     params.set('rest', '0');
     const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
     window.history.replaceState(window.history.state, '', nextUrl);

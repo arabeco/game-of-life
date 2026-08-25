@@ -82,7 +82,7 @@ const {
 const meioDia = new Date('2026-08-24T13:00:00');
 
 assert.equal(pickOracleGreeting(0, 'neutro', meioDia), null, 'silencioso nao cumprimenta');
-assert.equal(pickOracleGreeting(2, 'neutro', meioDia), null, 'equilibrado nao cumprimenta');
+assert.ok(pickOracleGreeting(2, 'neutro', meioDia), 'equilibrado cumprimenta');
 assert.ok(pickOracleGreeting(3, 'neutro', meioDia), 'presente cumprimenta');
 
 // faixa horaria
@@ -117,9 +117,9 @@ for (const linha of todas) {
 
 // --- o leque completo da fala espontanea ---------------------------------
 // So saudacao viraria papel de parede: a fala de abertura mistura cumprimento,
-// dica de como o jogo funciona e sugestao. A trava de presenca vale para todas.
+// dica de como o jogo funciona, sugestao e curiosidade. So o silencioso cala.
 assert.equal(pickOracleOpeningLine(0, 'neutro', meioDia), null, 'silencioso nao fala do nada');
-assert.equal(pickOracleOpeningLine(2, 'coach', meioDia), null, 'equilibrado nao fala do nada');
+assert.ok(pickOracleOpeningLine(2, 'coach', meioDia), 'equilibrado fala do nada');
 
 const tipos = new Set();
 for (let i = 0; i < 400; i += 1) {
@@ -158,4 +158,12 @@ for (const linha of ORACLE_LORE) {
 
 console.log(`Oracle opening: ${todas.length + espontaneas.length} falas espontaneas em quatro tipos.`);
 
-console.log(`Oracle greeting: ${todas.length} saudacoes, so na presenca 3, sem numero e sem cobranca.`);
+// O padrao do app e presenca 2. Exigir 3 fazia a saudacao existir so para quem
+// tivesse mexido no ajuste — que foi exatamente o bug relatado.
+const { DEFAULT_ORACLE_PRESENCE_LEVEL: padrao } = await import('../utils/oracleFeedUtils.ts');
+assert.ok(
+  pickOracleOpeningLine(padrao, 'neutro', meioDia),
+  `a presenca padrao (${padrao}) precisa render fala de abertura`,
+);
+
+console.log(`Oracle greeting: ${todas.length} saudacoes, mudas so no silencioso, sem numero e sem cobranca.`);

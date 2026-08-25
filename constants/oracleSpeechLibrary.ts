@@ -274,9 +274,9 @@ export const pickOracleSpeech = (
  * reagindo a algo ja feito. Isto e o cumprimento — uma linha, sem botao, sem
  * card, sem nada para dispensar. Some sozinho na proxima abertura.
  *
- * So existe na presenca 3 ("Presente"), que e onde a pessoa pediu para ele
- * aparecer mais. Em silencioso e equilibrado o painel continua abrindo calado,
- * porque cumprimento que a pessoa nao pediu vira ruido.
+ * Some no silencioso (presenca 0) e aparece nos dois niveis em que o Oraculo
+ * fala — equilibrado e presente. A primeira versao exigia presenca 3, mas o
+ * padrao do app e 2: na pratica quase ninguem via a saudacao.
  *
  * Nao carrega numero nem cobranca: quem quer dado tem a leitura logo abaixo.
  */
@@ -313,8 +313,8 @@ export const resolveGreetingPeriod = (hour: number): OracleGreetingPeriod => {
 /**
  * A saudacao do momento, ou null quando o Oraculo nao deve cumprimentar.
  *
- * `presenceLevel` abaixo de 3 devolve null: e a diferenca entre "aparece mais"
- * e "aparece sempre", que e o que a pessoa escolheu no ajuste de presenca.
+ * Silencioso devolve null. Os outros dois niveis cumprimentam: quem escolheu
+ * silencioso pediu para o Oraculo calar, os demais pediram que ele fale.
  */
 export const pickOracleGreeting = (
     presenceLevel: number,
@@ -322,7 +322,7 @@ export const pickOracleGreeting = (
     now: Date = new Date(),
     random: () => number = Math.random,
 ): string | null => {
-    if (presenceLevel < 3) return null;
+    if (presenceLevel <= 0) return null;
 
     const period = resolveGreetingPeriod(now.getHours());
     const options = ORACLE_GREETINGS[period][tone] || ORACLE_GREETINGS[period][ORACLE_FREE_TONE];
@@ -432,7 +432,7 @@ export const pickOracleOpeningLine = (
     now: Date = new Date(),
     random: () => number = Math.random,
 ): { text: string; kind: OracleOpeningKind } | null => {
-    if (presenceLevel < 3) return null;
+    if (presenceLevel <= 0) return null;
 
     const safeTone = tone in ORACLE_TONE_LABELS ? tone : ORACLE_FREE_TONE;
     const kinds: OracleOpeningKind[] = ['saudacao', 'dica', 'sugestao', 'curiosidade'];

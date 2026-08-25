@@ -52,7 +52,7 @@ export const ScreenIntroTipOverlay: React.FC<ScreenIntroTipOverlayProps> = ({
           />
           <GlassCard
             variant="gold"
-            className="pointer-events-auto relative w-full max-w-[21rem] overflow-hidden rounded-[18px] border-[#d8e6ff]/28 bg-[linear-gradient(180deg,rgba(18,17,16,0.96),rgba(8,8,9,0.98))] px-3 pb-2.5 pl-[4.45rem] pt-2.5 shadow-[0_16px_56px_rgba(0,0,0,0.42),0_0_20px_rgba(216,230,255,0.07)] backdrop-blur-xl"
+            className="pointer-events-none relative w-full max-w-[21rem] overflow-hidden rounded-[18px] border-[#d8e6ff]/28 bg-[linear-gradient(180deg,rgba(18,17,16,0.96),rgba(8,8,9,0.98))] px-3 pb-2.5 pl-[4.45rem] pt-2.5 shadow-[0_16px_56px_rgba(0,0,0,0.42),0_0_20px_rgba(216,230,255,0.07)] backdrop-blur-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-[radial-gradient(circle_at_top,rgba(216,230,255,0.13),transparent_70%)]" />
@@ -97,7 +97,10 @@ export const ScreenIntroTipOverlay: React.FC<ScreenIntroTipOverlayProps> = ({
               </div>
             </div>
 
-            <div className="mt-2 flex items-center justify-end gap-1.5">
+            {/* O card fica sobre a tela e chegava a cobrir os botoes da rest screen —
+                humor, checklist, foco e o Oraculo ficavam sem clique. O corpo dele
+                agora deixa o toque passar; so estes dois botoes capturam. */}
+            <div className="pointer-events-auto mt-2 flex items-center justify-end gap-1.5">
               <button
                 type="button"
                 onClick={() => onClose({ disableFuture: true })}

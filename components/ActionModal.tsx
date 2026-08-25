@@ -233,14 +233,14 @@ const ACTION_TYPE_CHOICES: Array<{
 ];
 
 const ActionSectionCard: React.FC<{ title?: string; subtitle?: string; children: React.ReactNode; className?: string }> = ({ title, subtitle, children, className = '' }) => (
-    <div className={`rounded-[20px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.18))] px-3 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.16)] ${className}`}>
+    <div className={`rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(0,0,0,0.14))] px-3.5 py-3.5 ${className}`}>
         {(title || subtitle) && (
-            <div className="mb-2.5">
+            <div className="mb-3">
                 {title && <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]/90">{title}</div>}
                 {subtitle && <p className="mt-1 text-[11px] leading-relaxed text-white/55">{subtitle}</p>}
             </div>
         )}
-        <div className="space-y-2.5">{children}</div>
+        <div className="space-y-3">{children}</div>
     </div>
 );
 
@@ -1353,7 +1353,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             <div className="ui-modal-backdrop z-[100]" onClick={handleBackdropClick} style={modalStyle}>
                 <GlassCard
                     variant="neutral"
-                    className="ui-modal-panel w-full max-w-[22.75rem] m-0 flex flex-col max-h-[84vh] h-auto p-0 relative overflow-hidden border-white/12 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
+                    className="ui-modal-panel w-full max-w-[22.75rem] m-0 flex flex-col max-h-[84vh] h-auto p-0 relative overflow-hidden border-white/14 shadow-[0_24px_70px_rgba(0,0,0,0.45)]"
                     style={{
                         backgroundImage: [
                             `radial-gradient(circle at 48% 0%, rgba(255,255,255,0.18), rgba(255,255,255,0.07) 16%, transparent 40%)`,
@@ -1373,7 +1373,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                     />
 
                     {/* Header Fixed */}
-                    <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md grid grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] items-start gap-2 z-30 relative border-b border-white/10">
+                    <div className="flex-none p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.08))] backdrop-blur-md grid grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] items-start gap-2 z-30 relative border-b border-white/8">
                         <div className="flex items-center gap-3 pt-1">
                             {!isPreview && !disableAuthoring && (hasTaskInstanceContext || !isLockedFromSource || mode === 'edit') && (
                                 <button
@@ -1551,7 +1551,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         className={`flex-1 rounded-xl px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition-all ${isEditingActionBase
                                                             ?'bg-[var(--skin-accent-color)] text-black shadow-[0_8px_18px_rgba(0,0,0,0.28)]'
                                                             : isLockedFromSource
-                                                                ?'bg-black/10 text-white/35 border border-white/5 cursor-not-allowed'
+                                                                ?'bg-black/10 text-white/35 border border-white/8 cursor-not-allowed'
                                                                 : 'bg-black/20 text-white/70 border border-white/8 hover:bg-white/8'
                                                             }`}
                                                     >
@@ -1578,7 +1578,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                         {isEditingTaskInstance ? (
                                             <>
                                                 <ActionSectionCard title="Ocorrência" subtitle="Você está ajustando só este item do Planner.">
-                                                    <div className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/20 px-4 py-4">
+                                                    <div className="flex items-center gap-3 rounded-[18px] border border-white/8 bg-black/20 px-4 py-4">
                                                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10">
                                                             <EmojiGlyph symbol={action?.icon || '📝'} size="action" className="text-white" />
                                                         </div>
@@ -1626,7 +1626,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 <ActionSectionCard title="Agenda" subtitle="Ajuste data e horário desta ocorrência sem mexer na ação base.">
                                                     <div>
                                                         <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data desta ocorrência</label>
-                                                        <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                        <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
                                                             <div className="flex items-center gap-2">
                                                                 <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                                                 <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
@@ -1637,7 +1637,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                                                     <div>
                                                         <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário desta ocorrência</label>
-                                                        <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                        <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
                                                             <span className="text-sm">{startTime || 'Sem horário'}</span>
                                                             <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
                                                         </button>
@@ -1656,7 +1656,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         type="button"
                                                         onClick={() => canEditAuthorialContent && setIsIconPickerOpen(true)}
                                                         disabled={!canEditAuthorialContent}
-                                                        className={`w-20 h-20 border rounded-[18px] transition-colors flex items-center justify-center relative group ${canEditAuthorialContent ?'bg-[#2a211c]/40 border-[var(--skin-accent-color)]/50 hover:bg-[#2a211c]' : 'bg-[#2a211c]/25 border-white/10 opacity-60 cursor-not-allowed'}`}
+                                                        className={`w-20 h-20 border rounded-[18px] transition-colors flex items-center justify-center relative group ${canEditAuthorialContent ?'bg-[#2a211c]/40 border-[var(--skin-accent-color)]/50 hover:bg-[#2a211c]' : 'bg-[#2a211c]/25 border-white/8 opacity-60 cursor-not-allowed'}`}
                                                     >
                                                         <EmojiGlyph symbol={editableAction.icon || '📝'} size="picker" className="scale-[1.45] text-white" />
                                                         <div className={`absolute inset-0 bg-black/40 rounded-[18px] flex items-center justify-center transition-opacity ${canEditAuthorialContent ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
@@ -1721,7 +1721,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                     }`}
                                                                 >
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-sm font-black ${selected ? 'border-[var(--skin-accent-color)]/70 bg-black/30 text-[var(--skin-accent-color)]' : 'border-white/10 bg-white/[0.03] text-white/50'}`}>
+                                                                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-sm font-black ${selected ? 'border-[var(--skin-accent-color)]/70 bg-black/30 text-[var(--skin-accent-color)]' : 'border-white/8 bg-white/[0.03] text-white/50'}`}>
                                                                             {choice.glyph}
                                                                         </span>
                                                                         <div className="min-w-0">
@@ -1741,7 +1741,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 )}
 
                                                 {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') && (
-                                                    <div className="rounded-[18px] border border-white/10 bg-black/18 px-3 py-3 space-y-3">
+                                                    <div className="rounded-[18px] border border-white/8 bg-black/18 px-3 py-3 space-y-3">
                                                         <div className="flex items-center justify-between px-1">
                                                             <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/42">
                                                                 {editableAction.actionType === 'Compromisso' ? 'Quando acontece' : 'Ritmo da ação'}
@@ -1770,7 +1770,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         {editableAction.actionType === 'Compromisso' && (
                                                             <div>
                                                                 <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data</label>
-                                                                <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                                <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
                                                                     <div className="flex items-center gap-2">
                                                                         <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                                                         <span className="text-sm">{selectedDate ? selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
@@ -1782,7 +1782,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                                                         <div>
                                                             <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
-                                                            <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                            <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
                                                                 <span className="text-sm">{startTime || 'Sem horário'}</span>
                                                                 <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ? 'rotate-90' : ''}`} />
                                                             </button>
@@ -1805,7 +1805,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                 </div>
                                                                 <div className={`relative h-6 w-11 rounded-full border transition-colors ${editableAction.context?.schedule?.notifyBeforeMinutes === 15
                                                                     ? 'border-emerald-400/70 bg-emerald-400/30'
-                                                                    : 'border-white/12 bg-white/5'
+                                                                    : 'border-white/14 bg-white/5'
                                                                     }`}>
                                                                     <div className={`absolute top-0.5 h-[1.125rem] w-[1.125rem] rounded-full bg-white transition-all ${editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'left-[1.35rem]' : 'left-0.5'}`} />
                                                                 </div>
@@ -1890,13 +1890,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             onChange={e => setEditableAction(p => ({ ...p, description: e.target.value }))}
                                             disabled={!canEditAuthorialContent}
                                             rows={3}
-                                            className={`w-full rounded-[18px] px-4 py-3 mt-1 text-sm text-white/90 border placeholder:text-gray-600 resize-none ${canEditAuthorialContent ?'bg-black/20 border-white/10 focus:outline-none focus:border-[var(--accent-bronze)]/50' : 'bg-black/12 border-white/8 opacity-65 cursor-not-allowed'}`}
+                                            className={`w-full rounded-[18px] px-4 py-3 mt-1 text-sm text-white/90 border placeholder:text-gray-600 resize-none ${canEditAuthorialContent ?'bg-black/20 border-white/8 focus:outline-none focus:border-[var(--accent-bronze)]/50' : 'bg-black/12 border-white/8 opacity-65 cursor-not-allowed'}`}
                                         />
                                     </div>
                                 </ActionSectionCard>
 
                                 {/* Sub-Tabs */}
-                                <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/5 mx-4 mt-0 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
+                                <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/8 mx-4 mt-0 mb-2 shrink-0 z-20 backdrop-blur-sm sticky top-0">
                                     {(['AGENDA', 'MÍDIA', 'ANOTAÇÃO', 'CHECKLIST', 'CONTEXTO'] as const).map((tab) => {
                                         const tabKey = tab === 'AGENDA' ? 'schedule' : tab === 'MÍDIA' ?'media' : tab === 'ANOTAÇÃO' ?'note' : tab === 'CHECKLIST' ?'checklist' : 'context';
                                         const isActive = advancedSubTab === tabKey;
@@ -1905,7 +1905,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                 key={tab}
                                                 onClick={() => setAdvancedSubTab(tabKey)}
                                                 className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all duration-300 ${isActive
-                                                    ?'bg-white/10 text-white shadow-lg border border-white/5'
+                                                    ?'bg-white/10 text-white shadow-lg border border-white/8'
                                                     : 'text-gray-600 hover:text-gray-400'
                                                     }`}
                                             >
@@ -1934,7 +1934,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         {editableAction.actionType === 'Compromisso' && (
                                                             <div>
                                                                 <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Data</label>
-                                                                <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                                <button onClick={() => setIsDatePickerOpen(true)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
                                                                     <div className="flex items-center gap-2">
                                                                         <CalendarIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                                                         <span className="text-sm">{selectedDate ?selectedDate.toLocaleDateString('pt-BR') : 'Selecionar data'}</span>
@@ -1946,7 +1946,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
                                                         <div>
                                                             <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Horário</label>
-                                                            <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/5">
+                                                            <button onClick={() => setIsTimePickerOpen(!isTimePickerOpen)} className="w-full p-3 mt-1 bg-black/20 rounded-xl flex justify-between items-center text-left hover:bg-black/30 transition-colors border border-white/8">
                                                                 <span className="text-sm">{startTime || 'Sem horário'}</span>
                                                                 <ChevronRightIcon className={`w-4 h-4 text-gray-500 transition-transform ${isTimePickerOpen ?'rotate-90' : ''}`} />
                                                             </button>
@@ -1969,7 +1969,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                 </div>
                                                                 <div className={`relative h-6 w-11 rounded-full border transition-colors ${editableAction.context?.schedule?.notifyBeforeMinutes === 15
                                                                     ? 'border-emerald-400/70 bg-emerald-400/30'
-                                                                    : 'border-white/12 bg-white/5'
+                                                                    : 'border-white/14 bg-white/5'
                                                                     }`}>
                                                                     <div className={`absolute top-0.5 h-[1.125rem] w-[1.125rem] rounded-full bg-white transition-all ${editableAction.context?.schedule?.notifyBeforeMinutes === 15 ? 'left-[1.35rem]' : 'left-0.5'}`} />
                                                                 </div>
@@ -2000,7 +2000,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     {advancedSubTab === 'media' && (
                                         <div className="h-full flex flex-col p-4">
                                             {mediaPreviewUrl ?(
-                                                <div className="w-full aspect-video bg-black/40 rounded-xl overflow-hidden border border-white/10 relative group mb-4">
+                                                <div className="w-full aspect-video bg-black/40 rounded-xl overflow-hidden border border-white/8 relative group mb-4">
                                                     <img
                                                         src={mediaPreviewUrl}
                                                         className="w-full h-full object-cover"
@@ -2017,7 +2017,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     )}
                                                 </div>
                                             ) : (
-                                                <div className="w-full aspect-video bg-white/5 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 mb-4">
+                                                <div className="w-full aspect-video bg-white/5 rounded-xl border border-dashed border-white/8 flex flex-col items-center justify-center gap-2 mb-4">
                                                     <span className="text-4xl opacity-20">📋</span>
                                                     <span className="text-xs text-gray-500 font-medium">Sem mídia vinculada</span>
                                                 </div>
@@ -2057,7 +2057,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                 }
                                                             }}
                                                             placeholder="https://..."
-                                                            className="w-full p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-300 placeholder:text-gray-600"
+                                                            className="w-full p-3 bg-black/30 border border-white/8 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-300 placeholder:text-gray-600"
                                                         />
                                                     </div>
                                                 </div>
@@ -2084,7 +2084,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     <textarea
                                                         value={editableAction.briefing || ''}
                                                         onChange={e => setEditableAction(prev => ({ ...prev, briefing: e.target.value }))}
-                                                        className="w-full flex-1 p-4 bg-black/30 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-200 resize-none min-h-[300px]"
+                                                        className="w-full flex-1 p-4 bg-black/30 border border-white/8 rounded-xl text-sm focus:outline-none focus:border-[var(--skin-accent-color)] text-gray-200 resize-none min-h-[300px]"
                                                         placeholder="Digite suas anotações aqui..."
                                                     />
                                                     <div className="text-[11px] text-gray-500 leading-relaxed">
@@ -2148,7 +2148,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             {/* Checklist Items */}
                                             {(displayAction?.preFlight || []).length > 0 ?(
                                                 displayAction?.preFlight?.map((item, i) => (
-                                                    <div key={i} className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors group">
+                                                    <div key={i} className="flex items-start gap-4 p-4 bg-white/5 rounded-xl border border-white/8 hover:bg-white/10 transition-colors group">
                                                         <div className="mt-1 w-2 h-2 rounded-full bg-[var(--skin-accent-color)]/50 group-hover:bg-[var(--skin-accent-color)] group-hover:shadow-[0_0_8px_var(--sephirot-glow-color)] transition-all" />
                                                         <span className="text-sm text-gray-300 font-medium leading-snug flex-1">{item}</span>
                                                         {mode === 'edit' && canEditAuthorialContent && (
@@ -2162,7 +2162,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="flex flex-col items-center justify-center py-10 opacity-30 space-y-2 border border-dashed border-white/5 rounded-xl">
+                                                <div className="flex flex-col items-center justify-center py-10 opacity-30 space-y-2 border border-dashed border-white/8 rounded-xl">
                                                     <span className="text-4xl">?</span>
                                                     <span className="text-[10px] uppercase font-black tracking-widest">Lista Vazia</span>
                                                 </div>
@@ -2182,7 +2182,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             }
                                                         }}
                                                         placeholder="Adicionar item..."
-                                                        className="flex-1 p-3 bg-black/30 border border-white/10 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)]"
+                                                        className="flex-1 p-3 bg-black/30 border border-white/8 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)]"
                                                     />
                                                     <button
                                                         onClick={() => {
@@ -2216,7 +2216,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                 onClick={() => isEditable && setEditableAction(prev => ({ ...prev, context: { ...prev.context, energyLevel: level } }))}
                                                                 className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all ${isSelected
                                                                     ?'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border-[var(--skin-accent-color)]/50 shadow-[0_0_15px_var(--sephirot-glow-color)]'
-                                                                    : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ?'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
+                                                                    : 'bg-black/20 text-gray-600 border-white/8 ' + (isEditable ?'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                     }`}
                                                             >
                                                                 {level === 'low' ?'Baixo' : level === 'medium' ?'Médio' : 'Alto'}
@@ -2240,7 +2240,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                 onClick={() => isEditable && setEditableAction(prev => ({ ...prev, context: { ...prev.context, timeOfDay: time } }))}
                                                                 className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all ${isSelected
                                                                     ?'bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] border-[var(--skin-accent-color)]/50 shadow-[0_0_15px_var(--sephirot-glow-color)]'
-                                                                    : 'bg-black/20 text-gray-600 border-white/5 ' + (isEditable ?'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
+                                                                    : 'bg-black/20 text-gray-600 border-white/8 ' + (isEditable ?'hover:bg-white/5 hover:text-gray-400' : 'opacity-50')
                                                                     }`}
                                                             >
                                                                 {time === 'morning' ?'Manhã' : time === 'afternoon' ?'Tarde' : time === 'evening' ?'Noite' : 'Madrugada'}
@@ -2302,7 +2302,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 <button
                                     ref={saveButtonRef}
                                     onClick={onClose}
-                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
+                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_15px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
                                 >
                                     <span className="relative z-10 group-hover:text-black transition-colors">Fechar</span>
                                     <div className="absolute inset-0 transition-colors bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10" />
@@ -2312,7 +2312,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                     <button
                                         ref={saveButtonRef}
                                         onClick={handleStartMission}
-                                        className="flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.06] active:scale-[0.99]"
+                                        className="flex-1 rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-white transition-all hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.06] active:scale-[0.99]"
                                     >
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-3 min-w-0">
@@ -2347,7 +2347,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             ? 'border-emerald-400/50 bg-emerald-500/12 shadow-[0_0_28px_rgba(52,211,153,0.18)]'
                                             : isCompletingNowHold
                                                 ? 'border-emerald-300/40 bg-emerald-500/10 shadow-[0_0_18px_rgba(52,211,153,0.12)]'
-                                                : 'border-white/10 bg-white/[0.04] hover:border-emerald-300/25 hover:bg-white/[0.06]'
+                                                : 'border-white/8 bg-white/[0.04] hover:border-emerald-300/25 hover:bg-white/[0.06]'
                                             }`}
                                         style={{
                                             touchAction: 'none',
@@ -2391,7 +2391,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 <button
                                     ref={saveButtonRef}
                                     onClick={onClose}
-                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
+                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_15px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
                                 >
                                     <span className="relative z-10 group-hover:text-black transition-colors">Fechar</span>
                                     <div className="absolute inset-0 transition-colors bg-[var(--skin-accent-color)]/0 group-hover:bg-[var(--skin-accent-color)]/10" />
@@ -2400,7 +2400,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                 <button
                                     ref={saveButtonRef}
                                     onClick={handleSave}
-                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_18px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
+                                    className="flex-1 py-3.5 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_0_15px_var(--sephirot-glow-color)] hover:shadow-[0_0_24px_var(--sephirot-glow-color)] transition-all transform active:scale-[0.98] border border-[color:rgba(255,215,0,0.16)] group relative overflow-hidden luxe-skin-button"
                                 >
                                     <span className="relative z-10">{isNew ? 'Criar ação' : 'Salvar alterações'}</span>
                                 </button>

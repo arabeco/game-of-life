@@ -114,7 +114,7 @@ const ActionSquare: React.FC<{
                 </div>
             </button>
             <div
-                className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border ${isClanQuest ?'' : 'bg-black/50 text-white border-white/10'}`}
+                className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none border ${isClanQuest ?'' : 'bg-black/50 text-white border-white/8'}`}
                 style={isClanQuest ?{
                     backgroundColor: withAlpha(QUEST_VISUAL.rgb, 0.24),
                     color: QUEST_VISUAL.hex,
@@ -577,7 +577,7 @@ export const ArenaDetailModal: React.FC<{
                             <div className="flex flex-col items-center gap-1">
                                 {/* Allow editing for flexible arenas or if user is the Mentor */}
                                 {!isReadOnlyArena && (!isArenaEditLocked || isEditing || effectiveRelationshipType === 'mentoria') && (
-                                    <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/20 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
+                                    <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors border border-white/14 ${isEditing ?'bg-white/20' : 'bg-transparent'}`}>
                                         <EditIcon className={`w-5 h-5 ${isEditing ?'text-white' : 'text-gray-300'}`} />
                                     </button>
                                 )}
@@ -601,7 +601,7 @@ export const ArenaDetailModal: React.FC<{
                                             }
                                             setRelationshipHubOpen(true);
                                         }}
-                                        className="p-2 rounded-full transition-colors border border-white/15 bg-black/30 hover:bg-black/40"
+                                        className="p-2 rounded-full transition-colors border border-white/14 bg-black/30 hover:bg-black/40"
                                     >
                                         <LinkIcon className="w-4 h-4 accent-text" />
                                     </button>
@@ -612,7 +612,7 @@ export const ArenaDetailModal: React.FC<{
                                         onClick={() => typeof setArenaAsShared === 'function' && setArenaAsShared(arena.id, !arena.description?.includes('[SHARED]'))}
                                         className={`p-2 rounded-full transition-colors border ${arena.description?.includes('[SHARED]')
                                             ?'border-green-500/50 bg-green-500/20 hover:bg-green-500/30'
-                                            : 'border-white/15 bg-black/30 hover:bg-black/40'
+                                            : 'border-white/14 bg-black/30 hover:bg-black/40'
                                             }`}
                                         title={arena.description?.includes('[SHARED]') ? 'Arena compartilhada' : 'Compartilhar arena para o cla'}
                                     >
@@ -653,7 +653,7 @@ export const ArenaDetailModal: React.FC<{
                                 )}
                                 {isClanQuestArena && (
                                     <div className="flex flex-col items-center gap-1 mt-1">
-                                        <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full text-[10px] accent-text border border-white/10">
+                                        <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full text-[10px] accent-text border border-white/8">
                                             <UsersIcon className="w-3 h-3" />
                                             <span className="font-mono font-bold">
                                                 {(() => {
@@ -725,7 +725,7 @@ export const ArenaDetailModal: React.FC<{
                                         type="text"
                                         value={editableArena.name}
                                         onChange={(e) => setEditableArena(prev => ({ ...prev, name: e.target.value }))}
-                                        className="arena-detail-title arena-detail-title-input luxe-title-ornate w-full text-center bg-transparent text-[1.82rem] font-bold uppercase tracking-[0.1em] text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/20"
+                                        className="arena-detail-title arena-detail-title-input luxe-title-ornate w-full text-center bg-transparent text-[1.82rem] font-bold uppercase tracking-[0.1em] text-[color:var(--skin-accent-color)] pt-2 focus:outline-none border-b border-dashed border-white/14"
                                     />
                                     <textarea
                                         value={editableArena.description}
@@ -733,14 +733,14 @@ export const ArenaDetailModal: React.FC<{
                                         rows={2}
                                         className="w-full text-center bg-transparent text-sm text-gray-500 pt-1 focus:outline-none"
                                     />
-                                    <div className="arena-detail-field-card w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-2 text-left">
+                                    <div className="arena-detail-field-card w-full rounded-2xl border border-white/8 bg-black/25 px-3 py-2 text-left">
                                         <label className="block text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400 mb-2">
                                             Ativo pai
                                         </label>
                                         <select
                                             value={editableArena.assetId}
                                             onChange={(e) => setEditableArena(prev => ({ ...prev, assetId: e.target.value }))}
-                                            className="w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-[var(--skin-accent-color)]/45"
+                                            className="w-full rounded-xl border border-white/8 bg-black/35 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-[var(--skin-accent-color)]/45"
                                         >
                                             {assets.map(asset => (
                                                 <option key={asset.id} value={asset.id}>
@@ -859,7 +859,7 @@ export const ArenaDetailModal: React.FC<{
             )}
             {PRODUCT_FEATURES.relationshipLegacyHub && isLinkingObserver && (
             <div className="arena-detail-modal fixed inset-0 bg-black/70 backdrop-blur-sm z-[240] flex items-center justify-center animate-fade-in" onClick={() => setIsLinkingObserver(false)}>
-                    <div className="arena-link-panel bg-black/70 border border-white/10 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
+                    <div className="arena-link-panel bg-black/70 border border-white/8 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center">
                             <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">VINCULAR ALIADO</div>
                             <button onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">?</span></button>
@@ -867,9 +867,9 @@ export const ArenaDetailModal: React.FC<{
                         <div className="text-xs text-gray-400">Escolha o tipo de v?nculo e convide um amigo para {editableArena.name || arena.name}.</div>
 
                         <div className="flex gap-2 mb-2">
-                            <button onClick={() => setSelectionType('mentoria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'mentoria' ?'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/30 text-gray-400 border-white/10'}`}>Mentoria</button>
-                            <button onClick={() => setSelectionType('competicao')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'competicao' ?'bg-red-500 text-white border-red-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Desafio</button>
-                            <button onClick={() => setSelectionType('parceria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'parceria' ?'bg-blue-500 text-white border-blue-500' : 'bg-black/30 text-gray-400 border-white/10'}`}>Parceria</button>
+                            <button onClick={() => setSelectionType('mentoria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'mentoria' ?'bg-[var(--skin-accent-color)] text-black border-[var(--skin-accent-color)]' : 'bg-black/30 text-gray-400 border-white/8'}`}>Mentoria</button>
+                            <button onClick={() => setSelectionType('competicao')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'competicao' ?'bg-red-500 text-white border-red-500' : 'bg-black/30 text-gray-400 border-white/8'}`}>Desafio</button>
+                            <button onClick={() => setSelectionType('parceria')} className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg border ${selectionType === 'parceria' ?'bg-blue-500 text-white border-blue-500' : 'bg-black/30 text-gray-400 border-white/8'}`}>Parceria</button>
                         </div>
                         {selectionType === 'mentoria' && (
                             <div className="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-400/20 rounded-xl px-3 py-2">
@@ -886,9 +886,9 @@ export const ArenaDetailModal: React.FC<{
                                     <button
                                         key={friend.id}
                                         onClick={() => sendObserverInvite(friend, selectionType)}
-                                        className="w-full p-3 rounded-xl text-left border flex items-center gap-3 bg-black/20 hover:bg-black/30 border-white/10"
+                                        className="w-full p-3 rounded-xl text-left border flex items-center gap-3 bg-black/20 hover:bg-black/30 border-white/8"
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center">
+                                        <div className="w-10 h-10 rounded-full bg-black/30 border border-white/8 overflow-hidden flex items-center justify-center">
                                                 {friend.avatarUrl ?<img src={friend.avatarUrl} alt={friend.nickname} className="w-full h-full object-cover" /> : <span className="text-xs font-bold text-gray-500">👤</span>}
                                         </div>
                                         <div className="flex-1">
@@ -904,7 +904,7 @@ export const ArenaDetailModal: React.FC<{
                                 )})}
                             </div>
                         )}
-                        {linkStatus && <div className="text-xs text-gray-300 bg-black/30 border border-white/10 rounded-xl p-2">{linkStatus}</div>}
+                        {linkStatus && <div className="text-xs text-gray-300 bg-black/30 border border-white/8 rounded-xl p-2">{linkStatus}</div>}
                     </div>
                 </div>
             )}

@@ -44,6 +44,8 @@ Míticos separada por temporada e slot:
 Slot vazio aparece tracejado, então dá para ver de relance o que cada coleção
 ainda pede.
 
+Todos os artefatos publicados estão indexados em `ARTEFATOS.md`.
+
 ---
 
 ## A coleção de cada temporada

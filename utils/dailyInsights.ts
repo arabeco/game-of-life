@@ -143,3 +143,134 @@ export const buildHistoricalDailyInsight = (input: HistoricalDailyInsightInput):
 
   return `Você concluiu ${completed} de ${planned} ${planned === 1 ? 'ação registrada' : 'ações registradas'}. O registro mostra avanço real e também o que pode ser ajustado no restante do ciclo.`;
 };
+
+/**
+ * Leitura do dia corrente no painel diario.
+ *
+ * O painel so falava sobre dias passados: `buildHistoricalDailyInsight` devolve
+ * texto para uma data que ja fechou, e a chamada em SitrepContent desiste quando
+ * a data e hoje. Ou seja, no caso normal — abrir o painel durante o dia — nao
+ * havia frase nenhuma. Esta funcao cobre esse caso.
+ *
+ * A profundidade muda com a assinatura, e a diferenca e a REGUA, nao o elogio:
+ *  - livre: descreve o dia. Sem comparacao.
+ *  - premium: compara com o seu proprio dia medio no ciclo atual.
+ *  - platinum: compara o ciclo em curso com a sua mediana de ciclos fechados.
+ *
+ * Nenhum nivel cobra do jogador. Ficar abaixo da media e informacao, nao falta:
+ * o app pontua por `fair_v2_1` justamente para nao punir, e o texto acompanha.
+ */
+export type DailyReadingDepth = 'livre' | 'premium' | 'platinum';
+
+export interface TodayDailyReadingInput {
+  completedCount: number;
+  plannedCount: number;
+  distinctArenaCount: number;
+  topArenaName?: string | null;
+  streakCurrent?: number;
+  /** Media de conclusoes nos dias ativos anteriores do ciclo atual. */
+  cycleActiveDayAverage?: number | null;
+  /** Taxa de execucao do ciclo em curso, 0-100. */
+  currentCycleExecutionPct?: number | null;
+  /** Mediana da taxa de execucao dos ciclos ja fechados, 0-100. */
+  pastCyclesExecutionMedianPct?: number | null;
+  /** Quantos ciclos fechados sustentam a mediana acima. */
+  pastCyclesCount?: number;
+}
+
+export interface TodayDailyReading {
+  text: string;
+  /** Regua exibida ao lado da frase, quando houver comparacao. */
+  comparison: string | null;
+  depth: DailyReadingDepth;
+}
+
+const formatDecimal = (value: number): string => value.toFixed(1).replace('.', ',');
+
+const describeToday = (completed: number, planned: number, arenas: number, topArenaName: string | null): string => {
+  if (planned === 0) {
+    return 'Nenhuma acao registrada para hoje ainda. O dia continua aberto.';
+  }
+  if (completed === 0) {
+    return `Hoje tem ${planned} ${planned === 1 ? 'acao registrada' : 'acoes registradas'} e nenhuma conclusao ate agora. O dia ainda esta em aberto.`;
+  }
+  if (completed >= planned) {
+    return `Voce ja concluiu as ${planned} ${planned === 1 ? 'acao registrada' : 'acoes registradas'} de hoje.`;
+  }
+  if (arenas >= 3) {
+    return `${completed} de ${planned} concluidas, distribuidas por ${arenas} areas.`;
+  }
+  if (topArenaName && arenas === 1) {
+    return `${completed} de ${planned} concluidas, todas em ${topArenaName}.`;
+  }
+  return `${completed} de ${planned} acoes concluidas ate agora.`;
+};
+
+export const buildTodayDailyReading = (
+  input: TodayDailyReadingInput,
+  depth: DailyReadingDepth = 'livre',
+): TodayDailyReading => {
+  const completed = Math.max(0, Math.round(input.completedCount));
+  const planned = Math.max(0, Math.round(input.plannedCount));
+  const arenas = Math.max(0, Math.round(input.distinctArenaCount));
+  const topArenaName = input.topArenaName?.trim() || null;
+
+  const base = describeToday(completed, planned, arenas, topArenaName);
+
+  if (depth === 'livre') {
+    return { text: base, comparison: null, depth };
+  }
+
+  if (depth === 'platinum') {
+    const current = input.currentCycleExecutionPct;
+    const median = input.pastCyclesExecutionMedianPct;
+    const cycles = Math.max(0, Math.round(input.pastCyclesCount || 0));
+
+    if (typeof current === 'number' && typeof median === 'number' && cycles >= 2) {
+      const delta = Math.round(current - median);
+      const comparison = `Ciclo em ${Math.round(current)}% · sua mediana em ${cycles} ciclos e ${Math.round(median)}%`;
+
+      if (delta >= 5) {
+        return { text: `${base} Este ciclo esta rodando acima do seu padrao historico.`, comparison, depth };
+      }
+      if (delta <= -5) {
+        return { text: `${base} Este ciclo esta abaixo do seu padrao historico — vale olhar se a carga planejada mudou.`, comparison, depth };
+      }
+      return { text: `${base} Este ciclo esta no seu padrao historico.`, comparison, depth };
+    }
+
+    if (cycles < 2) {
+      return {
+        text: `${base} Ainda nao ha ciclos fechados suficientes para comparar com o seu historico.`,
+        comparison: null,
+        depth,
+      };
+    }
+  }
+
+  // premium, e platinum sem historico de ciclo suficiente
+  const average = typeof input.cycleActiveDayAverage === 'number' && input.cycleActiveDayAverage > 0
+    ? input.cycleActiveDayAverage
+    : null;
+
+  if (average === null) {
+    return {
+      text: `${base} Ainda nao ha dias ativos anteriores neste ciclo para servir de referencia.`,
+      comparison: null,
+      depth,
+    };
+  }
+
+  const comparison = `Hoje ${completed} · seu dia ativo medio e ${formatDecimal(average)}`;
+
+  if (completed >= average + 1) {
+    return { text: `${base} Esta acima do seu dia medio neste ciclo.`, comparison, depth };
+  }
+  if (completed > 0 && completed <= average - 1) {
+    return { text: `${base} Esta abaixo do seu dia medio neste ciclo, o que por si so nao diz muita coisa: um dia menor cabe no ciclo.`, comparison, depth };
+  }
+  if (completed === 0) {
+    return { text: `${base} Seu dia ativo medio neste ciclo e ${formatDecimal(average)}.`, comparison, depth };
+  }
+  return { text: `${base} Esta na media dos seus dias ativos neste ciclo.`, comparison, depth };
+};

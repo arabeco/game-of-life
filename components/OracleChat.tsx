@@ -1,17 +1,15 @@
 ﻿import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { XIcon, SendIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, CheckIcon, PlannerIcon, GameLogoIcon, MicIcon } from './Icons';
-import { ORACLE_MODES } from '../constants/oracle';
-import { Notification, OracleCategory, OracleMode, OraclePremiumHint, OracleResponseKind, OracleResponsePayload, OracleStructuredContext } from '../types';
+import { XIcon, SparklesIcon, ZapIcon, EyeIcon, CrownIcon, LightbulbIcon, GameLogoIcon } from './Icons';
+import { ORACLE_FREE_TONE, ORACLE_TONE_LABELS, type OracleSpeechTone } from '../constants/oracleSpeechLibrary';
+import { Notification, OracleCategory, OracleMode, OraclePremiumHint, OracleResponseKind, OracleStructuredContext } from '../types';
 import { Portal } from './Portal';
-import { supabase } from '../supabaseClient';
 import { buildActionPoolByDate } from '../utils/coreLoopUtils.js';
 import { isTaskInPool } from '../utils/taskDomain.js';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsForProfile } from '../constants/oracleNotificationPolicy';
-import { buildOracleConversationMemory } from '../utils/oracleConversationMemory';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
 import { buildOracleCycleCoachBrief } from '../utils/oracleCoach';
@@ -36,7 +34,6 @@ interface Message {
 }
 
 type ChatQuickAction =
-  | { id: string; label: string; kind: 'send_prompt'; prompt: string }
   | { id: string; label: string; kind: 'open_planner_create_action' }
   | { id: string; label: string; kind: 'open_sitrep' }
   | { id: string; label: string; kind: 'open_planner' }
@@ -44,71 +41,19 @@ type ChatQuickAction =
   | { id: string; label: string; kind: 'open_arenas' }
   | { id: string; label: string; kind: 'open_arena'; arenaId: string };
 
-const normalizeOracleText = (value: string) =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
 
-const detectRequestedInfoCardCategory = (rawInput: string): OracleCategory | null => {
-  const normalized = normalizeOracleText(rawInput);
-  const asksForContent = /\b(card|manda|mande|mostra|mostre|quero|traz|traga|puxa|puxe|conteudo)\b/.test(normalized);
-  if (!asksForContent) return null;
 
-  if (/\b(inspir|motivacional|frase)\b/.test(normalized)) return 'frases_inspiradoras';
-  if (/\b(filosof|estoic|reflex)\b/.test(normalized)) return 'reflexoes_filosoficas';
-  if (/\b(sabedoria|fragmento)\b/.test(normalized)) return 'fragmentos_sabedoria';
-  if (/\b(ritual|dica de vida|estilo de vida|lifestyle)\b/.test(normalized)) return 'rituais_lifestyle';
-  if (/\b(maestria|sussurro)\b/.test(normalized)) return 'sussurros_maestria';
-  return null;
-};
 
-const readResponseBody = async (response: Response): Promise<unknown> => {
-  try {
-    return await response.clone().json();
-  } catch {
-    try {
-      return await response.clone().text();
-    } catch {
-      return null;
-    }
-  }
-};
-
-const parseOracleFunctionError = async (error: unknown): Promise<{ status: number | null; message: string; details: unknown }> => {
-  const rawError = error as { message?: string; context?: Response };
-  const response = rawError?.context;
-
-  if (!response || typeof response.status !== 'number') {
-    return {
-      status: null,
-      message: rawError?.message || 'Oracle function failed.',
-      details: null,
-    };
-  }
-
-  const details = await readResponseBody(response);
-  let message = rawError?.message || `Oracle HTTP ${response.status}`;
-
-  if (details && typeof details === 'object' && 'error' in details) {
-    const errorMessage = (details as { error?: unknown }).error;
-    if (typeof errorMessage === 'string' && errorMessage.trim()) {
-      message = errorMessage;
-    }
-  }
-
-  return {
-    status: response.status,
-    message,
-    details,
-  };
-};
 
 const dispatchAppView = (detail: AppNavigatePayload) => {
   window.dispatchEvent(new CustomEvent<AppNavigatePayload>(APP_NAVIGATE_EVENT, { detail }));
 };
-const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>, color: string, bg: string, border: string }> = {
+// Mensagens salvas antes da troca ainda carregam modos que sairam
+// (tatico, estrategico, personalizado): caem no tom gratuito.
+const resolveTone = (mode: string | null | undefined): OracleSpeechTone =>
+    mode && mode in ORACLE_TONE_LABELS ? (mode as OracleSpeechTone) : ORACLE_FREE_TONE;
+
+const MODE_VISUALS: Record<OracleSpeechTone, { icon: React.FC<{ className?: string }>, color: string, bg: string, border: string }> = {
     neutro: { 
         icon: GameLogoIcon, 
         color: "text-[var(--skin-accent-color)]", 
@@ -132,24 +77,6 @@ const MODE_VISUALS: Record<OracleMode, { icon: React.FC<{ className?: string }>,
         color: "text-purple-300", 
         bg: "bg-purple-900/20", 
         border: "border-purple-500/30" 
-    },
-    tatico: { 
-        icon: CheckIcon, 
-        color: "text-green-400", 
-        bg: "bg-green-900/20", 
-        border: "border-green-500/30" 
-    },
-    estrategico: { 
-        icon: PlannerIcon, 
-        color: "text-indigo-400", 
-        bg: "bg-indigo-900/20", 
-        border: "border-indigo-500/30" 
-    },
-    personalizado: { 
-        icon: CrownIcon, 
-        color: "text-pink-400", 
-        bg: "bg-pink-900/20", 
-        border: "border-pink-500/30" 
     }
 };
 
@@ -246,32 +173,16 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
   };
 };
 
-const buildVoicePreview = (transcript: string) => {
-  const normalized = normalizeOracleText(transcript);
-  const soundsOperational = /\b(criar|cria|editar|edita|ajustar|ajusta|agendar|agenda|programar|organizar|organiza|completei|concluir|conclui|marcar|marca)\b/.test(normalized);
-  if (soundsOperational) {
-    return `Entendi isso: "${transcript}". Envie e eu ajudo voce a decidir o melhor caminho no app.`;
-  }
-  return `Entendi isso: "${transcript}". Isso parece conversa. Se estiver certo, envie e eu sigo daqui.`;
-};
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
   const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeechAvailable, setIsSpeechAvailable] = useState(false);
   const isInitialLoadRef = useRef(true);
-  const firstConversationNotice = 'Aviso: o Oráculo usa IA externa. Evite compartilhar dados sensíveis nas conversas.';
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const speechRef = useRef<any>(null);
-  const sendMessageRef = useRef<(overrideInput?: string) => void>(() => {});
 
-  const [currentMode, setCurrentMode] = useState<OracleMode>(oraclePreferences?.activeMode || 'neutro');
+  const [currentMode, setCurrentMode] = useState<OracleSpeechTone>(oraclePreferences?.speechTone || ORACLE_FREE_TONE);
   const isPremiumUser = useMemo(() => hasPremiumAccess(userProfile), [userProfile]);
   const oracleFeedStatus = useMemo(
     () => getOracleFeedQuotaStatus(
@@ -368,10 +279,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Update mode when preferences change
   useEffect(() => {
-    if (oraclePreferences?.activeMode) {
-      setCurrentMode(oraclePreferences.activeMode);
+    if (oraclePreferences?.speechTone) {
+      setCurrentMode(oraclePreferences.speechTone);
     }
-  }, [oraclePreferences?.activeMode]);
+  }, [oraclePreferences?.speechTone]);
 
   // Load recent Oracle pulses without overriding the chosen preference mode.
   useEffect(() => {
@@ -472,64 +383,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages]);
 
-  // Focus input on mount
-  useEffect(() => {
-    // Only focus if NOT embedded to avoid keyboard popping up on mobile feed open
-    if (!isEmbedded) {
-        inputRef.current?.focus();
-    }
-  }, [isEmbedded]);
 
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setIsSpeechAvailable(false);
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => {
-      setIsListening(false);
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Nao consegui captar audio agora. Tente novamente.', timestamp: new Date(), mode: currentMode }]);
-    };
-    recognition.onresult = (event: any) => {
-      const transcript = event?.results?.[0]?.[0]?.transcript?.trim();
-      if (!transcript) return;
-      setInput(transcript);
-      setMessages((prev) => [...prev, {
-        role: 'assistant',
-        content: buildVoicePreview(transcript),
-        timestamp: new Date(),
-        mode: currentMode,
-      }]);
-    };
-
-    speechRef.current = recognition;
-    setIsSpeechAvailable(true);
-
-    return () => {
-      try {
-        recognition.abort?.();
-      } catch {
-        // noop
-      }
-    };
-  }, [currentMode]);
-
-  // Build System Prompt based on Mode
-  const systemPrompt = useMemo(() => {
-    const config = ORACLE_MODES[currentMode];
-    return config.systemPromptTemplate(operationalContext);
-  }, [currentMode, operationalContext]);
-
+  
   const buildRecoveryFastPath = useCallback((rawInput: string): string | null => {
     const normalized = rawInput
       .normalize('NFD')
@@ -619,150 +476,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     return null;
   };
 
-  const handleSendMessage = async (overrideInput?: string) => {
-    const nextInput = (overrideInput ?? input).trim();
-    if (!nextInput || isLoading) return;
-
-    const userMessage: Message = { role: 'user', content: nextInput, timestamp: new Date() };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-
-    const requestedInfoCategory = detectRequestedInfoCardCategory(nextInput);
-    if (requestedInfoCategory) {
-      try {
-        const result = await requestOracleContentCard(requestedInfoCategory);
-        if (result?.status === 'generated' && result.message) {
-          setMessages((previous) => [
-            ...previous,
-            {
-              role: 'assistant',
-              content: result.message!.content,
-              timestamp: new Date(result.message!.createdAt),
-              mode: result.message!.mode,
-              feedId: result.message!.id,
-              feedCategory: result.message!.category,
-              feedPresentation: resolveFeedPresentation(result.message!.category, result.message!.contextSnapshot),
-              feedSummary: result.message!.contextSnapshot?.categoryLabel || 'Card de conteudo',
-              feedTrigger: 'manual',
-            },
-          ]);
-        } else {
-          const statusText = result?.status === 'premium_required'
-            ? 'Esses cards fazem parte do Premium.'
-            : result?.status === 'daily_limit'
-              ? 'Esse tema ja foi entregue hoje, ou os cinco temas do dia ja foram usados.'
-              : 'Nao consegui entregar esse card agora.';
-          setMessages((previous) => [...previous, {
-            role: 'assistant',
-            content: statusText,
-            timestamp: new Date(),
-            mode: currentMode,
-          }]);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    if (nextInput.startsWith('?') || nextInput.startsWith('!')) {
-        const commandResponse = await handleCommand(nextInput);
-        if (commandResponse) {
-             setTimeout(() => {
-                 setMessages(prev => [...prev, { role: 'assistant', content: commandResponse, timestamp: new Date() }]);
-                 setIsLoading(false);
-             }, 600);
-             return;
-        }
-    }
-
-    const recoveryFastPath = buildRecoveryFastPath(nextInput);
-    if (recoveryFastPath) {
-      window.setTimeout(() => {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: recoveryFastPath,
-          timestamp: new Date(),
-          mode: currentMode,
-        }]);
-        setIsLoading(false);
-      }, 850);
-      return;
-    }
-
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (sessionError || !accessToken) {
-        throw new Error('Sessao autenticada ausente para consultar o Oraculo.');
-      }
-
-      const memory = buildOracleConversationMemory(
-        [...messages, userMessage].filter((message) => !message.feedId && message.content.trim().length > 0).map((message) => ({
-          role: message.role,
-          content: message.content,
-          timestamp: message.timestamp,
-        })),
-        {},
-      );
-
-      const { data, error } = await supabase.functions.invoke('oracle', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: {
-          text: userMessage.content,
-          channel: 'chat',
-          isPremium: isPremiumUser,
-          mode: currentMode,
-          memory,
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const payload = data as OracleResponsePayload | null;
-      const text = String(payload?.message || '').trim();
-      if (!payload || !text) {
-        throw new Error('Oracle function returned empty content.');
-      }
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: text,
-        timestamp: new Date(),
-        mode: currentMode,
-        responseKind: payload.kind,
-        structuredContext: payload.structuredContext,
-        premiumHint: payload.premiumHint || null,
-        originalInput: userMessage.content,
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      const parsedError = await parseOracleFunctionError(error);
-      console.error('Oracle Error:', parsedError, error);
-
-      let fallbackMessage = 'O Oraculo esta em silencio momentaneo. Tente novamente.';
-      if (parsedError.status === 401) fallbackMessage = 'Sessao expirada no Oraculo. Entre novamente na conta e tente de novo.';
-      if (parsedError.status === 403) fallbackMessage = 'Oraculo bloqueado para esta origem. Verifique o dominio liberado no Supabase.';
-      if (parsedError.status === 500) fallbackMessage = 'Oraculo indisponivel: configuracao ausente no servidor.';
-      if (parsedError.status === 502) fallbackMessage = 'Oraculo indisponivel no provedor de IA. Tente novamente em instantes.';
-
-      setMessages(prev => [...prev, { role: 'assistant', content: fallbackMessage, timestamp: new Date() }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const runQuickAction = useCallback((action: ChatQuickAction) => {
     switch (action.kind) {
-      case 'send_prompt':
-        handleSendMessage(action.prompt);
-        return;
       case 'open_planner_create_action':
         openPlannerCreateAction();
         onClose();
@@ -823,7 +539,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   };
 
   const handleGenerateCard = async () => {
-    if (isGeneratingCard || isLoading) return;
+    if (isGeneratingCard) return;
 
     setIsGeneratingCard(true);
     try {
@@ -868,7 +584,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
   };
 
-  const manualGenerateDisabled = isGeneratingCard || isLoading;
+  const manualGenerateDisabled = isGeneratingCard;
   const selectedThemeCount = oraclePreferences?.enabledCategories?.length || 0;
   const manualQuotaLabel = `${oracleFeedStatus.combinedSentToday}/${oracleFeedStatus.dailyLimit}`;
   const manualGenerateLabel = !isPremiumUser
@@ -880,37 +596,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const oracleInputHint = selectedThemeCount > 0
     ? `Premium: um card por tema ao dia, ate 5 no total. Pedir agora consome a vaga de um dos seus ${selectedThemeLabel}.`
     : 'Premium: escolha temas para receber ate 5 cards por dia.';
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  sendMessageRef.current = (overrideInput?: string) => handleSendMessage(overrideInput);
-
-  const handleVoiceToggle = () => {
-    if (!isSpeechAvailable) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Comando de voz indisponivel neste navegador/app.', timestamp: new Date(), mode: currentMode }]);
-      return;
-    }
-
-    if (isListening) {
-      try {
-        speechRef.current?.stop?.();
-      } catch {
-        // noop
-      }
-      return;
-    }
-
-    try {
-      speechRef.current?.start?.();
-    } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Nao consegui iniciar o microfone agora.', timestamp: new Date(), mode: currentMode }]);
-    }
-  };
 
   const HeaderIcon = MODE_VISUALS[currentMode].icon || GameLogoIcon;
   
@@ -930,7 +615,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             <div>
               <h3 className="text-sm font-bold text-[var(--skin-accent-color)] tracking-wider">ORÁCULO</h3>
               <div className="flex flex-col">
-                  <span className={`text-[10px] uppercase tracking-widest text-gray-400`}>{ORACLE_MODES[currentMode].name}</span>
+                  <span className={`text-[10px] uppercase tracking-widest text-gray-400`}>{ORACLE_TONE_LABELS[currentMode].name}</span>
                   <div className="flex items-center gap-1.5">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -956,7 +641,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                  <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)] animate-pulse"></div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                        Modo: <span className={`${MODE_VISUALS[currentMode].color}`}>{ORACLE_MODES[currentMode].name}</span>
+                        Tom: <span className={`${MODE_VISUALS[currentMode].color}`}>{ORACLE_TONE_LABELS[currentMode].name}</span>
                     </span>
                  </div>
                  {isEmbedded && (
@@ -972,19 +657,16 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           {messages.length === 0 && (
             <div className="flex min-h-full flex-col items-center justify-center p-6 text-center">
-              <div className="mb-5 max-w-[300px] rounded-2xl rounded-tl-sm border border-amber-400/20 bg-amber-500/5 px-4 py-3 text-left text-[11px] italic leading-relaxed text-amber-100/75 shadow-inner">
-                {firstConversationNotice}
-              </div>
               <div className="opacity-50">
               <HeaderIcon className={`w-16 h-16 mb-4 ${MODE_VISUALS[currentMode].color} drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]`} />
               <p className="text-sm text-gray-400 font-bold">O Oráculo aguarda sua consulta, Soberano.</p>
-              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Modo atual: {ORACLE_MODES[currentMode].description}</p>
+              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Tom atual: {ORACLE_TONE_LABELS[currentMode].hint}</p>
               </div>
             </div>
           )}
           
           {messages.map((msg, idx) => {
-             const msgMode = msg.role === 'assistant' ? (msg.mode || 'neutro') : 'neutro';
+             const msgMode = msg.role === 'assistant' ? resolveTone(msg.mode) : ORACLE_FREE_TONE;
              const visuals = MODE_VISUALS[msgMode];
              const ModeIcon = visuals.icon;
              const isFeedCard = msg.role === 'assistant' && Boolean(msg.feedId);
@@ -1004,7 +686,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                         <ModeIcon className={`w-2.5 h-2.5 ${visuals.color}`} />
                     </div>
                     <span className={`text-[10px] uppercase tracking-widest ${visuals.color}`}>
-                        {ORACLE_MODES[msgMode].name}
+                        {ORACLE_TONE_LABELS[msgMode].name}
                     </span>
                  </div>
               )}
@@ -1071,21 +753,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
               )}
             </div>
           )})}
-          
-          {isLoading && (
-            <div className="flex justify-start">
-                <div className="bg-black/40 text-gray-300 rounded-tl-sm border border-white/5 shadow-inner p-3 rounded-2xl flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
-                  </div>
-                  <span className="text-xs text-gray-500 animate-pulse ml-1">
-                    {["Consultando os astros...", "Ouvindo os sussurros...", "Decifrando o destino...", "Conectando ao éter..."][Math.floor(Math.random() * 4)]}
-                  </span>
-                </div>
-            </div>
-          )}
+
           <div ref={messagesEndRef} />
         </div>
 

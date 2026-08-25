@@ -16,13 +16,6 @@ import {
 } from "../_shared/oracle-host-voice.ts";
 import { buildContextualOracleLine } from "../_shared/oracle-lines.ts";
 
-const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
-// OpenRouter dropped the gemini-2.0-flash ids from its catalogue. Both the primary and
-// the fallback pointed at them, so every generation failed and the function answered
-// with its canned "Nao consegui gerar uma fala" text — the Oracle looked broken rather
-// than unavailable. Verified against openrouter.ai/api/v1/models on 2026-08-17.
-const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") || "google/gemini-3.7-flash";
-const OPENROUTER_FALLBACK_MODEL = Deno.env.get("OPENROUTER_FALLBACK_MODEL") || "google/gemini-3.5-flash-lite";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -50,8 +43,6 @@ type OracleCategory =
   | "analise_padroes";
 type OraclePresentation = "ambient_pulse" | "info_card";
 type OracleTriggerType = "app_open" | "cron" | "manual";
-type OracleAutomationProfile = "quieto" | "equilibrado" | "proativo";
-type OracleSurface = "push" | "chat" | "card";
 type OracleOperationalState = OracleHostOperationalState;
 
 type OracleContext = {
@@ -144,18 +135,6 @@ type OracleMessageRuntime = {
   contextSnapshot: JsonRecord;
   read: boolean;
   createdAt: string;
-};
-
-type OracleModeConfig = {
-  name: string;
-  automationProfile: OracleAutomationProfile;
-  automaticCategories: {
-    low: OracleCategory;
-    medium: OracleCategory;
-    high: OracleCategory;
-    critical: OracleCategory;
-  };
-  promptBlock: string;
 };
 
 type ArenaRow = {
@@ -251,22 +230,6 @@ const SAO_PAULO_PARTS_FORMATTER = new Intl.DateTimeFormat("en-CA", {
 
 const DAY_MINUTES = 24 * 60;
 const DAY_MS = DAY_MINUTES * 60 * 1000;
-const ORACLE_CHAT_TIMEOUT_MS = 12000;
-const ORACLE_RATE_LIMIT_WINDOW_MS = 60_000;
-const ORACLE_RATE_LIMIT_MAX_REQUESTS = 24;
-const ORACLE_CACHE_WINDOW_MS = 45_000;
-const ORACLE_DEBOUNCE_WINDOW_MS = 2_500;
-
-const oracleRateLimitState = new Map<string, number[]>();
-const oracleDebounceState = new Map<string, { fingerprint: string; timestamp: number }>();
-const oracleResponseCache = new Map<string, { timestamp: number; payload: JsonRecord }>();
-
-const ORACLE_INTEL_CATEGORIES = new Set<OracleCategory>([
-  "dicas_produtividade",
-  "provocacoes",
-  "analise_padroes",
-]);
-
 const ORACLE_MANUAL_LIBRARY_CATEGORIES: OracleCategory[] = [
   "frases_inspiradoras",
   "reflexoes_filosoficas",
@@ -299,53 +262,6 @@ const DEFAULT_ORACLE_PREFERENCES = {
   quietHoursEnd: "07:00",
 };
 
-const ORACLE_MODES: Record<OracleMode, OracleModeConfig> = {
-  neutro: {
-    name: "Neutro",
-    automationProfile: "equilibrado",
-    automaticCategories: { low: "dicas_produtividade", medium: "analise_padroes", high: "dicas_produtividade", critical: "provocacoes" },
-    promptBlock: ORACLE_MODE_PROMPT_BLOCKS.neutro,
-  },
-  calmo: {
-    name: "Calmo",
-    automationProfile: "quieto",
-    automaticCategories: { low: "rituais_lifestyle", medium: "analise_padroes", high: "dicas_produtividade", critical: "dicas_produtividade" },
-    promptBlock: ORACLE_MODE_PROMPT_BLOCKS.calmo,
-  },
-  reflexivo: {
-    name: "Reflexivo",
-    automationProfile: "quieto",
-    automaticCategories: { low: "reflexoes_filosoficas", medium: "analise_padroes", high: "analise_padroes", critical: "dicas_produtividade" },
-    promptBlock: ORACLE_MODE_PROMPT_BLOCKS.reflexivo,
-  },
-  tatico: {
-    name: "Tatico",
-    automationProfile: "proativo",
-    automaticCategories: { low: "dicas_produtividade", medium: "dicas_produtividade", high: "provocacoes", critical: "provocacoes" },
-    promptBlock: ORACLE_MODE_PROMPT_BLOCKS.tatico,
-  },
-  estrategico: {
-    name: "Estrategico",
-    automationProfile: "equilibrado",
-    automaticCategories: { low: "analise_padroes", medium: "analise_padroes", high: "analise_padroes", critical: "provocacoes" },
-    promptBlock: ORACLE_MODE_PROMPT_BLOCKS.estrategico,
-  },
-  coach: {
-    name: "Coach",
-    automationProfile: "proativo",
-    automaticCategories: { low: "dicas_produtividade", medium: "dicas_produtividade", high: "provocacoes", critical: "provocacoes" },
-    promptBlock: ORACLE_MODE_PROMPT_BLOCKS.coach,
-  },
-  personalizado: {
-    name: "Personalizado",
-    automationProfile: "equilibrado",
-    automaticCategories: { low: "dicas_produtividade", medium: "analise_padroes", high: "dicas_produtividade", critical: "provocacoes" },
-    promptBlock: ORACLE_MODE_PROMPT_BLOCKS.personalizado,
-  },
-};
-
-const BASE_UNIVERSAL = ORACLE_BASE_UNIVERSAL;
-
 const isLocalDevOrigin = (origin: string | null): boolean => !!origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
 const isVercelPreviewOrigin = (origin: string | null): boolean => !!origin && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
 const isGlyphOrigin = (origin: string | null): boolean => !!origin && /^https:\/\/([a-z0-9-]+\.)?glyph\.life$/i.test(origin);
@@ -375,39 +291,6 @@ const jsonResponse = (origin: string | null, status: number, payload: JsonRecord
     },
   },
 );
-
-const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    const timeoutId = setTimeout(() => {
-      clearTimeout(timeoutId);
-      reject(new Error(`${label}: timeout after ${timeoutMs}ms`));
-    }, timeoutMs);
-  });
-
-  return Promise.race([promise, timeoutPromise]);
-};
-
-const pruneTimestampBuckets = (bucket: number[], now: number, windowMs: number): number[] =>
-  bucket.filter((timestamp) => now - timestamp <= windowMs);
-
-const checkOracleRateLimit = (userId: string, now: number) => {
-  const current = pruneTimestampBuckets(oracleRateLimitState.get(userId) || [], now, ORACLE_RATE_LIMIT_WINDOW_MS);
-  if (current.length >= ORACLE_RATE_LIMIT_MAX_REQUESTS) {
-    oracleRateLimitState.set(userId, current);
-    return false;
-  }
-
-  current.push(now);
-  oracleRateLimitState.set(userId, current);
-  return true;
-};
-
-const normalizeCacheKey = (parts: Array<string | null | undefined>) =>
-  parts
-    .map((part) => typeof part === "string" ? part.trim() : "")
-    .filter(Boolean)
-    .join("::")
-    .toLowerCase();
 
 const isRecord = (value: unknown): value is JsonRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -558,28 +441,6 @@ const getOperationalDateString = (date = new Date()): string => {
 const deriveOracleOperationalState = (contextData: OracleContext, now = new Date()): OracleOperationalState => {
   return deriveOracleHostOperationalState(contextData, {
     operationalDate: getOperationalDateString(now),
-  });
-};
-
-const buildOracleVoiceDirective = ({
-  contextData,
-  surface,
-  mode,
-  now,
-  recentLines = [],
-}: {
-  contextData: OracleContext;
-  surface: OracleSurface;
-  mode: OracleMode;
-  now?: Date;
-  recentLines?: string[];
-}): string => {
-  return buildOracleHostVoiceDirective({
-    context: contextData,
-    surface,
-    mode,
-    recentLines,
-    operationalDate: getOperationalDateString(now || new Date()),
   });
 };
 
@@ -1081,248 +942,9 @@ const normalizeOracleMessages = (rows: OracleMessageRow[] | null | undefined): O
     .filter((message): message is OracleMessageRuntime => !!message)
 );
 
-const getAuthenticatedUser = async (accessToken: string) => {
-  const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data, error } = await supabaseAuth.auth.getUser(accessToken);
-  if (error || !data?.user) return null;
-  return data.user;
-};
-
 const getSupabaseAdmin = () => createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
-
-const loadOracleRuntimeState = async (
-  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
-  userId: string,
-  now: Date,
-) => {
-  const [
-    preferencesResult,
-    profileResult,
-    cycleResult,
-    arenasResult,
-    actionsResult,
-    tasksResult,
-    dailyCommitmentResult,
-    assetLevelsResult,
-    oracleMessagesResult,
-  ] = await Promise.all([
-    supabaseAdmin
-      .from("oracle_preferences")
-      .select("user_id, ia_enabled, notifications_enabled, daily_focus_card_enabled, presence_level, enabled_categories, active_mode, custom_mode_instructions, quiet_hours_start, quiet_hours_end")
-      .eq("user_id", userId)
-      .maybeSingle<OraclePreferencesRow>(),
-    supabaseAdmin
-      .from("user_profiles")
-      .select("id, nickname, level, chests, app_mode, daily_proof_streak, is_premium, premium_expires_at, subscription_tier")
-      .eq("id", userId)
-      .maybeSingle<UserProfileRow & { is_premium?: boolean | null; premium_expires_at?: string | null; subscription_tier?: string | null }>(),
-    supabaseAdmin
-      .from("cycles")
-      .select("id, name, start_date, end_date, arena_ids, report_data")
-      .eq("user_id", userId)
-      .is("report_data", null)
-      .order("start_date", { ascending: false })
-      .limit(1)
-      .maybeSingle<CycleRow & { report_data?: unknown }>(),
-    supabaseAdmin
-      .from("arenas")
-      .select("id, asset_id, name, is_archived, action_ids")
-      .eq("user_id", userId)
-      .returns<ArenaRow[]>(),
-    supabaseAdmin
-      .from("actions")
-      .select("id, arena_id, name, repetitions, action_type")
-      .eq("user_id", userId)
-      .returns<ActionRow[]>(),
-    supabaseAdmin
-      .from("scheduled_tasks")
-      .select("id, action_id, date, start_time, completed")
-      .eq("user_id", userId)
-      .returns<TaskRow[]>(),
-    supabaseAdmin
-      .from("daily_commitments")
-      .select("date, stage")
-      .eq("user_id", userId)
-      .eq("date", getOperationalDateString(now))
-      .maybeSingle<DailyCommitmentRow>(),
-    supabaseAdmin
-      .from("asset_levels")
-      .select("asset_id, level")
-      .eq("user_id", userId)
-      .returns<AssetLevelRow[]>(),
-    supabaseAdmin
-      .from("oracle_messages")
-      .select("id, category, content, mode, delivery_type, context_snapshot, read, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(50)
-      .returns<OracleMessageRow[]>(),
-  ]);
-
-  if (preferencesResult.error) {
-    throw new Error(preferencesResult.error.message);
-  }
-
-  const preferences = resolveRuntimeOraclePreferences(userId, preferencesResult.data ?? null);
-  const profile = profileResult.data ?? null;
-  const appMode: AppMode = asTrimmedString(profile?.app_mode) === "BASIC" ? "BASIC" : "GAME";
-  const contextData = buildOracleOperationalContext({
-    now,
-    profile,
-    preferences,
-    arenas: arenasResult.data ?? [],
-    actions: actionsResult.data ?? [],
-    tasks: tasksResult.data ?? [],
-    activeCycle: cycleResult.data ?? null,
-    dailyCommitment: dailyCommitmentResult.data ?? null,
-    assetLevels: assetLevelsResult.data ?? [],
-  });
-
-  const isPremium = asBoolean((profile as JsonRecord | null)?.is_premium, false)
-    || Boolean(asTrimmedString((profile as JsonRecord | null)?.premium_expires_at))
-    || ["premium", "platinum"].includes(asTrimmedString((profile as JsonRecord | null)?.subscription_tier));
-
-  return {
-    preferences,
-    profile,
-    appMode,
-    contextData,
-    oracleMessages: normalizeOracleMessages(oracleMessagesResult.data),
-    isPremium,
-  };
-};
-
-const callOpenRouter = async ({
-  systemPrompt,
-  userPrompt,
-  models,
-  referer,
-}: {
-  systemPrompt: string;
-  userPrompt: string;
-  models: string[];
-  referer: string;
-}): Promise<{ text: string; model: string; fallbackUsed: boolean }> => {
-  const uniqueModels = Array.from(new Set(models.filter(Boolean)));
-  let lastError = "unknown_error";
-
-  for (let index = 0; index < uniqueModels.length; index += 1) {
-    const model = uniqueModels[index];
-    try {
-      const upstream = await withTimeout(fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": referer,
-          "X-Title": "GLYPH",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.7,
-        }),
-      }), ORACLE_CHAT_TIMEOUT_MS, "openrouter");
-
-      const upstreamData = await upstream.json();
-      if (!upstream.ok) {
-        throw new Error(`OpenRouter request failed: ${JSON.stringify(upstreamData)}`);
-      }
-
-      const content = upstreamData?.choices?.[0]?.message?.content;
-      if (typeof content === "string" && content.trim()) {
-        return { text: content.trim(), model, fallbackUsed: index > 0 };
-      }
-
-      if (Array.isArray(content)) {
-        const flattened = content
-          .map((entry) => {
-            if (typeof entry === "string") return entry;
-            if (isRecord(entry)) return asTrimmedString(entry.text);
-            return "";
-          })
-          .filter(Boolean)
-          .join("\n")
-          .trim();
-
-        if (flattened) {
-          return { text: flattened, model, fallbackUsed: index > 0 };
-        }
-      }
-
-      throw new Error(`Invalid OpenRouter response format: ${JSON.stringify(upstreamData)}`);
-    } catch (error) {
-      lastError = String(error);
-    }
-  }
-
-  throw new Error(lastError);
-};
-
-const buildSystemPrompt = (
-  mode: OracleMode,
-  contextData: OracleContext,
-  options: { surface?: OracleSurface; recentLines?: string[]; now?: Date } = {},
-): string => {
-  const modeConfig = ORACLE_MODES[mode];
-  const customInstructions = mode === "personalizado" && contextData.customModeInstructions
-    ? `\nINSTRUCOES PERSONALIZADAS\n${contextData.customModeInstructions}\n`
-    : "";
-  const surface = options.surface || "chat";
-
-  return [
-    BASE_UNIVERSAL,
-    "",
-    modeConfig.promptBlock,
-    customInstructions,
-    "",
-    buildOracleVoiceDirective({
-      contextData,
-      surface,
-      mode,
-      now: options.now,
-      recentLines: options.recentLines,
-    }),
-    "",
-    JSON.stringify(contextData, null, 2),
-  ].join("\n");
-};
-
-const buildAutomaticContentCardPrompt = ({
-  category,
-  triggerType,
-}: {
-  category: OracleCategory;
-  triggerType: OracleTriggerType;
-}): string => [
-    "Gere um card curto de conteudo premium para o usuario.",
-    `Categoria solicitada: ${category}`,
-    `Momento de disparo: ${triggerType}`,
-    "Formato obrigatorio:",
-    "TITULO: ate 4 palavras",
-    "CARD: 2 a 4 linhas curtas",
-    "FECHO: 1 linha final breve",
-    "Regras:",
-    "- sem saudacao, placar, cobranca ou relatorio do ciclo",
-    "- entregue somente o tema assinado; nao transforme o card em fala operacional",
-    "- se a categoria for rituais_lifestyle, traga uma dica pratica e simples",
-    "- nas outras categorias, produza uma ideia memoravel, util e limpa",
-    "- nao repita frases recentes",
-  ].join("\n");
-
-const isCycleClosingSoon = (activeCycle: CycleRow | null, contextData: OracleContext, now: Date): boolean => {
-  if (!activeCycle || contextData.pendingActionsToday <= 0) return false;
-  const operationalDate = getOperationalDateString(now);
-  const daysToEnd = daysBetweenInclusive(operationalDate, activeCycle.end_date) - 1;
-  return daysToEnd >= 0 && daysToEnd <= 1;
-};
 
 const createAutomaticOracleMessage = async (
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
@@ -1512,304 +1134,8 @@ const createAutomaticOracleMessage = async (
   return { status: "generated", messageId };
 };
 
-const buildOracleChatSystemPrompt = ({
-  mode,
-  intent,
-  isPremium,
-}: {
-  mode: OracleMode;
-  intent: string;
-  isPremium: boolean;
-}) => [
-  BASE_UNIVERSAL,
-  "",
-  ORACLE_MODES[mode]?.promptBlock || ORACLE_MODES.neutro.promptBlock,
-  "",
-  "MODO CONVERSA UNIVERSAL + ASSESSORIA",
-  "- Responda com naturalidade, calor e valor real. Fale como uma presenca atenta, nao como template.",
-  "- Varie ritmo e abertura. Nao comece sempre do mesmo jeito.",
-  "- Fale sobre o app quando a pergunta for sobre o app.",
-  "- Fale sobre qualquer assunto quando o usuario quiser conversa geral.",
-  "- Nao force o GLYPH em assuntos gerais puros.",
-  "- Se o usuario pedir como funciona, explique curto e use exemplos reais do app.",
-  "- Seja coach e assessor: observe o contexto, faca uma pergunta util e recomende uma decisao pequena.",
-  "- Pode sugerir treinar hoje, retomar uma acao, reduzir repeticoes, editar ou remover algo que perdeu sentido.",
-  "- Quando a operacao depender de tela ou botao, indique o caminho curto no app.",
-  "- Nao crie, edite, agende, complete ou delete ciclo, arena, acao ou tarefa pelo chat.",
-  "- Nao ofereca rascunho nem modo acao. Os controles normais do app devem ser o caminho mais facil.",
-  isPremium
-    ? "- Usuario premium: voce pode aprofundar mais quando fizer sentido, mantendo clareza."
-    : "- Usuario free: entregue valor curto e forte. Se ele pedir profundidade repetida, aponte premium com sutileza.",
-  `Intento reconhecido: ${intent}`,
-].join("\n");
-
-const buildOracleChatUserPrompt = ({
-  text,
-  structuredContext,
-  memory,
-  appContext,
-  mode,
-}: {
-  text: string;
-  structuredContext: ReturnType<typeof routeOracleIntent>;
-  memory: OracleConversationMemory | null;
-  appContext: OracleContext | null;
-  mode: OracleMode;
-}) => {
-  const parts = [
-    `MENSAGEM DO USUARIO: ${text}`,
-    `INTENT: ${structuredContext.recognizedIntent}`,
-    `TOPICOS: ${(structuredContext.topics || []).join(", ") || "nenhum"}`,
-    `OFERECER ACAO: ${structuredContext.shouldOfferAction ? "sim" : "nao"}`,
-    `PRECISA CLARIFICAR: ${structuredContext.needsClarification ? "sim" : "nao"}`,
-  ];
-
-  if (memory?.summary) {
-    parts.push(`MEMORIA CURTA: ${memory.summary}`);
-  }
-
-  if (appContext) {
-    parts.push(`CONTEXTO DO APP: ${JSON.stringify(appContext)}`);
-    parts.push(buildOracleVoiceDirective({
-      contextData: appContext,
-      surface: "chat",
-      mode,
-      recentLines: memory?.summary ? [memory.summary] : [],
-    }));
-  }
-
-  parts.push([
-    "FORMATO DE RESPOSTA:",
-    "- frases curtas por padrao",
-    "- quando util, use blocos leves como 'o que entendi' e 'o que eu sugiro'",
-    "- se o usuario estiver aprendendo, explique o minimo necessario e de um exemplo",
-    "- se o usuario quiser resolver, recomende uma decisao e mostre o caminho simples pelo botao correspondente no app",
-    "- termine com no maximo uma pergunta util; nunca ofereca criar ou aplicar a mudanca pelo Oraculo",
-    "- nao use JSON",
-  ].join("\n"));
-
-  return parts.join("\n\n");
-};
-
-const buildOracleFallbackResponse = ({
-  text,
-  structuredContext,
-  appContext,
-  elapsedMs,
-}: {
-  text: string;
-  structuredContext: ReturnType<typeof routeOracleIntent>;
-  appContext: OracleContext | null;
-  elapsedMs: number;
-}) => {
-  const responseKind: OracleResponseKind = structuredContext.appContextUsed ? "app_answer" : "chat";
-  const message = structuredContext.appContextUsed && appContext
-    ? `Agora eu não consegui aprofundar pela IA, mas olhando seu estado atual no app, o foco mais claro é ${appContext.nextMove || "organizar o próximo passo"}.`
-    : "Agora eu não consegui aprofundar pela IA, mas posso continuar com uma leitura curta do que voce quer decidir.";
-
-  return {
-    kind: responseKind,
-    message,
-    structuredContext: {
-      ...structuredContext,
-      appContextUsed: Boolean(appContext),
-    },
-    actionDraft: null,
-    premiumHint: null,
-    telemetry: {
-      routeIntent: structuredContext.recognizedIntent,
-      responseKind,
-      latencyMs: elapsedMs,
-      cacheHit: false,
-      fallbackUsed: true,
-      model: null,
-      confidence: structuredContext.confidence,
-      channel: "chat",
-    },
-  };
-};
-
-const handleClientOracleRequest = async (req: Request, origin: string | null) => {
-  if (!OPENROUTER_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return jsonResponse(origin, 500, { error: "Function misconfigured: missing secrets." });
-  }
-
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return jsonResponse(origin, 401, { error: "Missing authorization header." });
-
-  const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!accessToken) return jsonResponse(origin, 401, { error: "Missing bearer token." });
-
-  const user = await getAuthenticatedUser(accessToken);
-  if (!user) return jsonResponse(origin, 401, { error: "Unauthorized request." });
-
-  try {
-    const startedAt = Date.now();
-    const body = await req.json();
-    const systemPrompt = asTrimmedString(body?.systemPrompt);
-    const userPrompt = asTrimmedString(body?.userPrompt);
-    const model = asTrimmedString(body?.model, OPENROUTER_MODEL) || OPENROUTER_MODEL;
-
-    if (!checkOracleRateLimit(user.id, startedAt)) {
-      return jsonResponse(origin, 429, { error: "Oracle rate limit reached." });
-    }
-
-    if (!systemPrompt || !userPrompt) {
-      const text = asTrimmedString(body?.text);
-      if (!text) {
-        return jsonResponse(origin, 400, { error: "systemPrompt and userPrompt are required." });
-      }
-
-      const channel = asTrimmedString(body?.channel, "chat") || "chat";
-      const suppliedMemory = isRecord(body?.memory) ? (body.memory as OracleConversationMemory) : null;
-      const cacheKey = normalizeCacheKey([
-        user.id,
-        channel,
-        text,
-        suppliedMemory?.summary || "",
-      ]);
-      const cached = oracleResponseCache.get(cacheKey);
-      if (cached && startedAt - cached.timestamp <= ORACLE_CACHE_WINDOW_MS) {
-        return jsonResponse(origin, 200, {
-          ...cached.payload,
-          telemetry: {
-            ...(isRecord(cached.payload.telemetry) ? cached.payload.telemetry : {}),
-            cacheHit: true,
-            latencyMs: Date.now() - startedAt,
-          },
-        });
-      }
-
-      const previousDebounce = oracleDebounceState.get(user.id);
-      const debounceFingerprint = normalizeCacheKey([channel, text]);
-      if (previousDebounce && previousDebounce.fingerprint === debounceFingerprint && startedAt - previousDebounce.timestamp <= ORACLE_DEBOUNCE_WINDOW_MS) {
-        const fallback = buildOracleFallbackResponse({
-          text,
-          structuredContext: routeOracleIntent(text, suppliedMemory),
-          appContext: null,
-          elapsedMs: Date.now() - startedAt,
-        });
-        return jsonResponse(origin, 200, {
-          ...fallback,
-          telemetry: { ...fallback.telemetry, cacheHit: false, fallbackUsed: true },
-        });
-      }
-      oracleDebounceState.set(user.id, { fingerprint: debounceFingerprint, timestamp: startedAt });
-
-      const supabaseAdmin = getSupabaseAdmin();
-      let runtime: Awaited<ReturnType<typeof loadOracleRuntimeState>> | null = null;
-      try {
-        runtime = await loadOracleRuntimeState(supabaseAdmin, user.id, new Date());
-      } catch (runtimeError) {
-        console.error("Oracle runtime context failed; continuing without app context:", runtimeError);
-      }
-      const requestedMode = normalizeOracleMode(body?.mode);
-      const effectiveMode = runtime?.preferences.activeMode || requestedMode;
-      const effectiveIsPremium = asBoolean(body?.isPremium, runtime?.isPremium ?? false);
-      const structuredContext = routeOracleIntent(text, suppliedMemory);
-      const responseKind: OracleResponseKind = structuredContext.needsClarification
-        ? "clarification"
-        : structuredContext.appContextUsed
-          ? "app_answer"
-          : "chat";
-
-      const premiumHint = !effectiveIsPremium ? buildOraclePremiumHint(structuredContext) : null;
-      const appContext = structuredContext.appContextUsed && runtime ? runtime.contextData : null;
-      const promptSystem = buildOracleChatSystemPrompt({
-        mode: effectiveMode,
-        intent: structuredContext.recognizedIntent,
-        isPremium: effectiveIsPremium,
-      });
-      const promptUser = buildOracleChatUserPrompt({
-        text,
-        structuredContext,
-        memory: suppliedMemory,
-        appContext,
-        mode: effectiveMode,
-      });
-
-      try {
-        const modelResult = await callOpenRouter({
-          systemPrompt: promptSystem,
-          userPrompt: promptUser,
-          models: [
-            OPENROUTER_MODEL,
-            OPENROUTER_FALLBACK_MODEL,
-          ],
-          referer: origin || SITE_URL,
-        });
-
-        const payload = {
-          kind: responseKind,
-          message: modelResult.text,
-          structuredContext: {
-            ...structuredContext,
-            appContextUsed: Boolean(appContext),
-          },
-          actionDraft: null,
-          premiumHint,
-          telemetry: {
-            routeIntent: structuredContext.recognizedIntent,
-            responseKind,
-            latencyMs: Date.now() - startedAt,
-            cacheHit: false,
-            fallbackUsed: modelResult.fallbackUsed,
-            model: modelResult.model,
-            confidence: structuredContext.confidence,
-            channel,
-          },
-        } satisfies JsonRecord;
-
-        oracleResponseCache.set(cacheKey, { timestamp: startedAt, payload });
-        console.log(JSON.stringify({
-          scope: "oracle_vnext",
-          userId: user.id,
-          routeIntent: structuredContext.recognizedIntent,
-          responseKind,
-          latencyMs: Date.now() - startedAt,
-          model: modelResult.model,
-          fallbackUsed: modelResult.fallbackUsed,
-          channel,
-        }));
-
-        return jsonResponse(origin, 200, payload);
-      } catch (_error) {
-        const fallback = buildOracleFallbackResponse({
-          text,
-          structuredContext,
-          appContext,
-          elapsedMs: Date.now() - startedAt,
-        });
-        return jsonResponse(origin, 200, fallback as unknown as JsonRecord);
-      }
-    }
-
-    try {
-      const { text } = await callOpenRouter({
-        systemPrompt,
-        userPrompt,
-        models: [model, OPENROUTER_FALLBACK_MODEL],
-        referer: origin || SITE_URL,
-      });
-
-      return jsonResponse(origin, 200, { text });
-    } catch (modelError) {
-      console.error("Oracle card generation failed; returning safe fallback:", modelError);
-      return jsonResponse(origin, 200, {
-        text: "Nao consegui gerar uma fala completa agora. Ainda assim, escolhe uma acao pequena e deixa o dia menos aberto.",
-        fallbackUsed: true,
-      });
-    }
-  } catch (error) {
-    return jsonResponse(origin, 500, {
-      error: "Unexpected error in oracle function.",
-      details: String(error),
-    });
-  }
-};
-
 const handleAutomaticOracleCron = async (req: Request, origin: string | null) => {
-  if (!OPENROUTER_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !WEB_PUSH_WEBHOOK_SECRET) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !WEB_PUSH_WEBHOOK_SECRET) {
     return jsonResponse(origin, 500, { error: "Function misconfigured for backend oracle automation." });
   }
 
@@ -1927,5 +1253,7 @@ serve(async (req) => {
     return handleAutomaticOracleCron(req, corsOrigin);
   }
 
-  return handleClientOracleRequest(req, corsOrigin);
+  // O Oraculo nao conversa mais: nao ha IA nem chat. Sobrou o feed automatico,
+  // que monta as falas a partir de texto escrito (_shared/oracle-lines.ts).
+  return jsonResponse(corsOrigin, 410, { error: "Oracle chat was removed. Only generate-automatic-feed is served." });
 });

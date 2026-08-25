@@ -63,3 +63,99 @@ assert.equal(afterManual.autoRemainingToday, 1, 'um pedido manual nao apaga a un
 assert.equal(afterManual.manualRemainingToday, 4, 'o pedido manual consome somente o tema usado');
 
 console.log('Oracle presence regression: 9 assertions passed.');
+
+// --- saudacao de abertura --------------------------------------------------
+// O painel abria mudo: o Oraculo so falava reagindo a algo ja feito. A saudacao
+// e o cumprimento ao abrir, e ela SO existe na presenca 3. Em silencioso e
+// equilibrado o painel continua calado — cumprimento nao pedido vira ruido, e
+// essa e a linha que separa "aparece mais" de "aparece sempre".
+const {
+  pickOracleGreeting,
+  pickOracleOpeningLine,
+  resolveGreetingPeriod,
+  ORACLE_GREETINGS,
+  ORACLE_GAME_TIPS,
+  ORACLE_SUGGESTIONS,
+  ORACLE_LORE,
+} = await import('../constants/oracleSpeechLibrary.ts');
+
+const meioDia = new Date('2026-08-24T13:00:00');
+
+assert.equal(pickOracleGreeting(0, 'neutro', meioDia), null, 'silencioso nao cumprimenta');
+assert.equal(pickOracleGreeting(2, 'neutro', meioDia), null, 'equilibrado nao cumprimenta');
+assert.ok(pickOracleGreeting(3, 'neutro', meioDia), 'presente cumprimenta');
+
+// faixa horaria
+assert.equal(resolveGreetingPeriod(7), 'manha');
+assert.equal(resolveGreetingPeriod(11), 'manha');
+assert.equal(resolveGreetingPeriod(12), 'tarde');
+assert.equal(resolveGreetingPeriod(17), 'tarde');
+assert.equal(resolveGreetingPeriod(18), 'noite');
+assert.equal(resolveGreetingPeriod(23), 'noite');
+
+// os quatro tons falam em todas as faixas
+for (const periodo of ['manha', 'tarde', 'noite']) {
+  for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+    const linhas = ORACLE_GREETINGS[periodo][tom];
+    assert.ok(Array.isArray(linhas) && linhas.length > 0, `${periodo}/${tom} precisa de saudacao`);
+    for (const linha of linhas) {
+      assert.ok(linha.length <= 60, `saudacao longa demais em ${periodo}/${tom}: "${linha}"`);
+    }
+  }
+}
+
+// tom desconhecido cai no gratuito em vez de quebrar
+assert.ok(pickOracleGreeting(3, 'inexistente', meioDia), 'tom desconhecido cai no neutro');
+
+// a saudacao nao cobra nem mede: quem quer numero tem a leitura logo abaixo
+const todas = ['manha', 'tarde', 'noite'].flatMap((periodo) =>
+  Object.values(ORACLE_GREETINGS[periodo]).flat());
+for (const linha of todas) {
+  assert.doesNotMatch(linha, /\d/, `saudacao nao carrega numero: "${linha}"`);
+  assert.doesNotMatch(linha, /falh|atras|deveria|precisa fazer/i, `saudacao nao cobra: "${linha}"`);
+}
+
+// --- o leque completo da fala espontanea ---------------------------------
+// So saudacao viraria papel de parede: a fala de abertura mistura cumprimento,
+// dica de como o jogo funciona e sugestao. A trava de presenca vale para todas.
+assert.equal(pickOracleOpeningLine(0, 'neutro', meioDia), null, 'silencioso nao fala do nada');
+assert.equal(pickOracleOpeningLine(2, 'coach', meioDia), null, 'equilibrado nao fala do nada');
+
+const tipos = new Set();
+for (let i = 0; i < 400; i += 1) {
+  const linha = pickOracleOpeningLine(3, 'coach', meioDia);
+  assert.ok(linha && linha.text, 'presenca 3 sempre devolve fala');
+  tipos.add(linha.kind);
+}
+assert.deepEqual([...tipos].sort(), ['curiosidade', 'dica', 'saudacao', 'sugestao'], 'os quatro tipos entram no sorteio');
+
+// dica e fato sobre o app, entao nao varia por tom: mesma lista para todos.
+assert.ok(ORACLE_GAME_TIPS.length >= 10, 'o leque de dicas precisa dar folego');
+for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+  assert.ok(ORACLE_SUGGESTIONS[tom]?.length >= 3, `${tom} precisa de sugestoes`);
+}
+
+// nenhuma fala de abertura cobra ou mede
+const espontaneas = [
+  ...ORACLE_GAME_TIPS,
+  ...ORACLE_LORE,
+  ...Object.values(ORACLE_SUGGESTIONS).flat(),
+];
+for (const linha of espontaneas) {
+  assert.doesNotMatch(linha, /falh|fracass|preguic|deveria ter/i, `fala espontanea nao cobra: "${linha}"`);
+  assert.ok(linha.length <= 100, `fala longa demais: "${linha}"`);
+}
+
+// tom desconhecido nao quebra o sorteio
+assert.ok(pickOracleOpeningLine(3, 'inexistente', meioDia), 'tom desconhecido cai no neutro');
+
+// A curiosidade nao pode citar temporada por nome: a ativa muda a cada poucos
+// meses e frase com nome proprio apodrece sozinha na virada.
+for (const linha of ORACLE_LORE) {
+  assert.doesNotMatch(linha, /Genesis|Aurora|Zenite|Eclipse|Egide/i,
+    `curiosidade nao pode nomear temporada: "${linha}"`);
+}
+
+console.log(`Oracle opening: ${todas.length + espontaneas.length} falas espontaneas em quatro tipos.`);
+
+console.log(`Oracle greeting: ${todas.length} saudacoes, so na presenca 3, sem numero e sem cobranca.`);

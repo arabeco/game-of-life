@@ -266,3 +266,194 @@ export const pickOracleSpeech = (
     const chosen = variants[Math.floor(Math.random() * variants.length)] || variants[0];
     return fillOracleSpeech(chosen, vars);
 };
+
+/**
+ * A saudacao de abertura.
+ *
+ * O app abre no painel diario, e ate agora ele abria mudo: o Oraculo so falava
+ * reagindo a algo ja feito. Isto e o cumprimento — uma linha, sem botao, sem
+ * card, sem nada para dispensar. Some sozinho na proxima abertura.
+ *
+ * So existe na presenca 3 ("Presente"), que e onde a pessoa pediu para ele
+ * aparecer mais. Em silencioso e equilibrado o painel continua abrindo calado,
+ * porque cumprimento que a pessoa nao pediu vira ruido.
+ *
+ * Nao carrega numero nem cobranca: quem quer dado tem a leitura logo abaixo.
+ */
+export type OracleGreetingPeriod = 'manha' | 'tarde' | 'noite';
+
+export const ORACLE_GREETINGS: Record<OracleGreetingPeriod, Record<OracleSpeechTone, string[]>> = {
+    manha: {
+        neutro: ['Bom dia.', 'Dia novo. O painel esta aqui.'],
+        coach: ['Bom dia. Comece pela menor.', 'Dia novo: escolha uma e puxe.'],
+        reflexivo: ['Bom dia. O que merece o comeco de hoje?', 'Dia novo. Que peso voce quer nao carregar hoje?'],
+        calmo: ['Bom dia. Sem pressa.', 'Dia novo. Ele cabe do jeito que vier.'],
+    },
+    tarde: {
+        neutro: ['Boa tarde.', 'Metade do dia. O painel esta aqui.'],
+        coach: ['Boa tarde. Ainda da tempo de uma.', 'Metade do dia: uma entrega ainda cabe.'],
+        reflexivo: ['Boa tarde. O dia foi como voce imaginou?', 'Metade do dia. O que mudou desde de manha?'],
+        calmo: ['Boa tarde. O que veio ate aqui ja conta.', 'Metade do dia, e tudo bem se foi devagar.'],
+    },
+    noite: {
+        neutro: ['Boa noite.', 'Fim do dia. O painel esta aqui.'],
+        coach: ['Boa noite. Registre o que fez antes de fechar.', 'Fim do dia: deixe o registro pronto.'],
+        reflexivo: ['Boa noite. O que hoje ensinou?', 'Fim do dia. Vale olhar antes de virar a pagina.'],
+        calmo: ['Boa noite. Pode encerrar.', 'Fim do dia. Nao precisa fechar tudo.'],
+    },
+};
+
+/** Faixa horaria da saudacao. Noite comeca cedo de proposito: o painel da noite e de fechamento. */
+export const resolveGreetingPeriod = (hour: number): OracleGreetingPeriod => {
+    if (hour < 12) return 'manha';
+    if (hour < 18) return 'tarde';
+    return 'noite';
+};
+
+/**
+ * A saudacao do momento, ou null quando o Oraculo nao deve cumprimentar.
+ *
+ * `presenceLevel` abaixo de 3 devolve null: e a diferenca entre "aparece mais"
+ * e "aparece sempre", que e o que a pessoa escolheu no ajuste de presenca.
+ */
+export const pickOracleGreeting = (
+    presenceLevel: number,
+    tone: OracleSpeechTone,
+    now: Date = new Date(),
+    random: () => number = Math.random,
+): string | null => {
+    if (presenceLevel < 3) return null;
+
+    const period = resolveGreetingPeriod(now.getHours());
+    const options = ORACLE_GREETINGS[period][tone] || ORACLE_GREETINGS[period][ORACLE_FREE_TONE];
+    if (!options || options.length === 0) return null;
+
+    return options[Math.floor(random() * options.length)] || options[0];
+};
+
+/**
+ * O leque da fala espontanea — a quarta voz do Oraculo.
+ *
+ * As outras tres respondem a alguma coisa: a REACAO responde ao que voce acabou
+ * de fazer, o CARD responde a um pedido seu, a MISSAO responde a um aceite.
+ * Esta e a unica que sai do nada, ao abrir o painel, e por isso e a que mais
+ * cansa se repetir. So saudacao viraria papel de parede em uma semana.
+ *
+ * Quatro tipos, misturados:
+ *  - saudacao: cumprimento por hora do dia, no tom da pessoa.
+ *  - dica: como o jogo funciona. Fato sobre o app, entao NAO varia por tom —
+ *    escrever a mesma regra de quatro jeitos so multiplica texto sem informar
+ *    mais. O tom colore opiniao, nao mecanica.
+ *  - sugestao: um empurrao pequeno para agora, esse sim no tom.
+ *  - curiosidade: como o mundo e as temporadas funcionam. Fato tambem, e sem
+ *    nome de temporada, para nao apodrecer na virada.
+ *
+ * Nenhuma carrega numero nem cobranca: quem quer medida tem a leitura do dia
+ * logo abaixo.
+ */
+export type OracleOpeningKind = 'saudacao' | 'dica' | 'sugestao' | 'curiosidade';
+
+/** Como o jogo funciona. Fato, nao opiniao: sem variacao por tom. */
+export const ORACLE_GAME_TIPS: readonly string[] = [
+    'Arena e uma area da sua vida. Acao e o que voce faz dentro dela.',
+    'Ciclo e o periodo que voce fecha e mede. O relatorio nasce dele.',
+    'Marco e acao que acontece uma vez. Recorrente e a que se repete.',
+    'O XP de uma acao vem do tempo dela: meia hora vale cerca de 30.',
+    'Concluir tudo de uma arena a fecha e ela para de pedir sua atencao.',
+    'Voce pode arquivar uma arena sem apagar nada do que ja registrou.',
+    'O baú guarda cosmetico. Nada dentro dele muda regra de jogo.',
+    'A pontuacao do ciclo compara voce com voce, nao com outra pessoa.',
+    'Dia sem registro nao apaga o ciclo: ele so entra como dia sem entrega.',
+    'Da para reordenar arenas por prioridade e o painel respeita a ordem.',
+    'A insignia marca o que voce fez. Ela nao expira quando a temporada vira.',
+    'Voce escolhe quanto o Oraculo fala no ajuste de presenca.',
+    'Acao concluida fora do horario marcado conta igual: o registro e o que vale.',
+    'Arena sem acao nenhuma nao entra em missao nem em relatorio.',
+    'O checklist do dia e separado das acoes: ele nao pontua, so organiza.',
+    'Fechar o painel do dia sela o que foi feito e deposita o XP no ciclo.',
+    'Voce pode mover uma acao de arena sem perder o historico dela.',
+    'Campanha e um conjunto de arenas que abre por etapas conforme voce avanca.',
+    'Ouro compra cosmetico e assinatura. Ele nao compra progresso.',
+    'Relatorio antigo continua acessivel depois que o ciclo fecha.',
+];
+
+/**
+ * Curiosidade sobre o mundo e as temporadas.
+ *
+ * Sem citar temporada por nome de proposito: a ativa muda a cada poucos meses e
+ * frase com nome proprio apodrece sozinha na virada. Estas continuam verdadeiras
+ * em qualquer temporada, entao ninguem precisa lembrar de revisa-las.
+ */
+export const ORACLE_LORE: readonly string[] = [
+    'Cada temporada tem colecao propria, e o que voce ganhou nela fica com voce.',
+    'Item de temporada nao volta: quem estava presente e quem carrega a marca.',
+    'A insignia conta onde voce estava. A borda e o banner contam o mesmo em silencio.',
+    'Temporada troca a colecao, nunca o seu historico.',
+    'As jornadas da temporada sao poucas de proposito, para caberem em meses.',
+    'Fechar todas as jornadas de uma temporada rende o selo dela.',
+    'A patente cresce com o que voce faz, nao com o tempo que passa.',
+    'O legado guarda o que sobreviveu aos seus ciclos, nao o que voce planejou.',
+    'Temporada zero abriu o mundo. As seguintes constroem sobre ela.',
+];
+
+/** Um empurrao pequeno para agora. Este varia por tom. */
+export const ORACLE_SUGGESTIONS: Record<OracleSpeechTone, readonly string[]> = {
+    neutro: [
+        'Se for abrir uma coisa so hoje, abra a que esta mais perto de fechar.',
+        'Registrar o que ja fez conta tanto quanto fazer o proximo.',
+        'Uma acao pequena hoje mantem o ciclo vivo.',
+    ],
+    coach: [
+        'Escolha a menor da lista e tire ela do caminho.',
+        'Se travou, corte a tarefa pela metade e faca a primeira metade.',
+        'Comece pela arena que voce vem evitando. Ela custa mais parada.',
+    ],
+    reflexivo: [
+        'O que voce evita registrar costuma dizer mais que o que voce registra.',
+        'Se hoje so coubesse uma coisa, qual seria?',
+        'Vale perguntar se a carga que voce planejou era mesmo para voce.',
+    ],
+    calmo: [
+        'Nao precisa recuperar nada hoje. Comece de onde esta.',
+        'Um dia menor continua sendo um dia.',
+        'Se hoje nao for de avancar, que seja de nao desistir.',
+    ],
+};
+
+/**
+ * A fala de abertura, sorteando entre os tres tipos.
+ *
+ * `pickOracleGreeting` continua existindo e so cumprimenta; esta e a porta larga,
+ * usada pelo painel. Segue valendo a trava de presenca 3.
+ */
+export const pickOracleOpeningLine = (
+    presenceLevel: number,
+    tone: OracleSpeechTone,
+    now: Date = new Date(),
+    random: () => number = Math.random,
+): { text: string; kind: OracleOpeningKind } | null => {
+    if (presenceLevel < 3) return null;
+
+    const safeTone = tone in ORACLE_TONE_LABELS ? tone : ORACLE_FREE_TONE;
+    const kinds: OracleOpeningKind[] = ['saudacao', 'dica', 'sugestao', 'curiosidade'];
+    const kind = kinds[Math.floor(random() * kinds.length)] || 'saudacao';
+
+    if (kind === 'dica') {
+        const text = ORACLE_GAME_TIPS[Math.floor(random() * ORACLE_GAME_TIPS.length)]
+            || ORACLE_GAME_TIPS[0];
+        return { text, kind };
+    }
+
+    if (kind === 'curiosidade') {
+        const text = ORACLE_LORE[Math.floor(random() * ORACLE_LORE.length)] || ORACLE_LORE[0];
+        return { text, kind };
+    }
+
+    if (kind === 'sugestao') {
+        const pool = ORACLE_SUGGESTIONS[safeTone] || ORACLE_SUGGESTIONS[ORACLE_FREE_TONE];
+        return { text: pool[Math.floor(random() * pool.length)] || pool[0], kind };
+    }
+
+    const greeting = pickOracleGreeting(presenceLevel, safeTone, now, random);
+    return greeting ? { text: greeting, kind: 'saudacao' } : null;
+};

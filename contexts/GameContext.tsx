@@ -17,7 +17,7 @@ import { getGoldBoostProduct, getGoldMechanicPrice, getGoldMembershipProduct, GO
 import { BIOLOGICAL_MACHINE_CODEX } from '../data/initialCodex';
 import { NOBILITY_RANKS, RANK_REWARDS } from '../constants/nobility';
 import { supabase } from '../supabaseClient';
-import { deriveLegacySentinelMode, getOracleModeConfig, ORACLE_MODES } from '../constants/oracle';
+import { deriveLegacySentinelMode, getOracleModeConfig } from '../constants/oracle';
 import { SupabaseService } from '../services/SupabaseService';
 import { rateLimiter } from '../services/SimpleRateLimiter';
 import type { Session } from '@supabase/supabase-js';
@@ -35,7 +35,7 @@ import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscrib
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
 import { getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
-import { getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
+import { getCycleXpBonusPercentLabel, getCycleXpBonusRate, getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
@@ -55,6 +55,14 @@ import { publishGlyphAndroidWidgetSnapshot } from '../utils/androidWidget';
 import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
+import {
+    buildPactCandidates,
+    buildPactCandidatesForArena,
+    measurePactProgress,
+    rebuildActivePact,
+    toArenaPactState,
+    type ArenaPact,
+} from '../utils/arenaPacts';
 import { emitDailyCompletionPrompt } from '../utils/dailyCompletionPrompt';
 import { buildLiveDailyPraise } from '../utils/dailyInsights';
 
@@ -462,19 +470,19 @@ const DEFAULT_USER_PROFILE: UserProfile = {
 const defaultChecklistItems: ChecklistItem[] = [];
 const defaultSequenceItems: SequenceItem[] = [];
 const PREMIUM_REWARD_CHEST: ChestType = 'Raro';
-const PLATINUM_REWARD_CHESTS: ChestType[] = ['Season', 'Raro'];
+const PLATINUM_REWARD_CHESTS: ChestType[] = ['Raro', 'Lendário'];
 const PLATINUM_REWARD_LEGACY_SCENE_CREDITS = 1;
 const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_FREE_CREDITS = 1;
 const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_MEDIUM_CREDITS = 1;
 const PREMIUM_ACTIVE_BENEFITS = [
     'Até 15 arenas ativas',
     'Fundos premium de perfil e ativos',
-    'Todos os modos do Oráculo',
+    'Todos os tons de fala do Oráculo',
     'Cena do legado com 50% off',
-    'Bônus de legado +10% XP',
+    'Bônus de legado +5% XP',
 ] as const;
 const PLATINUM_ACTIVE_BENEFITS = [
-    'Todas as vantagens do Premium',
+    'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
     'Até 30 arenas ativas',
     'Todos os planos de fundo e aparências premium',
 ] as const;
@@ -751,6 +759,13 @@ export interface GameContextType {
     feed: FeedEvent[];
     addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
     getArenas: () => Arena[];
+    activeArenaPact: ArenaPact | null;
+    arenaPactProgress: { current: number; goal: number; percent: number; completed: boolean } | null;
+    arenaPactCandidates: ArenaPact[];
+    getArenaPactOptionsForArena: (arenaId: string) => ArenaPact[];
+    acceptArenaPact: (pact: ArenaPact) => Promise<void>;
+    abandonArenaPact: () => Promise<void>;
+    claimArenaPact: () => Promise<void>;
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
     updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => void;
     deleteArena: (arenaId: string, options?: { force?: boolean }) => void;
@@ -1898,7 +1913,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        const modeConfig = ORACLE_MODES[latestMessage.mode] || ORACLE_MODES.neutro;
+        const modeConfig = getOracleModeConfig(latestMessage.mode);
         void showLocalNotification({
             title: `Oraculo - ${modeConfig.name}`,
             body: latestMessage.content,
@@ -8367,7 +8382,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'starterRewardsPending',
                 'vanguardWelcomePending',
                 'vanguardWelcomeShownAt',
-                'vanguardWelcomePayload'
+                'vanguardWelcomePayload',
+                // Pacto de arena. Sem estas cinco a missao do Oraculo era aceita
+                // na tela e sumia no reload: o estado local mudava e a escrita
+                // parava aqui, porque esta lista decide o que chega ao banco.
+                'arenaPactArenaId',
+                'arenaPactKind',
+                'arenaPactDifficulty',
+                'arenaPactGoal',
+                'arenaPactStartedOn'
             ];
             const entries = Object.entries(profileData).filter(([key, value]) => {
                 if (!allowedKeys.includes(key as keyof UserProfile)) return false;
@@ -8676,7 +8699,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 {
                     label: 'Baús',
                     value: grantedChests.length > 0 ? chestSummary : 'Sem novo baú',
-                    detail: grantedChests.length > 0 ? 'Temporada e raro entregues agora.' : 'Sem novo baú nesta rodada.',
+                    detail: grantedChests.length > 0 ? 'Entregues agora.' : 'Sem novo baú nesta rodada.',
                     tone: 'gold' as const,
                 },
                 {
@@ -8707,8 +8730,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 },
                 {
                     label: 'Ciclo',
-                    value: '+10% XP',
-                    detail: 'Bônus ativo enquanto o Premium durar.',
+                    value: `+${getCycleXpBonusPercentLabel(tier)} XP`,
+                    detail: 'Bônus ativo enquanto a assinatura durar.',
                     tone: 'emerald' as const,
                 },
             ];
@@ -9320,12 +9343,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
         const mostRepeatedAction = currentActions.find(a => a.id === mostRepeatedActionId)?.name || 'Nenhuma';
 
-        const isPremiumUser = hasPremiumAccess(userProfile);
         const cycleBaseExp = completedScoredTasks.reduce((sum, task) => {
             const action = currentActions.find(item => item.id === task.actionId);
             return sum + getTaskBaseExp(task, action);
         }, 0);
-        const premiumBonusExp = isPremiumUser ? Math.round(cycleBaseExp * 0.1) : 0;
+        const premiumBonusExp = Math.round(cycleBaseExp * getCycleXpBonusRate(userProfile));
         const rawExp = cycleExpBonus + cycleBaseExp + premiumBonusExp;
         const expBoostBonus = 0;
         const expGained = rawExp;
@@ -9675,7 +9697,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             bankCycleExp(activeCycle.id, expGained);
         } else {
             const shouldIncludePremium = options.includePremium ?? true;
-            const premiumExp = shouldIncludePremium && hasPremiumAccess(userProfile) ? Math.round(expGained * 0.1) : 0;
+            const premiumExp = shouldIncludePremium ? Math.round(expGained * getCycleXpBonusRate(userProfile)) : 0;
             const boostedExp = expGained + premiumExp;
             updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + boostedExp } });
             void recordClanContribution(boostedExp, options.contributionSource);
@@ -11572,6 +11594,124 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         showToast(`Missao "${quest.title}" abandonada.`);
     };
 
+    /**
+     * O ritual unico de entrega de recompensa de missao.
+     *
+     * Existiam quatro resgates escritos em dias diferentes — jornada de
+     * temporada, missao de temporada, desafio de sistema e pacto de arena — e
+     * eles tinham divergido em duas coisas que ninguem via:
+     *
+     *  1. SUBIDA DE PATENTE. As duas de temporada detectavam na mao e abriam o
+     *     modal PLAYER_RANK_UP com as insignias da patente. As outras duas
+     *     chamavam applyExp, que nao detecta nada: quem batia a patente
+     *     fechando um desafio ou um pacto nao ganhava a insignia e nao via a
+     *     tela. Sumia calado.
+     *  2. XP. applyExp deposita no ciclo quando ha ciclo ativo e ainda soma o
+     *     bonus de assinatura por cima; o caminho das de temporada escrevia
+     *     direto no perfil e sem bonus. A mesma missao pagava valores
+     *     diferentes dependendo de qual funcao a resgatava.
+     *
+     * Aqui o XP vai direto ao perfil, sem bonus de assinatura: e o valor que o
+     * modal promete no instante em que a pessoa le. O bonus de assinatura
+     * continua existindo onde ele foi desenhado para agir, no fechamento de
+     * ciclo.
+     */
+    const grantMissionReward = async (grant: {
+        completionId: string;
+        title: string;
+        icon?: string;
+        xp: number;
+        /** Ouro ja creditado pelo servidor. Entra so na exibicao. */
+        goldGranted?: number;
+        chest?: ChestType | null;
+        /** Insignias e itens da propria missao, alem dos de patente. */
+        itemIds?: string[];
+        feedTitle?: string;
+        feedIcon?: string;
+    }) => {
+        const currentExp = userProfile.nobility.exp;
+        const addedExp = Math.max(0, Math.round(grant.xp || 0));
+        const nextExp = currentExp + addedExp;
+
+        const chestGranted = grant.chest ? await addChest(grant.chest) : false;
+
+        const earnedItemIds: string[] = [];
+        for (const itemId of grant.itemIds || []) {
+            const def = resolveItemDef(itemId);
+            if (def?.category === 'insignia') grantUserUnlock('insignias', itemId);
+            await grantInventoryItem(itemId, true);
+            earnedItemIds.push(itemId);
+        }
+
+        // A patente so pode ser conferida com o total ja somado.
+        const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
+        if (nextRank) {
+            const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
+            grantUserUnlock('insignias', rankInsigniaId);
+            await grantInventoryItem(rankInsigniaId, true);
+            earnedItemIds.push(rankInsigniaId);
+
+            // A de subida, que acumula, vem junto da unica daquela patente.
+            grantUserUnlock('insignias', RANK_UP_INSIGNIA_ID);
+            await grantInventoryItem(RANK_UP_INSIGNIA_ID, true);
+            earnedItemIds.push(RANK_UP_INSIGNIA_ID);
+        }
+
+        updateUserProfile({
+            nobility: { ...userProfile.nobility, exp: nextExp },
+            completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), grant.completionId],
+        });
+
+        if (grant.feedTitle) {
+            addFeedEvent({
+                type: 'QUEST_COMPLETED',
+                content: { title: grant.feedTitle, icon: grant.feedIcon || '\u{1F4DD}', score: addedExp },
+            });
+        }
+
+        const allEarnedItems: string[] = [...new Set(earnedItemIds)];
+        const chestForModal = chestGranted ? grant.chest : null;
+
+        if (nextRank) {
+            const rankRewards = RANK_REWARDS[nextRank.id] || [];
+            setAchievementUnlocked({
+                type: 'PLAYER_RANK_UP',
+                data: {
+                    name: nextRank.name,
+                    rank: nextRank,
+                    rewards: {
+                        exp: addedExp,
+                        gold: grant.goldGranted || 0,
+                        items: [...new Set([...allEarnedItems, ...rankRewards.filter(reward => reward.category !== 'ui_skins').map(reward => reward.itemId)])],
+                        chest: chestForModal,
+                        rewardDetails: [
+                            ...allEarnedItems.map(itemId => ({ itemId })),
+                            ...rankRewards,
+                        ],
+                        uiSkins: rankRewards
+                            .filter(reward => reward.category === 'ui_skins')
+                            .map(reward => reward.itemId),
+                    },
+                },
+            });
+            return;
+        }
+
+        setAchievementUnlocked({
+            type: 'QUEST_COMPLETED',
+            data: {
+                title: grant.title,
+                icon: grant.icon,
+                reward: {
+                    exp: addedExp,
+                    gold: grant.goldGranted || 0,
+                    items: allEarnedItems,
+                    chest: chestForModal,
+                },
+            },
+        });
+    };
+
     const claimSeasonQuest = async (questId: string) => {
         const quest = findSeasonQuestById(questId);
         if (!quest) return;
@@ -11618,91 +11758,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        if (earnedChest) await addChest(earnedChest);
-
-        // Grant items from rewards
-        const earnedItemIds: string[] = [];
-        if (quest.rewards?.items) {
-            for (const itemId of quest.rewards.items) {
-                const def = resolveItemDef(itemId);
-                if (def?.category === 'insignia') {
-                    grantUserUnlock('insignias', itemId);
-                }
-                await grantInventoryItem(itemId, true); // Silent
-                earnedItemIds.push(itemId);
-            }
-        }
-
-        // Grant uncommon insignia for quest completion
-        const questInsigniaId = 'insignia_quest_incomum';
-        grantUserUnlock('insignias', questInsigniaId);
-        await grantInventoryItem(questInsigniaId, true);
-        earnedItemIds.push(questInsigniaId);
-
-        // Check if this completion should grant a rank insignia (levelup flow)
-        const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
-        if (nextRank) {
-            const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
-            grantUserUnlock('insignias', rankInsigniaId);
-            await grantInventoryItem(rankInsigniaId, true);
-            earnedItemIds.push(rankInsigniaId);
-
-            // A de subida, que acumula, vem junto da unica daquela patente.
-            grantUserUnlock('insignias', RANK_UP_INSIGNIA_ID);
-            await grantInventoryItem(RANK_UP_INSIGNIA_ID, true);
-            earnedItemIds.push(RANK_UP_INSIGNIA_ID);
-        }
-
-        // Update Profile (Removing gold)
-        updateUserProfile({
-            nobility: { ...userProfile.nobility, exp: nextExp },
-            completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), questId]
+        await grantMissionReward({
+            completionId: questId,
+            title: quest.title,
+            xp: quest.rewards.xp,
+            chest: earnedChest,
+            itemIds: [...(quest.rewards?.items || []), 'insignia_quest_incomum'],
+            feedTitle: `Quest Completada: ${quest.title}`,
         });
-
-        addFeedEvent({
-            type: 'QUEST_COMPLETED', // Changed from MILESTONE_COMPLETED
-            content: { title: `Quest Completada: ${quest.title}`, icon: '📝', score: addedExp }
-        });
-
-        // Determine all insignias to show in modal
-        // Deduplicate IDs
-        const allEarnedItems: string[] = [...new Set(earnedItemIds)];
-
-        // If Ranked Up, show PLAYER_RANK_UP modal with all rewards
-        if (nextRank) {
-            const rankRewards = RANK_REWARDS[nextRank.id] || [];
-            setAchievementUnlocked({
-                type: 'PLAYER_RANK_UP',
-                data: {
-                    name: nextRank.name,
-                    rank: nextRank,
-                    rewards: {
-                        exp: addedExp,
-                        items: [...new Set([...allEarnedItems, ...rankRewards.filter(reward => reward.category !== 'ui_skins').map(reward => reward.itemId)])],
-                        chest: earnedChest,
-                        rewardDetails: [
-                            ...allEarnedItems.map(itemId => ({ itemId })),
-                            ...rankRewards,
-                        ],
-                        uiSkins: rankRewards
-                            .filter(reward => reward.category === 'ui_skins')
-                            .map(reward => reward.itemId),
-                    }
-                }
-            });
-        } else {
-            setAchievementUnlocked({
-                type: 'QUEST_COMPLETED',
-                data: {
-                    title: quest.title,
-                    reward: {
-                        exp: addedExp,
-                        items: allEarnedItems,
-                        chest: earnedChest
-                    }
-                }
-            });
-        }
     };
 
     const claimSeasonMission = async (missionId: string) => {
@@ -11720,7 +11783,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Add XP
         const currentExp = userProfile.nobility.exp;
-        const addedExp = typeof mission.reward_value === 'number' ?mission.reward_value : 0;
+        // reward_value carrega o premio principal e nem sempre e XP: quando a
+        // missao entrega item (o Selo da Genesis entrega insignia), o XP mora em
+        // reward_exp. Lendo so o primeiro, missao de item pagava zero calado.
+        const addedExp = typeof mission.reward_value === 'number'
+            ? mission.reward_value
+            : Math.max(0, Number(mission.reward_exp || 0));
         const nextExp = currentExp + addedExp;
 
         // Check for chest rewards in description
@@ -11868,21 +11936,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
 
         await addCompletedMission(markerMission);
-        applyExp(challenge.rewards.xp);
-        const chestGranted = challenge.rewardChest ? await addChest(challenge.rewardChest) : false;
-
-        setAchievementUnlocked({
-            type: 'QUEST_COMPLETED',
-            data: {
-                title: challenge.title,
-                icon: challenge.actionTemplate.icon,
-                reward: {
-                    exp: challenge.rewards.xp,
-                    gold: goldGranted,
-                    items: [SYSTEM_CHALLENGE_INSIGNIA_ID],
-                    chest: chestGranted ? challenge.rewardChest : null,
-                },
-            },
+        await grantMissionReward({
+            completionId: challenge.id,
+            title: challenge.title,
+            icon: challenge.actionTemplate.icon,
+            xp: challenge.rewards.xp,
+            goldGranted,
+            chest: challenge.rewardChest || null,
+            itemIds: [SYSTEM_CHALLENGE_INSIGNIA_ID],
         });
     };
 
@@ -13542,15 +13603,20 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
     }, [activeCycle, freeProgressResetAt, tasks]);
 
-    const taskPool = useMemo(() => {
+    /**
+     * Arenas travadas por campanha. Vivia dentro do taskPool, mas o pacto de
+     * arena precisa do mesmo conjunto: `is_locked` nao e coluna, o estado sai do
+     * arenaConfig da campanha e depende dos pre-requisitos terem sido cumpridos.
+     * Calcular duas vezes seria convite para as duas contas divergirem.
+     */
+    const lockedArenaIds = useMemo(() => {
+        const locked = new Set<string>();
         const activeArenas = allArenas.filter(arena => !arena.isArchived);
-        const lockedArenaIds = new Set<string>();
         const arenasById = Object.fromEntries(activeArenas.map(arena => [arena.id, arena]));
         const actionsByArena = Object.fromEntries(activeArenas.map(arena => [arena.id, actions.filter(action => action.arenaId === arena.id)]));
 
         campaigns.forEach(campaign => {
             if (campaign.status !== 'active') return;
-
             const arenaStates = getCampaignArenaStates({
                 campaign,
                 arenasById,
@@ -13559,21 +13625,108 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 getClanQuestsForArena,
                 getClanQuestProgress,
             });
-
             Object.entries(arenaStates).forEach(([arenaId, state]) => {
-                if (state.isLocked) {
-                    lockedArenaIds.add(arenaId);
-                }
+                if (state.isLocked) locked.add(arenaId);
             });
         });
 
+        return locked;
+    }, [actions, allArenas, campaigns, cycleScopedTasks, getClanQuestProgress, getClanQuestsForArena]);
+
+    // --- Pacto de arena -------------------------------------------------
+    // As missoes do Oraculo amarradas a uma arena que a pessoa ja tem. Uma de
+    // cada vez: o slot vive no perfil, nao numa tabela.
+    const arenaPactToday = getOperationalDateString();
+
+    const activeArenaPact = useMemo(
+        () => rebuildActivePact(userProfile, allArenas, actions, tasks, arenaPactToday),
+        [actions, allArenas, arenaPactToday, tasks, userProfile],
+    );
+
+    const arenaPactProgress = useMemo(() => {
+        if (!activeArenaPact) return null;
+        const arena = allArenas.find((entry) => entry.id === activeArenaPact.arenaId) || null;
+        return measurePactProgress(activeArenaPact, arena, actions, tasks);
+    }, [actions, activeArenaPact, allArenas, tasks]);
+
+    const arenaPactCandidates = useMemo(
+        () => (activeArenaPact
+            ? []
+            // cycleScopedTasks para o progresso (a arena zera a cada ciclo, e a
+            // proposta tem de enxergar o mesmo que a tela); tasks inteiro so
+            // para medir abandono, que atravessa ciclos.
+            : buildPactCandidates(allArenas, actions, cycleScopedTasks, arenaPactToday, 3, { lockedArenaIds, allTimeTasks: tasks })),
+        [actions, activeArenaPact, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks],
+    );
+
+    const getArenaPactOptionsForArena = useCallback(
+        (arenaId: string) => {
+            const arena = allArenas.find((entry) => entry.id === arenaId);
+            if (!arena) return [];
+            return buildPactCandidatesForArena(arena, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks });
+        },
+        [actions, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks],
+    );
+
+    const acceptArenaPact = async (pact: ArenaPact) => {
+        if (activeArenaPact) {
+            showToast('Voce ja tem uma missao em andamento. Termine ou abandone antes de aceitar outra.', 'warning');
+            return;
+        }
+        await updateUserProfile(toArenaPactState(pact));
+        showToast(`Missao aceita: ${pact.title}`, 'success');
+    };
+
+    const abandonArenaPact = async () => {
+        if (!activeArenaPact) return;
+        await updateUserProfile(toArenaPactState(null));
+        showToast('Missao abandonada. O Oraculo pode propor outra quando voce pedir.', 'info');
+    };
+
+    const claimArenaPact = async () => {
+        const pact = activeArenaPact;
+        if (!pact) return;
+        if (!arenaPactProgress?.completed) {
+            showToast('Essa missao ainda nao esta cumprida.', 'warning');
+            return;
+        }
+
+        // O servidor refaz a contagem e paga; o cliente nao decide recompensa.
+        const { data, error } = await supabase.rpc('claim_arena_pact_reward');
+        if (error || !(data as any)?.success) {
+            showToast(error?.message || 'Nao foi possivel validar a missao agora.', 'error');
+            return;
+        }
+
+        const goldGranted = Number((data as any)?.gold_granted || 0);
+        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+
+        // A funcao ja limpou o pacto no banco; o perfil local acompanha.
+        await updateUserProfile({
+            ...toArenaPactState(null),
+            wallet: { ...userProfile.wallet, gold: nextGold },
+        });
+
+        await grantMissionReward({
+            completionId: pact.id,
+            title: pact.title,
+            icon: pact.arenaIcon,
+            xp: pact.reward.xp,
+            goldGranted,
+            chest: pact.reward.chest || null,
+        });
+    };
+
+
+    const taskPool = useMemo(() => {
+        const activeArenas = allArenas.filter(arena => !arena.isArchived);
         const cycleArenaIds = activeCycle?.arenaIds?.length ?new Set(activeCycle.arenaIds) : null;
         const cycleScopedArenas = cycleArenaIds ?activeArenas.filter(arena => cycleArenaIds.has(arena.id)) : activeArenas;
         const availableArenas = cycleScopedArenas.length > 0 ?cycleScopedArenas : activeArenas;
         const activeArenaIds: Set<string> = new Set(availableArenas.map(arena => arena.id).filter(id => !lockedArenaIds.has(id)));
 
         return buildTaskPoolEntries(actions, activeArenaIds, isClanQuestActionId);
-    }, [actions, allArenas, activeCycle?.arenaIds, campaigns, cycleScopedTasks, getClanQuestProgress, getClanQuestsForArena, isClanQuestActionId]);
+    }, [actions, allArenas, activeCycle?.arenaIds, isClanQuestActionId, lockedArenaIds]);
 
     useEffect(() => {
         if (!isProfileLoaded) return;
@@ -13628,7 +13781,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
-            aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence
+            aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
+            activeArenaPact, arenaPactProgress, arenaPactCandidates, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact
         }}>
             {children}
         </GameContext.Provider>

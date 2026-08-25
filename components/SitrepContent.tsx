@@ -10,7 +10,11 @@ import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import './core-ui.css';
 import { EmojiGlyph } from './EmojiGlyph';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
-import { buildHistoricalDailyInsight } from '../utils/dailyInsights';
+import { buildHistoricalDailyInsight, buildTodayDailyReading, type DailyReadingDepth } from '../utils/dailyInsights';
+import { ArenaPactBalloon } from './ArenaPactBalloon';
+import { pickOracleOpeningLine, ORACLE_FREE_TONE } from '../constants/oracleSpeechLibrary';
+import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
+import { hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
 
 type DailyActionRow = {
     task: ScheduledTask;
@@ -131,6 +135,8 @@ export const SitrepContent: React.FC<{ onClose?: () => void; selectedDateOverrid
         addFeedEvent,
         userProfile,
         getActionBackgroundStyle,
+        reports,
+        oraclePreferences,
     } = useGame();
 
     const [isShareChoiceOpen, setIsShareChoiceOpen] = useState(false);
@@ -256,6 +262,71 @@ export const SitrepContent: React.FC<{ onClose?: () => void; selectedDateOverrid
         });
     }, [arenaStats, completedRows.length, cyclePattern?.days, dailyRows.length, isToday, selectedDate, topArena]);
 
+    // A fala de abertura: saudacao, dica de como o jogo funciona, ou sugestao.
+    // Sorteada uma vez por montagem para nao trocar de frase a cada re-render, e
+    // so no dia corrente: abrir um dia passado nao e chegar, e consultar.
+    const greeting = useMemo(
+        () => (isToday
+            ? pickOracleOpeningLine(
+                oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL,
+                oraclePreferences?.speechTone || ORACLE_FREE_TONE,
+            )
+            : null),
+        // Sem oraclePreferences nas dependencias de proposito: trocar o tom no
+        // meio da sessao nao deve reescrever o cumprimento que ja esta na tela.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [isToday],
+    );
+
+    // O painel so falava de dias passados. Esta leitura cobre o dia corrente, e a
+    // profundidade acompanha a assinatura: livre descreve, Premium compara com o
+    // seu dia medio no ciclo, Platinum compara o ciclo com o seu historico.
+    const readingDepth: DailyReadingDepth = hasPlatinumAccess(userProfile)
+        ? 'platinum'
+        : hasPremiumAccess(userProfile)
+            ? 'premium'
+            : 'livre';
+
+    const todayReading = useMemo(() => {
+        if (!isToday) return null;
+
+        const previousActiveDays = (cyclePattern?.days || [])
+            .filter((day) => day.date < selectedDate && day.completed > 0);
+        const cycleActiveDayAverage = previousActiveDays.length > 0
+            ? previousActiveDays.reduce((sum, day) => sum + day.completed, 0) / previousActiveDays.length
+            : null;
+
+        // Relatorios antigos podem nao ter executionRatePct; da para reconstruir.
+        const pastRates = (reports || [])
+            .map((report) => {
+                const direct = report.metrics?.executionRatePct;
+                if (typeof direct === 'number' && Number.isFinite(direct)) return direct;
+                const done = Number(report.metrics?.actionsCompleted || 0);
+                const planned = Number(report.metrics?.totalPlannedActions || 0);
+                return planned > 0 ? (done / planned) * 100 : null;
+            })
+            .filter((rate): rate is number => typeof rate === 'number' && Number.isFinite(rate))
+            .sort((left, right) => left - right);
+
+        const median = pastRates.length > 0
+            ? (pastRates.length % 2 === 1
+                ? pastRates[(pastRates.length - 1) / 2]
+                : (pastRates[pastRates.length / 2 - 1] + pastRates[pastRates.length / 2]) / 2)
+            : null;
+
+        return buildTodayDailyReading({
+            completedCount: completedRows.length,
+            plannedCount: dailyRows.length,
+            distinctArenaCount: arenaStats.filter((entry) => entry.completed > 0).length,
+            topArenaName: topArena?.name || null,
+            streakCurrent: cyclePattern?.currentPerfectStreak || 0,
+            cycleActiveDayAverage,
+            currentCycleExecutionPct: typeof cyclePattern?.progress === 'number' ? cyclePattern.progress : null,
+            pastCyclesExecutionMedianPct: median,
+            pastCyclesCount: pastRates.length,
+        }, readingDepth);
+    }, [arenaStats, completedRows.length, cyclePattern, dailyRows.length, isToday, readingDepth, reports, selectedDate, topArena]);
+
     const handleShareImage = () => {
         void shareElementWithFeedback(showToast, 'daily-summary-capture-area', {
             title: 'Meu Resumo Diario - Glyph',
@@ -284,6 +355,11 @@ export const SitrepContent: React.FC<{ onClose?: () => void; selectedDateOverrid
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--skin-accent-color)_0%,transparent_62%)] opacity-12" />
                 <div className="relative z-10 space-y-4">
                     <div className="text-center">
+                        {greeting && (
+                            <p className="mb-1.5 text-[11px] font-medium italic leading-relaxed text-white/55">
+                                {greeting.text}
+                            </p>
+                        )}
                         <p className="core-label text-[var(--skin-accent-color)]">Resumo Diario</p>
                         <h3 className="mt-1 arena-title-text text-xl text-white luxe-title-shadow leading-tight">{title}</h3>
                     </div>
@@ -297,6 +373,35 @@ export const SitrepContent: React.FC<{ onClose?: () => void; selectedDateOverrid
                             </div>
                         </div>
                     )}
+
+                    {todayReading && (
+                        <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
+                            <OracleSpeakerMark tone="info" size="sm" className="mt-0.5 shrink-0" />
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="core-label text-[var(--skin-accent-color)]">Leitura do Oraculo</p>
+                                    {todayReading.depth === 'platinum' && (
+                                        <span className="shrink-0 rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em] text-cyan-100">
+                                            Platinum
+                                        </span>
+                                    )}
+                                    {todayReading.depth === 'premium' && (
+                                        <span className="shrink-0 rounded-full border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em] text-amber-100">
+                                            Premium
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="mt-1 text-[11px] leading-relaxed text-white/78">{todayReading.text}</p>
+                                {todayReading.comparison && (
+                                    <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--skin-accent-color)]/80">
+                                        {todayReading.comparison}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <ArenaPactBalloon />
 
                     {activeCycle && cyclePattern && (
                         <div className="sitrep-neutral-panel rounded-2xl p-3">

@@ -79,19 +79,19 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
     const premiumBenefits = useMemo(() => ([
         'Até 15 arenas ativas',
         'Fundos premium de perfil e ativos',
-        'Todos os modos do Oráculo',
+        'Todos os tons de fala do Oráculo',
         'Cena do legado com 50% off',
-        'Bônus de legado +10% XP',
+        'Bônus de legado +5% XP',
         '1 baú raro + 1 ficha grátis por ativação',
     ]), []);
 
     const platinumBenefits = useMemo(() => ([
-    'Todas as vantagens do Premium',
+    'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
     'Até 30 arenas ativas',
     '1 cena de legado grátis por ativação',
     '1 ficha média de quiz por ativação',
     'Todos os planos de fundo e aparências premium',
-    '1 baú da Temporada + 1 baú raro por ativação',
+    '1 baú raro + 1 baú lendário por ativação',
     ]), []);
     const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(premiumBenefits), [premiumBenefits]);
     const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(platinumBenefits), [platinumBenefits]);
@@ -142,7 +142,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                                         {isStaffAccess ? 'Acesso GM' : isPlatinum ? 'Platinum 30 dias ativo' : premiumBadgeLabel}
                                     </span>
                                     <span className="rounded-full border border-[var(--skin-accent-color)]/18 bg-[var(--skin-accent-color)]/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">
-                                        +10% XP legado
+                                        +5% XP legado
                                     </span>
                                 </div>
                             </div>

@@ -6,6 +6,13 @@ export type SystemChallenge = ConfigSeasonQuest & {
   rewardGold?: number;
 };
 
+/**
+ * ESCALA DO XP: no Glyph o XP e minutos de acao (uma acao de 30 min vale ~30).
+ * A tabela antiga ia de 500 a 3500, o que fazia "concluir o tutorial" pagar o
+ * equivalente a 16 horas de trabalho e o primeiro relatorio, 58. As faixas
+ * agora sao 100 (marco de um toque), 300 (esforco sustentado) e 500 (o maior
+ * do jogo). Premio de missao e BONUS por cima do XP que a acao ja paga.
+ */
 export const SYSTEM_CHALLENGE_INSIGNIA_ID = 'insignia_quest_incomum';
 
 export const SYSTEM_CHALLENGES: SystemChallenge[] = [
@@ -25,7 +32,7 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 1, milestone: true },
-    rewards: { xp: 500 },
+    rewards: { xp: 300 },
     rewardGold: 1,
   },
   {
@@ -44,7 +51,7 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 5, milestone: true },
-    rewards: { xp: 1000 },
+    rewards: { xp: 300 },
     rewardGold: 2,
   },
   {
@@ -63,7 +70,7 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 20, milestone: true },
-    rewards: { xp: 1000 },
+    rewards: { xp: 300 },
     rewardGold: 2,
   },
   {
@@ -82,7 +89,7 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 1, milestone: true },
-    rewards: { xp: 1000 },
+    rewards: { xp: 100 },
     rewardChest: 'Comum',
   },
   {
@@ -101,7 +108,7 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 1, milestone: true },
-    rewards: { xp: 1500 },
+    rewards: { xp: 100 },
     rewardChest: 'Comum',
   },
   {
@@ -120,7 +127,7 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 1, milestone: true },
-    rewards: { xp: 1250 },
+    rewards: { xp: 100 },
     rewardChest: 'Comum',
   },
   {
@@ -139,7 +146,7 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 1, milestone: true },
-    rewards: { xp: 3500 },
+    rewards: { xp: 500 },
     rewardChest: 'Ciclo',
   },
 ];

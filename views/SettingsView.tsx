@@ -33,6 +33,7 @@ import {
     setScreenIntroTipsEnabled,
     type ScreenIntroTipId,
 } from '../utils/screenIntroTips';
+import { ORACLE_FREE_TONE, ORACLE_TONE_LABELS } from '../constants/oracleSpeechLibrary';
 import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
 import './settings-ui.css';
 
@@ -2075,7 +2076,7 @@ const PreferenciasTab: React.FC = () => {
         };
     }, []);
 
-    const activeModeName = oraclePreferences?.activeMode ? (oraclePreferences.activeMode.charAt(0).toUpperCase() + oraclePreferences.activeMode.slice(1)) : 'Neutro';
+    const activeModeName = ORACLE_TONE_LABELS[oraclePreferences?.speechTone || ORACLE_FREE_TONE].name;
     const completedFlags = userProfile.completedSeasonMissions || [];
     const termsStatus = completedFlags.includes(PROFILE_FLAG_TERMS_ACCEPTED) ? 'Aceito' : 'Pendente';
     const tutorialStatus = completedFlags.includes(PROFILE_FLAG_TUTORIAL_COMPLETED) ? 'Assistido' : 'Pendente';
@@ -2379,18 +2380,18 @@ const PremiumTab: React.FC = () => {
     const premiumBenefits = [
         'Até 15 arenas ativas',
         'Fundos premium de perfil e ativos',
-        'Todos os modos do Oráculo',
+        'Todos os tons de fala do Oráculo',
         'Cena do legado com 50% off',
-        'Bônus de legado +10% XP',
+        'Bônus de legado +5% XP',
         '1 baú raro + 1 ficha grátis por ativação',
     ];
     const platinumBenefits = [
-        'Todas as vantagens do Premium',
+        'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
         'Até 30 arenas ativas',
         '1 cena de legado grátis por ativação',
         '1 ficha média de quiz por ativação',
         'Todos os planos de fundo e aparências premium',
-        '1 baú da Temporada + 1 baú raro por ativação',
+        '1 baú raro + 1 baú lendário por ativação',
     ];
     const [premiumBenefitLeft, premiumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(premiumBenefits), [premiumBenefits]);
     const [platinumBenefitLeft, platinumBenefitRight] = useMemo(() => splitBenefitsIntoColumns(platinumBenefits), [platinumBenefits]);

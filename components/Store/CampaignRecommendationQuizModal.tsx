@@ -240,20 +240,22 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
     const hasFreeQuizCredit = campaignQuizFreeCredits > 0;
     const hasMediumQuizCredit = campaignQuizMediumCredits > 0;
     const hasStarterFreeQuiz = !hasCompletedFreeCampaignQuiz() && !hasOwnedFreeCampaign;
-    const canPickFreeQuiz = hasStarterFreeQuiz || hasFreeQuizCredit;
+    // Perguntar e de graca, sempre. Antes o modo gratuito exigia o quiz inicial ou
+    // uma ficha em maos: quem ja tinha gasto a sua nao conseguia nem PEDIR uma
+    // recomendacao, so ver o catalogo pago. Era cobrar pedagio no proprio funil
+    // que vende campanha.
+    //
+    // A ficha nao pagava o quiz e continua nao pagando: ela e um voucher que
+    // substitui o ouro na hora de ADQUIRIR (buyCodex/useCampaignQuizFreeCredit).
+    // Sem ficha, a aquisicao volta ao caminho do ouro e a carteira e checada
+    // aqui e no servidor. Soltar a recomendacao nao libera nada de graca.
+    const canPickFreeQuiz = true;
     const shouldConsumeFreeQuizCredit = quizMode === 'free' && !hasStarterFreeQuiz && hasFreeQuizCredit;
 
-    useEffect(() => {
-        if (canPickFreeQuiz) {
-            setQuizMode('free');
-            return;
-        }
-        if (hasMediumQuizCredit) {
-            setQuizMode('medium');
-            return;
-        }
-        setQuizMode('full');
-    }, [canPickFreeQuiz, hasMediumQuizCredit]);
+    // O modo inicial ja e 'free' no useState, e agora o gratuito esta sempre
+    // disponivel. O efeito que existia aqui reescolhia o modo sempre que a
+    // contagem de fichas mudava, o que passou a significar desfazer a escolha
+    // do jogador no meio do quiz. Quem quiser outro modo usa os botoes.
 
     const allArenas = getArenas();
     const installedCodexIds = useMemo(() => new Set(allArenas.map((arena) => arena.originCodexId).filter(Boolean)), [allArenas]);
@@ -454,7 +456,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                                     onClick={() => setQuizMode('free')}
                                                     className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${quizMode === 'free' ? 'luxe-skin-button' : 'campaign-quiz-secondary'}`}
                                                 >
-                                                    {hasStarterFreeQuiz ? 'Quiz grátis' : `Ficha grátis · ${campaignQuizFreeCredits}`}
+                                                    {hasFreeQuizCredit && !hasStarterFreeQuiz ? `Ficha grátis · ${campaignQuizFreeCredits}` : 'Quiz grátis'}
                                                 </button>
                                             )}
                                             {hasMediumQuizCredit && (

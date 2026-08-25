@@ -1,4 +1,4 @@
-﻿import React, { Suspense, useEffect, useState } from 'react';
+﻿import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { Portal } from './Portal';
 import { SKINS_DATA } from '../constants/GMboard';
@@ -9,6 +9,8 @@ import { CycleAtlasPanel } from './CycleAtlasPanel';
 import { resolveItemDef } from '../constants/items';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon, RefreshCwIcon } from './Icons';
 import { MetalReportCard } from './MetalReportCard';
+import { buildCycleComparison, isFavourable } from '../utils/cycleComparison';
+import { hasPlatinumAccess } from '../utils/premiumAccess';
 import { exportElementAsImage, shouldPreferNativeShare } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
 import './report-ui.css';
@@ -96,7 +98,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
 }) => {
     const REWARD_CARD_CAPTURE_ID = 'report-metal-card-capture';
     const preferNativeShare = shouldPreferNativeShare();
-    const { userProfile, showToast } = useGame();
+    const { userProfile, showToast, reports } = useGame();
     const userSkinId = userProfile.skin;
     const userSkin = SKINS_DATA.find(s => s.id === userSkinId);
     const skinColor = userSkin?.color || '#ffffff';
@@ -382,6 +384,71 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         );
     };
 
+    // Platinum: o relatorio deixa de descrever um ciclo solto e passa a compara-lo
+    // com os ciclos ja fechados. Entra condicionalmente, como o Atlas.
+    const isPlatinum = hasPlatinumAccess(userProfile);
+    const comparison = useMemo(
+        () => (isPlatinum ? buildCycleComparison(report, reports || []) : null),
+        [isPlatinum, report, reports],
+    );
+    const showComparisonSlide = Boolean(comparison && comparison.metrics.length > 0);
+
+    const renderComparisonSlide = () => (
+        <div className="flex flex-col h-full p-6 pt-16">
+            <div className="text-center">
+                <div className="mb-2 flex items-center justify-center gap-2">
+                    <h3 className="text-2xl font-black uppercase tracking-[0.3em] text-white">Contra voce</h3>
+                    <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em] text-cyan-100">
+                        Platinum
+                    </span>
+                </div>
+                <div className="report-rule" />
+                <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+                    Mediana de {comparison?.sampleSize} ciclos fechados
+                </p>
+            </div>
+
+            <div className="mt-6 flex-1 space-y-2 overflow-y-auto">
+                {(comparison?.metrics || []).map((metric) => {
+                    const favourable = isFavourable(metric);
+                    const stable = metric.direction === 'estavel';
+                    const arrow = stable ? '=' : metric.delta > 0 ? '▲' : '▼';
+                    const toneClass = stable
+                        ? 'text-gray-400'
+                        : favourable ? 'text-emerald-300' : 'text-amber-300';
+
+                    return (
+                        <div
+                            key={metric.id}
+                            className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-black/40 px-4 py-3"
+                        >
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">{metric.label}</p>
+                                <p className="mt-0.5 text-[10px] text-gray-600">
+                                    seu normal: {metric.baseline}{metric.suffix}
+                                </p>
+                            </div>
+                            <div className="flex items-baseline gap-2 shrink-0">
+                                <span className="text-2xl font-black tracking-tight text-white tabular-nums">
+                                    {metric.current}{metric.suffix}
+                                </span>
+                                <span className={`text-[11px] font-black tabular-nums ${toneClass}`}>
+                                    {arrow} {Math.abs(metric.delta)}{metric.suffix}
+                                </span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {comparison?.headline && (
+                <p className="mt-4 text-center text-[11px] leading-relaxed text-white/70 italic">
+                    {comparison.headline}
+                </p>
+            )}
+        </div>
+    );
+
     // Slide 4: Veredito
     const renderVerdictSlide = () => (
         <div className="flex flex-col h-full items-center justify-center p-6 text-center space-y-8">
@@ -438,7 +505,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                 { label: 'Desafios', pts: metrics.scoreBreakdown!.questPts, max: Math.max(metrics.scoreBreakdown!.questPts, 20), opacity: 0.65 },
                                 { label: 'Consistencia', pts: metrics.scoreBreakdown!.consistencyPts, max: 20, opacity: 0.5 },
                                 { label: 'Volume', pts: metrics.scoreBreakdown!.volumePts, max: 30, opacity: 0.4 },
-                                ...((metrics.scoreBreakdown?.premiumBonusPts ?? 0) > 0 ? [{ label: 'Premium +10%', pts: metrics.scoreBreakdown!.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown!.premiumBonusPts!, 50), opacity: 1, isPremium: true }] : []),
+                                ...((metrics.scoreBreakdown?.premiumBonusPts ?? 0) > 0 ? [{ label: 'Premium', pts: metrics.scoreBreakdown!.premiumBonusPts!, max: Math.max(metrics.scoreBreakdown!.premiumBonusPts!, 50), opacity: 1, isPremium: true }] : []),
                             ]
                     ).map(({ label, pts, max, opacity, ...rest }) => (
                         <div key={label} className="flex items-center gap-3">
@@ -515,6 +582,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         ...(weeklyAtlas.length > 0 ? [renderAtlasSlide] : []),
         renderTerritorySlide,
         renderAchievementsSlide,
+        ...(showComparisonSlide ? [renderComparisonSlide] : []),
         renderVerdictSlide,
         renderRewardSlide
     ];

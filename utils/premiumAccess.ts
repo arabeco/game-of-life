@@ -98,3 +98,31 @@ export const getNextPremiumExpiryAt = (currentExpiresAt?: string | null, now: nu
   const baseTime = Number.isFinite(currentExpiry) && currentExpiry > now ? currentExpiry : now;
   return new Date(baseTime + PREMIUM_CYCLE_MS).toISOString();
 };
+
+/**
+ * Bonus de XP no fechamento de ciclo, por tier.
+ *
+ * Antes era um `0.1` solto em dois pontos do GameContext, atras de
+ * `hasPremiumAccess` — que responde true para platinum tambem. Resultado: os
+ * dois tiers pagos recebiam exatamente o mesmo bonus, e o Platinum nao tinha
+ * nenhuma vantagem de progressao sobre o Premium.
+ *
+ * O numero mora aqui para que codigo e vitrine nao possam divergir.
+ */
+export const CYCLE_XP_BONUS_BY_TIER: Record<SubscriptionTier, number> = {
+  premium: 0.05,
+  platinum: 0.10,
+};
+
+/** Fracao a somar sobre o XP base do ciclo. Zero para quem nao assina. */
+export const getCycleXpBonusRate = (
+  profile?: PremiumLikeProfile | null,
+  now: number = Date.now(),
+): number => {
+  const tier = getActiveSubscriptionTier(profile, now);
+  return tier ? CYCLE_XP_BONUS_BY_TIER[tier] : 0;
+};
+
+/** O mesmo valor em porcentagem inteira, para textos de vitrine. */
+export const getCycleXpBonusPercentLabel = (tier: SubscriptionTier): string =>
+  `${Math.round(CYCLE_XP_BONUS_BY_TIER[tier] * 100)}%`;

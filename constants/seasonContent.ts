@@ -148,39 +148,57 @@ export const SEASONS: Record<string, SeasonConfig> = {
     celebrationSummary: 'Genesis fechou como marco fundador do GLYPH. Obrigado por atravessar a primeira abertura.',
     launchTitle: 'Primeira Era iniciada',
     launchSummary: 'A trilha oficial das Temporadas comeca agora. Novas jornadas e cosmeticos vao nascer sobre essa base.',
+    /**
+     * As tres jornadas da Genesis, mais o selo que exige as tres.
+     *
+     * Duas correcoes de uma vez. A descricao prometia "1 Bau Comum" e o codigo
+     * nao entregava bau nenhum: faltava `reward_type`, e sem ele claimSeasonQuest
+     * nao tem o que creditar. E o XP estava fora da escala do jogo — XP e
+     * minutos de acao, entao 2250 equivalia a 37 horas de bonus por cima de um
+     * esforco de 5. Agora e 100 / 300 / 500, e o bau e o mitico da Temporada.
+     */
     quests: [
       {
         id: 'quest-wanderer',
         title: 'O Andarilho',
-        description: 'Caminhe 20km no total para fortalecer pernas e espirito. (Recompensa: 1 Bau Comum)',
+        description: 'Caminhe 20km no total para fortalecer pernas e espirito. (Recompensa: 1 Bau Mitico)',
         type: 'individual',
         category: 'physical',
         season_id: 'season-genesis-0',
         actionTemplate: { name: 'Caminhada (1km)', description: 'Caminhar 1km em ritmo constante.', duration: 15, icon: '🚶', repetitions: 20 },
         requirements: { totalReps: 20 },
-        rewards: { xp: 2250, gold: 0 },
+        rewards: { xp: 500, gold: 0 },
+        reward_type: 'chest',
+        reward_value: 'Season',
       },
       {
         id: 'quest-scholar',
         title: 'O Erudito',
-        description: 'Leia um livro inteiro ou dedique tempo consistente a leitura. (Recompensa: 1 Bau Comum)',
+        description: 'Leia um livro inteiro ou dedique tempo consistente a leitura. (Recompensa: 1 Bau Mitico)',
         type: 'individual',
         category: 'intellectual',
         season_id: 'season-genesis-0',
         actionTemplate: { name: 'Leitura Focada', description: 'Ler um livro com atenção plena.', duration: 30, icon: '📚', repetitions: 15, isMilestone: true },
         requirements: { milestone: true },
-        rewards: { xp: 1800, gold: 0 },
+        rewards: { xp: 500, gold: 0 },
+        reward_type: 'chest',
+        reward_value: 'Season',
       },
       {
         id: 'quest-warrior',
+        // Eram 50 flexoes: 5 series de 5 min, 25 minutos no total contra as 7h30
+        // do Erudito pelo mesmo bau. Agora sao 200, o que poe a jornada na mesma
+        // ordem de grandeza das outras duas sem virar exagero.
         title: 'O Guerreiro',
-        description: 'Complete 50 flexoes no acumulado para fortalecer o corpo. (Recompensa: 1 Bau Comum)',
+        description: 'Complete 200 flexoes no acumulado para fortalecer o corpo. (Recompensa: 1 Bau Mitico)',
         type: 'individual',
         category: 'physical',
         season_id: 'season-genesis-0',
-        actionTemplate: { name: 'Flexões (x10)', description: 'Fazer 10 flexões com boa forma.', duration: 5, icon: '💪', repetitions: 5 },
-        requirements: { totalReps: 5 },
-        rewards: { xp: 1125, gold: 0 },
+        actionTemplate: { name: 'Flexões (x10)', description: 'Fazer 10 flexões com boa forma.', duration: 5, icon: '💪', repetitions: 20 },
+        requirements: { totalReps: 20 },
+        rewards: { xp: 300, gold: 0 },
+        reward_type: 'chest',
+        reward_value: 'Season',
       },
     ],
   },
@@ -453,9 +471,30 @@ export const GM_SEASONS: Season[] = Object.values(SEASONS).map((season) => ({
 }));
 
 export const GM_SEASON_MISSIONS: SeasonMission[] = [
-  { id: 'sm_1', season_id: 'season-genesis-0', title: 'O Peregrino', description: 'Correr um total de 50km. (Recompensa: 1 Bau Mitico)', goal_type: 'km_run', goal_value: 50, reward_type: 'chest', reward_value: 'Season', reward_exp: 2250 },
-  { id: 'sm_2', season_id: 'season-genesis-0', title: 'O Sabio', description: 'Ler 1 livro completo. (Recompensa: 1 Bau Mitico)', goal_type: 'books_read', goal_value: 1, reward_type: 'chest', reward_value: 'Season', reward_exp: 1125 },
-  { id: 'sm_3', season_id: 'season-genesis-0', title: 'O Monge', description: 'Meditar por 20 dias. (Recompensa: 1 Bau Mitico)', goal_type: 'meditation_days', goal_value: 20, reward_type: 'chest', reward_value: 'Season', reward_exp: 1800 },
+  /**
+   * A quarta missao da Genesis: nao se cumpre sozinha, fecha as outras tres.
+   *
+   * Substitui O Peregrino, O Sabio e O Monge, que viviam aqui com goal_type
+   * km_run / books_read / meditation_days — tipos que nenhuma parte do app
+   * calcula. Ficavam visiveis em 0% para sempre, prometendo bau. O que a pessoa
+   * de fato joga sao as tres jornadas de SEASONS['season-genesis-0'].quests,
+   * e este selo aponta para elas por id.
+   */
+  {
+    id: 'sm_genesis_meta_1',
+    season_id: 'season-genesis-0',
+    title: 'Selo da Genesis',
+    description: 'Conclua as 3 jornadas da Temporada Zero para selar a Primeira Era. Recompensa: Insignia Genesis.',
+    goal_type: 'quests_claimed',
+    goal_value: 3,
+    reward_type: 'item_id',
+    reward_value: 'insignia_season_genesis',
+    reward_item_ids: ['insignia_season_genesis'],
+    sourceQuestIds: ['quest-wanderer', 'quest-scholar', 'quest-warrior'],
+    reward_exp: 500,
+    type: 'individual',
+    icon: '🌌',
+  },
   {
     id: 'sm_aurora_meta_1',
     season_id: 'season-aurora-1-2026',

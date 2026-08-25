@@ -10,6 +10,7 @@ import { getNextSeasonConfig, getSeasonLaunchToastStorageKey, isGenesisSeason, r
 import { SYSTEM_CHALLENGES, SystemChallenge } from '../constants/systemChallenges';
 import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
+import { ArenaPactBalloon, ArenaPactProposal } from '../components/ArenaPactBalloon';
 
 type SelectableQuest = SeasonQuest | SystemChallenge;
 
@@ -173,12 +174,16 @@ export const SeasonView: React.FC = () => {
         userMissionParticipations,
         showToast,
         updateUserProfile,
+        activeArenaPact,
+        arenaPactCandidates,
     } = useGame();
     const [selectedQuest, setSelectedQuest] = useState<SelectableQuest | null>(null);
     const [selectedAutomaticMission, setSelectedAutomaticMission] = useState<SeasonMission | null>(null);
     const [isSeasonDetailOpen, setSeasonDetailOpen] = useState(false);
     const [isSeasonTransitionOpen, setSeasonTransitionOpen] = useState(false);
     const [isMissionLibraryOpen, setMissionLibraryOpen] = useState(false);
+    // O pacto de arena e pedido, nao empurrado: so abre depois deste clique.
+    const [isPactRequestOpen, setPactRequestOpen] = useState(false);
     const [pendingAbandon, setPendingAbandon] = useState<{ id: string; title: string; kind: 'system' | 'season' } | null>(null);
     const [isCompletedOpen, setCompletedOpen] = useState(false);
 
@@ -572,11 +577,11 @@ export const SeasonView: React.FC = () => {
                                 </MissionSection>
                             )}
 
-                            {(activeSystemQuests.length > 0 || activeIndividualQuests.length > 0) && (
+                            {(activeSystemQuests.length > 0 || activeIndividualQuests.length > 0 || activeArenaPact || arenaPactCandidates.length > 0) && (
                                 <MissionSection
                                     title="Sua escolha"
                                     hint={`${activeSystemQuests.length}/1 desafio`}
-                                    count={activeSystemQuests.length + activeIndividualQuests.length}
+                                    count={activeSystemQuests.length + activeIndividualQuests.length + (activeArenaPact ? 1 : 0)}
                                 >
                                     {activeSystemQuests.map((quest) => (
                                         <SeasonQuestCard
@@ -615,6 +620,26 @@ export const SeasonView: React.FC = () => {
                                             })()}
                                         />
                                     ))}
+                                    {/* A missao do Oraculo mora aqui, junto das outras: para
+                                        quem joga e a mesma coisa — a missao individual
+                                        escolhida. Separar em secao propria so inventava um
+                                        conceito a mais para a pessoa aprender. */}
+                                    <ArenaPactBalloon />
+
+                                    {!activeArenaPact && activeIndividualQuests.length === 0 && !isPactRequestOpen && arenaPactCandidates.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setPactRequestOpen(true)}
+                                            className="w-full rounded-2xl border border-dashed border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/[0.04] px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/10"
+                                        >
+                                            Pedir uma missao ao Oraculo
+                                        </button>
+                                    )}
+
+                                    {!activeArenaPact && activeIndividualQuests.length === 0 && isPactRequestOpen && (
+                                        <ArenaPactProposal onClose={() => setPactRequestOpen(false)} />
+                                    )}
+
                                 </MissionSection>
                             )}
 

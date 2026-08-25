@@ -53,11 +53,16 @@ assert.match(cardPath, /hasPremiumAccess/);
 assert.match(cardPath, /purpose: 'premium_content_card'/);
 assert.doesNotMatch(cardPath, /dailyFocusCardEnabled|notificationsEnabled|presenceLevel/);
 
+// O card automatico saia de um prompt de IA (buildAutomaticContentCardPrompt).
+// A IA foi removida: o texto agora vem escrito, entao a checagem passou a olhar
+// a funcao que monta e grava o card. A regra segue a mesma: o caminho do card
+// premium nao pode carregar sinal do coach.
 const edgeSource = readFileSync(new URL('../supabase/functions/oracle/index.ts', import.meta.url), 'utf8');
-const promptStart = edgeSource.indexOf('const buildAutomaticContentCardPrompt');
-const promptEnd = edgeSource.indexOf('const createAutomaticOracleMessage', promptStart);
-const automaticPrompt = edgeSource.slice(promptStart, promptEnd);
-assert.match(automaticPrompt, /conteudo premium/);
-assert.doesNotMatch(automaticPrompt, /focusArenaSignal|priorityActionName|nextMove/);
+const cardStart2 = edgeSource.indexOf('const createAutomaticOracleMessage');
+const cardEnd2 = edgeSource.indexOf('const handleAutomaticOracleCron', cardStart2);
+const automaticCard = edgeSource.slice(cardStart2, cardEnd2);
+assert.ok(cardStart2 >= 0 && cardEnd2 > cardStart2, 'caminho do card automatico deve ser identificavel');
+assert.match(automaticCard, /purpose: "premium_content_card"/);
+assert.doesNotMatch(automaticCard, /focusArenaSignal|priorityActionName|nextMove/);
 
 console.log('Oracle coach separation regression: coach is local and independent from premium content.');

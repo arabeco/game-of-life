@@ -1577,18 +1577,18 @@ const CYCLE_REPORT_SHOWCASE: Report = (() => {
 const GM_PREMIUM_ACTIVE_BENEFITS = [
   'Até 15 arenas ativas',
   'Fundos premium de perfil',
-  'Todos os modos do Oráculo',
+  'Todos os tons de fala do Oráculo',
   'Cena do legado com 50% off',
-  'Bônus de legado +10% XP',
+  'Bônus de legado +5% XP',
 ];
 
 const GM_PLATINUM_ACTIVE_BENEFITS = [
-  'Todas as vantagens do Premium',
+  'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
   'Até 30 arenas ativas',
   '1 cena de legado grátis por ativação',
   'Todos os planos de fundo',
   'Todas as aparências premium',
-  '1 baú da Temporada + 1 baú raro por ativação',
+  '1 baú raro + 1 baú lendário por ativação',
 ];
 
 const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardModalPayload => {

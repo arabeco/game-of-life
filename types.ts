@@ -510,6 +510,14 @@ export interface UserProfile {
   acceptedSystemChallenges?: string[];
   onboardingAgeRange?: OnboardingAgeRange | null;
   onboardingPurpose?: OnboardingPurpose | null;
+
+  // Pacto de arena ativo. Uma missao de cada vez, por decisao de produto.
+  // Titulo e recompensa nao moram aqui: saem do molde em utils/arenaPacts.ts.
+  arenaPactArenaId?: string | null;
+  arenaPactKind?: 'constancia' | 'conclusao' | 'retomada' | null;
+  arenaPactDifficulty?: 'leve' | 'media' | 'alta' | null;
+  arenaPactGoal?: number | null;
+  arenaPactStartedOn?: string | null;
   role: 'admin' | 'gm' | 'user';
   isPremium?: boolean;
   clanName?: string;

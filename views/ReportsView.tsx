@@ -1642,7 +1642,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const displayedEraByReportIndex = useMemo(() => {
         if (isEditingEras) {
-            const map = new Map<number, { label: string; skinId: string; isActive: boolean }>();
+            const map = new Map<number, { label: string; skinId: string; isActive: boolean; slotId?: string }>();
             sortedReports.forEach((report, reportIndex) => {
                 const slotId = draftReportEraIds[report.id];
                 const slot = draftEraSlots.find((entry) => entry.id === slotId);
@@ -1650,13 +1650,16 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 map.set(reportIndex, {
                     label: slot.name?.trim() || slot.defaultLabel,
                     skinId: slot.skinId,
+                    // So a edicao usa: e por ele que a faixa horizontal sabe qual
+                    // era selecionar quando alguem toca nela.
+                    slotId: slot.id,
                     isActive: slot.id === activeDraftEraId,
                 });
             });
             return map;
         }
 
-        const map = new Map<number, { label: string; skinId: string; isActive: boolean }>();
+        const map = new Map<number, { label: string; skinId: string; isActive: boolean; slotId?: string }>();
         eraSegments.forEach((segment, index) => {
             const summary = eraSummaries[index];
             if (!summary) return;
@@ -1681,7 +1684,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
      */
     const eraStripBands = useMemo(() => {
         const cronologico = [...sortedReports].reverse();
-        const bands: Array<{ key: string; label: string; skinId?: string; count: number }> = [];
+        const bands: Array<{ key: string; label: string; skinId?: string; slotId?: string; isActive?: boolean; count: number }> = [];
 
         cronologico.forEach((report, indexFromStart) => {
             const era = displayedEraByReportIndex.get(sortedReports.length - 1 - indexFromStart);
@@ -1689,11 +1692,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             const skinId = era?.skinId;
             const anterior = bands[bands.length - 1];
 
-            if (anterior && anterior.label === label && anterior.skinId === skinId) {
+            if (anterior && anterior.label === label && anterior.skinId === skinId && anterior.slotId === era?.slotId) {
                 anterior.count += 1;
                 return;
             }
-            bands.push({ key: `${label}-${indexFromStart}`, label, skinId, count: 1 });
+            bands.push({ key: `${label}-${indexFromStart}`, label, skinId, slotId: era?.slotId, isActive: era?.isActive, count: 1 });
         });
 
         return bands;
@@ -1711,52 +1714,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         if (!strip) return;
         strip.scrollLeft = strip.scrollWidth;
     }, [sortedReports.length]);
-    const displayedEraBands = useMemo(() => {
-        if (isEditingEras) {
-            return draftEraSegments.map((segment, index) => {
-                const slot = draftEraSlots.find((entry) => entry.id === segment.slotId);
-                if (!slot) return null;
-                return {
-                    key: slot.id,
-                    label: slot.name?.trim() || slot.defaultLabel,
-                    skinId: slot.skinId,
-                    start: segment.start,
-                    end: segment.end,
-                    eraIndex: index,
-                    isActive: slot.id === activeDraftEraId,
-                    slot,
-                };
-            }).filter(Boolean) as Array<{ key: string; label: string; skinId: string; start: number; end: number; eraIndex: number; isActive: boolean; slot: DraftEraSlot }>;
-        }
-
-        if (eraSummaries.length === 0 && sortedReports.length > 0) {
-            return [{
-                key: BOOTSTRAP_ERA_KEY,
-                label: eraMetadata[BOOTSTRAP_ERA_KEY]?.name?.trim() || 'ERA 1',
-                skinId: eraMetadata[BOOTSTRAP_ERA_KEY]?.skinId || getEraRibbonSkinId(0),
-                start: -1,
-                end: -1,
-                eraIndex: 0,
-                isActive: false,
-                summary: null,
-            }] as Array<{ key: string; label: string; skinId: string; start: number; end: number; eraIndex: number; isActive: boolean; summary: LegacyEraSummary | null }>;
-        }
-
-        return eraSegments.map((segment, index) => {
-            const summary = eraSummaries[index];
-            if (!summary) return null;
-            return {
-                key: summary.key,
-                label: summary.label,
-                skinId: resolveEraSkinId(summary, index),
-                start: segment.start,
-                end: segment.end,
-                eraIndex: index,
-                isActive: false,
-                summary,
-            };
-        }).filter(Boolean) as Array<{ key: string; label: string; skinId: string; start: number; end: number; eraIndex: number; isActive: boolean; summary: LegacyEraSummary }>;
-    }, [activeCycle, activeDraftEraId, draftEraSegments, draftEraSlots, eraMetadata, eraSegments, eraSummaries, isEditingEras, sortedReports.length]);
 
     const legacyFallbackIdentity = useMemo(() => ({
         snapshotVersion: 2 as const,
@@ -2568,17 +2525,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
                 );
             case 'hub': {
-                const items: Array<
-                    | { type: 'report'; report: Report; reportIndex: number; seasonName?: string }
-                > = [];
-                const reportRowIndexMap = new Map<number, number>();
-
-                sortedReports.forEach((report, index) => {
-                    const season = getSeasonById(report.seasonId) || getSeasonByDate(report.endDate);
-                    items.push({ type: 'report', report, reportIndex: index, seasonName: season?.name });
-                    reportRowIndexMap.set(index, items.length - 1);
-                });
-
+                // items e reportRowIndexMap existiam para montar as linhas da grade
+                // vertical, que saiu. A trilha horizontal le sortedReports direto.
                 return (
                     <div className="pb-12">
                         {reportForComparison && (
@@ -2650,7 +2598,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     );
                                 })}
                             </div>
-                        ) : sortedReports.length > 0 && !isEditingEras && !isEditingHistoryCycles ? (
+                        ) : sortedReports.length > 0 && (
                             /*
                              * A trilha horizontal.
                              *
@@ -2682,7 +2630,16 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     report={report}
                                                     isLatest={isCurrent}
                                                     showTimelineMarker={false}
-                                                    onClick={() => handleViewReport(report)}
+                                                    onClick={() => {
+                                                        const indiceOriginal = sortedReports.length - 1 - indexFromStart;
+                                                        // Arrastar para atribuir nao existe na horizontal: o toque
+                                                        // assume o papel, e o alvo e a era selecionada na faixa.
+                                                        if (isEditingEras) return handleAssignReportToDraftEra(indiceOriginal);
+                                                        if (isEditingHistoryCycles) return setHistoricalCycleBeingEdited(report);
+                                                        handleViewReport(report);
+                                                    }}
+                                                    isEditing={isEditingEras}
+                                                    isSelectedForEraEdit={isEditingEras && Boolean(displayedEraByReportIndex.get(sortedReports.length - 1 - indexFromStart)?.isActive)}
                                                     seasonName={seasons.find((season) => season.id === report.seasonId)?.name}
                                                     eraLabel={displayedEraByReportIndex.get(sortedReports.length - 1 - indexFromStart)?.label}
                                                     eraSkinId={displayedEraByReportIndex.get(sortedReports.length - 1 - indexFromStart)?.skinId}
@@ -2710,136 +2667,35 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     <div
                                         className="scrollbar-hide -mt-1 flex gap-3 overflow-x-hidden"
                                         style={{ paddingLeft: 0 }}
-                                        aria-hidden
                                     >
                                         {eraStripBands.map((band) => {
                                             const skin = getEraRibbonSkin(band.skinId);
+                                            const selecionavel = isEditingEras && Boolean(band.slotId);
                                             return (
-                                                <div
+                                                <button
                                                     key={`era-band-${band.key}`}
-                                                    className="shrink-0"
+                                                    type="button"
+                                                    disabled={!selecionavel}
+                                                    onClick={() => band.slotId && setActiveDraftEraId(band.slotId)}
+                                                    className={`shrink-0 text-left transition-all ${selecionavel ? 'cursor-pointer' : 'cursor-default'} ${band.isActive ? 'scale-[1.02]' : ''}`}
                                                     style={{ width: `calc(${band.count} * 82% + ${band.count - 1} * 0.75rem)` }}
                                                 >
                                                     <div
-                                                        className="h-[3px] w-full rounded-full"
-                                                        style={{ background: `linear-gradient(90deg, ${skin.edge} 0%, ${skin.glow} 50%, ${skin.metal} 100%)` }}
+                                                        className={`w-full rounded-full transition-all ${band.isActive ? 'h-[5px]' : 'h-[3px]'}`}
+                                                        style={{
+                                                            background: `linear-gradient(90deg, ${skin.edge} 0%, ${skin.glow} 50%, ${skin.metal} 100%)`,
+                                                            boxShadow: band.isActive ? `0 0 14px ${skin.glow}` : undefined,
+                                                        }}
                                                     />
                                                     <p
                                                         className="mt-1 truncate text-[9px] font-black uppercase tracking-[0.2em]"
-                                                        style={{ color: skin.glow }}
+                                                        style={{ color: skin.glow, opacity: band.isActive || !isEditingEras ? 1 : 0.5 }}
                                                     >
                                                         {band.label}
                                                     </p>
-                                                </div>
+                                                </button>
                                             );
                                         })}
-                                    </div>
-                                )}
-                            </div>
-                        ) : sortedReports.length > 0 && (
-                            <div className="relative mt-6">
-                                {/* A primeira coluna de 16px era uma calha vazia: o card ja
-                                    desenha o proprio marcador e a linha (pl-4 + marcador em
-                                    left-0), e a fita de era mora na terceira coluna, que so
-                                    existe na edicao. A calha so empurrava tudo para a direita
-                                    e deixava a espinha desalinhada do nada. */}
-                                <div className={`grid ${isEditingEras ? 'grid-cols-[minmax(0,1fr)_18px]' : 'grid-cols-[minmax(0,1fr)]'} gap-x-1`}>
-                                    {items.map((item, rowIndex) => {
-                                        if (item.type === 'report') {
-                                            const eraDisplay = displayedEraByReportIndex.get(item.reportIndex);
-                                            return (
-                                                <React.Fragment key={item.report.id}>
-                                                    <div className="relative py-3">
-                                                        {/* A espinha passa por tras do marcador do card, que tem
-                                                            20px e fica em left-0: 9px centraliza o fio nele. */}
-                                                        <div className="absolute left-[9px] top-0 bottom-0 w-px bg-white/10"></div>
-                                                        <TimelineCard
-                                                            report={item.report}
-                                                            isLatest={item.reportIndex === 0}
-                                                            onClick={() => {
-                                                                if (isEditingEras) {
-                                                                    handleAssignReportToDraftEra(item.reportIndex);
-                                                                    return;
-                                                                }
-                                                                if (isEditingHistoryCycles) {
-                                                                    setHistoricalCycleBeingEdited(item.report);
-                                                                    return;
-                                                                }
-                                                                handleViewReport(item.report);
-                                                            }}
-                                                            seasonName={item.seasonName}
-                                                            isEditing={isEditingEras}
-                                                            eraLabel={eraDisplay?.label}
-                                                            eraSkinId={eraDisplay?.skinId}
-                                                            isSelectedForEraEdit={!!eraDisplay?.isActive}
-                                                            onDelete={isEditingHistoryCycles && !isEditingEras ? async () => {
-                                                                await handleDeleteReportCycle(item.report);
-                                                            } : undefined}
-                                                        />
-                                                    </div>
-                                                    {isEditingEras && <div className="relative py-3"></div>}
-                                                </React.Fragment>
-                                            );
-                                        }
-
-                                        return null;
-                                    })}
-                                    {isEditingEras && displayedEraBands.map((band) => {
-                                        const rowStart = reportRowIndexMap.get(band.start);
-                                        const rowEnd = reportRowIndexMap.get(band.end);
-                                        if (rowStart == null || rowEnd == null) return null;
-
-                                        return (
-                                            <div
-                                                key={`era-${band.key}-${band.start}-${band.end}`}
-                                                className="col-start-2 flex justify-center"
-                                                style={{ gridRow: `${rowStart + 1} / ${rowEnd + 2}`, marginTop: band.eraIndex === 0 ?0 : 8, marginBottom: band.eraIndex === displayedEraBands.length - 1 ?0 : 8 }}
-                                            >
-                                                <div className="relative h-full">
-                                                    <button
-                                                        id={`era-ribbon-button-${band.eraIndex}`}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (isEditingEras && 'slot' in band) {
-                                                                setActiveDraftEraId(band.slot.id);
-                                                                return;
-                                                            }
-                                                        }}
-                                                        disabled={!isEditingEras || !('slot' in band)}
-                                                        title={isEditingEras ?'Selecionar Era' : band.label}
-                                                        className={`h-full rounded-sm transition-all ${isEditingEras && band.isActive ?'scale-[1.03]' : ''} ${isEditingEras && 'slot' in band ?'cursor-pointer' : 'cursor-default'}`}
-                                                    >
-                                                        <EraRibbon
-                                                            label={band.label}
-                                                            skinId={band.skinId}
-                                                            className={`w-5 ${band.isActive ?'shadow-[0_0_0_1px_rgba(212,175,55,0.55),0_0_24px_rgba(212,175,55,0.16)]' : ''}`}
-                                                        />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if ('slot' in band) {
-                                                                openDraftEraInlineEditor(band.slot, band.eraIndex);
-                                                                setActiveDraftEraId(band.slot.id);
-                                                                return;
-                                                            }
-                                                            if ('summary' in band) {
-                                                                openSavedEraInlineEditor(band.summary, band.eraIndex);
-                                                            }
-                                                        }}
-                                                        title="Editar nome e skin da Era"
-                                                        className="absolute -right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-black/75 text-[10px] text-white/80 shadow-[0_8px_18px_rgba(0,0,0,0.35)] transition hover:border-[var(--skin-accent-color)]/45 hover:text-white"
-                                                    >
-                                                        <EditIcon className="h-3 w-3" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                {reports.length >= 2 && !visibleActiveCycle && !reportForComparison && (
-                                    <div className="mt-4">
-                                        <button onClick={handleStartCompare} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COMPARAR ÚLTIMOS 2 CICLOS</button>
                                     </div>
                                 )}
                             </div>

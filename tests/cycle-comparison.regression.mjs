@@ -112,3 +112,35 @@ assert.ok(execReconstruida, 'executionRatePct ausente deve ser reconstruido de f
 assert.equal(execReconstruida.baseline, 55);
 
 console.log('Cycle comparison regression: mediana propria, metrica invertida correta, e sem culpa no texto.');
+
+// --- a frase de fecho -----------------------------------------------------
+// A headline diz PARA ONDE foi; esta diz o que levar disso. A tela terminava
+// seca, e o relatorio ja tem frase no veredito — faltava aqui.
+const { buildComparisonClosingLine } = await import('../utils/cycleComparison.ts');
+
+assert.equal(buildComparisonClosingLine({ sampleSize: 0, metrics: [], headline: null }), null,
+  'sem metrica nao ha o que fechar');
+
+const tudoAcima = buildCycleComparison(
+  cycle('otimo', { exec: 90, dias: 25, seq: 12, lacunas: 1, score: 95 }),
+  historico,
+);
+const fechoBom = buildComparisonClosingLine(tudoAcima);
+assert.match(fechoBom, /nao competiu com ninguem/i, 'ciclo acima em tudo celebra sem comparar com outros');
+
+const tudoAbaixo = buildCycleComparison(
+  cycle('ruim', { exec: 15, dias: 3, seq: 1, lacunas: 22, score: 25 }),
+  historico,
+);
+const fechoRuim = buildComparisonClosingLine(tudoAbaixo);
+assert.match(fechoRuim, /continua sendo um ciclo/i, 'ciclo abaixo nao vira derrota');
+
+// nenhuma frase de fecho cobra
+for (const entrada of [tudoAcima, tudoAbaixo, comSigoMesmo]) {
+  const frase = buildComparisonClosingLine(entrada);
+  if (!frase) continue;
+  assert.doesNotMatch(frase, /falh|fracass|preguic|deveria|desperdic/i, `fecho nao cobra: "${frase}"`);
+  assert.ok(frase.length <= 120, `fecho longo demais: "${frase}"`);
+}
+
+console.log('Fecho da comparacao: diz o que levar do ciclo, sem cobrar nada dele.');

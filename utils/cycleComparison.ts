@@ -144,6 +144,34 @@ const buildHeadline = (metrics: CycleMetricComparison[], sampleSize: number): st
   return `Este ciclo ficou no seu padrao: nem acima nem abaixo de ${referencia}.`;
 };
 
+/**
+ * O fecho da comparacao, no lugar do resumo seco.
+ *
+ * A headline diz PARA ONDE foi; esta diz o que fazer com isso. Sao coisas
+ * diferentes: "ficou acima em tudo" e leitura, "nao precisa provar de novo
+ * amanha" e a frase que sobra na cabeca depois de fechar a tela.
+ *
+ * Nenhuma cobra. O ciclo ja fechou — nao ha o que corrigir nele, so o que levar
+ * para o proximo.
+ */
+export const buildComparisonClosingLine = (comparison: CycleComparison): string | null => {
+  if (comparison.metrics.length === 0) return null;
+
+  const favoraveis = comparison.metrics.filter(isFavourable).length;
+  const total = comparison.metrics.length;
+
+  if (favoraveis === total) {
+    return 'Voce nao competiu com ninguem aqui. Superou a sua propria media, e isso conta diferente.';
+  }
+  if (favoraveis === 0) {
+    return 'Um ciclo abaixo do seu normal continua sendo um ciclo. O que ele mostra vale para o proximo.';
+  }
+  if (favoraveis >= total / 2) {
+    return 'Nem tudo subiu, e nao precisava. O que segurou o ciclo esta acima do seu padrao.';
+  }
+  return 'A maior parte cedeu, mas nao tudo. O que resistiu e por onde comecar da proxima vez.';
+};
+
 export const buildCycleComparison = (
   report: Report,
   history: Report[],

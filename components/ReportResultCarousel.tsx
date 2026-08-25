@@ -9,7 +9,7 @@ import { CycleAtlasPanel } from './CycleAtlasPanel';
 import { resolveItemDef } from '../constants/items';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, CheckIcon, CrownIcon, ZapIcon, TrophyIcon, Trash2Icon, RefreshCwIcon } from './Icons';
 import { MetalReportCard } from './MetalReportCard';
-import { buildCycleComparison, isFavourable } from '../utils/cycleComparison';
+import { buildComparisonClosingLine, buildCycleComparison, isFavourable } from '../utils/cycleComparison';
 import { hasPlatinumAccess } from '../utils/premiumAccess';
 import { exportElementAsImage, shouldPreferNativeShare } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
@@ -392,13 +392,36 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         [isPlatinum, report, reports],
     );
     const showComparisonSlide = Boolean(comparison && comparison.metrics.length > 0);
+    const closingLine = comparison ? buildComparisonClosingLine(comparison) : null;
 
     const renderComparisonSlide = () => (
-        <div className="flex flex-col h-full p-6 pt-16">
-            <div className="text-center">
+        <div className="relative flex flex-col h-full p-6 pt-16">
+            {/* O brilho puxa a cor da skin de quem le, nao uma cor fixa: a tela e
+                sobre a pessoa contra ela mesma, entao ela aparece nela. */}
+            <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                    background: `radial-gradient(circle at 50% 0%, ${skinColor}22 0%, transparent 58%)`,
+                }}
+            />
+            <div
+                className="pointer-events-none absolute inset-x-10 top-14 h-px"
+                style={{ background: `linear-gradient(90deg, transparent, ${skinColor}90, transparent)` }}
+            />
+            <div className="relative z-10 text-center">
                 <div className="mb-2 flex items-center justify-center gap-2">
                     <h3 className="text-2xl font-black uppercase tracking-[0.3em] text-white">Contra voce</h3>
-                    <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em] text-cyan-100">
+                    <span
+                        className="rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em]"
+                        style={{
+                            color: skinColor,
+                            borderWidth: 1,
+                            borderStyle: 'solid',
+                            borderColor: `${skinColor}66`,
+                            background: `${skinColor}14`,
+                            boxShadow: `0 0 14px ${skinColor}30`,
+                        }}
+                    >
                         Platinum
                     </span>
                 </div>
@@ -408,7 +431,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 </p>
             </div>
 
-            <div className="mt-6 flex-1 space-y-2 overflow-y-auto">
+            <div className="relative z-10 mt-6 flex-1 space-y-2 overflow-y-auto">
                 {(comparison?.metrics || []).map((metric) => {
                     const favourable = isFavourable(metric);
                     const stable = metric.direction === 'estavel';
@@ -441,11 +464,21 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 })}
             </div>
 
-            {comparison?.headline && (
-                <p className="mt-4 text-center text-[11px] leading-relaxed text-white/70 italic">
-                    {comparison.headline}
-                </p>
-            )}
+            <div className="relative z-10 mt-4 space-y-2">
+                {comparison?.headline && (
+                    <p className="text-center text-[11px] leading-relaxed text-white/70 italic">
+                        {comparison.headline}
+                    </p>
+                )}
+                {closingLine && (
+                    <p
+                        className="text-center text-[12px] font-bold leading-relaxed"
+                        style={{ color: skinColor }}
+                    >
+                        {closingLine}
+                    </p>
+                )}
+            </div>
         </div>
     );
 

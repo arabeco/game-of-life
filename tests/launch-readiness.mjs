@@ -93,6 +93,13 @@ const suites = {
       interactions: ['os resgates passam pelo mesmo ritual', 'subida de patente entra em todos', 'missao de item paga XP por reward_exp'],
     },
     {
+      id: 'oracle-presence-policy',
+      label: 'Oracle presence policy regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'oracle-presence-policy.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['presenca decide o que ele fala', 'aviso decide onde chega', 'push nao volta a exigir presenca 3'],
+    },
+    {
       id: 'planner-simple-list',
       label: 'Planner simple list regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'planner-simple-list.regression.mjs')]],

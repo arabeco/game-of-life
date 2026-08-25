@@ -153,3 +153,34 @@ export const getOracleFeedQuotaStatus = (
     latestFeedAt: latestFeedMessage?.createdAt ?? null,
   };
 };
+
+/**
+ * Controle do "uma fala por dia" do nivel Equilibrado.
+ *
+ * O Presente fala a cada abertura e nao passa por aqui. O Equilibrado fala uma
+ * vez por dia, entao precisa lembrar se ja falou hoje — e isso e por aparelho,
+ * nao por conta: e sobre quantas vezes ESTA pessoa viu o app abrir, nao sobre
+ * um numero que valha a pena sincronizar.
+ */
+const OPENING_LINE_STORAGE_PREFIX = 'glyph_oracle_opening_';
+
+export const getOpeningLineStorageKey = (userId: string) => `${OPENING_LINE_STORAGE_PREFIX}${userId}`;
+
+export const hasSpokenOpeningLineToday = (userId: string, today: string): boolean => {
+  if (!userId || typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(getOpeningLineStorageKey(userId)) === today;
+  } catch {
+    return false;
+  }
+};
+
+export const markOpeningLineSpoken = (userId: string, today: string): void => {
+  if (!userId || typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(getOpeningLineStorageKey(userId), today);
+  } catch {
+    // Sem armazenamento a fala volta a cada abertura. E o pior caso aceitavel:
+    // falar demais incomoda menos que o painel abrir mudo por engano.
+  }
+};

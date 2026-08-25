@@ -55,6 +55,7 @@ import { publishGlyphAndroidWidgetSnapshot } from '../utils/androidWidget';
 import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
+import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import {
     buildPactCandidates,
     buildPactCandidatesForArena,
@@ -12142,6 +12143,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         isClanQuestActionId,
         showToast,
         oracleTone,
+        // Quanto ele comenta ao vivo sai da politica de presenca, nao de um numero solto.
+        oracleReactions: getOraclePresenceRules(oraclePreferences?.presenceLevel).reactions,
         updateClanMissionProgress,
         updateCustomClanMissionProgress,
         handleCompetitionArenaCompletion: resolveCompetitionChallengeOutcome,

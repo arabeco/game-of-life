@@ -7,7 +7,12 @@ import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTas
 import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../utils/progressUtils';
 import { emitArenaAttention } from '../../utils/arenaAttention';
 import { emitAppSensoryCue } from '../../utils/sensoryCue';
-import { emitOracleSpeech } from '../../utils/oracleSpeech';
+import { emitOracleSpeech as emitOracleSpeechRaw } from '../../utils/oracleSpeech';
+import {
+    allowsOracleReaction,
+    type OraclePresenceRules,
+    type OracleReactionWeight,
+} from '../../constants/oraclePresencePolicy';
 import { pickOracleSpeech, ORACLE_FREE_TONE, type OracleSpeechTone } from '../../constants/oracleSpeechLibrary';
 import { PRODUCT_FEATURES } from '../../constants/featureFlags';
 
@@ -54,6 +59,12 @@ interface CreateTaskDomainParams {
     isClanQuestActionId: (actionId: string) => boolean;
     showToast: (message: string, tone: ToastTone) => void;
     oracleTone?: OracleSpeechTone;
+    /**
+     * O Oraculo comenta o que voce acabou de concluir. So o nivel Presente faz
+     * isso: no Equilibrado ele fala uma vez por dia e nao acompanha cada acao.
+     */
+    /** Regra de reacao do nivel de presenca: 'nenhuma', 'marcos' ou 'todas'. */
+    oracleReactions?: OraclePresenceRules['reactions'];
     updateClanMissionProgress: (questId: string, increment: number) => Promise<void>;
     updateCustomClanMissionProgress: (missionId: string, increment: number) => Promise<void>;
     handleCompetitionArenaCompletion?: (arenaId: string) => Promise<void>;
@@ -91,6 +102,7 @@ export const createTaskDomain = ({
     isClanQuestActionId,
     showToast,
     oracleTone = ORACLE_FREE_TONE,
+    oracleReactions = 'todas',
     updateClanMissionProgress,
     updateCustomClanMissionProgress,
     handleCompetitionArenaCompletion,
@@ -104,6 +116,19 @@ export const createTaskDomain = ({
     tutorialCompletedFlag,
     reconcileJudgedDayTaskMutation,
 }: CreateTaskDomainParams): TaskDomainApi => {
+
+    // As reacoes nao pesam igual. Fechar arena, campanha ou marco e raro e vale
+    // uma palavra ja no Equilibrado; volume do dia e avanco de meta disparam quase
+    // sempre e, repetidos, viram papel de parede — esses so no Presente. O peso
+    // vai no ponto de chamada porque so ele sabe o que acabou de acontecer.
+    const emitOracleSpeech = (
+        payload: Parameters<typeof emitOracleSpeechRaw>[0],
+        weight: OracleReactionWeight = 'rotina',
+    ) => {
+        if (!allowsOracleReaction({ reactions: oracleReactions } as OraclePresenceRules, weight)) return;
+        emitOracleSpeechRaw(payload);
+    };
+
     const getJudgedTaskIdsForDate = (operationalDate: string) => {
         return judgedTaskIdsByDate[operationalDate] || [];
     };
@@ -315,7 +340,7 @@ export const createTaskDomain = ({
                 : pickOracleSpeech('arena_completed', oracleTone, { arena: arena.name }),
             tone: 'success',
             durationMs: campaignJustCleared ? 5600 : 5000,
-        });
+        }, 'marco');
 
         addFeedEvent({
             type: 'ARENA_COMPLETED',
@@ -1036,7 +1061,7 @@ export const createTaskDomain = ({
                 message: pickOracleSpeech('milestone_completed', oracleTone, { action: action.name }),
                 tone: 'success',
                 durationMs: 5000,
-            });
+            }, 'marco');
         }
         maybePromptSitrepFollowUp(newTask, action);
         onDailyProofActionCompleted?.({ task: newTask, action, tasksAfterChange: [...tasks, newTask] });

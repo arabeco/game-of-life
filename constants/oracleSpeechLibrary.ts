@@ -432,6 +432,9 @@ export const pickOracleOpeningLine = (
     now: Date = new Date(),
     random: () => number = Math.random,
 ): { text: string; kind: OracleOpeningKind } | null => {
+    // Quem decide SE fala e a politica de presenca (constants/oraclePresencePolicy).
+    // Aqui so sai fora quando a presenca cala de vez, para esta funcao continuar
+    // servindo a quem ja resolveu a frequencia antes de chamar.
     if (presenceLevel <= 0) return null;
 
     const safeTone = tone in ORACLE_TONE_LABELS ? tone : ORACLE_FREE_TONE;

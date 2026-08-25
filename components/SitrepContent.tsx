@@ -13,7 +13,8 @@ import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { buildHistoricalDailyInsight, buildTodayDailyReading, type DailyReadingDepth } from '../utils/dailyInsights';
 import { ArenaPactBalloon } from './ArenaPactBalloon';
 import { pickOracleOpeningLine, ORACLE_FREE_TONE } from '../constants/oracleSpeechLibrary';
-import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
+import { DEFAULT_ORACLE_PRESENCE_LEVEL, hasSpokenOpeningLineToday, markOpeningLineSpoken } from '../utils/oracleFeedUtils';
+import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import { hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
 
 type DailyActionRow = {
@@ -262,21 +263,26 @@ export const SitrepContent: React.FC<{ onClose?: () => void; selectedDateOverrid
         });
     }, [arenaStats, completedRows.length, cyclePattern?.days, dailyRows.length, isToday, selectedDate, topArena]);
 
-    // A fala de abertura: saudacao, dica de como o jogo funciona, ou sugestao.
-    // Sorteada uma vez por montagem para nao trocar de frase a cada re-render, e
-    // so no dia corrente: abrir um dia passado nao e chegar, e consultar.
-    const greeting = useMemo(
-        () => (isToday
-            ? pickOracleOpeningLine(
-                oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL,
-                oraclePreferences?.speechTone || ORACLE_FREE_TONE,
-            )
-            : null),
+    // A fala de abertura, na frequencia que o nivel de presenca manda:
+    // Silencioso nunca, Equilibrado uma por dia, Presente a cada abertura.
+    // Sorteada uma vez por montagem para nao trocar de frase a cada re-render.
+    const greeting = useMemo(() => {
+        if (!isToday) return null;
+
+        const rules = getOraclePresenceRules(oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL);
+        if (rules.openingLine === 'nunca') return null;
+        if (rules.openingLine === 'diaria' && hasSpokenOpeningLineToday(userProfile.id, selectedDate)) return null;
+
+        const line = pickOracleOpeningLine(
+            rules.value,
+            oraclePreferences?.speechTone || ORACLE_FREE_TONE,
+        );
+        if (line && rules.openingLine === 'diaria') markOpeningLineSpoken(userProfile.id, selectedDate);
+        return line;
         // Sem oraclePreferences nas dependencias de proposito: trocar o tom no
         // meio da sessao nao deve reescrever o cumprimento que ja esta na tela.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [isToday],
-    );
+    }, [isToday, selectedDate, userProfile.id]);
 
     // O painel so falava de dias passados. Esta leitura cobre o dia corrente, e a
     // profundidade acompanha a assinatura: livre descreve, Premium compara com o

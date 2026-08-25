@@ -23,6 +23,7 @@ import {
 } from '../constants/oracleSpeechLibrary';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
+import { ORACLE_PRESENCE_ORDER, ORACLE_PRESENCE_RULES } from '../constants/oraclePresencePolicy';
 
 interface OracleSettingsModalProps {
     onClose: () => void;
@@ -32,17 +33,10 @@ interface OracleSettingsModalProps {
 
 type ToggleKey = 'dailyFocusCardEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
 
-const ORACLE_PRESENCE_LEVELS: Array<{
-    value: OraclePresenceLevel;
-    label: string;
-    caption: string;
-}> = [
-    // Above silent the app delivers one automatic card a day at any level, so the
-    // captions describe when it speaks rather than promising a different volume.
-    { value: 0, label: 'Silencioso', caption: 'O Oraculo so responde quando voce o chama.' },
-    { value: 2, label: 'Equilibrado', caption: 'Um toque por dia, apenas quando houver algo que ajude.' },
-    { value: 3, label: 'Presente', caption: 'Um toque por dia, aproveitando mais oportunidades de falar.' },
-];
+// Os textos e as regras vivem em constants/oraclePresencePolicy: o que cada
+// nivel faz estava espalhado entre este modal, o cron e o portao de push, e por
+// isso nao batia entre si.
+const ORACLE_PRESENCE_LEVELS = ORACLE_PRESENCE_ORDER.map((value) => ORACLE_PRESENCE_RULES[value]);
 
 
 const PUSH_PERMISSION_LABEL: Record<AppPushPermission, string> = {
@@ -433,7 +427,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     {renderSwitchRow({
                                         icon: 'P',
                                         label: 'Avisos no aparelho',
-                                        description: PUSH_PERMISSION_LABEL[pushPermission],
+                                        description: `Só o push. Desligado, a fala continua e espera no Oráculo. ${PUSH_PERMISSION_LABEL[pushPermission]}`,
                                         enabled: Boolean(oraclePreferences.pushEnabled),
                                         onToggle: handlePushToggle,
                                         accentClass: 'bg-emerald-500/70',

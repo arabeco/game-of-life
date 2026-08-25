@@ -792,7 +792,12 @@ const shouldPushOracleMessage = (
     return false;
   }
 
-  if (presenceLevel < 3) {
+  // A presenca decide O QUE o Oraculo fala; quem decide se aquilo vira aviso no
+  // aparelho e o interruptor de avisos, conferido antes de chegar aqui. Este
+  // portao exigia presenca 3, entao quem estava no Equilibrado recebia o card e
+  // nunca o aviso — duas regras para a mesma decisao, em lugares diferentes.
+  // Silencioso nao gera card, entao nao chega ate aqui de qualquer forma.
+  if (presenceLevel <= 0) {
     return false;
   }
 

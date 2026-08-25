@@ -82,7 +82,7 @@
       benefits: [
         'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
         'Até 30 arenas ativas',
-        '1 cena de legado grátis por renovação',
+        'Cena do legado com 70% off',
         '1 campanha média grátis por renovação',
         'Todos os planos de fundo',
         'Todas as aparências premium',

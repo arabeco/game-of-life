@@ -2388,7 +2388,7 @@ const PremiumTab: React.FC = () => {
     const platinumBenefits = [
         'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
         'Até 30 arenas ativas',
-        '1 cena de legado grátis por ativação',
+        'Cena do legado com 70% off',
         '1 campanha média grátis por ativação',
         'Todos os planos de fundo e aparências premium',
         '1 baú raro + 1 baú lendário por ativação',

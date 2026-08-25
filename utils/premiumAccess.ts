@@ -76,6 +76,22 @@ export const getDiscountedPremiumPrice = (basePrice: number, discountPercent: nu
 
 export const LEGACY_PROJECTION_PREMIUM_DISCOUNT = 0.5;
 
+/**
+ * Desconto na cena de legado, por tier.
+ *
+ * O Platinum ganhava UMA cena gratis por renovacao e, gasto o credito, voltava a
+ * pagar o mesmo que o Premium — o tier de cima nao tinha vantagem nenhuma ali
+ * depois do primeiro uso. Voucher de uso unico se sente como brinde de sorteio;
+ * desconto permanente se sente como assinatura, e e o que sustenta o tier.
+ *
+ * O credito antigo continua sendo honrado para quem tem saldo; o que mudou e que
+ * ele deixou de ser o beneficio anunciado.
+ */
+export const LEGACY_PROJECTION_DISCOUNT_BY_TIER: Record<SubscriptionTier, number> = {
+  premium: LEGACY_PROJECTION_PREMIUM_DISCOUNT,
+  platinum: 0.7,
+};
+
 export const getLegacyProjectionSceneCredits = (profile?: PremiumLikeProfile | null): number => {
   return Math.max(0, Number(profile?.legacyProjectionSceneCredits || 0));
 };
@@ -89,8 +105,9 @@ export const getLegacyProjectionScenePrice = (
   basePrice: number = 50,
 ): number => {
   if (hasLegacyProjectionSceneCredit(profile)) return 0;
-  if (!hasPremiumAccess(profile)) return basePrice;
-  return getDiscountedPremiumPrice(basePrice, LEGACY_PROJECTION_PREMIUM_DISCOUNT);
+  const tier = getActiveSubscriptionTier(profile);
+  if (!tier) return basePrice;
+  return getDiscountedPremiumPrice(basePrice, LEGACY_PROJECTION_DISCOUNT_BY_TIER[tier]);
 };
 
 export const getNextPremiumExpiryAt = (currentExpiresAt?: string | null, now: number = Date.now()): string => {

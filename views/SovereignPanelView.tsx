@@ -1585,7 +1585,7 @@ const GM_PREMIUM_ACTIVE_BENEFITS = [
 const GM_PLATINUM_ACTIVE_BENEFITS = [
   'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
   'Até 30 arenas ativas',
-  '1 cena de legado grátis por ativação',
+  'Cena do legado com 70% off',
   'Todos os planos de fundo',
   'Todas as aparências premium',
   '1 baú raro + 1 baú lendário por ativação',

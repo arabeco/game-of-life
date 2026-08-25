@@ -472,7 +472,11 @@ const defaultChecklistItems: ChecklistItem[] = [];
 const defaultSequenceItems: SequenceItem[] = [];
 const PREMIUM_REWARD_CHEST: ChestType = 'Raro';
 const PLATINUM_REWARD_CHESTS: ChestType[] = ['Raro', 'Lendário'];
-const PLATINUM_REWARD_LEGACY_SCENE_CREDITS = 1;
+// A cena de legado virou desconto permanente (70% no Platinum, 50% no Premium)
+// em vez de um voucher por renovacao: gasto o credito, o Platinum voltava a
+// pagar o mesmo que o Premium. Zerado em vez de removido para nao quebrar quem
+// ainda tem saldo — o credito antigo continua zerando o preco.
+const PLATINUM_REWARD_LEGACY_SCENE_CREDITS = 0;
 // A ficha "gratis" nao valia nada: o RPC que a resgata recusa qualquer campanha
 // com preco (CAMPAIGN_QUIZ_FREE_CODEX_INELIGIBLE), entao ela so servia para
 // pegar o que ja era gratuito. Zerada em vez de removida para nao quebrar quem

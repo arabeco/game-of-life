@@ -72,3 +72,42 @@ assert.equal(Math.round(baseXp * getCycleXpBonusRate(premium)), 50);
 assert.equal(Math.round(baseXp * getCycleXpBonusRate(platinum)), 100);
 
 console.log('Subscription XP bonus regression: escada 0 / 5% / 10% e vitrine presa ao calculo.');
+
+// --- descontos: o tier de cima sempre paga menos ---------------------------
+// O Platinum ganhava UMA cena de legado por renovacao e, gasto o voucher,
+// voltava a pagar o mesmo que o Premium. Voucher de uso unico nao sustenta um
+// tier que custa 2,5x; desconto permanente sim. Mesma logica da campanha.
+const {
+  getCampaignPriceForProfile,
+  getLegacyProjectionScenePrice,
+  CAMPAIGN_DISCOUNT_BY_TIER,
+  LEGACY_PROJECTION_DISCOUNT_BY_TIER,
+} = await import('../utils/premiumAccess.ts');
+
+// campanha de 100
+assert.equal(getCampaignPriceForProfile(100, gratis), 100);
+assert.equal(getCampaignPriceForProfile(100, premium), 100, 'campanha: Premium ainda paga cheio');
+assert.equal(getCampaignPriceForProfile(100, platinum), 80, 'campanha: Platinum paga 20% menos');
+assert.equal(getCampaignPriceForProfile(100, expirado), 100, 'assinatura vencida nao desconta');
+
+// cena de legado de 50
+assert.equal(getLegacyProjectionScenePrice(gratis, 50), 50);
+assert.equal(getLegacyProjectionScenePrice(premium, 50), 25);
+assert.equal(getLegacyProjectionScenePrice(platinum, 50), 15, 'Platinum paga menos que Premium, sempre');
+assert.equal(getLegacyProjectionScenePrice(expirado, 50), 50);
+
+// a escada nunca inverte
+assert.ok(
+  LEGACY_PROJECTION_DISCOUNT_BY_TIER.platinum > LEGACY_PROJECTION_DISCOUNT_BY_TIER.premium,
+  'Platinum nao pode descontar menos que Premium na cena de legado',
+);
+assert.ok(
+  CAMPAIGN_DISCOUNT_BY_TIER.platinum >= CAMPAIGN_DISCOUNT_BY_TIER.premium,
+  'Platinum nao pode descontar menos que Premium na campanha',
+);
+
+// preco nunca vira zero por desconto: gratis so com credito, que e outra porta
+assert.ok(getCampaignPriceForProfile(1, platinum) >= 1);
+assert.ok(getLegacyProjectionScenePrice(platinum, 1) >= 0);
+
+console.log('Descontos: Platinum paga menos que Premium em campanha e cena de legado, sempre.');

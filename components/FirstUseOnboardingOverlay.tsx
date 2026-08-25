@@ -603,8 +603,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
       ? 'Abrir'
       : 'Próximo';
   const helperText = step.hideNext
-    ? step.id === 'start-style'
-      ? 'Não existe escolha errada. Você pode mudar de abordagem quando quiser.'
+    ? step.id === 'age-range' || step.id === 'purpose' || step.id === 'oracle-presence'
+      ? 'Não existe escolha errada. Dá para mudar depois, nos ajustes.'
       : step.id === 'arena-save'
       ? 'Crie a arena e eu já sigo para a próxima etapa.'
       : step.id === 'action-save'

@@ -302,9 +302,9 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                 recommendation.entry.isFree
                     ? 'Campanha gratuita pronta para entrar na sua biblioteca. Depois você instala no app quando quiser.'
                     : options.useCampaignQuizFreeCredit
-                        ? 'Sua ficha grátis pode liberar essa campanha para instalar agora.'
+                        ? 'Você pode liberar essa campanha agora, sem pagar.'
                     : options.useCampaignQuizMediumCredit
-                        ? 'Sua ficha média pode liberar essa campanha para instalar agora.'
+                        ? 'Você pode liberar essa campanha agora, sem pagar.'
                         : 'Campanha recomendada encontrada. Ao comprar, ela entra na sua biblioteca e depois pode ser instalada no app.',
             );
             return null;
@@ -314,9 +314,9 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
         setIsSyncingLibrary(true);
         setStatusMessage(
             recommendation.entry.isFree
-                ? (options.useCampaignQuizFreeCredit ? 'Aplicando sua ficha grátis e liberando a campanha...' : 'Adicionando a campanha recomendada à sua biblioteca...')
+                ? (options.useCampaignQuizFreeCredit ? 'Liberando a campanha...' : 'Adicionando a campanha recomendada à sua biblioteca...')
                 : options.useCampaignQuizMediumCredit
-                    ? 'Aplicando sua ficha média e liberando a campanha...'
+                    ? 'Liberando a campanha...'
                     : 'Adquirindo a campanha recomendada e colocando na sua biblioteca...',
         );
         try {
@@ -329,9 +329,9 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
             if (resolved) {
                 setStatusMessage(
                     recommendation.entry.isFree
-                        ? (options.useCampaignQuizFreeCredit ? 'Campanha liberada com sua ficha grátis. Se quiser, instale agora.' : 'Campanha adicionada à sua biblioteca. Se quiser, instale agora.')
+                        ? (options.useCampaignQuizFreeCredit ? 'Campanha liberada. Se quiser, instale agora.' : 'Campanha adicionada à sua biblioteca. Se quiser, instale agora.')
                         : options.useCampaignQuizMediumCredit
-                            ? 'Campanha liberada com sua ficha média. Se quiser, instale agora.'
+                            ? 'Campanha liberada. Se quiser, instale agora.'
                             : 'Campanha adquirida e adicionada à sua biblioteca. Se quiser, instale agora.',
                 );
                 return resolved;
@@ -414,18 +414,19 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
             : `${result?.entry.priceGold} ouro`;
     const secondaryPriceLabel = secondaryRecommendation ? `${secondaryRecommendation.entry.priceGold} ouro` : null;
     const modeLabel = quizMode === 'free'
-        ? (hasStarterFreeQuiz ? 'Primeiro quiz gratuito' : `${campaignQuizFreeCredits} ficha${campaignQuizFreeCredits === 1 ? '' : 's'} grátis disponível${campaignQuizFreeCredits === 1 ? '' : 'eis'}`)
+        ? 'Entre as campanhas gratuitas'
         : quizMode === 'medium'
             ? `${campaignQuizMediumCredits} ficha${campaignQuizMediumCredits === 1 ? '' : 's'} média${campaignQuizMediumCredits === 1 ? '' : 's'} disponível${campaignQuizMediumCredits === 1 ? '' : 'eis'}`
             : 'Catálogo completo';
     const resultModeLabel = quizMode === 'free'
-        ? (shouldConsumeFreeQuizCredit ? 'Resultado com ficha grátis' : 'Resultado do quiz')
+        ? (shouldConsumeFreeQuizCredit ? 'Resultado do quiz' : 'Resultado do quiz')
         : quizMode === 'medium'
             ? 'Resultado com ficha média'
             : 'Resultado do quiz';
-    const installLabel = quizMode === 'medium' || shouldConsumeFreeQuizCredit
-        ? 'Liberar e instalar campanha'
-        : 'Instalar campanha';
+    // Quem tem vale precisa VER que esta gastando um. "Liberar e instalar" nao
+    // dizia isso: a pessoa terminava o quiz achando que nao tinha ganhado nada.
+    const usaVale = quizMode === 'medium' || shouldConsumeFreeQuizCredit;
+    const installLabel = usaVale ? 'Reivindicar campanha' : 'Instalar campanha';
 
     return (
         <Portal>
@@ -456,7 +457,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                                     onClick={() => setQuizMode('free')}
                                                     className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${quizMode === 'free' ? 'luxe-skin-button' : 'campaign-quiz-secondary'}`}
                                                 >
-                                                    {hasFreeQuizCredit && !hasStarterFreeQuiz ? `Ficha grátis · ${campaignQuizFreeCredits}` : 'Quiz grátis'}
+                                                    Campanhas gratuitas
                                                 </button>
                                             )}
                                             {hasMediumQuizCredit && (
@@ -465,7 +466,7 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                                     onClick={() => setQuizMode('medium')}
                                                     className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${quizMode === 'medium' ? 'luxe-skin-button' : 'campaign-quiz-secondary'}`}
                                                 >
-                                                    Ficha média · {campaignQuizMediumCredits}
+                                                    Campanha grátis disponível · {campaignQuizMediumCredits}
                                                 </button>
                                             )}
                                             <button
@@ -565,6 +566,11 @@ export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQui
                                                     </button>
                                                 </div>
                                             </div>
+                                        )}
+                                        {usaVale && (
+                                            <p className="mb-2 text-center text-[11px] font-bold leading-relaxed text-[var(--skin-accent-color)]">
+                                                Você tem um vale-campanha. Reivindicar usa o vale e não custa ouro.
+                                            </p>
                                         )}
                                         <div className="campaign-quiz-result-actions">
                                             <button type="button" onClick={() => { void handleInstallRecommendation(result); }} disabled={installingCatalogId !== null || isSyncingLibrary || isResultInstalled} className="luxe-skin-button w-full px-5 py-3 text-[11px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50">

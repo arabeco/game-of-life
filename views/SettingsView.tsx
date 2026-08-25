@@ -2383,13 +2383,13 @@ const PremiumTab: React.FC = () => {
         'Todos os tons de fala do Oráculo',
         'Cena do legado com 50% off',
         'Bônus de legado +5% XP',
-        '1 baú raro + 1 ficha grátis por ativação',
+        '1 baú raro por ativação',
     ];
     const platinumBenefits = [
         'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
         'Até 30 arenas ativas',
         '1 cena de legado grátis por ativação',
-        '1 ficha média de quiz por ativação',
+        '1 campanha média grátis por ativação',
         'Todos os planos de fundo e aparências premium',
         '1 baú raro + 1 baú lendário por ativação',
     ];

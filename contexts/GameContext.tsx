@@ -473,7 +473,11 @@ const defaultSequenceItems: SequenceItem[] = [];
 const PREMIUM_REWARD_CHEST: ChestType = 'Raro';
 const PLATINUM_REWARD_CHESTS: ChestType[] = ['Raro', 'Lendário'];
 const PLATINUM_REWARD_LEGACY_SCENE_CREDITS = 1;
-const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_FREE_CREDITS = 1;
+// A ficha "gratis" nao valia nada: o RPC que a resgata recusa qualquer campanha
+// com preco (CAMPAIGN_QUIZ_FREE_CODEX_INELIGIBLE), entao ela so servia para
+// pegar o que ja era gratuito. Zerada em vez de removida para nao quebrar quem
+// tem saldo — o credito antigo continua funcionando como sempre funcionou.
+const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_FREE_CREDITS = 0;
 const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_MEDIUM_CREDITS = 1;
 const PREMIUM_ACTIVE_BENEFITS = [
     'Até 15 arenas ativas',
@@ -8766,7 +8770,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 },
                 {
                     label: 'Entrega',
-                    value: isPlatinum ? 'Temporada + raro' : 'Baú raro + ficha',
+                    value: isPlatinum ? 'Temporada + raro' : 'Baú raro',
                     detail: isPlatinum ? 'rodada do Platinum' : 'rodada do Premium',
                 },
             ],

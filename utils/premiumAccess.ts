@@ -126,3 +126,40 @@ export const getCycleXpBonusRate = (
 /** O mesmo valor em porcentagem inteira, para textos de vitrine. */
 export const getCycleXpBonusPercentLabel = (tier: SubscriptionTier): string =>
   `${Math.round(CYCLE_XP_BONUS_BY_TIER[tier] * 100)}%`;
+
+/**
+ * Desconto em ouro nas campanhas.
+ *
+ * O Platinum custa 2,5x o Premium e, fora XP e arenas, so entregava cosmetico e
+ * consumivel de uso unico — coisa que se compra uma vez. Desconto e o unico
+ * beneficio que se paga de novo a cada compra, entao e ele que sustenta o tier.
+ *
+ * ATENCAO: quem cobra e o servidor (buy_codex_catalog_item le price_gold do
+ * catalogo). Este calculo existe para EXIBIR o preco; a mesma regra tem de valer
+ * la, senao a tela promete um valor e a carteira paga outro.
+ */
+export const CAMPAIGN_DISCOUNT_BY_TIER: Record<SubscriptionTier, number> = {
+  premium: 0,
+  platinum: 0.20,
+};
+
+export const getCampaignDiscountRate = (
+  profile?: PremiumLikeProfile | null,
+  now: number = Date.now(),
+): number => {
+  const tier = getActiveSubscriptionTier(profile, now);
+  return tier ? CAMPAIGN_DISCOUNT_BY_TIER[tier] : 0;
+};
+
+/** Preco final da campanha para este perfil. Arredonda para cima: ouro e inteiro. */
+export const getCampaignPriceForProfile = (
+  basePrice: number,
+  profile?: PremiumLikeProfile | null,
+  now: number = Date.now(),
+): number => {
+  const base = Math.max(0, Math.round(basePrice || 0));
+  if (base <= 0) return 0;
+  const rate = getCampaignDiscountRate(profile, now);
+  if (rate <= 0) return base;
+  return Math.max(1, Math.ceil(base * (1 - rate)));
+};

@@ -60,17 +60,6 @@
         android:padding="2dp">
 
         <TextView
-            android:id="@+id/glyph_day_tab_today"
-            android:layout_width="0dp"
-            android:layout_height="30dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="HOJE"
-            android:textColor="#F6D65B"
-            android:textSize="9sp"
-            android:textStyle="bold" />
-
-        <TextView
             android:id="@+id/glyph_day_tab_do"
             android:layout_width="0dp"
             android:layout_height="30dp"
@@ -78,6 +67,17 @@
             android:gravity="center"
             android:text="FAZER"
             android:textColor="#8E8878"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/glyph_day_tab_today"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="HOJE"
+            android:textColor="#F6D65B"
             android:textSize="9sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -125,6 +125,21 @@
         android:paddingRight="6dp">
         <TextView android:id="@+id/glyph_day_row_3_text" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="2" android:textColor="#E8E2D4" android:textSize="10sp" android:textStyle="bold" />
         <TextView android:id="@+id/glyph_day_row_3_action" android:layout_width="wrap_content" android:layout_height="30dp" android:background="@drawable/glyph_widget_pill_gold" android:gravity="center" android:minWidth="54dp" android:paddingLeft="8dp" android:paddingRight="8dp" android:text="FEITO" android:textColor="#211B0A" android:textSize="8sp" android:textStyle="bold" />
+    </LinearLayout>
+
+<LinearLayout
+        android:id="@+id/glyph_day_row_4"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="5dp"
+        android:layout_weight="1"
+        android:background="@drawable/glyph_widget_pill_dark"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="9dp"
+        android:paddingRight="6dp">
+        <TextView android:id="@+id/glyph_day_row_4_text" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="2" android:textColor="#E8E2D4" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/glyph_day_row_4_action" android:layout_width="wrap_content" android:layout_height="30dp" android:background="@drawable/glyph_widget_pill_gold" android:gravity="center" android:minWidth="54dp" android:paddingLeft="8dp" android:paddingRight="8dp" android:text="FEITO" android:textColor="#211B0A" android:textSize="8sp" android:textStyle="bold" />
     </LinearLayout>
 
     <TextView

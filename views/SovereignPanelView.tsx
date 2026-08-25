@@ -1606,7 +1606,7 @@ const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardM
       { label: 'Ativo até', value: isPlatinum ? '02 mai' : '02 mai', detail: 'validade atual' },
       {
         label: 'Entrega',
-        value: isPlatinum ? 'Temporada + raro' : 'Baú raro + ficha',
+        value: isPlatinum ? 'Temporada + raro' : 'Baú raro',
         detail: isPlatinum ? 'rodada do Platinum' : 'rodada do Premium',
       },
     ],

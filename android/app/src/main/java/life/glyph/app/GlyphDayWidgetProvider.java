@@ -89,6 +89,9 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
         bindRow(context, views, appWidgetId, 0, rows, showDo, R.id.glyph_day_row_1, R.id.glyph_day_row_1_text, R.id.glyph_day_row_1_action);
         bindRow(context, views, appWidgetId, 1, rows, showDo, R.id.glyph_day_row_2, R.id.glyph_day_row_2_text, R.id.glyph_day_row_2_action);
         bindRow(context, views, appWidgetId, 2, rows, showDo, R.id.glyph_day_row_3, R.id.glyph_day_row_3_text, R.id.glyph_day_row_3_action);
+        // O app ja mandava quatro acoes da baia e o widget so desenhava tres:
+        // a quarta era descartada em silencio.
+        bindRow(context, views, appWidgetId, 3, rows, showDo, R.id.glyph_day_row_4, R.id.glyph_day_row_4_text, R.id.glyph_day_row_4_action);
 
         views.setOnClickPendingIntent(R.id.glyph_day_tab_today, providerIntent(context, appWidgetId, ACTION_TAB_TODAY, 10, null));
         views.setOnClickPendingIntent(R.id.glyph_day_tab_do, providerIntent(context, appWidgetId, ACTION_TAB_DO, 20, null));
@@ -172,6 +175,10 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
 
                 applySuccessfulCompletion(root, actionId, task);
                 prefs.edit().putString(GlyphWidgetPlugin.SNAPSHOT_KEY, root.toString()).apply();
+                // Concluida a acao, o widget vira para o planner e mostra onde ela
+                // caiu. Sem isso a linha some da baia e a pessoa fica sem retorno
+                // de onde aquilo foi parar.
+                saveTab(context, widgetId, "today");
                 updateWidget(context, manager, widgetId);
             } catch (Exception error) {
                 RemoteViews failed = new RemoteViews(context.getPackageName(), R.layout.glyph_day_widget);
@@ -331,7 +338,10 @@ public class GlyphDayWidgetProvider extends AppWidgetProvider {
     }
 
     private static String readTab(Context context, int widgetId) {
-        return context.getSharedPreferences(GlyphWidgetPlugin.PREFS_GROUP, Context.MODE_PRIVATE).getString(TAB_KEY_PREFIX + widgetId, "today");
+        // A baia abre primeiro: quem poe o widget na tela quer AGIR, nao consultar.
+        // O planner e a segunda aba, e para onde o widget vai sozinho depois que
+        // a acao e concluida — para a pessoa ver onde ela caiu.
+        return context.getSharedPreferences(GlyphWidgetPlugin.PREFS_GROUP, Context.MODE_PRIVATE).getString(TAB_KEY_PREFIX + widgetId, "do");
     }
 
     private static String safeString(JSONObject object, String key) {

@@ -1,7 +1,10 @@
 import { Asset, UserProfile } from '../types';
 import { getActiveSubscriptionTier, hasPremiumAccess } from './premiumAccess';
 
-export const STANDARD_ARENA_LIMIT = 7;
+// 7 apertava demais quem esta comecando: as cinco areas da vida ja consomem
+// quase tudo antes da pessoa entender o app. 10 deixa espaco para experimentar
+// sem que o limite vire a primeira coisa que ela encontra.
+export const STANDARD_ARENA_LIMIT = 10;
 export const PREMIUM_ARENA_LIMIT = 15;
 export const PLATINUM_ARENA_LIMIT = 30;
 

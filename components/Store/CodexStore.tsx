@@ -5,6 +5,7 @@ import { CheckIcon, LightbulbIcon } from '../Icons';
 import { CampaignsCodex } from '../CampaignsCodex';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
+import { getCampaignPriceForProfile } from '../../utils/premiumAccess';
 import { CampaignArenaStack } from '../CampaignArenaStack';
 import { CodexCoverArt as SharedCodexCoverArt } from '../CodexCoverArt';
 import { CampaignRecommendationQuizModal } from './CampaignRecommendationQuizModal';
@@ -127,7 +128,7 @@ export const CodexStore: React.FC = () => {
             return;
         }
 
-        const goldPrice = Number(catalogItem.price_gold ?? Math.round(catalogItem.price_brl ?? 0));
+        const goldPrice = getCampaignPriceForProfile(Number(catalogItem.price_gold ?? Math.round(catalogItem.price_brl ?? 0)), userProfile);
         setPendingPurchase({ id: catalogItem.id, title: catalogItem.title, goldPrice });
     };
 
@@ -155,7 +156,10 @@ export const CodexStore: React.FC = () => {
             if (!template) return [];
 
             const preview = buildCodexCampaignPreview(codex.id, template);
-            const goldPrice = Number(codex.price_gold ?? Math.round(codex.price_brl ?? 0));
+            const listPrice = Number(codex.price_gold ?? Math.round(codex.price_brl ?? 0));
+            // O Platinum paga menos pela campanha. Guardamos os dois precos para a
+            // etiqueta mostrar de quanto era e de quanto ficou.
+            const goldPrice = getCampaignPriceForProfile(listPrice, userProfile);
             const templateMeta = resolveTemplateCampaignMeta(codex.id, template);
             const previewAssetIds = preview.arenas
                 .map((arena) => arena.assetId)
@@ -178,6 +182,7 @@ export const CodexStore: React.FC = () => {
                 template,
                 preview,
                 goldPrice,
+                listPrice,
                 isFree: goldPrice <= 0,
                 actionCount: preview.actions.length,
                 coverVisual: codex.cover_image || template.coverImage,
@@ -387,7 +392,7 @@ export const CodexStore: React.FC = () => {
 
                 {filteredEntries.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3">
-                        {filteredEntries.map(({ codex, template, preview, coverVisual, actionCount, goldPrice, isFree }) => {
+                        {filteredEntries.map(({ codex, template, preview, coverVisual, actionCount, goldPrice, listPrice, isFree }) => {
                             const ownedCodex = userCodexes.find((userCodex) => userCodex.catalog_id === codex.id || userCodex.name === codex.title) || null;
                             const isOwned = Boolean(ownedCodex);
                             const isInstalled = Boolean(ownedCodex && installedCodexIds.has(ownedCodex.id));
@@ -458,7 +463,15 @@ export const CodexStore: React.FC = () => {
                                                     disabled={!!purchasing}
                                                     className="luxe-skin-button inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
-                                                    {purchasing === codex.id ? '...' : isFree ? 'Gratis' : <><span>{goldPrice}</span><span aria-hidden>{'\u{1FA99}'}</span></>}
+                                                    {purchasing === codex.id ? '...' : isFree ? 'Gratis' : (
+                                                        <>
+                                                            {listPrice > goldPrice && (
+                                                                <span className="mr-1 text-white/45 line-through decoration-red-400/80 decoration-2">{listPrice}</span>
+                                                            )}
+                                                            <span>{goldPrice}</span>
+                                                            <span aria-hidden>{'\u{1FA99}'}</span>
+                                                        </>
+                                                    )}
                                                 </button>
                                             )}
 

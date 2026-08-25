@@ -1146,6 +1146,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     const difficultyLabels = ['LAZER', 'LEVE', 'MÉDIA', 'ALTA'];
     const week: DayOfWeek[] = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'];
+    // Dia da semana so existe com horario: sem ele nao ha o que agendar, e a acao
+    // fica na baia para ser concluida quando der. Por isso o seletor SOME em vez
+    // de avisar — mostrar um controle que nao faz nada e pior que nao mostrar.
+    const temHorario = Boolean(startTime && startTime !== 'Sem Horário');
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     useEffect(() => {
         if (advancedSubTab !== 'note' || mode !== 'view') {
@@ -1747,7 +1751,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             </span>
                                                         </div>
 
-                                                        {editableAction.actionType === 'Ação Recorrente' && (
+                                                        {editableAction.actionType === 'Ação Recorrente' && temHorario && (
                                                             <div>
                                                                 <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da semana</label>
                                                                 <div className="grid grid-cols-7 gap-1 mt-1">
@@ -1918,7 +1922,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                             <ActionSectionCard title="Agenda">
                                                 {(editableAction.actionType === 'Ação Recorrente' || editableAction.actionType === 'Compromisso') ? (
                                                     <>
-                                                        {editableAction.actionType === 'Ação Recorrente' && (
+                                                        {editableAction.actionType === 'Ação Recorrente' && temHorario && (
                                                             <div>
                                                                 <label className="text-xs font-semibold text-gray-400 uppercase ml-1">Dias da semana</label>
                                                                 <div className="grid grid-cols-7 gap-1 mt-1">

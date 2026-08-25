@@ -2077,6 +2077,25 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <p className="mt-1 max-w-[32rem] text-xs leading-relaxed text-gray-400">
                                 Toque para abrir a projeção completa, navegar pelas eras e expandir a placa do legado se quiser.
                             </p>
+                            {/* O preco so era conferido na hora de cobrar: a pessoa clicava e
+                                so descobria o custo se faltasse ouro. E o desconto da
+                                assinatura ficava invisivel, que e o oposto do ponto dele. */}
+                            <p className="mt-2 text-[10px] font-black uppercase tracking-[0.16em]">
+                                {legacyProjectionSceneGoldCost <= 0 ? (
+                                    <span className="text-emerald-300">Grátis para você</span>
+                                ) : (
+                                    <>
+                                        {LEGACY_PROJECTION_SCENE_BASE_GOLD_COST > legacyProjectionSceneGoldCost && (
+                                            <span className="mr-1.5 text-white/35 line-through decoration-red-400/80 decoration-2">
+                                                {LEGACY_PROJECTION_SCENE_BASE_GOLD_COST}
+                                            </span>
+                                        )}
+                                        <span className="text-[var(--skin-accent-color)]">
+                                            {legacyProjectionSceneGoldCost} ouro
+                                        </span>
+                                    </>
+                                )}
+                            </p>
                         </div>
                         <div className="w-[132px] shrink-0 rounded-[20px] border border-white/10 bg-black/32 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md">
                             <div className="mx-auto max-w-[108px]">
@@ -2613,7 +2632,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                              * espiando nas bordas para a faixa nao parecer uma tela so.
                              */
                             <div className="relative mt-6">
-                                <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                                 <div
                                     ref={cycleStripRef}
                                     className="scrollbar-hide relative flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2"

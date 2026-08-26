@@ -3,13 +3,11 @@ import { useGame } from '../contexts/GameContext';
 import { useEffect } from 'react';
 import { AssetArenaBoard } from '../components/AssetArenaBoard';
 import { AssetArtButton } from '../components/AssetArtButton';
-import { GardenZenModal } from '../components/GardenZenModal';
 import { InputModal } from '../components/inputs/InputModal';
 import { Sephirot } from '../components/Sephirot';
 import { EditIcon, XIcon } from '../components/Icons';
 import { ASSET_ACCENT_COLORS, DEFAULT_ASSET_ART_BY_ID } from '../constants/assetVisuals';
 import { LIFE_AREAS } from '../constants/lifeAreas';
-import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
@@ -122,7 +120,6 @@ export const AssetsView: React.FC = () => {
     const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
     const [draftAssetArtUrl, setDraftAssetArtUrl] = useState<string | undefined>(undefined);
     const [draftAssetWidgetValue, setDraftAssetWidgetValue] = useState<SlotValue | undefined>(undefined);
-    const [isGardenOpen, setGardenOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const cycleSummaryRef = useRef<HTMLButtonElement | null>(null);
     const lastSelectedAssetIdRef = useRef<string | null>(null);
@@ -814,20 +811,9 @@ export const AssetsView: React.FC = () => {
                             })}
                             </div>
                         </div>
-                        {PRODUCT_FEATURES.personalGarden && (
-                            <button
-                                type="button"
-                                onClick={() => setGardenOpen(true)}
-                                className="absolute bottom-[calc(5rem+var(--safe-area-bottom))] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full border border-amber-200/35 bg-black/58 text-2xl shadow-[0_14px_34px_rgba(0,0,0,0.42),0_0_20px_rgba(244,205,130,0.18)] backdrop-blur-md transition-transform hover:scale-105"
-                                title="Meu jardim"
-                            >
-                                <span className="translate-y-[-1px]">{'\u{1FAA8}'}</span>
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>
-            {PRODUCT_FEATURES.personalGarden && isGardenOpen && <GardenZenModal onClose={() => setGardenOpen(false)} />}
         </div>
     );
 };

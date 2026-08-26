@@ -1,7 +1,7 @@
 {
   "name": "glyph-app",
   "private": true,
-  "version": "1.0.68",
+  "version": "1.0.69",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
     "test:xp-scale": "node tests/xp-scale.regression.mjs",
     "test:mission-reward": "node tests/mission-reward-unification.regression.mjs",
     "test:oracle-presence-policy": "node tests/oracle-presence-policy.regression.mjs",
+    "test:device-only": "node tests/safe-area-insets.regression.mjs",
     "test:cycle-delete-smoke": "node tests/cycle-delete-smoke.cdp.mjs",
     "test:launch": "node tests/launch-readiness.mjs",
     "test:launch:full": "node tests/launch-readiness.mjs --suite=full",

@@ -62,7 +62,7 @@ export const ScreenIntroTipOverlay: React.FC<ScreenIntroTipOverlayProps> = ({
             <button
               type="button"
               onClick={() => onClose()}
-              className="absolute right-2.5 top-2.5 rounded-full border border-white/8 bg-white/[0.04] p-1 text-white/45 transition-colors hover:text-white"
+              className="pointer-events-auto absolute right-2.5 top-2.5 rounded-full border border-white/8 bg-white/[0.04] p-1 text-white/45 transition-colors hover:text-white"
               aria-label="Fechar dica inicial"
             >
               <XIcon className="h-3 w-3" />

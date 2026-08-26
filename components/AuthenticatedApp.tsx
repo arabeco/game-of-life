@@ -1097,7 +1097,11 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
     const baseTopPadding = isBuilderMode ?104 : 56;
     const baseBottomPadding = 64;
-    const mainPaddingTop = `${baseTopPadding}px`;
+    // O cabecalho e fixo e agora desce a altura da barra de status junto; o
+    // conteudo tem de descer com ele, senao as primeiras linhas de cada tela
+    // (em Ajustes, "Interface & Som" e "Oraculo & Alertas") ficam por baixo do
+    // cabecalho, que captura o toque no lugar delas.
+    const mainPaddingTop = `calc(${baseTopPadding}px + var(--safe-area-top))`;
     const mainPaddingBottom = currentView === 'assets'
         ?'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;

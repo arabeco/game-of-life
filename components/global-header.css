@@ -1,4 +1,9 @@
 .shell-header {
+  /* A faixa de 64px comeca ABAIXO da barra de status. Sem isto os botoes do
+     cabecalho — Oraculo, tela de descanso e a barra de humor — nascem com a
+     metade de cima por baixo dela, e o toque nunca chega neles. O fundo cobre
+     tambem o padding, entao a barra de status continua escurecida. */
+  padding-top: var(--safe-area-top);
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.58), transparent);
   backdrop-filter: blur(4px);
 }

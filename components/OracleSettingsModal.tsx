@@ -133,8 +133,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     const { oraclePreferences, updateOraclePreferences, userProfile, showToast } = useGame();
     const [pushPermission, setPushPermission] = useState<AppPushPermission>('default');
 
-    if (!oraclePreferences) return null;
-
     const isPremium = hasPremiumAccess(userProfile);
     const pushSupport = getAppPushSupport();
 
@@ -151,7 +149,32 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [oraclePreferences.pushEnabled]);
+    }, [oraclePreferences?.pushEnabled]);
+
+    // As preferencias chegam do banco depois da primeira renderizacao, e ate
+    // chegarem este `return` fica no caminho. Ele precisa vir DEPOIS dos hooks:
+    // acima deles a contagem de hooks mudava entre uma renderizacao e outra, o
+    // que o React nao aceita.
+    //
+    // E ele nao devolve mais vazio. Vazio era o bug que se via: o toque em
+    // "Oraculo & Alertas" marcava o modal como aberto, o componente desenhava
+    // nada, e a tela ficava igual — parecia botao morto. No navegador as
+    // preferencias ja estao carregadas quando se chega em Ajustes; num aparelho
+    // recem-instalado, nao.
+    if (!oraclePreferences) {
+        return (
+            <Portal>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+                    <GlassCard variant="neutral" className="w-full max-w-sm rounded-3xl border border-white/10 p-6 text-center">
+                        <div className="mx-auto h-8 w-8 animate-pulse rounded-full border border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12" />
+                        <div className="mt-3 text-[11px] font-black uppercase tracking-[0.18em] text-white/70">
+                            Carregando preferencias
+                        </div>
+                    </GlassCard>
+                </div>
+            </Portal>
+        );
+    }
 
     const handleToggle = (key: ToggleKey) => {
         if (key === 'dailyFocusCardEnabled') {

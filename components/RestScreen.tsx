@@ -808,7 +808,16 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         <Portal>
             <div
                 className={`restscreen-root fixed inset-0 z-[150] flex flex-col items-center justify-start gap-2 transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] border-x border-y ${softVisuals ? 'border-[var(--ui-core-surface-border)]' : 'border-[var(--skin-accent-color)]/20'} ${mounted && !isClosing ? 'translate-y-0' : 'translate-y-full'}`}
-                style={{ touchAction: 'none', background: 'var(--app-background)' }} // Prevent scrolling
+                // A tela ocupa tudo, inclusive o que fica por baixo das barras do
+                // sistema. Sem estas duas margens a fileira de atalhos (jardim,
+                // checklist, humor) cai dentro da barra de gestos e o toque nao
+                // chega nela.
+                style={{
+                    touchAction: 'none', // Prevent scrolling
+                    background: 'var(--app-background)',
+                    paddingTop: 'var(--safe-area-top)',
+                    paddingBottom: 'var(--safe-area-bottom)',
+                }}
             >
                 {/* Sephirot Fog Background */}
                 <div className="absolute inset-0 z-0 pointer-events-none" style={{ opacity: softVisuals ? (isLightTheme ? 0.1 : 0.18) : 0.42 }}>

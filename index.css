@@ -1,10 +1,29 @@
 @import "tailwindcss";
 
+/* As margens do sistema.
+ *
+ * O Capacitor 8 nao encosta mais a WebView abaixo da barra de status: com
+ * targetSdk 36 a janela e edge-to-edge e a pagina ocupa a tela inteira, por
+ * baixo da barra de status em cima e da barra de gestos embaixo. Ele avisa a
+ * pagina de duas formas, e as duas precisam ser lidas:
+ *
+ *   1. `env(safe-area-inset-*)`, que so responde em WebView recente;
+ *   2. as variaveis `--safe-area-inset-*`, que ele grava direto no style do
+ *      <html> — e por serem inline vencem a declaracao daqui sozinhas.
+ *
+ * Ler so o `env()` foi o que deixou o cabecalho por baixo da barra de status:
+ * o botao do Oraculo, o da tela de descanso e a barra de humor ficavam com
+ * metade da altura fora do alcance do dedo, e no navegador nada disso aparece
+ * porque ali nao existe barra de sistema. */
 :root {
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-right: env(safe-area-inset-right, 0px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-top: var(--safe-area-inset-top, 0px);
+  --safe-area-right: var(--safe-area-inset-right, 0px);
+  --safe-area-bottom: var(--safe-area-inset-bottom, 0px);
+  --safe-area-left: var(--safe-area-inset-left, 0px);
   --app-background: linear-gradient(to bottom, #111111, #000000);
   --tier-1-comum:     #9CA3AF;
   --tier-2-incomum:   #22C55E;

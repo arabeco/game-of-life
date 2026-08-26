@@ -100,6 +100,13 @@ const suites = {
       interactions: ['presenca decide o que ele fala', 'aviso decide onde chega', 'push nao volta a exigir presenca 3'],
     },
     {
+      id: 'device-only-failures',
+      label: 'Safe area and late data regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'safe-area-insets.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['o cabecalho desce a barra de status', 'a tela de descanso respeita as duas barras', 'preferencia que ainda nao chegou nao vira botao morto'],
+    },
+    {
       id: 'planner-simple-list',
       label: 'Planner simple list regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'planner-simple-list.regression.mjs')]],

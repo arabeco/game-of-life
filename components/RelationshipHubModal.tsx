@@ -9,6 +9,7 @@ import {
     LinkedRelationshipArena,
     RelationshipCompetitionChallenge,
     RelationshipCompetitionProposal,
+    RelationshipMentorshipOffer,
     Arena,
     Action,
     Campaign,
@@ -806,7 +807,6 @@ export const RelationshipHubModal: React.FC<{
     const {
         assets,
         createCompetitionChallenge,
-        createLinkedRelationshipArena,
         createRelationshipInvite,
         duplicateUserCodexToRecipient,
         endRelationshipLink,
@@ -815,7 +815,9 @@ export const RelationshipHubModal: React.FC<{
         friends,
         getRelationshipCapacitySummary,
         installCodex,
+        offerMentorshipArena,
         respondCompetitionChallenge,
+        respondMentorshipOffer,
         respondToRelationshipInvite,
         shareRelationshipArena,
         showToast,
@@ -834,6 +836,7 @@ export const RelationshipHubModal: React.FC<{
     const [linkedArenas, setLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
     const [competitionChallenges, setCompetitionChallenges] = useState<RelationshipCompetitionChallenge[]>([]);
     const [competitionProposals, setCompetitionProposals] = useState<RelationshipCompetitionProposal[]>([]);
+    const [mentorshipOffers, setMentorshipOffers] = useState<RelationshipMentorshipOffer[]>([]);
     const [profilesById, setProfilesById] = useState<Record<string, RelationshipProfileLite>>({});
     const [invitePickerType, setInvitePickerType] = useState<RelationshipLinkType | null>(null);
     const [inviteConfirmState, setInviteConfirmState] = useState<InviteConfirmState | null>(null);
@@ -849,12 +852,6 @@ export const RelationshipHubModal: React.FC<{
     const [selectedArenaDetail, setSelectedArenaDetail] = useState<RelationshipArenaDetailState | null>(null);
     const [selectedRelationshipCampaign, setSelectedRelationshipCampaign] = useState<RelationshipCampaignModalState | null>(null);
     const [mentorSentCodexesByLinkId, setMentorSentCodexesByLinkId] = useState<Record<string, UserCodex[]>>({});
-    const [linkedArenaDraft, setLinkedArenaDraft] = useState({
-        assetId: assets[0]?.id || 'geral',
-        name: '',
-        description: '',
-        icon: '\u{1F3DB}\uFE0F',
-    });
     const refreshSequenceRef = useRef(0);
 
     const sessionUid = userProfile.id;
@@ -871,37 +868,10 @@ export const RelationshipHubModal: React.FC<{
     }, [activeTab]);
 
     useEffect(() => {
-        setLinkedArenaDraft((prev) => {
-            if (prev.assetId) return prev;
-            return { ...prev, assetId: assets[0]?.id || 'geral' };
-        });
-    }, [assets]);
-
-    useEffect(() => {
-        if (!selectedMentorLinkForArena) return;
-        if (selectedMentorLinkForArena.linkType === 'parceria') return;
-        setLinkedArenaDraft((prev) => {
-            const normalized = prev.name || prev.description
-                ? prev
-                : {
-                    ...prev,
-                    assetId: prev.assetId || assets.find((asset) => asset.id !== 'geral')?.id || assets[0]?.id || 'geral',
-                    name: '',
-                    description: '',
-                };
-            const nextIcon = suggestEmojiForLabel(prev.name, 'arena', {
-                assetId: normalized.assetId,
-                fallback: '\u{1F3DB}\uFE0F',
-            });
-            return {
-                ...normalized,
-                icon: nextIcon,
-            };
-        });
-    }, [assets, linkedArenaDraft.assetId, linkedArenaDraft.description, linkedArenaDraft.name, selectedMentorLinkForArena]);
-
-    useEffect(() => {
-        if (!selectedMentorLinkForArena || selectedMentorLinkForArena.linkType !== 'parceria') {
+        // Mentoria escolhe arena pelo mesmo seletor da parceria desde que a
+        // entrega virou "molde que o pupilo instala". Limpar por tipo de vinculo
+        // zerava a escolha do mentor no instante em que ele a fazia.
+        if (!selectedMentorLinkForArena) {
             setSelectedPartnershipArenaId(null);
         }
     }, [selectedMentorLinkForArena]);
@@ -947,6 +917,7 @@ export const RelationshipHubModal: React.FC<{
             setLinkedArenas([]);
             setCompetitionChallenges([]);
             setCompetitionProposals([]);
+            setMentorshipOffers([]);
             setSummary(null);
             setMentorSentCodexesByLinkId({});
             setProfilesById({ [userProfile.id]: toProfileLite(userProfile) });
@@ -1000,6 +971,7 @@ export const RelationshipHubModal: React.FC<{
             setLinkedArenas(hub.linkedArenas || []);
             setCompetitionChallenges(hub.competitionChallenges || []);
             setCompetitionProposals(hub.competitionProposals || []);
+            setMentorshipOffers(hub.mentorshipOffers || []);
             setSummary((hub.summary || fallbackSummary || null) as RelationshipCapacitySummary | null);
             setMentorSentCodexesByLinkId(nextMentorSentCodexesByLinkId);
             setProfilesById(nextProfiles);
@@ -1140,6 +1112,15 @@ export const RelationshipHubModal: React.FC<{
                 .sort((left, right) => left.arena.name.localeCompare(right.arena.name, 'pt-BR')),
         [assets, linkedArenaIds]
     );
+    // Mentoria entrega um MOLDE, e molde vazio nao serve: o servidor recusa com
+    // MENTORSHIP_SOURCE_ARENA_EMPTY. Sem filtrar aqui, o mentor escolheria uma
+    // arena sem acoes e so descobriria no erro.
+    const mentorshipSourceArenas = useMemo(
+        () => (selectedMentorLinkForArena?.linkType === 'parceria'
+            ? availablePartnershipSourceArenas
+            : availablePartnershipSourceArenas.filter((entry) => entry.actionCount > 0)),
+        [availablePartnershipSourceArenas, selectedMentorLinkForArena],
+    );
     const availableCompetitionSourceArenas = useMemo(
         () =>
             assets
@@ -1209,6 +1190,19 @@ export const RelationshipHubModal: React.FC<{
         }
     };
 
+    const handleRespondOffer = async (
+        offer: RelationshipMentorshipOffer,
+        action: 'install' | 'decline' | 'cancel',
+    ) => {
+        setBusyKey(`offer:${offer.id}`);
+        try {
+            const ok = await respondMentorshipOffer(offer.id, action);
+            if (ok) await refreshHub();
+        } finally {
+            setBusyKey(null);
+        }
+    };
+
     const handleRespondProposal = async (
         proposal: RelationshipCompetitionProposal,
         action: 'accept' | 'decline' | 'cancel',
@@ -1269,26 +1263,19 @@ export const RelationshipHubModal: React.FC<{
                 return;
             }
 
-            if (!linkedArenaDraft.name.trim()) {
-                showToast('Diga o nome da arena vinculada.', 'warning');
+            // Mentoria tambem escolhe uma arena PRONTA do proprio mentor. Digitar
+            // nome e icone criava uma arena vazia direto na conta do pupilo — o
+            // caminho que o banco mura hoje. Agora ele entrega um molde do que ja
+            // construiu, e o pupilo instala se quiser.
+            if (!selectedPartnershipArenaId) {
+                showToast('Escolha uma arena sua para entregar.', 'warning');
                 return;
             }
 
-            const created = await createLinkedRelationshipArena(selectedMentorLinkForArena.id, {
-                assetId: linkedArenaDraft.assetId,
-                name: linkedArenaDraft.name.trim(),
-                description: linkedArenaDraft.description.trim(),
-                icon: linkedArenaDraft.icon,
-            });
-
-            if (created) {
+            const offered = await offerMentorshipArena(selectedMentorLinkForArena.id, selectedPartnershipArenaId);
+            if (offered) {
                 setSelectedMentorLinkForArena(null);
-                setLinkedArenaDraft({
-                    assetId: assets[0]?.id || 'geral',
-                    name: '',
-                    description: '',
-                    icon: '\u{1F3DB}\uFE0F',
-                });
+                setSelectedPartnershipArenaId(null);
                 await refreshHub();
             }
         } finally {
@@ -1933,6 +1920,9 @@ export const RelationshipHubModal: React.FC<{
                 ? mentorSentCodexesByLinkId[link.id] || []
                 : receivedCodexesByLinkId.get(link.id) || [];
             const hasMentorshipContent = arenasForLink.length > 0 || relationshipCodexes.length > 0;
+            const pendingOffer = mentorshipOffers.find(
+                (offer) => offer.relationshipLinkId === link.id && offer.status === 'pending',
+            ) || null;
             return (
                 <div className={`space-y-3 ${isMentorSide ? 'pb-24' : ''}`}>
                     <LinkClosingLine
@@ -1966,11 +1956,54 @@ export const RelationshipHubModal: React.FC<{
                             </div>
                         }
                     >
-                        {!hasMentorshipContent ? (
+                        {pendingOffer ? (
+                            /* A entrega ocupa o lugar do conteudo ate ser respondida.
+                               Instalar e o que muda a posse: a arena nasce do pupilo,
+                               e por isso o vinculo pode vencer sem leva-la junto. */
+                            <div className="rounded-[18px] border border-[var(--skin-accent-color)]/24 bg-[var(--skin-accent-color)]/8 p-3">
+                                <div className="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--ui-text-accent-soft)]">
+                                    {isMentorSide ? 'Aguardando instalacao' : 'Arena montada para voce'}
+                                </div>
+                                <div className="mt-1 truncate text-sm font-black text-white">
+                                    {pendingOffer.arenaSnapshot?.name || 'Arena'}
+                                </div>
+                                <div className="mt-0.5 text-[10px] text-white/44">
+                                    {`${pendingOffer.arenaSnapshot?.actionCount ?? 0} acoes`}
+                                </div>
+                                <div className="mt-2.5 flex gap-2">
+                                    {isMentorSide ? (
+                                        <button
+                                            onClick={() => { void handleRespondOffer(pendingOffer, 'cancel'); }}
+                                            disabled={busyKey === `offer:${pendingOffer.id}`}
+                                            className="luxe-button-secondary rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] disabled:opacity-50"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => { void handleRespondOffer(pendingOffer, 'decline'); }}
+                                                disabled={busyKey === `offer:${pendingOffer.id}`}
+                                                className="luxe-button-secondary rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] disabled:opacity-50"
+                                            >
+                                                Recusar
+                                            </button>
+                                            <button
+                                                onClick={() => { void handleRespondOffer(pendingOffer, 'install'); }}
+                                                disabled={busyKey === `offer:${pendingOffer.id}`}
+                                                className="luxe-skin-button rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] disabled:opacity-50"
+                                            >
+                                                Instalar
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ) : !hasMentorshipContent ? (
                             <EmptyState
                                 title="Sem conteudo"
                                 text={isMentorSide
-                                    ? 'Abra uma arena ou entregue uma campanha para este pupilo.'
+                                    ? 'Monte uma arena sua para entregar a este pupilo.'
                                     : 'Nenhuma arena ou campanha desta mentoria apareceu ainda.'}
                             />
                         ) : (
@@ -2771,12 +2804,12 @@ export const RelationshipHubModal: React.FC<{
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/42">
-                                        {selectedMentorLinkForArena.linkType === 'parceria' ? 'Parceria' : 'Arena vinculada'}
+                                        {selectedMentorLinkForArena.linkType === 'parceria' ? 'Parceria' : 'Mentoria'}
                                     </div>
                                     <h3 className="mt-1 text-base font-black uppercase tracking-[0.14em] text-white">
                                         {selectedMentorLinkForArena.linkType === 'parceria'
                                             ? `Expor para ${otherParticipant(selectedMentorLinkForArena)?.nickname || 'seu parceiro'}`
-                                            : `Compartilhar com ${profileFor(selectedMentorLinkForArena.pupilId)?.nickname || 'pupilo'}`}
+                                            : `Entregar para ${profileFor(selectedMentorLinkForArena.pupilId)?.nickname || 'pupilo'}`}
                                     </h3>
                                 </div>
                                 <button onClick={() => setSelectedMentorLinkForArena(null)} className="rounded-full border border-white/12 bg-black/20 p-2 text-white/70 hover:text-white">
@@ -2785,20 +2818,27 @@ export const RelationshipHubModal: React.FC<{
                             </div>
 
                             <div className="mt-4 space-y-3">
-                                {selectedMentorLinkForArena.linkType === 'parceria' ? (
+                                {(
                                     <>
                                         <div className="rounded-[20px] border border-cyan-300/14 bg-cyan-500/8 px-4 py-3">
-                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">Vitrine viva</div>
+                                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">{selectedMentorLinkForArena.linkType === 'parceria' ? 'Vitrine viva' : 'Entrega'}</div>
                                             <p className="mt-1 text-sm text-white/62">
-                                                Escolha uma arena existente sua. O parceiro le a mesma arena em tempo real.
+                                                {selectedMentorLinkForArena.linkType === 'parceria'
+                                                    ? 'Escolha uma arena existente sua. O parceiro le a mesma arena em tempo real.'
+                                                    : 'Escolha uma arena sua. Ela vira um molde que o pupilo instala — e a copia nasce sendo dele.'}
                                             </p>
                                         </div>
 
                                         <div className="space-y-2 max-h-[44vh] overflow-y-auto pr-1 custom-scrollbar">
-                                            {availablePartnershipSourceArenas.length === 0 ? (
-                                                <EmptyState title="Sem arena elegivel" text="Voce ja expôs tudo ou so restaram arenas arquivadas." />
+                                            {mentorshipSourceArenas.length === 0 ? (
+                                                <EmptyState
+                                                    title="Sem arena elegivel"
+                                                    text={selectedMentorLinkForArena.linkType === 'parceria'
+                                                        ? 'Voce ja expôs tudo ou so restaram arenas arquivadas.'
+                                                        : 'Uma entrega precisa de arena com acoes dentro.'}
+                                                />
                                             ) : (
-                                                availablePartnershipSourceArenas.map(({ arena, assetName, actionCount }) => {
+                                                mentorshipSourceArenas.map(({ arena, assetName, actionCount }) => {
                                                     const active = selectedPartnershipArenaId === arena.id;
                                                     return (
                                                         <button
@@ -2828,43 +2868,6 @@ export const RelationshipHubModal: React.FC<{
                                             </div>
                                         )}
                                     </>
-                                ) : (
-                                    <>
-                                        <div className="rounded-2xl border border-white/10 bg-black/24 px-4 py-3">
-                                            <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/38">
-                                                Ativo pai
-                                            </label>
-                                            <select
-                                                id="relationship-linked-arena-asset-button"
-                                                value={linkedArenaDraft.assetId}
-                                                onChange={(event) => setLinkedArenaDraft((prev) => ({ ...prev, assetId: event.target.value }))}
-                                                className="mt-2 w-full rounded-xl border border-white/10 bg-black/32 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-[var(--skin-accent-color)]/46"
-                                            >
-                                                {assets.map((asset) => (
-                                                    <option key={asset.id} value={asset.id}>
-                                                        {asset.id === 'geral' ? 'OUTROS / SIDEQUEST' : asset.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <input
-                                            id="relationship-linked-arena-name-input"
-                                            type="text"
-                                            placeholder="Nome da arena vinculada"
-                                            value={linkedArenaDraft.name}
-                                            onChange={(event) => setLinkedArenaDraft((prev) => ({ ...prev, name: event.target.value }))}
-                                            className="w-full rounded-2xl border border-white/10 bg-black/24 px-4 py-3 text-sm text-white outline-none placeholder:text-white/28 focus:border-[var(--skin-accent-color)]/46"
-                                        />
-                                        <textarea
-                                            id="relationship-linked-arena-description-input"
-                                            placeholder="Descricao"
-                                            value={linkedArenaDraft.description}
-                                            onChange={(event) => setLinkedArenaDraft((prev) => ({ ...prev, description: event.target.value }))}
-                                            rows={3}
-                                            className="w-full rounded-2xl border border-white/10 bg-black/24 px-4 py-3 text-sm text-white outline-none placeholder:text-white/28 focus:border-[var(--skin-accent-color)]/46"
-                                        />
-                                    </>
                                 )}
 
                                 <div className="flex gap-2 pt-1">
@@ -2877,10 +2880,10 @@ export const RelationshipHubModal: React.FC<{
                                     <button
                                         id="relationship-linked-arena-submit-button"
                                         onClick={handleCreateLinkedArena}
-                                        disabled={busyKey === `linked-arena:${selectedMentorLinkForArena.id}` || (selectedMentorLinkForArena.linkType === 'parceria' && !selectedPartnershipArenaId)}
+                                        disabled={busyKey === `linked-arena:${selectedMentorLinkForArena.id}` || !selectedPartnershipArenaId}
                                         className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
                                     >
-                                        <span>{selectedMentorLinkForArena.linkType === 'parceria' ? 'Expor arena' : 'Criar arena'}</span>
+                                        <span>{selectedMentorLinkForArena.linkType === 'parceria' ? 'Expor arena' : 'Entregar arena'}</span>
                                         <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[9px] leading-none">
                                             Incluso
                                         </span>

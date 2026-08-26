@@ -1257,6 +1257,33 @@ export interface RelationshipCompetitionProposal {
   challengeId?: string | null;
 }
 
+/**
+ * Uma arena que o mentor montou e que ainda nao e de ninguem.
+ *
+ * O mentor nunca escreve na conta do pupilo. Ele monta a oferta a partir de uma
+ * arena dele; no instante em que o pupilo INSTALA, a arena nasce ja sendo dele —
+ * copia propria, dono proprio. E por isso que o vinculo pode vencer sem levar a
+ * arena junto.
+ */
+export interface RelationshipMentorshipOffer {
+  id: string;
+  relationshipLinkId: string;
+  mentorId: string;
+  pupilId: string;
+  sourceArenaId?: string | null;
+  arenaSnapshot?: {
+    asset_id?: string;
+    name?: string;
+    description?: string;
+    icon?: string;
+    actionCount?: number;
+  } | null;
+  status: 'pending' | 'installed' | 'declined' | 'cancelled';
+  createdAt: string;
+  respondedAt?: string | null;
+  installedArenaId?: string | null;
+}
+
 export type LinkNotificationType = 'praise' | 'support' | 'scold';
 
 export interface LinkNotificationLog {

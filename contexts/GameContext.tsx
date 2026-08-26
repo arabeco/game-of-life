@@ -1,5 +1,5 @@
 ﻿import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
+import { Asset, Arena, ArenaFolder, Action, ScheduledTask, ChecklistItem, SequenceItem, DailyProofStreak, UserProfile, ProfileVisibilityScope, Report, NobilityRank, Clan, ClanJoinRequest, ClanRank, DayOfWeek, Cycle, DailyCommitment, DailyCommitmentStage, ChestType, FeedEvent, FeedEventType, EnrichedClanMember, ClanMember, Season, SeasonMission, SeasonQuest, FriendRequest, LevelUnlocks, UnlockCategory, UserUnlocks, InventoryItem, UserWallet, OraclePreferences, OracleMessage, OracleMode, OracleCategory, Notification, AldeiaSlot, AldeiaPresence, AldeiaSlotId, Campaign, ThemePreference, ArenasViewMode, CodexSharePreview, DirectMessage, DMConversation, ItemRarity, ChestOpenResult, RelationshipLinkType, RelationshipLinkInvite, RelationshipLink, RelationshipCapacitySummary, RelationshipCapacitySlotType, RelationshipInviteAction, LinkedRelationshipArena, RelationshipCompetitionChallenge, RelationshipCompetitionProposal, RelationshipMentorshipOffer, RewardModalPayload, UserBlock, ModerationReportInput, PlannerMatrixQuadrant } from '../types';
 import { ASSETS_DATA, MASTERY_LEVEL_DESCRIPTIONS, MAX_CLAN_MEMBERS, GM_CONFIG, SEASONS, ACTIVE_SEASON_ID, buildDefaultLevelUnlocks, DEFAULT_SOVEREIGN_CONFIG } from '../constants';
 import { ITEMS_DB, GOLD_PACKS, CODEXES, ItemCategory, ItemDef, RANK_UP_INSIGNIA_ID, resolveItemDef, getCatalogItemsByCategory, isChestEligibleItem, isItemCatalogVisible } from '../constants/items';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
@@ -923,12 +923,14 @@ export interface GameContextType {
     buyCodexWithFragments: (catalogId: string, fragmentCost: number, options?: { silentSuccess?: boolean }) => Promise<UserCodex | null>;
     buyCodexCreationSlot: () => Promise<boolean>;
     getRelationshipCapacitySummary: () => Promise<RelationshipCapacitySummary | null>;
-    fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; competitionChallenges: RelationshipCompetitionChallenge[]; competitionProposals: RelationshipCompetitionProposal[]; summary: RelationshipCapacitySummary | null }>;
+    fetchRelationshipHubData: () => Promise<{ invites: RelationshipLinkInvite[]; links: RelationshipLink[]; linkedArenas: LinkedRelationshipArena[]; competitionChallenges: RelationshipCompetitionChallenge[]; competitionProposals: RelationshipCompetitionProposal[]; mentorshipOffers: RelationshipMentorshipOffer[]; summary: RelationshipCapacitySummary | null }>;
     createRelationshipInvite: (recipientId: string, linkType: RelationshipLinkType) => Promise<boolean>;
     createCompetitionInvite: (recipientId: string, sourceArenaId: string, durationDays: number) => Promise<boolean>;
     respondToRelationshipInvite: (inviteId: string, action: RelationshipInviteAction) => Promise<boolean>;
     endRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
     renewRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
+    offerMentorshipArena: (relationshipLinkId: string, sourceArenaId: string) => Promise<boolean>;
+    respondMentorshipOffer: (offerId: string, action: 'install' | 'decline' | 'cancel') => Promise<boolean>;
     buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType) => Promise<boolean>;
     createLinkedRelationshipArena: (relationshipLinkId: string, arenaInput: { assetId: string; name: string; description?: string; icon?: string }) => Promise<Arena | null>;
     selectMentorshipArena: (relationshipLinkId: string, arenaId: string) => Promise<Arena | null>;
@@ -6063,6 +6065,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         };
     };
 
+    const mapMentorshipOfferRow = (row: any): RelationshipMentorshipOffer => ({
+        id: row.id,
+        relationshipLinkId: row.relationship_link_id,
+        mentorId: row.mentor_id,
+        pupilId: row.pupil_id,
+        sourceArenaId: row.source_arena_id ?? null,
+        arenaSnapshot: row.arena_snapshot ?? null,
+        status: row.status,
+        createdAt: row.created_at,
+        respondedAt: row.responded_at ?? null,
+        installedArenaId: row.installed_arena_id ?? null,
+    });
+
     const mapCompetitionProposalRow = (row: any): RelationshipCompetitionProposal => ({
         id: row.id,
         relationshipLinkId: row.relationship_link_id,
@@ -6156,6 +6171,62 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
      * pode renovar: prender isso a quem criou faria o vinculo morrer junto com o
      * interesse de uma pessoa so, mesmo com a outra querendo continuar.
      */
+    /**
+     * O mentor monta uma arena a partir de uma dele. Nada nasce na conta do
+     * pupilo aqui — a oferta so fica esperando resposta.
+     */
+    const offerMentorshipArena = async (relationshipLinkId: string, sourceArenaId: string): Promise<boolean> => {
+        if (!sourceArenaId) {
+            showToast('Escolha uma arena sua para montar a entrega.', 'warning');
+            return false;
+        }
+
+        const { error } = await supabase.rpc('offer_mentorship_arena', {
+            p_relationship_link_id: relationshipLinkId,
+            p_source_arena_id: sourceArenaId,
+        });
+
+        if (error) {
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel montar essa entrega.'), 'error');
+            return false;
+        }
+
+        showToast('Entrega montada. Ela vale quando o pupilo instalar.', 'success');
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+        return true;
+    };
+
+    /**
+     * Instalar e onde a posse muda de mao: a arena nasce com o pupilo como dono,
+     * e a partir dai o mentor nao tem poder nenhum sobre ela.
+     */
+    const respondMentorshipOffer = async (
+        offerId: string,
+        action: 'install' | 'decline' | 'cancel',
+    ): Promise<boolean> => {
+        const { data, error } = await supabase.rpc('respond_mentorship_offer', {
+            p_offer_id: offerId,
+            p_action: action,
+        });
+
+        if (error) {
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel responder essa entrega.'), 'error');
+            return false;
+        }
+
+        const status = String((data as any)?.status || action);
+        if (status === 'installed') {
+            showToast('Arena instalada. Ela e sua a partir de agora.', 'success');
+        } else if (status === 'declined') {
+            showToast('Entrega recusada.', 'info');
+        } else {
+            showToast('Entrega cancelada.', 'info');
+        }
+
+        window.dispatchEvent(new CustomEvent('glyph:relationships-updated'));
+        return true;
+    };
+
     const renewRelationshipLink = async (relationshipLinkId: string): Promise<boolean> => {
         const { data, error } = await supabase.rpc('renew_relationship_link', {
             p_relationship_link_id: relationshipLinkId,
@@ -6234,11 +6305,30 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         let linkedArenaRows: any[] = [];
         let competitionChallenges: RelationshipCompetitionChallenge[] = [];
         let competitionProposals: RelationshipCompetitionProposal[] = [];
+        let mentorshipOffers: RelationshipMentorshipOffer[] = [];
         const arenasById = new Map<string, Arena>();
         const actionsByArenaId = new Map<string, Action[]>();
         const tasksByArenaId = new Map<string, ScheduledTask[]>();
 
         if (linkIds.length > 0) {
+            // A oferta e o estado ANTES da arena existir: nada foi criado em conta
+            // nenhuma ainda. So as pendentes interessam ao card.
+            const mentorshipLinkIds = links.filter((link) => link.linkType === 'mentoria').map((link) => link.id);
+            if (mentorshipLinkIds.length > 0) {
+                const offersResult = await supabase
+                    .from('relationship_mentorship_offers')
+                    .select('*')
+                    .in('relationship_link_id', mentorshipLinkIds)
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
+
+                if (offersResult.error) {
+                    console.error('Error fetching mentorship offers:', offersResult.error);
+                } else {
+                    mentorshipOffers = (offersResult.data || []).map(mapMentorshipOfferRow);
+                }
+            }
+
             if (competitionLinkIds.length > 0) {
                 const competitionChallengesResult = await supabase
                     .from('relationship_competition_challenges')
@@ -6428,6 +6518,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             linkedArenas: linkedArenaRows.map(row => mapLinkedRelationshipArenaRow(row, linksById, arenasById, actionsByArenaId, tasksByArenaId)),
             competitionChallenges,
             competitionProposals,
+            mentorshipOffers,
             summary,
         };
     };
@@ -13837,7 +13928,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
             activeArenaPact, arenaPactProgress, arenaPactCandidates, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact

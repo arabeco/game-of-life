@@ -219,4 +219,41 @@ assert.match(
   'o caminho antigo redireciona para a proposta em vez de impor o duelo',
 );
 
+
+// --- a mentoria entrega, nao escreve na conta do outro --------------------
+// Em marco a mentoria ganhou edicao colaborativa; no mesmo dia foi preciso
+// corrigir a propriedade da arena criada, e quatro dias depois duas migracoes
+// seguidas para o PUPILO conseguir apagar o que o mentor tinha feito na conta
+// dele. Em agosto tudo caiu. A resposta e o INSTALAR: a arena nasce ja sendo do
+// pupilo, entao nao ha dono ambiguo nem politica de escrita cruzada — e o
+// vinculo pode vencer sem levar a arena junto.
+const oferta = read('supabase/migrations/20260826160000_mentorship_arena_is_offered.sql');
+
+assert.match(oferta, /create table if not exists public\.relationship_mentorship_offers/);
+
+const oferecer = oferta.slice(oferta.indexOf('create or replace function public.offer_mentorship_arena'));
+const corpoOferecer = oferecer.slice(0, oferecer.indexOf('$fn$;'));
+assert.doesNotMatch(corpoOferecer, /insert into public\.arenas/, 'oferecer nao cria arena em conta nenhuma');
+assert.match(corpoOferecer, /mentor_id = v_uid/, 'so o mentor oferece');
+
+const responder = oferta.slice(oferta.indexOf('create or replace function public.respond_mentorship_offer'));
+const corpoResponder = responder.slice(0, responder.indexOf('$fn$;'));
+assert.match(corpoResponder, /insert into public\.arenas[\s\S]{0,400}v_uid,/, 'a arena instalada nasce com o PUPILO como dono');
+assert.match(corpoResponder, /v_offer\.pupil_id <> v_uid/, 'ninguem instala no lugar do outro');
+
+// A porta antiga continua murada.
+const portaMurada = oferta.slice(oferta.indexOf('create or replace function public.create_linked_relationship_arena'));
+assert.match(
+  portaMurada.slice(0, portaMurada.indexOf('$fn$;')),
+  /MENTORSHIP_USE_OFFER_INSTEAD/,
+  'criar arena direto na conta do pupilo continua proibido, mas o erro agora nomeia a saida',
+);
+
+// As vagas da mentoria contam ENTREGAS instaladas, nao observacoes: olhar mais
+// uma arena nao custa trabalho a ninguem, produzir uma custa.
+assert.match(corpoOferecer, /status = 'installed'[\s\S]{0,200}arena_slots/, 'a vaga e consumida pela entrega instalada');
+
+// E a tela nao manda mais o mentor fazer o que o banco recusa.
+assert.doesNotMatch(semComentarios, /Abra uma arena ou entregue uma campanha/, 'a instrucao impossivel sai');
+
 console.log('Vinculo como produto: um preco, um prazo, renovacao pela metade, e nada cobrando por dentro.');

@@ -1232,6 +1232,31 @@ export interface RelationshipCompetitionChallenge {
   metadata?: Record<string, any> | null;
 }
 
+/**
+ * Um duelo antes de existir.
+ *
+ * Forjar criava as duas arenas espelhadas na hora, inclusive a do outro — uma
+ * pessoa escrevia na conta da outra sem perguntar. A proposta e o passo que
+ * faltava: so no aceite as arenas nascem.
+ */
+export interface RelationshipCompetitionProposal {
+  id: string;
+  relationshipLinkId: string;
+  proposerUserId: string;
+  opponentUserId: string;
+  sourceArenaId: string;
+  arenaSnapshot?: {
+    name?: string;
+    icon?: string;
+    actionCount?: number;
+    plannedTotal?: number;
+  } | null;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  createdAt: string;
+  respondedAt?: string | null;
+  challengeId?: string | null;
+}
+
 export type LinkNotificationType = 'praise' | 'support' | 'scold';
 
 export interface LinkNotificationLog {

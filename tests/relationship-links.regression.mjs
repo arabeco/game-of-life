@@ -162,11 +162,61 @@ assert.doesNotMatch(semComentarios, /mentoria basica/i, '"basica" era sobra de u
 // --- o cliente nao promete mais duelos do que o banco aceita --------------
 // Havia indice unico (relationship_link_id where completed_at is null) desde
 // marco, e a tela dizia 3: o segundo forjar morria com erro do servidor.
+// A proposta pendente tambem ocupa a vaga. Se nao ocupasse, daria para propor
+// duas e a segunda so morreria na hora em que alguem aceitasse — e o erro
+// apareceria para quem aceitou, nao para quem propos.
 assert.match(
   hub,
-  /const competitionCanLaunch = openCompetitionChallenges\.length === 0;/,
-  'um duelo por vez, que e o que o banco impoe',
+  /const competitionCanLaunch = openCompetitionChallenges\.length === 0 && !pendingProposal;/,
+  'um duelo por vez, contando tambem o que esta so proposto',
 );
 assert.doesNotMatch(semComentarios, /3 duelos abertos/, 'o limite de 3 nunca existiu no banco');
+
+
+// --- o duelo e proposto, nao imposto --------------------------------------
+// Forjar criava as duas arenas espelhadas na hora, inclusive a do outro: uma
+// pessoa escrevia uma arena na conta da outra sem perguntar. E a mesma pergunta
+// de propriedade que derrubou a mentoria colaborativa em agosto, so que na
+// competicao ninguem tinha reparado.
+const proposta = read('supabase/migrations/20260826140000_competition_duel_is_proposed.sql');
+
+assert.match(proposta, /create table if not exists public\.relationship_competition_proposals/);
+assert.match(
+  proposta,
+  /create unique index if not exists relationship_competition_proposals_pending_idx/,
+  'uma proposta pendente por vinculo, pelo mesmo motivo que ha um duelo aberto por vinculo',
+);
+
+// A forja so pode acontecer dentro do aceite.
+const aceite = proposta.slice(proposta.indexOf('create or replace function public.respond_competition_challenge'));
+assert.match(
+  aceite.slice(0, aceite.indexOf('$fn$;')),
+  /_competition_forge_challenge/,
+  'as arenas espelhadas so nascem quando o outro aceita',
+);
+
+// Quem desafia vem por parametro: quem executa o aceite e o OPONENTE, e ler
+// auth.uid() ali faria o duelo nascer com os lados trocados.
+assert.match(
+  proposta,
+  /create or replace function public\._competition_forge_challenge\([\s\S]{0,200}p_challenger_id uuid/,
+  'a forja precisa receber quem desafia, nao deduzir da sessao',
+);
+
+// Propor nao pode criar arena nenhuma.
+const propor = proposta.slice(proposta.indexOf('create or replace function public.propose_competition_challenge'));
+assert.doesNotMatch(
+  propor.slice(0, propor.indexOf('$fn$;')),
+  /insert into public\.arenas/,
+  'propor nao escreve na conta de ninguem',
+);
+
+// A porta antiga nao pode continuar criando arena direto.
+const portaAntiga = proposta.slice(proposta.indexOf('create or replace function public.create_competition_challenge'));
+assert.match(
+  portaAntiga.slice(0, portaAntiga.indexOf('$fn$;')),
+  /propose_competition_challenge/,
+  'o caminho antigo redireciona para a proposta em vez de impor o duelo',
+);
 
 console.log('Vinculo como produto: um preco, um prazo, renovacao pela metade, e nada cobrando por dentro.');

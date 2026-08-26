@@ -8,6 +8,7 @@ import {
     RelationshipLinkType,
     LinkedRelationshipArena,
     RelationshipCompetitionChallenge,
+    RelationshipCompetitionProposal,
     Arena,
     Action,
     Campaign,
@@ -814,6 +815,7 @@ export const RelationshipHubModal: React.FC<{
         friends,
         getRelationshipCapacitySummary,
         installCodex,
+        respondCompetitionChallenge,
         respondToRelationshipInvite,
         shareRelationshipArena,
         showToast,
@@ -831,6 +833,7 @@ export const RelationshipHubModal: React.FC<{
     const [links, setLinks] = useState<RelationshipLink[]>([]);
     const [linkedArenas, setLinkedArenas] = useState<LinkedRelationshipArena[]>([]);
     const [competitionChallenges, setCompetitionChallenges] = useState<RelationshipCompetitionChallenge[]>([]);
+    const [competitionProposals, setCompetitionProposals] = useState<RelationshipCompetitionProposal[]>([]);
     const [profilesById, setProfilesById] = useState<Record<string, RelationshipProfileLite>>({});
     const [invitePickerType, setInvitePickerType] = useState<RelationshipLinkType | null>(null);
     const [inviteConfirmState, setInviteConfirmState] = useState<InviteConfirmState | null>(null);
@@ -943,6 +946,7 @@ export const RelationshipHubModal: React.FC<{
             setLinks([]);
             setLinkedArenas([]);
             setCompetitionChallenges([]);
+            setCompetitionProposals([]);
             setSummary(null);
             setMentorSentCodexesByLinkId({});
             setProfilesById({ [userProfile.id]: toProfileLite(userProfile) });
@@ -995,6 +999,7 @@ export const RelationshipHubModal: React.FC<{
             setLinks(hub.links || []);
             setLinkedArenas(hub.linkedArenas || []);
             setCompetitionChallenges(hub.competitionChallenges || []);
+            setCompetitionProposals(hub.competitionProposals || []);
             setSummary((hub.summary || fallbackSummary || null) as RelationshipCapacitySummary | null);
             setMentorSentCodexesByLinkId(nextMentorSentCodexesByLinkId);
             setProfilesById(nextProfiles);
@@ -1199,6 +1204,19 @@ export const RelationshipHubModal: React.FC<{
                 setInvitePickerType(null);
                 await refreshHub();
             }
+        } finally {
+            setBusyKey(null);
+        }
+    };
+
+    const handleRespondProposal = async (
+        proposal: RelationshipCompetitionProposal,
+        action: 'accept' | 'decline' | 'cancel',
+    ) => {
+        setBusyKey(`proposal:${proposal.id}`);
+        try {
+            const ok = await respondCompetitionChallenge(proposal.id, action);
+            if (ok) await refreshHub();
         } finally {
             setBusyKey(null);
         }
@@ -2159,7 +2177,13 @@ export const RelationshipHubModal: React.FC<{
         // Um por vez, que e o que o banco ja impunha: indice unico em
         // relationship_link_id where completed_at is null. O cliente permitia 3 e
         // o segundo forjar morria com erro do servidor.
-        const competitionCanLaunch = openCompetitionChallenges.length === 0;
+        // A proposta pendente tambem ocupa a vaga: se nao ocupasse, daria para
+        // propor duas e a segunda so morreria na hora em que alguem aceitasse —
+        // e o erro apareceria para quem aceitou, nao para quem propos.
+        const pendingProposal = competitionProposals.find(
+            (proposal) => proposal.relationshipLinkId === link.id && proposal.status === 'pending',
+        ) || null;
+        const competitionCanLaunch = openCompetitionChallenges.length === 0 && !pendingProposal;
         // Competicao e a unica das tres que morre com vencedor. Le o ultimo duelo
         // selado, porque e ele que carrega o resultado.
         const lastSealed = sealedCompetitionChallenges[0] || null;
@@ -2182,7 +2206,7 @@ export const RelationshipHubModal: React.FC<{
                     action={
                         <div className="flex flex-wrap gap-2">
                             <span className="rounded-full border border-rose-300/18 bg-rose-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-rose-200">
-                                {openCompetitionChallenges.length}/1 aberto
+                                {pendingProposal ? 'Proposto' : `${openCompetitionChallenges.length}/1 aberto`}
                             </span>
                             <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                                 {sealedCompetitionChallenges.length} selados
@@ -2212,7 +2236,52 @@ export const RelationshipHubModal: React.FC<{
                         </div>
                     )}
                     {openCompetitionChallenges.length === 0 ? (
-                        <EmptyState title="Sem duelo aberto" text="Forje uma arena sua para abrir a corrida." />
+                        pendingProposal ? (
+                            /* A proposta aparece no lugar do duelo, com o mesmo par de
+                               botoes do convite de vinculo e da entrega de mentoria.
+                               Uma pendencia e um estado do card, nao uma lista a parte. */
+                            <div className="rounded-[18px] border border-rose-300/22 bg-rose-500/8 p-3">
+                                <div className="text-[9px] font-black uppercase tracking-[0.18em] text-rose-200/78">
+                                    {pendingProposal.proposerUserId === sessionUid ? 'Aguardando resposta' : 'Duelo proposto'}
+                                </div>
+                                <div className="mt-1 truncate text-sm font-black text-white">
+                                    {pendingProposal.arenaSnapshot?.name || 'Arena'}
+                                </div>
+                                <div className="mt-0.5 text-[10px] text-white/44">
+                                    {`${pendingProposal.arenaSnapshot?.actionCount ?? 0} acoes`}
+                                </div>
+                                <div className="mt-2.5 flex gap-2">
+                                    {pendingProposal.proposerUserId === sessionUid ? (
+                                        <button
+                                            onClick={() => { void handleRespondProposal(pendingProposal, 'cancel'); }}
+                                            disabled={busyKey === `proposal:${pendingProposal.id}`}
+                                            className="luxe-button-secondary rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] disabled:opacity-50"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => { void handleRespondProposal(pendingProposal, 'decline'); }}
+                                                disabled={busyKey === `proposal:${pendingProposal.id}`}
+                                                className="luxe-button-secondary rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] disabled:opacity-50"
+                                            >
+                                                Recusar
+                                            </button>
+                                            <button
+                                                onClick={() => { void handleRespondProposal(pendingProposal, 'accept'); }}
+                                                disabled={busyKey === `proposal:${pendingProposal.id}`}
+                                                className="luxe-skin-button rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] disabled:opacity-50"
+                                            >
+                                                Aceitar
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <EmptyState title="Sem duelo aberto" text="Proponha uma arena sua para abrir a corrida." />
+                        )
                     ) : (
                         <div className="space-y-3">
                             {openCompetitionChallenges.map((challenge) => {
@@ -2356,7 +2425,7 @@ export const RelationshipHubModal: React.FC<{
                                 className="luxe-skin-button inline-flex items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
                             >
                                 <span className="text-[10px] font-black uppercase tracking-[0.16em]">
-                                    {competitionChallengesForLink.length > 0 ? 'Forjar novo duelo' : 'Forjar primeiro duelo'}
+                                    {competitionChallengesForLink.length > 0 ? 'Propor novo duelo' : 'Propor primeiro duelo'}
                                 </span>
                                 <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
                                     Incluso
@@ -2627,7 +2696,7 @@ export const RelationshipHubModal: React.FC<{
                                 <div>
                                     <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/42">Competicao</div>
                                     <h3 className="mt-1 text-base font-black uppercase tracking-[0.14em] text-white">
-                                        Forjar duelo contra {otherParticipant(selectedCompetitionLinkForChallenge)?.nickname || 'seu rival'}
+                                        Propor duelo contra {otherParticipant(selectedCompetitionLinkForChallenge)?.nickname || 'seu rival'}
                                     </h3>
                                 </div>
                                 <button onClick={() => setSelectedCompetitionLinkForChallenge(null)} className="rounded-full border border-white/12 bg-black/20 p-2 text-white/70 hover:text-white">
@@ -2683,7 +2752,7 @@ export const RelationshipHubModal: React.FC<{
                                     disabled={!selectedCompetitionSourceArenaId || busyKey === `competition-challenge:${selectedCompetitionLinkForChallenge.id}`}
                                     className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
                                 >
-                                    {busyKey === `competition-challenge:${selectedCompetitionLinkForChallenge.id}` ? 'Forjando...' : 'Forjar duelo'}
+                                    {busyKey === `competition-challenge:${selectedCompetitionLinkForChallenge.id}` ? 'Propondo...' : 'Propor duelo'}
                                 </button>
                             </div>
                         </GlassCard>

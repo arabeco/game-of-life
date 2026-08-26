@@ -57,6 +57,16 @@
   color: #ffffff;
 }
 
+/* O cadeado e o Oraculo.
+ *
+ * A bolinha visivel encolheu, mas o alvo do dedo NAO. Sao coisas separadas de
+ * proposito: o botao continua com os 44px que o dedo precisa e fica
+ * transparente; quem desenha o circulo e o ::before, menor e centrado dentro
+ * dele. Encolher o botao junto reduziria a area de toque bem no meio de uma
+ * investigacao sobre toque que nao responde. */
+/* Sem `position` aqui: os dois usuarios ja chegam com `absolute` e o
+   `left-full`/`right-full` deles depende disso. Declarar `relative` neste
+   seletor vence a utilitaria do Tailwind e joga o botao para fora da tela. */
 .shell-float-button {
   width: 2.75rem;
   height: 2.75rem;
@@ -66,15 +76,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.shell-float-button::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.15rem;
+  height: 2.15rem;
+  transform: translate(-50%, -50%);
   border-radius: 9999px;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(4px);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
-  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.shell-float-button:hover {
+/* O ::before e posicionado e o icone nao, entao sem isto o circulo pintaria por
+   cima do icone. So o icone precisa: as insignias ja sao absolutas e, por virem
+   depois na ordem do DOM, ja pintam acima. */
+.shell-float-button > svg {
+  position: relative;
+  z-index: 1;
+}
+
+.shell-float-button:hover::before {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 215, 0, 0.45);
 }
@@ -114,7 +145,8 @@
     0 0 0 1px color-mix(in srgb, var(--skin-accent-color) 10%, transparent);
 }
 
-.mode-game.theme-light .shell-float-button {
+/* O tema claro pinta o circulo, nao o botao: o botao e so o alvo do dedo. */
+.mode-game.theme-light .shell-float-button::before {
   background: rgba(229, 235, 240, 0.94);
   border-color: color-mix(in srgb, var(--skin-accent-color) 40%, rgba(100, 116, 139, 0.16));
   box-shadow:
@@ -122,7 +154,7 @@
     0 0 0 1px color-mix(in srgb, var(--skin-accent-color) 12%, transparent);
 }
 
-.mode-game.theme-light .shell-float-button:hover {
+.mode-game.theme-light .shell-float-button:hover::before {
   background: rgba(247, 250, 253, 0.98);
   border-color: color-mix(in srgb, var(--skin-accent-color) 58%, rgba(100, 116, 139, 0.2));
 }

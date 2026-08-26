@@ -352,14 +352,14 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                     className={`shell-float-button pointer-events-auto absolute left-full z-[80] ml-2 group ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
                                     aria-label="Oracle Assistant"
                                 >
-                                    <SparklesIcon className={`shell-oracle-icon w-5 h-5 transition-all ${hasUnread ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'}`} />
+                                    <SparklesIcon className={`shell-oracle-icon w-4 h-4 transition-all ${hasUnread ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'}`} />
                                     {unreadNotificationsCount > 0 && (
-                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border border-black">
+                                        <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border border-black">
                                             <span className="text-[9px] font-bold text-white">{unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}</span>
                                         </div>
                                     )}
                                     {unreadNotificationsCount === 0 && hasUnread && (
-                                        <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                                        <span className="absolute top-1 right-1 flex h-3 w-3">
                                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70"></span>
                                             <span className="relative inline-flex h-3 w-3 rounded-full border border-black bg-amber-400"></span>
                                         </span>

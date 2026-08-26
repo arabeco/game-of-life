@@ -116,4 +116,54 @@ assert.equal(
   'exatamente dois pontos de reacao contam como marco',
 );
 
+
+// --- a fala de abertura obedece a tabela, nao um sorteio -----------------
+// Ela estava presa a tres coisas que nao vinham da regra: so disparava no
+// Planner, tinha cota diaria em todos os niveis, e ainda passava por
+// shouldShowPlannerCoach — uma moeda de 55% no Presente. "Fala toda vez que voce
+// abre" virava "45% das vezes que voce abre o Planner, uma vez por dia".
+const authenticatedApp = readFileSync(new URL('../components/AuthenticatedApp.tsx', import.meta.url), 'utf8');
+
+assert.match(authenticatedApp, /getOraclePresenceRules/, 'a fala de abertura le a politica');
+assert.doesNotMatch(
+  authenticatedApp,
+  /shouldShowPlannerCoach\(/,
+  'sorteio nao decide o que a tabela ja decidiu',
+);
+assert.match(
+  authenticatedApp,
+  /presenceRules\.openingLine === 'diaria' && currentView !== 'planner'/,
+  'so o nivel diario fica preso ao Planner; o Presente fala em qualquer abertura',
+);
+assert.match(
+  authenticatedApp,
+  /presenceRules\.openingLine === 'diaria' && lastSpeechDate === today/,
+  '"sempre" nao pode ter cota diaria',
+);
+
+// A marca do dia so entra depois da fala. Gravada antes do sorteio, um sorteio
+// perdido queimava o dia inteiro em silencio.
+const trechoFala = authenticatedApp.slice(
+  authenticatedApp.indexOf('const message = buildPlannerCoachSpeech'),
+  authenticatedApp.indexOf('emitOracleSpeech({'),
+);
+assert.ok(
+  trechoFala.indexOf('if (!message) return;') < trechoFala.indexOf('localStorage.setItem(speechKey, today)'),
+  'a marca do dia so pode ser gravada depois de haver o que falar',
+);
+
+// --- perguntar push nao pode queimar o campo antes de perguntar ----------
+// onboardingPushPromptedAt era gravado ANTES da chamada. Qualquer falha no meio
+// calava o aparelho para sempre — e o unico outro caminho para ligar push era o
+// modal de preferencias, que desenhava vazio ate a 1.0.69.
+const blocoPush = authenticatedApp.slice(
+  authenticatedApp.indexOf('const permission = await getAppPushPermission();'),
+  authenticatedApp.indexOf('handleCloseVanguardWelcome'),
+);
+assert.ok(
+  blocoPush.indexOf('await requestAppPushPermission()') < blocoPush.indexOf('onboardingPushPromptedAt: new Date()'),
+  'a marca de "ja perguntei" so entra depois de perguntar',
+);
+assert.match(blocoPush, /nextPermission !== 'unsupported'/, 'falha nao conta como resposta');
+
 console.log('Oracle presence policy: silencioso cala, equilibrado celebra o grande, presente acompanha tudo.');

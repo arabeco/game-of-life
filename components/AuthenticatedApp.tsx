@@ -56,12 +56,12 @@ import type { AppBroadcast } from './AppBroadcastModal';
 import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../utils/dailyCompletionPrompt';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
 import { ORACLE_SPEECH_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
+import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import {
     buildPlannerCoachSpeech,
     getOracleCoachDailyLimit,
-    shouldShowPlannerCoach,
 } from '../utils/oracleCoach';
 import { getOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import './auth-shell.css';
@@ -736,7 +736,18 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [currentView, pendingSitrepDate, pendingSitrepOpen]);
 
     useEffect(() => {
-        if (currentView !== 'planner' || isRestScreenVisible || userProfile.id === 'placeholder_user') return;
+        // A fala de abertura segue a POLITICA de presenca, nao um sorteio.
+        //
+        // Estava presa a tres coisas que nao vieram da regra: so disparava no
+        // Planner, so uma vez por dia, e ainda passava por shouldShowPlannerCoach,
+        // que e uma moeda de 55% no nivel Presente. "Fala toda vez que voce abre"
+        // virava "45% das vezes que voce abre o Planner, uma vez por dia".
+        const presenceRules = getOraclePresenceRules(oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL);
+        if (presenceRules.openingLine === 'nunca') return;
+        if (isRestScreenVisible || userProfile.id === 'placeholder_user') return;
+        // No Equilibrado ele so fala ao abrir o Planner, que e onde a leitura tem
+        // contexto. No Presente, qualquer abertura serve.
+        if (presenceRules.openingLine === 'diaria' && currentView !== 'planner') return;
 
         const now = new Date();
         const today = getOperationalDateString(now);
@@ -746,7 +757,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         const lastSpeechDate = localStorage.getItem(speechKey);
         localStorage.setItem(openKey, today);
 
-        if (lastSpeechDate === today) return;
+        // "Sempre" nao tem cota diaria; "diaria" tem.
+        if (presenceRules.openingLine === 'diaria' && lastSpeechDate === today) return;
 
         const daysSinceLastPlannerOpen = diffLocalDays(previousPlannerOpen, today);
         const arenasCount = assets.reduce((sum, asset) => sum + (asset.arenas?.length || 0), 0);
@@ -794,9 +806,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
         if (!message) return;
 
+        // A marca do dia so entra depois que ele fala. Antes ela era gravada
+        // ANTES do sorteio, entao um sorteio perdido queimava o dia inteiro: o
+        // Oraculo ficava mudo ate a virada, sem ter dito nada.
         localStorage.setItem(speechKey, today);
-        const presenceLevel = oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL;
-        if (!shouldShowPlannerCoach(presenceLevel)) return;
 
         const timer = window.setTimeout(() => {
             emitOracleSpeech({
@@ -1554,7 +1567,22 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     useEffect(() => {
         if (!isProfileLoaded || showTerms) return;
         if (userProfile.id === 'placeholder_user') return;
-        if (userProfile.onboardingPushPromptedAt) return;
+        // A marca de "ja perguntei" nao pode calar a pergunta para sempre.
+        //
+        // Ela era gravada ANTES de chamar requestAppPushPermission, entao
+        // qualquer coisa entre uma linha e outra — app morto no meio, erro
+        // engolido virando 'unsupported', prompt do sistema nao aparecendo —
+        // queimava o campo e o usuario nunca mais era perguntado. E o unico outro
+        // caminho para ligar push era o modal de preferencias do Oraculo, que
+        // desenhava vazio ate a versao 1.0.69.
+        //
+        // Agora ela so barra dentro do mesmo dia: se o sistema ainda responde
+        // 'prompt', amanha ele pergunta de novo. O Android limita sozinho quantas
+        // vezes o prompt aparece, entao nao ha risco de virar assedio.
+        const jaPerguntouHoje = userProfile.onboardingPushPromptedAt
+            && getOperationalDateString(new Date(userProfile.onboardingPushPromptedAt))
+                === getOperationalDateString(new Date());
+        if (jaPerguntouHoje) return;
         if (isFirstUseOnboardingActive) return;
         if (shouldHoldVanguardWelcome) return;
 
@@ -1564,11 +1592,16 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
             const permission = await getAppPushPermission();
             if (cancelled || permission !== 'prompt') return;
 
-            updateUserProfile({ onboardingPushPromptedAt: new Date().toISOString() });
             setOnboardingPushBusy(true);
             try {
                 const nextPermission = await requestAppPushPermission();
                 if (cancelled) return;
+                // A marca entra DEPOIS, e so quando o sistema respondeu de
+                // verdade: 'unsupported' e falha, nao resposta, e queimar o campo
+                // por causa dela era o que deixava o aparelho mudo para sempre.
+                if (nextPermission !== 'unsupported') {
+                    updateUserProfile({ onboardingPushPromptedAt: new Date().toISOString() });
+                }
                 if (nextPermission === 'granted') {
                     await updateOraclePreferences({ pushEnabled: true });
                     showToast('Push ativado. O Oraculo ja pode te acompanhar fora da tela.', 'success');

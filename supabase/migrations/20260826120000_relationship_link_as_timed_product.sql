@@ -9,14 +9,17 @@ begin;
 -- reembolso acontece se a pessoa recusar" — enquanto a cobranca de verdade
 -- acontecia depois, num momento sobre o qual nada avisava.
 --
--- Agora se paga uma vez, ao criar, e o que se compra tem duas medidas:
+-- Agora se paga uma vez, ao ENVIAR o convite, e o que se compra tem duas
+-- medidas:
 --   PRAZO      — um mes, renovavel pela metade do preco;
 --   VAGAS      — quantas arenas cabem por participante.
--- Tudo que acontece dentro do vinculo e de graca.
+-- Expor arena e forjar duelo passam a vir inclusos.
 --
--- Consequencia que cai junto: recusar deixa de ter preco, entao a maquinaria de
--- reembolso de convite (cost_gold, refunded_at) para de ser exercitada. As
--- colunas ficam, porque ha historico gravado nelas.
+-- No envio e nao no aceite de proposito: cobrar no aceite deixaria a cobranca
+-- falhar na pior hora possivel — o remetente gasta o saldo em outra coisa
+-- enquanto espera, o outro aceita, e nao ha como pagar. Debitando no envio, a
+-- devolucao automatica de _relationship_refund_pending_invite cobre recusa,
+-- revogacao e expiracao. Nenhuma tela precisa explicar isso: o ouro volta.
 
 do $$
 declare
@@ -313,60 +316,6 @@ $$;
 revoke all on function public.share_relationship_arena(uuid, uuid) from public;
 grant execute on function public.share_relationship_arena(uuid, uuid) to authenticated;
 
--- ---------------------------------------------------------------------------
--- 6. Criar vinculo cobra, e o prazo comeca a valer no aceite
--- ---------------------------------------------------------------------------
--- Cobrar no ENVIO faria o remetente pagar por um convite que talvez nunca seja
--- aceito, e traria de volta o reembolso que acabamos de matar. Cobra-se de quem
--- criou no momento em que o vinculo passa a existir.
-
-create or replace function public._relationship_start_link(
-  p_invite public.relationship_link_invites,
-  p_arena_slots integer default null
-)
-returns public.relationship_links
-language plpgsql
-security definer
-set search_path = public, auth, extensions
-as $$
-declare
-  v_link public.relationship_links%rowtype;
-  v_slots integer;
-  v_price integer;
-begin
-  v_slots := greatest(1, coalesce(p_arena_slots, public.relationship_link_default_slots(p_invite.link_type)));
-  v_price := public.relationship_link_price(p_invite.link_type, v_slots);
-
-  if v_price > 0 then
-    perform public._codex_debit_gold(
-      p_invite.sender_id,
-      v_price,
-      'relationship_link',
-      format('Vinculo de %s', p_invite.link_type),
-      jsonb_build_object(
-        'invite_id', p_invite.id,
-        'link_type', p_invite.link_type,
-        'arena_slots', v_slots
-      )
-    );
-  end if;
-
-  insert into public.relationship_links (
-    mentor_id, pupil_id, link_type, arena_id, arena_snapshot,
-    satisfaction_level, arena_slots, expires_at
-  ) values (
-    p_invite.sender_id, p_invite.recipient_id, p_invite.link_type,
-    p_invite.arena_id, p_invite.arena_snapshot,
-    50, v_slots, now() + interval '1 month'
-  ) returning * into v_link;
-
-  return v_link;
-end;
-$$;
-
-revoke all on function public._relationship_start_link(public.relationship_link_invites, integer) from public;
-
-
 -- Quantas vagas o convite esta comprando. Fica no convite porque o preco e
 -- cobrado de quem enviou, no momento do aceite, e precisa ser o mesmo numero
 -- que ele viu na tela quando decidiu enviar.
@@ -374,94 +323,7 @@ alter table public.relationship_link_invites
   add column if not exists arena_slots integer not null default 1;
 
 -- ---------------------------------------------------------------------------
--- 7. Convidar para competicao deixa de cobrar no envio
--- ---------------------------------------------------------------------------
--- Cobrava 50 no envio e mais 50 no aceite. Com o preco no vinculo, o envio e de
--- graca e a cobranca acontece uma vez so, quando o vinculo nasce.
-
-create or replace function public.create_competition_invite(
-  p_recipient_id uuid,
-  p_source_arena_id uuid,
-  p_duration_days integer default 7
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public, auth, extensions
-as $fn$
-declare
-  v_uid uuid := auth.uid();
-  v_profile public.user_profiles%rowtype;
-  v_arena public.arenas%rowtype;
-  v_invite public.relationship_link_invites%rowtype;
-  v_action_count integer;
-  v_total_planned integer;
-  v_duration integer;
-begin
-  if v_uid is null then raise exception 'AUTH_REQUIRED'; end if;
-  if p_recipient_id is null or p_recipient_id = v_uid then raise exception 'INVALID_RECIPIENT'; end if;
-
-  select * into v_profile from public.user_profiles where id = v_uid;
-  if not found then raise exception 'PROFILE_NOT_FOUND'; end if;
-
-  select * into v_arena from public.arenas
-  where id = p_source_arena_id and user_id = v_uid and coalesce(is_archived, false) = false
-  for update;
-  if not found then raise exception 'COMPETITION_SOURCE_ARENA_REQUIRED'; end if;
-
-  select count(*), coalesce(sum(greatest(1, coalesce(repetitions, 1))), 0)
-  into v_action_count, v_total_planned
-  from public.actions
-  where arena_id = v_arena.id and coalesce(action_type, '') <> 'Livre';
-
-  if v_action_count = 0 then raise exception 'COMPETITION_SOURCE_ARENA_EMPTY'; end if;
-
-  if exists (
-    select 1 from public.relationship_links
-    where link_type = 'competicao' and ended_at is null
-      and ((mentor_id = v_uid and pupil_id = p_recipient_id)
-        or (mentor_id = p_recipient_id and pupil_id = v_uid))
-  ) then raise exception 'RELATIONSHIP_LINK_ALREADY_ACTIVE'; end if;
-
-  if exists (
-    select 1 from public.relationship_link_invites
-    where link_type = 'competicao' and status = 'pending'
-      and ((sender_id = v_uid and recipient_id = p_recipient_id)
-        or (sender_id = p_recipient_id and recipient_id = v_uid))
-  ) then raise exception 'RELATIONSHIP_INVITE_ALREADY_PENDING'; end if;
-
-  v_duration := greatest(1, least(30, coalesce(p_duration_days, 7)));
-
-  insert into public.relationship_link_invites (
-    sender_id, recipient_id, link_type, arena_id, arena_snapshot, status,
-    cost_gold, refunded_at, expires_at, arena_slots
-  ) values (
-    v_uid, p_recipient_id, 'competicao', v_arena.id,
-    jsonb_build_object(
-      'name', v_arena.name, 'icon', v_arena.icon,
-      'actionCount', v_action_count, 'plannedTotal', v_total_planned,
-      'durationDays', v_duration
-    ),
-    'pending', 0, null, now() + interval '7 days', 1
-  ) returning * into v_invite;
-
-  insert into public.notifications (id, user_id, type, content, read, created_at, metadata)
-  values (
-    extensions.gen_random_uuid(), p_recipient_id, 'arena_access',
-    format('@%s desafiou voce em "%s".', coalesce(v_profile.nickname, 'Um aliado'), v_arena.name),
-    false, now(),
-    jsonb_build_object('inviteId', v_invite.id, 'senderId', v_uid, 'linkType', 'competicao', 'arenaId', v_arena.id)
-  );
-
-  return jsonb_build_object('success', true, 'new_gold', null, 'invite', to_jsonb(v_invite));
-end;
-$fn$;
-
-revoke all on function public.create_competition_invite(uuid, uuid, integer) from public;
-grant execute on function public.create_competition_invite(uuid, uuid, integer) to authenticated;
-
--- ---------------------------------------------------------------------------
--- 8. Aceitar cria o vinculo pago, com prazo
+-- 6. Aceitar cria o vinculo, com prazo
 -- ---------------------------------------------------------------------------
 
 create or replace function public.respond_relationship_link_invite(
@@ -605,7 +467,7 @@ revoke all on function public.respond_relationship_link_invite(uuid, text) from 
 grant execute on function public.respond_relationship_link_invite(uuid, text) to authenticated;
 
 -- ---------------------------------------------------------------------------
--- 9. Forjar duelo dentro do vinculo deixa de cobrar
+-- 7. Forjar duelo dentro do vinculo deixa de cobrar
 -- ---------------------------------------------------------------------------
 -- Recriada a partir da versao de 20260330113000, com duas mudancas: o debito de
 -- 50 sai (o vinculo ja foi pago) e vinculo vencido passa a recusar duelo novo.
@@ -656,7 +518,12 @@ begin
     from public.relationship_competition_challenges challenge
     where challenge.relationship_link_id = v_link.id
       and challenge.sealed_at is null
-  ) >= 3 then
+  ) >= 1 then
+    -- Um duelo por vez. O numero era 3 aqui, mas o indice unico
+    -- relationship_competition_challenges_active_link_idx ja so aceitava um
+    -- aberto desde marco: o segundo forjar passava por esta checagem e morria
+    -- na constraint. Contando coisas diferentes, ainda por cima — este conta
+    -- sealed_at, o indice conta completed_at.
     raise exception 'COMPETITION_CHALLENGE_LIMIT_REACHED';
   end if;
 
@@ -946,5 +813,154 @@ $$;
 
 revoke all on function public.create_competition_challenge(uuid, uuid) from public;
 grant execute on function public.create_competition_challenge(uuid, uuid) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 8. A cobranca fica no ENVIO, com devolucao automatica
+-- ---------------------------------------------------------------------------
+-- Cobrar no aceite tinha um furo feio: quem enviasse com pouco ouro poderia
+-- gastar o saldo em outra coisa antes de o outro responder, e a cobranca falharia
+-- exatamente no instante do aceite — a pior hora possivel, com as duas pessoas
+-- ja contando com o vinculo.
+--
+-- Entao volta para onde estava: debita de quem envia, e devolve sozinho se o
+-- outro recusar, se o remetente revogar ou se o convite expirar. Isso ja existe
+-- em _relationship_refund_pending_invite; o que faltava era o preco nao ser mais
+-- zero. Nenhuma tela precisa explicar a devolucao: o ouro simplesmente volta.
+
+create or replace function public._relationship_get_invite_cost(p_link_type text)
+returns integer
+language plpgsql
+immutable
+as $fn$
+begin
+  if coalesce(p_link_type, '') not in ('mentoria', 'parceria', 'competicao') then
+    raise exception 'RELATIONSHIP_LINK_TYPE_INVALID';
+  end if;
+  return public.relationship_link_price(p_link_type, 1);
+end;
+$fn$;
+
+-- O aceite deixa de mexer em ouro: quem pagou ja pagou no envio.
+create or replace function public._relationship_start_link(
+  p_invite public.relationship_link_invites,
+  p_arena_slots integer default null
+)
+returns public.relationship_links
+language plpgsql
+security definer
+set search_path = public, auth, extensions
+as $fn$
+declare
+  v_link public.relationship_links%rowtype;
+  v_slots integer;
+begin
+  v_slots := greatest(1, coalesce(p_arena_slots, public.relationship_link_default_slots(p_invite.link_type)));
+
+  insert into public.relationship_links (
+    mentor_id, pupil_id, link_type, arena_id, arena_snapshot,
+    satisfaction_level, arena_slots, expires_at
+  ) values (
+    p_invite.sender_id, p_invite.recipient_id, p_invite.link_type,
+    p_invite.arena_id, p_invite.arena_snapshot,
+    50, v_slots, now() + interval '1 month'
+  ) returning * into v_link;
+
+  return v_link;
+end;
+$fn$;
+
+revoke all on function public._relationship_start_link(public.relationship_link_invites, integer) from public;
+
+-- E o convite de competicao volta a debitar no envio, como os outros dois.
+create or replace function public.create_competition_invite(
+  p_recipient_id uuid,
+  p_source_arena_id uuid,
+  p_duration_days integer default 7
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, auth, extensions
+as $fn$
+declare
+  v_uid uuid := auth.uid();
+  v_profile public.user_profiles%rowtype;
+  v_arena public.arenas%rowtype;
+  v_invite public.relationship_link_invites%rowtype;
+  v_action_count integer;
+  v_total_planned integer;
+  v_duration integer;
+  v_cost integer;
+  v_new_gold integer;
+begin
+  if v_uid is null then raise exception 'AUTH_REQUIRED'; end if;
+  if p_recipient_id is null or p_recipient_id = v_uid then raise exception 'INVALID_RECIPIENT'; end if;
+
+  select * into v_profile from public.user_profiles where id = v_uid;
+  if not found then raise exception 'PROFILE_NOT_FOUND'; end if;
+
+  select * into v_arena from public.arenas
+  where id = p_source_arena_id and user_id = v_uid and coalesce(is_archived, false) = false
+  for update;
+  if not found then raise exception 'COMPETITION_SOURCE_ARENA_REQUIRED'; end if;
+
+  select count(*), coalesce(sum(greatest(1, coalesce(repetitions, 1))), 0)
+  into v_action_count, v_total_planned
+  from public.actions
+  where arena_id = v_arena.id and coalesce(action_type, '') <> 'Livre';
+
+  if v_action_count = 0 then raise exception 'COMPETITION_SOURCE_ARENA_EMPTY'; end if;
+
+  if exists (
+    select 1 from public.relationship_links
+    where link_type = 'competicao' and ended_at is null
+      and ((mentor_id = v_uid and pupil_id = p_recipient_id)
+        or (mentor_id = p_recipient_id and pupil_id = v_uid))
+  ) then raise exception 'RELATIONSHIP_LINK_ALREADY_ACTIVE'; end if;
+
+  if exists (
+    select 1 from public.relationship_link_invites
+    where link_type = 'competicao' and status = 'pending'
+      and ((sender_id = v_uid and recipient_id = p_recipient_id)
+        or (sender_id = p_recipient_id and recipient_id = v_uid))
+  ) then raise exception 'RELATIONSHIP_INVITE_ALREADY_PENDING'; end if;
+
+  v_duration := greatest(1, least(30, coalesce(p_duration_days, 7)));
+
+  v_cost := public._relationship_get_invite_cost('competicao');
+  v_new_gold := public._codex_debit_gold(
+    v_uid, v_cost, 'relationship_invite',
+    format('Vinculo de competicao: %s', trim(v_arena.name)),
+    jsonb_build_object('recipient_id', p_recipient_id, 'link_type', 'competicao',
+      'arena_id', v_arena.id, 'cost_gold', v_cost)
+  );
+
+  insert into public.relationship_link_invites (
+    sender_id, recipient_id, link_type, arena_id, arena_snapshot, status,
+    cost_gold, refunded_at, expires_at, arena_slots
+  ) values (
+    v_uid, p_recipient_id, 'competicao', v_arena.id,
+    jsonb_build_object(
+      'name', v_arena.name, 'icon', v_arena.icon,
+      'actionCount', v_action_count, 'plannedTotal', v_total_planned,
+      'durationDays', v_duration
+    ),
+    'pending', v_cost, null, now() + interval '7 days', 1
+  ) returning * into v_invite;
+
+  insert into public.notifications (id, user_id, type, content, read, created_at, metadata)
+  values (
+    extensions.gen_random_uuid(), p_recipient_id, 'arena_access',
+    format('@%s desafiou voce em "%s".', coalesce(v_profile.nickname, 'Um aliado'), v_arena.name),
+    false, now(),
+    jsonb_build_object('inviteId', v_invite.id, 'senderId', v_uid, 'linkType', 'competicao', 'arenaId', v_arena.id)
+  );
+
+  return jsonb_build_object('success', true, 'new_gold', v_new_gold, 'invite', to_jsonb(v_invite));
+end;
+$fn$;
+
+revoke all on function public.create_competition_invite(uuid, uuid, integer) from public;
+grant execute on function public.create_competition_invite(uuid, uuid, integer) to authenticated;
 
 commit;

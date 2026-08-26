@@ -112,14 +112,49 @@ assert.ok(
 
 // --- as acoes de dentro nao cobram mais -----------------------------------
 assert.match(migration, /'price_gold', 0/, 'expor arena passa a ser incluso');
+
+// --- e a cobranca fica no ENVIO, nao no aceite ----------------------------
+// Cobrar no aceite deixava a cobranca falhar na pior hora: o remetente gasta o
+// saldo enquanto espera resposta, o outro aceita, e nao ha como pagar.
+const criaVinculo = migration.slice(
+  migration.indexOf('create or replace function public._relationship_start_link'),
+);
 assert.doesNotMatch(
-  migration.slice(migration.indexOf('9. Forjar duelo dentro do vinculo')),
+  criaVinculo.slice(0, criaVinculo.indexOf('$fn$;')),
+  /_codex_debit_gold/,
+  'criar o vinculo no aceite nao pode mexer em ouro: quem pagou pagou no envio',
+);
+assert.match(
+  migration,
+  /return public\.relationship_link_price\(p_link_type, 1\);/,
+  'o custo do convite tem de sair da mesma tabela de precos do vinculo',
+);
+const forjarDueloInteiro = migration.slice(
+  migration.indexOf('create or replace function public.create_competition_challenge'),
+);
+const forjarDuelo = forjarDueloInteiro.slice(0, forjarDueloInteiro.indexOf('\n$$;'));
+assert.ok(forjarDuelo.length > 0, 'o corpo de create_competition_challenge deve ser identificavel');
+
+assert.doesNotMatch(
+  forjarDuelo,
   /_codex_debit_gold/,
   'forjar duelo nao pode voltar a cobrar: o vinculo ja foi pago',
 );
 
-// --- nenhuma tela volta a falar de reembolso de convite -------------------
-// Era o texto que descrevia uma politica de reembolso para uma cobranca de zero.
+// Um por vez tambem no servidor. O cliente dizia 3, esta funcao dizia 3, e o
+// indice unico relationship_competition_challenges_active_link_idx aceitava 1
+// desde marco — o segundo forjar passava pelas duas checagens e morria na
+// constraint. Contando coisas diferentes: aqui sealed_at, la completed_at.
+assert.match(
+  forjarDuelo,
+  /\) >= 1 then/,
+  'o servidor tambem precisa recusar a partir do primeiro duelo aberto',
+);
+
+// --- a devolucao acontece, mas nenhuma tela a explica --------------------
+// Recusar devolve o ouro de verdade — e por isso que cobrar no envio e seguro.
+// O que nao volta e o PARAGRAFO: o texto antigo descrevia a politica inteira
+// numa tela onde a cobranca era de zero. O ouro simplesmente volta.
 const semComentarios = hub.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/^\s*\/\/.*$/gm, '');
 assert.doesNotMatch(semComentarios, /reembolso/i, 'o texto de reembolso de convite nao volta');
 assert.doesNotMatch(semComentarios, /mentoria basica/i, '"basica" era sobra de um modo que nao existe mais');

@@ -591,18 +591,17 @@ const RelationshipInvitePicker: React.FC<{
                         </button>
                     </div>
 
-                    <div className="mt-4 rounded-[20px] border border-white/10 bg-black/24 px-3 py-3">
-                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/44">Entrada</div>
-                        {/* O texto antigo explicava reembolso de um convite que fora
-                            zerado em agosto — chegava a imprimir "cobra 0 no envio".
-                            Agora o preco e do vinculo, sai uma vez so quando ele
-                            nasce, e nada la dentro cobra de novo. */}
-                        <p className="mt-1 text-sm text-white/58">
-                            {`${COIN_GLYPH} ${LINK_LABELS[linkType].cost} quando a pessoa aceitar. Enviar e recusar nao custam nada.`}
-                        </p>
-                        <p className="mt-1.5 text-[11px] text-white/42">
-                            {`O vinculo vale ${RELATIONSHIP_LINK_DURATION_DAYS} dias. Expor arena e forjar duelo ja vem inclusos. Renovar sai por ${COIN_GLYPH} ${getRelationshipRenewalPrice(linkType)}.`}
-                        </p>
+                    {/* Preco e prazo, sem paragrafo. O que a pessoa precisa saber
+                        para decidir cabe em dois numeros; explicar o resto em texto
+                        corrido so enche a tela. */}
+                    <div className="mt-4 flex items-center justify-between rounded-[20px] border border-white/10 bg-black/24 px-3 py-2.5">
+                        <span className="text-[10px] font-black uppercase tracking-[0.22em] text-white/44">Vinculo</span>
+                        <span className="text-sm font-black text-[var(--skin-accent-color)]">
+                            {`${COIN_GLYPH} ${LINK_LABELS[linkType].cost}`}
+                            <span className="ml-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/38">
+                                {`${RELATIONSHIP_LINK_DURATION_DAYS}d`}
+                            </span>
+                        </span>
                     </div>
 
                     <div className="mt-4">
@@ -708,9 +707,6 @@ const RelationshipInviteConfirmModal: React.FC<{
                         <MiniStatCard label="Renovar" value={`${COIN_GLYPH} ${getRelationshipRenewalPrice(state.linkType)}`} tone="text-emerald-300" />
                     </div>
 
-                    <div className="mt-4 rounded-[18px] border border-emerald-300/16 bg-emerald-400/10 px-4 py-3 text-[12px] text-emerald-100/84">
-                        So cobra quando a pessoa aceitar. Expor arena e forjar duelo ja vem inclusos.
-                    </div>
 
                     <div className="mt-4 flex gap-2">
                         <button
@@ -2642,7 +2638,7 @@ export const RelationshipHubModal: React.FC<{
                             <div className="mt-4 rounded-[20px] border border-rose-300/14 bg-rose-500/8 px-4 py-3">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-rose-200">Duelo espelhado</div>
                                 <p className="mt-1 text-sm text-white/62">
-                                    Escolha uma arena autoral sua. O sistema sela um snapshot para cada lado. O duelo ja esta pago pelo vinculo.
+                                    Escolha uma arena sua. O sistema sela um snapshot para cada lado.
                                 </p>
                             </div>
 

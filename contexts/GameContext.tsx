@@ -515,7 +515,6 @@ export type ArenaSetupChange = {
 
 
 const getTodayString = () => getOperationalDateString();
-const COMPETITION_DUEL_GOLD_COST = getGoldMechanicPrice('competition_challenge', 50);
 
 const createDefaultDailyCommitment = (): DailyCommitment => ({
     date: getTodayString(),
@@ -929,6 +928,7 @@ export interface GameContextType {
     createCompetitionInvite: (recipientId: string, sourceArenaId: string, durationDays: number) => Promise<boolean>;
     respondToRelationshipInvite: (inviteId: string, action: RelationshipInviteAction) => Promise<boolean>;
     endRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
+    renewRelationshipLink: (relationshipLinkId: string) => Promise<boolean>;
     buyRelationshipCapacitySlot: (slotType: RelationshipCapacitySlotType) => Promise<boolean>;
     createLinkedRelationshipArena: (relationshipLinkId: string, arenaInput: { assetId: string; name: string; description?: string; icon?: string }) => Promise<Arena | null>;
     selectMentorshipArena: (relationshipLinkId: string, arenaId: string) => Promise<Arena | null>;
@@ -6004,6 +6004,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         endedAt: row.ended_at ?? null,
+        expiresAt: row.expires_at ?? null,
+        arenaSlots: typeof row.arena_slots === 'number' ? row.arena_slots : 1,
+        renewedAt: row.renewed_at ?? null,
+        renewalCount: typeof row.renewal_count === 'number' ? row.renewal_count : 0,
     });
 
     const buildLinkedRelationshipArenaPreview = (
@@ -6128,6 +6132,31 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (raw.includes('MENTOR_FORGED_CODEX_LIMIT_REACHED')) return 'A forja de campanhas da mentoria agora e paga por uso. Se isso apareceu, o banco ainda esta com regra antiga.';
         if (raw.includes('RELATIONSHIP_CAPACITY_DISABLED')) return 'A camada social agora funciona so por ouro.';
         return raw;
+    };
+
+    /**
+     * Renovar estende um mes a partir de max(agora, vencimento).
+     *
+     * Renovar cedo nao perde dia, e renovar depois de vencido nao paga pelo
+     * tempo em que o vinculo esteve congelado. Qualquer um dos dois participantes
+     * pode renovar: prender isso a quem criou faria o vinculo morrer junto com o
+     * interesse de uma pessoa so, mesmo com a outra querendo continuar.
+     */
+    const renewRelationshipLink = async (relationshipLinkId: string): Promise<boolean> => {
+        const { data, error } = await supabase.rpc('renew_relationship_link', {
+            p_relationship_link_id: relationshipLinkId,
+        });
+
+        if (error) {
+            showToast(mapRelationshipErrorMessage(error.message, 'Nao foi possivel renovar o vinculo.'), 'error');
+            return false;
+        }
+
+        const nextGold = Number((data as any)?.new_gold ?? userProfile.wallet?.gold ?? 0);
+        updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
+
+        showToast('Vinculo renovado por mais um mes.', 'success');
+        return true;
     };
 
     const getRelationshipCapacitySummary = async (): Promise<RelationshipCapacitySummary | null> => {
@@ -6597,17 +6626,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return null;
         }
 
-        if ((userProfile.wallet?.gold || 0) < COMPETITION_DUEL_GOLD_COST) {
-            const missingGold = Math.max(0, COMPETITION_DUEL_GOLD_COST - Number(userProfile.wallet?.gold || 0));
-            showToast(`Saldo insuficiente. Faltam ${missingGold} de ouro para forjar esse duelo.`, 'warning');
-            promptGoldShortage({
-                requiredGold: COMPETITION_DUEL_GOLD_COST,
-                label: 'forjar um duelo competitivo',
-                storeTab: 'store',
-                section: 'packs',
-            });
-            return null;
-        }
+        // Duelo nao cobra mais: quem pagou foi o vinculo, uma vez so, quando ele
+        // nasceu. O portao de saldo aqui recusaria por falta de ouro uma acao que
+        // hoje e gratuita.
 
         const { data, error } = await supabase.rpc('create_competition_challenge', {
             p_relationship_link_id: relationshipLinkId,
@@ -13790,7 +13811,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
             activeArenaPact, arenaPactProgress, arenaPactCandidates, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact

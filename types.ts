@@ -1161,6 +1161,13 @@ export interface RelationshipLink {
   createdAt: string;
   updatedAt: string;
   endedAt?: string | null;
+  /** O vinculo e um produto com prazo. Vencido ele congela, nao some. */
+  expiresAt?: string | null;
+  /** Quantas arenas cabem POR PARTICIPANTE. Teto compartilhado deixaria uma
+   *  pessoa consumir as vagas das duas. */
+  arenaSlots?: number;
+  renewedAt?: string | null;
+  renewalCount?: number;
 }
 
 export type RelationshipCapacityBucket = 'partnership' | 'competition' | 'mentor' | 'linked_arena' | 'pupil_mentor';

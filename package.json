@@ -16,6 +16,7 @@
     "test:mission-reward": "node tests/mission-reward-unification.regression.mjs",
     "test:oracle-presence-policy": "node tests/oracle-presence-policy.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",
+    "test:relationship-links": "node tests/relationship-links.regression.mjs",
     "test:cycle-delete-smoke": "node tests/cycle-delete-smoke.cdp.mjs",
     "test:launch": "node tests/launch-readiness.mjs",
     "test:launch:full": "node tests/launch-readiness.mjs --suite=full",

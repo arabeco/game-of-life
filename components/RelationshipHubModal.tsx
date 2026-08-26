@@ -35,6 +35,13 @@ import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { buildCodexCampaignPreview, buildCodexTemplateFromDraft, type CodexCampaignPreview } from '../utils/codexPreview';
 import { getGoldMechanicPrice } from '../constants/goldCatalog';
 import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
+import {
+    RELATIONSHIP_LINK_DURATION_DAYS,
+    getRelationshipDaysLeft,
+    getRelationshipLifecycle,
+    getRelationshipLinkPrice,
+    getRelationshipRenewalPrice,
+} from '../constants/relationshipLinks';
 
 const CodexModal = lazy(() =>
     import('./CodexModal').then((module) => ({ default: module.CodexModal }))
@@ -86,12 +93,10 @@ const HUB_TABS: Array<{
     { id: 'competicao', label: 'Competicao', icon: <TrophyIcon className="w-4 h-4" /> },
 ];
 const COIN_GLYPH = '\u{1FA99}';
-const MENTORIA_INVITE_GOLD_COST = getGoldMechanicPrice('relationship_invite_mentoria', 100);
-const PARCERIA_INVITE_GOLD_COST = getGoldMechanicPrice('relationship_invite_parceria', 50);
-const COMPETICAO_INVITE_GOLD_COST = getGoldMechanicPrice('relationship_invite_competicao', 50);
-const MENTOR_LINKED_ARENA_GOLD_COST = getGoldMechanicPrice('mentor_linked_arena', 50);
-const PARTNERSHIP_LINKED_ARENA_GOLD_COST = getGoldMechanicPrice('partnership_linked_arena', 50);
-const COMPETITION_DUEL_GOLD_COST = getGoldMechanicPrice('competition_challenge', 50);
+// O preco agora e do VINCULO, e vem do mesmo arquivo que a migracao espelha.
+const MENTORIA_INVITE_GOLD_COST = getRelationshipLinkPrice('mentoria');
+const PARCERIA_INVITE_GOLD_COST = getRelationshipLinkPrice('parceria');
+const COMPETICAO_INVITE_GOLD_COST = getRelationshipLinkPrice('competicao');
 const MENTOR_CAMPAIGN_FORGE_GOLD_COST = getGoldMechanicPrice('mentor_codex_forge', 100);
 
 const LINK_LABELS: Record<RelationshipLinkType, { singular: string; action: string; cost: number; accent: string }> = {
@@ -388,6 +393,76 @@ const MentorshipCampaignBoardCard: React.FC<{
     );
 };
 
+/**
+ * O prazo do vinculo, no canto do card.
+ *
+ * Pequeno e sem pressao enquanto ha tempo — so "29d". Quando vence, o card NAO
+ * some: some-lo a meia-noite e o que gera raiva, e mataria justamente a
+ * renovacao que se quer vender. Ele congela, avisa que congelou, e oferece
+ * renovar por metade.
+ */
+const LinkLifecyclePill: React.FC<{
+    link: RelationshipLink;
+    busy: boolean;
+    onRenew: () => void;
+}> = ({ link, busy, onRenew }) => {
+    const lifecycle = getRelationshipLifecycle(link);
+    const daysLeft = getRelationshipDaysLeft(link);
+    const renewalPrice = getRelationshipRenewalPrice(link.linkType, link.arenaSlots || 1);
+
+    if (lifecycle === 'encerrado') return null;
+
+    if (lifecycle === 'expirado') {
+        return (
+            <button
+                onClick={onRenew}
+                disabled={busy}
+                className="inline-flex items-center gap-1 rounded-full border border-amber-300/28 bg-amber-400/12 px-2.5 py-[0.34rem] text-[8px] font-black uppercase tracking-[0.12em] text-amber-100 transition-all hover:bg-amber-400/18 disabled:opacity-50"
+            >
+                {busy ? 'Renovando...' : `Renovar ${COIN_GLYPH} ${renewalPrice}`}
+            </button>
+        );
+    }
+
+    // Faltando pouco o selo esquenta, mas continua sendo so um selo.
+    const urgente = typeof daysLeft === 'number' && daysLeft <= 5;
+
+    return (
+        <button
+            onClick={onRenew}
+            disabled={busy}
+            title={`Renovar por ${renewalPrice} de ouro`}
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-[0.34rem] text-[8px] font-black uppercase tracking-[0.12em] transition-all disabled:opacity-50 ${
+                urgente
+                    ? 'border-amber-300/24 bg-amber-400/10 text-amber-100/88 hover:bg-amber-400/16'
+                    : 'border-white/10 bg-white/8 text-white/52 hover:bg-white/12'
+            }`}
+        >
+            {daysLeft === null ? '--' : `${daysLeft}d`}
+        </button>
+    );
+};
+
+/**
+ * O fecho do vinculo congelado.
+ *
+ * Competicao morre com veredito; parceria e mentoria nao tem vencedor, entao
+ * levam um resumo do que aconteceu. Sem isto elas congelariam mostrando nada, e
+ * congelar daria no mesmo que apagar.
+ */
+const LinkClosingLine: React.FC<{
+    link: RelationshipLink;
+    summary: string;
+}> = ({ link, summary }) => {
+    if (getRelationshipLifecycle(link) !== 'expirado') return null;
+    return (
+        <div className="mb-3 rounded-[16px] border border-amber-300/16 bg-amber-400/8 px-3 py-2.5">
+            <div className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-200/76">Vinculo vencido</div>
+            <p className="mt-1 text-[12px] text-white/64">{summary}</p>
+        </div>
+    );
+};
+
 const RelationshipSectionCard: React.FC<{
     eyebrow: string;
     title: string;
@@ -474,7 +549,7 @@ const InviteCard: React.FC<{
                         disabled={busy}
                         className="rounded-xl border border-amber-300/18 bg-amber-400/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-200 transition-all hover:bg-amber-400/14 disabled:opacity-50"
                     >
-                        Revogar + reembolso
+                        Revogar convite
                     </button>
                 )}
             </div>
@@ -518,10 +593,15 @@ const RelationshipInvitePicker: React.FC<{
 
                     <div className="mt-4 rounded-[20px] border border-white/10 bg-black/24 px-3 py-3">
                         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/44">Entrada</div>
+                        {/* O texto antigo explicava reembolso de um convite que fora
+                            zerado em agosto — chegava a imprimir "cobra 0 no envio".
+                            Agora o preco e do vinculo, sai uma vez so quando ele
+                            nasce, e nada la dentro cobra de novo. */}
                         <p className="mt-1 text-sm text-white/58">
-                            {linkType === 'mentoria'
-                                ? `A mentoria basica cobra ${COIN_GLYPH} ${LINK_LABELS.mentoria.cost} no envio. O reembolso acontece se a pessoa recusar, se voce revogar ou se expirar.`
-                                : `O custo so sai quando voce confirmar o envio: ${COIN_GLYPH} ${LINK_LABELS[linkType].cost}.`}
+                            {`${COIN_GLYPH} ${LINK_LABELS[linkType].cost} quando a pessoa aceitar. Enviar e recusar nao custam nada.`}
+                        </p>
+                        <p className="mt-1.5 text-[11px] text-white/42">
+                            {`O vinculo vale ${RELATIONSHIP_LINK_DURATION_DAYS} dias. Expor arena e forjar duelo ja vem inclusos. Renovar sai por ${COIN_GLYPH} ${getRelationshipRenewalPrice(linkType)}.`}
                         </p>
                     </div>
 
@@ -616,22 +696,20 @@ const RelationshipInviteConfirmModal: React.FC<{
                             <div className="min-w-0">
                                 <div className="truncate text-sm font-black text-white">{state.friend.nickname}</div>
                                 <p className="mt-1 text-[12px] text-white/56">
-                                    {isMentoria
-                                        ? 'Isso abre a mentoria basica com essa pessoa.'
-                                        : `Voce vai enviar ${label.singular.toLowerCase()} para essa pessoa.`}
+                                    {`Voce vai enviar ${label.singular.toLowerCase()} para essa pessoa.`}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className={`mt-4 grid gap-2 ${isMentoria ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                        <MiniStatCard label="Custo agora" value={`${COIN_GLYPH} ${label.cost}`} tone="text-[var(--skin-accent-color)]" />
-                        {isMentoria && <MiniStatCard label="Modo" value="basica" tone="text-white" />}
-                        <MiniStatCard label="Reembolso" value="se recusar" tone="text-emerald-300" />
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                        <MiniStatCard label="Vinculo" value={`${COIN_GLYPH} ${label.cost}`} tone="text-[var(--skin-accent-color)]" />
+                        <MiniStatCard label="Vale" value={`${RELATIONSHIP_LINK_DURATION_DAYS}d`} tone="text-white" />
+                        <MiniStatCard label="Renovar" value={`${COIN_GLYPH} ${getRelationshipRenewalPrice(state.linkType)}`} tone="text-emerald-300" />
                     </div>
 
                     <div className="mt-4 rounded-[18px] border border-emerald-300/16 bg-emerald-400/10 px-4 py-3 text-[12px] text-emerald-100/84">
-                        O custo volta se a pessoa recusar, voce revogar ou o convite expirar.
+                        So cobra quando a pessoa aceitar. Expor arena e forjar duelo ja vem inclusos.
                     </div>
 
                     <div className="mt-4 flex gap-2">
@@ -735,6 +813,7 @@ export const RelationshipHubModal: React.FC<{
         createRelationshipInvite,
         duplicateUserCodexToRecipient,
         endRelationshipLink,
+        renewRelationshipLink,
         fetchRelationshipHubData,
         friends,
         getRelationshipCapacitySummary,
@@ -1124,6 +1203,16 @@ export const RelationshipHubModal: React.FC<{
                 setInvitePickerType(null);
                 await refreshHub();
             }
+        } finally {
+            setBusyKey(null);
+        }
+    };
+
+    const handleRenewLink = async (link: RelationshipLink) => {
+        setBusyKey(`renew-link:${link.id}`);
+        try {
+            const success = await renewRelationshipLink(link.id);
+            if (success) await refreshHub();
         } finally {
             setBusyKey(null);
         }
@@ -1832,6 +1921,10 @@ export const RelationshipHubModal: React.FC<{
             const hasMentorshipContent = arenasForLink.length > 0 || relationshipCodexes.length > 0;
             return (
                 <div className={`space-y-3 ${isMentorSide ? 'pb-24' : ''}`}>
+                    <LinkClosingLine
+                        link={link}
+                        summary={`${arenasForLink.length} arena${arenasForLink.length === 1 ? '' : 's'} acompanhada${arenasForLink.length === 1 ? '' : 's'} - ${relationshipCodexes.length} campanha${relationshipCodexes.length === 1 ? '' : 's'} entregue${relationshipCodexes.length === 1 ? '' : 's'}.`}
+                    />
                     <RelationshipSectionCard
                         eyebrow="Mentoria"
                         title={isMentorSide ? (pupilProfile?.nickname || 'Pupilo') : (mentorProfile?.nickname || 'Mentor')}
@@ -1843,6 +1936,11 @@ export const RelationshipHubModal: React.FC<{
                                 <span className="rounded-full border border-white/10 bg-white/8 px-2.5 py-[0.34rem] text-[9px] font-black uppercase tracking-[0.16em] text-white/58">
                                     {relationshipCodexes.length} campanha{relationshipCodexes.length === 1 ? '' : 's'}
                                 </span>
+                                <LinkLifecyclePill
+                                    link={link}
+                                    busy={busyKey === `renew-link:${link.id}`}
+                                    onRenew={() => { void handleRenewLink(link); }}
+                                />
                                 <button
                                     onClick={() => setEndLinkConfirmState(link)}
                                     disabled={busyKey === `end-link:${link.id}`}
@@ -1922,7 +2020,7 @@ export const RelationshipHubModal: React.FC<{
                                         >
                                             <span className="text-[10px] font-black uppercase tracking-[0.16em]">Nova arena</span>
                                             <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
-                                                {COIN_GLYPH} {MENTOR_LINKED_ARENA_GOLD_COST}
+                                                Incluso
                                             </span>
                                         </button>
                                         <button
@@ -1950,6 +2048,10 @@ export const RelationshipHubModal: React.FC<{
         if (isPartnership) {
             return (
                 <div className="space-y-3 pb-20">
+                    <LinkClosingLine
+                        link={link}
+                        summary={`${ownArenasForLink.length + partnerArenasForLink.length} arena${(ownArenasForLink.length + partnerArenasForLink.length) === 1 ? '' : 's'} expostas entre os dois.`}
+                    />
                     <RelationshipSectionCard
                         eyebrow="Parceria"
                         title={profile?.nickname || 'Parceiro'}
@@ -1961,6 +2063,11 @@ export const RelationshipHubModal: React.FC<{
                                 <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                                     {partnerArenasForLink.length} dele
                                 </span>
+                                <LinkLifecyclePill
+                                    link={link}
+                                    busy={busyKey === `renew-link:${link.id}`}
+                                    onRenew={() => { void handleRenewLink(link); }}
+                                />
                                 <button
                                     onClick={() => setEndLinkConfirmState(link)}
                                     disabled={busyKey === `end-link:${link.id}`}
@@ -1973,7 +2080,18 @@ export const RelationshipHubModal: React.FC<{
                         }
                     >
                         {ownArenasForLink.length === 0 ? (
-                            <EmptyState title="Sem arena sua" text="Exponha uma arena sua." />
+                            /* Quadrado vazio com um "+" no lugar de um aviso de vazio.
+                               Ele ensina pela forma o que a aba faz — "aqui cabe uma
+                               arena" — sem precisar de texto explicativo, que era
+                               justamente o que faltava nas tres abas. */
+                            <button
+                                type="button"
+                                onClick={() => setSelectedMentorLinkForArena(link)}
+                                className="flex h-[6.5rem] w-[7.5rem] flex-col items-center justify-center gap-1.5 rounded-[18px] border border-dashed border-white/16 bg-white/[0.03] text-white/38 transition-all hover:border-cyan-300/38 hover:bg-cyan-400/8 hover:text-cyan-200"
+                            >
+                                <span className="text-2xl font-thin leading-none">+</span>
+                                <span className="text-[9px] font-black uppercase tracking-[0.14em]">Expor arena</span>
+                            </button>
                         ) : (
                             <div
                                 className="flex min-w-max gap-2 overflow-x-auto pb-1.5 pr-1 custom-scrollbar"
@@ -2030,7 +2148,7 @@ export const RelationshipHubModal: React.FC<{
                             >
                                 <span className="text-[10px] font-black uppercase tracking-[0.16em]">Expor arena</span>
                                 <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
-                                    {COIN_GLYPH} {PARTNERSHIP_LINKED_ARENA_GOLD_COST}
+                                    Incluso
                                 </span>
                             </button>
                         </div>
@@ -2042,21 +2160,42 @@ export const RelationshipHubModal: React.FC<{
         const competitionChallengesForLink = getCompetitionChallengesForLink(link.id);
         const openCompetitionChallenges = competitionChallengesForLink.filter((challenge) => !challenge.sealedAt);
         const sealedCompetitionChallenges = competitionChallengesForLink.filter((challenge) => Boolean(challenge.sealedAt));
-        const competitionCanLaunch = openCompetitionChallenges.length < 3;
+        // Um por vez, que e o que o banco ja impunha: indice unico em
+        // relationship_link_id where completed_at is null. O cliente permitia 3 e
+        // o segundo forjar morria com erro do servidor.
+        const competitionCanLaunch = openCompetitionChallenges.length === 0;
+        // Competicao e a unica das tres que morre com vencedor. Le o ultimo duelo
+        // selado, porque e ele que carrega o resultado.
+        const lastSealed = sealedCompetitionChallenges[0] || null;
+        const competitionVerdict = (() => {
+            if (!lastSealed) return 'Nenhum duelo chegou ao fim neste vinculo.';
+            if (lastSealed.resultKind === 'draw' || !lastSealed.winnerUserId) return 'Ultimo duelo terminou empatado.';
+            const venceu = lastSealed.winnerUserId === sessionUid;
+            return venceu
+                ? 'Voce venceu o ultimo duelo deste vinculo.'
+                : `${profile?.nickname || 'Seu rival'} venceu o ultimo duelo deste vinculo.`;
+        })();
+
 
         return (
             <div className="space-y-3 pb-20">
+                <LinkClosingLine link={link} summary={competitionVerdict} />
                 <RelationshipSectionCard
                     eyebrow="Competicao"
                     title={profile?.nickname || 'Rival'}
                     action={
                         <div className="flex flex-wrap gap-2">
                             <span className="rounded-full border border-rose-300/18 bg-rose-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-rose-200">
-                                {openCompetitionChallenges.length}/3 abertos
+                                {openCompetitionChallenges.length}/1 aberto
                             </span>
                             <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/58">
                                 {sealedCompetitionChallenges.length} selados
                             </span>
+                                <LinkLifecyclePill
+                                    link={link}
+                                    busy={busyKey === `renew-link:${link.id}`}
+                                    onRenew={() => { void handleRenewLink(link); }}
+                                />
                                 <button
                                     onClick={() => setEndLinkConfirmState(link)}
                                     disabled={busyKey === `end-link:${link.id}`}
@@ -2070,7 +2209,10 @@ export const RelationshipHubModal: React.FC<{
                 >
                     {!competitionCanLaunch && (
                         <div className="mb-3 rounded-[16px] border border-rose-300/14 bg-rose-500/10 px-4 py-3 text-[12px] text-white/60">
-                            Este vinculo ja tem 3 duelos abertos. Feche ou sele um deles antes de forjar outro.
+                            {/* O banco so aceita UM duelo aberto por vinculo — ha indice
+                                unico em relationship_link_id where completed_at is null.
+                                O texto falava em 3 desde antes desse indice existir. */}
+                            Ja existe um duelo aberto neste vinculo. Feche ou sele ele antes de abrir outro.
                         </div>
                     )}
                     {openCompetitionChallenges.length === 0 ? (
@@ -2221,7 +2363,7 @@ export const RelationshipHubModal: React.FC<{
                                     {competitionChallengesForLink.length > 0 ? 'Forjar novo duelo' : 'Forjar primeiro duelo'}
                                 </span>
                                 <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[10px] font-black leading-none">
-                                    {COIN_GLYPH} {COMPETITION_DUEL_GOLD_COST}
+                                    Incluso
                                 </span>
                             </button>
                         </div>
@@ -2500,7 +2642,7 @@ export const RelationshipHubModal: React.FC<{
                             <div className="mt-4 rounded-[20px] border border-rose-300/14 bg-rose-500/8 px-4 py-3">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-rose-200">Duelo espelhado</div>
                                 <p className="mt-1 text-sm text-white/62">
-                                    Escolha uma arena autoral sua. O sistema sela um snapshot para cada lado e cobra {COIN_GLYPH} {COMPETITION_DUEL_GOLD_COST}.
+                                    Escolha uma arena autoral sua. O sistema sela um snapshot para cada lado. O duelo ja esta pago pelo vinculo.
                                 </p>
                             </div>
 
@@ -2545,7 +2687,7 @@ export const RelationshipHubModal: React.FC<{
                                     disabled={!selectedCompetitionSourceArenaId || busyKey === `competition-challenge:${selectedCompetitionLinkForChallenge.id}`}
                                     className="luxe-skin-button inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
                                 >
-                                    {busyKey === `competition-challenge:${selectedCompetitionLinkForChallenge.id}` ? 'Forjando...' : `Forjar duelo · ${COIN_GLYPH} ${COMPETITION_DUEL_GOLD_COST}`}
+                                    {busyKey === `competition-challenge:${selectedCompetitionLinkForChallenge.id}` ? 'Forjando...' : 'Forjar duelo'}
                                 </button>
                             </div>
                         </GlassCard>
@@ -2675,7 +2817,7 @@ export const RelationshipHubModal: React.FC<{
                                     >
                                         <span>{selectedMentorLinkForArena.linkType === 'parceria' ? 'Expor arena' : 'Criar arena'}</span>
                                         <span className="rounded-full border border-black/10 bg-black/12 px-2 py-1 text-[9px] leading-none">
-                                            {COIN_GLYPH} {selectedMentorLinkForArena.linkType === 'parceria' ? PARTNERSHIP_LINKED_ARENA_GOLD_COST : MENTOR_LINKED_ARENA_GOLD_COST}
+                                            Incluso
                                         </span>
                                     </button>
                                 </div>

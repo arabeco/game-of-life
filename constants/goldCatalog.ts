@@ -168,12 +168,13 @@ export const GOLD_CODEX_CATALOG = [
 export const GOLD_MECHANIC_CATALOG = [
     { id: 'create_clan', name: 'Criar grupo', priceGold: GOLD_CLAN_CREATION_COST, source: 'sql' },
     { id: 'legacy_projection_scene', name: 'Gerar a cena do legado', priceGold: 50, source: 'sql' },
-    { id: 'relationship_invite_mentoria', name: 'Convite de mentoria', priceGold: 0, source: 'sql' },
-    { id: 'relationship_invite_parceria', name: 'Convite de parceria', priceGold: 0, source: 'sql' },
-    { id: 'relationship_invite_competicao', name: 'Convite de competição', priceGold: 0, source: 'sql' },
-    { id: 'mentor_linked_arena', name: 'Nova arena vinculada de mentoria', priceGold: 50, source: 'sql' },
-    { id: 'partnership_linked_arena', name: 'Mostrar arena para parceiro', priceGold: 50, source: 'sql' },
-    { id: 'competition_challenge', name: 'Forjar duelo competitivo', priceGold: 50, source: 'sql' },
+    // O preco mora no VINCULO, nao nas acoes de dentro. Os numeros de verdade
+    // estao em constants/relationshipLinks.ts e em public.relationship_link_price;
+    // aqui ficam so para a vitrine de mecanicas nao mentir sobre o que custa.
+    { id: 'relationship_link_mentoria', name: 'Vinculo de mentoria (30 dias)', priceGold: 100, source: 'sql' },
+    { id: 'relationship_link_parceria', name: 'Vinculo de parceria (30 dias)', priceGold: 50, source: 'sql' },
+    { id: 'relationship_link_competicao', name: 'Vinculo de competição (30 dias)', priceGold: 50, source: 'sql' },
+    { id: 'relationship_link_renewal', name: 'Renovar vínculo (metade do preço)', priceGold: 25, source: 'sql' },
     { id: 'mentor_codex_forge', name: 'Forjar campanha nova para pupilo', priceGold: 100, source: 'sql' },
     { id: 'codex_share_external', name: 'Gerar link externo de campanha', priceGold: 50, source: 'sql' },
     { id: 'codex_share_in_app', name: 'Enviar campanha por @nickname', priceGold: 50, source: 'sql' },

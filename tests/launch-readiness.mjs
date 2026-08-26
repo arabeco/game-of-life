@@ -107,6 +107,13 @@ const suites = {
       interactions: ['o cabecalho desce a barra de status', 'a tela de descanso respeita as duas barras', 'preferencia que ainda nao chegou nao vira botao morto'],
     },
     {
+      id: 'relationship-links',
+      label: 'Relationship link as timed product regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'relationship-links.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['o preco exibido e o preco cobrado', 'renovar custa menos que criar', 'vencer congela em vez de apagar'],
+    },
+    {
       id: 'planner-simple-list',
       label: 'Planner simple list regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'planner-simple-list.regression.mjs')]],

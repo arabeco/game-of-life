@@ -194,7 +194,10 @@ const OracleSpeechOverlay: React.FC = () => {
                     <div className="text-[8px] font-black uppercase tracking-[0.16em]" style={{ color: toneTokens.core }}>
                         {speech.title || 'Oraculo'}
                     </div>
-                    <p className="mt-1 min-h-[1.35rem] max-h-[2.8rem] overflow-hidden whitespace-pre-wrap text-[11px] font-semibold leading-snug text-white/86">
+                    {/* Sem teto de altura: cortava a fala no meio da frase, e uma
+                        frase pela metade nao e resumo, e defeito. O balao cresce
+                        com o texto — ele mora no topo e some sozinho. */}
+                    <p className="mt-1 min-h-[1.35rem] whitespace-pre-wrap text-[11px] font-semibold leading-snug text-white/86">
                         {displayedText}
                         {isTyping && <span className="ml-1 inline-block h-3 w-1 animate-pulse align-middle opacity-80" style={{ background: toneTokens.core }} />}
                     </p>
@@ -736,6 +739,17 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         return () => window.clearTimeout(timer);
     }, [currentView, pendingSitrepDate, pendingSitrepOpen]);
 
+    // Uma fala de abertura por vinda ao app. Volta a valer quando o app retorna do
+    // segundo plano, que e o que "abrir de novo" quer dizer num celular.
+    const openingSpokenThisSessionRef = useRef(false);
+    useEffect(() => {
+        const onVisible = () => {
+            if (document.visibilityState === 'visible') openingSpokenThisSessionRef.current = false;
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
+    }, []);
+
     useEffect(() => {
         // A fala de abertura segue a POLITICA de presenca, nao um sorteio.
         //
@@ -760,6 +774,13 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
         // "Sempre" nao tem cota diaria; "diaria" tem.
         if (presenceRules.openingLine === 'diaria' && lastSpeechDate === today) return;
+
+        // "Sempre" quer dizer a cada ABERTURA do app, nao a cada mudanca de estado.
+        // Sem esta trava o efeito redisparava a cada acao concluida, ciclo alterado
+        // ou aba trocada — o Oraculo falava varias vezes seguidas e gravava uma
+        // linha para cada. A trava zera quando o app volta do segundo plano, que e
+        // o que "abrir de novo" significa num celular.
+        if (openingSpokenThisSessionRef.current) return;
 
         const daysSinceLastPlannerOpen = diffLocalDays(previousPlannerOpen, today);
         const arenasCount = assets.reduce((sum, asset) => sum + (asset.arenas?.length || 0), 0);
@@ -817,6 +838,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             // vestido de mensagem: recalculada no cliente a cada abertura do chat,
             // sem hora, sem historico, sem push. Agora o caminho que ela sugeria
             // viaja junto de uma fala de verdade.
+            openingSpokenThisSessionRef.current = true;
             emitOracleSpeech({
                 title: 'Oraculo',
                 message,

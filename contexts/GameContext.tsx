@@ -1653,7 +1653,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             };
 
             setOracleMessages(prev => [newMessage, ...prev]);
-            await supabase.from('oracle_messages').insert(mapToSnakeCase(newMessage));
+            // O contextSnapshot vai INTEIRO, sem passar por mapToSnakeCase.
+            //
+            // Aquele mapeador e recursivo: ele renomeava tambem as chaves de dentro
+            // do jsonb, entao 'triggerType' virava 'trigger_type' no banco. O portao
+            // de push procura contextSnapshot.triggerType para nao empurrar card
+            // pedido a mao — nao achava, e o card manual tocava o celular de quem
+            // estava com o app aberto, olhando para ele.
+            //
+            // E o servidor grava camelCase nessa mesma coluna, entao havia duas
+            // formas diferentes convivendo: card do cron legivel, card manual nao.
+            await supabase.from('oracle_messages').insert({
+                id: newMessage.id,
+                user_id: newMessage.userId,
+                category: newMessage.category,
+                content: newMessage.content,
+                mode: newMessage.mode,
+                delivery_type: newMessage.deliveryType,
+                context_snapshot: newMessage.contextSnapshot,
+                read: newMessage.read,
+                created_at: newMessage.createdAt,
+            });
 
             console.log('Oracle generated message:', text);
             showToast(`Tema entregue (${quota.combinedSentToday + 1}/${quota.dailyLimit}).`, 'success');

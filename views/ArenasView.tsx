@@ -2712,7 +2712,13 @@ export const ArenasView: React.FC = () => {
                                                 </div>
                                             ) : (
                                             <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2 animate-in fade-in slide-in-from-top-1 duration-200" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y pinch-zoom', overscrollBehaviorX: 'contain' }}>
-                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[7.35rem] gap-2.5 px-2 pt-1">
+                                                {/* 6.85rem e a mesma largura das outras
+                                                    fileiras. Estava em 7.35 so aqui, e
+                                                    a conta nao fechava: 3 x 117,6 + gaps
+                                                    + padding da 389px numa tela de 375,
+                                                    entao a terceira arena vivia cortada
+                                                    neste modo e inteira nos outros dois. */}
+                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[6.85rem] gap-2.5 px-2 pt-1">
                                                     {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                                 </div>
                                             </div>

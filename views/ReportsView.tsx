@@ -1712,6 +1712,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     useEffect(() => {
         const strip = cycleStripRef.current;
         if (!strip) return;
+        // scrollWidth passa do fim; o navegador limita, e com o padding lateral o
+        // limite ja deixa o ultimo card centrado. Sem esse padding ele encostava na
+        // borda e o ciclo atual — justamente o que abre — nascia torto.
         strip.scrollLeft = strip.scrollWidth;
     }, [sortedReports.length]);
 
@@ -2634,15 +2637,19 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <div className="relative mt-6">
                                 <div
                                     ref={cycleStripRef}
-                                    className="scrollbar-hide relative flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2"
-                                    style={{ scrollPaddingLeft: '9%', scrollPaddingRight: '9%' }}
+                                    /* O padding lateral vale (100% - largura do card) / 2.
+                                       Sem ele o primeiro e o ultimo card nao conseguem
+                                       chegar ao centro — encostam na borda e ficam
+                                       torto justamente o ciclo atual, que e o que abre. */
+                                    className="scrollbar-hide relative flex snap-x snap-mandatory gap-3 overflow-x-auto px-[16%] pb-2 sm:px-[27%] lg:px-[34%]"
+                                    style={{ scrollPaddingLeft: '16%', scrollPaddingRight: '16%' }}
                                 >
                                     {[...sortedReports].reverse().map((report, indexFromStart) => {
                                         const isCurrent = indexFromStart === sortedReports.length - 1;
                                         return (
                                             <div
                                                 key={`strip-${report.id}`}
-                                                className="w-[82%] shrink-0 snap-center sm:w-[46%] lg:w-[32%]"
+                                                className="w-[68%] shrink-0 snap-center sm:w-[46%] lg:w-[32%]"
                                             >
                                                 <TimelineCard
                                                     report={report}

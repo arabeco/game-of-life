@@ -676,28 +676,16 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           {messages.map((msg, idx) => {
              const msgMode = msg.role === 'assistant' ? resolveTone(msg.mode) : ORACLE_FREE_TONE;
              const visuals = MODE_VISUALS[msgMode];
-             const ModeIcon = visuals.icon;
              const isFeedCard = msg.role === 'assistant' && Boolean(msg.feedId);
              const feedCategory = msg.feedCategory || 'frases_inspiradoras';
              const feedPresentation = msg.feedPresentation || 'ambient_pulse';
              const feedVisual = ORACLE_CATEGORY_VISUALS[feedCategory];
-             const feedTriggerLabel = msg.feedTrigger === 'manual' ? 'manual' : 'auto';
 
              return (
             <div 
               key={idx} 
               className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} mb-4`}
             >
-              {msg.role === 'assistant' && (
-                 <div className="flex items-center gap-2 mb-1 ml-1">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${visuals.bg} border ${visuals.border}`}>
-                        <ModeIcon className={`w-2.5 h-2.5 ${visuals.color}`} />
-                    </div>
-                    <span className={`text-[10px] uppercase tracking-widest ${visuals.color}`}>
-                        {ORACLE_TONE_LABELS[msgMode].name}
-                    </span>
-                 </div>
-              )}
               {msg.role === 'user' ? (
                 <div className="max-w-[85%] rounded-2xl rounded-tr-sm border border-white/5 bg-white/10 p-3 text-sm leading-relaxed text-white">
                   {msg.content}
@@ -710,18 +698,14 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       : `${feedVisual.borderClass} ${feedVisual.bgClass}`
                   }`}
                 >
+                  {/* Um rotulo e a hora. Antes eram quatro coisas dizendo quase a
+                      mesma: o tom em cima de cada bolha, o selo do tipo, o selo de
+                      gatilho (AUTO/MANUAL — vocabulario de quem escreveu o codigo,
+                      nao de quem le) e o resumo, que repetia o texto do selo. */}
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     <span className={`rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${feedVisual.badgeClass}`}>
                       {feedVisual.label}
                     </span>
-                    <span className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/45">
-                      {feedTriggerLabel}
-                    </span>
-                    {msg.feedSummary && (
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/36">
-                        {msg.feedSummary}
-                      </span>
-                    )}
                     {/* A hora vem de created_at, que ja chegava na mesma consulta —
                         so nao era desenhada. Sem ela o historico e uma pilha de
                         falas sem quando, e nao da para saber se a de cima e de

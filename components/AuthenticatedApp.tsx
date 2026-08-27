@@ -62,6 +62,7 @@ import { buildOracleOperationalContext } from '../utils/oracleOperationalContext
 import {
     buildPlannerCoachSpeech,
     getOracleCoachDailyLimit,
+    buildOracleCycleCoachBrief,
 } from '../utils/oracleCoach';
 import { getOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import './auth-shell.css';
@@ -812,11 +813,17 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         localStorage.setItem(speechKey, today);
 
         const timer = window.setTimeout(() => {
+            // Os botoes vem do mesmo brief que a starter usava. Ela era um painel
+            // vestido de mensagem: recalculada no cliente a cada abertura do chat,
+            // sem hora, sem historico, sem push. Agora o caminho que ela sugeria
+            // viaja junto de uma fala de verdade.
             emitOracleSpeech({
                 title: 'Oraculo',
                 message,
                 tone: 'info',
                 durationMs: 6800,
+                kind: 'abertura',
+                quickActions: buildOracleCycleCoachBrief(oracleContext).quickActions,
             });
         }, 520);
 

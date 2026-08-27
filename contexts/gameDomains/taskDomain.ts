@@ -126,7 +126,14 @@ export const createTaskDomain = ({
         weight: OracleReactionWeight = 'rotina',
     ) => {
         if (!allowsOracleReaction({ reactions: oracleReactions } as OraclePresenceRules, weight)) return;
-        emitOracleSpeechRaw(payload);
+        // Marco fica gravado; rotina passa e some. "Voce fez 5 acoes hoje" dispara
+        // quase todo dia e, empilhado no historico, vira papel de parede — o mesmo
+        // motivo que ja separava os dois pesos aqui em cima.
+        emitOracleSpeechRaw({
+            ...payload,
+            kind: 'reacao',
+            ephemeral: weight !== 'marco',
+        });
     };
 
     const getJudgedTaskIdsForDate = (operationalDate: string) => {

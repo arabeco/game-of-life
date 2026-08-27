@@ -12,7 +12,6 @@ import { buildOracleOperationalContext } from '../utils/oracleOperationalContext
 import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
-import { buildOracleCycleCoachBrief } from '../utils/oracleCoach';
 
 type OracleTabTarget = 'chat' | 'requests';
 interface Message {
@@ -234,7 +233,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     return Object.values(unified).filter((payload: any) => payload.count > 0 || ((payload.taskIds?.length || 0) > 0)).length;
   }, [availableTaskPool, bayAreaTasks]);
-  const starterMessageInjectedRef = useRef(false);
 
   const openPlannerCreateAction = useCallback(() => {
     dispatchAppView({ view: 'planner' });
@@ -291,9 +289,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     pendingChests: userProfile.chests?.reduce((acc, chest) => acc + (chest.count || 0), 0) || 0,
   }), [activeCycle, actions, assets, currentMode, cycleProgress, dailyCommitment, oraclePreferences, tasks, userProfile]);
 
-  const contextualStarter = useMemo(() => {
-    return buildOracleCycleCoachBrief(operationalContext);
-  }, [operationalContext]);
 
   // Update mode when preferences change
   useEffect(() => {
@@ -304,8 +299,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Load recent Oracle pulses without overriding the chosen preference mode.
   useEffect(() => {
+    // Card de infos ('feed') e fala do Oraculo ('chat') entram os dois. Sao coisas
+    // diferentes — o card e conteudo pago com cota propria, a fala e o Oraculo
+    // falando — mas as duas sao mensagens de verdade e as duas moram no historico
+    // com data e hora. Antes so o card era lido, e a fala evaporava no balao.
     const recentFeedCards = (oracleMessages || [])
-      .filter((message) => message.deliveryType === 'feed')
+      .filter((message) => (
+        message.deliveryType === 'feed'
+        || (message.deliveryType === 'chat' && message.contextSnapshot?.purpose === 'oracle_speech')
+      ))
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
     if (recentFeedCards.length === 0) {
@@ -325,6 +327,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       feedPresentation: resolveFeedPresentation(feedMessage.category, feedMessage.contextSnapshot),
       feedSummary: feedMessage.contextSnapshot?.summary || feedMessage.contextSnapshot?.categoryLabel || undefined,
       feedTrigger: feedMessage.contextSnapshot?.triggerType,
+      quickActions: Array.isArray(feedMessage.contextSnapshot?.quickActions)
+        ? (feedMessage.contextSnapshot?.quickActions as ChatQuickAction[])
+        : undefined,
     }));
 
     setMessages((previous) => {
@@ -369,34 +374,13 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     });
   }, [currentMode, oracleSignalNotifications]);
 
-  useEffect(() => {
-    if (isInitialLoadRef.current || starterMessageInjectedRef.current) return;
-
-    const hasStarter = messages.some((message) => message.systemId === 'oracle:starter');
-    const hasConversation = messages.some((message) => !message.feedId && message.role === 'user');
-    if (hasStarter || hasConversation) {
-      starterMessageInjectedRef.current = true;
-      return;
-    }
-
-    setMessages((previous) => {
-      if (previous.some((message) => message.systemId === 'oracle:starter')) {
-        return previous;
-      }
-      return [
-        ...previous,
-        {
-          role: 'assistant',
-          content: contextualStarter.content,
-          timestamp: new Date(),
-          mode: currentMode,
-          systemId: 'oracle:starter',
-          quickActions: contextualStarter.quickActions,
-        },
-      ];
-    });
-    starterMessageInjectedRef.current = true;
-  }, [contextualStarter, currentMode, messages]);
+  // A starter foi embora. Ela era um painel vestido de mensagem: recalculada no
+  // cliente a cada abertura do chat, sem hora, sem historico e sem push, sentada
+  // num log ao lado de mensagens de verdade que tinham as tres coisas.
+  //
+  // O que ela dizia nao se perdeu — os mesmos botoes viajam agora na fala de
+  // abertura, que e uma linha em oracle_messages e passa pelo mesmo caminho de
+  // qualquer outra fala do Oraculo.
 
   // Auto-scroll to bottom
   useEffect(() => {

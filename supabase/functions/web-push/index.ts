@@ -783,13 +783,34 @@ const shouldPushOracleMessage = (
   dailyFocusCardEnabled: boolean,
   presenceLevel: number,
 ): boolean => {
-  if (message.read || message.deliveryType !== "feed") {
+  if (message.read) {
+    return false;
+  }
+
+  // Duas coisas passam por aqui, e sao coisas diferentes:
+  //   'feed' — o card de infos, conteudo com cota propria;
+  //   'chat' com purpose 'oracle_speech' — a fala do Oraculo.
+  // A fala so virou push agora. Antes ela era um evento de janela que pintava um
+  // balao por cinco segundos e evaporava: quem estava com o celular no bolso
+  // simplesmente nao recebia, embora o combinado fosse que desligar o aviso
+  // tirasse a fala do celular, nao que a apagasse.
+  const isOracleSpeech = message.deliveryType === "chat"
+    && asTrimmedString(message.contextSnapshot.purpose) === "oracle_speech";
+
+  if (message.deliveryType !== "feed" && !isOracleSpeech) {
     return false;
   }
 
   const triggerType = asTrimmedString(message.contextSnapshot.triggerType);
   if (triggerType === "manual") {
     return false;
+  }
+
+  // A fala nao passa pelo perfil de push do modo, que existe para graduar quanto
+  // do CONTEUDO pago vira aviso. Ela ja foi filtrada pela presenca no cliente
+  // antes de ser gravada; aqui so falta o interruptor, ja conferido acima.
+  if (isOracleSpeech) {
+    return presenceLevel > 0;
   }
 
   // A presenca decide O QUE o Oraculo fala; quem decide se aquilo vira aviso no

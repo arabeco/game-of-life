@@ -176,4 +176,42 @@ assert.match(
 );
 assert.match(blocoPush, /Ajustes > Oraculo & Alertas/, 'a recusa precisa dizer onde ligar depois');
 
+
+// --- as tres coisas sao tres, e as tres sao reais ------------------------
+// CARD DE INFOS nasce no cron e sempre foi real. FALA e REACAO usavam o mesmo
+// cano: um evento de janela que pintava um balao por cinco segundos e
+// evaporava — sem gravar, sem push, sem hora. Quem estava com o celular no
+// bolso simplesmente nao recebia, embora o combinado fosse que desligar o aviso
+// tirasse a fala do celular, nao que a apagasse.
+const speech = readFileSync(new URL('../utils/oracleSpeech.ts', import.meta.url), 'utf8');
+assert.match(speech, /record_oracle_speech/, 'a fala precisa ficar gravada, nao so piscar');
+assert.match(
+  speech,
+  /if \(payload\.ephemeral\) return;/,
+  'reacao de rotina passa e some; so marco fica no historico',
+);
+
+// O balao continua aparecendo antes da gravacao: perder o historico e ruim,
+// nao mostrar nada e pior.
+assert.ok(
+  speech.indexOf('window.dispatchEvent') < speech.indexOf('supabase.rpc'),
+  'a fala aparece na hora mesmo se a gravacao falhar',
+);
+
+// A fala nao pode roubar a cota do card, que e conteudo pago com regra propria.
+const rpcFala = readFileSync(
+  new URL('../supabase/migrations/20260827120000_oracle_speech_is_a_real_message.sql', import.meta.url),
+  'utf8',
+);
+assert.match(rpcFala, /'chat',/, "a fala grava como 'chat'; a cota do card conta so 'feed'");
+assert.match(rpcFala, /v_presence, 0\) <= 0/, 'silencioso nao grava fala nenhuma');
+
+// E o push da fala passa a existir, com o interruptor decidindo — nao a presenca.
+const webPush2 = readFileSync(new URL('../supabase/functions/web-push/index.ts', import.meta.url), 'utf8');
+assert.match(webPush2, /purpose\) === "oracle_speech"/, 'a fala precisa chegar ao push');
+
+// A reacao de rotina nao pode virar push nem historico.
+const taskDomain2 = readFileSync(new URL('../contexts/gameDomains/taskDomain.ts', import.meta.url), 'utf8');
+assert.match(taskDomain2, /ephemeral: weight !== 'marco'/, 'so marco fica gravado');
+
 console.log('Oracle presence policy: silencioso cala, equilibrado celebra o grande, presente acompanha tudo.');

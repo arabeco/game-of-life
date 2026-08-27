@@ -1011,8 +1011,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             )}
 
                             {/* Content Area */}
-                            <div className={`overflow-y-auto custom-scrollbar transition-[max-height,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-h-0 scale-y-95 translate-y-[-8px] opacity-0 pointer-events-none' : 'flex-1 min-h-0 scale-y-100 translate-y-0 opacity-100 pointer-events-auto'}`}>
-                                {!isSitrepLocked && <SitrepContent />}
+                            {/* overflow-hidden: quem rola agora e a lista de acoes por
+                                dentro do painel. O painel inteiro rolando era o que
+                                fazia ele parecer que nao coube. */}
+                            <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-h-0 scale-y-95 translate-y-[-8px] opacity-0 pointer-events-none' : 'flex-1 min-h-0 scale-y-100 translate-y-0 opacity-100 pointer-events-auto'}`}>
+                                {!isSitrepLocked && <SitrepContent fillHeight />}
                             </div>
                         </GlassCard>
                     </div>

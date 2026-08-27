@@ -2711,19 +2711,15 @@ export const ArenasView: React.FC = () => {
                                                     }))}
                                                 </div>
                                             ) : (
-                                            <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2 animate-in fade-in slide-in-from-top-1 duration-200" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y pinch-zoom', overscrollBehaviorX: 'contain' }}>
-                                                {/* Tres por linha em 360px, que e a tela
-                                                    mais estreita que importa.
-                                                    3 x 108 + 2 gaps de 8 + 12 de padding
-                                                    = 352. Com os 6.85rem e gap-2.5 das
-                                                    outras fileiras dava 364,8 e a terceira
-                                                    saia cortada — elas escapam porque
-                                                    paginam numa largura fixa, e esta aqui
-                                                    e um rolador continuo, que so empilha
-                                                    e nao garante quantas cabem. */}
-                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[6.75rem] gap-2 px-1.5 pt-1">
-                                                    {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
-                                                </div>
+                                            <div className="grid grid-cols-3 items-start gap-2.5 md:grid-cols-4 xl:grid-cols-5 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                {/* Mesma grade que o modo LIVRE usa, que e o que
+                                                    funciona. Aqui era um rolador horizontal cuja
+                                                    largura de coluna precisava fechar uma conta
+                                                    com gaps e padding para caberem tres — e conta
+                                                    que depende da largura do aparelho quebra em
+                                                    algum aparelho. Grade que quebra linha nao tem
+                                                    essa conta, nem barra de rolagem para esconder. */}
+                                                {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                             </div>
                                             )
                                         )}

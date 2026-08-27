@@ -96,7 +96,7 @@ const ActionSummaryCard: React.FC<{
 
     return (
         <div
-            className={`relative overflow-hidden rounded-[20px] border px-3 py-2 text-white ${isFreeAction ? 'free-action-shell free-action-outline' : 'border-white/12'}`}
+            className={`relative overflow-hidden rounded-[18px] border px-2.5 py-1.5 text-white ${isFreeAction ? 'free-action-shell free-action-outline' : 'border-white/12'}`}
             style={isFreeAction
                 ? {
                     ['--free-action-bg' as string]: String(backgroundStyle.background || 'var(--asset-grad-default)'),
@@ -104,8 +104,8 @@ const ActionSummaryCard: React.FC<{
                 : backgroundStyle}
         >
             {!isFreeAction && <div className="absolute inset-0 bg-black/32" />}
-            <div className="relative z-10 flex min-w-0 items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/12 bg-black/30">
+            <div className="relative z-10 flex min-w-0 items-center gap-2.5">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-white/12 bg-black/30">
                     <EmojiGlyph symbol={row.action.icon || '\u{1F4DD}'} size="action" className="text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -124,7 +124,19 @@ const ActionSummaryCard: React.FC<{
     );
 };
 
-export const SitrepContent: React.FC<{ onClose?: () => void; selectedDateOverride?: string | null }> = ({ onClose, selectedDateOverride }) => {
+/**
+ * `fillHeight` faz o painel ocupar exatamente a altura que recebe, em vez de
+ * crescer e empurrar rolagem para fora.
+ *
+ * Na tela de descanso ele abre grande e nao deve rolar: o unico trecho que rola
+ * e a lista de acoes, por dentro. No SitrepModal o comportamento certo e o
+ * contrario — la o proprio modal rola —, por isso isto e opcional e nao padrao.
+ */
+export const SitrepContent: React.FC<{
+    onClose?: () => void;
+    selectedDateOverride?: string | null;
+    fillHeight?: boolean;
+}> = ({ onClose, selectedDateOverride, fillHeight = false }) => {
     const {
         activeCycle,
         dailyCommitment,
@@ -355,11 +367,18 @@ export const SitrepContent: React.FC<{ onClose?: () => void; selectedDateOverrid
         showToast('Resumo diario postado no feed.', 'success');
     };
 
+    // Quantas linhas cabem sem rolagem. Numero fixo porque a altura disponivel
+    // varia com o aparelho e medir em tempo de execucao para cortar lista costuma
+    // piscar; o resto vira uma linha de "+N", que informa sem ocupar espaco.
+    const MAX_LINHAS_SEM_ROLAGEM = 5;
+    const visibleDailyRows = fillHeight ? dailyRows.slice(0, MAX_LINHAS_SEM_ROLAGEM) : dailyRows;
+    const hiddenDailyCount = fillHeight ? Math.max(0, dailyRows.length - MAX_LINHAS_SEM_ROLAGEM) : 0;
+
     return (
-        <div className="space-y-4">
-            <div id="daily-summary-capture-area" className="relative overflow-hidden rounded-[24px] border border-[var(--skin-accent-color)]/20 bg-black/28 p-4 shadow-[inset_0_0_24px_rgba(255,255,255,0.025)]">
+        <div className={fillHeight ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-4'}>
+            <div id="daily-summary-capture-area" className={`relative overflow-hidden rounded-[24px] border border-[var(--skin-accent-color)]/20 bg-black/28 shadow-[inset_0_0_24px_rgba(255,255,255,0.025)] ${fillHeight ? 'flex min-h-0 flex-1 flex-col p-3' : 'p-4'}`}>
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--skin-accent-color)_0%,transparent_62%)] opacity-12" />
-                <div className="relative z-10 space-y-4">
+                <div className={`relative z-10 ${fillHeight ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-4'}`}>
                     <div className="text-center">
                         {greeting && (
                             <p className="mb-1.5 text-[11px] font-medium italic leading-relaxed text-white/55">
@@ -485,19 +504,29 @@ export const SitrepContent: React.FC<{ onClose?: () => void; selectedDateOverrid
                         </div>
                     )}
 
-                    <div className="space-y-2">
+                    <div className={fillHeight ? 'flex min-h-0 flex-1 flex-col gap-2' : 'space-y-2'}>
                         <div className="flex items-center justify-between gap-2">
                             <p className="core-label">Acoes do dia</p>
                             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">somente leitura</p>
                         </div>
-                        <div className="max-h-56 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
-                            {dailyRows.map((row) => (
+                        {/* Sem rolagem quando o painel precisa caber inteiro: mostra o
+                            que cabe e diz quantas ficaram de fora. Uma barra de rolagem
+                            dentro de um painel que ja e uma tela cheia parece que a
+                            informacao nao coube — e a conta de quantas cabem depende do
+                            aparelho, entao o corte e por numero, que e previsivel. */}
+                        <div className={`space-y-1.5 pr-1 hide-scrollbar ${fillHeight ? 'min-h-0 flex-1 overflow-hidden' : 'max-h-56 overflow-y-auto'}`}>
+                            {visibleDailyRows.map((row) => (
                                 <ActionSummaryCard
                                     key={row.task.id}
                                     row={row}
                                     getActionBackgroundStyle={getActionBackgroundStyle}
                                 />
                             ))}
+                            {hiddenDailyCount > 0 && (
+                                <p className="pt-0.5 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-white/38">
+                                    {`+${hiddenDailyCount} ${hiddenDailyCount === 1 ? 'acao' : 'acoes'} no Planner`}
+                                </p>
+                            )}
                             {dailyRows.length === 0 && (
                                 <div className="sitrep-neutral-panel rounded-2xl p-4 text-center">
                                     <CheckCircleIcon className="mx-auto h-6 w-6 text-white/35" />

@@ -638,6 +638,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     // A trilha abre no ciclo mais recente: ela le da esquerda para a direita e
     // termina no agora, entao o ponto de chegada e onde a pessoa esta.
     const cycleStripRef = useRef<HTMLDivElement>(null);
+    // Qual ciclo esta no centro. A trilha deixou de ser arrastavel livre: quem
+    // move sao as setas, e o que esta no meio e o que se esta olhando.
+    const [stripIndex, setStripIndex] = useState<number | null>(null);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const [selectedReportStartsAtEnd, setSelectedReportStartsAtEnd] = useState(false);
     const [reportsToCompare, setReportsToCompare] = useState<[Report, Report] | null>(null);
@@ -1712,11 +1715,21 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     useEffect(() => {
         const strip = cycleStripRef.current;
         if (!strip) return;
-        // scrollWidth passa do fim; o navegador limita, e com o padding lateral o
-        // limite ja deixa o ultimo card centrado. Sem esse padding ele encostava na
-        // borda e o ciclo atual — justamente o que abre — nascia torto.
-        strip.scrollLeft = strip.scrollWidth;
-    }, [sortedReports.length]);
+        const alvo = stripIndex ?? Math.max(0, sortedReports.length - 1);
+        const card = strip.children[alvo] as HTMLElement | undefined;
+        if (!card) return;
+        // Centraliza o card em foco. Abrir no ultimo e proposital: a trilha le da
+        // esquerda para a direita e termina no agora.
+        strip.scrollTo({
+            left: card.offsetLeft - (strip.clientWidth - card.clientWidth) / 2,
+            behavior: stripIndex === null ? 'auto' : 'smooth',
+        });
+    }, [sortedReports.length, stripIndex]);
+
+    const moveStrip = (delta: number) => {
+        const atual = stripIndex ?? Math.max(0, sortedReports.length - 1);
+        setStripIndex(Math.min(sortedReports.length - 1, Math.max(0, atual + delta)));
+    };
 
     const legacyFallbackIdentity = useMemo(() => ({
         snapshotVersion: 2 as const,
@@ -2438,19 +2451,30 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         if (!isEditingEras) {
             return (
-                <div className="relative z-20 mt-3 rounded-[20px] border border-white/10 bg-black/20 px-4 py-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Eras</p>
-                            <p className="mt-1 text-xs font-semibold text-gray-300">{eraStatusLabel}</p>
-                        </div>
-                        <div className="flex shrink-0 flex-wrap gap-2">
-                            <button id="eras-button" onClick={beginEraEditing} className="rounded-xl luxe-button-secondary px-4 py-2.5 text-xs">ORGANIZAR</button>
-                            {sortedReports.length > 0 && hasCustomEras && (
-                                <button onClick={handleResetEras} className="rounded-xl luxe-button-secondary px-4 py-2.5 text-xs">RESTAURAR</button>
-                            )}
-                        </div>
-                    </div>
+                /* Uma caixa inteira com rotulo, contagem e dois botoes gritados so
+                   para dizer que eras existem. O nome delas ja aparece embaixo da
+                   trilha; aqui basta a porta de edicao, discreta no canto. O texto
+                   completo volta quando se entra no modo de edicao, que e quando
+                   ele importa. */
+                <div className="relative z-20 mt-2 flex items-center justify-end gap-1">
+                    <span className="mr-auto text-[10px] font-black uppercase tracking-[0.24em] text-gray-600">{eraStatusLabel}</span>
+                    {sortedReports.length > 0 && hasCustomEras && (
+                        <button
+                            onClick={handleResetEras}
+                            title="Restaurar eras automaticas"
+                            className="rounded-lg border border-white/8 p-1.5 text-white/35 transition-colors hover:border-white/16 hover:text-white/70"
+                        >
+                            <XIcon className="h-3.5 w-3.5" />
+                        </button>
+                    )}
+                    <button
+                        id="eras-button"
+                        onClick={beginEraEditing}
+                        title="Organizar eras"
+                        className="rounded-lg border border-white/8 p-1.5 text-white/35 transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-[var(--skin-accent-color)]"
+                    >
+                        <EditIcon className="h-3.5 w-3.5" />
+                    </button>
                 </div>
             );
         }
@@ -2635,6 +2659,31 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                              * espiando nas bordas para a faixa nao parecer uma tela so.
                              */
                             <div className="relative mt-6">
+                                {/* Setas no lugar do arrastar. A tela e grande e o gesto de
+                                    rolar nela parecia lista; seta diz que ha um em foco e
+                                    outros ao lado. Elas so aparecem quando ha para onde ir. */}
+                                {sortedReports.length > 1 && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => moveStrip(-1)}
+                                            disabled={(stripIndex ?? sortedReports.length - 1) <= 0}
+                                            aria-label="Ciclo anterior"
+                                            className="absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/12 bg-black/55 p-2 text-white/70 backdrop-blur-sm transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-white disabled:opacity-0"
+                                        >
+                                            <ChevronLeftIcon className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => moveStrip(1)}
+                                            disabled={(stripIndex ?? sortedReports.length - 1) >= sortedReports.length - 1}
+                                            aria-label="Proximo ciclo"
+                                            className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/12 bg-black/55 p-2 text-white/70 backdrop-blur-sm transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-white disabled:opacity-0"
+                                        >
+                                            <ChevronRightIcon className="h-4 w-4" />
+                                        </button>
+                                    </>
+                                )}
                                 <div
                                     ref={cycleStripRef}
                                     /* O padding lateral vale (100% - largura do card) / 2.
@@ -2649,7 +2698,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         return (
                                             <div
                                                 key={`strip-${report.id}`}
-                                                className="w-[68%] shrink-0 snap-center sm:w-[46%] lg:w-[32%]"
+                                                className={`w-[68%] shrink-0 snap-center transition-[opacity,transform] duration-300 sm:w-[46%] lg:w-[32%] ${
+                                                    indexFromStart === (stripIndex ?? sortedReports.length - 1)
+                                                        ? 'opacity-100'
+                                                        : 'scale-[0.94] opacity-45'
+                                                }`}
                                             >
                                                 <TimelineCard
                                                     report={report}

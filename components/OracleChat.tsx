@@ -45,6 +45,24 @@ type ChatQuickAction =
 
 
 
+/**
+ * Quando a fala aconteceu.
+ *
+ * Hoje mostra so a hora; de outro dia mostra dia/mes junto. Carimbar "26/08" numa
+ * mensagem de dez minutos atras e ruido — a data so informa quando ela deixa de
+ * ser obvia.
+ */
+const formatFeedMoment = (moment: Date): string => {
+  const agora = new Date();
+  const mesmoDia = moment.getDate() === agora.getDate()
+    && moment.getMonth() === agora.getMonth()
+    && moment.getFullYear() === agora.getFullYear();
+  const hora = moment.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  if (mesmoDia) return hora;
+  const dia = moment.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return `${dia} ${hora}`;
+};
+
 const dispatchAppView = (detail: AppNavigatePayload) => {
   window.dispatchEvent(new CustomEvent<AppNavigatePayload>(APP_NAVIGATE_EVENT, { detail }));
 };
@@ -714,6 +732,13 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                         {msg.feedSummary}
                       </span>
                     )}
+                    {/* A hora vem de created_at, que ja chegava na mesma consulta —
+                        so nao era desenhada. Sem ela o historico e uma pilha de
+                        falas sem quando, e nao da para saber se a de cima e de
+                        agora ou da semana passada. Custo de egress: zero. */}
+                    <span className="ml-auto text-[10px] font-semibold tabular-nums tracking-[0.08em] text-white/32">
+                      {formatFeedMoment(msg.timestamp)}
+                    </span>
                   </div>
                   <div className={`whitespace-pre-line ${feedVisual.accentClass} ${feedPresentation === 'info_card' ? 'font-medium text-[14px]' : 'text-white/88'}`}>
                     {msg.content}

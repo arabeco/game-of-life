@@ -2850,16 +2850,12 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 propria tela, e era justamente isso que a fazia parecer camada
                 sobreposta. O voltar agora mora no cabecalho dela, onde se
                 procura, e o botao fisico do Android tambem fecha. */}
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={handleCloseDynamic}>
-                {/* O cabecalho fixo e z-[100] e este overlay e z-50, entao ele pinta
-                    por cima: sem folga no topo a primeira coisa da lista — hoje a
-                    placa do legado — nasce cortada debaixo dele. A folga acompanha
-                    a barra de status, senao volta a faltar em aparelho edge-to-edge. */}
-                <div
-                    className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col"
-                    style={{ paddingTop: 'calc(4.75rem + var(--safe-area-top))' }}
-                    onClick={e => e.stopPropagation()}
-                >
+            {/* Sem `fixed`, sem veu escuro, sem desfoque e sem clique-fora para
+                fechar: isto agora e o conteudo de uma tela, e mora dentro do <main>,
+                que ja cuida do espaco do cabecalho e da barra de abas. O que fecha e
+                o voltar do cabecalho e o botao fisico do Android. */}
+            <div className="flex h-full min-h-0 flex-col animate-fade-in">
+                <div className="w-full max-w-[420px] mx-auto h-full min-h-0 px-1 flex flex-col">
                     <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
                             {/* O voltar mora na tela, sempre — inclusive no historico, onde

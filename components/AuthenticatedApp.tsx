@@ -1284,15 +1284,24 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 }
             />
 
+            {/* O historico de ciclos e uma TELA, nao um modal por cima.
+                Ele vivia fora do <main>, como sobreposicao de tela cheia com fundo
+                escurecido e desfoque — e uma tela que cobre a anterior com um veu
+                nao e uma tela do app, e uma camada. Agora ele ocupa o mesmo miolo
+                que as outras abas, com o mesmo cabecalho e a mesma barra embaixo:
+                o voltar dele leva para onde se estava, sem nada piscando atras. */}
             <main className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ paddingTop: mainPaddingTop, paddingBottom: mainPaddingBottom }}>
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col overflow-hidden">
-                    {renderView()}
+                    {isReportsVisible ? (
+                        <Suspense fallback={null}>
+                            <ReportsView onClose={() => setReportsVisible(false)} />
+                        </Suspense>
+                    ) : renderView()}
                 </div>
             </main>
 
             <Suspense fallback={null}>
                 {isProfileVisible && <ProfileView onClose={() => setProfileVisible(false)} />}
-                {isReportsVisible && <ReportsView onClose={() => setReportsVisible(false)} />}
             </Suspense>
 
             {dailyCompletionPrompt && (

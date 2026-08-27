@@ -166,4 +166,14 @@ assert.ok(
 );
 assert.match(blocoPush, /nextPermission !== 'unsupported'/, 'falha nao conta como resposta');
 
+// Pergunta UMA VEZ. Quem disse nao nao e perguntado de novo: insistir a cada
+// abertura, ou a cada dia, e assedio. O caminho para mudar de ideia e Ajustes, e
+// o unico momento em que da para dizer isso e na propria recusa.
+assert.match(
+  authenticatedApp,
+  /if \(userProfile\.onboardingPushPromptedAt\) return;/,
+  'respondeu uma vez, nao pergunta mais',
+);
+assert.match(blocoPush, /Ajustes > Oraculo & Alertas/, 'a recusa precisa dizer onde ligar depois');
+
 console.log('Oracle presence policy: silencioso cala, equilibrado celebra o grande, presente acompanha tudo.');

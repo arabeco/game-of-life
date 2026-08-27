@@ -1567,22 +1567,19 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     useEffect(() => {
         if (!isProfileLoaded || showTerms) return;
         if (userProfile.id === 'placeholder_user') return;
-        // A marca de "ja perguntei" nao pode calar a pergunta para sempre.
+        // Pergunta UMA VEZ, logo depois do onboarding. Quem disser nao nao e
+        // perguntado de novo — o caminho para mudar de ideia e Ajustes.
         //
-        // Ela era gravada ANTES de chamar requestAppPushPermission, entao
-        // qualquer coisa entre uma linha e outra — app morto no meio, erro
-        // engolido virando 'unsupported', prompt do sistema nao aparecendo —
-        // queimava o campo e o usuario nunca mais era perguntado. E o unico outro
-        // caminho para ligar push era o modal de preferencias do Oraculo, que
-        // desenhava vazio ate a versao 1.0.69.
+        // O bug nao era a marca existir, era ela ser gravada ANTES de chamar
+        // requestAppPushPermission: app morto no meio, erro engolido virando
+        // 'unsupported' ou prompt do sistema nao aparecendo queimavam o campo sem
+        // que ninguem tivesse sido perguntado. E o unico outro caminho para ligar
+        // push era o modal de preferencias do Oraculo, que desenhava vazio ate a
+        // 1.0.69 — as duas portas fechadas ao mesmo tempo.
         //
-        // Agora ela so barra dentro do mesmo dia: se o sistema ainda responde
-        // 'prompt', amanha ele pergunta de novo. O Android limita sozinho quantas
-        // vezes o prompt aparece, entao nao ha risco de virar assedio.
-        const jaPerguntouHoje = userProfile.onboardingPushPromptedAt
-            && getOperationalDateString(new Date(userProfile.onboardingPushPromptedAt))
-                === getOperationalDateString(new Date());
-        if (jaPerguntouHoje) return;
+        // A correcao e a ORDEM, nao a frequencia: a marca entra depois da
+        // resposta, e so quando houve resposta.
+        if (userProfile.onboardingPushPromptedAt) return;
         if (isFirstUseOnboardingActive) return;
         if (shouldHoldVanguardWelcome) return;
 
@@ -1606,7 +1603,9 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                     await updateOraclePreferences({ pushEnabled: true });
                     showToast('Push ativado. O Oraculo ja pode te acompanhar fora da tela.', 'success');
                 } else if (nextPermission === 'denied') {
-                    showToast('Tudo bem. O push ficou bloqueado neste aparelho por enquanto.', 'warning');
+                    // Nao insiste depois. Quem quiser ligar depois precisa saber
+                    // onde, e este e o unico momento em que da para dizer.
+                    showToast('Tudo bem. Se mudar de ideia, e em Ajustes > Oraculo & Alertas.', 'warning');
                 }
             } finally {
                 if (!cancelled) setOnboardingPushBusy(false);

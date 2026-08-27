@@ -16,6 +16,7 @@ export const GOLD_PREMIUM_PRODUCT = {
         'Até 15 arenas ativas (vs 10 no plano base)',
         'Fundos premium de perfil e ativos',
         'Oráculo: todos os tons de fala',
+        'Oráculo: escolha os temas e peça card na hora',
         'Bônus de legado: +5% XP no ciclo',
         'Cena do legado com 50% off',
         '1 baú raro por renovação',

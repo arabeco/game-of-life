@@ -245,6 +245,14 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     };
 
     const handleCategoryToggle = (category: OracleCategory) => {
+        // Escolher tema passou a ser O beneficio do Premium. O card automatico
+        // virou um por dia para todo mundo — a pool tem 3 variacoes por estado, e
+        // volume maior entregaria repeticao — entao o que se vende agora e
+        // profundidade: escolher o assunto e poder pedir na hora.
+        if (!isPremium) {
+            showToast('Escolher temas e do Premium. O card do dia continua entrando de qualquer forma.', 'info');
+            return;
+        }
         const current = oraclePreferences.enabledCategories || [];
         const next = current.includes(category)
             ? current.filter(c => c !== category)
@@ -373,7 +381,9 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5">
                     <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Temas assinados</div>
                     <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
-                        Voce pode pedir um card de cada tema por dia, ate cinco no total. A entrega automatica escolhe no maximo um deles.
+                        {isPremium
+                            ? 'Um card por dia entra sozinho. Aqui voce escolhe de que assunto ele fala, e pode pedir mais na hora.'
+                            : 'Um card por dia entra sozinho, sempre. Escolher o assunto e pedir na hora e do Premium.'}
                     </p>
                 </div>
                 {MANUAL_LIBRARY_CATEGORIES.map((cat) => {
@@ -386,7 +396,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                 isEnabled
                                     ? 'border-white/20 bg-white/10'
                                     : 'border-transparent bg-black/20 hover:bg-black/30'
-                            }`}
+                            } ${isPremium ? '' : 'opacity-45'}`}
                         >
                             <div className="flex items-center gap-3">
                                 <span className="text-base leading-none">{normalizeOracleIcon(cat.icon)}</span>

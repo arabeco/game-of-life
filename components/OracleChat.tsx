@@ -595,9 +595,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       ? 'Gerando...'
       : 'Card do Oraculo';
   const selectedThemeLabel = selectedThemeCount === 1 ? '1 tema marcado' : `${selectedThemeCount} temas marcados`;
-  const oracleInputHint = selectedThemeCount > 0
-    ? `Premium: um card por tema ao dia, ate 5 no total. Pedir agora consome a vaga de um dos seus ${selectedThemeLabel}.`
-    : 'Premium: escolha temas para receber ate 5 cards por dia.';
+  // O card automatico virou um por dia para todo mundo, inclusive no gratuito: a
+  // pool tem 3 variacoes por estado, entao volume maior entregaria repeticao. O
+  // que o Premium compra agora e escolher o tema e pedir na hora — profundidade,
+  // nao quantidade. O texto tem de dizer isso, senao vende o que nao existe.
+  const oracleInputHint = !isPremiumUser
+    ? 'Um card por dia, todo dia. No Premium voce escolhe o tema e pode pedir na hora.'
+    : selectedThemeCount > 0
+      ? `Um card por dia entra sozinho. Pedir agora consome a vaga de um dos seus ${selectedThemeLabel}.`
+      : 'Escolha temas para pedir card na hora. O card do dia entra sozinho de qualquer forma.';
 
   const HeaderIcon = MODE_VISUALS[currentMode].icon || GameLogoIcon;
   

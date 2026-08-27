@@ -979,10 +979,17 @@ const createAutomaticOracleMessage = async (
   if (isQuietHours(now, preferences)) return { status: "skipped", reason: "quiet_hours" };
 
   const profile = profileResult.data ?? null;
-  const isPremium = asBoolean(profile?.is_premium, false)
-    || Boolean(asTrimmedString(profile?.premium_expires_at))
-    || ["premium", "platinum"].includes(asTrimmedString(profile?.subscription_tier));
-  if (!isPremium) return { status: "skipped", reason: "premium_required" };
+
+  // O card automatico deixou de ser exclusivo do Premium, e o motivo e aritmetico.
+  //
+  // A pool tem 3 variacoes por estado operacional. Dar 3 cards por dia ao Premium
+  // queimaria as tres no mesmo dia e entregaria REPETICAO como beneficio pago —
+  // pior do que nao dar nada. Entao o volume ficou em um por dia para todo mundo,
+  // e o Premium passou a comprar profundidade em vez de quantidade: escolher os
+  // temas e puxar card na hora, que continuam pagos.
+  //
+  // O efeito colateral e bom: no plano gratuito a mecanica deixa de ser invisivel.
+  // Ninguem assina o que nunca viu funcionar.
   const appMode: AppMode = asTrimmedString(profile?.app_mode) === "BASIC" ? "BASIC" : "GAME";
 
   const [cycleResult, oracleMessagesResult] = await Promise.all([

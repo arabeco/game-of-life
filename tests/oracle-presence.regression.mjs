@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   getOracleFeedQuotaStatus,
   resolveOracleAutoDailyTarget,
@@ -165,5 +166,43 @@ assert.ok(
   pickOracleOpeningLine(padrao, 'neutro', meioDia),
   `a presenca padrao (${padrao}) precisa render fala de abertura`,
 );
+
+
+// --- um card por dia para todos, e o Premium compra profundidade ----------
+// A pool tem 3 variacoes por estado operacional (supabase/functions/_shared/
+// oracle-lines.ts). Dar 3 cards por dia ao Premium queimaria as tres no mesmo dia
+// e entregaria REPETICAO como beneficio pago — o picker faz
+// `pool = fresh.length > 0 ? fresh : usable`, ou seja repete em vez de calar.
+//
+// Entao o volume ficou em um por dia para todo mundo, inclusive no gratuito, e o
+// Premium passou a vender escolher o tema e pedir na hora. De quebra a mecanica
+// deixa de ser invisivel para quem nao assina: ninguem assina o que nunca viu.
+const oracleFn = readFileSync(
+  new URL('../supabase/functions/oracle/index.ts', import.meta.url),
+  'utf8',
+);
+assert.doesNotMatch(
+  oracleFn,
+  /reason: "premium_required"/,
+  'o card automatico nao pode voltar a ser exclusivo do Premium',
+);
+
+const settings = readFileSync(new URL('../components/OracleSettingsModal.tsx', import.meta.url), 'utf8');
+assert.match(
+  settings,
+  /if \(!isPremium\) \{[\s\S]{0,240}Escolher temas e do Premium/,
+  'escolher tema e o que o Premium compra agora',
+);
+
+// A vitrine tem de anunciar o que existe. Vender "cards" sem dizer que o card do
+// dia e de todos seria vender o que a pessoa ja tem.
+for (const arquivo of ['constants/economy.ts', 'constants/goldCatalog.ts']) {
+  const vitrine = readFileSync(new URL(`../${arquivo}`, import.meta.url), 'utf8');
+  assert.match(
+    vitrine,
+    /escolha os temas e peça card na hora/,
+    `${arquivo} precisa anunciar o beneficio que existe`,
+  );
+}
 
 console.log(`Oracle greeting: ${todas.length} saudacoes, mudas so no silencioso, sem numero e sem cobranca.`);

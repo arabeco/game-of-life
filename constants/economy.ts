@@ -71,6 +71,7 @@
         'Fundos premium de perfil',
         'Cena do legado com 50% off',
         'Oráculo: todos os tons de fala',
+        'Oráculo: escolha os temas e peça card na hora',
         'Bônus de legado: +5% XP no ciclo',
         '1 campanha curta grátis por renovação',
       ],

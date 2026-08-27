@@ -953,14 +953,16 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
 
                 {/* Center Section: Resumo Diario */}
                 <div className="flex-1 flex min-h-0 w-full items-center justify-center px-4 pb-2 z-10 animate-fade-in overflow-hidden">
-                    <div className={`relative flex w-full flex-col group transition-[max-width,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-w-[21rem] translate-y-1' : 'max-w-md translate-y-0'}`}>
+                    {/* min-h-0 e max-h-full: sem os dois o filho nao encolhe e o
+                        painel transborda a tela em aparelho curto. */}
+                    <div className={`relative flex min-h-0 max-h-full w-full flex-col group transition-[max-width,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-w-[21rem] translate-y-1' : 'max-w-md translate-y-0'}`}>
                         {/* Decorative background glow */}
                         <div className={`absolute rounded-3xl -z-10 bg-black/20 blur-2xl transition-all duration-500 ${isSitrepLocked ? 'inset-x-6 inset-y-0 opacity-60' : 'inset-0 opacity-90'}`} />
 
                         <GlassCard
                             id="sitrep-embedded-card"
                             variant="neutral"
-                            className={`restscreen-neutral-shell rounded-[2rem] flex flex-col gap-2 shadow-2xl relative overflow-hidden transition-[max-height,padding,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'p-3 max-h-[5.2rem]' : 'p-4 max-h-[min(76vh,42rem)]'}`}
+                            className={`restscreen-neutral-shell rounded-[2rem] flex flex-col gap-2 shadow-2xl relative overflow-hidden transition-[max-height,padding,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'p-3 max-h-[5.2rem]' : 'p-4 min-h-0 flex-1'}`}
                         >
                             {/* Header / Lock Control */}
                             {isSitrepLocked ? (
@@ -1009,7 +1011,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             )}
 
                             {/* Content Area */}
-                            <div className={`overflow-y-auto custom-scrollbar transition-[max-height,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-h-0 scale-y-95 translate-y-[-8px] opacity-0 pointer-events-none' : 'flex-1 max-h-[calc(min(76vh,42rem)-5.5rem)] scale-y-100 translate-y-0 opacity-100 pointer-events-auto'}`}>
+                            <div className={`overflow-y-auto custom-scrollbar transition-[max-height,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-h-0 scale-y-95 translate-y-[-8px] opacity-0 pointer-events-none' : 'flex-1 min-h-0 scale-y-100 translate-y-0 opacity-100 pointer-events-auto'}`}>
                                 {!isSitrepLocked && <SitrepContent />}
                             </div>
                         </GlassCard>
@@ -1017,7 +1019,9 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 </div>
 
                 {/* Bottom Section: Indicators & Unlock */}
-                <div className="flex-none mb-8 flex flex-col items-center gap-6 z-10 w-full px-6">
+                {/* mb-4 em tela curta: os 32px fixos saiam do espaco do painel, que e
+                    a unica parte da tela que precisa de altura. */}
+                <div className="flex-none mb-4 sm:mb-8 flex flex-col items-center gap-6 z-10 w-full px-6">
                     {actionSession && (
                         <div className="w-full max-w-sm mb-2 flex justify-center">
                             <button

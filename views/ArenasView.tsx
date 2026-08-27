@@ -2712,13 +2712,16 @@ export const ArenasView: React.FC = () => {
                                                 </div>
                                             ) : (
                                             <div className="overflow-x-auto overflow-y-hidden overscroll-x-contain hide-scrollbar pb-2 animate-in fade-in slide-in-from-top-1 duration-200" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y pinch-zoom', overscrollBehaviorX: 'contain' }}>
-                                                {/* 6.85rem e a mesma largura das outras
-                                                    fileiras. Estava em 7.35 so aqui, e
-                                                    a conta nao fechava: 3 x 117,6 + gaps
-                                                    + padding da 389px numa tela de 375,
-                                                    entao a terceira arena vivia cortada
-                                                    neste modo e inteira nos outros dois. */}
-                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[6.85rem] gap-2.5 px-2 pt-1">
+                                                {/* Tres por linha em 360px, que e a tela
+                                                    mais estreita que importa.
+                                                    3 x 108 + 2 gaps de 8 + 12 de padding
+                                                    = 352. Com os 6.85rem e gap-2.5 das
+                                                    outras fileiras dava 364,8 e a terceira
+                                                    saia cortada — elas escapam porque
+                                                    paginam numa largura fixa, e esta aqui
+                                                    e um rolador continuo, que so empilha
+                                                    e nao garante quantas cabem. */}
+                                                <div className="grid min-w-max grid-flow-col grid-rows-1 auto-cols-[6.75rem] gap-2 px-1.5 pt-1">
                                                     {group.arenas.map(arena => renderArenaBoardCard(arena, { assetName: group.name }))}
                                                 </div>
                                             </div>

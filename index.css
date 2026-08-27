@@ -1324,11 +1324,22 @@ body {
   -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
 
-.scrollbar-hide::-webkit-scrollbar {
+/* Os dois nomes existem porque o codigo usa os dois.
+ *
+ * O CSS definia so `.scrollbar-hide`, e 20 lugares em 11 arquivos escreviam
+ * `.hide-scrollbar` — palavras trocadas. A classe nao existia, entao a barra
+ * aparecia justamente nas fileiras horizontais de arena, campanha e loja, que
+ * sao as que mais rolam.
+ *
+ * Definir o apelido conserta os 20 de uma vez; renomear cada uso seria mexer em
+ * 11 arquivos para o mesmo efeito. */
+.scrollbar-hide::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar {
     display: none;
 }
 
-.scrollbar-hide {
+.scrollbar-hide,
+.hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }

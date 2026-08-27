@@ -27,6 +27,7 @@ interface Message {
   feedCategory?: OracleCategory;
   feedPresentation?: 'ambient_pulse' | 'info_card';
   feedSummary?: string;
+  feedPurpose?: string;
   feedTrigger?: 'app_open' | 'cron' | 'manual';
   systemId?: string;
   quickActions?: ChatQuickAction[];
@@ -327,6 +328,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       feedPresentation: resolveFeedPresentation(feedMessage.category, feedMessage.contextSnapshot),
       feedSummary: feedMessage.contextSnapshot?.summary || feedMessage.contextSnapshot?.categoryLabel || undefined,
       feedTrigger: feedMessage.contextSnapshot?.triggerType,
+      feedPurpose: feedMessage.contextSnapshot?.purpose,
       quickActions: Array.isArray(feedMessage.contextSnapshot?.quickActions)
         ? (feedMessage.contextSnapshot?.quickActions as ChatQuickAction[])
         : undefined,
@@ -679,7 +681,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
              const isFeedCard = msg.role === 'assistant' && Boolean(msg.feedId);
              const feedCategory = msg.feedCategory || 'frases_inspiradoras';
              const feedPresentation = msg.feedPresentation || 'ambient_pulse';
-             const feedVisual = ORACLE_CATEGORY_VISUALS[feedCategory];
+             // Categoria desconhecida nao pode derrubar o painel. Sem esta rede,
+             // uma linha gravada com categoria fora da lista fazia
+             // `feedVisual.borderClass` estourar e, como nao ha error boundary no
+             // app, o Oraculo inteiro sumia ao abrir.
+             const feedVisual = ORACLE_CATEGORY_VISUALS[feedCategory]
+               || ORACLE_CATEGORY_VISUALS.frases_inspiradoras;
+             // A fala nao e card de conteudo, entao nao usa o rotulo do tema.
+             const isSpeech = msg.feedPurpose === 'oracle_speech';
+             const feedLabel = isSpeech ? 'Oraculo' : feedVisual.label;
 
              return (
             <div 
@@ -704,7 +714,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       nao de quem le) e o resumo, que repetia o texto do selo. */}
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     <span className={`rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] ${feedVisual.badgeClass}`}>
-                      {feedVisual.label}
+                      {feedLabel}
                     </span>
                     {/* A hora vem de created_at, que ja chegava na mesma consulta —
                         so nao era desenhada. Sem ela o historico e uma pilha de

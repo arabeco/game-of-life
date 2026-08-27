@@ -2806,7 +2806,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <XIcon />
             </button>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={handleCloseDynamic}>
-                <div className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
+                {/* O cabecalho fixo e z-[100] e este overlay e z-50, entao ele pinta
+                    por cima: sem folga no topo a primeira coisa da lista — hoje a
+                    placa do legado — nasce cortada debaixo dele. A folga acompanha
+                    a barra de status, senao volta a faltar em aparelho edge-to-edge. */}
+                <div
+                    className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col"
+                    style={{ paddingTop: 'calc(4.75rem + var(--safe-area-top))' }}
+                    onClick={e => e.stopPropagation()}
+                >
                     <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
                             {(view === 'results' || view === 'comparing') && (

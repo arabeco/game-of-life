@@ -101,7 +101,13 @@ begin
   ) values (
     v_id,
     v_uid,
-    'foco',
+    -- 'foco' nao existe em OracleCategory. O cliente indexa o mapa visual por
+    -- categoria e estourava em `feedVisual.borderClass` — como nao ha error
+    -- boundary em lugar nenhum do app, o painel do Oraculo inteiro sumia ao
+    -- abrir. A fala e uma leitura do seu proprio estado, entao usa a categoria
+    -- que existe e mais se parece com isso; quem da o rosto dela na tela e o
+    -- purpose 'oracle_speech', nao a categoria.
+    'analise_padroes',
     trim(p_message),
     v_mode,
     'chat',

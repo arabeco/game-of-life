@@ -57,6 +57,7 @@ import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
 import { ORACLE_SPEECH_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
+import { App as CapacitorApp } from '@capacitor/app';
 import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import {
@@ -381,6 +382,39 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const previousViewRef = useRef<View>(currentView);
     const previousRestVisibilityRef = useRef(isRestScreenVisible);
     const hasInitializedViewTransitionRef = useRef(false);
+
+    /**
+     * O botao voltar do Android, que ate aqui nao existia no app.
+     *
+     * Sem listener, o Capacitor cai no comportamento padrao e o voltar nao sabe
+     * que ha uma tela aberta por cima: abrir o historico de ciclos e apertar
+     * voltar nao fechava o historico — ia parar em outro lugar, ou fechava o app.
+     * Era isso que fazia essas telas parecerem camadas soltas em vez de telas.
+     *
+     * A ordem aqui e a ordem visual: fecha primeiro o que esta mais por cima.
+     * Quando nao ha nada aberto e a pessoa nao esta na aba inicial, o voltar leva
+     * para ela; so na aba inicial o app sai, que e o que o Android espera.
+     */
+    useEffect(() => {
+        let handle: { remove: () => void } | null = null;
+        let cancelled = false;
+
+        void CapacitorApp.addListener('backButton', () => {
+            if (isReportsVisible) { setReportsVisible(false); return; }
+            if (isProfileVisible) { setProfileVisible(false); return; }
+            if (dailyCompletionPrompt) { setDailyCompletionPrompt(null); return; }
+            if (currentView !== 'assets') { handleSetView('assets'); return; }
+            void CapacitorApp.exitApp();
+        }).then((registered) => {
+            if (cancelled) { registered.remove(); return; }
+            handle = registered;
+        });
+
+        return () => {
+            cancelled = true;
+            handle?.remove();
+        };
+    }, [currentView, dailyCompletionPrompt, isProfileVisible, isReportsVisible]);
 
     useEffect(() => {
         onBlockingOverlayChange?.(Boolean(

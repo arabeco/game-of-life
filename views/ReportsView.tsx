@@ -2846,18 +2846,10 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     return (
         <>
-            <button
-                type="button"
-                aria-label="Fechar historico"
-                onClick={handleForceClose}
-                onPointerUp={handleForceClose}
-                onTouchEnd={handleForceClose}
-                onMouseUp={handleForceClose}
-                className="fixed right-4 top-[calc(var(--safe-area-top)+12px)] z-[10005] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white/90 shadow-[0_10px_28px_rgba(0,0,0,0.34)] transition-colors hover:bg-white/10 hover:text-white"
-                style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-            >
-                <XIcon />
-            </button>
+            {/* O X flutuante saiu. Ele pairava em z-[10005], fora do layout da
+                propria tela, e era justamente isso que a fazia parecer camada
+                sobreposta. O voltar agora mora no cabecalho dela, onde se
+                procura, e o botao fisico do Android tambem fecha. */}
             <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 animate-fade-in" onClick={handleCloseDynamic}>
                 {/* O cabecalho fixo e z-[100] e este overlay e z-50, entao ele pinta
                     por cima: sem folga no topo a primeira coisa da lista — hoje a
@@ -2870,9 +2862,18 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 >
                     <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
-                            {(view === 'results' || view === 'comparing') && (
-                                <button id="reports-view-back-button" onClick={handleCloseDynamic} className="p-2 -ml-2"><ChevronLeftIcon /></button>
-                            )}
+                            {/* O voltar mora na tela, sempre — inclusive no historico, onde
+                                antes so havia um X flutuante no canto oposto. Uma tela sem
+                                voltar visivel parece camada solta, nao tela; e do hub ele
+                                fecha o historico inteiro, que e para onde voltar leva. */}
+                            <button
+                                id="reports-view-back-button"
+                                onClick={handleCloseDynamic}
+                                aria-label={view === 'hub' ? 'Fechar historico' : 'Voltar'}
+                                className="-ml-2 rounded-xl p-2 text-white/75 transition-colors hover:bg-white/8 hover:text-white"
+                            >
+                                <ChevronLeftIcon />
+                            </button>
                             <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
                         </div>
                         {view === 'hub' && (activeCycle || sortedReports.length > 0) && (

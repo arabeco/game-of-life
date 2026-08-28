@@ -73,7 +73,9 @@ const pickLine = (lines: string[], random: () => number): string => (
 
 type CoachToneLines = Record<OracleSpeechTone, readonly string[]>;
 
-const COACH_LINES: Record<string, CoachToneLines> = {
+// Exportado para o teste conseguir medir variacao por estado e por tom. A
+// contagem sozinha nao basta: duas linhas iguais contam duas e variam uma.
+export const COACH_LINES: Record<string, CoachToneLines> = {
   /** Sumiu por tres dias ou mais. Marcadores: {dias} */
   /**
    * A pessoa sumiu por dias — e esta LENDO isto, o que significa que ela voltou.
@@ -90,18 +92,26 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       'Voltou depois de {dias} dias. As acoes continuam onde estavam.',
       '{dias} dias de intervalo, e voce esta aqui. Nada foi perdido, so parou.',
+      '{dias} dias fora, e o painel esta igual ao que voce deixou.',
+      'Intervalo de {dias} dias. Comeca do ponto em que parou, nao do zero.',
     ],
     coach: [
       'Voltou depois de {dias} dias. Comeca por uma acao pequena, e ajusta o resto depois.',
       'De volta em {dias} dias. Escolhe uma so para hoje: recomecar pesa menos que compensar.',
+      '{dias} dias fora. Nao tenta compensar hoje: uma acao ja recoloca o ritmo.',
+      'Esta de volta. Abre a arena mais facil que tiver e fecha uma coisa.',
     ],
     reflexivo: [
       'Voltou depois de {dias} dias. O que mudou na sua vida nesse intervalo?',
       '{dias} dias longe, e voce voltou. Foi falta de tempo, ou o plano tinha deixado de servir?',
+      '{dias} dias, e voce voltou hoje. O que te trouxe de volta?',
+      'Depois de {dias} dias, o que aqui ainda faz sentido para voce?',
     ],
     calmo: [
       'Voltou depois de {dias} dias, e esta tudo bem. O painel esperou, nao cobrou.',
       '{dias} dias de pausa. Nao precisa recuperar nada. Comeca de onde da.',
+      '{dias} dias de intervalo. Voltar ja foi a parte dificil.',
+      'Voce voltou, e isso basta por hoje.',
     ],
   },
 
@@ -123,18 +133,22 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       'Depois de {dias} dias parada, {arena} voltou a andar. Ainda esta atras, mas mudou de direcao.',
       '{arena} voltou a andar. Continua atras do planejado, e agora esta em movimento.',
+      '{arena} teve movimento hoje depois de um tempo parada.',
     ],
     coach: [
       '{arena} ficou {dias} dias parada e voltou hoje. Repete amanha e vira ritmo.',
       '{arena} saiu do lugar. O proximo dia e o que decide se foi um dia ou uma retomada.',
+      '{arena} andou. Marca a proxima dela agora, enquanto esta quente.',
     ],
     reflexivo: [
       '{dias} dias parada, e hoje {arena} andou. O que mudou hoje que nao existia ontem?',
       '{arena} voltou depois de um tempo parada. Da para repetir o que fez isso acontecer?',
+      '{arena} voltou. O que estava travando ela ate ontem?',
     ],
     calmo: [
       '{arena} voltou depois de {dias} dias. Nao precisa recuperar tudo — precisa continuar.',
       '{arena} andou de novo. O tempo parado nao volta, e tambem nao precisa ser pago.',
+      '{arena} andou de novo, e isso ja e bastante.',
     ],
   },
 
@@ -143,18 +157,26 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       'Voce tem arena e nao tem ciclo aberto. O ciclo e o que da comeco e fim ao periodo.',
       'Sem ciclo, as acoes existem mas nao tem prazo nem fecho.',
+      'Suas arenas estao sem periodo definido.',
+      'Nao ha ciclo aberto. As acoes existem soltas no tempo.',
     ],
     coach: [
       'Abra um ciclo de sete dias ou menos. Curto e mais facil de terminar do que longo.',
       'Proximo passo: monte um ciclo pequeno. Uma semana ja da ritmo sem virar divida.',
+      'Abre um ciclo hoje e ja coloca as arenas que voce quer tocar nesta semana.',
+      'Escolhe um prazo pequeno. Prazo curto termina; prazo longo vira divida.',
     ],
     reflexivo: [
       'Voce tem arena, mas nao marcou um periodo. Quanto tempo voce quer se dar?',
       'O que voce quer conseguir enxergar quando esse periodo fechar?',
+      'Sem ciclo, como voce vai saber que esse periodo acabou?',
+      'O que voce quer que seja verdade sobre voce daqui a uma semana?',
     ],
     calmo: [
       'Ja tem arena, que era a parte dificil. O ciclo pode ser curto e sem ambicao.',
       'Nao precisa de um plano grande. Uma semana ja e um ciclo.',
+      'Nao precisa de ciclo hoje. Quando quiser um comeco e um fim, ele esta ali.',
+      'Um ciclo curto pesa menos que a duvida de nao ter nenhum.',
     ],
   },
 
@@ -183,18 +205,26 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       'Ultima conclusao ha {dias} dias.',
       '{dias} dias sem fechar nada. A sequencia parou.',
+      '{dias} dias sem nada concluido. As acoes continuam abertas.',
+      'Nenhuma entrega em {dias} dias.',
     ],
     coach: [
       'Faz {dias} dias. Fecha a menor que estiver aberta hoje.',
       '{dias} dias sem entrega. Escolhe a mais barata e conclui: o resto volta sozinho.',
+      '{dias} dias parados. Pega a de menor duracao e fecha ela agora.',
+      'Uma acao pequena hoje vale mais que um plano novo. Escolhe uma.',
     ],
     reflexivo: [
       '{dias} dias sem concluir. O que esta no caminho?',
       'Faz {dias} dias. As acoes ainda cabem no seu dia como estao?',
+      '{dias} dias sem fechar nada. Foi o dia que encheu, ou a lista?',
+      'Faz {dias} dias. Voce mudou, ou a lista e que ficou para tras?',
     ],
     calmo: [
       '{dias} dias sem entrega, e isso acontece. Uma pequena hoje ja recoloca.',
       'A sequencia esfriou. Nao precisa voltar inteiro de uma vez.',
+      '{dias} dias sem entrega. Nao ha divida acumulando aqui.',
+      'Parar acontece. O que estava aberto continua aberto, sem juros.',
     ],
   },
 
@@ -244,21 +274,25 @@ const COACH_LINES: Record<string, CoachToneLines> = {
       '{streak} dias seguidos, e hoje ainda sem nenhuma acao. Uma fecha o dia.',
       'Sua sequencia esta em {streak}. Falta a de hoje.',
       '{diasSeguidos}a noite seguida chegando no limite com {streak} dias em jogo.',
+      'Nenhuma acao hoje, e a sequencia de {streak} depende disso.',
     ],
     coach: [
       '{streak} dias de pe. Escolhe a menor acao que tiver e mantem.',
       'Uma acao agora e a diferenca entre {streak} e comecar de novo amanha.',
       'Segunda vez esta semana que da essa hora. Antecipa amanha e para de depender do limite.',
+      'Falta uma acao para os {streak} continuarem. A menor serve.',
     ],
     reflexivo: [
       '{streak} dias, e hoje passou sem nenhuma. O dia foi cheio, ou foi so escapando?',
       'Sua sequencia esta em {streak}. Ela ainda significa o que significava quando comecou?',
       'Sao {diasSeguidos} noites seguidas apertando no fim. O problema e o dia ou e a hora?',
+      '{streak} dias construidos, e hoje ainda vazio. Vale o risco?',
     ],
     calmo: [
       'Seu {streak} esta de pe ate a virada do dia. Uma acao segura ele.',
       '{streak} dias. Se hoje nao der, tambem esta tudo bem — mas ainda da.',
       '{diasSeguidos} noites assim seguidas. Talvez o horario e que nao esta ajudando.',
+      '{streak} dias. Uma acao pequena e o suficiente, e ainda ha tempo.',
     ],
   },
 
@@ -309,18 +343,22 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       '{arena} esta atras do ritmo do ciclo.',
       'Pelo tempo e pelo progresso, {arena} e a que mais ficou para tras.',
+      '{arena} acumulou pendencia em relacao ao resto do ciclo.',
     ],
     coach: [
       'Abra {arena} e feche uma acao dela hoje. A menor que tiver, nao a mais dificil.',
       '{arena} nao andou esta semana. Uma acao hoje ja muda o numero de amanha.',
+      'Se for tocar em alguma coisa hoje, que seja {arena}.',
     ],
     reflexivo: [
       '{arena} ficou para tras. Ela ainda importa como importava quando voce criou?',
       'O que {arena} pedia de voce que a semana nao deu?',
+      '{arena} esta atras. Ela e prioridade de verdade, ou so estava na lista?',
     ],
     calmo: [
       '{arena} esta devagar, e devagar ainda e andar. Uma acao hoje basta.',
       'Nem toda arena anda no mesmo passo. {arena} pode esperar sem culpa.',
+      '{arena} ficou para tras, e nada nela urgente. Um passo quando der.',
     ],
   },
 
@@ -329,18 +367,22 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       '{arena} esta sem movimento ha alguns dias.',
       'Nenhuma acao de {arena} foi registrada recentemente.',
+      '{arena} nao registra conclusao ha bastante tempo.',
     ],
     coach: [
       '{arena} parou. Decide agora: uma acao pequena hoje, ou pausa a arena.',
       'Retomar {arena} com o menor item, ou pausar. As duas resolvem; deixar aberta nao.',
+      '{arena} parou. Ou uma acao hoje, ou tira ela do ciclo — as duas resolvem.',
     ],
     reflexivo: [
       '{arena} esfriou. Isso e uma fase, ou ela deixou de fazer sentido?',
       'O que aconteceria se voce pausasse {arena} por um tempo?',
+      '{arena} parou faz tempo. Ela ainda pertence a este ciclo?',
     ],
     calmo: [
       '{arena} parou, e pausar tambem e uma escolha legitima.',
       'Nao precisa manter {arena} viva so porque ela existe.',
+      '{arena} esta parada. Deixar parada tambem e uma decisao valida.',
     ],
   },
 
@@ -349,18 +391,22 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       'O ciclo esta atras do ritmo pelo tempo restante.',
       'O progresso do ciclo ficou abaixo do que o prazo pedia.',
+      'O ciclo esta atras do ritmo previsto para esta altura.',
     ],
     coach: [
       'Antes de compensar, tire uma meta. Fechar menos inteiro vale mais que muito pela metade.',
       'O ciclo apertou. Reduz o escopo hoje e protege o que sobrar.',
+      'O ciclo esta atras. Escolhe uma arena so para hoje e ignora o resto.',
     ],
     reflexivo: [
       'O ciclo esta atrasado. O que voce planejou era para esta semana ou para uma semana ideal?',
       'O que dentro do ciclo voce ja sabe que nao vai acontecer?',
+      'O ciclo ficou para tras. Foi a semana, ou o ciclo ja nasceu grande?',
     ],
     calmo: [
       'O ciclo esta atras, e isso nao apaga o que ja foi feito.',
       'Ciclo atrasado nao e ciclo perdido. Ainda da para fechar com o que cabe.',
+      'O ciclo esta atrasado, e ciclo atrasado ainda termina.',
     ],
   },
 
@@ -369,18 +415,26 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       '{acao} e a proxima da fila hoje.',
       'Hoje tem {acao} em aberto.',
+      'A proxima da fila e {acao}.',
+      '{acao} continua aberta hoje.',
     ],
     coach: [
       'Faz {acao} hoje. Uma real ja mantem o ciclo andando.',
       '{acao} primeiro. Depois dela o resto do dia decide sozinho.',
+      'Comeca por {acao}. Comecar pela mais facil tambem vale.',
+      '{acao} agora, enquanto o dia ainda e seu.',
     ],
     reflexivo: [
       '{acao} cabe hoje de verdade, ou entrou na lista por inercia?',
       'Se so {acao} acontecesse hoje, o dia teria valido?',
+      '{acao} e o que importa hoje, ou e so o que sobrou na lista?',
+      'Se voce fizesse so {acao} hoje, isso seria pouco?',
     ],
     calmo: [
       '{acao} esta ali quando der. Nao precisa ser agora.',
       'Se {acao} nao couber hoje, ajustar a meta e melhor que carregar peso.',
+      '{acao} espera. Nao precisa ser a primeira coisa do dia.',
+      '{acao} esta na lista, e a lista nao cobra.',
     ],
   },
 
@@ -389,18 +443,26 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       'Voce concluiu {acao} hoje.',
       '{acao} ja saiu hoje.',
+      '{acao} foi concluida hoje.',
+      'Hoje ja tem {acao} fechada.',
     ],
     coach: [
       '{acao} feita. Se ainda houver energia, a proxima menor mantem o ritmo.',
       'Boa, {acao} saiu. Decide agora se para aqui ou puxa mais uma.',
+      '{acao} fechada. Se for puxar outra, escolhe a menor.',
+      '{acao} saiu. Amanha comeca com essa mesma facilidade.',
     ],
     reflexivo: [
       '{acao} saiu hoje. O que fez ela acontecer, que da para repetir amanha?',
       'Voce ja entregou {acao}. O dia precisa de mais alguma coisa?',
+      '{acao} aconteceu hoje. Foi planejado ou foi o dia que abriu espaco?',
+      'Voce fechou {acao}. Foi ela mesma que voce queria fechar?',
     ],
     calmo: [
       '{acao} ja foi. Isso ja e o dia cumprido, se voce quiser que seja.',
       'Uma entrega e suficiente. Encerrar aqui e uma escolha, nao desistencia.',
+      '{acao} feita. O dia ja tem o que precisava ter.',
+      '{acao} saiu, e nao ha nada pendente nessa conversa.',
     ],
   },
 

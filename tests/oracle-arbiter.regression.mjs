@@ -8,7 +8,7 @@ import {
   scoreOracleCandidate,
   getOracleRelevanceThreshold,
 } from '../utils/oracleCandidates.ts';
-import { COACH_LINE_STATES, buildPlannerCoachSpeech } from '../utils/oracleCoach.ts';
+import { COACH_LINE_STATES, COACH_LINES, buildPlannerCoachSpeech, countCoachLines } from '../utils/oracleCoach.ts';
 import { ORACLE_PRESENCE } from '../constants/oraclePresencePolicy.ts';
 import { resolveArenaTrend } from '../utils/oracleOperationalContext.ts';
 import {
@@ -757,5 +757,57 @@ for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
   assert.doesNotMatch(linha, /nao abre|sem passar por aqui|sem aparecer/i, `${tom}: nao anunciar a ausencia para quem a encerrou`);
   assert.match(linha, /5/, `${tom}: o intervalo continua sendo dito`);
 }
+
+
+// --- repertorio proporcional a frequencia -----------------------------------
+// Encher todos os estados por igual seria desperdicio: `estrutura_enxuta` quase
+// nunca dispara, e `prioridade` pode falar dia sim dia nao por semanas.
+//
+// O cooldown ja e a medida de frequencia — foi para isso que ele foi escrito —
+// entao ele decide quantas variacoes o estado precisa ter. E precisa mesmo:
+// com duas linhas e a memoria impedindo repetir a anterior, a escolha vira
+// ALTERNANCIA, e alternancia e detectavel em quatro exposicoes.
+//
+// streak_marco e a excecao declarada: cooldown zero, mas so acontece cinco vezes
+// na vida de alguem. Frequencia baixa por outro motivo que nao o cooldown.
+
+const MINIMO_POR_TOM = { 0: 4, 1: 4, 2: 3, 3: 2 };
+const EXCECOES_DE_FREQUENCIA = new Set(['streak_marco']);
+
+for (const estado of COACH_LINE_STATES) {
+  const cooldown = ORACLE_CANDIDATE_WEIGHTS[estado].cooldownDays;
+  const minimo = EXCECOES_DE_FREQUENCIA.has(estado) ? 2 : (MINIMO_POR_TOM[cooldown] ?? 2);
+  for (const [tom, linhas] of Object.entries(COACH_LINES[estado])) {
+    assert.ok(
+      linhas.length >= minimo,
+      `${estado}.${tom} tem ${linhas.length} linhas e precisa de ${minimo}: quem fala mais precisa variar mais`,
+    );
+  }
+}
+
+// Nenhuma linha repetida dentro do mesmo estado e tom — duas iguais reduzem a
+// variacao real sem que a contagem denuncie.
+for (const estado of COACH_LINE_STATES) {
+  for (const [tom, linhas] of Object.entries(COACH_LINES[estado])) {
+    assert.equal(
+      new Set(linhas).size, linhas.length,
+      `${estado}.${tom} tem linha repetida`,
+    );
+  }
+}
+
+// As quatro vozes precisam ser vozes diferentes. Se dois tons dizem a mesma
+// frase, um deles nao existe — e tres dos quatro sao pagos.
+for (const estado of COACH_LINE_STATES) {
+  const vistas = new Map();
+  for (const [tom, linhas] of Object.entries(COACH_LINES[estado])) {
+    for (const linha of linhas) {
+      assert.ok(!vistas.has(linha), `${estado}: ${tom} e ${vistas.get(linha)} dizem a mesma frase`);
+      vistas.set(linha, tom);
+    }
+  }
+}
+
+assert.ok(countCoachLines() >= 176, 'o banco de aberturas nao pode encolher sem alguem notar');
 
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

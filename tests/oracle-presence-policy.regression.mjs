@@ -208,7 +208,24 @@ assert.match(rpcFala, /v_presence, 0\) <= 0/, 'silencioso nao grava fala nenhuma
 
 // E o push da fala passa a existir, com o interruptor decidindo — nao a presenca.
 const webPush2 = readFileSync(new URL('../supabase/functions/web-push/index.ts', import.meta.url), 'utf8');
-assert.match(webPush2, /purpose\) === "oracle_speech"/, 'a fala precisa chegar ao push');
+// So o CARD vira aviso no celular. A fala de abertura so existe porque a pessoa
+// abriu o app, e a reacao porque ela acabou de concluir algo — nos dois casos ela
+// esta com a tela na mao. Avisar sobre o que acabou de acontecer na tela em que se
+// esta e o mesmo defeito do card pedido a mao, que tocava o celular de quem
+// estava olhando para ele.
+const portaoPush = webPush2.slice(
+  webPush2.indexOf('const shouldPushOracleMessage'),
+  webPush2.indexOf('const buildOracleMessagePayload'),
+);
+assert.match(
+  portaoPush,
+  /deliveryType !== "feed"[\s\S]{0,40}return false/,
+  'so o card de infos vira push',
+);
+assert.doesNotMatch(portaoPush, /oracle_speech/, 'a fala nao pode voltar a virar aviso');
+
+// Mas ela continua GRAVADA: desligar o aviso nunca apagou a fala.
+assert.match(speech, /record_oracle_speech/, 'a fala continua no historico');
 
 // A reacao de rotina nao pode virar push nem historico.
 const taskDomain2 = readFileSync(new URL('../contexts/gameDomains/taskDomain.ts', import.meta.url), 'utf8');

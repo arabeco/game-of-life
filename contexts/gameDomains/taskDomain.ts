@@ -102,7 +102,9 @@ export const createTaskDomain = ({
     isClanQuestActionId,
     showToast,
     oracleTone = ORACLE_FREE_TONE,
-    oracleReactions = 'todas',
+    // O padrao erra para o lado silencioso. Se a preferencia ainda nao chegou,
+    // 'todas' faria o Oraculo comentar o dia de quem pediu para ele calar.
+    oracleReactions = 'nenhuma',
     updateClanMissionProgress,
     updateCustomClanMissionProgress,
     handleCompetitionArenaCompletion,

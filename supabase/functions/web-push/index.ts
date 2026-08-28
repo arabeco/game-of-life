@@ -787,17 +787,18 @@ const shouldPushOracleMessage = (
     return false;
   }
 
-  // Duas coisas passam por aqui, e sao coisas diferentes:
-  //   'feed' — o card de infos, conteudo com cota propria;
-  //   'chat' com purpose 'oracle_speech' — a fala do Oraculo.
-  // A fala so virou push agora. Antes ela era um evento de janela que pintava um
-  // balao por cinco segundos e evaporava: quem estava com o celular no bolso
-  // simplesmente nao recebia, embora o combinado fosse que desligar o aviso
-  // tirasse a fala do celular, nao que a apagasse.
-  const isOracleSpeech = message.deliveryType === "chat"
-    && asTrimmedString(message.contextSnapshot.purpose) === "oracle_speech";
-
-  if (message.deliveryType !== "feed" && !isOracleSpeech) {
+  // So o CARD vira aviso no celular.
+  //
+  // A fala de abertura so existe porque a pessoa abriu o app; a reacao so existe
+  // porque ela acabou de concluir alguma coisa. Nos dois casos ela esta com a
+  // tela na mao — avisar sobre o que acabou de acontecer na tela em que se esta e
+  // o mesmo defeito do card pedido a mao, que tocava o celular de quem estava
+  // olhando para ele.
+  //
+  // O card e diferente: nasce no cron enquanto a pessoa esta fora. Esse aviso tem
+  // para quem chegar. As falas continuam gravadas e aparecem no chat com hora —
+  // desligar o aviso nunca apagou a fala, e agora ela tambem nao persegue ninguem.
+  if (message.deliveryType !== "feed") {
     return false;
   }
 
@@ -806,12 +807,6 @@ const shouldPushOracleMessage = (
     return false;
   }
 
-  // A fala nao passa pelo perfil de push do modo, que existe para graduar quanto
-  // do CONTEUDO pago vira aviso. Ela ja foi filtrada pela presenca no cliente
-  // antes de ser gravada; aqui so falta o interruptor, ja conferido acima.
-  if (isOracleSpeech) {
-    return presenceLevel > 0;
-  }
 
   // A presenca decide O QUE o Oraculo fala; quem decide se aquilo vira aviso no
   // aparelho e o interruptor de avisos, conferido antes de chegar aqui. Este

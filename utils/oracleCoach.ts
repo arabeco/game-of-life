@@ -31,10 +31,12 @@ export interface PlannerCoachContext {
   completedActionNameToday: string | null;
 }
 
-export const getOracleCoachDailyLimit = (presenceLevel: number): number => {
-  if (presenceLevel <= 0) return 0;
-  return presenceLevel >= 3 ? 2 : 1;
-};
+// getOracleCoachDailyLimit saiu daqui.
+//
+// Ela dizia quantas falas por dia cada nivel de presenca recebe — a mesma
+// pergunta que ORACLE_PRESENCE_RULES.openingLine responde, num arquivo que nao
+// conhecia o outro. Duas regras sobre o mesmo assunto e como o app acabava
+// dizendo uma coisa na tabela e fazendo outra na tela.
 
 export const shouldShowPlannerCoach = (
   presenceLevel: number,

@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   buildPlannerCoachSpeech,
-  getOracleCoachDailyLimit,
   shouldShowPlannerCoach,
 } from '../utils/oracleCoach.ts';
+import { ORACLE_PRESENCE, ORACLE_PRESENCE_RULES } from '../constants/oraclePresencePolicy.ts';
 
 const baseContext = {
   arenasCount: 2,
@@ -22,9 +22,20 @@ const baseContext = {
   completedActionNameToday: null,
 };
 
-assert.equal(getOracleCoachDailyLimit(0), 0);
-assert.equal(getOracleCoachDailyLimit(2), 1);
-assert.equal(getOracleCoachDailyLimit(3), 2);
+// A frequencia da fala mora na TABELA de presenca, nao numa funcao paralela.
+// getOracleCoachDailyLimit respondia a mesma pergunta que openingLine, num
+// arquivo que nao conhecia o outro — e o teto dela vencia, entao a tabela dizia
+// "fala toda vez que abre" e o Oraculo calava na terceira.
+assert.equal(ORACLE_PRESENCE_RULES[ORACLE_PRESENCE.SILENCIOSO].openingLine, 'nunca');
+assert.equal(ORACLE_PRESENCE_RULES[ORACLE_PRESENCE.EQUILIBRADO].openingLine, 'diaria');
+assert.equal(ORACLE_PRESENCE_RULES[ORACLE_PRESENCE.PRESENTE].openingLine, 'sempre');
+
+const coachSource = readFileSync(new URL('../utils/oracleCoach.ts', import.meta.url), 'utf8');
+assert.doesNotMatch(
+  coachSource,
+  /export const getOracleCoachDailyLimit/,
+  'nao pode voltar a existir uma segunda regra de frequencia',
+);
 assert.equal(shouldShowPlannerCoach(0, () => 0), false);
 assert.equal(shouldShowPlannerCoach(2, () => 0.24), true);
 assert.equal(shouldShowPlannerCoach(2, () => 0.25), false);

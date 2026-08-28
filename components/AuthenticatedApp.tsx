@@ -62,7 +62,6 @@ import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone }
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import {
     buildPlannerCoachSpeech,
-    getOracleCoachDailyLimit,
     buildOracleCycleCoachBrief,
 } from '../utils/oracleCoach';
 import { getOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
@@ -125,16 +124,27 @@ const OracleSpeechOverlay: React.FC = () => {
             const detail = (event as CustomEvent<OracleSpeechPayload>).detail;
             if (!detail?.message?.trim()) return;
 
-            const presenceLevel = oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL;
-            if (presenceLevel <= 0) return;
+            // Quem decide a frequencia e a TABELA de presenca, e so ela.
+            //
+            // Aqui existia um segundo teto — getOracleCoachDailyLimit, que dava 2
+            // falas por dia no Presente e 1 nos outros. Era uma regra sobre o mesmo
+            // assunto morando em outro arquivo, e na pratica o teto vencia: a
+            // tabela dizia "fala toda vez que abre" e o Oraculo calava na terceira.
+            // E o mesmo tipo de duplicidade que ja tinha feito o push exigir
+            // presenca 3 enquanto a tabela dizia outra coisa.
+            const rules = getOraclePresenceRules(oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL);
+            if (rules.openingLine === 'nunca') return;
 
-            const today = getOperationalDateString(new Date());
-            const storageKey = `oracle_speech_daily:${userProfile.id}:${today}`;
-            const spokenToday = Number.parseInt(localStorage.getItem(storageKey) || '0', 10) || 0;
-            const dailyLimit = getOracleCoachDailyLimit(presenceLevel);
-            if (spokenToday >= dailyLimit) return;
+            // Reacao segue o proprio peso, ja filtrado antes de chegar aqui; a cota
+            // diaria vale so para a fala de abertura do nivel Equilibrado.
+            const isReaction = detail.kind === 'reacao';
+            if (!isReaction && rules.openingLine === 'diaria') {
+                const today = getOperationalDateString(new Date());
+                const storageKey = `oracle_speech_daily:${userProfile.id}:${today}`;
+                if (localStorage.getItem(storageKey) === today) return;
+                localStorage.setItem(storageKey, today);
+            }
 
-            localStorage.setItem(storageKey, String(spokenToday + 1));
             setSpeech({ ...detail, id: Date.now() });
         };
 

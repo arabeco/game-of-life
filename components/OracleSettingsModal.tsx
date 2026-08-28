@@ -254,6 +254,14 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
             return;
         }
         const current = oraclePreferences.enabledCategories || [];
+        // Desligar o ultimo tema zerava a cota (dailyLimit = temas ligados), entao
+        // o card parava de chegar e o unico sinal era o contador lendo "0/0" — que
+        // parece defeito, nao ajuste. Quem quer o Oraculo calado usa a presenca:
+        // tema escolhe SOBRE O QUE ele fala, nao SE ele fala.
+        if (current.length <= 1 && current.includes(category)) {
+            showToast('Precisa de pelo menos um tema. Para calar o Oraculo, use a presenca.', 'info');
+            return;
+        }
         const next = current.includes(category)
             ? current.filter(c => c !== category)
             : [...current, category];

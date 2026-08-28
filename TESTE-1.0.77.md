@@ -59,9 +59,14 @@ Veja o balão, depois abra o Oráculo. **A mesma fala tem que estar lá**, com h
 Hoje mostra `10:49`; de outro dia, `26/08 10:49`. Não pode existir mensagem sem
 hora no chat.
 
-### 10. Um card por dia, não três
-O contador do topo. Se ainda disser `0/3`, **me fala o número que aparece** — eu
-segurei essa mudança esperando você ver o valor real.
+### 10. O contador conta os seus temas
+`0/3` estava certo: o denominador é **quantos temas você tem ligados**, não um 3
+fixo. Com 1 tema lê `0/1`. O card **automático** é sempre 1 por dia — número
+diferente, coisa diferente.
+
+Tente desligar o último tema: ele **recusa**, dizendo que para calar o Oráculo é
+na presença. Antes deixava zerar, e aí o card parava de chegar em silêncio com o
+contador lendo `0/0`.
 
 ### 11. Reação de marco fica, rotina some
 Feche uma arena: a reação aparece **e fica gravada**. Já "você fez 5 ações hoje"

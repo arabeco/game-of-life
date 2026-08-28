@@ -227,6 +227,19 @@ assert.doesNotMatch(portaoPush, /oracle_speech/, 'a fala nao pode voltar a virar
 // Mas ela continua GRAVADA: desligar o aviso nunca apagou a fala.
 assert.match(speech, /record_oracle_speech/, 'a fala continua no historico');
 
+// --- o que a pessoa PEDE nao vira historico -----------------------------
+// "Ler meu dia" e resposta a um toque, sobre algo que ela esta olhando — como o
+// painel de missao, que aparece, recebe as escolhas e some. Gravar encheria o
+// historico de linhas iguais no mesmo dia, e o historico existe para o que o
+// Oraculo disse por conta propria.
+const chat = readFileSync(new URL('../components/OracleChat.tsx', import.meta.url), 'utf8');
+const lerMeuDia = chat.slice(
+  chat.indexOf('const handleReadMyDay'),
+  chat.indexOf('const handleAskMission'),
+);
+assert.ok(lerMeuDia.length > 0, 'o handler de ler meu dia deve ser identificavel');
+assert.match(lerMeuDia, /ephemeral: true/, 'leitura sob demanda nao entra no historico');
+
 // A reacao de rotina nao pode virar push nem historico.
 const taskDomain2 = readFileSync(new URL('../contexts/gameDomains/taskDomain.ts', import.meta.url), 'utf8');
 assert.match(taskDomain2, /ephemeral: weight !== 'marco'/, 'so marco fica gravado');

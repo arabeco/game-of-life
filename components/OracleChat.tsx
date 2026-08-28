@@ -501,6 +501,11 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
    *
    * Apertar duas vezes devolve a mesma frase de proposito: o que muda a leitura e
    * o seu estado mudar, nao o Oraculo ter mais sinonimos.
+   *
+   * E ela NAO fica gravada. E resposta a um toque, sobre algo que a pessoa esta
+   * olhando — como o painel de missao, que aparece, recebe as duas escolhas e
+   * some. Gravar encheria o historico de linhas iguais num mesmo dia, e o
+   * historico existe para o que o Oraculo disse por conta propria.
    */
   const handleReadMyDay = useCallback(() => {
     const brief = buildOracleCycleCoachBrief(operationalContext);
@@ -513,6 +518,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       durationMs: 6800,
       kind: 'abertura',
       quickActions: brief.quickActions,
+      ephemeral: true,
     });
   }, [operationalContext, sensory]);
 

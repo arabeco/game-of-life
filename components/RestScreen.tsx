@@ -993,11 +993,11 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         </div>
                                     </div>
 
+                                    {/* A pilha de status saiu: ela dizia sitrepStatusLabel e o
+                                        botao ao lado dizia sitrepStatusLabel de novo — o mesmo
+                                        nome duas vezes na mesma linha, um deles sem funcao
+                                        nenhuma alem de ocupar largura. */}
                                     <div className="flex items-center gap-3">
-                                        <div className={`restscreen-neutral-pill hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] sm:flex ${isSitrepLocked ? 'text-gray-300' : 'text-[var(--skin-accent-color)]'}`}>
-                                            {isSitrepLocked ? <EyeIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
-                                            <span>{sitrepStatusLabel}</span>
-                                        </div>
                                         <button
                                             onClick={() => setIsSitrepLocked(!isSitrepLocked)}
                                             className={`restscreen-neutral-pill inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all hover:bg-black/70 ${isSitrepLocked ? 'text-white' : 'text-[var(--skin-accent-color)]'}`}

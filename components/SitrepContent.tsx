@@ -375,8 +375,13 @@ export const SitrepContent: React.FC<{
 
     return (
         <div className={fillHeight ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-4'}>
-            <div id="daily-summary-capture-area" className={`relative overflow-hidden rounded-[24px] border border-[var(--skin-accent-color)]/20 bg-black/28 shadow-[inset_0_0_24px_rgba(255,255,255,0.025)] ${fillHeight ? 'flex min-h-0 flex-1 flex-col p-3' : 'p-4'}`}>
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--skin-accent-color)_0%,transparent_62%)] opacity-12" />
+            {/* Embutido, este bloco NAO desenha cartao: o GlassCard do painel ja e o
+                cartao, e a borda arredondada aqui dentro criava cartao dentro de
+                cartao — duas bordas, dois paddings, ~28px de largura e outro tanto
+                de altura gastos so em moldura. No modal ele continua sendo o cartao,
+                porque la ele e a unica moldura que existe. */}
+            <div id="daily-summary-capture-area" className={`relative overflow-hidden ${fillHeight ? 'flex min-h-0 flex-1 flex-col' : 'rounded-[24px] border border-[var(--skin-accent-color)]/20 bg-black/28 shadow-[inset_0_0_24px_rgba(255,255,255,0.025)] p-4'}`}>
+                {!fillHeight && <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--skin-accent-color)_0%,transparent_62%)] opacity-12" />}
                 <div className={`relative z-10 ${fillHeight ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-4'}`}>
                     {/* Antes empilhava quatro coisas dizendo a mesma: a saudacao, o
                         rotulo "Resumo Diario", o titulo "Resumo de hoje" — e o painel

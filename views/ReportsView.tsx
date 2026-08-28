@@ -2904,7 +2904,14 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             >
                                 <ChevronLeftIcon />
                             </button>
-                            <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
+                            {/* No hub o titulo era "HISTORICO" em caixa alta grande, logo
+                                abaixo de um botao de voltar, numa tela que so tem
+                                historico dentro. Ele nomeava o obvio e comia altura que
+                                a trilha de ciclos precisa. Nas telas internas o titulo
+                                fica: la ele diz em qual ciclo voce entrou. */}
+                            {view !== 'hub' && (
+                                <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
+                            )}
                         </div>
 
                     </div>

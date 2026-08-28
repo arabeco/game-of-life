@@ -1189,7 +1189,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     // (em Ajustes, "Interface & Som" e "Oraculo & Alertas") ficam por baixo do
     // cabecalho, que captura o toque no lugar delas.
     const mainPaddingTop = `calc(${baseTopPadding}px + var(--safe-area-top))`;
-    const mainPaddingBottom = currentView === 'assets'
+    // A excecao de 'assets' existe porque aquela tela cuida do proprio rodape. Mas o
+    // historico nao e uma aba: ele entra por isReportsVisible por cima da aba atual,
+    // e quando ele abria a partir de Ativos herdava a excecao — ficava sem os 64px
+    // da barra de abas, e o botao de novo ciclo, que mora no fim da tela, nascia
+    // por baixo dela. A condicao tem de olhar o que esta desenhado, nao a aba.
+    const mainPaddingBottom = (currentView === 'assets' && !isReportsVisible)
         ?'var(--safe-area-bottom)'
         : `calc(${baseBottomPadding}px + var(--safe-area-bottom))`;
     const themeClass = `mode-game theme-${(activeTheme || 'DARK').toLowerCase()}`;

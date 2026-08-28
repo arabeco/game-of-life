@@ -18,6 +18,9 @@ import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { ArenaPactBalloon, ArenaPactProposal } from './ArenaPactBalloon';
 
 type OracleTabTarget = 'chat' | 'requests';
+// Marca a leitura pedida a mao: uma so por vez na lista, e nunca vai para o banco.
+const READING_FEED_ID = 'reading:now';
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -507,20 +510,33 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
    * some. Gravar encheria o historico de linhas iguais num mesmo dia, e o
    * historico existe para o que o Oraculo disse por conta propria.
    */
+  // A leitura sai NO CHAT, nao em balao flutuante. O balao existe para te alcancar
+  // quando voce esta em outra tela; pedir a leitura de dentro do proprio Oraculo e
+  // receber um balao que aparece ATRAS do painel aberto e o pior dos dois mundos.
+  //
+  // E ela nao empilha: o mesmo feedId sai e volta, entao pedir de novo troca a
+  // leitura no lugar e a hora muda junto. Continua sem gravar no banco — some ao
+  // fechar o Oraculo, como a proposta de missao.
   const handleReadMyDay = useCallback(() => {
     const brief = buildOracleCycleCoachBrief(operationalContext);
     if (!brief?.content) return;
     sensory('click_soft');
-    emitOracleSpeech({
-      title: 'Oraculo',
-      message: brief.content,
-      tone: 'info',
-      durationMs: 6800,
-      kind: 'abertura',
-      quickActions: brief.quickActions,
-      ephemeral: true,
-    });
-  }, [operationalContext, sensory]);
+    setMessages((previous) => [
+      ...previous.filter((message) => message.feedId !== READING_FEED_ID),
+      {
+        role: 'assistant',
+        content: brief.content,
+        timestamp: new Date(),
+        mode: currentMode,
+        feedId: READING_FEED_ID,
+        feedCategory: 'analise_padroes',
+        feedPresentation: 'ambient_pulse',
+        feedSummary: 'Leitura do momento',
+        feedTrigger: 'manual',
+        quickActions: brief.quickActions,
+      },
+    ]);
+  }, [operationalContext, sensory, currentMode]);
 
   const handleAskMission = useCallback(() => {
     if (activeArenaPact) {
@@ -870,10 +886,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             <div className="flex min-w-0 flex-1 gap-2">
               <button
                 onClick={handleReadMyDay}
-                className="min-w-0 flex-1 rounded-2xl border border-white/12 bg-white/[0.04] px-3 py-2.5 text-left transition-colors hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]"
+                className="min-w-0 flex-1 rounded-2xl border border-white/12 bg-white/[0.04] px-2.5 py-2.5 text-left transition-colors hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]"
               >
-                <span className="block truncate text-[11px] font-black uppercase tracking-[0.14em] text-white/82">Ler meu dia</span>
-                <span className="mt-0.5 block truncate text-[9px] text-white/38">como voce esta agora</span>
+                <span className="block text-[11px] font-black uppercase leading-tight tracking-[0.02em] text-white/82">Ler meu dia</span>
+                <span className="mt-0.5 block truncate text-[9px] text-white/38">agora</span>
               </button>
 
               {/* O mesmo slot, dois estados: sem pacto convida, com pacto informa.
@@ -881,7 +897,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                   da, em vez de nao dar e ficar calado. */}
               <button
                 onClick={handleAskMission}
-                className={`min-w-0 flex-1 rounded-2xl border px-3 py-2.5 text-left transition-colors ${
+                className={`min-w-0 flex-1 rounded-2xl border px-2.5 py-2.5 text-left transition-colors ${
                   activeArenaPact
                     ? 'border-[var(--skin-accent-color)]/32 bg-[var(--skin-accent-color)]/8 hover:bg-[var(--skin-accent-color)]/12'
                     : missionAvailable
@@ -889,7 +905,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       : 'border-white/8 bg-white/[0.02] opacity-45'
                 }`}
               >
-                <span className={`block truncate text-[11px] font-black uppercase tracking-[0.14em] ${activeArenaPact ? 'text-[var(--skin-accent-color)]' : 'text-white/82'}`}>
+                <span className={`block truncate text-[11px] font-black uppercase leading-tight tracking-[0.02em] ${activeArenaPact ? 'text-[var(--skin-accent-color)]' : 'text-white/82'}`}>
                   {activeArenaPact ? activeArenaPact.title : 'Pedir missao'}
                 </span>
                 <span className="mt-0.5 block truncate text-[9px] text-white/38">

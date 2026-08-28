@@ -1443,6 +1443,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             setOraclePreferences({
                 ...mapped,
                 dailyFocusCardEnabled: mapped.dailyFocusCardEnabled ?? false,
+                importantAlertsEnabled: mapped.importantAlertsEnabled ?? false,
                 dmNotificationsEnabled: mapped.dmNotificationsEnabled ?? true,
                 enabledCategories: normalizeOracleManualCategories(mapped.enabledCategories || []),
                 sentinelMode: deriveLegacySentinelMode(nextMode, nextIaEnabled),
@@ -1456,6 +1457,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 iaEnabled: true,
                 notificationsEnabled: true,
                 dailyFocusCardEnabled: false,
+                importantAlertsEnabled: false,
                 dmNotificationsEnabled: true,
                 pushEnabled: getPushEnabled(userId),
                 presenceLevel: getOraclePresenceLevel(userId),

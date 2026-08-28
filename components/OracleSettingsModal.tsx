@@ -31,7 +31,7 @@ interface OracleSettingsModalProps {
     variant?: 'preferences' | 'assistant';
 }
 
-type ToggleKey = 'dailyFocusCardEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
+type ToggleKey = 'dailyFocusCardEnabled' | 'importantAlertsEnabled' | 'dmNotificationsEnabled' | 'animationsEnabled' | 'soundsEnabled' | 'hapticsEnabled';
 
 // Os textos e as regras vivem em constants/oraclePresencePolicy: o que cada
 // nivel faz estava espalhado entre este modal, o cron e o portao de push, e por
@@ -457,6 +457,17 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
                                 <div className="space-y-1 pt-1">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Avisos</h3>
+                                    {/* Fora do bloco de presenca de proposito: este aviso
+                                        existe para quem esta no Silencioso tambem. */}
+                                    {renderSwitchRow({
+                                        icon: '!',
+                                        label: 'Avisar antes de perder a sequencia',
+                                        description: 'A noite, se o dia ainda estiver sem nenhuma acao. Independe da presenca do Oraculo.',
+                                        enabled: Boolean(oraclePreferences.importantAlertsEnabled),
+                                        onToggle: () => handleToggle('importantAlertsEnabled'),
+                                        accentClass: 'bg-rose-500/70',
+                                    })}
+
                                     {renderSwitchRow({
                                         icon: 'DM',
                                         label: 'Mensagens e convites',

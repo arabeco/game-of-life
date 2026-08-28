@@ -1317,6 +1317,16 @@ export interface OraclePreferences {
   iaEnabled: boolean;
   notificationsEnabled: boolean;
   dailyFocusCardEnabled?: boolean;
+  /**
+   * Aviso de perda iminente — hoje, a sequencia prestes a morrer.
+   *
+   * NAO e presenca. Presenca decide o que o Oraculo comenta; isto decide se ele
+   * avisa que voce esta prestes a perder alguma coisa. Sao interruptores
+   * separados de proposito: Silencioso + Alertas ligados e uma combinacao
+   * legitima, e abrir excecao invisivel no Silencioso transformaria preferencia
+   * em sugestao.
+   */
+  importantAlertsEnabled?: boolean;
   dmNotificationsEnabled: boolean;
   // Local-only preference for browser/device notifications.
   pushEnabled?: boolean;

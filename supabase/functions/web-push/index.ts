@@ -782,6 +782,7 @@ const shouldPushOracleMessage = (
   appMode: AppMode,
   dailyFocusCardEnabled: boolean,
   presenceLevel: number,
+  importantAlertsEnabled: boolean,
 ): boolean => {
   if (message.read) {
     return false;
@@ -807,6 +808,19 @@ const shouldPushOracleMessage = (
     return false;
   }
 
+  // Aviso de perda iminente tem portao proprio, e sai ANTES do portao de presenca.
+  //
+  // Sem esta saida o aviso morreria tres vezes: presenceLevel <= 0 barra o
+  // Silencioso — que e exatamente quem o interruptor de alertas existe para
+  // servir —, e depois o perfil de modo exige presentation 'info_card' ou recusa
+  // tudo no 'essencial'. A mensagem seria gravada no historico e nunca chegaria
+  // no celular: falha em silencio, a pior especie.
+  //
+  // Presenca decide o que o Oraculo COMENTA. Isto nao e comentario: e a
+  // sequencia morrendo a meia-noite, e recebe so quem ligou o interruptor.
+  if (asTrimmedString(message.contextSnapshot.purpose) === "streak_alert") {
+    return importantAlertsEnabled;
+  }
 
   // A presenca decide O QUE o Oraculo fala; quem decide se aquilo vira aviso no
   // aparelho e o interruptor de avisos, conferido antes de chegar aqui. Este
@@ -1473,7 +1487,7 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
       .is("disabled_at", null),
     supabaseAdmin
       .from("oracle_preferences")
-      .select("notifications_enabled, daily_focus_card_enabled, presence_level")
+      .select("notifications_enabled, daily_focus_card_enabled, presence_level, important_alerts_enabled")
       .eq("user_id", message.userId)
       .maybeSingle(),
     supabaseAdmin
@@ -1494,8 +1508,9 @@ const dispatchOracleMessage = async (req: Request, body: JsonRecord, origin: str
   const appMode: AppMode = asTrimmedString(profileRow?.app_mode) === "BASIC" ? "BASIC" : "GAME";
   const dailyFocusCardEnabled = preferenceRow?.daily_focus_card_enabled === true;
   const presenceLevel = clamp(Math.round(asNumber(preferenceRow?.presence_level, 1)), 0, 3);
+  const importantAlertsEnabled = preferenceRow?.important_alerts_enabled === true;
 
-  if (!shouldPushOracleMessage(message, appMode, dailyFocusCardEnabled, presenceLevel)) {
+  if (!shouldPushOracleMessage(message, appMode, dailyFocusCardEnabled, presenceLevel, importantAlertsEnabled)) {
     return jsonResponse(origin, 200, { skipped: true, reason: "policy_filtered" });
   }
 

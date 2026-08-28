@@ -386,12 +386,17 @@ export const SitrepContent: React.FC<{
                         <h3 className="arena-title-text text-lg text-white luxe-title-shadow leading-tight">{dateLabel}</h3>
                     </div>
 
-                    {historicalInsight && (
+                    {/* No painel embutido o Oraculo fala UMA vez. Os dois blocos
+                        empilhados eram dois paragrafos dele seguidos, e sao a maior
+                        altura variavel da coluna — junto com a leitura de hoje, eram
+                        o que estourava a tela em aparelho curto. A leitura de hoje
+                        ganha, por ser a mais especifica. */}
+                    {(!fillHeight || !todayReading) && historicalInsight && (
                         <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
                             <OracleSpeakerMark tone="info" size="sm" className="mt-0.5 shrink-0" />
                             <div className="min-w-0">
                                 {/* Sem rotulo: o rosto do Oraculo ao lado ja diz de quem e a fala. */}
-                                <p className="text-[11px] leading-relaxed text-white/78">{historicalInsight}</p>
+                                <p className={`text-[11px] leading-relaxed text-white/78 ${fillHeight ? 'line-clamp-3' : ''}`}>{historicalInsight}</p>
                             </div>
                         </div>
                     )}
@@ -413,7 +418,7 @@ export const SitrepContent: React.FC<{
                                         </span>
                                     )}
                                 </div>
-                                <p className="mt-1 text-[11px] leading-relaxed text-white/78">{todayReading.text}</p>
+                                <p className={`mt-1 text-[11px] leading-relaxed text-white/78 ${fillHeight ? 'line-clamp-4' : ''}`}>{todayReading.text}</p>
                                 {todayReading.comparison && (
                                     <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--skin-accent-color)]/80">
                                         {todayReading.comparison}
@@ -446,18 +451,13 @@ export const SitrepContent: React.FC<{
                         </div>
                     )}
 
+                    {/* Eram cinco numeros em duas grades, e dois nao diziam nada novo:
+                        "Ritmo" e "Feitas" em porcentagem, e "Checklist" ja aparece
+                        como badge no proprio botao de checklist, a dois centimetros
+                        daqui na mesma tela. Sobram os tres que sao de hoje. */}
                     <div className="grid grid-cols-3 gap-2">
                         <PanelMetric label="Feitas" value={`${completedRows.length}/${dailyRows.length}`} hint="acoes do dia" />
                         <PanelMetric label="EXP" value={`+${dayExp}`} hint="confirmado" accent />
-                        <PanelMetric label="Ritmo" value={`${dayProgress}%`} hint="acoes com XP" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                        <PanelMetric
-                            label="Checklist"
-                            value={`${checklistCompleted}/${checklistTotal}`}
-                            hint={checklistTotal > 0 ? 'itens marcados' : 'sem itens'}
-                        />
                         <PanelMetric
                             label="Streak"
                             value={userProfile.dailyProofStreak?.current || 0}
@@ -466,7 +466,7 @@ export const SitrepContent: React.FC<{
                         />
                     </div>
 
-                    {topArena && (
+                    {!fillHeight && topArena && (
                         <div className="sitrep-neutral-panel rounded-2xl p-3">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/12">
@@ -484,7 +484,11 @@ export const SitrepContent: React.FC<{
                         </div>
                     )}
 
-                    {cyclePattern && (
+                    {/* Historia do ciclo, nao do dia — e "Sequencia" ficava ao lado de
+                        "Streak" sendo outra coisa, dois numeros parecidos com nomes
+                        parecidos. Vive no modal e na tela de historico, que agora
+                        existe; o painel embutido responde so "como esta hoje". */}
+                    {!fillHeight && cyclePattern && (
                         <div className="grid grid-cols-3 gap-2 text-center">
                             <div className="sitrep-neutral-panel rounded-xl p-2">
                                 <p className="core-label">Perfeitos</p>

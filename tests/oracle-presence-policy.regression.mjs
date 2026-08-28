@@ -244,4 +244,26 @@ assert.match(lerMeuDia, /ephemeral: true/, 'leitura sob demanda nao entra no his
 const taskDomain2 = readFileSync(new URL('../contexts/gameDomains/taskDomain.ts', import.meta.url), 'utf8');
 assert.match(taskDomain2, /ephemeral: weight !== 'marco'/, 'so marco fica gravado');
 
+
+// --- o toast confirma, o Oraculo comenta --------------------------------
+// Fechar arena disparava os dois no mesmo instante, e o toast dizia "Muito bem"
+// enquanto o balao elogiava de novo logo abaixo — dois elogios pelo mesmo fato.
+//
+// Pior que a repeticao: o toast ignora a presenca. Quem pos o Oraculo no
+// Silencioso pediu para nao ser comentado, e recebia o elogio assim mesmo pela
+// outra porta. Os dois podem coexistir desde que tenham papeis diferentes: o
+// toast registra que a acao pegou, o Oraculo diz o que acha dela.
+const fechaArena = taskDomain2.slice(
+  taskDomain2.indexOf('emitAppSensoryCue(campaignJustCleared'),
+  taskDomain2.indexOf("}, 'marco');"),
+);
+assert.ok(fechaArena.length > 0, 'o fecho de arena deve ser identificavel');
+assert.match(fechaArena, /showToast\(/, 'fechar arena continua confirmando');
+assert.match(fechaArena, /emitOracleSpeech\(/, 'e o Oraculo continua comentando');
+assert.doesNotMatch(
+  fechaArena.slice(fechaArena.indexOf('showToast('), fechaArena.indexOf('emitOracleSpeech(')),
+  /Muito bem|Parabens|Boa!/i,
+  'o toast nao pode elogiar: elogio e do Oraculo, e ele obedece a presenca',
+);
+
 console.log('Oracle presence policy: silencioso cala, equilibrado celebra o grande, presente acompanha tudo.');

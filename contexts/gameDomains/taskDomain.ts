@@ -336,10 +336,18 @@ export const createTaskDomain = ({
         );
         emitAppSensoryCue(campaignJustCleared ? 'campaign_complete' : 'arena_complete');
 
+        // O toast CONFIRMA, o Oraculo COMENTA. Sao papeis diferentes e por isso os
+        // dois podem existir no mesmo evento — mas o toast dizia "Muito bem" e o
+        // balao dizia a mesma coisa logo abaixo, dois elogios pelo mesmo fato.
+        //
+        // Pior: o toast ignora a presenca. Quem pos o Oraculo no Silencioso pediu
+        // para nao ser comentado, e recebia o elogio assim mesmo pela outra porta.
+        // Sem a voz, o toast vira o que ele deveria ser: o registro de que a acao
+        // pegou. Quem quiser comentario sobe a presenca.
         showToast(
             campaignJustCleared && parentCampaign
-                ? `Muito bem. Campanha "${parentCampaign.title}" concluida.`
-                : `Muito bem. Arena "${arena.name}" concluida.`,
+                ? `Campanha "${parentCampaign.title}" concluida.`
+                : `Arena "${arena.name}" concluida.`,
             'success',
         );
         emitOracleSpeech({

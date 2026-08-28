@@ -1,6 +1,6 @@
-# Roteiro de teste — 1.0.77
+# Roteiro de teste — 1.0.78
 
-`versionCode 77` · commit `50694ea` · o AAB que você instalou
+`versionCode 78` · o AAB que você acabou de receber
 
 Substitui o roteiro da 1.0.71: aquele saiu, e mais quinze commits entraram por
 cima dele. Isto aqui é **tudo que ainda não foi conferido em aparelho**, junto.
@@ -97,31 +97,52 @@ Ajustes › Oráculo & Alertas"** — e **não** pergunta de novo, nunca.
 Ajustes › Oráculo & Alertas. No AAB anterior essa tela **não abria** — era um
 `return null` antes de um hook, e o app inteiro caía junto.
 
+### 17. Fechar arena não elogia duas vezes
+Feche uma arena. O toast diz só **`Arena "X" concluída.`** — seco, é o recibo. O
+elogio vem **só do balão**. Antes os dois elogiavam junto, e o toast escapava da
+presença: quem estava no **Silencioso** levava o parabéns assim mesmo.
+
+Confira no Silencioso: **o toast continua** (você precisa saber que a ação
+pegou), **o balão não**.
+
 ---
 
 ## Telas
 
-### 17. O nível é um número só
+### 18. O nível é um número só
 Placa do legado e cabeçalho **têm que dizer o mesmo**. Antes um dizia 36 e o
 outro 72. Confira também em clã, amigos e convites.
 
-### 18. O painel diário cabe
-Abra na tela de descanso. **Sem rolagem**, em qualquer altura de tela, e sem o
-monte de texto inútil que estava lá.
+### 19. O painel diário cabe, com menos coisa dentro
+Abra na tela de descanso. **Nada cortado**, em qualquer altura de tela, e sem
+rolagem em lugar nenhum.
 
-### 19. Histórico é tela, não modal
+Ele cabe porque tem menos coisa, não porque rola. Saíram quatro blocos:
+**Ritmo** (era Feitas em porcentagem), **Checklist** (já é badge no botão de
+checklist, na mesma tela), **Arena mais tocada** e o trio **Perfeitos ·
+Sequência · Melhor dia** — os dois últimos são história do ciclo, não do dia, e
+"Sequência" ainda ficava colado em "Streak" sendo outra coisa.
+
+Sobrou o que é de hoje: **Feitas · EXP · Streak**, a data, uma fala do Oráculo,
+o pacto e o progresso do ciclo.
+
+**Confira que não sumiu do app:** abra o resumo pelo modal (não pelo painel
+embutido) — Arena mais tocada e as estatísticas do ciclo **continuam lá**, junto
+com a tela de histórico.
+
+### 20. Histórico é tela, não modal
 O voltar é o **nativo do app** — inclusive o botão físico do Android, que antes
 não existia em lugar nenhum. O ciclo abre **centralizado**.
 
-### 20. Um botão de editar
+### 21. Um botão de editar
 Um só, que libera **apagar ciclo e selecionar era** juntos. Apagar existe só
 dentro do modo de edição. Criar ciclo fica **embaixo**.
 
-### 21. Três arenas por linha
+### 22. Três arenas por linha
 Em **todos** os modos, inclusive o de ordenação em Ativos. A barra de rolagem só
 aparece ao arrastar, como no resto do app.
 
-### 22. Jardim só na tela de descanso
+### 23. Jardim só na tela de descanso
 O atalho saiu da aba Ativos.
 
 ---
@@ -136,5 +157,4 @@ Erro do banco nomeia a causa: `RELATIONSHIP_LINK_EXPIRED`,
 Os itens **9, 11 e 14** dependem das edge functions. Se um deles falhar sozinho
 enquanto os outros passam, o problema é o deploy, não o código.
 
-**Não está neste AAB:** o conserto do toast que repetia o Oráculo ao fechar arena
-(`bfc3cf2`). Entra no próximo bundle, quando você pedir.
+Agora **tudo** que está aqui está no bundle — não sobrou conserto fora dele.

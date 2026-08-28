@@ -57,6 +57,7 @@ import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
 import { ORACLE_SPEECH_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
+import { resolveOracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import { App as CapacitorApp } from '@capacitor/app';
 import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
@@ -868,7 +869,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             focusArenaAdjustment: oracleContext.focusArenaSignal?.suggestedAdjustment || null,
             priorityActionName: oracleContext.priorityActionName,
             completedActionNameToday,
-        });
+        }, Math.random, resolveOracleSpeechTone(oraclePreferences?.speechTone));
 
         if (!message) return;
 

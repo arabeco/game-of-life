@@ -44,16 +44,25 @@ const actionSpeech = buildPlannerCoachSpeech({
   ...baseContext,
   priorityActionName: 'treinar',
 }, () => 0);
-assert.match(actionSpeech, /Que tal treinar hoje/);
+// A frase exata mudou quando a abertura ganhou tom, e cobrar o texto literal
+// prendia a redacao. O que importa e a acao real da pessoa aparecer na fala.
+assert.match(actionSpeech, /treinar/);
 
 const returningSpeech = buildPlannerCoachSpeech({
   ...baseContext,
   daysSinceLastPlannerOpen: 4,
 }, () => 0);
-assert.match(returningSpeech, /ultimos 4 dias/);
+// Mesma razao: o numero real e o que importa, nao a redacao ao redor dele.
+assert.match(returningSpeech, /4 dias/);
 
 const source = readFileSync(new URL('../utils/oracleCoach.ts', import.meta.url), 'utf8');
-assert.doesNotMatch(source, /premium|dailyFocusCardEnabled|enabledCategories|hasPremiumAccess/i);
+// Sem comentarios: o que esta proibido e o coach CONSULTAR premium, nao a palavra
+// aparecer numa explicacao. O tom e comprado no Premium, e dizer isso num
+// comentario e justamente o que impede alguem de reintroduzir o portao aqui.
+const sourceCode = source
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '');
+assert.doesNotMatch(sourceCode, /premium|dailyFocusCardEnabled|enabledCategories|hasPremiumAccess/i);
 
 const contextSource = readFileSync(new URL('../contexts/GameContext.tsx', import.meta.url), 'utf8');
 const cardStart = contextSource.indexOf('const requestOracleContentCard');
@@ -75,5 +84,42 @@ const automaticCard = edgeSource.slice(cardStart2, cardEnd2);
 assert.ok(cardStart2 >= 0 && cardEnd2 > cardStart2, 'caminho do card automatico deve ser identificavel');
 assert.match(automaticCard, /purpose: "premium_content_card"/);
 assert.doesNotMatch(automaticCard, /focusArenaSignal|priorityActionName|nextMove/);
+
+
+// --- a abertura fala nas quatro vozes -----------------------------------
+// Ela e a fala MAIS VISTA do app — dispara a cada abertura no nivel Presente — e
+// tinha o MENOR estoque: 20 frases sem variacao de tom nenhuma. As reacoes ja
+// falavam em quatro vozes; a abertura, que aparece muito mais, falava numa so.
+// O tom e o que o Premium compra, entao ter reacao com tom e abertura sem tom
+// fazia o Oraculo trocar de personalidade conforme o assunto.
+const { countCoachLines, COACH_LINE_STATES } = await import('../utils/oracleCoach.ts');
+assert.equal(COACH_LINE_STATES.length, 10, 'dez situacoes de abertura');
+assert.ok(countCoachLines() >= 80, `abertura precisa de estoque; tem ${countCoachLines()}`);
+
+const ausente = { ...baseContext, daysSinceLastPlannerOpen: 5 };
+const vozes = ['neutro', 'coach', 'reflexivo', 'calmo']
+  .map((tom) => buildPlannerCoachSpeech(ausente, () => 0, tom));
+assert.equal(new Set(vozes).size, 4, 'cada tom precisa dizer algo diferente');
+for (const voz of vozes) assert.match(voz, /5/, 'o numero real da pessoa entra na frase');
+
+// Tom desconhecido cai no neutro: errar para o gratuito nunca entrega de graca a
+// voz que o Premium compra, e nunca deixa o Oraculo mudo.
+assert.equal(
+  buildPlannerCoachSpeech(ausente, () => 0, 'inexistente'),
+  buildPlannerCoachSpeech(ausente, () => 0, 'neutro'),
+);
+
+// --- e as reacoes ganharam uma terceira por voz --------------------------
+const speechLib = readFileSync(new URL('../constants/oracleSpeechLibrary.ts', import.meta.url), 'utf8');
+const reacoes = speechLib.slice(
+  speechLib.indexOf('export const ORACLE_SPEECH_LIBRARY'),
+  speechLib.indexOf('export const fillOracleSpeech'),
+);
+const totalReacoes = (reacoes.match(/^ {12}'/gm) || []).length;
+assert.ok(totalReacoes >= 120, `reacoes: 10 eventos x 4 tons x 3; tem ${totalReacoes}`);
+
+// Custo de rede das duas: zero. Sao bancos escritos, escolhidos no aparelho.
+const coachSrc = readFileSync(new URL('../utils/oracleCoach.ts', import.meta.url), 'utf8');
+assert.doesNotMatch(coachSrc, /fetch\(|supabase|invoke\(/, 'a abertura nao pode ir a rede');
 
 console.log('Oracle coach separation regression: coach is local and independent from premium content.');

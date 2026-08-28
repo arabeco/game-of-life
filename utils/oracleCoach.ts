@@ -1,3 +1,4 @@
+import type { OracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import type { OracleContext } from '../types';
 
 export type OracleCoachPace = 'adiantado' | 'no_ritmo' | 'atrasado' | 'critico' | null;
@@ -50,9 +51,263 @@ const pickLine = (lines: string[], random: () => number): string => (
   lines[Math.floor(random() * lines.length)] || lines[0] || ''
 );
 
+/**
+ * A fala de abertura, agora por TOM.
+ *
+ * Ela era a fala mais vista do app — dispara toda vez que se abre, no nivel
+ * Presente — e tinha o menor estoque de todos: 20 frases, duas por situacao, sem
+ * variacao nenhuma de tom. As reacoes ja falavam em quatro vozes; a abertura,
+ * que aparece muito mais, falava numa so.
+ *
+ * O tom nao e enfeite: e o que o Premium compra. Ter reacao com tom e abertura
+ * sem tom fazia o Oraculo mudar de personalidade dependendo do que ele estava
+ * dizendo.
+ *
+ * As quatro vozes, e o que separa uma da outra:
+ *   neutro    — constata. Nao sugere, nao pergunta, nao consola.
+ *   coach     — entrega o proximo passo, concreto e pequeno.
+ *   reflexivo — devolve a pergunta em vez da resposta.
+ *   calmo     — tira o peso antes de qualquer coisa.
+ *
+ * Custo de rede: zero. Sao textos escritos, escolhidos no aparelho, com os
+ * numeros da propria pessoa preenchidos nos marcadores.
+ */
+
+type CoachToneLines = Record<OracleSpeechTone, readonly string[]>;
+
+const COACH_LINES: Record<string, CoachToneLines> = {
+  /** Sumiu por tres dias ou mais. Marcadores: {dias} */
+  ausente: {
+    neutro: [
+      'Voce nao abre o Planner ha {dias} dias. As acoes continuam onde estavam.',
+      '{dias} dias sem passar por aqui. Nada foi perdido, so parou.',
+    ],
+    coach: [
+      'Faz {dias} dias. Comece por uma acao pequena hoje, e ajuste o resto depois.',
+      '{dias} dias parado. Escolha uma so para hoje: recomecar pesa menos que compensar.',
+    ],
+    reflexivo: [
+      'Faz {dias} dias. O que mudou na sua vida nesse intervalo?',
+      '{dias} dias longe daqui. Foi falta de tempo, ou o plano deixou de servir?',
+    ],
+    calmo: [
+      'Faz {dias} dias, e tudo bem. O painel espera, nao cobra.',
+      '{dias} dias sem aparecer. Nao precisa recuperar nada. Comeca de onde da.',
+    ],
+  },
+
+  /** Tem arena, nao tem ciclo. */
+  sem_ciclo: {
+    neutro: [
+      'Voce tem arena e nao tem ciclo aberto. O ciclo e o que da comeco e fim ao periodo.',
+      'Sem ciclo, as acoes existem mas nao tem prazo nem fecho.',
+    ],
+    coach: [
+      'Abra um ciclo de sete dias ou menos. Curto e mais facil de terminar do que longo.',
+      'Proximo passo: monte um ciclo pequeno. Uma semana ja da ritmo sem virar divida.',
+    ],
+    reflexivo: [
+      'Voce tem arena, mas nao marcou um periodo. Quanto tempo voce quer se dar?',
+      'O que voce quer conseguir enxergar quando esse periodo fechar?',
+    ],
+    calmo: [
+      'Ja tem arena, que era a parte dificil. O ciclo pode ser curto e sem ambicao.',
+      'Nao precisa de um plano grande. Uma semana ja e um ciclo.',
+    ],
+  },
+
+  /** Ciclo longo com pouco progresso. Marcadores: {dias}, {progresso} */
+  ciclo_longo: {
+    neutro: [
+      'Ciclo de {dias} dias, {progresso}% andado.',
+      '{progresso}% em um ciclo de {dias} dias. O prazo esta maior que o ritmo.',
+    ],
+    coach: [
+      'Ciclo de {dias} dias em {progresso}%. Encurte a rodada ou tire uma frente.',
+      '{progresso}% de {dias} dias. Reduzir o escopo agora custa menos que arrastar ate o fim.',
+    ],
+    reflexivo: [
+      'Ciclo de {dias} dias em {progresso}%. O ciclo esta grande, ou a semana ficou cheia?',
+      '{progresso}% andado. O que voce planejou ainda e o que voce quer?',
+    ],
+    calmo: [
+      'Ciclo longo anda devagar mesmo. {progresso}% nao e atraso, e o tamanho da rodada.',
+      'Sao {dias} dias. Nao ha pressa embutida nisso.',
+    ],
+  },
+
+  /** Sem conclusao ha tres dias ou mais. Marcadores: {dias} */
+  sem_entrega: {
+    neutro: [
+      'Ultima conclusao ha {dias} dias.',
+      '{dias} dias sem fechar nada. A sequencia parou.',
+    ],
+    coach: [
+      'Faz {dias} dias. Fecha a menor que estiver aberta hoje.',
+      '{dias} dias sem entrega. Escolhe a mais barata e conclui: o resto volta sozinho.',
+    ],
+    reflexivo: [
+      '{dias} dias sem concluir. O que esta no caminho?',
+      'Faz {dias} dias. As acoes ainda cabem no seu dia como estao?',
+    ],
+    calmo: [
+      '{dias} dias sem entrega, e isso acontece. Uma pequena hoje ja recoloca.',
+      'A sequencia esfriou. Nao precisa voltar inteiro de uma vez.',
+    ],
+  },
+
+  /** Arena de foco atrasada. Marcadores: {arena} */
+  arena_atrasada: {
+    neutro: [
+      '{arena} esta atras do ritmo do ciclo.',
+      'Pelo tempo e pelo progresso, {arena} e a que mais ficou para tras.',
+    ],
+    coach: [
+      'Abra {arena} e reveja a meta. Reduzir repeticao vale mais que abandonar.',
+      '{arena} pede ajuste. Corte uma acao ou diminua a repeticao, e siga.',
+    ],
+    reflexivo: [
+      '{arena} ficou para tras. Ela ainda importa como importava quando voce criou?',
+      'O que {arena} pedia de voce que a semana nao deu?',
+    ],
+    calmo: [
+      '{arena} esta devagar. Nao e cobranca — talvez a meta e que estava grande.',
+      'Nem toda arena anda no mesmo passo. {arena} pode esperar sem culpa.',
+    ],
+  },
+
+  /** Arena parada, candidata a pausa. Marcadores: {arena} */
+  arena_parada: {
+    neutro: [
+      '{arena} esta sem movimento ha alguns dias.',
+      'Nenhuma acao de {arena} foi registrada recentemente.',
+    ],
+    coach: [
+      '{arena} parou. Decide agora: uma acao pequena hoje, ou pausa a arena.',
+      'Retomar {arena} com o menor item, ou pausar. As duas resolvem; deixar aberta nao.',
+    ],
+    reflexivo: [
+      '{arena} esfriou. Isso e uma fase, ou ela deixou de fazer sentido?',
+      'O que aconteceria se voce pausasse {arena} por um tempo?',
+    ],
+    calmo: [
+      '{arena} parou, e pausar tambem e uma escolha legitima.',
+      'Nao precisa manter {arena} viva so porque ela existe.',
+    ],
+  },
+
+  /** Ciclo inteiro atrasado. */
+  ciclo_atrasado: {
+    neutro: [
+      'O ciclo esta atras do ritmo pelo tempo restante.',
+      'O progresso do ciclo ficou abaixo do que o prazo pedia.',
+    ],
+    coach: [
+      'Antes de compensar, tire uma meta. Fechar menos inteiro vale mais que muito pela metade.',
+      'O ciclo apertou. Reduz o escopo hoje e protege o que sobrar.',
+    ],
+    reflexivo: [
+      'O ciclo esta atrasado. O que voce planejou era para esta semana ou para uma semana ideal?',
+      'O que dentro do ciclo voce ja sabe que nao vai acontecer?',
+    ],
+    calmo: [
+      'O ciclo esta atras, e isso nao apaga o que ja foi feito.',
+      'Ciclo atrasado nao e ciclo perdido. Ainda da para fechar com o que cabe.',
+    ],
+  },
+
+  /** Ha uma acao prioritaria clara. Marcadores: {acao} */
+  prioridade: {
+    neutro: [
+      '{acao} e a proxima da fila hoje.',
+      'Hoje tem {acao} em aberto.',
+    ],
+    coach: [
+      'Faz {acao} hoje. Uma real ja mantem o ciclo andando.',
+      '{acao} primeiro. Depois dela o resto do dia decide sozinho.',
+    ],
+    reflexivo: [
+      '{acao} cabe hoje de verdade, ou entrou na lista por inercia?',
+      'Se so {acao} acontecesse hoje, o dia teria valido?',
+    ],
+    calmo: [
+      '{acao} esta ali quando der. Nao precisa ser agora.',
+      'Se {acao} nao couber hoje, ajustar a meta e melhor que carregar peso.',
+    ],
+  },
+
+  /** Ja concluiu algo hoje. Marcadores: {acao} */
+  ja_entregou: {
+    neutro: [
+      'Voce concluiu {acao} hoje.',
+      '{acao} ja saiu hoje.',
+    ],
+    coach: [
+      '{acao} feita. Se ainda houver energia, a proxima menor mantem o ritmo.',
+      'Boa, {acao} saiu. Decide agora se para aqui ou puxa mais uma.',
+    ],
+    reflexivo: [
+      '{acao} saiu hoje. O que fez ela acontecer, que da para repetir amanha?',
+      'Voce ja entregou {acao}. O dia precisa de mais alguma coisa?',
+    ],
+    calmo: [
+      '{acao} ja foi. Isso ja e o dia cumprido, se voce quiser que seja.',
+      'Uma entrega e suficiente. Encerrar aqui e uma escolha, nao desistencia.',
+    ],
+  },
+
+  /** Estrutura muito enxuta. */
+  estrutura_enxuta: {
+    neutro: [
+      'Voce tem uma arena so, com poucas acoes.',
+      'A estrutura esta enxuta: uma frente e pouca coisa dentro.',
+    ],
+    coach: [
+      'Uma segunda arena separa melhor as areas. Corpo, trabalho e casa nao competem na mesma lista.',
+      'Cria uma segunda frente quando fizer sentido. Duas pequenas equilibram mais que uma cheia.',
+    ],
+    reflexivo: [
+      'Uma arena so. Ela cobre o que voce quer mudar, ou e por onde deu para comecar?',
+      'O que esta fora do app hoje e deveria estar dentro?',
+    ],
+    calmo: [
+      'Uma arena ja e um comeco inteiro. Nao precisa crescer agora.',
+      'Enxuto funciona. Adicionar so quando incomodar ter so uma.',
+    ],
+  },
+};
+
+/** Preenche {arena}, {acao}, {dias}, {progresso}. Marcador sem valor invalida a linha. */
+const fillCoachLine = (template: string, vars: Record<string, string | number | null>): string | null => {
+  let faltou = false;
+  const texto = template.replace(/\{(\w+)\}/g, (_all, chave: string) => {
+    const valor = vars[chave];
+    if (valor === null || valor === undefined || valor === '') { faltou = true; return ''; }
+    return String(valor);
+  });
+  return faltou ? null : texto;
+};
+
+const pickCoachLine = (
+  estado: keyof typeof COACH_LINES,
+  tone: OracleSpeechTone,
+  vars: Record<string, string | number | null>,
+  random: () => number,
+): string | null => {
+  const porTom = COACH_LINES[estado];
+  if (!porTom) return null;
+  // Tom desconhecido cai no neutro, que e o gratuito: melhor a voz certa em
+  // neutro do que a voz errada.
+  const linhas = porTom[tone] || porTom.neutro;
+  const validas = linhas.map((linha) => fillCoachLine(linha, vars)).filter((linha): linha is string => Boolean(linha));
+  if (validas.length === 0) return null;
+  return validas[Math.floor(random() * validas.length)] || validas[0];
+};
+
 export const buildPlannerCoachSpeech = (
   context: PlannerCoachContext,
   random: () => number = Math.random,
+  tone: OracleSpeechTone = 'neutro',
 ): string | null => {
   const {
     arenasCount,
@@ -70,78 +325,52 @@ export const buildPlannerCoachSpeech = (
     completedActionNameToday,
   } = context;
 
+  const escolher = (estado: keyof typeof COACH_LINES, vars: Record<string, string | number | null> = {}) =>
+    pickCoachLine(estado, tone, vars, random);
+
+  // A ordem e de urgencia, nao de importancia: quem sumiu ha dias precisa ouvir
+  // sobre isso antes de ouvir sobre a meta da arena.
   if (daysSinceLastPlannerOpen !== null && daysSinceLastPlannerOpen >= 3) {
-    return pickLine([
-      `Voce nao abriu o Planner nos ultimos ${daysSinceLastPlannerOpen} dias. Antes de compensar tudo, ajuste o numero de acoes nas arenas se precisar.`,
-      `Faz ${daysSinceLastPlannerOpen} dias que voce nao passa por aqui. Eu recomecaria pequeno: uma acao real hoje, o resto a gente reorganiza depois.`,
-    ], random);
+    return escolher('ausente', { dias: daysSinceLastPlannerOpen });
   }
-
   if (!hasActiveCycle && arenasCount > 0) {
-    return pickLine([
-      'Para nao se perder nas acoes, eu comecaria com um ciclo de 1 semana ou menos. Quer montar um pequeno?',
-      'Voce ja tem arena. Agora falta uma janela curta para ela respirar: um ciclo de ate 7 dias costuma ser mais facil de conduzir.',
-    ], random);
+    return escolher('sem_ciclo');
   }
-
   if (cycleLengthDays && cycleLengthDays > 7 && cycleProgress < 35) {
-    return pickLine([
-      `Esse ciclo tem ${cycleLengthDays} dias e ainda esta em ${cycleProgress}%. Talvez um ciclo de 1 semana ou menos fique mais facil de conduzir.`,
-      `O ciclo esta longo para o progresso atual: ${cycleProgress}% em ${cycleLengthDays} dias. Pode valer encurtar a rodada e proteger o foco.`,
-    ], random);
+    return escolher('ciclo_longo', { dias: cycleLengthDays, progresso: Math.round(cycleProgress) });
   }
-
   if (daysSinceLastProof !== null && daysSinceLastProof >= 3) {
-    return pickLine([
-      `Faz ${daysSinceLastProof} dias desde sua ultima conclusao. Talvez hoje seja dia de reduzir a carga e fechar uma acao pequena.`,
-      `A sequencia esfriou um pouco. Nao precisa voltar perfeito: uma acao concluida hoje ja recoloca o ciclo em movimento.`,
-    ], random);
+    return escolher('sem_entrega', { dias: daysSinceLastProof });
   }
-
   if (focusArenaName && (focusArenaPace === 'atrasado' || focusArenaPace === 'critico')) {
-    return pickLine([
-      `${focusArenaName} esta ficando para tras pelo tempo e progresso do ciclo. Quer abrir a arena e rever a meta?`,
-      `A arena ${focusArenaName} esta pedindo ajuste. Talvez valha reduzir repeticoes, editar uma acao ou tirar o que nao faz mais sentido.`,
-    ], random);
+    return escolher('arena_atrasada', { arena: focusArenaName });
   }
-
   if (focusArenaName && focusArenaAdjustment === 'pausar_arena') {
-    return pickLine([
-      `${focusArenaName} esta sem movimento ha alguns dias. Quer retomar com uma acao pequena ou pausar essa arena por enquanto?`,
-      `A arena ${focusArenaName} esfriou. Antes de se cobrar, vale decidir: continuar, editar ou pausar?`,
-    ], random);
+    return escolher('arena_parada', { arena: focusArenaName });
   }
-
   if (cyclePace === 'atrasado' || cyclePace === 'critico') {
-    return pickLine([
-      'Seu ciclo esta ficando para tras olhando o tempo e o progresso. Quer rever alguma meta antes de tentar compensar tudo?',
-      'O ritmo do ciclo caiu. Eu olharia primeiro para o que pode ser reduzido ou removido sem culpa.',
-    ], random);
+    return escolher('ciclo_atrasado');
   }
-
   if (priorityActionName) {
-    return pickLine([
-      `Que tal ${priorityActionName} hoje? Uma acao real ja mantem o ciclo em movimento.`,
-      `${priorityActionName} ainda cabe hoje? Se nao couber, vale ajustar a meta em vez de deixar virar peso.`,
-    ], random);
+    return escolher('prioridade', { acao: priorityActionName });
   }
-
   if (completedActionNameToday) {
-    return pickLine([
-      `Voce ja fez ${completedActionNameToday} hoje. Boa. Quer proteger o ritmo ou encerrar por aqui?`,
-      `${completedActionNameToday} ja saiu do papel hoje. Agora escolhe com calma se ainda cabe mais alguma coisa.`,
-    ], random);
+    return escolher('ja_entregou', { acao: completedActionNameToday });
   }
-
   if (arenasCount === 1 && actionsCount <= 3) {
-    return pickLine([
-      'Voce esta com uma arena so. Se fizer sentido, adicionar uma segunda frente pode equilibrar melhor o ciclo.',
-      'Sua estrutura esta bem enxuta. Uma segunda arena pode ajudar a separar o que e corpo, trabalho, casa ou foco.',
-    ], random);
+    return escolher('estrutura_enxuta');
   }
 
   return null;
 };
+
+/** Quantas linhas o banco tem, por estado e por tom. Usado pelo teste. */
+export const COACH_LINE_STATES = Object.keys(COACH_LINES);
+export const countCoachLines = (): number =>
+  Object.values(COACH_LINES).reduce(
+    (soma, porTom) => soma + Object.values(porTom).reduce((s, linhas) => s + linhas.length, 0),
+    0,
+  );
 
 const openFocusedArena = (context: OracleContext): OracleCycleCoachAction | null => {
   if (!context.focusArenaSignal) return null;

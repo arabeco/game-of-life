@@ -238,7 +238,19 @@ const lerMeuDia = chat.slice(
   chat.indexOf('const handleAskMission'),
 );
 assert.ok(lerMeuDia.length > 0, 'o handler de ler meu dia deve ser identificavel');
-assert.match(lerMeuDia, /ephemeral: true/, 'leitura sob demanda nao entra no historico');
+// A assercao antiga exigia `ephemeral: true`, que era COMO a leitura evitava o
+// historico quando ela saia em balao flutuante. Ela agora sai dentro do proprio
+// chat — o balao aparecia ATRAS do painel aberto, que e o pior dos dois mundos —
+// e o mecanismo mudou. O que precisa continuar valendo e a garantia, nao o
+// mecanismo: a leitura pedida a mao nao pode encostar no banco.
+assert.doesNotMatch(
+  lerMeuDia,
+  /emitOracleSpeech|record_oracle_speech|supabase/,
+  'leitura sob demanda nao entra no historico: nada de gravar',
+);
+// E ocupa uma vaga unica: pedir de novo troca a leitura no lugar e a hora muda
+// junto, em vez de empilhar a mesma coisa varias vezes na lista.
+assert.match(lerMeuDia, /!== READING_FEED_ID/, 'a leitura anterior sai antes da nova entrar');
 
 // A reacao de rotina nao pode virar push nem historico.
 const taskDomain2 = readFileSync(new URL('../contexts/gameDomains/taskDomain.ts', import.meta.url), 'utf8');

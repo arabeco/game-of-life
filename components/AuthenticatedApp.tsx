@@ -864,12 +864,25 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             daysSinceLastProof: diffLocalDays(lastProofDate, today),
             hasActiveCycle: Boolean(activeCycle),
             cyclePace: oracleContext.cyclePace,
-            focusArenaName: oracleContext.focusArenaSignal?.arenaName || null,
-            focusArenaPace: oracleContext.focusArenaSignal?.pace || null,
-            focusArenaAdjustment: oracleContext.focusArenaSignal?.suggestedAdjustment || null,
             priorityActionName: oracleContext.priorityActionName,
             completedActionNameToday,
-        }, Math.random, resolveOracleSpeechTone(oraclePreferences?.speechTone));
+            // TODAS as arenas, nao so focusArenaSignal.
+            //
+            // O contexto ja calculava ate seis, ranqueadas por gravidade, e esta
+            // chamada usava a primeira — cinco morriam aqui, uma linha antes de
+            // serem usadas. E como o ranking e por gravidade, a arena que ia bem
+            // tinha a menor nota possivel e nunca chegava a existir para a fala.
+            // Agora todas viram candidatos e quem escolhe e o arbitro.
+            arenas: (oracleContext.arenaSignals || []).map((sinal) => ({
+                arenaId: sinal.arenaId,
+                arenaName: sinal.arenaName,
+                pace: sinal.pace,
+                adjustment: sinal.suggestedAdjustment,
+                progressDelta: sinal.progressDelta,
+                daysSinceProof: sinal.daysSinceProof,
+                pendingActionsToday: sinal.pendingActionsToday,
+            })),
+        }, Math.random, resolveOracleSpeechTone(oraclePreferences?.speechTone), presenceRules.value);
 
         if (!message) return;
 

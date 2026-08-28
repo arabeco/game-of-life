@@ -1,8 +1,11 @@
 import type { OracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import type { OracleContext } from '../types';
+import type { OracleCandidateInput } from './oracleCandidates.ts';
+import { rankOracleCandidates } from './oracleCandidates.ts';
 
-export type OracleCoachPace = 'adiantado' | 'no_ritmo' | 'atrasado' | 'critico' | null;
-export type OracleCoachArenaPace = OracleCoachPace | 'sem_medida';
+// Os tipos de ritmo moram no arbitro agora, junto de quem os le. Reexportados
+// para quem ja importava daqui.
+export type { OracleCoachPace, OracleCoachArenaPace, PlannerCoachArena } from './oracleCandidates.ts';
 
 export type OracleCycleCoachAction =
   | { id: string; label: string; kind: 'open_planner' }
@@ -16,21 +19,14 @@ export interface OracleCycleCoachBrief {
   quickActions: OracleCycleCoachAction[];
 }
 
-export interface PlannerCoachContext {
-  arenasCount: number;
-  actionsCount: number;
-  cycleLengthDays: number | null;
-  cycleProgress: number;
-  daysSinceLastPlannerOpen: number | null;
-  daysSinceLastProof: number | null;
-  hasActiveCycle: boolean;
-  cyclePace: OracleCoachPace;
-  focusArenaName: string | null;
-  focusArenaPace: OracleCoachArenaPace;
-  focusArenaAdjustment: string | null;
-  priorityActionName: string | null;
-  completedActionNameToday: string | null;
-}
+/**
+ * Os tres campos `focusArena*` sairam daqui.
+ *
+ * Eles eram a unica janela para a camada de arena, e mostravam UMA — a primeira
+ * de um ranking por gravidade, com as outras cinco ja descartadas. No lugar
+ * deles entra `arenas`, com todas, e quem escolhe passa a ser o arbitro.
+ */
+export type PlannerCoachContext = OracleCandidateInput;
 
 // getOracleCoachDailyLimit saiu daqui.
 //
@@ -304,63 +300,34 @@ const pickCoachLine = (
   return validas[Math.floor(random() * validas.length)] || validas[0];
 };
 
+/**
+ * A cascata de dez `if` saiu daqui.
+ *
+ * Ela decidia por ordem fixa: o primeiro que casasse vencia e calava os outros
+ * nove. Quem estava tres dias ausente E com uma arena critica E com uma acao
+ * prioritaria ouvia sobre a ausencia, sempre, e nunca sobre o resto — e quem
+ * estava em `prioridade` ouvia `prioridade` todo dia, porque a ordem nao muda.
+ *
+ * Agora os detectores produzem candidatos independentes e o arbitro ordena por
+ * relevancia. Aqui so sobra andar na lista: o primeiro que consegue render uma
+ * frase fala. Andar na lista, e nao pegar o primeiro, e o que faz um candidato
+ * barrado — variavel faltando hoje, cooldown amanha — passar a vez em vez de
+ * virar silencio indevido.
+ *
+ * A presenca entra como corte de relevancia. O padrao e 3 (Presente) para que
+ * chamadas sem ela se comportem como antes: quem controla se ele fala e a
+ * politica de presenca, la em cima; aqui o corte so afina.
+ */
 export const buildPlannerCoachSpeech = (
   context: PlannerCoachContext,
   random: () => number = Math.random,
   tone: OracleSpeechTone = 'neutro',
+  presenceValue: number = 3,
 ): string | null => {
-  const {
-    arenasCount,
-    actionsCount,
-    cycleLengthDays,
-    cycleProgress,
-    daysSinceLastPlannerOpen,
-    daysSinceLastProof,
-    hasActiveCycle,
-    cyclePace,
-    focusArenaName,
-    focusArenaPace,
-    focusArenaAdjustment,
-    priorityActionName,
-    completedActionNameToday,
-  } = context;
-
-  const escolher = (estado: keyof typeof COACH_LINES, vars: Record<string, string | number | null> = {}) =>
-    pickCoachLine(estado, tone, vars, random);
-
-  // A ordem e de urgencia, nao de importancia: quem sumiu ha dias precisa ouvir
-  // sobre isso antes de ouvir sobre a meta da arena.
-  if (daysSinceLastPlannerOpen !== null && daysSinceLastPlannerOpen >= 3) {
-    return escolher('ausente', { dias: daysSinceLastPlannerOpen });
+  for (const candidato of rankOracleCandidates(context, presenceValue)) {
+    const linha = pickCoachLine(candidato.type, tone, candidato.vars, random);
+    if (linha) return linha;
   }
-  if (!hasActiveCycle && arenasCount > 0) {
-    return escolher('sem_ciclo');
-  }
-  if (cycleLengthDays && cycleLengthDays > 7 && cycleProgress < 35) {
-    return escolher('ciclo_longo', { dias: cycleLengthDays, progresso: Math.round(cycleProgress) });
-  }
-  if (daysSinceLastProof !== null && daysSinceLastProof >= 3) {
-    return escolher('sem_entrega', { dias: daysSinceLastProof });
-  }
-  if (focusArenaName && (focusArenaPace === 'atrasado' || focusArenaPace === 'critico')) {
-    return escolher('arena_atrasada', { arena: focusArenaName });
-  }
-  if (focusArenaName && focusArenaAdjustment === 'pausar_arena') {
-    return escolher('arena_parada', { arena: focusArenaName });
-  }
-  if (cyclePace === 'atrasado' || cyclePace === 'critico') {
-    return escolher('ciclo_atrasado');
-  }
-  if (priorityActionName) {
-    return escolher('prioridade', { acao: priorityActionName });
-  }
-  if (completedActionNameToday) {
-    return escolher('ja_entregou', { acao: completedActionNameToday });
-  }
-  if (arenasCount === 1 && actionsCount <= 3) {
-    return escolher('estrutura_enxuta');
-  }
-
   return null;
 };
 

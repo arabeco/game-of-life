@@ -93,6 +93,13 @@ const suites = {
       interactions: ['os resgates passam pelo mesmo ritual', 'subida de patente entra em todos', 'missao de item paga XP por reward_exp'],
     },
     {
+      id: 'oracle-arbiter',
+      label: 'Oracle arbiter regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'oracle-arbiter.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['as seis arenas competem em vez de morrer no ranking', 'a presenca e o corte de relevancia', 'sem candidato ele fica quieto'],
+    },
+    {
       id: 'oracle-presence-policy',
       label: 'Oracle presence policy regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'oracle-presence-policy.regression.mjs')]],

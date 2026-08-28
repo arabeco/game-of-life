@@ -4,6 +4,7 @@ import { GlassCard } from './GlassCard';
 import { ShareIcon } from './Icons';
 import { FeedEventType } from '../types';
 import { SKINS_DATA } from '../constants/GMboard';
+import { PROOF_STREAK_CHALLENGE_TITLES } from '../constants/systemChallenges';
 import { VideoPlayer } from './VideoPlayer';
 import { Portal } from './Portal';
 import { resolveItemDef } from '../constants/items';
@@ -29,12 +30,12 @@ const getAchievementDetails = (type: FeedEventType, data: any) => {
         case 'PLAYER_RANK_UP':
             return { title: 'Parabéns', icon: '\u{1F451}', message: `Você subiu de patente para ${data.name}!` };
         case 'QUEST_COMPLETED': {
-            const isStreakMilestone = data.title === 'Sete Dias em Movimento';
+            const isStreakMilestone = PROOF_STREAK_CHALLENGE_TITLES.includes(data.title);
             return isStreakMilestone
                 ? {
                     title: 'Sequência consolidada',
                     icon: data.icon || '\u{1F525}',
-                    message: 'Você se manteve em movimento por sete dias seguidos. Não foi sobre perfeição: foi constância suficiente para continuar.',
+                    message: 'Você se manteve em movimento por cinco dias seguidos. Não foi sobre perfeição: foi constância suficiente para continuar.',
                 }
                 : { title: 'Desafio concluído', icon: data.icon || '\u{1F3AF}', message: `Você concluiu o desafio "${data.title}".` };
         }
@@ -90,7 +91,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     const skinColor = userSkin?.color || '#ffffff';
     const isRankUp = achievement.type === 'PLAYER_RANK_UP';
     const isQuestComplete = achievement.type === 'QUEST_COMPLETED';
-    const isStreakMilestone = isQuestComplete && achievement.data.title === 'Sete Dias em Movimento';
+    const isStreakMilestone = isQuestComplete && PROOF_STREAK_CHALLENGE_TITLES.includes(achievement.data.title);
     const isReportComplete = achievement.type === 'REPORT_COMPLETED';
     const showVideo = isRankUp || isQuestComplete || isReportComplete;
     const { showVideoStage, showContentStage, isVideoFading, triggerReveal } = useVideoStageTransition({

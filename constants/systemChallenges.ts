@@ -150,3 +150,23 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
     rewardChest: 'Ciclo',
   },
 ];
+
+/**
+ * A missao de sequencia, nomeada uma vez so.
+ *
+ * O AchievementModal reconhecia esta missao comparando com o texto
+ * 'Sete Dias em Movimento', escrito a mao la dentro. Quando o desafio caiu de
+ * sete para cinco dias, o nome mudou aqui e o literal de la ficou — a
+ * comparacao passou a ser sempre falsa, e quem fechava a sequencia recebia o
+ * "Desafio concluido" generico em vez da celebracao escrita para ela.
+ *
+ * Derivar dos proprios dados fecha a porta: renomear o desafio nunca mais
+ * desliga a celebracao dele. Sao dois nomes porque o disparo usa ora o titulo
+ * do desafio, ora o nome do modelo de acao.
+ */
+export const PROOF_STREAK_CHALLENGE_ID = 'system-five-day-proof-streak';
+
+export const PROOF_STREAK_CHALLENGE_TITLES: readonly string[] = (() => {
+  const desafio = SYSTEM_CHALLENGES.find((item) => item.id === PROOF_STREAK_CHALLENGE_ID);
+  return [desafio?.title, desafio?.actionTemplate?.name].filter((nome): nome is string => Boolean(nome));
+})();

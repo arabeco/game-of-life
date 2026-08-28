@@ -881,6 +881,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 progressDelta: sinal.progressDelta,
                 daysSinceProof: sinal.daysSinceProof,
                 pendingActionsToday: sinal.pendingActionsToday,
+                trend: sinal.trend,
+                trendPauseDays: sinal.trendPauseDays,
             })),
         }, Math.random, resolveOracleSpeechTone(oraclePreferences?.speechTone), presenceRules.value);
 

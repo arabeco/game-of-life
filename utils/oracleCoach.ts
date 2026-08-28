@@ -92,6 +92,39 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     ],
   },
 
+  /**
+   * Uma arena voltou a andar depois de uma pausa de verdade.
+   *
+   * Este e o unico estado que descreve uma MUDANCA e nao um lugar, e por isso e
+   * o unico que a pessoa nao consegue ler na tela: a tela mostra 22%, nao mostra
+   * que ontem eram 22% ha oito dias.
+   *
+   * Toda voz tem uma linha com {dias} e uma sem. Nao e enfeite: fillCoachLine
+   * invalida a linha quando falta variavel, entao a sem numero e a garantia de
+   * que sempre sobra alguma coisa para dizer.
+   *
+   * E nenhuma delas finge que a arena esta em dia — dizer "voltou a andar" e
+   * "ainda esta atras" na mesma frase e o que separa reconhecer de bajular.
+   */
+  arena_retomada: {
+    neutro: [
+      'Depois de {dias} dias parada, {arena} voltou a andar. Ainda esta atras, mas mudou de direcao.',
+      '{arena} voltou a andar. Continua atras do planejado, e agora esta em movimento.',
+    ],
+    coach: [
+      '{arena} ficou {dias} dias parada e voltou hoje. Repete amanha e vira ritmo.',
+      '{arena} saiu do lugar. O proximo dia e o que decide se foi um dia ou uma retomada.',
+    ],
+    reflexivo: [
+      '{dias} dias parada, e hoje {arena} andou. O que mudou hoje que nao existia ontem?',
+      '{arena} voltou depois de um tempo parada. Da para repetir o que fez isso acontecer?',
+    ],
+    calmo: [
+      '{arena} voltou depois de {dias} dias. Nao precisa recuperar tudo — precisa continuar.',
+      '{arena} andou de novo. O tempo parado nao volta, e tambem nao precisa ser pago.',
+    ],
+  },
+
   /** Tem arena, nao tem ciclo. */
   sem_ciclo: {
     neutro: [

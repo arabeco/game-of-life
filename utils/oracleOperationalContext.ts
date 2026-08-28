@@ -1,4 +1,7 @@
-import { Action, Asset, Cycle, DailyCommitment, DailyProofStreak, OracleArenaSignal, OracleCategory, OracleContext, OracleMode, ScheduledTask } from '../types';
+// `import type` e nao `import`: sao todos tipos, e so assim o Node consegue
+// carregar este arquivo direto num teste. Com import de valor ele tentaria
+// resolver '../types' em tempo de execucao e quebraria.
+import type { Action, Asset, Cycle, DailyCommitment, DailyProofStreak, OracleArenaSignal, OracleArenaTrend, OracleCategory, OracleContext, OracleMode, ScheduledTask } from '../types';
 import { filterCycleTasksByScope } from './coreLoopUtils.js';
 import { getOperationalDateString, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 
@@ -89,6 +92,55 @@ const resolveArenaPace = (
   if (delta >= -10) return 'no_ritmo';
   if (delta >= -25) return 'atrasado';
   return 'critico';
+};
+
+/**
+ * Para onde a arena esta indo — direcao, nao posicao.
+ *
+ * `resolveArenaPace` responde "onde ela esta em relacao ao planejado" e e uma
+ * foto: recalculada do zero a cada leitura, sem nocao de ontem. Por isso o
+ * Oraculo nunca soube dizer que uma arena voltou a andar, e dizia "esta critico,
+ * reduza a meta" exatamente no dia em que a pessoa fez a coisa certa.
+ *
+ * NAO precisa de tabela nova. As tasks ja tem data operacional, entao o passado
+ * e recalculavel: e o mesmo cálculo com outra data de corte. Quatro janelas
+ * derivadas bastam, e nada precisa ser gravado nem mantido.
+ *
+ * `retomando` ganha de tudo porque e o unico que so existe com passado — os
+ * outros tres sao comparacao de volume, e este e uma transicao.
+ */
+export const resolveArenaTrend = (
+  completedDates: string[],
+  operationalDate: string,
+): { trend: OracleArenaTrend; pauseDays: number | null } => {
+  if (completedDates.length === 0) return { trend: 'estavel', pauseDays: null };
+
+  const diasUnicos = Array.from(new Set(completedDates)).sort();
+  const ultima = diasUnicos[diasUnicos.length - 1];
+  const penultima = diasUnicos.length >= 2 ? diasUnicos[diasUnicos.length - 2] : null;
+  const diasDesdeUltima = diffLocalDays(ultima, operationalDate) ?? 0;
+
+  // Voltou a andar agora depois de uma pausa de verdade. Quatro dias e o corte:
+  // menos que isso e fim de semana, nao abandono.
+  if (diasDesdeUltima <= 1 && penultima) {
+    const pausa = diffLocalDays(penultima, ultima) ?? 0;
+    // O tamanho da pausa volta junto: "voltou depois de oito dias" e uma frase,
+    // "voltou" e um adjetivo. O numero e a parte que reconhece o percurso.
+    if (pausa >= 4) return { trend: 'retomando', pauseDays: pausa };
+  }
+
+  const dentro = (inicio: string, fim: string) =>
+    completedDates.filter((data) => data >= inicio && data <= fim).length;
+
+  const recentes = dentro(shiftLocalDateString(operationalDate, -2), operationalDate);
+  const anteriores = dentro(shiftLocalDateString(operationalDate, -6), shiftLocalDateString(operationalDate, -3));
+  const taxaRecente = recentes / 3;
+  const taxaAnterior = anteriores / 4;
+
+  if (taxaAnterior === 0) return { trend: taxaRecente > 0 ? 'melhorando' : 'estavel', pauseDays: null };
+  if (taxaRecente > taxaAnterior * 1.25) return { trend: 'melhorando', pauseDays: null };
+  if (taxaRecente < taxaAnterior * 0.75) return { trend: 'piorando', pauseDays: null };
+  return { trend: 'estavel', pauseDays: null };
 };
 
 const buildArenaSignalReason = (signal: Omit<OracleArenaSignal, 'reason'>): string => {
@@ -304,6 +356,8 @@ export const buildOracleOperationalContext = ({
           lastProofDate: null,
           daysSinceProof: null,
           suggestedAdjustment: 'criar_meta_minima',
+          trend: 'estavel',
+          trendPauseDays: null,
         };
         return { ...baseSignal, reason: buildArenaSignalReason(baseSignal) };
       }
@@ -328,6 +382,7 @@ export const buildOracleOperationalContext = ({
         .sort();
       const lastProofDate = completedDates.length > 0 ? completedDates[completedDates.length - 1] : null;
       const daysSinceProof = lastProofDate ? diffLocalDays(lastProofDate, operationalDate) : null;
+      const { trend, pauseDays: trendPauseDays } = resolveArenaTrend(completedDates, operationalDate);
       const suggestedAdjustment: OracleArenaSignal['suggestedAdjustment'] =
         plannedActions === 0
           ? 'criar_meta_minima'
@@ -356,6 +411,8 @@ export const buildOracleOperationalContext = ({
         lastProofDate,
         daysSinceProof,
         suggestedAdjustment,
+        trend,
+        trendPauseDays,
       };
       return { ...baseSignal, reason: buildArenaSignalReason(baseSignal) };
     })

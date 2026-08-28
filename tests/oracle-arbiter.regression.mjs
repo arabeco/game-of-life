@@ -10,6 +10,7 @@ import {
 } from '../utils/oracleCandidates.ts';
 import { COACH_LINE_STATES, buildPlannerCoachSpeech } from '../utils/oracleCoach.ts';
 import { ORACLE_PRESENCE } from '../constants/oraclePresencePolicy.ts';
+import { resolveArenaTrend } from '../utils/oracleOperationalContext.ts';
 
 /**
  * O arbitro do Oraculo.
@@ -245,5 +246,164 @@ assert.ok(
   falaDePrioridade.includes('Correr 5km'),
   'venceu `prioridade`, entao a acao concreta precisa aparecer na frase',
 );
+
+
+// --- a retomada vence a queixa sobre a mesma arena ---------------------------
+// O caso que o `trend` existe para resolver: a arena esta em 22% quando deveria
+// estar em 60% — `critico`, e o ranking antigo a coroaria como a pior de todas —
+// mas ela voltou a andar hoje depois de oito dias parada.
+//
+// Os dois fatos sao verdade. So um merece a fala. Dizer "reduza a meta" no dia
+// em que a pessoa fez a coisa certa e o pior erro que o Oraculo pode cometer, e
+// era o comportamento garantido antes disto.
+
+const criticaMasRetomando = {
+  ...contextoBase,
+  arenas: [arena({
+    arenaName: 'Projeto',
+    pace: 'critico',
+    adjustment: 'reduzir_meta',
+    progressDelta: -38,
+    trend: 'retomando',
+    trendPauseDays: 8,
+  })],
+};
+
+const candidatosRetomada = detectOracleCandidates(criticaMasRetomando)
+  .filter((candidato) => candidato.arenaId);
+assert.equal(candidatosRetomada.length, 1, 'a retomada substitui a queixa, nao concorre com ela');
+assert.equal(candidatosRetomada[0].type, 'arena_retomada');
+
+assert.ok(
+  ORACLE_CANDIDATE_WEIGHTS.arena_retomada.novelty >
+  ORACLE_CANDIDATE_WEIGHTS.arena_atrasada.novelty,
+  'a mudanca e mais nova que o estado: a tela ja mostra 22%, nao mostra que voltou',
+);
+
+const falaRetomada = buildPlannerCoachSpeech(criticaMasRetomando, () => 0, 'neutro');
+assert.ok(falaRetomada.includes('Projeto'), 'a frase nomeia a arena que voltou');
+assert.ok(/8 dias/.test(falaRetomada), 'e diz quantos dias ela ficou parada');
+assert.ok(!/\{\w+\}/.test(falaRetomada), 'nenhum marcador pode sobrar');
+
+// Sem o numero de dias a frase ainda tem de sair: fillCoachLine invalida linha
+// com variavel faltando, entao cada voz precisa de uma linha sem {dias}. Sem
+// isso, uma retomada sem numero viraria silencio.
+const retomouSemNumero = {
+  ...contextoBase,
+  arenas: [arena({ arenaName: 'Projeto', trend: 'retomando', trendPauseDays: null })],
+};
+const falaSemNumero = buildPlannerCoachSpeech(retomouSemNumero, () => 0, 'neutro');
+assert.ok(
+  typeof falaSemNumero === 'string' && falaSemNumero.includes('Projeto'),
+  'retomada sem o numero de dias ainda fala',
+);
+assert.ok(!/\{\w+\}/.test(falaSemNumero), 'nenhum marcador pode sobrar');
+
+// Vale para as quatro vozes, senao um tom Premium cai no silencio.
+for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+  const linha = buildPlannerCoachSpeech(retomouSemNumero, () => 0, tom);
+  assert.ok(linha && !/\{\w+\}/.test(linha), `${tom} precisa de uma linha de retomada sem {dias}`);
+}
+
+// A arena que apenas melhorou nao vira fala: melhorar dentro do ritmo e o
+// esperado. So a volta depois de uma pausa real e novidade.
+const soMelhorando = {
+  ...contextoBase,
+  arenas: [arena({ pace: 'no_ritmo', adjustment: 'manter_ritmo', trend: 'melhorando' })],
+};
+assert.deepEqual(
+  detectOracleCandidates(soMelhorando).filter((c) => c.arenaId), [],
+  'melhorar dentro do ritmo nao merece interromper ninguem',
+);
+
+
+// --- a aritmetica do trend ---------------------------------------------------
+// `trend` sai de janelas derivadas das proprias tasks — hoje, ontem, D-3, D-7 —
+// sem tabela nova e sem snapshot gravado: as tasks ja tem data operacional,
+// entao o passado e o mesmo calculo com outra data de corte.
+//
+// E a parte com aritmetica de verdade, entao e a que precisa de teste proprio:
+// um erro de um dia aqui vira "voltou depois de oito dias" numa arena que nunca
+// parou.
+
+const HOJE = '2026-08-28';
+
+// Oito dias parada e voltou hoje. O caso que o estado existe para nomear.
+assert.deepEqual(
+  resolveArenaTrend(['2026-08-19', '2026-08-28'], HOJE),
+  { trend: 'retomando', pauseDays: 9 },
+  'pausa longa seguida de volta hoje e retomada, com o tamanho da pausa junto',
+);
+
+// Fim de semana nao e abandono. Sem esse corte, toda segunda-feira o app
+// anunciaria uma retomada heroica.
+assert.notEqual(
+  resolveArenaTrend(['2026-08-26', '2026-08-28'], HOJE).trend,
+  'retomando',
+  'dois dias de pausa e fim de semana, nao volta por cima de abandono',
+);
+
+// Voltou ontem tambem conta: quem abre o app no dia seguinte ainda merece ouvir.
+assert.equal(
+  resolveArenaTrend(['2026-08-15', '2026-08-27'], HOJE).trend,
+  'retomando',
+  'a retomada continua valendo no dia seguinte',
+);
+
+// Mas nao vale a semana toda depois: isso ja virou o novo normal.
+assert.notEqual(
+  resolveArenaTrend(['2026-08-10', '2026-08-22'], HOJE).trend,
+  'retomando',
+  'retomada de uma semana atras nao e mais novidade',
+);
+
+// Arena sem nenhuma conclusao nao tem direcao. Quem fala de arena parada e o
+// `pace`, nao o `trend` — trend descreve mudanca, e nao houve nenhuma.
+assert.deepEqual(
+  resolveArenaTrend([], HOJE),
+  { trend: 'estavel', pauseDays: null },
+  'sem historico nao ha direcao a declarar',
+);
+
+// Acelerou: nada na janela anterior, movimento na recente.
+assert.equal(
+  resolveArenaTrend(['2026-08-27', '2026-08-28'], HOJE).trend,
+  'melhorando',
+  'comecar a andar depois de uma janela vazia e melhora',
+);
+
+// Desacelerou: muito antes, pouco agora.
+assert.equal(
+  resolveArenaTrend(
+    ['2026-08-22', '2026-08-22', '2026-08-23', '2026-08-23', '2026-08-24', '2026-08-25', '2026-08-28'],
+    HOJE,
+  ).trend,
+  'piorando',
+  'quatro dias fortes seguidos de tres fracos e queda',
+);
+
+// Ritmo parelho nao e noticia.
+//
+// As janelas tem tamanhos diferentes de proposito — 3 dias recentes contra os 4
+// anteriores — entao "parelho" e mesma TAXA, nao mesma contagem: 4 acoes em 4
+// dias contra 3 em 3. A primeira versao deste teste usava 3 e 3 e falhou com
+// razao, porque aquilo e aceleracao de 0,75 para 1,0 por dia.
+assert.equal(
+  resolveArenaTrend(
+    ['2026-08-22', '2026-08-23', '2026-08-24', '2026-08-25', '2026-08-26', '2026-08-27', '2026-08-28'],
+    HOJE,
+  ).trend,
+  'estavel',
+  'mesma taxa nas duas janelas nao e mudanca',
+);
+
+// pauseDays so existe na retomada: os outros tres sao comparacao de volume, e
+// numero solto numa frase que nao fala de pausa seria mentira.
+for (const datas of [[], ['2026-08-27', '2026-08-28'], ['2026-08-26', '2026-08-28']]) {
+  const saida = resolveArenaTrend(datas, HOJE);
+  if (saida.trend !== 'retomando') {
+    assert.equal(saida.pauseDays, null, 'so a retomada carrega o numero de dias');
+  }
+}
 
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

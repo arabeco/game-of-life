@@ -39,6 +39,7 @@ export type OracleCoachArenaPace = OracleCoachPace | 'sem_medida';
  */
 export type OracleCandidateType =
   | 'ausente'
+  | 'arena_retomada'
   | 'sem_ciclo'
   | 'ciclo_longo'
   | 'sem_entrega'
@@ -51,6 +52,7 @@ export type OracleCandidateType =
 
 export const ORACLE_CANDIDATE_TYPES: readonly OracleCandidateType[] = [
   'ausente',
+  'arena_retomada',
   'sem_ciclo',
   'ciclo_longo',
   'sem_entrega',
@@ -86,6 +88,10 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
   ausente: {
     importance: 4, urgency: 5, novelty: 3, actionability: 3,
     why: 'Quem sumiu pode nao voltar. E a unica situacao em que o silencio do app decide o desfecho, entao urgencia maxima.',
+  },
+  arena_retomada: {
+    importance: 4, urgency: 2, novelty: 5, actionability: 2,
+    why: 'Novidade maxima: e a unica coisa que a pessoa NAO ve na tela, porque a tela mostra o estado e nao a mudanca. Vence a queixa sobre a mesma arena de proposito — dizer "reduza a meta" no dia em que ela voltou a andar e o pior erro que o Oraculo pode cometer.',
   },
   sem_ciclo: {
     importance: 4, urgency: 3, novelty: 2, actionability: 5,
@@ -147,6 +153,8 @@ const EIXO_PESO = {
  */
 export const SEVERITY_BOOST_CAP = 2;
 
+export type OracleArenaTrend = 'piorando' | 'estavel' | 'melhorando' | 'retomando';
+
 export interface PlannerCoachArena {
   arenaId: string;
   arenaName: string;
@@ -155,6 +163,10 @@ export interface PlannerCoachArena {
   progressDelta: number | null;
   daysSinceProof: number | null;
   pendingActionsToday: number;
+  /** Direcao, separada de `pace`. Ausente = contexto antigo, sem passado. */
+  trend?: OracleArenaTrend;
+  /** Dias parada antes de voltar. So existe quando trend e 'retomando'. */
+  trendPauseDays?: number | null;
 }
 
 /** O que os detectores precisam ver. `PlannerCoachContext` estende isto. */
@@ -277,6 +289,21 @@ const detectArenaIssues = (input: OracleCandidateInput): OracleCandidate[] => {
 
   for (const arena of arenas) {
     const extra = { arenaId: arena.arenaId, arenaName: arena.arenaName, boost: arenaBoost(arena) };
+
+    // A retomada SUBSTITUI a queixa sobre a mesma arena, nao concorre com ela.
+    //
+    // Uma arena pode estar em 22% quando deveria estar em 60% — `critico` — e ao
+    // mesmo tempo ter voltado a andar hoje depois de oito dias. Os dois fatos sao
+    // verdade, mas so um merece a fala: "reduza a meta" no dia em que a pessoa
+    // fez a coisa certa e o pior erro possivel. A frase da retomada ja diz que
+    // ela ainda esta atras.
+    if (arena.trend === 'retomando') {
+      saida.push(build('arena_retomada', {
+        arena: arena.arenaName,
+        dias: arena.trendPauseDays ?? null,
+      }, extra));
+      continue;
+    }
 
     if (arena.adjustment === 'pausar_arena') {
       saida.push(build('arena_parada', { arena: arena.arenaName }, extra));

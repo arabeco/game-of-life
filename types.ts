@@ -1360,6 +1360,22 @@ export interface OracleMessage {
   createdAt: string;
 }
 
+/**
+ * Direcao, nao posicao.
+ *
+ * `pace` responde "onde ela esta em relacao ao planejado". `trend` responde
+ * "para onde ela esta indo". Sao dimensoes diferentes e por isso nao cabem no
+ * mesmo campo: uma arena pode estar em 22% quando deveria estar em 60% — logo
+ * `critico` — e ao mesmo tempo ter voltado a andar hoje depois de oito dias
+ * parada. Sem `trend`, o Oraculo so sabe dizer "esta critico, reduza a meta"
+ * no exato dia em que a pessoa fez a coisa certa.
+ *
+ * `retomando` e o estado que so existe com passado: e uma transicao, nao um
+ * lugar. E e o mais valioso de todos, porque e o unico que o app pode celebrar
+ * sem estar elogiando um numero.
+ */
+export type OracleArenaTrend = 'piorando' | 'estavel' | 'melhorando' | 'retomando';
+
 export interface OracleArenaSignal {
   arenaId: string;
   arenaName: string;
@@ -1377,6 +1393,10 @@ export interface OracleArenaSignal {
   lastProofDate: string | null;
   daysSinceProof: number | null;
   suggestedAdjustment: 'reduzir_meta' | 'pausar_arena' | 'criar_meta_minima' | 'proteger_uma_acao' | 'manter_ritmo';
+  /** Opcional: o cron ainda nao calcula, e nao precisa — quem fala e o cliente. */
+  trend?: OracleArenaTrend;
+  /** Dias de pausa que antecederam a retomada. Preenchido so quando trend e 'retomando'. */
+  trendPauseDays?: number | null;
   reason: string;
 }
 

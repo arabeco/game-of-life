@@ -11,6 +11,13 @@ import {
 import { COACH_LINE_STATES, buildPlannerCoachSpeech } from '../utils/oracleCoach.ts';
 import { ORACLE_PRESENCE } from '../constants/oraclePresencePolicy.ts';
 import { resolveArenaTrend } from '../utils/oracleOperationalContext.ts';
+import {
+  isOracleSubjectOnCooldown,
+  recallOracleSpeech,
+  rememberOracleSpeech,
+  ORACLE_SPEECH_MEMORY_SIZE,
+} from '../utils/oracleSpeechMemory.ts';
+import { buildPlannerCoachSpeechDetailed } from '../utils/oracleCoach.ts';
 
 /**
  * O arbitro do Oraculo.
@@ -545,5 +552,122 @@ assert.deepEqual(
   rankOracleCandidates(sequenciaEmRisco, ORACLE_PRESENCE.SILENCIOSO), [],
   'nem a sequencia morrendo fura o pacto do Silencioso',
 );
+
+
+// --- memoria: ele para de repetir --------------------------------------------
+// Cada fala nascia so do estado de AGORA. Ele nunca soube que tinha dito a mesma
+// coisa ontem. Quem esta em `prioridade` fica em `prioridade` por semanas, e com
+// duas variacoes por estado a pessoa via as duas tres vezes numa semana — ponto
+// em que ela para de ler.
+
+const ONTEM = '2026-08-27';
+const ANTEONTEM = '2026-08-26';
+
+// Cooldown zero ainda impede falar duas vezes do mesmo no MESMO dia.
+assert.equal(
+  isOracleSubjectOnCooldown([{ type: 'ja_entregou', date: HOJE, line: 'x' }], 'ja_entregou', undefined, HOJE, 0),
+  true,
+  'nenhum assunto sai duas vezes no mesmo dia, nem os de cooldown zero',
+);
+assert.equal(
+  isOracleSubjectOnCooldown([{ type: 'ja_entregou', date: ONTEM, line: 'x' }], 'ja_entregou', undefined, HOJE, 0),
+  false,
+  'elogiar o que ela fez hoje e sobre hoje: ontem nao bloqueia',
+);
+
+// Cooldown de dois dias segura a queixa mais repetivel do banco.
+const disseOntem = [{ type: 'arena_atrasada', arenaId: 'a1', date: ONTEM, line: 'x' }];
+assert.equal(
+  isOracleSubjectOnCooldown(disseOntem, 'arena_atrasada', 'a1', HOJE, 2), true,
+  'queixa de arena nao sai em dias seguidos',
+);
+// E o cooldown e por ARENA: reclamar de Projeto nao cala Saude.
+assert.equal(
+  isOracleSubjectOnCooldown(disseOntem, 'arena_atrasada', 'a2', HOJE, 2), false,
+  'o assunto e a arena, nao o tipo: outra arena e outro assunto',
+);
+
+// Dias seguidos contam a partir de ONTEM — hoje ainda nao foi decidido, e e a
+// decisao de hoje que vai consultar esse numero.
+assert.equal(
+  recallOracleSpeech([
+    { type: 'prioridade', date: ONTEM, line: 'a' },
+    { type: 'prioridade', date: ANTEONTEM, line: 'b' },
+  ], 'prioridade', undefined, HOJE).consecutiveDays,
+  2,
+  'dois dias seguidos no mesmo assunto sao dois, e nao incluem hoje',
+);
+
+// A memoria e curta de proposito: e memoria, nao arquivo. O historico e o chat.
+let acumulada = [];
+for (let i = 0; i < ORACLE_SPEECH_MEMORY_SIZE + 4; i += 1) {
+  acumulada = rememberOracleSpeech(acumulada, { type: 'prioridade', date: HOJE, line: `l${i}` });
+}
+assert.equal(acumulada.length, ORACLE_SPEECH_MEMORY_SIZE, 'a memoria nao cresce sem limite');
+
+// --- o assunto de molho passa a vez, nao vira silencio ----------------------
+// E por isso que o arbitro devolve LISTA e nao vencedor.
+
+// A arena precisa estar PARADA e nao so atrasada para vencer `prioridade`: a
+// primeira fixture usava `atrasado` e falhou com razao, porque apontar a proxima
+// acao concreta ja ganha de anunciar um atraso — inclusive com boost maximo.
+const paradaEPrioridade = {
+  ...contextoBase,
+  priorityActionName: 'Correr 5km',
+  arenas: [arena({ arenaId: 'a1', pace: 'critico', adjustment: 'pausar_arena', daysSinceProof: 9 })],
+};
+
+const semMemoria = buildPlannerCoachSpeechDetailed(paradaEPrioridade, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE, [], HOJE);
+assert.equal(semMemoria.entry.type, 'arena_parada', 'sem memoria vence o mais relevante');
+
+const comMemoria = buildPlannerCoachSpeechDetailed(
+  paradaEPrioridade, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE,
+  [{ type: 'arena_parada', arenaId: 'a1', date: ONTEM, line: 'x' }], HOJE,
+);
+assert.ok(comMemoria, 'assunto de molho nao pode virar silencio');
+assert.equal(comMemoria.entry.type, 'prioridade', 'ele passa a vez para o proximo colocado');
+
+// --- a mesma frase nao sai duas vezes seguidas -------------------------------
+// O cooldown cuida do assunto; isto cuida da redacao. Sao coisas diferentes: um
+// assunto pode voltar legitimamente e ainda assim nao merece a frase identica.
+
+const soPrioridade = { ...contextoBase, priorityActionName: 'Correr 5km' };
+const primeiraVez = buildPlannerCoachSpeechDetailed(soPrioridade, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE, [], HOJE);
+const segundaVez = buildPlannerCoachSpeechDetailed(
+  soPrioridade, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE,
+  [{ type: 'prioridade', date: '2026-08-01', line: primeiraVez.line }], HOJE,
+);
+assert.notEqual(
+  segundaVez.line, primeiraVez.line,
+  'mesmo com o mesmo sorteio, a frase anterior nao se repete',
+);
+
+// Mas quando so sobra uma frase valida, repetir e melhor que calar — o cooldown
+// ja e quem impede insistir no assunto.
+const unicaValida = buildPlannerCoachSpeechDetailed(
+  { ...contextoBase, arenas: [arena({ arenaName: 'Projeto', trend: 'retomando', trendPauseDays: null })] },
+  () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE,
+  [{ type: 'arena_retomada', arenaId: 'a1', date: '2026-08-01', line: 'Projeto voltou a andar. Continua atras do planejado, e agora esta em movimento.' }],
+  HOJE,
+);
+assert.ok(unicaValida && unicaValida.line, 'com uma unica frase valida, ele fala mesmo assim');
+
+// --- sem data, comporta-se como antes de existir memoria --------------------
+// Navegador com storage bloqueado, aba anonima, cota estourada: sem memoria o
+// Oraculo volta a ser o que era, que e pior mas nao e quebrado.
+assert.ok(
+  buildPlannerCoachSpeechDetailed(paradaEPrioridade, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE,
+    [{ type: 'arena_parada', arenaId: 'a1', date: ONTEM, line: 'x' }], ''),
+  'sem data a memoria e ignorada em vez de calar o Oraculo',
+);
+
+// --- todo tipo declara cooldown ---------------------------------------------
+for (const tipo of ORACLE_CANDIDATE_TYPES) {
+  const peso = ORACLE_CANDIDATE_WEIGHTS[tipo];
+  assert.ok(
+    Number.isInteger(peso.cooldownDays) && peso.cooldownDays >= 0 && peso.cooldownDays <= 7,
+    `${tipo} precisa dizer quantos dias fica de molho`,
+  );
+}
 
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

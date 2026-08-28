@@ -143,13 +143,34 @@ assert.match(
 
 // A marca do dia so entra depois da fala. Gravada antes do sorteio, um sorteio
 // perdido queimava o dia inteiro em silencio.
-const trechoFala = authenticatedApp.slice(
-  authenticatedApp.indexOf('const message = buildPlannerCoachSpeech'),
-  authenticatedApp.indexOf('emitOracleSpeech({'),
+const inicioFala = authenticatedApp.indexOf('buildPlannerCoachSpeechDetailed({');
+const fimFala = authenticatedApp.indexOf('emitOracleSpeech({', inicioFala);
+// As ancoras conferidas antes do slice: indexOf devolvendo -1 ja transformou
+// uma assercao deste arquivo em nada, e o teste seguiu passando por meses sem
+// verificar coisa alguma. Ancora que sumiu tem de quebrar o teste, nao esvazia-lo.
+assert.ok(inicioFala > 0, 'a chamada da fala de abertura deve ser identificavel');
+assert.ok(fimFala > inicioFala, 'o fim do trecho da fala deve ser identificavel');
+const trechoFala = authenticatedApp.slice(inicioFala, fimFala);
+
+const posGuarda = trechoFala.indexOf('if (!speech) return;');
+const posMarca = trechoFala.indexOf('localStorage.setItem(speechKey, today)');
+assert.ok(posGuarda > 0, 'a guarda de "nao ha o que falar" deve existir');
+assert.ok(posMarca > 0, 'a marca do dia deve ser gravada neste trecho');
+assert.ok(
+  posGuarda < posMarca,
+  'a marca do dia so pode ser gravada depois de haver o que falar',
+);
+
+// A memoria e lida ANTES da escolha: ela participa de decidir o que dizer, e nao
+// filtra o que ele ja decidiu. Lida depois, um assunto de molho viraria silencio
+// em vez de passar a vez para o proximo colocado.
+assert.ok(
+  authenticatedApp.indexOf('readOracleSpeechMemory()') < inicioFala,
+  'a memoria entra antes da escolha, nao depois',
 );
 assert.ok(
-  trechoFala.indexOf('if (!message) return;') < trechoFala.indexOf('localStorage.setItem(speechKey, today)'),
-  'a marca do dia so pode ser gravada depois de haver o que falar',
+  trechoFala.indexOf('writeOracleSpeechMemory') > posGuarda,
+  'so grava na memoria o que ele de fato falou',
 );
 
 // --- perguntar push nao pode queimar o campo antes de perguntar ----------

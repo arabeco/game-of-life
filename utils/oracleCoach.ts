@@ -1,7 +1,9 @@
 import type { OracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import type { OracleContext } from '../types';
 import type { OracleCandidateInput } from './oracleCandidates.ts';
-import { rankOracleCandidates } from './oracleCandidates.ts';
+import { rankOracleCandidates, ORACLE_CANDIDATE_WEIGHTS } from './oracleCandidates.ts';
+import type { OracleSpeechMemoryEntry } from './oracleSpeechMemory.ts';
+import { isOracleSubjectOnCooldown, recallOracleSpeech } from './oracleSpeechMemory.ts';
 
 // Os tipos de ritmo moram no arbitro agora, junto de quem os le. Reexportados
 // para quem ja importava daqui.
@@ -395,6 +397,7 @@ const pickCoachLine = (
   tone: OracleSpeechTone,
   vars: Record<string, string | number | null>,
   random: () => number,
+  evitar?: string | null,
 ): string | null => {
   const porTom = COACH_LINES[estado];
   if (!porTom) return null;
@@ -403,39 +406,87 @@ const pickCoachLine = (
   const linhas = porTom[tone] || porTom.neutro;
   const validas = linhas.map((linha) => fillCoachLine(linha, vars)).filter((linha): linha is string => Boolean(linha));
   if (validas.length === 0) return null;
-  return validas[Math.floor(random() * validas.length)] || validas[0];
+  // A mesma frase nunca sai duas vezes seguidas para o mesmo assunto. Quando o
+  // assunto so tem uma frase valida, repetir e melhor que calar — o cooldown ja
+  // cuida de nao insistir.
+  const candidatas = evitar ? validas.filter((linha) => linha !== evitar) : validas;
+  const conjunto = candidatas.length > 0 ? candidatas : validas;
+  return conjunto[Math.floor(random() * conjunto.length)] || conjunto[0];
 };
+
+export interface PlannerCoachSpeech {
+  line: string;
+  /** O que gravar na memoria depois de falar. */
+  entry: OracleSpeechMemoryEntry;
+  /** Dias seguidos, ate ontem, no mesmo assunto. Serve para "terceiro dia". */
+  consecutiveDays: number;
+}
 
 /**
  * A cascata de dez `if` saiu daqui.
  *
  * Ela decidia por ordem fixa: o primeiro que casasse vencia e calava os outros
  * nove. Quem estava tres dias ausente E com uma arena critica E com uma acao
- * prioritaria ouvia sobre a ausencia, sempre, e nunca sobre o resto — e quem
- * estava em `prioridade` ouvia `prioridade` todo dia, porque a ordem nao muda.
+ * prioritaria ouvia sobre a ausencia, sempre — e quem estava em `prioridade`
+ * ouvia `prioridade` todo dia, porque a ordem nao muda.
  *
  * Agora os detectores produzem candidatos independentes e o arbitro ordena por
- * relevancia. Aqui so sobra andar na lista: o primeiro que consegue render uma
- * frase fala. Andar na lista, e nao pegar o primeiro, e o que faz um candidato
- * barrado — variavel faltando hoje, cooldown amanha — passar a vez em vez de
- * virar silencio indevido.
+ * relevancia. Aqui so sobra andar na lista ate achar quem pode falar.
+ *
+ * ANDAR e o ponto, e e por isso que o arbitro devolve lista e nao vencedor: o
+ * primeiro colocado pode estar de molho por ter falado ontem, ou nao render
+ * frase por faltar variavel. Se so o primeiro voltasse, os dois casos virariam
+ * silencio indevido em vez de passar a vez para o proximo.
  *
  * A presenca entra como corte de relevancia. O padrao e 3 (Presente) para que
  * chamadas sem ela se comportem como antes: quem controla se ele fala e a
  * politica de presenca, la em cima; aqui o corte so afina.
  */
+export const buildPlannerCoachSpeechDetailed = (
+  context: PlannerCoachContext,
+  random: () => number = Math.random,
+  tone: OracleSpeechTone = 'neutro',
+  presenceValue: number = 3,
+  memory: OracleSpeechMemoryEntry[] = [],
+  today: string = '',
+): PlannerCoachSpeech | null => {
+  for (const candidato of rankOracleCandidates(context, presenceValue)) {
+    const peso = ORACLE_CANDIDATE_WEIGHTS[candidato.type];
+
+    // Sem data nao ha memoria possivel, e ai ele se comporta como antes de ter.
+    if (today) {
+      const deMolho = isOracleSubjectOnCooldown(
+        memory, candidato.type, candidato.arenaId, today, peso.cooldownDays,
+      );
+      if (deMolho) continue;
+    }
+
+    const recall = today
+      ? recallOracleSpeech(memory, candidato.type, candidato.arenaId, today)
+      : { consecutiveDays: 0, lastLine: null, spokenToday: false, daysSinceLastSaid: null };
+
+    const linha = pickCoachLine(candidato.type, tone, candidato.vars, random, recall.lastLine);
+    if (!linha) continue;
+
+    return {
+      line: linha,
+      entry: { type: candidato.type, arenaId: candidato.arenaId, date: today, line: linha },
+      consecutiveDays: recall.consecutiveDays,
+    };
+  }
+  return null;
+};
+
+/** Atalho de quem so quer a frase. Mantido porque a maior parte das chamadas so quer isso. */
 export const buildPlannerCoachSpeech = (
   context: PlannerCoachContext,
   random: () => number = Math.random,
   tone: OracleSpeechTone = 'neutro',
   presenceValue: number = 3,
-): string | null => {
-  for (const candidato of rankOracleCandidates(context, presenceValue)) {
-    const linha = pickCoachLine(candidato.type, tone, candidato.vars, random);
-    if (linha) return linha;
-  }
-  return null;
-};
+  memory: OracleSpeechMemoryEntry[] = [],
+  today: string = '',
+): string | null =>
+  buildPlannerCoachSpeechDetailed(context, random, tone, presenceValue, memory, today)?.line ?? null;
 
 /** Quantas linhas o banco tem, por estado e por tom. Usado pelo teste. */
 export const COACH_LINE_STATES = Object.keys(COACH_LINES);

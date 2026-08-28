@@ -62,9 +62,14 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import {
-    buildPlannerCoachSpeech,
+    buildPlannerCoachSpeechDetailed,
     buildOracleCycleCoachBrief,
 } from '../utils/oracleCoach';
+import {
+    readOracleSpeechMemory,
+    rememberOracleSpeech,
+    writeOracleSpeechMemory,
+} from '../utils/oracleSpeechMemory';
 import { getOperationalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import './auth-shell.css';
 
@@ -855,7 +860,11 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             .filter((task) => task.completed && taskMatchesOperationalDate(task, today))
             .map((task) => actionById.get(task.actionId)?.name || null)
             .find((name): name is string => Boolean(name)) || null;
-        const message = buildPlannerCoachSpeech({
+        // A memoria entra ANTES da escolha, nao depois: ela nao filtra o que ele
+        // disse, ela participa de decidir o que dizer. Um assunto de molho faz o
+        // arbitro passar para o proximo colocado, e nao ficar em silencio.
+        const speechMemory = readOracleSpeechMemory();
+        const speech = buildPlannerCoachSpeechDetailed({
             arenasCount,
             actionsCount: actions.length,
             cycleLengthDays,
@@ -890,9 +899,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 trend: sinal.trend,
                 trendPauseDays: sinal.trendPauseDays,
             })),
-        }, Math.random, resolveOracleSpeechTone(oraclePreferences?.speechTone), presenceRules.value);
+        }, Math.random, resolveOracleSpeechTone(oraclePreferences?.speechTone), presenceRules.value, speechMemory, today);
 
-        if (!message) return;
+        if (!speech) return;
+        const message = speech.line;
+
+        writeOracleSpeechMemory(rememberOracleSpeech(speechMemory, speech.entry));
 
         // A marca do dia so entra depois que ele fala. Antes ela era gravada
         // ANTES do sorteio, entao um sorteio perdido queimava o dia inteiro: o

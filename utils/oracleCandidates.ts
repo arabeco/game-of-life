@@ -77,6 +77,11 @@ export interface OracleCandidateWeight {
   novelty: number;
   /** O quanto ela consegue fazer alguma coisa a respeito agora. */
   actionability: number;
+  /**
+   * Dias que o assunto fica de molho depois de dito. Propriedade do TIPO, nao
+   * da situacao: queixa cansa, risco nao. Zero ainda impede repetir no mesmo dia.
+   */
+  cooldownDays: number;
   why: string;
 }
 
@@ -91,54 +96,67 @@ export interface OracleCandidateWeight {
 export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandidateWeight> = {
   streak_em_risco: {
     importance: 4, urgency: 5, novelty: 3, actionability: 5,
+    cooldownDays: 0, // Zero: cada noite e um risco novo, e nao avisar porque avisou ontem seria deixar morrer por elegancia.
     why: 'A unica coisa no app que morre sozinha se ninguem disser nada. Uma arena fechada continua fechada daqui a vinte minutos; um streak de 23 dias vira 0 na virada. Vence ate a estrutura inflada — a conta que nao fecha continua nao fechando amanha de manha, e a sequencia nao.',
   },
   meta_inflada: {
     importance: 5, urgency: 3, novelty: 4, actionability: 5,
+    cooldownDays: 3, // Tres dias: a estrutura nao muda sozinha, e repetir todo dia vira cobranca sobre algo que ela ja ouviu.
     why: 'A nota mais alta da tabela, inclusive acima de "sumiu" — de proposito, porque costuma ser a CAUSA de ter sumido. E o unico caso em que o problema nao e a pessoa: ela pode se esforcar o mes inteiro e continuar falhando, porque a conta nao fecha. Acionabilidade maxima: baixar a repeticao resolve na hora.',
   },
   ausente: {
     importance: 4, urgency: 5, novelty: 3, actionability: 3,
+    cooldownDays: 1, // Um dia: se ela voltou a sumir amanha, isso e um fato novo.
     why: 'Quem sumiu pode nao voltar. E a unica situacao em que o silencio do app decide o desfecho, entao urgencia maxima.',
   },
   arena_retomada: {
     importance: 4, urgency: 2, novelty: 5, actionability: 2,
+    cooldownDays: 2, // Dois dias: retomada e um momento, nao um estado. Repetir transforma reconhecimento em bajulacao.
     why: 'Novidade maxima: e a unica coisa que a pessoa NAO ve na tela, porque a tela mostra o estado e nao a mudanca. Vence a queixa sobre a mesma arena de proposito — dizer "reduza a meta" no dia em que ela voltou a andar e o pior erro que o Oraculo pode cometer.',
   },
   sem_ciclo: {
     importance: 4, urgency: 3, novelty: 2, actionability: 5,
+    cooldownDays: 1, // Um dia: e acionavel demais para insistir, e obvio demais para calar de vez.
     why: 'Sem ciclo nada mais funciona, e resolver e um toque. Acionabilidade maxima, urgencia media porque nao piora sozinho.',
   },
   ciclo_longo: {
     importance: 3, urgency: 2, novelty: 2, actionability: 4,
+    cooldownDays: 3, // Tres dias: ciclo arrastado leva dias para mudar, entao nao ha o que dizer de novo antes disso.
     why: 'Ciclo arrastado e problema estrutural: importa, mas nao muda nada dizer hoje em vez de amanha.',
   },
   sem_entrega: {
     importance: 4, urgency: 4, novelty: 2, actionability: 3,
+    cooldownDays: 1, // Um dia: cada dia a mais sem entrega e um fato diferente do dia anterior.
     why: 'Tres dias sem entregar e o comeco do padrao que vira abandono. Ainda da para interromper.',
   },
   arena_atrasada: {
     importance: 3, urgency: 2, novelty: 1, actionability: 3,
+    cooldownDays: 2, // Dois dias, o maior entre as queixas de arena: e a fala mais repetivel do banco e a que mais rapido vira papel de parede.
     why: 'Atraso de arena e comum e a pessoa ja ve na tela. Novidade baixa de proposito: anunciar o obvio gasta a fala do dia.',
   },
   arena_parada: {
     importance: 4, urgency: 3, novelty: 2, actionability: 4,
+    cooldownDays: 2, // Dois dias: sete dias parada nao vira nada em vinte e quatro horas.
     why: 'Sete dias e zero conclusao e mais grave que atraso: a arena parou de existir na pratica, e ainda da para reanimar.',
   },
   ciclo_atrasado: {
     importance: 3, urgency: 3, novelty: 1, actionability: 2,
+    cooldownDays: 2, // Dois dias: e agregado e pouco acionavel, entao repetir so acumula peso sem indicar saida.
     why: 'E um agregado — diz que algo esta errado sem dizer onde. Pouco acionavel, e por isso perde para o que aponta a arena.',
   },
   prioridade: {
     importance: 2, urgency: 3, novelty: 1, actionability: 5,
+    cooldownDays: 1, // Um dia: a acao prioritaria muda de um dia para o outro, entao amanha costuma ser outra frase.
     why: 'Sozinha nao e grande coisa, mas e a unica que entrega o proximo movimento pronto. E o eixo de acionabilidade que a carrega.',
   },
   ja_entregou: {
     importance: 2, urgency: 1, novelty: 2, actionability: 0,
+    cooldownDays: 0, // Zero: elogiar o que ela fez hoje e sobre HOJE. So nao pode sair duas vezes no mesmo dia.
     why: 'Elogio de rotina. Nota baixa de proposito: elogio inflacionado destroi o valor do elogio de marco.',
   },
   estrutura_enxuta: {
     importance: 2, urgency: 1, novelty: 3, actionability: 3,
+    cooldownDays: 3, // Tres dias: estrutura pequena nao e defeito e nao tem pressa nenhuma.
     why: 'Quase nunca dispara, entao quando dispara e informacao nova. Nenhuma pressa: estrutura pequena nao e defeito.',
   },
 };

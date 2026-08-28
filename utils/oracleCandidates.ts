@@ -38,6 +38,7 @@ export type OracleCoachArenaPace = OracleCoachPace | 'sem_medida';
  * frases venceria e ficaria mudo, entao o teste amarra os dois lados.
  */
 export type OracleCandidateType =
+  | 'meta_inflada'
   | 'ausente'
   | 'arena_retomada'
   | 'sem_ciclo'
@@ -51,6 +52,7 @@ export type OracleCandidateType =
   | 'estrutura_enxuta';
 
 export const ORACLE_CANDIDATE_TYPES: readonly OracleCandidateType[] = [
+  'meta_inflada',
   'ausente',
   'arena_retomada',
   'sem_ciclo',
@@ -85,6 +87,10 @@ export interface OracleCandidateWeight {
  * seria uma regra ruim E opaca — pior que a cascata que ela substitui.
  */
 export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandidateWeight> = {
+  meta_inflada: {
+    importance: 5, urgency: 3, novelty: 4, actionability: 5,
+    why: 'A nota mais alta da tabela, inclusive acima de "sumiu" — de proposito, porque costuma ser a CAUSA de ter sumido. E o unico caso em que o problema nao e a pessoa: ela pode se esforcar o mes inteiro e continuar falhando, porque a conta nao fecha. Acionabilidade maxima: baixar a repeticao resolve na hora.',
+  },
   ausente: {
     importance: 4, urgency: 5, novelty: 3, actionability: 3,
     why: 'Quem sumiu pode nao voltar. E a unica situacao em que o silencio do app decide o desfecho, entao urgencia maxima.',
@@ -181,6 +187,11 @@ export interface OracleCandidateInput {
   cyclePace: OracleCoachPace;
   priorityActionName: string | null;
   completedActionNameToday: string | null;
+  /** Demanda diaria montada e o melhor dia ja entregue. Ausentes = sem historico para julgar. */
+  plannedDailyDemand?: number | null;
+  bestDailyCompletions?: number | null;
+  daysWithCompletions?: number;
+  cycleDayNumber?: number | null;
   /** TODAS as arenas ranqueadas, nao so a primeira. Ausente = comportamento antigo. */
   arenas?: PlannerCoachArena[];
 }
@@ -317,6 +328,46 @@ const detectArenaIssues = (input: OracleCandidateInput): OracleCandidate[] => {
   return saida;
 };
 
+/**
+ * A estrutura pede mais do que a pessoa jamais entregou.
+ *
+ * `reduzir_meta` ja existia no contexto, mas dispara em `pace atrasado` — que
+ * acontece tanto para quem pos 2 acoes por dia e nao fez, quanto para quem pos
+ * 40 e e impossivel. So o segundo e evidencia de estrutura errada. No primeiro
+ * a pessoa apenas nao executou, e mandar ela cortar a meta e o app se rendendo
+ * por ela.
+ *
+ * Os quatro portoes sao conservadores de proposito. Falso positivo aqui manda
+ * alguem capaz baixar o proprio padrao, o que e pior do que ficar calado:
+ *
+ *   - cinco dias de ciclo, senao nao ha o que julgar;
+ *   - tres dias com alguma entrega, para separar "impossivel" de "nem tentou";
+ *   - oito acoes por dia no minimo, um piso absoluto — abaixo disso nenhuma
+ *     estrutura e impossivel, so mal executada;
+ *   - demanda maior que o DOBRO do melhor dia que ela ja teve. O melhor dia e
+ *     generoso: se nem ele chega perto do que o plano pede todo dia, a conta nao
+ *     fecha, e a culpa e do numero.
+ */
+const DEMANDA_MINIMA_PARA_SUSPEITA = 8;
+
+const detectStructuralIssues = (input: OracleCandidateInput): OracleCandidate[] => {
+  const demanda = input.plannedDailyDemand ?? null;
+  const melhorDia = input.bestDailyCompletions ?? null;
+  const diasComEntrega = input.daysWithCompletions ?? 0;
+  const diaDoCiclo = input.cycleDayNumber ?? 0;
+
+  if (demanda === null || melhorDia === null) return [];
+  if (diaDoCiclo < 5) return [];
+  if (diasComEntrega < 3) return [];
+  if (demanda < DEMANDA_MINIMA_PARA_SUSPEITA) return [];
+  if (demanda <= melhorDia * 2) return [];
+
+  return [build('meta_inflada', {
+    acoes: Math.round(demanda),
+    maximo: melhorDia,
+  })];
+};
+
 const detectStructure = (input: OracleCandidateInput): OracleCandidate[] => (
   input.arenasCount === 1 && input.actionsCount <= 3 ? [build('estrutura_enxuta')] : []
 );
@@ -336,6 +387,7 @@ export const detectOracleCandidates = (input: OracleCandidateInput): OracleCandi
   ...detectCycleIssues(input),
   ...detectDeliveryGap(input),
   ...detectArenaIssues(input),
+  ...detectStructuralIssues(input),
   ...detectStructure(input),
   ...detectNextMove(input),
   ...detectAchievements(input),

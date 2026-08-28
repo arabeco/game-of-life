@@ -186,21 +186,64 @@ const COACH_LINES: Record<string, CoachToneLines> = {
   },
 
   /** Arena de foco atrasada. Marcadores: {arena} */
+  /**
+   * A estrutura pede mais do que a pessoa jamais entregou.
+   *
+   * E o unico estado em que o Oraculo diz que o problema NAO e ela. Por isso
+   * nenhuma linha cobra, nenhuma pede esforco, e nenhuma sugere abandonar: todas
+   * apontam o numero. Nao culpar alguem por um erro estrutural e a diferenca de
+   * produto inteira aqui.
+   *
+   * Marcadores: {acoes} — o que o plano pede por dia. {maximo} — o melhor dia
+   * que ela ja teve.
+   */
+  meta_inflada: {
+    neutro: [
+      'Sua estrutura pede {acoes} acoes por dia. Seu melhor dia ate agora teve {maximo}.',
+      'O plano pede {acoes} por dia. Isso nao e falta de esforco, e conta que nao fecha.',
+    ],
+    coach: [
+      '{acoes} acoes por dia e o que esta montado. Corte pela metade e voce passa a fechar o dia.',
+      'Seu melhor dia teve {maximo}. Ajuste as repeticoes para perto disso e o resto se resolve.',
+    ],
+    reflexivo: [
+      'O plano pede {acoes} por dia. Voce montou para quem voce e, ou para quem queria ser?',
+      'Seu melhor dia foi {maximo} e a meta pede {acoes}. Qual dos dois numeros e o real?',
+    ],
+    calmo: [
+      'Sao {acoes} acoes por dia ai. Nao e voce que esta devendo — e o numero.',
+      'O dia que voce montou e maior que o dia que existe. Da para baixar agora, sem perder nada.',
+    ],
+  },
+
+  /**
+   * Arena atras do ritmo. Este e o caso de EXECUCAO, nao de estrutura.
+   *
+   * Tres destas linhas mandavam cortar a meta — "reveja a meta", "diminua a
+   * repeticao", "talvez a meta e que estava grande". Mas estar atras nao e
+   * evidencia de meta errada: se voce pos 2 acoes por dia e passou a semana no
+   * videogame, nao ha nada de errado com o numero, voce so nao fez. Sugerir
+   * corte ali e o app se rendendo por voce.
+   *
+   * Quem manda cortar e `meta_inflada`, e so quando ha evidencia de verdade —
+   * a demanda passa do dobro do melhor dia que a pessoa ja teve. Aqui a fala
+   * volta para o que cabe: uma acao, hoje.
+   */
   arena_atrasada: {
     neutro: [
       '{arena} esta atras do ritmo do ciclo.',
       'Pelo tempo e pelo progresso, {arena} e a que mais ficou para tras.',
     ],
     coach: [
-      'Abra {arena} e reveja a meta. Reduzir repeticao vale mais que abandonar.',
-      '{arena} pede ajuste. Corte uma acao ou diminua a repeticao, e siga.',
+      'Abra {arena} e feche uma acao dela hoje. A menor que tiver, nao a mais dificil.',
+      '{arena} nao andou esta semana. Uma acao hoje ja muda o numero de amanha.',
     ],
     reflexivo: [
       '{arena} ficou para tras. Ela ainda importa como importava quando voce criou?',
       'O que {arena} pedia de voce que a semana nao deu?',
     ],
     calmo: [
-      '{arena} esta devagar. Nao e cobranca — talvez a meta e que estava grande.',
+      '{arena} esta devagar, e devagar ainda e andar. Uma acao hoje basta.',
       'Nem toda arena anda no mesmo passo. {arena} pode esperar sem culpa.',
     ],
   },

@@ -866,6 +866,10 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             cyclePace: oracleContext.cyclePace,
             priorityActionName: oracleContext.priorityActionName,
             completedActionNameToday,
+            plannedDailyDemand: oracleContext.plannedDailyDemand,
+            bestDailyCompletions: oracleContext.bestDailyCompletions,
+            daysWithCompletions: oracleContext.daysWithCompletions,
+            cycleDayNumber: oracleContext.cycleDayNumber,
             // TODAS as arenas, nao so focusArenaSignal.
             //
             // O contexto ja calculava ate seis, ranqueadas por gravidade, e esta

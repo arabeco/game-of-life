@@ -1428,6 +1428,13 @@ export interface OracleContext {
   completedActionsInCycle: number;
   pendingActionsToday: number;
   overdueActions: number;
+  /**
+   * Demanda montada contra capacidade demonstrada. Opcionais: o cron ainda nao
+   * calcula, e nao precisa — quem fala e o cliente.
+   */
+  plannedDailyDemand?: number | null;
+  bestDailyCompletions?: number | null;
+  daysWithCompletions?: number;
   dailyProofStreakCurrent: number;
   dailyProofStreakBest: number;
   dailyProofTotalClosedDays: number;

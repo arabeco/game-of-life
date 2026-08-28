@@ -295,6 +295,7 @@ export const buildOracleOperationalContext = ({
   const cycleCompletedActions = Math.min(cycleTotalActions || completedCycleTasks.length, completedCycleTasks.length);
   const cyclePendingActions = Math.max(0, cycleTotalActions - cycleCompletedActions);
 
+
   const cycleTotalDays = activeCycle
     ? Math.max(1, (diffLocalDays(activeCycle.startDate, activeCycle.endDate) ?? 0) + 1)
     : null;
@@ -304,6 +305,32 @@ export const buildOracleOperationalContext = ({
         Math.max(1, (diffLocalDays(activeCycle.startDate, operationalDate) ?? 0) + 1),
       )
     : null;
+  /**
+   * Capacidade demonstrada contra demanda montada.
+   *
+   * `reduzir_meta` ja existia, mas dispara em `pace atrasado` — que acontece
+   * tanto para quem pos 2 acoes por dia e nao fez, quanto para quem pos 40 e e
+   * impossivel. So o segundo e evidencia de que a ESTRUTURA esta errada. No
+   * primeiro caso nao ha evidencia nenhuma: a pessoa so nao executou, e mandar
+   * ela cortar a meta e o app se rendendo por ela.
+   *
+   * O melhor dia e generoso de proposito. Se nem o melhor dia que ela ja teve
+   * chega perto do que o plano pede todo dia, a conta nao fecha — e ai a culpa e
+   * do numero, nao dela.
+   */
+  const completionsByDay = new Map<string, number>();
+  for (const task of completedCycleTasks) {
+    const dia = getTaskOperationalDateString(task);
+    completionsByDay.set(dia, (completionsByDay.get(dia) || 0) + 1);
+  }
+  const bestDailyCompletions = completionsByDay.size > 0
+    ? Math.max(...Array.from(completionsByDay.values()))
+    : 0;
+  const daysWithCompletions = completionsByDay.size;
+  const plannedDailyDemand = cycleTotalDays && cycleTotalDays > 0
+    ? cycleTotalActions / cycleTotalDays
+    : null;
+
   const cycleDaysRemaining = activeCycle && cycleDayNumber && cycleTotalDays
     ? Math.max(0, cycleTotalDays - cycleDayNumber)
     : null;
@@ -487,6 +514,9 @@ export const buildOracleOperationalContext = ({
     completedActionsInCycle,
     pendingActionsToday: pendingTodayTasks.length,
     overdueActions: overdueTasks.length,
+    plannedDailyDemand,
+    bestDailyCompletions,
+    daysWithCompletions,
     dailyProofStreakCurrent: Math.max(0, Math.round(dailyProofStreak?.current || 0)),
     dailyProofStreakBest: Math.max(0, Math.round(dailyProofStreak?.best || 0)),
     dailyProofTotalClosedDays: Math.max(0, Math.round(dailyProofStreak?.totalClosedDays || 0)),

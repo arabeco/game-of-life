@@ -406,4 +406,74 @@ for (const datas of [[], ['2026-08-27', '2026-08-28'], ['2026-08-26', '2026-08-2
   }
 }
 
+
+// --- estrutura inflada nao e execucao baixa ---------------------------------
+// A distincao que o app nao fazia: `reduzir_meta` disparava em `pace atrasado`,
+// que acontece tanto para quem pos 2 acoes por dia e nao fez quanto para quem
+// pos 40 e e impossivel. So o segundo e evidencia de estrutura errada.
+
+const estruturaImpossivel = {
+  ...contextoBase,
+  cycleDayNumber: 12,
+  plannedDailyDemand: 40,
+  bestDailyCompletions: 7,
+  daysWithCompletions: 9,
+};
+const inflada = detectOracleCandidates(estruturaImpossivel).filter((c) => c.type === 'meta_inflada');
+assert.equal(inflada.length, 1, '40 por dia contra um melhor dia de 7 e estrutura impossivel');
+
+const falaInflada = buildPlannerCoachSpeech(estruturaImpossivel, () => 0, 'neutro');
+assert.ok(/40/.test(falaInflada), 'a frase diz o numero que o plano pede');
+assert.ok(/7/.test(falaInflada), 'e o melhor dia que a pessoa ja teve');
+assert.ok(!/\{\w+\}/.test(falaInflada), 'nenhum marcador pode sobrar');
+
+// Ela vence ate quem sumiu: costuma ser a CAUSA de ter sumido, e e o unico caso
+// em que o problema nao e a pessoa.
+assert.equal(
+  rankOracleCandidates({ ...estruturaImpossivel, daysSinceLastPlannerOpen: 6 }, ORACLE_PRESENCE.PRESENTE)[0].type,
+  'meta_inflada',
+  'a causa fala antes do sintoma',
+);
+
+// --- e os quatro portoes seguram o falso positivo ---------------------------
+// Falso positivo aqui manda alguem capaz baixar o proprio padrao, o que e pior
+// do que ficar calado.
+
+const semInflada = (mudancas, motivo) => assert.deepEqual(
+  detectOracleCandidates({ ...estruturaImpossivel, ...mudancas }).filter((c) => c.type === 'meta_inflada'),
+  [], motivo,
+);
+
+semInflada({ cycleDayNumber: 3 }, 'tres dias de ciclo nao dao base para julgar estrutura');
+semInflada({ daysWithCompletions: 1 }, 'quem nem tentou nao tem estrutura impossivel, tem estrutura nao testada');
+semInflada({ plannedDailyDemand: 6, bestDailyCompletions: 1 }, 'abaixo do piso absoluto nenhuma estrutura e impossivel, so mal executada');
+semInflada({ plannedDailyDemand: 12, bestDailyCompletions: 7 }, 'demanda dentro do dobro do melhor dia ainda e alcancavel');
+
+// O caso que define a diferenca: meta plausivel, execucao baixa. Nao ha
+// evidencia nenhuma de que o numero esteja errado — a pessoa so nao fez.
+const metaPlausivelSemExecucao = {
+  ...contextoBase,
+  cycleDayNumber: 12,
+  plannedDailyDemand: 2,
+  bestDailyCompletions: 0,
+  daysWithCompletions: 3,
+  arenas: [arena({ pace: 'critico', adjustment: 'reduzir_meta', progressDelta: -45 })],
+};
+assert.deepEqual(
+  detectOracleCandidates(metaPlausivelSemExecucao).filter((c) => c.type === 'meta_inflada'),
+  [], 'duas acoes por dia nunca e o culpado',
+);
+
+// E a fala que sobra para esse caso nao pode mandar cortar meta: seria o app se
+// rendendo por alguem que so precisa fazer uma acao.
+for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+  const linha = buildPlannerCoachSpeech(metaPlausivelSemExecucao, () => 0, tom);
+  assert.ok(linha, `${tom} precisa ter o que dizer sobre arena atrasada`);
+  assert.doesNotMatch(
+    linha,
+    /reduz|reveja a meta|diminua a repeticao|meta e que estava grande|corte uma acao/i,
+    `${tom}: estar atras nao autoriza mandar cortar a meta`,
+  );
+}
+
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

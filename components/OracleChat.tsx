@@ -12,6 +12,10 @@ import { buildOracleOperationalContext } from '../utils/oracleOperationalContext
 import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
+import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
+import { buildOracleCycleCoachBrief } from '../utils/oracleCoach';
+import { emitOracleSpeech } from '../utils/oracleSpeech';
+import { ArenaPactBalloon, ArenaPactProposal } from './ArenaPactBalloon';
 
 type OracleTabTarget = 'chat' | 'requests';
 interface Message {
@@ -193,7 +197,7 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
-  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard } = useGame();
+  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, showToast } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -481,6 +485,51 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   };
 
 
+  const { trigger: sensory } = useSensoryFeedback();
+  const [pactPanelOpen, setPactPanelOpen] = useState(false);
+
+  // Sem arena elegivel nao ha pacto possivel. O botao fica opaco em vez de sumir:
+  // sumir faz o rodape pular, e nao explica nada.
+  const missionAvailable = (arenaPactCandidates?.length || 0) > 0;
+
+  /**
+   * A leitura do proprio estado, na hora e de graca.
+   *
+   * Tudo que ela precisa ja esta na memoria: arenas, acoes, tarefas e ciclo. Nao
+   * ha ida ao servidor, entao ela pode ser livre e gratuita — e da ao plano
+   * gratuito um botao para apertar, coisa que o rodape nao tinha.
+   *
+   * Apertar duas vezes devolve a mesma frase de proposito: o que muda a leitura e
+   * o seu estado mudar, nao o Oraculo ter mais sinonimos.
+   */
+  const handleReadMyDay = useCallback(() => {
+    const brief = buildOracleCycleCoachBrief(operationalContext);
+    if (!brief?.content) return;
+    sensory('click_soft');
+    emitOracleSpeech({
+      title: 'Oraculo',
+      message: brief.content,
+      tone: 'info',
+      durationMs: 6800,
+      kind: 'abertura',
+      quickActions: brief.quickActions,
+    });
+  }, [operationalContext, sensory]);
+
+  const handleAskMission = useCallback(() => {
+    if (activeArenaPact) {
+      setPactPanelOpen(true);
+      return;
+    }
+    if (!missionAvailable) {
+      sensory('error');
+      showToast('Nenhuma arena sua esta elegivel para missao agora.', 'warning');
+      return;
+    }
+    sensory('click_soft');
+    setPactPanelOpen(true);
+  }, [activeArenaPact, missionAvailable, sensory, showToast]);
+
   const runQuickAction = useCallback((action: ChatQuickAction) => {
     switch (action.kind) {
       case 'open_planner_create_action':
@@ -766,6 +815,21 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           <div ref={messagesEndRef} />
         </div>
 
+        {/* O painel do pacto abre ACIMA da barra, dentro do proprio Oraculo.
+            Ele nao e conversa: sao duas escolhas — arena e molde — e um aceitar.
+            Nada dele vira mensagem, entao o historico continua limpo. */}
+        {pactPanelOpen && (
+          <div className="border-t border-white/10 bg-black/30 p-3 flex-shrink-0">
+            {activeArenaPact ? <ArenaPactBalloon /> : <ArenaPactProposal onClose={() => setPactPanelOpen(false)} />}
+            <button
+              onClick={() => setPactPanelOpen(false)}
+              className="mt-2 w-full rounded-xl border border-white/10 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/45 transition-colors hover:text-white/80"
+            >
+              Fechar
+            </button>
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-4 border-t border-white/10 bg-black/40 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -791,12 +855,41 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                 {manualQuotaLabel}
               </div>
             </div>
-            {/* Free-form chat removed: it called the model for every user with no
-                premium gate, so its cost grew with signups rather than revenue. The
-                Oracle now speaks through cards and contextual lines only. */}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-bold text-[color:var(--ui-card-text)]">{manualGenerateLabel}</p>
-              <p className="mt-0.5 text-[10px] leading-snug text-[color:var(--ui-card-text-soft)]">{oracleInputHint}</p>
+            {/* O chat livre saiu: ele chamava o modelo para todo mundo sem portao de
+                Premium, entao o custo crescia com cadastros e nao com receita. O
+                espaco dele virava duas linhas explicando o botao ao lado — texto
+                sobre um botao que ja tem rotulo.
+                Agora sao duas acoes que a pessoa pode pedir quando quiser, e as
+                duas custam ZERO de rede: leem o que ja esta na memoria do app. */}
+            <div className="flex min-w-0 flex-1 gap-2">
+              <button
+                onClick={handleReadMyDay}
+                className="min-w-0 flex-1 rounded-2xl border border-white/12 bg-white/[0.04] px-3 py-2.5 text-left transition-colors hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]"
+              >
+                <span className="block truncate text-[11px] font-black uppercase tracking-[0.14em] text-white/82">Ler meu dia</span>
+                <span className="mt-0.5 block truncate text-[9px] text-white/38">como voce esta agora</span>
+              </button>
+
+              {/* O mesmo slot, dois estados: sem pacto convida, com pacto informa.
+                  Botao que some faz o rodape pular; opaco com toast diz por que nao
+                  da, em vez de nao dar e ficar calado. */}
+              <button
+                onClick={handleAskMission}
+                className={`min-w-0 flex-1 rounded-2xl border px-3 py-2.5 text-left transition-colors ${
+                  activeArenaPact
+                    ? 'border-[var(--skin-accent-color)]/32 bg-[var(--skin-accent-color)]/8 hover:bg-[var(--skin-accent-color)]/12'
+                    : missionAvailable
+                      ? 'border-white/12 bg-white/[0.04] hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]'
+                      : 'border-white/8 bg-white/[0.02] opacity-45'
+                }`}
+              >
+                <span className={`block truncate text-[11px] font-black uppercase tracking-[0.14em] ${activeArenaPact ? 'text-[var(--skin-accent-color)]' : 'text-white/82'}`}>
+                  {activeArenaPact ? activeArenaPact.title : 'Pedir missao'}
+                </span>
+                <span className="mt-0.5 block truncate text-[9px] text-white/38">
+                  {activeArenaPact ? `${arenaPactProgress.current}/${arenaPactProgress.goal}` : 'uma de cada vez'}
+                </span>
+              </button>
             </div>
           </div>
         </div>

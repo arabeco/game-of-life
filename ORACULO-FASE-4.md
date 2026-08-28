@@ -483,6 +483,146 @@ grátis para sempre.
 
 ---
 
+# Parte 7 — Revisão: o Oráculo já calcula muito mais do que fala
+
+Escrito depois de checar `utils/oracleOperationalContext.ts` e `utils/oracleCoach.ts`.
+**Corrige a Parte 1**, que subestimou o que já existe.
+
+## 7.1 O que o contexto carrega
+
+`OracleArenaSignal` é **rico, e é por arena**. Dezesseis campos, calculados para
+até **6 arenas ranqueadas**:
+
+`progressPercent` · `expectedProgressPercent` · `progressDelta` ·
+`pace` · `completedActions` · `plannedActions` · `pendingActions` ·
+`pendingActionsToday` · `lastProofDate` · `daysSinceProof` ·
+`suggestedAdjustment` · `reason`
+
+O `pace` já tem cinco estados: `adiantado` · `no_ritmo` · `atrasado` ·
+`critico` · `sem_medida`.
+
+E o `suggestedAdjustment` já tem cinco decisões: `reduzir_meta` ·
+`pausar_arena` · `criar_meta_minima` · `proteger_uma_acao` · `manter_ritmo`.
+
+Mais os agregados `stalledArenaCount`, `overloadedArenaCount`, `staleArenas[]`,
+e a família `dailyProofStreakCurrent/Best/TotalClosedDays/LastClosedDate`.
+
+## 7.2 O que a fala usa
+
+`buildPlannerCoachSpeech` lê **14 campos**. Destes, **um** é por arena:
+
+| | |
+|---|---|
+| Do ciclo | `cycleCompletedActions` `cycleCompletionPercent` `cycleDayNumber` `cycleDaysRemaining` `cycleName` `cyclePace` `cyclePendingActions` `cycleTotalActions` `expectedCycleCompletionPercent` |
+| Estrutura | `hasArenas` `hasCycle` `totalArenas` `priorityActionName` |
+| Por arena | **`focusArenaSignal`** — e só a primeira do ranking |
+
+## 7.3 As três consequências
+
+**1. `arenaSignals[1..5]` nunca é lido.** Ele ranqueia seis arenas e fala de uma.
+Aquela distinção de Caso A (tudo em 60%) e Caso B (duas em 100%, duas em 5%) —
+o contexto **já sabe separar**. A fala não pergunta.
+
+**2. `overloadedArenaCount` nunca é lido — e a M1 já está meio construída.**
+O `suggestedAdjustment: 'reduzir_meta'` é calculado **por arena**, e o agregado
+conta quantas estão assim. **O Oráculo já sabe quem configurou demais.** Ele só
+nunca abre a boca sobre isso.
+
+A M1 deixa de ser "ensinar ele a ver estrutura" e vira "deixar ele dizer o que
+já concluiu". Só falta o banco de linhas.
+
+**3. Nenhum campo de streak é lido.** Os quatro existem no contexto e passam
+direto. A M3 também é banco de linhas, não cálculo novo.
+
+## 7.4 O que falta de verdade
+
+Só uma coisa: **estado anterior**. Todos os campos acima são instantâneos.
+`daysSinceProof` diz "6 dias parada", mas ninguém guarda que ontem eram 5 —
+então `parada → retomando` é invisível.
+
+**A memória (M4) não é uma melhoria entre outras. É a única peça que falta**
+para tudo o resto virar percurso em vez de foto.
+
+---
+
+# Parte 8 — A arquitetura da relevância
+
+Ideia que veio de fora e é melhor que a minha M2. Registro com o crédito.
+
+Hoje há duas dimensões: **Presença** (quanto fala) e **Tom** (como fala). Falta
+a terceira, que não é configuração e sim cálculo: **vale a pena falar agora?**
+
+Cada evento recebe uma nota, e a presença vira o corte:
+
+| Nota | Evento |
+|---|---|
+| 0 | nada mudou |
+| 1 | ação comum |
+| 2 | sequência interessante |
+| 3 | arena fechada |
+| 4 | virada depois de abandono · streak ameaçado |
+| 5 | marco grande |
+
+**Silencioso** ≥ 5 (ou nada, conforme o pacto) · **Equilibrado** ≥ 3 ·
+**Presente** ≥ 1.
+
+Isto **absorve a M2**. "Falar por evento em vez de por abertura" deixa de ser
+regra própria e vira consequência: abrir o app pontua 0.
+
+E dá uma propriedade que a M2 sozinha não dava: **os três níveis passam a ser o
+mesmo sistema com corte diferente**, em vez de três caminhos separados no
+código. Hoje `openingLine: 'nunca' | 'diaria' | 'sempre'` e
+`reactions: 'nenhuma' | 'marcos' | 'todas'` são duas escadas paralelas fazendo
+a mesma pergunta.
+
+## 8.1 A descida
+
+Achada a nota, falta escolher **sobre o que** falar. A ordem é do amplo ao
+específico, e para na coisa mais acionável:
+
+**Global → Ciclo → Arena → Ação**
+
+Ciclo responde *como estou indo*. Arena responde *onde está o problema*. A
+segunda é muito mais acionável, e é justamente a camada que hoje é jogada fora.
+
+> Em vez de: "Você está em 61%."
+>
+> "Manutenção virou seu gargalo. As outras três estão andando."
+
+## 8.2 Estado por arena, com transição
+
+O `pace` já é quase isso. Falta `retomando`, que só existe com memória — e é
+justamente a transição que vale ser dita:
+
+`parada → retomando` → *"Projeto voltou a andar depois de oito dias."*
+
+O Oráculo não comenta toda transição. Ele **registra todas** e comenta as que
+pontuam acima do corte.
+
+---
+
+# Parte 9 — Ordem revisada
+
+| # | Melhoria | Por quê agora |
+|---|---|---|
+| 1 | **M1** estrutura inflada | detecção já existe; só falta a fala |
+| 2 | **M3** streak com voz | dados já existem; só falta a fala |
+| 3 | **M4** memória curta | é a peça que falta, não uma entre outras |
+| 4 | **M8** camada por arena | o cálculo já existe e é descartado |
+| 5 | **M9** nota de relevância | absorve a M2 e unifica as presenças |
+| 6 | **M6** gramática do háptico | independente, barato |
+| 7 | **M4b** 4 variações por estado | escrita pura |
+| 8 | **M7** háptico em três posições | |
+| 9 | **M5** exceções do Silencioso | por último, como antes |
+
+**M2 sai da lista** — foi absorvida pela M9.
+
+M1 e M3 continuam primeiro, e agora por um motivo mais forte do que eu tinha:
+não é que sejam baratas. É que o trabalho **já foi feito** e está sendo jogado
+fora na última etapa.
+
+---
+
 # Anexo — O inventário de hoje
 
 | | |
@@ -499,3 +639,7 @@ grátis para sempre.
 | Cota de cards | = temas ligados (mín. 1, máx. 5) |
 | Teto de segurança | 12 falas/dia (servidor) |
 | Egress por fala | **zero** |
+| Campos por arena calculados | 16, para até 6 arenas |
+| Campos por arena usados na fala | **1** (`focusArenaSignal`) |
+| Campos de streak calculados | 4 |
+| Campos de streak usados na fala | **0** |

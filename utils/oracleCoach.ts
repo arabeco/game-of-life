@@ -75,22 +75,33 @@ type CoachToneLines = Record<OracleSpeechTone, readonly string[]>;
 
 const COACH_LINES: Record<string, CoachToneLines> = {
   /** Sumiu por tres dias ou mais. Marcadores: {dias} */
+  /**
+   * A pessoa sumiu por dias — e esta LENDO isto, o que significa que ela voltou.
+   *
+   * As linhas antigas anunciavam a ausencia para quem acabara de encerra-la:
+   * "voce nao abre o Planner ha 5 dias", dito a alguem que estava com o Planner
+   * aberto na mao. E o mesmo erro de mandar cortar meta no dia em que ela fez a
+   * coisa certa — o app comentando o passado e ignorando o unico fato novo.
+   *
+   * A volta e o acontecimento. O numero fica, porque reconhecer o intervalo e
+   * diferente de fingir que ele nao existiu, mas quem leva a frase e o retorno.
+   */
   ausente: {
     neutro: [
-      'Voce nao abre o Planner ha {dias} dias. As acoes continuam onde estavam.',
-      '{dias} dias sem passar por aqui. Nada foi perdido, so parou.',
+      'Voltou depois de {dias} dias. As acoes continuam onde estavam.',
+      '{dias} dias de intervalo, e voce esta aqui. Nada foi perdido, so parou.',
     ],
     coach: [
-      'Faz {dias} dias. Comece por uma acao pequena hoje, e ajuste o resto depois.',
-      '{dias} dias parado. Escolha uma so para hoje: recomecar pesa menos que compensar.',
+      'Voltou depois de {dias} dias. Comeca por uma acao pequena, e ajusta o resto depois.',
+      'De volta em {dias} dias. Escolhe uma so para hoje: recomecar pesa menos que compensar.',
     ],
     reflexivo: [
-      'Faz {dias} dias. O que mudou na sua vida nesse intervalo?',
-      '{dias} dias longe daqui. Foi falta de tempo, ou o plano deixou de servir?',
+      'Voltou depois de {dias} dias. O que mudou na sua vida nesse intervalo?',
+      '{dias} dias longe, e voce voltou. Foi falta de tempo, ou o plano tinha deixado de servir?',
     ],
     calmo: [
-      'Faz {dias} dias, e tudo bem. O painel espera, nao cobra.',
-      '{dias} dias sem aparecer. Nao precisa recuperar nada. Comeca de onde da.',
+      'Voltou depois de {dias} dias, e esta tudo bem. O painel esperou, nao cobrou.',
+      '{dias} dias de pausa. Nao precisa recuperar nada. Comeca de onde da.',
     ],
   },
 
@@ -189,6 +200,35 @@ const COACH_LINES: Record<string, CoachToneLines> = {
 
   /** Arena de foco atrasada. Marcadores: {arena} */
   /**
+   * Marco de sequencia: 7, 14, 30, 60, 100.
+   *
+   * A unica entrada do banco que so oferece. Nao pede acao, nao aponta proximo
+   * passo, nao lembra do que falta — pedir alguma coisa aqui estragaria o unico
+   * momento do app em que a pessoa nao deve nada a ninguem.
+   *
+   * E o numero e sempre dito. O marco existe justamente para o acumulado virar
+   * acumulado; sem o numero, o dia 30 e igual ao dia 12.
+   */
+  streak_marco: {
+    neutro: [
+      '{streak} dias seguidos. Isso nao foi sorte.',
+      'Marca de {streak} dias. O numero e seu.',
+    ],
+    coach: [
+      '{streak} dias. Quem chega aqui ja nao depende de vontade, depende de habito.',
+      'Sao {streak} dias seguidos. Guarda esse numero para o dia em que bater duvida.',
+    ],
+    reflexivo: [
+      '{streak} dias seguidos. O que voce era no primeiro deles?',
+      'Chegou a {streak}. O que mudou de verdade nesse intervalo?',
+    ],
+    calmo: [
+      '{streak} dias. Sem pressa e sem barulho, e chegou aqui.',
+      'Sao {streak} dias seguidos. Nao precisa fazer nada com isso agora.',
+    ],
+  },
+
+  /**
    * A sequencia morre hoje se nada acontecer.
    *
    * O numero E a fala. Ate aqui nenhuma das 200 linhas do app mencionava o
@@ -203,18 +243,22 @@ const COACH_LINES: Record<string, CoachToneLines> = {
     neutro: [
       '{streak} dias seguidos, e hoje ainda sem nenhuma acao. Uma fecha o dia.',
       'Sua sequencia esta em {streak}. Falta a de hoje.',
+      '{diasSeguidos}a noite seguida chegando no limite com {streak} dias em jogo.',
     ],
     coach: [
       '{streak} dias de pe. Escolhe a menor acao que tiver e mantem.',
       'Uma acao agora e a diferenca entre {streak} e comecar de novo amanha.',
+      'Segunda vez esta semana que da essa hora. Antecipa amanha e para de depender do limite.',
     ],
     reflexivo: [
       '{streak} dias, e hoje passou sem nenhuma. O dia foi cheio, ou foi so escapando?',
       'Sua sequencia esta em {streak}. Ela ainda significa o que significava quando comecou?',
+      'Sao {diasSeguidos} noites seguidas apertando no fim. O problema e o dia ou e a hora?',
     ],
     calmo: [
       'Seu {streak} esta de pe ate a virada do dia. Uma acao segura ele.',
       '{streak} dias. Se hoje nao der, tambem esta tudo bem — mas ainda da.',
+      '{diasSeguidos} noites assim seguidas. Talvez o horario e que nao esta ajudando.',
     ],
   },
 
@@ -465,7 +509,15 @@ export const buildPlannerCoachSpeechDetailed = (
       ? recallOracleSpeech(memory, candidato.type, candidato.arenaId, today)
       : { consecutiveDays: 0, lastLine: null, spokenToday: false, daysSinceLastSaid: null };
 
-    const linha = pickCoachLine(candidato.type, tone, candidato.vars, random, recall.lastLine);
+    // `diasSeguidos` sai da memoria, nao do detector — o detector nao sabe o que
+    // ja foi dito. Na primeira vez ele vale null, e fillCoachLine invalida
+    // sozinho as linhas que o usam: a variacao "segunda noite seguida" simplesmente
+    // nao existe ate existir. Nenhum `if` a mais para isso.
+    const vars = {
+      ...candidato.vars,
+      diasSeguidos: recall.consecutiveDays > 0 ? recall.consecutiveDays + 1 : null,
+    };
+    const linha = pickCoachLine(candidato.type, tone, vars, random, recall.lastLine);
     if (!linha) continue;
 
     return {

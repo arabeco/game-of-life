@@ -670,4 +670,92 @@ for (const tipo of ORACLE_CANDIDATE_TYPES) {
   );
 }
 
+
+// --- marcos de sequencia -----------------------------------------------------
+// Sem eles o numero nao significa nada: se o dia 30 chega com a mesma frase do
+// dia 12, o acumulado nunca vira acumulado.
+
+const marco = (streak) => ({ ...contextoBase, daysSinceLastProof: 0, dailyProofStreakCurrent: streak });
+
+for (const numero of [7, 14, 30, 60, 100]) {
+  const encontrados = detectOracleCandidates(marco(numero)).filter((c) => c.type === 'streak_marco');
+  assert.equal(encontrados.length, 1, `${numero} dias e marco`);
+  const linha = buildPlannerCoachSpeech(marco(numero), () => 0, 'neutro');
+  assert.ok(new RegExp(String(numero)).test(linha), `a fala do marco ${numero} diz o numero`);
+}
+
+// Dia comum nao e marco.
+for (const numero of [6, 12, 31]) {
+  assert.deepEqual(
+    detectOracleCandidates(marco(numero)).filter((c) => c.type === 'streak_marco'),
+    [], `${numero} dias nao e marco`,
+  );
+}
+
+// Marco anunciado no dia seguinte e resenha, nao celebracao.
+assert.deepEqual(
+  detectOracleCandidates({ ...marco(30), daysSinceLastProof: 1 }).filter((c) => c.type === 'streak_marco'),
+  [], 'sem entrega hoje o marco nao foi alcancado hoje',
+);
+
+// O boost cresce com o marco: 100 dias e 7 dias sao coisas diferentes com o
+// mesmo nome, e so o primeiro ganha de uma arena parada.
+const nota = (n) => detectOracleCandidates(marco(n)).find((c) => c.type === 'streak_marco').score;
+assert.ok(nota(100) > nota(30) && nota(30) > nota(7), 'marco maior pesa mais');
+
+const arenaParadaComMarco = {
+  ...marco(100),
+  arenas: [arena({ adjustment: 'pausar_arena', daysSinceProof: 9 })],
+};
+assert.equal(
+  rankOracleCandidates(arenaParadaComMarco, ORACLE_PRESENCE.PRESENTE)[0].type,
+  'streak_marco',
+  'cem dias ganham de uma arena parada',
+);
+assert.equal(
+  rankOracleCandidates({ ...arenaParadaComMarco, dailyProofStreakCurrent: 7 }, ORACLE_PRESENCE.PRESENTE)[0].type,
+  'arena_parada',
+  'sete dias, nao',
+);
+
+// A unica entrada do banco que so oferece: nada de pedir acao no momento em que
+// a pessoa nao deve nada a ninguem.
+for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+  const linha = buildPlannerCoachSpeech(marco(30), () => 0, tom);
+  assert.doesNotMatch(
+    linha, /escolhe uma|feche uma|abra |uma acao hoje|corte /i,
+    `${tom}: marco nao pede nada`,
+  );
+}
+
+// --- a segunda noite seguida no limite --------------------------------------
+// `diasSeguidos` vem da memoria e nao do detector, e na primeira vez vale null —
+// entao fillCoachLine invalida sozinho as linhas que o usam. A variacao "segunda
+// noite" nao existe ate existir, sem nenhum `if` a mais.
+
+const noiteEmRisco = { ...contextoBase, daysSinceLastProof: 1, dailyProofStreakCurrent: 23, hourOfDay: 22 };
+
+const primeiraNoite = buildPlannerCoachSpeechDetailed(noiteEmRisco, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE, [], HOJE);
+assert.ok(!/\{diasSeguidos\}|undefined|null/.test(primeiraNoite.line), 'primeira noite nao usa a variavel que nao existe');
+assert.equal(primeiraNoite.consecutiveDays, 0, 'primeira noite nao tem dias seguidos');
+
+const segundaNoite = buildPlannerCoachSpeechDetailed(
+  noiteEmRisco, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE,
+  [{ type: 'streak_em_risco', date: ONTEM, line: 'x' }], HOJE,
+);
+assert.equal(segundaNoite.consecutiveDays, 1, 'ontem tambem foi noite de risco');
+assert.ok(!/\{\w+\}/.test(segundaNoite.line), 'nenhum marcador pode sobrar');
+
+// --- a volta e o acontecimento ----------------------------------------------
+// As linhas antigas anunciavam a ausencia para quem acabara de encerra-la:
+// "voce nao abre o Planner ha 5 dias", dito a alguem com o Planner na mao.
+
+const voltou = { ...contextoBase, daysSinceLastPlannerOpen: 5 };
+for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+  const linha = buildPlannerCoachSpeech(voltou, () => 0, tom);
+  assert.match(linha, /volt|de volta/i, `${tom}: quem esta lendo isto voltou, e e disso que se fala`);
+  assert.doesNotMatch(linha, /nao abre|sem passar por aqui|sem aparecer/i, `${tom}: nao anunciar a ausencia para quem a encerrou`);
+  assert.match(linha, /5/, `${tom}: o intervalo continua sendo dito`);
+}
+
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

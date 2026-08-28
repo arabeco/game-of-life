@@ -8,7 +8,10 @@ export type AppSensoryCue =
     | 'report_chapter'
     | 'report_verdict'
     | 'report_reward'
-    | 'cycle_complete';
+    | 'cycle_complete'
+    // Marcos de sequencia: 7, 14, 30, 60, 100. Peso proprio porque e raro por
+    // definicao — e o que e raro pode ser reconhecivel.
+    | 'streak_milestone';
 
 export interface AppSensoryCuePayload {
     cue: AppSensoryCue;

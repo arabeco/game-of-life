@@ -93,6 +93,13 @@ const suites = {
       interactions: ['os resgates passam pelo mesmo ritual', 'subida de patente entra em todos', 'missao de item paga XP por reward_exp'],
     },
     {
+      id: 'sensory-grammar',
+      label: 'Sensory grammar regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'sensory-grammar.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['tres pesos e nada colidindo', 'fechar ciclo nao vibra como fechar painel', 'o marco de sequencia tem pulso proprio'],
+    },
+    {
       id: 'oracle-arbiter',
       label: 'Oracle arbiter regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'oracle-arbiter.regression.mjs')]],

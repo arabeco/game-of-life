@@ -3,6 +3,7 @@ import { useGame } from '../contexts/GameContext';
 import { safeVibrate } from '../utils/safeVibrate';
 
 type FeedbackType =
+    | 'streak_milestone'
     | 'click'
     | 'click_soft'
     | 'click_crisp'
@@ -142,6 +143,15 @@ export const useSensoryFeedback = () => {
                 case 'level_up':
                     // Soberano: pulso crescente para milestones.
                     safeVibrate([120, 40, 180, 40, 240]);
+                    break;
+                case 'streak_milestone':
+                    // Reservado a 7, 14, 30, 60 e 100 dias — e a nada mais.
+                    //
+                    // Desenho oposto ao do level_up de proposito: comeca longo e
+                    // AFINA, em vez de crescer. Duas coisas grandes que sobem
+                    // igual sao a mesma coisa para o pulso, e o objetivo aqui e
+                    // que a pessoa reconheca na segunda vez que sentir.
+                    safeVibrate([220, 60, 90, 60, 90, 60, 40]);
                     break;
             }
         }

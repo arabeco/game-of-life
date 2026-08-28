@@ -12275,7 +12275,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         if (streakResult.isNewDate) {
-            window.setTimeout(() => emitAppSensoryCue('daily_streak'), 120);
+            // 7, 14, 30, 60, 100 tem peso proprio no pulso. Um dia comum de
+            // sequencia e um 'fecho'; chegar a um marco nao pode chegar igual,
+            // senao o numero nunca vira acumulado para o corpo — que e onde a
+            // antecipacao mora. A lista e a mesma do banco de falas de propria.
+            const marcoDeSequencia = [7, 14, 30, 60, 100].includes(streakResult.next.current);
+            window.setTimeout(
+                () => emitAppSensoryCue(marcoDeSequencia ? 'streak_milestone' : 'daily_streak'),
+                120,
+            );
         }
         if (praise) {
             emitOracleSpeech({

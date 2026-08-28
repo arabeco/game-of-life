@@ -14,6 +14,7 @@ import { buildPremiumRewardsToast } from '../utils/premiumRewards';
 import { buildVanguardRewardsToast } from '../utils/vanguardRewards';
 import { getUnreadBadgeCount } from '../constants/oracleNotificationPolicy';
 import { APP_SENSORY_CUE_EVENT, type AppSensoryCuePayload } from '../utils/sensoryCue';
+import { getSensoryWeight } from '../constants/sensoryGrammar';
 import {
     LEGAL_ACCEPT_SOURCE_INITIAL,
     LEGAL_ACCEPT_SOURCE_REVIEW,
@@ -1531,44 +1532,27 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 toastSensorySuppressedUntilRef.current = Date.now() + 420;
             }
 
-            switch (detail.cue) {
-                case 'task_complete':
-                    trigger('impact');
-                    break;
-                case 'daily_streak':
-                    // Um dia de streak fica um degrau abaixo de arena concluida.
-                    trigger('impact');
-                    break;
-                case 'daily_panel_closed':
-                    trigger('success');
-                    break;
-                case 'arena_complete':
-                    trigger('success');
-                    if (animationsEnabled) {
-                        setConfettiBurst({ key: detail.timestamp, intense: false });
-                    }
-                    break;
-                case 'campaign_complete':
-                    trigger('level_up');
-                    if (animationsEnabled) {
-                        setConfettiBurst({ key: detail.timestamp, intense: true });
-                    }
-                    break;
-                case 'cycle_seal_start':
-                    trigger('whoosh');
-                    break;
-                case 'report_chapter':
-                    trigger('click_soft');
-                    break;
-                case 'report_verdict':
-                    trigger('success');
-                    break;
-                case 'report_reward':
-                    trigger('fanfare');
-                    break;
-                case 'cycle_complete':
-                    trigger('success');
-                    break;
+            // O peso vem da tabela, nao daqui.
+            //
+            // Antes cada pista escolhia a propria vibracao neste switch, e foi
+            // isso que produziu as colisoes: fechar arena e fechar o painel
+            // diario davam 'success' as duas, e fechar um CICLO INTEIRO tambem.
+            // Escolha espalhada nao consegue garantir que coisas diferentes
+            // sejam diferentes, porque cada linha so ve a si mesma.
+            const peso = getSensoryWeight(detail.cue);
+            trigger(
+                peso === 'marco_raro' ? 'streak_milestone'
+                    : peso === 'marco' ? 'level_up'
+                        : peso === 'fecho' ? 'success'
+                            : 'impact',
+            );
+
+            // O confete e outra dimensao: ele responde ao que merece a TELA, e
+            // nem tudo que merece o pulso merece a tela.
+            if (animationsEnabled && (peso === 'marco' || peso === 'marco_raro')) {
+                setConfettiBurst({ key: detail.timestamp, intense: true });
+            } else if (animationsEnabled && detail.cue === 'arena_complete') {
+                setConfettiBurst({ key: detail.timestamp, intense: false });
             }
         };
 

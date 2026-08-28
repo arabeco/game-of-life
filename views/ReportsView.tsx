@@ -566,7 +566,10 @@ const TimelineCard: React.FC<{ report: Report, isLatest: boolean, onClick: () =>
                     {isLatest && <div className="w-2 h-2 bg-[var(--skin-accent-color)] rounded-full animate-pulse"></div>}
                 </div>
             )}
-            {onDelete && !isEditing && (
+            {/* O lixo aparece sempre que ha modo de edicao — quem controla se ele
+                existe e quem passa onDelete, e isso so acontece editando. Antes ele
+                se escondia justamente no modo de eras, que agora e o mesmo modo. */}
+            {onDelete && (
                 <button
                     type="button"
                     onClick={(event) => {
@@ -1795,6 +1798,20 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         return segments;
     };
 
+    /**
+     * O unico botao de editar do historico.
+     *
+     * Antes eram dois modos separados, cada um com o proprio botao num canto
+     * diferente da tela: um escolhia a era de cada ciclo, o outro liberava apagar.
+     * Ninguem descobria que existiam dois, nem qual liberava o que. Agora ha um
+     * estado de edicao so, e nele as duas coisas valem.
+     */
+    const beginHistoryEditing = () => {
+        if (isEditingEras) return;
+        setIsEditingHistoryCycles(true);
+        beginEraEditing();
+    };
+
     const beginEraEditing = () => {
         if (sortedReports.length === 0) {
             if (activeCycle) {
@@ -2223,24 +2240,18 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const handleCancelEraEdit = () => {
         setIsEditingEras(false);
+        // O modo de edicao e um so: sair dele fecha as duas coisas juntas.
+        setIsEditingHistoryCycles(false);
         setDraftEraSlots([]);
         setDraftReportEraIds({});
         setActiveDraftEraId(null);
         setInlineEraEditor(null);
     };
 
-    const toggleHistoryCycleEditing = () => {
-        if (isEditingEras) {
-            showToast('Finalize a organizacao das Eras antes de editar ciclos.');
-            return;
-        }
-        setIsEditingHistoryCycles((previous) => !previous);
-        setCycleBeingEdited(null);
-        setHistoricalCycleBeingEdited(null);
-    };
-
     const handleResetEras = async () => {
         setIsEditingEras(false);
+        // O modo de edicao e um so: sair dele fecha as duas coisas juntas.
+        setIsEditingHistoryCycles(false);
         setDraftEraSlots([]);
         setDraftReportEraIds({});
         setActiveDraftEraId(null);
@@ -2419,6 +2430,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         });
         setEraMetadata(nextMetadata);
         setIsEditingEras(false);
+        // O modo de edicao e um so: sair dele fecha as duas coisas juntas.
+        setIsEditingHistoryCycles(false);
         setDraftEraSlots([]);
         setDraftReportEraIds({});
         setActiveDraftEraId(null);
@@ -2467,26 +2480,15 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <XIcon className="h-3.5 w-3.5" />
                         </button>
                     )}
-                    {/* Editar ciclos morava no alto da tela, longe do que edita, e
-                        ninguem ligava um ao outro. Eras e ciclos sao as duas coisas
-                        editaveis do historico: ficam lado a lado. */}
-                    {(activeCycle || sortedReports.length > 0) && (
-                        <button
-                            onClick={toggleHistoryCycleEditing}
-                            title={isEditingHistoryCycles ? 'Concluir edicao de ciclos' : 'Editar ciclos'}
-                            className={`rounded-lg border p-1.5 transition-colors ${
-                                isEditingHistoryCycles
-                                    ? 'border-[var(--skin-accent-color)]/50 text-[var(--skin-accent-color)]'
-                                    : 'border-white/8 text-white/35 hover:border-[var(--skin-accent-color)]/40 hover:text-[var(--skin-accent-color)]'
-                            }`}
-                        >
-                            <Trash2Icon className="h-3.5 w-3.5" />
-                        </button>
-                    )}
+
+                    {/* UM botao de editar, nao dois. Ele destrava as duas coisas de
+                        uma vez: escolher a que era cada ciclo pertence e apagar
+                        ciclo. Separado, a pessoa tinha de descobrir que existiam dois
+                        modos e qual deles liberava o que. */}
                     <button
                         id="eras-button"
-                        onClick={beginEraEditing}
-                        title="Organizar eras"
+                        onClick={beginHistoryEditing}
+                        title="Editar eras e ciclos"
                         className="rounded-lg border border-white/8 p-1.5 text-white/35 transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-[var(--skin-accent-color)]"
                     >
                         <EditIcon className="h-3.5 w-3.5" />

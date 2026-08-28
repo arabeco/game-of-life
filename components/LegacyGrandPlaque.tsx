@@ -4,6 +4,7 @@ import type { ReportIdentitySnapshot } from '../types';
 import type { LegacyEraSummary } from './LegacyExportDocument';
 import { buildLegacyPlaqueSummary } from './LegacyPlaqueArtifact';
 import { UserAvatar } from './UserAvatar';
+import { getDisplayLevel } from '../constants/lifeAreas';
 
 interface LegacyGrandPlaqueProps {
     eras: LegacyEraSummary[];
@@ -30,7 +31,10 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
     const patent = identity?.nobilityRankName || identity?.title || 'Vagante';
     const clanName = identity?.clanName?.trim() || '';
     const clanRank = identity?.clanRankName?.trim() || '';
-    const level = Math.max(1, Number(identity?.level || 1));
+    // O snapshot guarda a soma crua das areas; o numero que se mostra e o Indice
+    // Glyph, o mesmo do cabecalho. A placa mostrava metade do que o cabecalho
+    // mostrava para a mesma pessoa.
+    const level = getDisplayLevel(identity?.level);
     const formattedHours = `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`;
     const capturedAt = identity?.capturedAt ? new Date(identity.capturedAt) : null;
     const capturedDate = capturedAt && !Number.isNaN(capturedAt.getTime())

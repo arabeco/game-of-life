@@ -37,6 +37,7 @@ import { suggestEmojiForLabel } from '../utils/suggestEmojiForLabel';
 import { buildCodexCampaignPreview, buildCodexTemplateFromDraft, type CodexCampaignPreview } from '../utils/codexPreview';
 import { getGoldMechanicPrice } from '../constants/goldCatalog';
 import { getContentVisualPalette, resolveCampaignVisualFamily } from '../utils/contentCardVisuals';
+import { getDisplayLevel } from '../constants/lifeAreas';
 import {
     RELATIONSHIP_LINK_DURATION_DAYS,
     getRelationshipDaysLeft,
@@ -643,7 +644,7 @@ const RelationshipInvitePicker: React.FC<{
                                             <div className="min-w-0 flex-1">
                                                 <div className="truncate text-sm font-black text-white">{friend.nickname}</div>
                                                 <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/42">
-                                                    Nivel {friend.level || 1}
+                                                    Nivel {getDisplayLevel(friend.level)}
                                                 </div>
                                             </div>
                                             <div className="rounded-full border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 p-2 text-[var(--skin-accent-color)]">

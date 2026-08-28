@@ -4,6 +4,7 @@ import { GlassCard } from './GlassCard';
 import { useGame } from '../contexts/GameContext';
 import { XIcon } from './Icons';
 import { Portal } from './Portal';
+import { getDisplayLevel } from '../constants/lifeAreas';
 
 interface TransferLeadershipModalProps {
     onClose: () => void;
@@ -37,7 +38,7 @@ export const TransferLeadershipModal: React.FC<TransferLeadershipModalProps> = (
                                 <img src={member.avatarUrl} alt={member.nickname} className="w-10 h-10 rounded-full"/>
                                 <div>
                                     <h4 className="font-bold text-white text-sm">{member.nickname}</h4>
-                                    <p className="text-xs text-gray-400">Nível {member.level}</p>
+                                    <p className="text-xs text-gray-400">Nível {getDisplayLevel(member.level)}</p>
                                 </div>
                             </button>
                         ))}

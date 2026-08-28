@@ -19,6 +19,7 @@ import { SupabaseService } from '../services/SupabaseService';
 import { safeVibrate } from '../utils/safeVibrate';
 import { UserAvatar } from './UserAvatar';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
+import { getDisplayLevel } from '../constants/lifeAreas';
 
 const ALDEIA_SLOTS: { id: AldeiaSlotId; label: string; emoji: string; x: number; y: number; note?: string }[] = [
     { id: 'fogueira', label: 'Fogueira', emoji: '🔥', x: 42, y: 51 },
@@ -129,7 +130,7 @@ const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () =
                                 {member.role === 'leader' ? (isOfficeClan ? 'Diretor' : 'Lider') : 'Pessoa'}
                             </span>
                             <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold uppercase tracking-wider text-gray-300 border border-white/10">
-                                Nível {member.level}
+                                Nível {getDisplayLevel(member.level)}
                             </span>
                         </div>
                     </div>
@@ -1676,7 +1677,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                             <UserAvatar avatarUrl={friend.avatarUrl} nickname={friend.nickname} className="h-10 w-10" level={friend.level} showBorder={false} />
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="font-bold text-white truncate">{friend.nickname}</div>
-                                                                <p className="text-[11px] text-gray-400">Nível {friend.level}</p>
+                                                                <p className="text-[11px] text-gray-400">Nível {getDisplayLevel(friend.level)}</p>
                                                             </div>
                                                             <button
                                                                 onClick={() => handleSendClanInvite(friend.id, friend.nickname)}

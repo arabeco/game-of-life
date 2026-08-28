@@ -36,6 +36,7 @@ import {
 import { ORACLE_FREE_TONE, ORACLE_TONE_LABELS } from '../constants/oracleSpeechLibrary';
 import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
 import './settings-ui.css';
+import { getDisplayLevel } from '../constants/lifeAreas';
 
 const OracleChat = lazy(() =>
     import('../components/OracleChat').then((module) => ({ default: module.OracleChat }))
@@ -1560,7 +1561,7 @@ const ChallengeSelectionModal: React.FC<{ title?: string; onClose: () => void; o
                                     </div>
                                     <div className="flex-1">
                                         <div className="text-sm font-bold text-white">{friend.nickname}</div>
-                                        <div className="text-[10px] text-gray-400">Nível {friend.level || 1}</div>
+                                        <div className="text-[10px] text-gray-400">Nível {getDisplayLevel(friend.level)}</div>
                                     </div>
                                     <div className="px-3 py-1 bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] text-[10px] font-bold rounded-lg uppercase">
                                         Desafiar

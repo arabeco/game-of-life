@@ -34,6 +34,21 @@ const sumAreaLevels = (levels: readonly (number | null | undefined)[]): number =
 export const getMasteryIndexFromLevels = (levels: readonly (number | null | undefined)[]): number =>
   toMasteryIndex(sumAreaLevels(levels));
 
+/**
+ * O numero de nivel que o usuario VE.
+ *
+ * `profile.level` guarda a soma crua dos niveis das cinco areas — 36, no caso de
+ * quem tem todas em 7 ou 8. O Indice Glyph, que e o numero do cabecalho, e essa
+ * soma vezes dois: 72. As duas coisas conviviam, e cada tela escolhia uma: o
+ * cabecalho mostrava 72 e a placa do legado mostrava 36 para a mesma pessoa, no
+ * mesmo instante.
+ *
+ * Toda tela que mostra "Nivel" passa por aqui. Quem precisa do numero cru para
+ * conta interna continua lendo profile.level direto.
+ */
+export const getDisplayLevel = (rawLevel: number | null | undefined): number =>
+  toMasteryIndex(Math.max(1, Number(rawLevel || 1)));
+
 export const getMasteryIndexFromAssets = (
   assets: readonly { id: string; level?: number | null }[],
 ): number =>

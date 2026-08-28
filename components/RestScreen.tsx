@@ -987,10 +987,9 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                             <CheckCircleIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                         </div>
                                         <div>
+                                            {/* "Acoes e ciclo" era legenda de um titulo que ja
+                                                diz o que e. Uma linha basta. */}
                                             <h2 className="restscreen-neutral-label text-[10px] font-black uppercase tracking-[0.2em]">RESUMO DIARIO</h2>
-                                            <div className="restscreen-neutral-title text-xs font-bold uppercase tracking-wider">
-                                                Acoes e ciclo
-                                            </div>
                                         </div>
                                     </div>
 

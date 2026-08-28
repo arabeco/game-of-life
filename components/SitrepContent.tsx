@@ -253,7 +253,6 @@ export const SitrepContent: React.FC<{
     const topArena = arenaStats[0] || null;
     const dateLabel = formatPanelDate(selectedDate);
     const isToday = selectedDate === getOperationalDateString();
-    const title = isToday ? 'Resumo de hoje' : `Resumo de ${dateLabel}`;
     const historicalInsight = useMemo(() => {
         if (isToday) return null;
 
@@ -379,22 +378,20 @@ export const SitrepContent: React.FC<{
             <div id="daily-summary-capture-area" className={`relative overflow-hidden rounded-[24px] border border-[var(--skin-accent-color)]/20 bg-black/28 shadow-[inset_0_0_24px_rgba(255,255,255,0.025)] ${fillHeight ? 'flex min-h-0 flex-1 flex-col p-3' : 'p-4'}`}>
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--skin-accent-color)_0%,transparent_62%)] opacity-12" />
                 <div className={`relative z-10 ${fillHeight ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-4'}`}>
+                    {/* Antes empilhava quatro coisas dizendo a mesma: a saudacao, o
+                        rotulo "Resumo Diario", o titulo "Resumo de hoje" — e o painel
+                        que abriu ja tem "RESUMO DIARIO" no proprio cabecalho. Quem
+                        abriu sabe onde esta. Sobra a data, que e a unica informacao. */}
                     <div className="text-center">
-                        {greeting && (
-                            <p className="mb-1.5 text-[11px] font-medium italic leading-relaxed text-white/55">
-                                {greeting.text}
-                            </p>
-                        )}
-                        <p className="core-label text-[var(--skin-accent-color)]">Resumo Diario</p>
-                        <h3 className="mt-1 arena-title-text text-xl text-white luxe-title-shadow leading-tight">{title}</h3>
+                        <h3 className="arena-title-text text-lg text-white luxe-title-shadow leading-tight">{dateLabel}</h3>
                     </div>
 
                     {historicalInsight && (
                         <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
                             <OracleSpeakerMark tone="info" size="sm" className="mt-0.5 shrink-0" />
                             <div className="min-w-0">
-                                <p className="core-label text-[var(--skin-accent-color)]">Leitura do Oraculo</p>
-                                <p className="mt-1 text-[11px] leading-relaxed text-white/78">{historicalInsight}</p>
+                                {/* Sem rotulo: o rosto do Oraculo ao lado ja diz de quem e a fala. */}
+                                <p className="text-[11px] leading-relaxed text-white/78">{historicalInsight}</p>
                             </div>
                         </div>
                     )}

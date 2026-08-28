@@ -5,6 +5,7 @@ import { CheckIcon, SendIcon, XIcon } from './Icons';
 import { Portal } from './Portal';
 import { SupabaseService } from '../services/SupabaseService';
 import { UserAvatar } from './UserAvatar';
+import { getDisplayLevel } from '../constants/lifeAreas';
 
 export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const {
@@ -110,7 +111,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
                                         <UserAvatar avatarUrl={request.requesterProfile?.avatarUrl} nickname={request.requesterProfile?.nickname || 'Jogador'} className="h-10 w-10" level={request.requesterProfile?.level} showBorder={false} />
                                         <div className="flex-grow min-w-0">
                                             <h4 className="font-bold text-white text-sm truncate">{request.requesterProfile?.nickname || 'Jogador'}</h4>
-                                            <p className="text-xs text-gray-400">Nivel {request.requesterProfile?.level || 1}</p>
+                                            <p className="text-xs text-gray-400">Nivel {getDisplayLevel(request.requesterProfile?.level)}</p>
                                         </div>
                                         <button
                                             onClick={() => approveClanJoinRequest(request)}
@@ -144,7 +145,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
                                         <UserAvatar avatarUrl={friend.avatarUrl} nickname={friend.nickname} className="h-10 w-10" level={friend.level} showBorder={false} />
                                         <div className="flex-grow">
                                             <h4 className="font-bold text-white text-sm">{friend.nickname}</h4>
-                                            <p className="text-xs text-gray-400">Nivel {friend.level}</p>
+                                            <p className="text-xs text-gray-400">Nivel {getDisplayLevel(friend.level)}</p>
                                         </div>
                                         {pendingInviteeIds.includes(friend.id) ? (
                                             <button onClick={() => handleRevokeInvite(friend.id)} disabled={busyId === friend.id} className="px-3 py-2 bg-red-500/12 text-red-300 text-xs font-bold rounded-lg hover:bg-red-500/20 disabled:opacity-50 inline-flex items-center gap-1">

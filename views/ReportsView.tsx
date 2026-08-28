@@ -2467,6 +2467,22 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <XIcon className="h-3.5 w-3.5" />
                         </button>
                     )}
+                    {/* Editar ciclos morava no alto da tela, longe do que edita, e
+                        ninguem ligava um ao outro. Eras e ciclos sao as duas coisas
+                        editaveis do historico: ficam lado a lado. */}
+                    {(activeCycle || sortedReports.length > 0) && (
+                        <button
+                            onClick={toggleHistoryCycleEditing}
+                            title={isEditingHistoryCycles ? 'Concluir edicao de ciclos' : 'Editar ciclos'}
+                            className={`rounded-lg border p-1.5 transition-colors ${
+                                isEditingHistoryCycles
+                                    ? 'border-[var(--skin-accent-color)]/50 text-[var(--skin-accent-color)]'
+                                    : 'border-white/8 text-white/35 hover:border-[var(--skin-accent-color)]/40 hover:text-[var(--skin-accent-color)]'
+                            }`}
+                        >
+                            <Trash2Icon className="h-3.5 w-3.5" />
+                        </button>
+                    )}
                     <button
                         id="eras-button"
                         onClick={beginEraEditing}
@@ -2608,12 +2624,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                         {renderLegacySummaryCard()}
 
-                        {!visibleActiveCycle && !visibleUpcomingCycle ? (
-                            <div className="relative z-20 space-y-2">
-                                <button id="start-new-cycle-button" onClick={() => setShowNewCycleSetup(true)} className="w-full py-3 rounded-xl luxe-skin-button mb-4 shadow-lg shadow-[var(--skin-accent-color)]/20">INICIAR NOVO CICLO</button>
-                                {reports.length < 1 && <div className="text-center text-sm text-gray-500 py-4 italic">Sem legado fechado ainda. Inicie sua jornada.</div>}
-                            </div>
-                        ) : null}
 
                         {renderEraControls()}
 
@@ -2721,7 +2731,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     seasonName={seasons.find((season) => season.id === report.seasonId)?.name}
                                                     eraLabel={displayedEraByReportIndex.get(sortedReports.length - 1 - indexFromStart)?.label}
                                                     eraSkinId={displayedEraByReportIndex.get(sortedReports.length - 1 - indexFromStart)?.skinId}
-                                                    onDelete={() => { void handleDeleteReportCycle(report); }}
+                                                    /* O lixo so existe no modo de edicao. Antes ficava
+                                                       no canto de todo ciclo, o tempo todo — um botao
+                                                       de apagar permanentemente a um toque de distancia
+                                                       de quem so queria abrir o relatorio. */
+                                                    onDelete={isEditingHistoryCycles ? () => { void handleDeleteReportCycle(report); } : undefined}
                                                 />
                                                 <p className={`mt-1.5 text-center text-[9px] font-black uppercase tracking-[0.18em] ${isCurrent ? 'text-[var(--skin-accent-color)]' : 'text-white/28'}`}>
                                                     {isCurrent ? 'mais recente' : `ciclo ${indexFromStart + 1}`}
@@ -2776,6 +2790,24 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         })}
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {/* O comeco de ciclo fica no fim da tela, nao no meio dela.
+                            No meio ele partia a leitura em duas: placa em cima, trilha
+                            embaixo, e um botao grande atravessado no caminho. */}
+                        {!visibleActiveCycle && !visibleUpcomingCycle && (
+                            <div className="relative z-20 mt-6">
+                                {reports.length < 1 && (
+                                    <p className="mb-3 text-center text-sm italic text-gray-500">Sem legado fechado ainda. Inicie sua jornada.</p>
+                                )}
+                                <button
+                                    id="start-new-cycle-button"
+                                    onClick={() => setShowNewCycleSetup(true)}
+                                    className="w-full rounded-xl py-3 luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20"
+                                >
+                                    INICIAR NOVO CICLO
+                                </button>
                             </div>
                         )}
                     </div>
@@ -2872,20 +2904,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </button>
                             <h1 className="text-xl font-black uppercase tracking-widest">{getTitle()}</h1>
                         </div>
-                        {view === 'hub' && (activeCycle || sortedReports.length > 0) && (
-                            <button
-                                type="button"
-                                onClick={toggleHistoryCycleEditing}
-                                className={`inline-flex h-9 min-w-[3.25rem] items-center justify-center rounded-xl border px-3 text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
-                                    isEditingHistoryCycles
-                                        ? 'border-[var(--skin-accent-color)] bg-[var(--skin-accent-color)]/12 text-white'
-                                        : 'border-white/10 bg-black/35 text-white/80 hover:bg-white/10 hover:text-white'
-                                }`}
-                                title={isEditingHistoryCycles ? 'Finalizar edicao de ciclos' : 'Editar ciclos'}
-                            >
-                                {isEditingHistoryCycles ? 'OK' : <EditIcon className="h-4 w-4" />}
-                            </button>
-                        )}
+
                     </div>
                     <div className="flex-grow overflow-y-auto relative overflow-hidden">
                         {renderContent()}

@@ -10,6 +10,7 @@ import { RecruitmentStatus } from '../types';
 import { UserAvatar } from './UserAvatar';
 import { CLAN_EMBLEM_OPTIONS, resolveClanBackground, SANCTUARY_BACKGROUND_OPTIONS } from '../constants';
 import { ClanEmblem } from './ClanEmblem';
+import { getDisplayLevel } from '../constants/lifeAreas';
 
 export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { clan, enrichedClanMembers, updateClan, kickClanMember, deleteClan } = useGame();
@@ -144,7 +145,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                                 <UserAvatar avatarUrl={member.avatarUrl} nickname={member.nickname} className="h-10 w-10" level={member.level} showBorder={false} />
                                 <div className="flex-grow">
                                     <h4 className="font-bold text-white text-sm">{member.nickname}</h4>
-                                    <p className="text-xs text-gray-400">Nivel {member.level}</p>
+                                    <p className="text-xs text-gray-400">Nivel {getDisplayLevel(member.level)}</p>
                                 </div>
                                 {member.role === 'leader' ? (
                                     <CrownIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />

@@ -187,6 +187,36 @@ const COACH_LINES: Record<string, CoachToneLines> = {
 
   /** Arena de foco atrasada. Marcadores: {arena} */
   /**
+   * A sequencia morre hoje se nada acontecer.
+   *
+   * O numero E a fala. Ate aqui nenhuma das 200 linhas do app mencionava o
+   * streak — o que mais segura a pessoa era a unica coisa que o Oraculo nao
+   * comentava. Por isso as oito linhas usam {streak}: "23 dias" reconhece um
+   * percurso, "bom trabalho" nao reconhece nada.
+   *
+   * Nenhuma delas ameaca. A perda ja e o incentivo; acrescentar drama em cima
+   * seria cobrar duas vezes pelo mesmo fato.
+   */
+  streak_em_risco: {
+    neutro: [
+      '{streak} dias seguidos, e hoje ainda sem nenhuma acao. Uma fecha o dia.',
+      'Sua sequencia esta em {streak}. Falta a de hoje.',
+    ],
+    coach: [
+      '{streak} dias de pe. Escolhe a menor acao que tiver e mantem.',
+      'Uma acao agora e a diferenca entre {streak} e comecar de novo amanha.',
+    ],
+    reflexivo: [
+      '{streak} dias, e hoje passou sem nenhuma. O dia foi cheio, ou foi so escapando?',
+      'Sua sequencia esta em {streak}. Ela ainda significa o que significava quando comecou?',
+    ],
+    calmo: [
+      'Seu {streak} esta de pe ate a virada do dia. Uma acao segura ele.',
+      '{streak} dias. Se hoje nao der, tambem esta tudo bem — mas ainda da.',
+    ],
+  },
+
+  /**
    * A estrutura pede mais do que a pessoa jamais entregou.
    *
    * E o unico estado em que o Oraculo diz que o problema NAO e ela. Por isso

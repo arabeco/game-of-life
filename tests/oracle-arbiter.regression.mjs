@@ -476,4 +476,74 @@ for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
   );
 }
 
+
+// --- a sequencia que vai morrer hoje ----------------------------------------
+// O streak e lazy: so e reavaliado quando a pessoa conclui alguma coisa. Nada
+// rodava quando ela NAO fazia nada — exatamente quando ele morre. O dado sempre
+// esteve la; ninguem perguntava.
+//
+// E nenhuma das 200 linhas do app mencionava o numero. O que mais segura a
+// pessoa era a unica coisa que o Oraculo nao comentava.
+
+const sequenciaEmRisco = {
+  ...contextoBase,
+  daysSinceLastProof: 1,
+  dailyProofStreakCurrent: 23,
+  hourOfDay: 22,
+};
+const risco = detectOracleCandidates(sequenciaEmRisco).filter((c) => c.type === 'streak_em_risco');
+assert.equal(risco.length, 1, '23 dias, nada hoje, 22h: a sequencia esta em risco');
+
+const falaRisco = buildPlannerCoachSpeech(sequenciaEmRisco, () => 0, 'calmo');
+assert.ok(/23/.test(falaRisco), 'a fala diz o numero — e o numero que reconhece o percurso');
+assert.ok(!/\{\w+\}/.test(falaRisco), 'nenhum marcador pode sobrar');
+
+// Todas as vozes falam o numero: o gate garante que ele existe sempre que dispara.
+for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
+  const linha = buildPlannerCoachSpeech(sequenciaEmRisco, () => 0, tom);
+  assert.ok(/23/.test(linha), `${tom} precisa dizer o numero da sequencia`);
+}
+
+// Vence tudo, inclusive a estrutura inflada: e a unica coisa que morre sozinha
+// se ninguem falar. A conta que nao fecha continua nao fechando amanha de manha.
+assert.equal(
+  rankOracleCandidates({
+    ...sequenciaEmRisco,
+    daysSinceLastPlannerOpen: 6,
+    cycleDayNumber: 12,
+    plannedDailyDemand: 40,
+    bestDailyCompletions: 7,
+    daysWithCompletions: 9,
+  }, ORACLE_PRESENCE.PRESENTE)[0].type,
+  'streak_em_risco',
+  'o que expira hoje fala antes do que expira nunca',
+);
+
+// --- e os portoes ------------------------------------------------------------
+
+const semRisco = (mudancas, motivo) => assert.deepEqual(
+  detectOracleCandidates({ ...sequenciaEmRisco, ...mudancas }).filter((c) => c.type === 'streak_em_risco'),
+  [], motivo,
+);
+
+semRisco({ hourOfDay: 10 }, 'de manha ainda ha dia inteiro pela frente');
+semRisco({ dailyProofStreakCurrent: 2 }, 'perder um streak de 2 nao doi, e avisar ensina a ignorar o aviso');
+semRisco({ daysSinceLastProof: 0 }, 'ja entregou hoje: nao ha risco nenhum');
+
+// A madrugada ainda e o mesmo dia operacional — que vira as 4h — entao 1h da
+// manha continua sendo hora de risco, e nao "amanha de manha cedo".
+assert.equal(
+  detectOracleCandidates({ ...sequenciaEmRisco, hourOfDay: 1 })
+    .filter((c) => c.type === 'streak_em_risco').length,
+  1,
+  'a madrugada pertence ao dia que ainda nao fechou',
+);
+
+// O Silencioso continua calado. Quem quiser ser avisado usa o interruptor de
+// alertas, que e outra coisa: presenca decide o que ele COMENTA.
+assert.deepEqual(
+  rankOracleCandidates(sequenciaEmRisco, ORACLE_PRESENCE.SILENCIOSO), [],
+  'nem a sequencia morrendo fura o pacto do Silencioso',
+);
+
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

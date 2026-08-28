@@ -38,6 +38,7 @@ export type OracleCoachArenaPace = OracleCoachPace | 'sem_medida';
  * frases venceria e ficaria mudo, entao o teste amarra os dois lados.
  */
 export type OracleCandidateType =
+  | 'streak_em_risco'
   | 'meta_inflada'
   | 'ausente'
   | 'arena_retomada'
@@ -52,6 +53,7 @@ export type OracleCandidateType =
   | 'estrutura_enxuta';
 
 export const ORACLE_CANDIDATE_TYPES: readonly OracleCandidateType[] = [
+  'streak_em_risco',
   'meta_inflada',
   'ausente',
   'arena_retomada',
@@ -87,6 +89,10 @@ export interface OracleCandidateWeight {
  * seria uma regra ruim E opaca — pior que a cascata que ela substitui.
  */
 export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandidateWeight> = {
+  streak_em_risco: {
+    importance: 4, urgency: 5, novelty: 3, actionability: 5,
+    why: 'A unica coisa no app que morre sozinha se ninguem disser nada. Uma arena fechada continua fechada daqui a vinte minutos; um streak de 23 dias vira 0 na virada. Vence ate a estrutura inflada — a conta que nao fecha continua nao fechando amanha de manha, e a sequencia nao.',
+  },
   meta_inflada: {
     importance: 5, urgency: 3, novelty: 4, actionability: 5,
     why: 'A nota mais alta da tabela, inclusive acima de "sumiu" — de proposito, porque costuma ser a CAUSA de ter sumido. E o unico caso em que o problema nao e a pessoa: ela pode se esforcar o mes inteiro e continuar falhando, porque a conta nao fecha. Acionabilidade maxima: baixar a repeticao resolve na hora.',
@@ -192,6 +198,9 @@ export interface OracleCandidateInput {
   bestDailyCompletions?: number | null;
   daysWithCompletions?: number;
   cycleDayNumber?: number | null;
+  /** Sequencia atual e hora local. Sem os dois nao da para saber que ela esta em risco. */
+  dailyProofStreakCurrent?: number;
+  hourOfDay?: number | null;
   /** TODAS as arenas ranqueadas, nao so a primeira. Ausente = comportamento antigo. */
   arenas?: PlannerCoachArena[];
 }
@@ -350,6 +359,39 @@ const detectArenaIssues = (input: OracleCandidateInput): OracleCandidate[] => {
  */
 const DEMANDA_MINIMA_PARA_SUSPEITA = 8;
 
+/**
+ * A sequencia vai morrer hoje.
+ *
+ * O streak e lazy: so e reavaliado quando a pessoa conclui alguma coisa. Nada
+ * roda quando ela NAO faz nada — que e exatamente quando ele morre. O dado para
+ * saber estava sempre ali (sequencia atual + nenhuma entrega hoje), e ninguem
+ * perguntava.
+ *
+ * Aqui cobre quem abre o app a noite. Quem nao abre depende do aviso do cron,
+ * que e outra metade e passa por outro interruptor — presenca decide o que ele
+ * COMENTA, e isto aqui e comentario.
+ *
+ * Tres dias de piso: perder um streak de 2 nao doi, e avisar sobre ele ensina a
+ * pessoa a ignorar o aviso quando ele for sobre 30.
+ */
+const STREAK_MINIMO_PARA_AVISO = 3;
+/** A partir daqui o dia ja e curto demais para contar com o acaso. */
+const HORA_DE_RISCO = 18;
+
+const detectStreakEvents = (input: OracleCandidateInput): OracleCandidate[] => {
+  const streak = input.dailyProofStreakCurrent ?? 0;
+  const hora = input.hourOfDay ?? null;
+  const semEntregaHoje = (input.daysSinceLastProof ?? 0) >= 1;
+
+  if (hora === null) return [];
+  if (streak < STREAK_MINIMO_PARA_AVISO) return [];
+  if (!semEntregaHoje) return [];
+  // O dia operacional vira as 4h, entao a madrugada ainda e "hoje" e ainda da tempo.
+  if (hora < HORA_DE_RISCO && hora >= 4) return [];
+
+  return [build('streak_em_risco', { streak })];
+};
+
 const detectStructuralIssues = (input: OracleCandidateInput): OracleCandidate[] => {
   const demanda = input.plannedDailyDemand ?? null;
   const melhorDia = input.bestDailyCompletions ?? null;
@@ -387,6 +429,7 @@ export const detectOracleCandidates = (input: OracleCandidateInput): OracleCandi
   ...detectCycleIssues(input),
   ...detectDeliveryGap(input),
   ...detectArenaIssues(input),
+  ...detectStreakEvents(input),
   ...detectStructuralIssues(input),
   ...detectStructure(input),
   ...detectNextMove(input),

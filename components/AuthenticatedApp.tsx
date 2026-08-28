@@ -870,6 +870,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             bestDailyCompletions: oracleContext.bestDailyCompletions,
             daysWithCompletions: oracleContext.daysWithCompletions,
             cycleDayNumber: oracleContext.cycleDayNumber,
+            dailyProofStreakCurrent: oracleContext.dailyProofStreakCurrent,
+            hourOfDay: new Date().getHours(),
             // TODAS as arenas, nao so focusArenaSignal.
             //
             // O contexto ja calculava ate seis, ranqueadas por gravidade, e esta

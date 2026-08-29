@@ -143,7 +143,7 @@ assert.match(
 
 // A marca do dia so entra depois da fala. Gravada antes do sorteio, um sorteio
 // perdido queimava o dia inteiro em silencio.
-const inicioFala = authenticatedApp.indexOf('buildPlannerCoachSpeechDetailed({');
+const inicioFala = authenticatedApp.indexOf('decideOracleSpeech({');
 const fimFala = authenticatedApp.indexOf('emitOracleSpeech({', inicioFala);
 // As ancoras conferidas antes do slice: indexOf devolvendo -1 ja transformou
 // uma assercao deste arquivo em nada, e o teste seguiu passando por meses sem
@@ -168,6 +168,13 @@ assert.ok(
   authenticatedApp.indexOf('readOracleSpeechMemory()') < inicioFala,
   'a memoria entra antes da escolha, nao depois',
 );
+
+// O registro da decisao vem ANTES da guarda de silencio: silencio e uma decisao
+// e precisa ser explicavel igual. Registrado depois, so as falas teriam rastro,
+// e "por que ele nao falou nada?" continuaria sem resposta.
+const posRegistro = trechoFala.indexOf('recordOracleDecision(decisao)');
+assert.ok(posRegistro > 0, 'a decisao precisa ser registrada neste trecho');
+assert.ok(posRegistro < posGuarda, 'o silencio tambem precisa ficar registrado');
 assert.ok(
   trechoFala.indexOf('writeOracleSpeechMemory') > posGuarda,
   'so grava na memoria o que ele de fato falou',

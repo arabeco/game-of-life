@@ -63,9 +63,10 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import {
-    buildPlannerCoachSpeechDetailed,
+    decideOracleSpeech,
     buildOracleCycleCoachBrief,
 } from '../utils/oracleCoach';
+import { recordOracleDecision } from '../utils/oracleDecisionLog';
 import {
     readOracleSpeechMemory,
     rememberOracleSpeech,
@@ -865,7 +866,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         // disse, ela participa de decidir o que dizer. Um assunto de molho faz o
         // arbitro passar para o proximo colocado, e nao ficar em silencio.
         const speechMemory = readOracleSpeechMemory();
-        const speech = buildPlannerCoachSpeechDetailed({
+        const decisao = decideOracleSpeech({
             arenasCount,
             actionsCount: actions.length,
             cycleLengthDays,
@@ -902,6 +903,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             })),
         }, Math.random, resolveOracleSpeechTone(oraclePreferences?.speechTone), presenceRules.value, speechMemory, today);
 
+        // O registro vem ANTES da guarda de silencio, de proposito: silencio e uma
+        // decisao e precisa ser explicavel igual. "Por que ele nao falou nada?" e
+        // uma pergunta tao comum quanto "por que ele falou isso?".
+        recordOracleDecision(decisao);
+
+        const speech = decisao.chosen;
         if (!speech) return;
         const message = speech.line;
 

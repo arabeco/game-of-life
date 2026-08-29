@@ -24,6 +24,7 @@ import {
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL } from '../utils/oracleFeedUtils';
 import { ORACLE_PRESENCE_ORDER, ORACLE_PRESENCE_RULES } from '../constants/oraclePresencePolicy';
+import { formatOracleDecisionLog, readOracleDecisionLog } from '../utils/oracleDecisionLog';
 
 interface OracleSettingsModalProps {
     onClose: () => void;
@@ -536,6 +537,32 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                             >
                                 <span>💬</span>
                                 <span className="text-xs font-bold tracking-widest">ABRIR CHAT</span>
+                            </button>
+                        )}
+
+                        {/* Diagnostico do Oraculo.
+                            O teste acontece no celular, onde nao ha console. Um
+                            log que so existe em DevTools nao seria lido por
+                            ninguem, e diagnostico que ninguem le nao diagnostica
+                            nada. Aqui ele vira texto colavel numa conversa. */}
+                        {variant === 'preferences' && (
+                            <button
+                                onClick={async () => {
+                                    const texto = formatOracleDecisionLog(readOracleDecisionLog());
+                                    try {
+                                        await navigator.clipboard.writeText(texto);
+                                        showToast('Diagnostico copiado.', 'success');
+                                    } catch {
+                                        // Sem area de transferencia (WebView antiga, permissao
+                                        // negada) o texto ainda precisa chegar a alguem: o
+                                        // console e o ultimo recurso, nao o primeiro.
+                                        console.info(texto);
+                                        showToast('Diagnostico enviado ao console.', 'info');
+                                    }
+                                }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 py-2.5 text-white/50 transition-colors hover:border-white/25 hover:text-white/80"
+                            >
+                                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Copiar diagnostico do Oraculo</span>
                             </button>
                         )}
 

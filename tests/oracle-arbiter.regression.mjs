@@ -17,7 +17,8 @@ import {
   rememberOracleSpeech,
   ORACLE_SPEECH_MEMORY_SIZE,
 } from '../utils/oracleSpeechMemory.ts';
-import { buildPlannerCoachSpeechDetailed } from '../utils/oracleCoach.ts';
+import { buildPlannerCoachSpeechDetailed, decideOracleSpeech } from '../utils/oracleCoach.ts';
+import { formatOracleDecisionLog } from '../utils/oracleDecisionLog.ts';
 
 /**
  * O arbitro do Oraculo.
@@ -847,5 +848,64 @@ for (const linha of TODAS_AS_LINHAS) {
   // de acentuacao fez, e so aparece quando a frase ja esta na frente da pessoa.
   assert.doesNotMatch(linha, /\{[^}]*[À-ÿ][^}]*\}/, `marcador acentuado: ${linha}`);
 }
+
+
+// --- o rastro da decisao -----------------------------------------------------
+// O proximo ganho do Oraculo nao vem do candidato numero quinze. Vem de
+// descobrir quando ele deveria ter ficado quieto — e isso so aparece observando
+// gente usando. Sem rastro, o relato possivel e "ficou estranho" e a resposta
+// possivel e um chute.
+
+const cenarioRico = {
+  ...contextoBase,
+  daysSinceLastPlannerOpen: 6,
+  priorityActionName: 'Correr 5km',
+  cycleDayNumber: 12,
+  plannedDailyDemand: 40,
+  bestDailyCompletions: 7,
+  daysWithCompletions: 9,
+  arenas: [arena({ arenaId: 'a1', pace: 'critico', adjustment: 'pausar_arena', daysSinceProof: 9 })],
+};
+
+const decisao = decideOracleSpeech(cenarioRico, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE, [], HOJE);
+assert.ok(decisao.chosen, 'o cenario rico produz fala');
+assert.ok(decisao.rows.length >= 4, 'o rastro precisa listar os concorrentes, nao so o vencedor');
+assert.equal(decisao.rows.filter((r) => r.outcome === 'venceu').length, 1, 'um vencedor, sempre');
+assert.equal(decisao.rows[0].type, decisao.chosen.entry.type, 'quem venceu aparece no topo do rastro');
+
+// Quem perdeu tambem aparece. Um candidato barrado pela presenca e um barrado
+// por cooldown produzem o mesmo silencio na tela e pedem consertos opostos: um
+// e limiar, o outro e frequencia.
+const porCooldown = decideOracleSpeech(
+  cenarioRico, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE,
+  [{ type: 'meta_inflada', date: HOJE, line: 'x' }], HOJE,
+);
+assert.ok(
+  porCooldown.rows.some((r) => r.type === 'meta_inflada' && r.outcome === 'de_molho'),
+  'o rastro diz que foi o cooldown, e nao o limiar',
+);
+
+// E o silencio tambem e explicavel: "por que ele nao falou nada?" e uma pergunta
+// tao comum quanto "por que ele falou isso?".
+const noEquilibrado = decideOracleSpeech(
+  { ...contextoBase, completedActionNameToday: 'Correr 5km' },
+  () => 0, 'neutro', ORACLE_PRESENCE.EQUILIBRADO, [], HOJE,
+);
+assert.equal(noEquilibrado.chosen, null, 'elogio de rotina nao passa no Equilibrado');
+assert.ok(
+  noEquilibrado.rows.some((r) => r.outcome === 'cortado_por_presenca'),
+  'o silencio precisa dizer que foi a presenca que cortou',
+);
+
+// O texto tem de ser legivel por gente: o teste acontece no celular, onde nao ha
+// console, e diagnostico que ninguem le nao diagnostica nada.
+const texto = formatOracleDecisionLog([{
+  at: '2026-08-28T21:30:00.000Z', presence: 3, threshold: 5, tone: 'neutro',
+  chosen: decisao.chosen.entry.type, line: decisao.chosen.line, rows: decisao.rows,
+}]);
+assert.match(texto, /presenca 3/, 'o texto diz a presenca');
+assert.match(texto, /=>/, 'o texto diz no que deu');
+assert.match(texto, new RegExp(decisao.chosen.entry.type), 'o texto nomeia o vencedor');
+assert.match(formatOracleDecisionLog([]), /Sem decisoes/, 'log vazio nao quebra o texto');
 
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

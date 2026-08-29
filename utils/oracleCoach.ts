@@ -1,7 +1,7 @@
 import type { OracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import type { OracleContext } from '../types';
 import type { OracleCandidateInput } from './oracleCandidates.ts';
-import { rankOracleCandidates, ORACLE_CANDIDATE_WEIGHTS } from './oracleCandidates.ts';
+import { detectOracleCandidates, getOracleRelevanceThreshold, ORACLE_CANDIDATE_WEIGHTS } from './oracleCandidates.ts';
 import type { OracleSpeechMemoryEntry } from './oracleSpeechMemory.ts';
 import { isOracleSubjectOnCooldown, recallOracleSpeech } from './oracleSpeechMemory.ts';
 
@@ -548,6 +548,97 @@ export interface PlannerCoachSpeech {
  * chamadas sem ela se comportem como antes: quem controla se ele fala e a
  * politica de presenca, la em cima; aqui o corte so afina.
  */
+/**
+ * O que aconteceu na decisao — para depois conseguir discutir, em vez de adivinhar.
+ *
+ * Quando uma fala parecer idiota em teste, a pergunta nao pode ser "por que ele
+ * falou isso?". Tem de ser: meta_inflada 18.3, arena_retomada 14.6,
+ * prioridade 11.7, venceu meta_inflada. Ai da para discutir peso; sem isto, so
+ * da para achar.
+ *
+ * O rastro inclui QUEM PERDEU e POR QUE, e nao so quem ganhou: um candidato
+ * barrado pela presenca e um candidato barrado por cooldown falham de formas
+ * diferentes e pedem consertos diferentes, e os dois sao invisiveis no resultado.
+ */
+export type OracleDecisionOutcome = 'venceu' | 'cortado_por_presenca' | 'de_molho' | 'sem_frase' | 'perdeu';
+
+export interface OracleDecisionRow {
+  type: string;
+  arenaId?: string;
+  score: number;
+  outcome: OracleDecisionOutcome;
+}
+
+export interface OracleDecision {
+  chosen: PlannerCoachSpeech | null;
+  rows: OracleDecisionRow[];
+  presenceValue: number;
+  threshold: number;
+  tone: OracleSpeechTone;
+}
+
+export const decideOracleSpeech = (
+  context: PlannerCoachContext,
+  random: () => number = Math.random,
+  tone: OracleSpeechTone = 'neutro',
+  presenceValue: number = 3,
+  memory: OracleSpeechMemoryEntry[] = [],
+  today: string = '',
+): OracleDecision => {
+  const threshold = getOracleRelevanceThreshold(presenceValue);
+  const rows: OracleDecisionRow[] = [];
+
+  // Os detectados ANTES do corte: quem a presenca barrou nao aparece no ranking,
+  // e e justamente o que explica um silencio que parece defeito.
+  const detectados = detectOracleCandidates(context)
+    .sort((esquerda, direita) => direita.score - esquerda.score);
+
+  let chosen: PlannerCoachSpeech | null = null;
+
+  for (const candidato of detectados) {
+    const base = { type: candidato.type, arenaId: candidato.arenaId, score: Math.round(candidato.score * 10) / 10 };
+
+    if (chosen) { rows.push({ ...base, outcome: 'perdeu' }); continue; }
+    if (candidato.score < threshold) { rows.push({ ...base, outcome: 'cortado_por_presenca' }); continue; }
+
+    const peso = ORACLE_CANDIDATE_WEIGHTS[candidato.type];
+    if (today && isOracleSubjectOnCooldown(memory, candidato.type, candidato.arenaId, today, peso.cooldownDays)) {
+      rows.push({ ...base, outcome: 'de_molho' });
+      continue;
+    }
+
+    const recall = today
+      ? recallOracleSpeech(memory, candidato.type, candidato.arenaId, today)
+      : { consecutiveDays: 0, lastLine: null, spokenToday: false, daysSinceLastSaid: null };
+
+    const vars = {
+      ...candidato.vars,
+      diasSeguidos: recall.consecutiveDays > 0 ? recall.consecutiveDays + 1 : null,
+    };
+    const linha = pickCoachLine(candidato.type, tone, vars, random, recall.lastLine);
+    if (!linha) { rows.push({ ...base, outcome: 'sem_frase' }); continue; }
+
+    rows.push({ ...base, outcome: 'venceu' });
+    chosen = {
+      line: linha,
+      entry: { type: candidato.type, arenaId: candidato.arenaId, date: today, line: linha },
+      consecutiveDays: recall.consecutiveDays,
+    };
+  }
+
+  return { chosen, rows, presenceValue, threshold, tone };
+};
+
+/**
+ * A cascata de dez `if` saiu daqui.
+ *
+ * Ela decidia por ordem fixa: o primeiro que casasse vencia e calava os outros
+ * nove. Quem estava tres dias ausente E com uma arena critica E com uma acao
+ * prioritaria ouvia sobre a ausencia, sempre — e quem estava em `prioridade`
+ * ouvia `prioridade` todo dia, porque a ordem nao muda.
+ *
+ * Hoje isto e so a cara simples de decideOracleSpeech, que decide e explica.
+ */
 export const buildPlannerCoachSpeechDetailed = (
   context: PlannerCoachContext,
   random: () => number = Math.random,
@@ -555,41 +646,8 @@ export const buildPlannerCoachSpeechDetailed = (
   presenceValue: number = 3,
   memory: OracleSpeechMemoryEntry[] = [],
   today: string = '',
-): PlannerCoachSpeech | null => {
-  for (const candidato of rankOracleCandidates(context, presenceValue)) {
-    const peso = ORACLE_CANDIDATE_WEIGHTS[candidato.type];
-
-    // Sem data nao ha memoria possivel, e ai ele se comporta como antes de ter.
-    if (today) {
-      const deMolho = isOracleSubjectOnCooldown(
-        memory, candidato.type, candidato.arenaId, today, peso.cooldownDays,
-      );
-      if (deMolho) continue;
-    }
-
-    const recall = today
-      ? recallOracleSpeech(memory, candidato.type, candidato.arenaId, today)
-      : { consecutiveDays: 0, lastLine: null, spokenToday: false, daysSinceLastSaid: null };
-
-    // `diasSeguidos` sai da memoria, nao do detector — o detector nao sabe o que
-    // ja foi dito. Na primeira vez ele vale null, e fillCoachLine invalida
-    // sozinho as linhas que o usam: a variacao "segunda noite seguida" simplesmente
-    // nao existe ate existir. Nenhum `if` a mais para isso.
-    const vars = {
-      ...candidato.vars,
-      diasSeguidos: recall.consecutiveDays > 0 ? recall.consecutiveDays + 1 : null,
-    };
-    const linha = pickCoachLine(candidato.type, tone, vars, random, recall.lastLine);
-    if (!linha) continue;
-
-    return {
-      line: linha,
-      entry: { type: candidato.type, arenaId: candidato.arenaId, date: today, line: linha },
-      consecutiveDays: recall.consecutiveDays,
-    };
-  }
-  return null;
-};
+): PlannerCoachSpeech | null =>
+  decideOracleSpeech(context, random, tone, presenceValue, memory, today).chosen;
 
 /** Atalho de quem so quer a frase. Mantido porque a maior parte das chamadas so quer isso. */
 export const buildPlannerCoachSpeech = (

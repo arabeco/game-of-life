@@ -67,118 +67,118 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
     campaign_completed: {
         neutro: [
             'Campanha "{campaign}" fechada. Boa. Agora deixa esse marco assentar antes de abrir outra frente grande.',
-            '"{campaign}" concluiu. Isso ja e um bloco inteiro de vida organizado, nao so uma tarefa.',
-            'Campanha "{campaign}" encerrada. Ela sai da lista e vira historico.',
+            '"{campaign}" concluiu. Isso já é um bloco inteiro de vida organizado, não só uma tarefa.',
+            'Campanha "{campaign}" encerrada. Ela sai da lista e vira histórico.',
         ],
         calmo: [
-            '"{campaign}" fechou. Nao precisa abrir nada agora. Deixa assentar.',
-            'Campanha "{campaign}" concluida. E bastante coisa. Descansa antes da proxima.',
-            '"{campaign}" acabou. Nao precisa de proxima hoje.',
+            '"{campaign}" fechou. Não precisa abrir nada agora. Deixa assentar.',
+            'Campanha "{campaign}" concluída. E bastante coisa. Descansa antes da próxima.',
+            '"{campaign}" acabou. Não precisa de próxima hoje.',
         ],
         coach: [
             'Campanha "{campaign}" fechada. Dica: escreve em uma linha o que fez ela andar, antes de esquecer.',
-            '"{campaign}" concluida. Sugestao: espera uma semana antes de abrir outra desse tamanho.',
-            '"{campaign}" fechada. Dica: olha o que dela vale repetir na proxima antes de esquecer.',
+            '"{campaign}" concluída. Sugestão: espera uma semana antes de abrir outra desse tamanho.',
+            '"{campaign}" fechada. Dica: olha o que dela vale repetir na próxima antes de esquecer.',
         ],
         reflexivo: [
-            '"{campaign}" fechou. O que dentro dela voce faria de novo?',
-            'Campanha "{campaign}" concluida. Foi o plano que funcionou, ou a insistencia?',
-            'Campanha "{campaign}" fechada. Voce e o mesmo de quando comecou ela?',
+            '"{campaign}" fechou. O que dentro dela você faria de novo?',
+            'Campanha "{campaign}" concluída. Foi o plano que funcionou, ou a insistência?',
+            'Campanha "{campaign}" fechada. Você é o mesmo de quando começou ela?',
         ],
     },
 
     /** Arena concluida. Marcadores: {arena} */
     arena_completed: {
         neutro: [
-            'Arena "{arena}" concluida. Muito bem. Essa frente ganhou forma real.',
+            'Arena "{arena}" concluída. Muito bem. Essa frente ganhou forma real.',
             '"{arena}" fechou. Boa. Agora vale registrar o que funcionou antes de empilhar outra coisa.',
-            'Arena "{arena}" encerrada. O espaco dela abre para outra coisa.',
+            'Arena "{arena}" encerrada. O espaço dela abre para outra coisa.',
         ],
         calmo: [
-            '"{arena}" fechou. Sem pressa de comecar a proxima.',
-            'Arena "{arena}" concluida. Fica um momento com isso antes de seguir.',
-            '"{arena}" fechou. Pode ficar so nisso hoje.',
+            '"{arena}" fechou. Sem pressa de começar a próxima.',
+            'Arena "{arena}" concluída. Fica um momento com isso antes de seguir.',
+            '"{arena}" fechou. Pode ficar só nisso hoje.',
         ],
         coach: [
-            'Arena "{arena}" concluida. Dica: anota as duas acoes que mais renderam.',
-            '"{arena}" fechou. Sugestao: nao abre outra hoje - deixa o proximo ciclo escolher.',
-            '"{arena}" concluida. Sugestao: nao preenche a vaga hoje - deixa o ciclo respirar um dia.',
+            'Arena "{arena}" concluída. Dica: anota as duas ações que mais renderam.',
+            '"{arena}" fechou. Sugestão: não abre outra hoje - deixa o próximo ciclo escolher.',
+            '"{arena}" concluída. Sugestão: não preenche a vaga hoje - deixa o ciclo respirar um dia.',
         ],
         reflexivo: [
-            '"{arena}" fechou. O que aqui vale levar para a proxima?',
-            'Arena "{arena}" concluida. Foi ela que mudou, ou voce?',
-            '"{arena}" fechou. Ela terminou porque acabou, ou porque voce mudou?',
+            '"{arena}" fechou. O que aqui vale levar para a próxima?',
+            'Arena "{arena}" concluída. Foi ela que mudou, ou você?',
+            '"{arena}" fechou. Ela terminou porque acabou, ou porque você mudou?',
         ],
     },
 
     /** Oito ou mais acoes reais no dia. Marcadores: {count} */
     daily_reps_high: {
         neutro: [
-            '{count} acoes reais hoje. Muito bem; agora protege o fechamento.',
-            '{count} acoes reais no dia. Bom ritmo. Agora nao precisa provar mais nada, precisa fechar limpo.',
-            '{count} acoes hoje. E acima do seu dia comum.',
+            '{count} ações reais hoje. Muito bem; agora protege o fechamento.',
+            '{count} ações reais no dia. Bom ritmo. Agora não precisa provar mais nada, precisa fechar limpo.',
+            '{count} ações hoje. E acima do seu dia comum.',
         ],
         calmo: [
-            '{count} acoes hoje. Ja e bastante. Pode parar sem culpa.',
-            '{count} entregas reais. O dia esta feito. Fecha com calma.',
-            '{count} hoje. Amanha pode ser um, e continua valendo.',
+            '{count} ações hoje. Já é bastante. Pode parar sem culpa.',
+            '{count} entregas reais. O dia está feito. Fecha com calma.',
+            '{count} hoje. Amanhã pode ser um, e continua valendo.',
         ],
         coach: [
-            '{count} acoes hoje. Sugestao: para de abrir e fecha o que ficou em pe.',
-            '{count} entregas. Dica: dia assim cobra amanha. Planeja um amanha mais leve.',
-            '{count} acoes. Dica: guarda uma das faceis para amanha - comecar cheio ajuda.',
+            '{count} ações hoje. Sugestão: para de abrir e fecha o que ficou em pé.',
+            '{count} entregas. Dica: dia assim cobra amanhã. Planeja um amanhã mais leve.',
+            '{count} ações. Dica: guarda uma das fáceis para amanhã - começar cheio ajuda.',
         ],
         reflexivo: [
-            '{count} acoes hoje. Isso foi ritmo ou foi fuga de outra coisa?',
-            '{count} entregas. O que ficou de fora enquanto voce fazia tudo isso?',
-            '{count} acoes hoje. Voce escolheu esse ritmo, ou ele te escolheu?',
+            '{count} ações hoje. Isso foi ritmo ou foi fuga de outra coisa?',
+            '{count} entregas. O que ficou de fora enquanto você fazia tudo isso?',
+            '{count} ações hoje. Você escolheu esse ritmo, ou ele te escolheu?',
         ],
     },
 
     /** Cinco a sete acoes reais no dia. Marcadores: {count} */
     daily_reps_mid: {
         neutro: [
-            '{count} acoes reais hoje. O dia ganhou corpo.',
-            '{count} entregas reais. Boa. Agora escolhe a proxima sem inflar o dia.',
-            '{count} acoes reais hoje.',
+            '{count} ações reais hoje. O dia ganhou corpo.',
+            '{count} entregas reais. Boa. Agora escolhe a próxima sem inflar o dia.',
+            '{count} ações reais hoje.',
         ],
         calmo: [
-            '{count} acoes hoje. O dia ja tem peso proprio.',
-            '{count} entregas. Da para seguir devagar a partir daqui.',
-            '{count} hoje. Esse e o tamanho de um dia que se sustenta.',
+            '{count} ações hoje. O dia já tem peso proprio.',
+            '{count} entregas. Dá para seguir devagar a partir daqui.',
+            '{count} hoje. Esse é o tamanho de um dia que se sustenta.',
         ],
         coach: [
-            '{count} acoes hoje. Sugestao: escolhe uma so para fechar e para por ai.',
-            '{count} entregas. Dica: a proxima rende mais se for a que voce vem adiando.',
-            '{count} entregas. Sugestao: repete esse numero amanha em vez de tentar dobrar.',
+            '{count} ações hoje. Sugestão: escolhe uma só para fechar e para por aí.',
+            '{count} entregas. Dica: a próxima rende mais se for a que você vem adiando.',
+            '{count} entregas. Sugestão: repete esse número amanhã em vez de tentar dobrar.',
         ],
         reflexivo: [
-            '{count} acoes hoje. A proxima e necessidade ou impulso?',
-            '{count} entregas. O dia ja esta bom - o que voce ainda quer provar?',
-            '{count} acoes. Foi o dia que voce planejou ou o que ele permitiu?',
+            '{count} ações hoje. A próxima é necessidade ou impulso?',
+            '{count} entregas. O dia já está bom - o que você ainda quer provar?',
+            '{count} ações. Foi o dia que você planejou ou o que ele permitiu?',
         ],
     },
 
     /** Tres acoes reais no dia. Marcadores: {count} */
     daily_reps_low: {
         neutro: [
-            '{count} acoes reais hoje. Muito bem.',
-            'Tres acoes reais ja mudam o dia. Continua com calma.',
+            '{count} ações reais hoje. Muito bem.',
+            'Três ações reais já mudam o dia. Continua com calma.',
             '{count} hoje. Menos que o comum, e ainda assim registrado.',
         ],
         calmo: [
-            '{count} acoes hoje. Ja e o suficiente para o dia contar.',
-            'Tres entregas reais mudam o dia. Sem pressa para a quarta.',
-            '{count} hoje ja tira o dia do zero. E isso que conta.',
+            '{count} ações hoje. Já é o suficiente para o dia contar.',
+            'Três entregas reais mudam o dia. Sem pressa para a quarta.',
+            '{count} hoje já tira o dia do zero. E isso que conta.',
         ],
         coach: [
-            '{count} acoes hoje. Dica: e aqui que o dia destrava. Aproveita o embalo numa quarta.',
-            'Tres entregas reais. Sugestao: fecha o dia agora e ganha o de amanha inteiro.',
-            '{count} feita. Dica: amanha comeca pela mesma - repetir e mais barato que escolher.',
+            '{count} ações hoje. Dica: é aqui que o dia destrava. Aproveita o embalo numa quarta.',
+            'Três entregas reais. Sugestão: fecha o dia agora e ganha o de amanhã inteiro.',
+            '{count} feita. Dica: amanhã começa pela mesma - repetir é mais barato que escolher.',
         ],
         reflexivo: [
-            '{count} acoes hoje. O que destravou depois da primeira?',
-            'Tres entregas ja mudam o dia. Por que essas tres e nao outras?',
+            '{count} ações hoje. O que destravou depois da primeira?',
+            'Três entregas já mudam o dia. Por que essas três e não outras?',
             '{count} hoje. O que ocupou o resto?',
         ],
     },
@@ -186,72 +186,72 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
     /** Meta da acao fechada no ciclo. Marcadores: {action} {count} {target} */
     cycle_goal_met: {
         neutro: [
-            '{action}: {count}/{target} no ciclo. Fechou a meta dessa acao.',
+            '{action}: {count}/{target} no ciclo. Fechou a meta dessa ação.',
             '{action} completou o combinado do ciclo: {count}/{target}. Boa.',
             '{action} fechou o ciclo em {count}/{target}.',
         ],
         calmo: [
             '{action} fechou o ciclo em {count}/{target}. Pode soltar essa.',
             '{action}: {count}/{target}. Combinado cumprido, sem precisar de mais.',
-            '{action} completa: {count}/{target}. Nao precisa passar disso.',
+            '{action} completa: {count}/{target}. Não precisa passar disso.',
         ],
         coach: [
-            '{action} fechou em {count}/{target}. Sugestao: nao aumenta a meta no meio - sobe no proximo ciclo.',
-            '{action}: {count}/{target}. Dica: usa o tempo dessa acao na que esta atrasada.',
-            '{action} em {count}/{target}, meta batida. Sugestao: nao aumenta a meta agora - termina o ciclo assim.',
+            '{action} fechou em {count}/{target}. Sugestão: não aumenta a meta no meio - sobe no próximo ciclo.',
+            '{action}: {count}/{target}. Dica: usa o tempo dessa ação na que está atrasada.',
+            '{action} em {count}/{target}, meta batida. Sugestão: não aumenta a meta agora - termina o ciclo assim.',
         ],
         reflexivo: [
             '{action} fechou em {count}/{target}. O alvo estava no tamanho certo?',
-            '{action}: {count}/{target}. Voce repetiria essa meta no proximo ciclo?',
-            '{action} chegou a {count}/{target}. A meta estava certa, ou ficou facil demais?',
+            '{action}: {count}/{target}. Você repetiria essa meta no próximo ciclo?',
+            '{action} chegou a {count}/{target}. A meta estava certa, ou ficou fácil demais?',
         ],
     },
 
     /** Falta uma para fechar. Marcadores: {action} {count} {target} */
     cycle_goal_last_one: {
         neutro: [
-            '{action}: {count}/{target} no ciclo. Falta so 1 para fechar essa meta.',
-            'Boa. {action} esta quase la: {count}/{target}.',
+            '{action}: {count}/{target} no ciclo. Falta só 1 para fechar essa meta.',
+            'Boa. {action} está quase lá: {count}/{target}.',
             '{action} em {count}/{target}. Falta uma.',
         ],
         calmo: [
             '{action}: {count}/{target}. Falta uma, e ela pode esperar.',
-            '{action} esta a uma entrega do fim. Sem correria.',
-            '{count}/{target} em {action}. A ultima pode ser amanha.',
+            '{action} está a uma entrega do fim. Sem correria.',
+            '{count}/{target} em {action}. A última pode ser amanhã.',
         ],
         coach: [
-            '{action}: {count}/{target}. Dica: agenda a ultima para amanha cedo, antes do ciclo apertar.',
-            'Falta uma em {action} ({count}/{target}). Sugestao: fecha hoje e tira da cabeca.',
-            '{action} em {count}/{target}. Dica: agenda a ultima agora, enquanto e so uma.',
+            '{action}: {count}/{target}. Dica: agenda a última para amanhã cedo, antes do ciclo apertar.',
+            'Falta uma em {action} ({count}/{target}). Sugestão: fecha hoje e tira da cabeça.',
+            '{action} em {count}/{target}. Dica: agenda a última agora, enquanto é só uma.',
         ],
         reflexivo: [
-            '{action}: {count}/{target}. O que segurou a ultima ate aqui?',
-            'Falta uma em {action}. Ela e dificil ou so ficou para depois?',
-            'Falta uma de {action}. O que costuma acontecer com voce na ultima?',
+            '{action}: {count}/{target}. O que segurou a última até aqui?',
+            'Falta uma em {action}. Ela é difícil ou só ficou para depois?',
+            'Falta uma de {action}. O que costuma acontecer com você na última?',
         ],
     },
 
     /** Primeira entrega da acao no ciclo. Marcadores: {action} {target} {remaining} */
     cycle_goal_first: {
         neutro: [
-            '{action} entrou no ciclo: 1/{target}. Agora e so manter sem inflar.',
+            '{action} entrou no ciclo: 1/{target}. Agora é só manter sem inflar.',
             'Primeira de {action} registrada neste ciclo. Faltam {remaining}.',
             '{action} saiu do zero: 1/{target}.',
         ],
         calmo: [
-            '{action} comecou: 1/{target}. A primeira costuma ser a mais cara.',
+            '{action} começou: 1/{target}. A primeira costuma ser a mais cara.',
             'Primeira de {action} no ciclo. Faltam {remaining}, uma de cada vez.',
-            'Primeira de {action}. As outras {remaining} nao precisam ser hoje.',
+            'Primeira de {action}. As outras {remaining} não precisam ser hoje.',
         ],
         coach: [
-            '{action} comecou: 1/{target}. Dica: marca as {remaining} restantes agora, enquanto esta quente.',
-            'Primeira de {action} feita. Sugestao: repete no mesmo horario - o habito pega mais rapido.',
-            '1/{target} em {action}. Sugestao: a segunda dentro de dois dias, senao vira primeira de novo.',
+            '{action} começou: 1/{target}. Dica: marca as {remaining} restantes agora, enquanto está quente.',
+            'Primeira de {action} feita. Sugestão: repete no mesmo horário - o habito pega mais rápido.',
+            '1/{target} em {action}. Sugestão: a segunda dentro de dois dias, senão vira primeira de novo.',
         ],
         reflexivo: [
-            '{action} comecou: 1/{target}. O que destravou hoje e nao antes?',
+            '{action} começou: 1/{target}. O que destravou hoje e não antes?',
             'Primeira de {action} no ciclo. As {remaining} restantes cabem mesmo?',
-            '{action} comecou. O que quase impediu essa primeira?',
+            '{action} começou. O que quase impediu essa primeira?',
         ],
     },
 
@@ -259,17 +259,17 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
     cycle_goal_progress: {
         neutro: [
             '{action}: {count}/{target} no ciclo. Faltam {remaining}.',
-            'Boa. {action} ja tem {count} entregas no ciclo; restam {remaining}.',
+            'Boa. {action} já tem {count} entregas no ciclo; restam {remaining}.',
             '{action} em {count}/{target}. Faltam {remaining}.',
         ],
         calmo: [
-            '{action}: {count}/{target}. Restam {remaining}, e ha tempo.',
+            '{action}: {count}/{target}. Restam {remaining}, e há tempo.',
             '{action} segue andando: {count} feitas, {remaining} pela frente.',
             '{count}/{target} em {action}. Meio caminho conta como caminho.',
         ],
         coach: [
             '{action}: {count}/{target}. Dica: divide as {remaining} pelos dias restantes e para de improvisar.',
-            '{action} em {count}/{target}. Sugestao: se {remaining} nao couber, corta a meta agora e nao no fim.',
+            '{action} em {count}/{target}. Sugestão: se {remaining} não couber, corta a meta agora e não no fim.',
             '{action} em {count}/{target}. Dica: {remaining} restantes dividem bem nos dias que sobram.',
         ],
         reflexivo: [
@@ -282,68 +282,68 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
     /** Marco concluido. Marcadores: {action} */
     first_after_pause: {
         neutro: [
-            'Primeira acao em {dias} dias.',
+            'Primeira ação em {dias} dias.',
             'Depois de {dias} dias parados, uma saiu.',
             '{dias} dias sem nada, e hoje tem uma.',
         ],
         coach: [
-            'Primeira em {dias} dias. Amanha a segunda custa menos que essa.',
-            'Quebrou {dias} dias de pausa. E a proxima que decide se virou retomada.',
-            'Uma acao depois de {dias} dias parados. Repete amanha e ja e ritmo.',
+            'Primeira em {dias} dias. Amanhã a segunda custa menos que essa.',
+            'Quebrou {dias} dias de pausa. E a próxima que decide se virou retomada.',
+            'Uma ação depois de {dias} dias parados. Repete amanhã e já e ritmo.',
         ],
         reflexivo: [
-            'Primeira em {dias} dias. O que hoje tinha que os outros nao tinham?',
-            'Depois de {dias} dias, essa saiu. Da para repetir o que fez ela acontecer?',
-            '{dias} dias de pausa e uma acao hoje. O que mudou?',
+            'Primeira em {dias} dias. O que hoje tinha que os outros não tinham?',
+            'Depois de {dias} dias, essa saiu. Dá para repetir o que fez ela acontecer?',
+            '{dias} dias de pausa e uma ação hoje. O que mudou?',
         ],
         calmo: [
-            'Primeira em {dias} dias, e ja e o bastante para hoje.',
-            'Depois de {dias} dias, uma. Nao precisa recuperar o resto.',
+            'Primeira em {dias} dias, e já e o bastante para hoje.',
+            'Depois de {dias} dias, uma. Não precisa recuperar o resto.',
             '{dias} dias pararam aqui. Sem pressa para o que vem.',
         ],
     },
     streak_saved: {
         neutro: [
-            'Fechou o dia. A sequencia continua em {streak}.',
-            'Sequencia mantida: {streak} dias.',
-            'Passou de raspao, e {streak} segue de pe.',
+            'Fechou o dia. A sequência continua em {streak}.',
+            'Sequência mantida: {streak} dias.',
+            'Passou de raspão, e {streak} segue de pé.',
         ],
         coach: [
-            '{streak} salvos no fim do dia. Amanha, mais cedo.',
-            'Sequencia mantida em {streak}. Antecipa amanha e para de depender do limite.',
-            'Fechou a tempo. {streak} continua, e o proximo nao precisa ser assim.',
+            '{streak} salvos no fim do dia. Amanhã, mais cedo.',
+            'Sequência mantida em {streak}. Antecipa amanhã e para de depender do limite.',
+            'Fechou a tempo. {streak} continua, e o próximo não precisa ser assim.',
         ],
         reflexivo: [
-            '{streak} salvos no limite. Foi o dia, ou foi a hora que voce escolheu?',
-            'A sequencia sobreviveu por pouco. Isso esta virando o padrao?',
+            '{streak} salvos no limite. Foi o dia, ou foi a hora que você escolheu?',
+            'A sequência sobreviveu por pouco. Isso está virando o padrão?',
             'Fechou no fim do dia de novo. {streak} vale essa corrida toda noite?',
         ],
         calmo: [
-            '{streak} de pe. Chegou no fim, mas chegou.',
-            'A sequencia continua em {streak}. Tarde ainda e a tempo.',
+            '{streak} de pé. Chegou no fim, mas chegou.',
+            'A sequência continua em {streak}. Tarde ainda é a tempo.',
             'Fechou. {streak} seguem, sem precisar ter sido perfeito.',
         ],
     },
     milestone_completed: {
         neutro: [
-            'Marco "{action}" concluido. Isso muda o desenho do ciclo.',
-            '"{action}" foi concluida. Boa. Esse era um ponto de passagem, nao so mais uma acao.',
-            'Marco "{action}" fechado. Ele nao volta a aparecer.',
+            'Marco "{action}" concluído. Isso muda o desenho do ciclo.',
+            '"{action}" foi concluída. Boa. Esse era um ponto de passagem, não só mais uma ação.',
+            'Marco "{action}" fechado. Ele não volta a aparecer.',
         ],
         calmo: [
-            'Marco "{action}" concluido. Era um ponto de virada. Reconhece isso.',
+            'Marco "{action}" concluído. Era um ponto de virada. Reconhece isso.',
             '"{action}" fechou. Deixa esse marco assentar antes de seguir.',
             '"{action}" era um marco. Deixa pesar o quanto merece.',
         ],
         coach: [
-            'Marco "{action}" concluido. Sugestao: revisa o ciclo - marco fechado costuma liberar espaco.',
+            'Marco "{action}" concluído. Sugestão: revisa o ciclo - marco fechado costuma liberar espaço.',
             '"{action}" fechou. Dica: se ele destravou outra coisa, agenda essa outra hoje.',
-            'Marco "{action}" fechado. Sugestao: escreve em uma linha o que fez ele sair.',
+            'Marco "{action}" fechado. Sugestão: escreve em uma linha o que fez ele sair.',
         ],
         reflexivo: [
-            'Marco "{action}" concluido. O que ele destrava agora?',
+            'Marco "{action}" concluído. O que ele destrava agora?',
             '"{action}" fechou. Era mesmo um marco, ou virou um no caminho?',
-            '"{action}" fechou. Ha um mes voce apostaria que fecharia?',
+            '"{action}" fechou. Há um mês você apostaria que fecharia?',
         ],
     },
 };
@@ -359,12 +359,24 @@ export const pickOracleSpeech = (
     event: OracleSpeechEvent,
     tone: OracleSpeechTone,
     vars: Record<string, string | number> = {},
+    avoid?: string | null,
 ): string => {
     const entry = ORACLE_SPEECH_LIBRARY[event];
     const variants = (entry?.[tone]?.length ? entry[tone] : entry?.neutro) || [];
     if (variants.length === 0) return '';
-    const chosen = variants[Math.floor(Math.random() * variants.length)] || variants[0];
-    return fillOracleSpeech(chosen, vars);
+
+    // `avoid` EXCLUI, nao repete o sorteio ate dar diferente.
+    //
+    // A primeira versao tentava de novo tres vezes: com tres variantes, cada
+    // tentativa tinha um terco de chance de cair na mesma, e a anterior voltava
+    // uma vez em vinte e sete. Raro o bastante para o teste passar por sorte, e
+    // frequente o bastante para a pessoa ver. Filtrar torna impossivel.
+    const preenchidas = variants.map((linha) => fillOracleSpeech(linha, vars));
+    const candidatas = avoid ? preenchidas.filter((linha) => linha !== avoid) : preenchidas;
+    // Sobrando uma so, repetir e melhor que calar: a reacao responde a algo que a
+    // pessoa acabou de fazer, e silencio ali e lido como defeito.
+    const conjunto = candidatas.length > 0 ? candidatas : preenchidas;
+    return conjunto[Math.floor(Math.random() * conjunto.length)] || conjunto[0];
 };
 
 /**
@@ -455,26 +467,26 @@ export type OracleOpeningKind = 'saudacao' | 'dica' | 'sugestao' | 'curiosidade'
 
 /** Como o jogo funciona. Fato, nao opiniao: sem variacao por tom. */
 export const ORACLE_GAME_TIPS: readonly string[] = [
-    'Arena e uma area da sua vida. Acao e o que voce faz dentro dela.',
-    'Ciclo e o periodo que voce fecha e mede. O relatorio nasce dele.',
-    'Marco e acao que acontece uma vez. Recorrente e a que se repete.',
-    'O XP de uma acao vem do tempo dela: meia hora vale cerca de 30.',
-    'Concluir tudo de uma arena a fecha e ela para de pedir sua atencao.',
-    'Voce pode arquivar uma arena sem apagar nada do que ja registrou.',
-    'O baú guarda cosmetico. Nada dentro dele muda regra de jogo.',
-    'A pontuacao do ciclo compara voce com voce, nao com outra pessoa.',
-    'Dia sem registro nao apaga o ciclo: ele so entra como dia sem entrega.',
-    'Da para reordenar arenas por prioridade e o painel respeita a ordem.',
-    'A insignia marca o que voce fez. Ela nao expira quando a temporada vira.',
-    'Voce escolhe quanto o Oraculo fala no ajuste de presenca.',
-    'Acao concluida fora do horario marcado conta igual: o registro e o que vale.',
-    'Arena sem acao nenhuma nao entra em missao nem em relatorio.',
-    'O checklist do dia e separado das acoes: ele nao pontua, so organiza.',
+    'Arena é uma área da sua vida. Ação é o que você faz dentro dela.',
+    'Ciclo é o período que você fecha e mede. O relatório nasce dele.',
+    'Marco é ação que acontece uma vez. Recorrente é a que se repete.',
+    'O XP de uma ação vem do tempo dela: meia hora vale cerca de 30.',
+    'Concluir tudo de uma arena a fecha e ela para de pedir sua atenção.',
+    'Você pode arquivar uma arena sem apagar nada do que já registrou.',
+    'O baú guarda cosmético. Nada dentro dele muda regra de jogo.',
+    'A pontuação do ciclo compara você com você, não com outra pessoa.',
+    'Dia sem registro não apaga o ciclo: ele só entra como dia sem entrega.',
+    'Dá para reordenar arenas por prioridade e o painel respeita a ordem.',
+    'A insígnia marca o que você fez. Ela não expira quando a temporada vira.',
+    'Você escolhe quanto o Oráculo fala no ajuste de presença.',
+    'Ação concluída fora do horário marcado conta igual: o registro é o que vale.',
+    'Arena sem ação nenhuma não entra em missão nem em relatório.',
+    'O checklist do dia e separado das ações: ele não pontua, só organiza.',
     'Fechar o painel do dia sela o que foi feito e deposita o XP no ciclo.',
-    'Voce pode mover uma acao de arena sem perder o historico dela.',
-    'Campanha e um conjunto de arenas que abre por etapas conforme voce avanca.',
-    'Ouro compra cosmetico e assinatura. Ele nao compra progresso.',
-    'Relatorio antigo continua acessivel depois que o ciclo fecha.',
+    'Você pode mover uma ação de arena sem perder o histórico dela.',
+    'Campanha é um conjunto de arenas que abre por etapas conforme você avança.',
+    'Ouro compra cosmético e assinatura. Ele não compra progresso.',
+    'Relatório antigo continua acessível depois que o ciclo fecha.',
 ];
 
 /**
@@ -485,38 +497,38 @@ export const ORACLE_GAME_TIPS: readonly string[] = [
  * em qualquer temporada, entao ninguem precisa lembrar de revisa-las.
  */
 export const ORACLE_LORE: readonly string[] = [
-    'Cada temporada tem colecao propria, e o que voce ganhou nela fica com voce.',
-    'Item de temporada nao volta: quem estava presente e quem carrega a marca.',
-    'A insignia conta onde voce estava. A borda e o banner contam o mesmo em silencio.',
-    'Temporada troca a colecao, nunca o seu historico.',
-    'As jornadas da temporada sao poucas de proposito, para caberem em meses.',
+    'Cada temporada tem coleção própria, e o que você ganhou nela fica com você.',
+    'Item de temporada não volta: quem estava presente e quem carrega a marca.',
+    'A insígnia conta onde você estava. A borda e o banner contam o mesmo em silêncio.',
+    'Temporada troca a coleção, nunca o seu histórico.',
+    'As jornadas da temporada são poucas de propósito, para caberem em meses.',
     'Fechar todas as jornadas de uma temporada rende o selo dela.',
-    'A patente cresce com o que voce faz, nao com o tempo que passa.',
-    'O legado guarda o que sobreviveu aos seus ciclos, nao o que voce planejou.',
+    'A patente cresce com o que você faz, não com o tempo que passa.',
+    'O legado guarda o que sobreviveu aos seus ciclos, não o que você planejou.',
     'Temporada zero abriu o mundo. As seguintes constroem sobre ela.',
 ];
 
 /** Um empurrao pequeno para agora. Este varia por tom. */
 export const ORACLE_SUGGESTIONS: Record<OracleSpeechTone, readonly string[]> = {
     neutro: [
-        'Se for abrir uma coisa so hoje, abra a que esta mais perto de fechar.',
-        'Registrar o que ja fez conta tanto quanto fazer o proximo.',
-        'Uma acao pequena hoje mantem o ciclo vivo.',
+        'Se for abrir uma coisa só hoje, abra a que está mais perto de fechar.',
+        'Registrar o que já fez conta tanto quanto fazer o próximo.',
+        'Uma ação pequena hoje mantém o ciclo vivo.',
     ],
     coach: [
         'Escolha a menor da lista e tire ela do caminho.',
-        'Se travou, corte a tarefa pela metade e faca a primeira metade.',
-        'Comece pela arena que voce vem evitando. Ela custa mais parada.',
+        'Se travou, corte a tarefa pela metade e faça a primeira metade.',
+        'Comece pela arena que você vem evitando. Ela custa mais parada.',
     ],
     reflexivo: [
-        'O que voce evita registrar costuma dizer mais que o que voce registra.',
-        'Se hoje so coubesse uma coisa, qual seria?',
-        'Vale perguntar se a carga que voce planejou era mesmo para voce.',
+        'O que você evita registrar costuma dizer mais que o que você registra.',
+        'Se hoje só coubesse uma coisa, qual seria?',
+        'Vale perguntar se a carga que você planejou era mesmo para você.',
     ],
     calmo: [
-        'Nao precisa recuperar nada hoje. Comece de onde esta.',
+        'Não precisa recuperar nada hoje. Comece de onde está.',
         'Um dia menor continua sendo um dia.',
-        'Se hoje nao for de avancar, que seja de nao desistir.',
+        'Se hoje não for de avançar, que seja de não desistir.',
     ],
 };
 

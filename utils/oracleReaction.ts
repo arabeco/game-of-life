@@ -63,13 +63,7 @@ export const pickOracleReaction = (
     memory: OracleReactionMemory = {},
 ): { message: string; memory: OracleReactionMemory } => {
     const anterior = memory[event];
-
-    let escolhida = pickOracleSpeech(event, tone, vars);
-    // Tres tentativas bastam: com tres variantes a chance de cair na mesma tres
-    // vezes seguidas e uma em vinte e sete, e o custo de tentar e um sorteio.
-    for (let tentativa = 0; tentativa < 3 && escolhida && escolhida === anterior; tentativa += 1) {
-        escolhida = pickOracleSpeech(event, tone, vars);
-    }
+    const escolhida = pickOracleSpeech(event, tone, vars, anterior);
 
     return {
         message: escolhida,

@@ -90,28 +90,28 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
    */
   ausente: {
     neutro: [
-      'Voltou depois de {dias} dias. As acoes continuam onde estavam.',
-      '{dias} dias de intervalo, e voce esta aqui. Nada foi perdido, so parou.',
-      '{dias} dias fora, e o painel esta igual ao que voce deixou.',
-      'Intervalo de {dias} dias. Comeca do ponto em que parou, nao do zero.',
+      'Voltou depois de {dias} dias. As ações continuam onde estavam.',
+      '{dias} dias de intervalo, e você está aqui. Nada foi perdido, só parou.',
+      '{dias} dias fora, e o painel está igual ao que você deixou.',
+      'Intervalo de {dias} dias. Começa do ponto em que parou, não do zero.',
     ],
     coach: [
-      'Voltou depois de {dias} dias. Comeca por uma acao pequena, e ajusta o resto depois.',
-      'De volta em {dias} dias. Escolhe uma so para hoje: recomecar pesa menos que compensar.',
-      '{dias} dias fora. Nao tenta compensar hoje: uma acao ja recoloca o ritmo.',
-      'Esta de volta. Abre a arena mais facil que tiver e fecha uma coisa.',
+      'Voltou depois de {dias} dias. Começa por uma ação pequena, e ajusta o resto depois.',
+      'De volta em {dias} dias. Escolhe uma só para hoje: recomecar pesa menos que compensar.',
+      '{dias} dias fora. Não tenta compensar hoje: uma ação já recoloca o ritmo.',
+      'Está de volta. Abre a arena mais fácil que tiver e fecha uma coisa.',
     ],
     reflexivo: [
       'Voltou depois de {dias} dias. O que mudou na sua vida nesse intervalo?',
-      '{dias} dias longe, e voce voltou. Foi falta de tempo, ou o plano tinha deixado de servir?',
-      '{dias} dias, e voce voltou hoje. O que te trouxe de volta?',
-      'Depois de {dias} dias, o que aqui ainda faz sentido para voce?',
+      '{dias} dias longe, e você voltou. Foi falta de tempo, ou o plano tinha deixado de servir?',
+      '{dias} dias, e você voltou hoje. O que te trouxe de volta?',
+      'Depois de {dias} dias, o que aqui ainda faz sentido para você?',
     ],
     calmo: [
-      'Voltou depois de {dias} dias, e esta tudo bem. O painel esperou, nao cobrou.',
-      '{dias} dias de pausa. Nao precisa recuperar nada. Comeca de onde da.',
-      '{dias} dias de intervalo. Voltar ja foi a parte dificil.',
-      'Voce voltou, e isso basta por hoje.',
+      'Voltou depois de {dias} dias, e está tudo bem. O painel esperou, não cobrou.',
+      '{dias} dias de pausa. Não precisa recuperar nada. Começa de onde dá.',
+      '{dias} dias de intervalo. Voltar já foi a parte difícil.',
+      'Você voltou, e isso basta por hoje.',
     ],
   },
 
@@ -131,52 +131,52 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
    */
   arena_retomada: {
     neutro: [
-      'Depois de {dias} dias parada, {arena} voltou a andar. Ainda esta atras, mas mudou de direcao.',
-      '{arena} voltou a andar. Continua atras do planejado, e agora esta em movimento.',
+      'Depois de {dias} dias parada, {arena} voltou a andar. Ainda está atrás, mas mudou de direção.',
+      '{arena} voltou a andar. Continua atrás do planejado, e agora está em movimento.',
       '{arena} teve movimento hoje depois de um tempo parada.',
     ],
     coach: [
-      '{arena} ficou {dias} dias parada e voltou hoje. Repete amanha e vira ritmo.',
-      '{arena} saiu do lugar. O proximo dia e o que decide se foi um dia ou uma retomada.',
-      '{arena} andou. Marca a proxima dela agora, enquanto esta quente.',
+      '{arena} ficou {dias} dias parada e voltou hoje. Repete amanhã e vira ritmo.',
+      '{arena} saiu do lugar. O próximo dia é o que decide se foi um dia ou uma retomada.',
+      '{arena} andou. Marca a próxima dela agora, enquanto está quente.',
     ],
     reflexivo: [
-      '{dias} dias parada, e hoje {arena} andou. O que mudou hoje que nao existia ontem?',
-      '{arena} voltou depois de um tempo parada. Da para repetir o que fez isso acontecer?',
-      '{arena} voltou. O que estava travando ela ate ontem?',
+      '{dias} dias parada, e hoje {arena} andou. O que mudou hoje que não existia ontem?',
+      '{arena} voltou depois de um tempo parada. Dá para repetir o que fez isso acontecer?',
+      '{arena} voltou. O que estava travando ela até ontem?',
     ],
     calmo: [
-      '{arena} voltou depois de {dias} dias. Nao precisa recuperar tudo — precisa continuar.',
-      '{arena} andou de novo. O tempo parado nao volta, e tambem nao precisa ser pago.',
-      '{arena} andou de novo, e isso ja e bastante.',
+      '{arena} voltou depois de {dias} dias. Não precisa recuperar tudo — precisa continuar.',
+      '{arena} andou de novo. O tempo parado não volta, e também não precisa ser pago.',
+      '{arena} andou de novo, e isso já é bastante.',
     ],
   },
 
   /** Tem arena, nao tem ciclo. */
   sem_ciclo: {
     neutro: [
-      'Voce tem arena e nao tem ciclo aberto. O ciclo e o que da comeco e fim ao periodo.',
-      'Sem ciclo, as acoes existem mas nao tem prazo nem fecho.',
-      'Suas arenas estao sem periodo definido.',
-      'Nao ha ciclo aberto. As acoes existem soltas no tempo.',
+      'Você tem arena e não tem ciclo aberto. O ciclo é o que dá começo e fim ao período.',
+      'Sem ciclo, as ações existem mas não tem prazo nem fecho.',
+      'Suas arenas estão sem período definido.',
+      'Não há ciclo aberto. As ações existem soltas no tempo.',
     ],
     coach: [
-      'Abra um ciclo de sete dias ou menos. Curto e mais facil de terminar do que longo.',
-      'Proximo passo: monte um ciclo pequeno. Uma semana ja da ritmo sem virar divida.',
-      'Abre um ciclo hoje e ja coloca as arenas que voce quer tocar nesta semana.',
-      'Escolhe um prazo pequeno. Prazo curto termina; prazo longo vira divida.',
+      'Abra um ciclo de sete dias ou menos. Curto é mais fácil de terminar do que longo.',
+      'Próximo passo: monte um ciclo pequeno. Uma semana já dá ritmo sem virar dívida.',
+      'Abre um ciclo hoje e já coloca as arenas que você quer tocar nesta semana.',
+      'Escolhe um prazo pequeno. Prazo curto termina; prazo longo vira dívida.',
     ],
     reflexivo: [
-      'Voce tem arena, mas nao marcou um periodo. Quanto tempo voce quer se dar?',
-      'O que voce quer conseguir enxergar quando esse periodo fechar?',
-      'Sem ciclo, como voce vai saber que esse periodo acabou?',
-      'O que voce quer que seja verdade sobre voce daqui a uma semana?',
+      'Você tem arena, mas não marcou um período. Quanto tempo você quer se dar?',
+      'O que você quer conseguir enxergar quando esse período fechar?',
+      'Sem ciclo, como você vai saber que esse período acabou?',
+      'O que você quer que seja verdade sobre você daqui a uma semana?',
     ],
     calmo: [
-      'Ja tem arena, que era a parte dificil. O ciclo pode ser curto e sem ambicao.',
-      'Nao precisa de um plano grande. Uma semana ja e um ciclo.',
-      'Nao precisa de ciclo hoje. Quando quiser um comeco e um fim, ele esta ali.',
-      'Um ciclo curto pesa menos que a duvida de nao ter nenhum.',
+      'Já tem arena, que era a parte difícil. O ciclo pode ser curto e sem ambição.',
+      'Não precisa de um plano grande. Uma semana já é um ciclo.',
+      'Não precisa de ciclo hoje. Quando quiser um começo e um fim, ele está ali.',
+      'Um ciclo curto pesa menos que a dúvida de não ter nenhum.',
     ],
   },
 
@@ -184,46 +184,46 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
   ciclo_longo: {
     neutro: [
       'Ciclo de {dias} dias, {progresso}% andado.',
-      '{progresso}% em um ciclo de {dias} dias. O prazo esta maior que o ritmo.',
+      '{progresso}% em um ciclo de {dias} dias. O prazo está maior que o ritmo.',
     ],
     coach: [
       'Ciclo de {dias} dias em {progresso}%. Encurte a rodada ou tire uma frente.',
-      '{progresso}% de {dias} dias. Reduzir o escopo agora custa menos que arrastar ate o fim.',
+      '{progresso}% de {dias} dias. Reduzir o escopo agora custa menos que arrastar até o fim.',
     ],
     reflexivo: [
-      'Ciclo de {dias} dias em {progresso}%. O ciclo esta grande, ou a semana ficou cheia?',
-      '{progresso}% andado. O que voce planejou ainda e o que voce quer?',
+      'Ciclo de {dias} dias em {progresso}%. O ciclo está grande, ou a semana ficou cheia?',
+      '{progresso}% andado. O que você planejou ainda é o que você quer?',
     ],
     calmo: [
-      'Ciclo longo anda devagar mesmo. {progresso}% nao e atraso, e o tamanho da rodada.',
-      'Sao {dias} dias. Nao ha pressa embutida nisso.',
+      'Ciclo longo anda devagar mesmo. {progresso}% não é atraso, é o tamanho da rodada.',
+      'São {dias} dias. Não há pressa embutida nisso.',
     ],
   },
 
   /** Sem conclusao ha tres dias ou mais. Marcadores: {dias} */
   sem_entrega: {
     neutro: [
-      'Ultima conclusao ha {dias} dias.',
-      '{dias} dias sem fechar nada. A sequencia parou.',
-      '{dias} dias sem nada concluido. As acoes continuam abertas.',
+      'Última conclusão há {dias} dias.',
+      '{dias} dias sem fechar nada. A sequência parou.',
+      '{dias} dias sem nada concluído. As ações continuam abertas.',
       'Nenhuma entrega em {dias} dias.',
     ],
     coach: [
       'Faz {dias} dias. Fecha a menor que estiver aberta hoje.',
       '{dias} dias sem entrega. Escolhe a mais barata e conclui: o resto volta sozinho.',
-      '{dias} dias parados. Pega a de menor duracao e fecha ela agora.',
-      'Uma acao pequena hoje vale mais que um plano novo. Escolhe uma.',
+      '{dias} dias parados. Pega a de menor duração e fecha ela agora.',
+      'Uma ação pequena hoje vale mais que um plano novo. Escolhe uma.',
     ],
     reflexivo: [
-      '{dias} dias sem concluir. O que esta no caminho?',
-      'Faz {dias} dias. As acoes ainda cabem no seu dia como estao?',
+      '{dias} dias sem concluir. O que está no caminho?',
+      'Faz {dias} dias. As ações ainda cabem no seu dia como estão?',
       '{dias} dias sem fechar nada. Foi o dia que encheu, ou a lista?',
-      'Faz {dias} dias. Voce mudou, ou a lista e que ficou para tras?',
+      'Faz {dias} dias. Você mudou, ou a lista é que ficou para trás?',
     ],
     calmo: [
-      '{dias} dias sem entrega, e isso acontece. Uma pequena hoje ja recoloca.',
-      'A sequencia esfriou. Nao precisa voltar inteiro de uma vez.',
-      '{dias} dias sem entrega. Nao ha divida acumulando aqui.',
+      '{dias} dias sem entrega, e isso acontece. Uma pequena hoje já recoloca.',
+      'A sequência esfriou. Não precisa voltar inteiro de uma vez.',
+      '{dias} dias sem entrega. Não há dívida acumulando aqui.',
       'Parar acontece. O que estava aberto continua aberto, sem juros.',
     ],
   },
@@ -241,20 +241,20 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
    */
   streak_marco: {
     neutro: [
-      '{streak} dias seguidos. Isso nao foi sorte.',
-      'Marca de {streak} dias. O numero e seu.',
+      '{streak} dias seguidos. Isso não foi sorte.',
+      'Marca de {streak} dias. O número é seu.',
     ],
     coach: [
-      '{streak} dias. Quem chega aqui ja nao depende de vontade, depende de habito.',
-      'Sao {streak} dias seguidos. Guarda esse numero para o dia em que bater duvida.',
+      '{streak} dias. Quem chega aqui já não depende de vontade, depende de habito.',
+      'São {streak} dias seguidos. Guarda esse número para o dia em que bater dúvida.',
     ],
     reflexivo: [
-      '{streak} dias seguidos. O que voce era no primeiro deles?',
+      '{streak} dias seguidos. O que você era no primeiro deles?',
       'Chegou a {streak}. O que mudou de verdade nesse intervalo?',
     ],
     calmo: [
       '{streak} dias. Sem pressa e sem barulho, e chegou aqui.',
-      'Sao {streak} dias seguidos. Nao precisa fazer nada com isso agora.',
+      'São {streak} dias seguidos. Não precisa fazer nada com isso agora.',
     ],
   },
 
@@ -271,28 +271,28 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
    */
   streak_em_risco: {
     neutro: [
-      '{streak} dias seguidos, e hoje ainda sem nenhuma acao. Uma fecha o dia.',
-      'Sua sequencia esta em {streak}. Falta a de hoje.',
+      '{streak} dias seguidos, e hoje ainda sem nenhuma ação. Uma fecha o dia.',
+      'Sua sequência está em {streak}. Falta a de hoje.',
       '{diasSeguidos}a noite seguida chegando no limite com {streak} dias em jogo.',
-      'Nenhuma acao hoje, e a sequencia de {streak} depende disso.',
+      'Nenhuma ação hoje, e a sequência de {streak} depende disso.',
     ],
     coach: [
-      '{streak} dias de pe. Escolhe a menor acao que tiver e mantem.',
-      'Uma acao agora e a diferenca entre {streak} e comecar de novo amanha.',
-      'Segunda vez esta semana que da essa hora. Antecipa amanha e para de depender do limite.',
-      'Falta uma acao para os {streak} continuarem. A menor serve.',
+      '{streak} dias de pé. Escolhe a menor ação que tiver e mantém.',
+      'Uma ação agora é a diferença entre {streak} e começar de novo amanhã.',
+      'Segunda vez esta semana que dá essa hora. Antecipa amanhã e para de depender do limite.',
+      'Falta uma ação para os {streak} continuarem. A menor serve.',
     ],
     reflexivo: [
-      '{streak} dias, e hoje passou sem nenhuma. O dia foi cheio, ou foi so escapando?',
-      'Sua sequencia esta em {streak}. Ela ainda significa o que significava quando comecou?',
-      'Sao {diasSeguidos} noites seguidas apertando no fim. O problema e o dia ou e a hora?',
-      '{streak} dias construidos, e hoje ainda vazio. Vale o risco?',
+      '{streak} dias, e hoje passou sem nenhuma. O dia foi cheio, ou foi só escapando?',
+      'Sua sequência está em {streak}. Ela ainda significa o que significava quando começou?',
+      'São {diasSeguidos} noites seguidas apertando no fim. O problema é o dia ou é a hora?',
+      '{streak} dias construídos, e hoje ainda vazio. Vale o risco?',
     ],
     calmo: [
-      'Seu {streak} esta de pe ate a virada do dia. Uma acao segura ele.',
-      '{streak} dias. Se hoje nao der, tambem esta tudo bem — mas ainda da.',
-      '{diasSeguidos} noites assim seguidas. Talvez o horario e que nao esta ajudando.',
-      '{streak} dias. Uma acao pequena e o suficiente, e ainda ha tempo.',
+      'Seu {streak} está de pé até a virada do dia. Uma ação segura ele.',
+      '{streak} dias. Se hoje não der, também está tudo bem — mas ainda dá.',
+      '{diasSeguidos} noites assim seguidas. Talvez o horário é que não está ajudando.',
+      '{streak} dias. Uma ação pequena é o suficiente, e ainda há tempo.',
     ],
   },
 
@@ -309,20 +309,20 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
    */
   meta_inflada: {
     neutro: [
-      'Sua estrutura pede {acoes} acoes por dia. Seu melhor dia ate agora teve {maximo}.',
-      'O plano pede {acoes} por dia. Isso nao e falta de esforco, e conta que nao fecha.',
+      'Sua estrutura pede {acoes} ações por dia. Seu melhor dia até agora teve {maximo}.',
+      'O plano pede {acoes} por dia. Isso não é falta de esforço, é conta que não fecha.',
     ],
     coach: [
-      '{acoes} acoes por dia e o que esta montado. Corte pela metade e voce passa a fechar o dia.',
-      'Seu melhor dia teve {maximo}. Ajuste as repeticoes para perto disso e o resto se resolve.',
+      '{acoes} ações por dia é o que está montado. Corte pela metade e você passa a fechar o dia.',
+      'Seu melhor dia teve {maximo}. Ajuste as repetições para perto disso e o resto se resolve.',
     ],
     reflexivo: [
-      'O plano pede {acoes} por dia. Voce montou para quem voce e, ou para quem queria ser?',
-      'Seu melhor dia foi {maximo} e a meta pede {acoes}. Qual dos dois numeros e o real?',
+      'O plano pede {acoes} por dia. Você montou para quem você é, ou para quem queria ser?',
+      'Seu melhor dia foi {maximo} e a meta pede {acoes}. Qual dos dois números é o real?',
     ],
     calmo: [
-      'Sao {acoes} acoes por dia ai. Nao e voce que esta devendo — e o numero.',
-      'O dia que voce montou e maior que o dia que existe. Da para baixar agora, sem perder nada.',
+      'São {acoes} ações por dia aí. Não é você que está devendo — é o número.',
+      'O dia que você montou é maior que o dia que existe. Dá para baixar agora, sem perder nada.',
     ],
   },
 
@@ -341,148 +341,148 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
    */
   arena_atrasada: {
     neutro: [
-      '{arena} esta atras do ritmo do ciclo.',
-      'Pelo tempo e pelo progresso, {arena} e a que mais ficou para tras.',
-      '{arena} acumulou pendencia em relacao ao resto do ciclo.',
+      '{arena} está atrás do ritmo do ciclo.',
+      'Pelo tempo e pelo progresso, {arena} é a que mais ficou para trás.',
+      '{arena} acumulou pendência em relação ao resto do ciclo.',
     ],
     coach: [
-      'Abra {arena} e feche uma acao dela hoje. A menor que tiver, nao a mais dificil.',
-      '{arena} nao andou esta semana. Uma acao hoje ja muda o numero de amanha.',
+      'Abra {arena} e feche uma ação dela hoje. A menor que tiver, não a mais difícil.',
+      '{arena} não andou esta semana. Uma ação hoje já muda o número de amanhã.',
       'Se for tocar em alguma coisa hoje, que seja {arena}.',
     ],
     reflexivo: [
-      '{arena} ficou para tras. Ela ainda importa como importava quando voce criou?',
-      'O que {arena} pedia de voce que a semana nao deu?',
-      '{arena} esta atras. Ela e prioridade de verdade, ou so estava na lista?',
+      '{arena} ficou para trás. Ela ainda importa como importava quando você criou?',
+      'O que {arena} pedia de você que a semana não deu?',
+      '{arena} está atrás. Ela é prioridade de verdade, ou só estava na lista?',
     ],
     calmo: [
-      '{arena} esta devagar, e devagar ainda e andar. Uma acao hoje basta.',
+      '{arena} está devagar, e devagar ainda é andar. Uma ação hoje basta.',
       'Nem toda arena anda no mesmo passo. {arena} pode esperar sem culpa.',
-      '{arena} ficou para tras, e nada nela urgente. Um passo quando der.',
+      '{arena} ficou para trás, e nada nela urgente. Um passo quando der.',
     ],
   },
 
   /** Arena parada, candidata a pausa. Marcadores: {arena} */
   arena_parada: {
     neutro: [
-      '{arena} esta sem movimento ha alguns dias.',
-      'Nenhuma acao de {arena} foi registrada recentemente.',
-      '{arena} nao registra conclusao ha bastante tempo.',
+      '{arena} está sem movimento há alguns dias.',
+      'Nenhuma ação de {arena} foi registrada recentemente.',
+      '{arena} não registra conclusão há bastante tempo.',
     ],
     coach: [
-      '{arena} parou. Decide agora: uma acao pequena hoje, ou pausa a arena.',
-      'Retomar {arena} com o menor item, ou pausar. As duas resolvem; deixar aberta nao.',
-      '{arena} parou. Ou uma acao hoje, ou tira ela do ciclo — as duas resolvem.',
+      '{arena} parou. Decide agora: uma ação pequena hoje, ou pausa a arena.',
+      'Retomar {arena} com o menor item, ou pausar. As duas resolvem; deixar aberta não.',
+      '{arena} parou. Ou uma ação hoje, ou tira ela do ciclo — as duas resolvem.',
     ],
     reflexivo: [
-      '{arena} esfriou. Isso e uma fase, ou ela deixou de fazer sentido?',
-      'O que aconteceria se voce pausasse {arena} por um tempo?',
+      '{arena} esfriou. Isso é uma fase, ou ela deixou de fazer sentido?',
+      'O que aconteceria se você pausasse {arena} por um tempo?',
       '{arena} parou faz tempo. Ela ainda pertence a este ciclo?',
     ],
     calmo: [
-      '{arena} parou, e pausar tambem e uma escolha legitima.',
-      'Nao precisa manter {arena} viva so porque ela existe.',
-      '{arena} esta parada. Deixar parada tambem e uma decisao valida.',
+      '{arena} parou, e pausar também é uma escolha legítima.',
+      'Não precisa manter {arena} viva só porque ela existe.',
+      '{arena} está parada. Deixar parada também é uma decisão válida.',
     ],
   },
 
   /** Ciclo inteiro atrasado. */
   ciclo_atrasado: {
     neutro: [
-      'O ciclo esta atras do ritmo pelo tempo restante.',
+      'O ciclo está atrás do ritmo pelo tempo restante.',
       'O progresso do ciclo ficou abaixo do que o prazo pedia.',
-      'O ciclo esta atras do ritmo previsto para esta altura.',
+      'O ciclo está atrás do ritmo previsto para esta altura.',
     ],
     coach: [
       'Antes de compensar, tire uma meta. Fechar menos inteiro vale mais que muito pela metade.',
       'O ciclo apertou. Reduz o escopo hoje e protege o que sobrar.',
-      'O ciclo esta atras. Escolhe uma arena so para hoje e ignora o resto.',
+      'O ciclo está atrás. Escolhe uma arena só para hoje e ignora o resto.',
     ],
     reflexivo: [
-      'O ciclo esta atrasado. O que voce planejou era para esta semana ou para uma semana ideal?',
-      'O que dentro do ciclo voce ja sabe que nao vai acontecer?',
-      'O ciclo ficou para tras. Foi a semana, ou o ciclo ja nasceu grande?',
+      'O ciclo está atrasado. O que você planejou era para esta semana ou para uma semana ideal?',
+      'O que dentro do ciclo você já sabe que não vai acontecer?',
+      'O ciclo ficou para trás. Foi a semana, ou o ciclo já nasceu grande?',
     ],
     calmo: [
-      'O ciclo esta atras, e isso nao apaga o que ja foi feito.',
-      'Ciclo atrasado nao e ciclo perdido. Ainda da para fechar com o que cabe.',
-      'O ciclo esta atrasado, e ciclo atrasado ainda termina.',
+      'O ciclo está atrás, e isso não apaga o que já foi feito.',
+      'Ciclo atrasado não é ciclo perdido. Ainda dá para fechar com o que cabe.',
+      'O ciclo está atrasado, e ciclo atrasado ainda termina.',
     ],
   },
 
   /** Ha uma acao prioritaria clara. Marcadores: {acao} */
   prioridade: {
     neutro: [
-      '{acao} e a proxima da fila hoje.',
+      '{acao} é a próxima da fila hoje.',
       'Hoje tem {acao} em aberto.',
-      'A proxima da fila e {acao}.',
+      'A próxima da fila é {acao}.',
       '{acao} continua aberta hoje.',
     ],
     coach: [
-      'Faz {acao} hoje. Uma real ja mantem o ciclo andando.',
+      'Faz {acao} hoje. Uma real já mantém o ciclo andando.',
       '{acao} primeiro. Depois dela o resto do dia decide sozinho.',
-      'Comeca por {acao}. Comecar pela mais facil tambem vale.',
-      '{acao} agora, enquanto o dia ainda e seu.',
+      'Começa por {acao}. Começar pela mais fácil também vale.',
+      '{acao} agora, enquanto o dia ainda é seu.',
     ],
     reflexivo: [
-      '{acao} cabe hoje de verdade, ou entrou na lista por inercia?',
-      'Se so {acao} acontecesse hoje, o dia teria valido?',
-      '{acao} e o que importa hoje, ou e so o que sobrou na lista?',
-      'Se voce fizesse so {acao} hoje, isso seria pouco?',
+      '{acao} cabe hoje de verdade, ou entrou na lista por inércia?',
+      'Se só {acao} acontecesse hoje, o dia teria válido?',
+      '{acao} é o que importa hoje, ou é só o que sobrou na lista?',
+      'Se você fizesse só {acao} hoje, isso seria pouco?',
     ],
     calmo: [
-      '{acao} esta ali quando der. Nao precisa ser agora.',
-      'Se {acao} nao couber hoje, ajustar a meta e melhor que carregar peso.',
-      '{acao} espera. Nao precisa ser a primeira coisa do dia.',
-      '{acao} esta na lista, e a lista nao cobra.',
+      '{acao} está ali quando der. Não precisa ser agora.',
+      'Se {acao} não couber hoje, ajustar a meta é melhor que carregar peso.',
+      '{acao} espera. Não precisa ser a primeira coisa do dia.',
+      '{acao} está na lista, e a lista não cobra.',
     ],
   },
 
   /** Ja concluiu algo hoje. Marcadores: {acao} */
   ja_entregou: {
     neutro: [
-      'Voce concluiu {acao} hoje.',
-      '{acao} ja saiu hoje.',
-      '{acao} foi concluida hoje.',
-      'Hoje ja tem {acao} fechada.',
+      'Você concluiu {acao} hoje.',
+      '{acao} já saiu hoje.',
+      '{acao} foi concluída hoje.',
+      'Hoje já tem {acao} fechada.',
     ],
     coach: [
-      '{acao} feita. Se ainda houver energia, a proxima menor mantem o ritmo.',
+      '{acao} feita. Se ainda houver energia, a próxima menor mantém o ritmo.',
       'Boa, {acao} saiu. Decide agora se para aqui ou puxa mais uma.',
       '{acao} fechada. Se for puxar outra, escolhe a menor.',
-      '{acao} saiu. Amanha comeca com essa mesma facilidade.',
+      '{acao} saiu. Amanhã começa com essa mesma facilidade.',
     ],
     reflexivo: [
-      '{acao} saiu hoje. O que fez ela acontecer, que da para repetir amanha?',
-      'Voce ja entregou {acao}. O dia precisa de mais alguma coisa?',
-      '{acao} aconteceu hoje. Foi planejado ou foi o dia que abriu espaco?',
-      'Voce fechou {acao}. Foi ela mesma que voce queria fechar?',
+      '{acao} saiu hoje. O que fez ela acontecer, que dá para repetir amanhã?',
+      'Você já entregou {acao}. O dia precisa de mais alguma coisa?',
+      '{acao} aconteceu hoje. Foi planejado ou foi o dia que abriu espaço?',
+      'Você fechou {acao}. Foi ela mesma que você queria fechar?',
     ],
     calmo: [
-      '{acao} ja foi. Isso ja e o dia cumprido, se voce quiser que seja.',
-      'Uma entrega e suficiente. Encerrar aqui e uma escolha, nao desistencia.',
-      '{acao} feita. O dia ja tem o que precisava ter.',
-      '{acao} saiu, e nao ha nada pendente nessa conversa.',
+      '{acao} já foi. Isso já é o dia cumprido, se você quiser que seja.',
+      'Uma entrega é suficiente. Encerrar aqui é uma escolha, não desistência.',
+      '{acao} feita. O dia já tem o que precisava ter.',
+      '{acao} saiu, e não há nada pendente nessa conversa.',
     ],
   },
 
   /** Estrutura muito enxuta. */
   estrutura_enxuta: {
     neutro: [
-      'Voce tem uma arena so, com poucas acoes.',
-      'A estrutura esta enxuta: uma frente e pouca coisa dentro.',
+      'Você tem uma arena só, com poucas ações.',
+      'A estrutura está enxuta: uma frente e pouca coisa dentro.',
     ],
     coach: [
-      'Uma segunda arena separa melhor as areas. Corpo, trabalho e casa nao competem na mesma lista.',
+      'Uma segunda arena separa melhor as áreas. Corpo, trabalho e casa não competem na mesma lista.',
       'Cria uma segunda frente quando fizer sentido. Duas pequenas equilibram mais que uma cheia.',
     ],
     reflexivo: [
-      'Uma arena so. Ela cobre o que voce quer mudar, ou e por onde deu para comecar?',
-      'O que esta fora do app hoje e deveria estar dentro?',
+      'Uma arena só. Ela cobre o que você quer mudar, ou é por onde deu para começar?',
+      'O que está fora do app hoje e deveria estar dentro?',
     ],
     calmo: [
-      'Uma arena ja e um comeco inteiro. Nao precisa crescer agora.',
-      'Enxuto funciona. Adicionar so quando incomodar ter so uma.',
+      'Uma arena já é um começo inteiro. Não precisa crescer agora.',
+      'Enxuto funciona. Adicionar só quando incomodar ter só uma.',
     ],
   },
 };

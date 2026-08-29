@@ -142,4 +142,27 @@ for (const id of ['arenas', 'planner', 'reports']) {
   }
 }
 
+
+// --- o banco de reacoes tambem e escrito em portugues -----------------------
+// Mesma regra do banco de aberturas: 144 frases que a pessoa le, e nenhuma pode
+// voltar a ser digitada sem acento.
+
+const LINHAS_DE_REACAO = Object.values(ORACLE_SPEECH_LIBRARY)
+  .flatMap((porTom) => Object.values(porTom).flat());
+
+assert.ok(LINHAS_DE_REACAO.length >= 140, 'o banco de reacoes nao pode encolher sem alguem notar');
+
+for (const linha of LINHAS_DE_REACAO) {
+  assert.doesNotMatch(
+    linha,
+    /(nao|voce|acao|acoes|sequencia|amanha|numero|proxima|proximo|periodo|tambem|ate|so|ja|ha|atras|dificil|facil|historico|maximo|minimo|pe)/,
+    `sem acento: ${linha}`,
+  );
+  assert.match(linha, /^[A-ZÀ-Ý0-9{"]/, `sem maiuscula inicial: ${linha}`);
+  assert.match(linha, /[.?!]$/, `sem pontuacao final: ${linha}`);
+  // Marcador acentuado nunca preenche: fillOracleSpeech procura {acoes}, e
+  // {ações} deixaria a chave crua na tela da pessoa.
+  assert.doesNotMatch(linha, /\{[^}]*[À-ÿ][^}]*\}/, `marcador acentuado: ${linha}`);
+}
+
 console.log('Oracle reaction: a reacao lembra, sabe o que aconteceu, e a dica olha a tela.');

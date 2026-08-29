@@ -36,6 +36,14 @@ import { buildPlannerCoachSpeechDetailed } from '../utils/oracleCoach.ts';
  * comportamento: e ele que permite mexer nos pesos sem quebrar o resto.
  */
 
+// As guardas de texto comparam SEM acento.
+//
+// Elas sao doesNotMatch: quando o banco ganhou acentos, /corte uma acao/ deixou
+// de casar com "corte uma ação" e a guarda passou a aprovar tudo em silencio —
+// exatamente como uma assercao que pina redacao morre sozinha. Normalizar antes
+// de comparar faz a guarda sobreviver a mudanca de grafia nos dois sentidos.
+const semAcento = (texto) => texto.normalize('NFD').replace(/[̀-ͯ]/g, '');
+
 const contextoBase = {
   arenasCount: 3,
   actionsCount: 9,
@@ -477,7 +485,7 @@ for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
   const linha = buildPlannerCoachSpeech(metaPlausivelSemExecucao, () => 0, tom);
   assert.ok(linha, `${tom} precisa ter o que dizer sobre arena atrasada`);
   assert.doesNotMatch(
-    linha,
+    semAcento(linha),
     /reduz|reveja a meta|diminua a repeticao|meta e que estava grande|corte uma acao/i,
     `${tom}: estar atras nao autoriza mandar cortar a meta`,
   );
@@ -723,7 +731,7 @@ assert.equal(
 for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
   const linha = buildPlannerCoachSpeech(marco(30), () => 0, tom);
   assert.doesNotMatch(
-    linha, /escolhe uma|feche uma|abra |uma acao hoje|corte /i,
+    semAcento(linha), /escolhe uma|feche uma|abra |uma acao hoje|corte /i,
     `${tom}: marco nao pede nada`,
   );
 }
@@ -754,7 +762,7 @@ const voltou = { ...contextoBase, daysSinceLastPlannerOpen: 5 };
 for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
   const linha = buildPlannerCoachSpeech(voltou, () => 0, tom);
   assert.match(linha, /volt|de volta/i, `${tom}: quem esta lendo isto voltou, e e disso que se fala`);
-  assert.doesNotMatch(linha, /nao abre|sem passar por aqui|sem aparecer/i, `${tom}: nao anunciar a ausencia para quem a encerrou`);
+  assert.doesNotMatch(semAcento(linha), /nao abre|sem passar por aqui|sem aparecer/i, `${tom}: nao anunciar a ausencia para quem a encerrou`);
   assert.match(linha, /5/, `${tom}: o intervalo continua sendo dito`);
 }
 
@@ -809,5 +817,35 @@ for (const estado of COACH_LINE_STATES) {
 }
 
 assert.ok(countCoachLines() >= 176, 'o banco de aberturas nao pode encolher sem alguem notar');
+
+
+// --- o texto que a pessoa le e escrito em portugues -------------------------
+// O banco inteiro nasceu sem acento. Em um app em portugues isso nao e detalhe:
+// e a diferenca entre um texto escrito e um texto digitado com pressa, e a
+// pessoa nota na primeira frase.
+
+const TODAS_AS_LINHAS = COACH_LINE_STATES.flatMap(
+  (estado) => Object.values(COACH_LINES[estado]).flat(),
+);
+
+for (const linha of TODAS_AS_LINHAS) {
+  // Palavras que so existem acentuadas em portugues. Se alguma aparecer sem
+  // acento, o texto voltou a ser digitado e nao escrito.
+  assert.doesNotMatch(
+    linha,
+    /(nao|voce|acao|acoes|sequencia|amanha|numero|proxima|proximo|periodo|tambem|ate|so|ja|ha|atras|dificil|facil|historico|maximo|minimo|pe)/,
+    `sem acento: ${linha}`,
+  );
+
+  // Comeca com maiuscula e termina com pontuacao. Uma frase solta no meio do
+  // banco quebra o ritmo de leitura de todas as outras.
+  assert.match(linha, /^[A-ZÀ-Ý0-9{"]/, `sem maiuscula inicial: ${linha}`);
+  assert.match(linha, /[.?!]$/, `sem pontuacao final: ${linha}`);
+
+  // Marcador acentuado nunca preenche: fillCoachLine procura {acoes}, e {ações}
+  // passaria batido deixando a chave crua na tela. Foi o que a primeira passada
+  // de acentuacao fez, e so aparece quando a frase ja esta na frente da pessoa.
+  assert.doesNotMatch(linha, /\{[^}]*[À-ÿ][^}]*\}/, `marcador acentuado: ${linha}`);
+}
 
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

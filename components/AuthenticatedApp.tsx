@@ -373,7 +373,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     onBlockingOverlayChange,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile } = useGame();
+    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports } = useGame();
     const historyReady = useRef(false);
 
     const effectiveUiSkin = resolveUiSkinId(userProfile.skin || 'BASIC');
@@ -1366,6 +1366,15 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 <ScreenIntroTipOverlay
                     open={!suppressScreenIntroTips && !achievementUnlocked && !!activeScreenTipId}
                     tipId={activeScreenTipId}
+                    // A dica passa a olhar o que existe antes de dar conselho: a
+                    // tela de Arenas dizia "crie uma arena simples" para quem
+                    // chegava com seis, e o Planner dizia "puxa uma acao" para
+                    // quem nao tinha ciclo — e ali o Planner esta vazio.
+                    state={{
+                        arenasCount: assets.reduce((total, asset) => total + asset.arenas.length, 0),
+                        hasActiveCycle: Boolean(activeCycle),
+                        hasClosedCycle: reports.length > 0,
+                    }}
                     onClose={handleCloseScreenIntroTip}
                 />
             </Suspense>

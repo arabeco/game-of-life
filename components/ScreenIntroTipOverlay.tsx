@@ -2,21 +2,26 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { XIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
-import { SCREEN_INTRO_TIPS, type ScreenIntroTipId } from '../utils/screenIntroTips';
+import { resolveScreenIntroTip, type ScreenIntroTipId, type ScreenIntroTipState } from '../utils/screenIntroTips';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 
 interface ScreenIntroTipOverlayProps {
   open: boolean;
   tipId: ScreenIntroTipId | null;
+  /** O que existe na tela agora. Sem isto a dica volta a ser a fixa. */
+  state?: ScreenIntroTipState;
   onClose: (options?: { disableFuture?: boolean }) => void;
 }
 
 export const ScreenIntroTipOverlay: React.FC<ScreenIntroTipOverlayProps> = ({
   open,
   tipId,
+  state,
   onClose,
 }) => {
-  const tip = tipId ? SCREEN_INTRO_TIPS[tipId] : null;
+  const tip = tipId
+    ? resolveScreenIntroTip(tipId, state || { arenasCount: 0, hasActiveCycle: false, hasClosedCycle: false })
+    : null;
   const fullText = useMemo(() => tip?.summary || '', [tip?.summary]);
   const [displayedText, setDisplayedText] = useState(fullText);
 

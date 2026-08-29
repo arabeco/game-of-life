@@ -8,6 +8,7 @@ import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../
 import { emitArenaAttention } from '../../utils/arenaAttention';
 import { emitAppSensoryCue } from '../../utils/sensoryCue';
 import { emitOracleSpeech as emitOracleSpeechRaw } from '../../utils/oracleSpeech';
+import { pickOracleReaction, readOracleReactionMemory, writeOracleReactionMemory } from '../../utils/oracleReaction';
 import {
     allowsOracleReaction,
     type OraclePresenceRules,
@@ -123,6 +124,18 @@ export const createTaskDomain = ({
     // uma palavra ja no Equilibrado; volume do dia e avanco de meta disparam quase
     // sempre e, repetidos, viram papel de parede — esses so no Presente. O peso
     // vai no ponto de chamada porque so ele sabe o que acabou de acontecer.
+    // Toda reacao passa por aqui, e por aqui ela lembra da anterior. Com tres
+    // variantes e sorteio sem memoria, fechar duas arenas seguidas devolvia a
+    // mesma frase uma vez em cada tres.
+    const falarReacao = (
+        evento: Parameters<typeof pickOracleReaction>[0],
+        vars: Record<string, string | number> = {},
+    ): string => {
+        const escolha = pickOracleReaction(evento, oracleTone, vars, readOracleReactionMemory());
+        if (escolha.message) writeOracleReactionMemory(escolha.memory);
+        return escolha.message;
+    };
+
     const emitOracleSpeech = (
         payload: Parameters<typeof emitOracleSpeechRaw>[0],
         weight: OracleReactionWeight = 'rotina',
@@ -353,8 +366,8 @@ export const createTaskDomain = ({
         emitOracleSpeech({
             title: campaignJustCleared ? 'Campanha' : 'Arena',
             message: campaignJustCleared && parentCampaign
-                ? pickOracleSpeech('campaign_completed', oracleTone, { campaign: parentCampaign.title })
-                : pickOracleSpeech('arena_completed', oracleTone, { arena: arena.name }),
+                ? falarReacao('campaign_completed', { campaign: parentCampaign.title })
+                : falarReacao('arena_completed', { arena: arena.name }),
             tone: 'success',
             durationMs: campaignJustCleared ? 5600 : 5000,
         }, 'marco');
@@ -405,7 +418,7 @@ export const createTaskDomain = ({
         const repsEvent = crossedThreshold >= 8
             ? 'daily_reps_high'
             : crossedThreshold >= 5 ? 'daily_reps_mid' : 'daily_reps_low';
-        const message = pickOracleSpeech(repsEvent, oracleTone, { count: crossedThreshold });
+        const message = falarReacao(repsEvent, { count: crossedThreshold });
 
         emitOracleSpeech({
             title: crossedThreshold >= 8 ? 'Fechamento' : 'Ritmo',
@@ -449,7 +462,7 @@ export const createTaskDomain = ({
             : remaining === 1
                 ? 'cycle_goal_last_one'
                 : cappedCount === 1 ? 'cycle_goal_first' : 'cycle_goal_progress';
-        const message = pickOracleSpeech(goalEvent, oracleTone, {
+        const message = falarReacao(goalEvent, {
             action: actionName,
             count: cappedCount,
             target,
@@ -1075,7 +1088,7 @@ export const createTaskDomain = ({
             emitAppSensoryCue('task_complete');
             emitOracleSpeech({
                 title: 'Marco',
-                message: pickOracleSpeech('milestone_completed', oracleTone, { action: action.name }),
+                message: falarReacao('milestone_completed', { action: action.name }),
                 tone: 'success',
                 durationMs: 5000,
             }, 'marco');

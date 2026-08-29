@@ -93,6 +93,13 @@ const suites = {
       interactions: ['os resgates passam pelo mesmo ritual', 'subida de patente entra em todos', 'missao de item paga XP por reward_exp'],
     },
     {
+      id: 'oracle-reaction',
+      label: 'Oracle reaction regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'oracle-reaction.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['a reacao nao repete a frase anterior', 'a primeira acao depois de uma pausa tem fala propria', 'a dica de tela olha o que existe na tela'],
+    },
+    {
       id: 'sensory-grammar',
       label: 'Sensory grammar regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'sensory-grammar.regression.mjs')]],

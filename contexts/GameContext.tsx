@@ -29,6 +29,7 @@ import { buildCyclePaceMetrics, buildDailyExpSnapshot, buildTaskPoolEntries, fil
 import { buildFairScoreFromTasks, recalculateReportsWithFairScore } from '../utils/fairScoreUtils.js';
 import { buildCycleWeeklyAtlas } from '../utils/reportAtlasUtils.js';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, getOracleFeedQuotaStatus } from '../utils/oracleFeedUtils';
+import { allowsOracleReaction } from '../constants/oraclePresencePolicy';
 import { pickOracleCard } from '../constants/oracleCardLibrary';
 import { getArenaDomainFlags, isClanQuestAction, isOfficeArena, isQuestAction, isQuestArena, looksLikeClanQuestArena, normalizeDomainLabel } from '../utils/taskDomain.js';
 import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscribeInstallPrompt } from '../utils/installPrompt';
@@ -41,6 +42,12 @@ import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
+import {
+    pickOracleReaction,
+    readOracleReactionMemory,
+    resolveReactionSignificance,
+    writeOracleReactionMemory,
+} from '../utils/oracleReaction';
 import { ORACLE_FREE_TONE, ORACLE_PREMIUM_TONES, type OracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import { getSeasonLaunchRewardFlag, getSeasonLaunchToastStorageKey, resolveRuntimeActiveSeason, resolveSeasonConfigForSeason } from '../utils/seasonPresentation';
 import { showLocalNotification } from '../utils/localNotification';
@@ -12273,6 +12280,48 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             streakCurrent: streakResult.next.current,
             isFirstProofToday,
         });
+
+        // O que esta entrega SIGNIFICOU, e nao so que ela aconteceu.
+        //
+        // Os dois dados ja estavam aqui e ninguem perguntava: a data da entrega
+        // anterior (no proprio streak) e a hora. Fechar uma acao e banal; fechar
+        // a primeira depois de oito dias, ou a que salva a sequencia as 22h, sao
+        // outra coisa — e ate agora as tres recebiam a mesma frase.
+        if (streakResult.isNewDate) {
+            const entregaAnterior = normalizedStreak.lastProofDate || normalizedStreak.lastClosedDate;
+            const significado = resolveReactionSignificance({
+                previousProofDate: entregaAnterior,
+                proofDate,
+                hourOfDay: new Date().getHours(),
+                streakAfter: streakResult.next.current,
+            });
+
+            // Peso 'marco': raro e grande, entao passa no Equilibrado e para no
+            // Silencioso. A reacao continua obedecendo a presenca, como todas.
+            const presencaPermite = allowsOracleReaction(
+                getOraclePresenceRules(oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL),
+                'marco',
+            );
+
+            if (significado && presencaPermite) {
+                const reacao = pickOracleReaction(
+                    significado.event,
+                    oracleTone,
+                    significado.vars,
+                    readOracleReactionMemory(),
+                );
+                if (reacao.message) {
+                    writeOracleReactionMemory(reacao.memory);
+                    emitOracleSpeech({
+                        title: significado.event === 'first_after_pause' ? 'Retomada' : 'Sequencia',
+                        message: reacao.message,
+                        tone: 'success',
+                        durationMs: 5200,
+                        kind: 'reacao',
+                    });
+                }
+            }
+        }
 
         if (streakResult.isNewDate) {
             // 7, 14, 30, 60, 100 tem peso proprio no pulso. Um dia comum de

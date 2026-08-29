@@ -264,3 +264,54 @@ export const markScreenIntroTipSeen = (userId: string | null | undefined, tipId:
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(getSeenStorageKey(userId, tipId), 'seen');
 };
+
+/**
+ * A dica que combina com o que esta na tela.
+ *
+ * A dica era fixa por tela e mostrada uma vez, sem olhar o estado. O resultado
+ * era conselho que nao servia para quem estava lendo: a tela de Arenas dizia
+ * "crie uma arena simples" para quem chegava com seis; o Planner dizia "puxa uma
+ * acao" para quem nao tinha ciclo aberto, e ali o Planner esta vazio — a pessoa
+ * lia a dica, olhava a tela e nao via nada do que foi descrito.
+ *
+ * Nao muda a regra: continua uma vez por tela, continua respeitando o
+ * interruptor, continua a mesma tela vista. Muda o QUE ela diz, que passa a
+ * depender do que existe. Dica que descreve outra tela ensina que a dica nao
+ * vale a pena ler.
+ *
+ * So as telas em que o estado realmente muda o conselho tem variante. Nas
+ * outras, uma dica so continua sendo a resposta certa.
+ */
+export interface ScreenIntroTipState {
+  arenasCount: number;
+  hasActiveCycle: boolean;
+  hasClosedCycle: boolean;
+}
+
+const SCREEN_INTRO_TIP_VARIANTS: Partial<Record<ScreenIntroTipId, (state: ScreenIntroTipState) => Partial<ScreenIntroTipDef> | null>> = {
+  arenas: (state) => (state.arenasCount === 0 ? null : {
+    title: 'Uma frente por vez.',
+    summary: `Voce ja tem ${state.arenasCount} ${state.arenasCount === 1 ? 'arena' : 'arenas'}. Aqui elas viram o que voce joga hoje.`,
+    items: ['escolha uma para hoje. As outras nao vao a lugar nenhum.'],
+  }),
+  planner: (state) => (state.hasActiveCycle ? null : {
+    title: 'Falta o ciclo.',
+    summary: 'O Planner mostra as acoes de um ciclo aberto. Sem ciclo, ele fica vazio mesmo.',
+    items: ['abra um ciclo curto primeiro. Uma semana ja basta.'],
+  }),
+  reports: (state) => (state.hasClosedCycle ? null : {
+    title: 'Ainda nao ha o que comparar.',
+    summary: 'O historico nasce quando o primeiro ciclo fecha. Ate la esta tela fica quase vazia.',
+    items: ['volte aqui depois de fechar um ciclo.'],
+  }),
+};
+
+/** A dica base, com a variante aplicada por cima quando o estado pede outra. */
+export const resolveScreenIntroTip = (
+  tipId: ScreenIntroTipId,
+  state: ScreenIntroTipState,
+): ScreenIntroTipDef => {
+  const base = SCREEN_INTRO_TIPS[tipId];
+  const variante = SCREEN_INTRO_TIP_VARIANTS[tipId]?.(state) || null;
+  return variante ? { ...base, ...variante } : base;
+};

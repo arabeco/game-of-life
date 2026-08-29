@@ -53,7 +53,12 @@ export type OracleSpeechEvent =
     | 'cycle_goal_last_one'
     | 'cycle_goal_first'
     | 'cycle_goal_progress'
-    | 'milestone_completed';
+    | 'milestone_completed'
+    // Nao sao coisas novas que acontecem: sao as MESMAS coisas acontecendo em
+    // momentos que mudam o significado delas. Fechar uma acao e banal; fechar a
+    // primeira depois de oito dias e historia.
+    | 'first_after_pause'
+    | 'streak_saved';
 
 type ToneVariants = Record<OracleSpeechTone, string[]>;
 
@@ -275,6 +280,50 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
     },
 
     /** Marco concluido. Marcadores: {action} */
+    first_after_pause: {
+        neutro: [
+            'Primeira acao em {dias} dias.',
+            'Depois de {dias} dias parados, uma saiu.',
+            '{dias} dias sem nada, e hoje tem uma.',
+        ],
+        coach: [
+            'Primeira em {dias} dias. Amanha a segunda custa menos que essa.',
+            'Quebrou {dias} dias de pausa. E a proxima que decide se virou retomada.',
+            'Uma acao depois de {dias} dias parados. Repete amanha e ja e ritmo.',
+        ],
+        reflexivo: [
+            'Primeira em {dias} dias. O que hoje tinha que os outros nao tinham?',
+            'Depois de {dias} dias, essa saiu. Da para repetir o que fez ela acontecer?',
+            '{dias} dias de pausa e uma acao hoje. O que mudou?',
+        ],
+        calmo: [
+            'Primeira em {dias} dias, e ja e o bastante para hoje.',
+            'Depois de {dias} dias, uma. Nao precisa recuperar o resto.',
+            '{dias} dias pararam aqui. Sem pressa para o que vem.',
+        ],
+    },
+    streak_saved: {
+        neutro: [
+            'Fechou o dia. A sequencia continua em {streak}.',
+            'Sequencia mantida: {streak} dias.',
+            'Passou de raspao, e {streak} segue de pe.',
+        ],
+        coach: [
+            '{streak} salvos no fim do dia. Amanha, mais cedo.',
+            'Sequencia mantida em {streak}. Antecipa amanha e para de depender do limite.',
+            'Fechou a tempo. {streak} continua, e o proximo nao precisa ser assim.',
+        ],
+        reflexivo: [
+            '{streak} salvos no limite. Foi o dia, ou foi a hora que voce escolheu?',
+            'A sequencia sobreviveu por pouco. Isso esta virando o padrao?',
+            'Fechou no fim do dia de novo. {streak} vale essa corrida toda noite?',
+        ],
+        calmo: [
+            '{streak} de pe. Chegou no fim, mas chegou.',
+            'A sequencia continua em {streak}. Tarde ainda e a tempo.',
+            'Fechou. {streak} seguem, sem precisar ter sido perfeito.',
+        ],
+    },
     milestone_completed: {
         neutro: [
             'Marco "{action}" concluido. Isso muda o desenho do ciclo.',

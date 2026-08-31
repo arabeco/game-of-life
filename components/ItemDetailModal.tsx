@@ -2,7 +2,7 @@
 import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
-import { XIcon, Trash2Icon, ShareIcon } from './Icons';
+import { XIcon, Trash2Icon, GiftIcon } from './Icons';
 import { ITEMS_DB, ItemDef, ItemCategory, isItemCatalogVisible, isForgeEligibleItem } from '../constants/items';
 import { ECONOMY } from '../constants/economy';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
@@ -32,7 +32,8 @@ const CATEGORY_MAP: Partial<Record<ItemCategory, UnlockCategory>> = {
 };
 
 export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialItem, instanceId: initialInstanceId, type, onClose, onOpen }) => {
-    const { userProfile, updateUserProfile, toggleEquipItem, recycleItem, craftItem, buyStoreItem, showToast } = useGame();
+    const { userProfile, updateUserProfile, toggleEquipItem, recycleItem, craftItem, buyStoreItem, showToast, donateItem, friends } = useGame();
+    const [escolhendoAmigo, setEscolhendoAmigo] = React.useState(false);
     const [acaoEmCurso, setAcaoEmCurso] = React.useState<string | null>(null);
     const [currentItem, setCurrentItem] = React.useState<ItemDef>(initialItem);
 
@@ -134,10 +135,44 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
         onClose(); 
     };
 
+    /**
+     * Doar abre a lista de amigos. So amigos.
+     *
+     * Isto era `alert("(Simulação)")` com um comentario dizendo que a logica viria
+     * depois. O botao estava publicado e parecia real.
+     *
+     * Doar para qualquer apelido abriria a porta mais barata de engenharia social
+     * que existe num jogo — "me manda o item que eu te devolvo". Exigir amizade
+     * nao impede um golpe entre conhecidos, mas tira o golpe de desconhecido, que
+     * e a forma que escala.
+     */
     const handleDonate = () => {
+        if (!currentInstanceId) return;
+        if (isEquipped) {
+            showToast('Desequipe o item antes de doar.', 'error');
+            return;
+        }
+        if (friends.length === 0) {
+            showToast('Você ainda não tem amigos para doar.', 'info');
+            return;
+        }
+        setEscolhendoAmigo(true);
+    };
+
+    const confirmarDoacao = async (amigoId: string, amigoNome: string) => {
+        if (!currentInstanceId || acaoEmCurso) return;
         // eslint-disable-next-line no-alert
-        alert(`Você doou ${currentItem.name}! (Simulação)`);
-        // Logic to donate would go here
+        if (!window.confirm(`Doar ${currentItem.name} para ${amigoNome}? Isso não pode ser desfeito.`)) return;
+        setAcaoEmCurso('doar');
+        try {
+            const ok = await donateItem(currentInstanceId, amigoId);
+            if (ok) {
+                setEscolhendoAmigo(false);
+                onClose();
+            }
+        } finally {
+            setAcaoEmCurso(null);
+        }
     };
 
     /**
@@ -322,6 +357,47 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         </button>
                     )}
                     
+                    {/* A lista de amigos cobre as acoes enquanto esta aberta:
+                        escolher para quem doar e uma decisao, e decisao com os
+                        outros botoes ainda clicaveis atras convida engano. */}
+                    {escolhendoAmigo && (
+                        <div className="col-span-2 space-y-2 rounded-2xl border border-white/12 bg-black/60 p-3">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Doar para</p>
+                                <button
+                                    type="button"
+                                    onClick={() => setEscolhendoAmigo(false)}
+                                    className="rounded-full p-1 text-white/40 hover:text-white"
+                                >
+                                    <XIcon className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                            <div className="max-h-40 space-y-1 overflow-y-auto hide-scrollbar">
+                                {friends.map((amigo) => {
+                                    const nome = amigo.nickname || amigo.username || 'Soberano';
+                                    return (
+                                        <button
+                                            key={amigo.id}
+                                            type="button"
+                                            onClick={() => { void confirmarDoacao(amigo.id, nome); }}
+                                            disabled={!!acaoEmCurso}
+                                            className="flex w-full items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-2.5 py-2 text-left transition-colors hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07] disabled:opacity-50"
+                                        >
+                                            {amigo.avatarUrl ? (
+                                                <img src={amigo.avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                            ) : (
+                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[9px] font-bold">
+                                                    {nome.slice(0, 2).toUpperCase()}
+                                                </span>
+                                            )}
+                                            <span className="truncate text-[11px] font-bold text-white/85">{nome}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Quebrar diz QUANTO rende.
                         "Reciclar" com um icone de lixo pede que a pessoa aceite
                         perder algo sem saber o que ganha — e o que ela ganha e
@@ -373,7 +449,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                                 : 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
                             }`}
                     >
-                        <ShareIcon className="w-4 h-4" />
+                        {/* Presente, nao compartilhar. Doar entrega o item e ele sai
+                            do seu inventario; o icone de compartilhar promete a coisa
+                            oposta — mostrar sem perder. */}
+                        <GiftIcon className="w-4 h-4" />
                         <span className="text-[10px]">Doar</span>
                     </button>
                 </div>

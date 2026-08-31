@@ -920,6 +920,7 @@ export interface GameContextType {
     buyGoldPack: (packId: string, purchaseContext?: GoldPackPurchaseContext) => Promise<boolean>;
     buyStoreItem: (itemId: string, type: 'premium' | 'codex' | 'exclusive' | 'boost', options?: { costOverrideGold?: number; successMessage?: string }) => Promise<void>;
     recycleItem: (instanceId: string) => Promise<void>;
+    donateItem: (instanceId: string, recipientId: string) => Promise<boolean>;
     craftItem: (tier: number, category?: string, exactItemId?: string) => Promise<InventoryItem | null>;
     equipItem: (item: InventoryItem) => Promise<void>;
     toggleEquipItem: (item: InventoryItem) => Promise<void>;
@@ -2522,6 +2523,45 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const chests = await fetchChestsFromDB(userId);
             if (chests) updateUserProfile({ chests });
             showToast(`Baú ${chestType} adquirido.`, 'success');
+            return true;
+        }
+        return false;
+    };
+
+    /**
+     * Doa um item para um amigo. Irreversivel.
+     *
+     * O botao existia ha tempos e era `alert("(Simulação)")` — nunca moveu nada.
+     * A troca acontece no servidor porque quem doa nao pode ser quem confere se a
+     * amizade existe, nem se o item e mesmo dele.
+     *
+     * Nao ha desfazer: presente que pode ser retomado nao e presente, e a
+     * possibilidade de retomar seria a proxima alavanca de chantagem.
+     */
+    const donateItem = async (instanceId: string, recipientId: string): Promise<boolean> => {
+        const { data, error } = await withLatencyToast<{ data: any, error: any }>(
+            supabase.rpc('donate_item_to_friend', {
+                p_instance_id: instanceId,
+                p_recipient_id: recipientId,
+            }) as any
+        );
+
+        if (error) {
+            const motivo = String(error.message || '');
+            showToast(
+                motivo.includes('NOT_FRIENDS') ? 'Você só pode doar para amigos.'
+                    : motivo.includes('ITEM_EQUIPPED') ? 'Desequipe o item antes de doar.'
+                        : motivo.includes('ITEM_NOT_OWNED') ? 'Esse item não está mais com você.'
+                            : motivo.includes('DONATE_TO_SELF') ? 'Não dá para doar para você mesmo.'
+                                : 'Não foi possível doar o item.',
+                'error',
+            );
+            return false;
+        }
+
+        if (data?.success) {
+            setInventory((prev) => prev.filter((item) => item.instanceId !== instanceId));
+            showToast('Item doado.', 'success');
             return true;
         }
         return false;
@@ -14207,7 +14247,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             abortSeasonQuest,
             addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
-            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
+            addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
             activeArenaPact, arenaPactProgress, arenaPactCandidates, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact

@@ -520,7 +520,14 @@ export const SitrepContent: React.FC<{
                             dentro de um painel que ja e uma tela cheia parece que a
                             informacao nao coube — e a conta de quantas cabem depende do
                             aparelho, entao o corte e por numero, que e previsivel. */}
-                        <div className={`space-y-1.5 pr-1 hide-scrollbar ${fillHeight ? 'min-h-0 flex-1 overflow-hidden' : 'max-h-56 overflow-y-auto'}`}>
+                        {/* A lista ROLA, com a barra escondida.
+                            Com `overflow-hidden` ela cortava o ultimo cartao no
+                            meio: a altura disponivel quase nunca e multipla da
+                            altura de um cartao, entao sobrava sempre meio card
+                            fatiado na borda. Meio cartao parece defeito; cartao
+                            inteiro com rolagem escondida parece lista.
+                            O que nao pode rolar e o PAINEL — esse continua fixo. */}
+                        <div className={`space-y-1.5 pr-1 hide-scrollbar ${fillHeight ? 'min-h-0 flex-1 overflow-y-auto' : 'max-h-56 overflow-y-auto'}`}>
                             {visibleDailyRows.map((row) => (
                                 <ActionSummaryCard
                                     key={row.task.id}

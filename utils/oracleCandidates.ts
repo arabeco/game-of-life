@@ -123,7 +123,7 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
   },
   sem_ciclo: {
     importance: 4, urgency: 3, novelty: 2, actionability: 5,
-    cooldownDays: 1, // Um dia: e acionavel demais para insistir, e obvio demais para calar de vez.
+    cooldownDays: 2, // Dois dias: com um, quem esta sem ciclo ouvia sobre ciclo dia sim dia nao — e a solucao proposta e sempre a mesma, entao repetir nao acrescenta.
     why: 'Sem ciclo nada mais funciona, e resolver e um toque. Acionabilidade maxima, urgencia media porque nao piora sozinho.',
   },
   ciclo_longo: {
@@ -301,7 +301,9 @@ const detectAbsence = (input: OracleCandidateInput): OracleCandidate[] => (
 const detectCycleIssues = (input: OracleCandidateInput): OracleCandidate[] => {
   const saida: OracleCandidate[] = [];
   if (!input.hasActiveCycle && input.arenasCount > 0) {
-    saida.push(build('sem_ciclo'));
+    // A acao prioritaria vai junto: sem ciclo, a saida util costuma ser executar
+    // e nao configurar, e para dizer isso e preciso ter o que apontar.
+    saida.push(build('sem_ciclo', { acao: input.priorityActionName }));
   }
   if (input.cycleLengthDays && input.cycleLengthDays > 7 && input.cycleProgress < 35) {
     saida.push(build('ciclo_longo', {

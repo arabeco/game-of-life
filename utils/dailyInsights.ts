@@ -189,13 +189,13 @@ const formatDecimal = (value: number): string => value.toFixed(1).replace('.', '
 
 const describeToday = (completed: number, planned: number, arenas: number, topArenaName: string | null): string => {
   if (planned === 0) {
-    return 'Nenhuma acao registrada para hoje ainda. O dia continua aberto.';
+    return 'Nenhuma ação registrada para hoje ainda. O dia continua aberto.';
   }
   if (completed === 0) {
-    return `Hoje tem ${planned} ${planned === 1 ? 'acao registrada' : 'acoes registradas'} e nenhuma conclusao ate agora. O dia ainda esta em aberto.`;
+    return `Hoje tem ${planned} ${planned === 1 ? 'ação registrada' : 'ações registradas'} e nenhuma conclusão até agora. O dia ainda está em aberto.`;
   }
   if (completed >= planned) {
-    return `Voce ja concluiu as ${planned} ${planned === 1 ? 'acao registrada' : 'acoes registradas'} de hoje.`;
+    return `Você já concluiu as ${planned} ${planned === 1 ? 'ação registrada' : 'ações registradas'} de hoje.`;
   }
   if (arenas >= 3) {
     return `${completed} de ${planned} concluidas, distribuidas por ${arenas} areas.`;
@@ -203,7 +203,7 @@ const describeToday = (completed: number, planned: number, arenas: number, topAr
   if (topArenaName && arenas === 1) {
     return `${completed} de ${planned} concluidas, todas em ${topArenaName}.`;
   }
-  return `${completed} de ${planned} acoes concluidas ate agora.`;
+  return `${completed} de ${planned} ações concluídas até agora.`;
 };
 
 export const buildTodayDailyReading = (
@@ -231,17 +231,17 @@ export const buildTodayDailyReading = (
       const comparison = `Ciclo em ${Math.round(current)}% · sua mediana em ${cycles} ciclos e ${Math.round(median)}%`;
 
       if (delta >= 5) {
-        return { text: `${base} Este ciclo esta rodando acima do seu padrao historico.`, comparison, depth };
+        return { text: `${base} Este ciclo está rodando acima do seu padrão histórico.`, comparison, depth };
       }
       if (delta <= -5) {
-        return { text: `${base} Este ciclo esta abaixo do seu padrao historico — vale olhar se a carga planejada mudou.`, comparison, depth };
+        return { text: `${base} Este ciclo está abaixo do seu padrão histórico — vale olhar se a carga planejada mudou.`, comparison, depth };
       }
-      return { text: `${base} Este ciclo esta no seu padrao historico.`, comparison, depth };
+      return { text: `${base} Este ciclo está no seu padrão histórico.`, comparison, depth };
     }
 
     if (cycles < 2) {
       return {
-        text: `${base} Ainda nao ha ciclos fechados suficientes para comparar com o seu historico.`,
+        text: `${base} Ainda não há ciclos fechados suficientes para comparar com o seu histórico.`,
         comparison: null,
         depth,
       };
@@ -255,7 +255,7 @@ export const buildTodayDailyReading = (
 
   if (average === null) {
     return {
-      text: `${base} Ainda nao ha dias ativos anteriores neste ciclo para servir de referencia.`,
+      text: `${base} Ainda não há dias ativos anteriores neste ciclo para servir de referência.`,
       comparison: null,
       depth,
     };
@@ -264,13 +264,13 @@ export const buildTodayDailyReading = (
   const comparison = `Hoje ${completed} · seu dia ativo medio e ${formatDecimal(average)}`;
 
   if (completed >= average + 1) {
-    return { text: `${base} Esta acima do seu dia medio neste ciclo.`, comparison, depth };
+    return { text: `${base} Está acima do seu dia médio neste ciclo.`, comparison, depth };
   }
   if (completed > 0 && completed <= average - 1) {
-    return { text: `${base} Esta abaixo do seu dia medio neste ciclo, o que por si so nao diz muita coisa: um dia menor cabe no ciclo.`, comparison, depth };
+    return { text: `${base} Está abaixo do seu dia médio neste ciclo, o que por si só não diz muita coisa: um dia menor cabe no ciclo.`, comparison, depth };
   }
   if (completed === 0) {
-    return { text: `${base} Seu dia ativo medio neste ciclo e ${formatDecimal(average)}.`, comparison, depth };
+    return { text: `${base} Seu dia ativo médio neste ciclo é ${formatDecimal(average)}.`, comparison, depth };
   }
   return { text: `${base} Esta na media dos seus dias ativos neste ciclo.`, comparison, depth };
 };

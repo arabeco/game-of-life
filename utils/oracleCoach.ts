@@ -153,30 +153,44 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
   },
 
   /** Tem arena, nao tem ciclo. */
+  /**
+   * Tem arena, nao tem ciclo.
+   *
+   * As dezesseis linhas empurravam a MESMA coisa: abra um ciclo. Quem esta sem
+   * ciclo ouvia isso dia sim dia nao, sempre com a mesma solucao, e a fala virou
+   * cobranca de burocracia — o app pedindo configuracao em vez de pedir acao.
+   *
+   * Metade delas agora aponta o contrario: sem ciclo tambem se anda, e a arena
+   * ja existe. Fazer vale mais que organizar, e o ciclo pode esperar a vontade
+   * de ter um.
+   *
+   * {acao} e a acao prioritaria de hoje, e so existe quando existe: sem ela, as
+   * linhas que a citam sao invalidadas sozinhas e sobram as outras.
+   */
   sem_ciclo: {
     neutro: [
       'Você tem arena e não tem ciclo aberto. O ciclo é o que dá começo e fim ao período.',
-      'Sem ciclo, as ações existem mas não tem prazo nem fecho.',
-      'Suas arenas estão sem período definido.',
       'Não há ciclo aberto. As ações existem soltas no tempo.',
+      'Sem ciclo as ações continuam valendo. {acao} está lá para hoje.',
+      'Nenhum ciclo aberto, e nenhuma ação bloqueada por isso.',
     ],
     coach: [
       'Abra um ciclo de sete dias ou menos. Curto é mais fácil de terminar do que longo.',
-      'Próximo passo: monte um ciclo pequeno. Uma semana já dá ritmo sem virar dívida.',
+      'Sem ciclo você ainda executa. Faz {acao} hoje e decide o prazo depois.',
+      'Não precisa planejar para começar. Escolhe uma ação da sua arena e fecha ela.',
       'Abre um ciclo hoje e já coloca as arenas que você quer tocar nesta semana.',
-      'Escolhe um prazo pequeno. Prazo curto termina; prazo longo vira dívida.',
     ],
     reflexivo: [
       'Você tem arena, mas não marcou um período. Quanto tempo você quer se dar?',
-      'O que você quer conseguir enxergar quando esse período fechar?',
       'Sem ciclo, como você vai saber que esse período acabou?',
-      'O que você quer que seja verdade sobre você daqui a uma semana?',
+      'Você está esperando o plano ficar pronto, ou dá para começar por {acao}?',
+      'A arena já existe. O que ainda falta para executar hoje?',
     ],
     calmo: [
-      'Já tem arena, que era a parte difícil. O ciclo pode ser curto e sem ambição.',
-      'Não precisa de um plano grande. Uma semana já é um ciclo.',
       'Não precisa de ciclo hoje. Quando quiser um começo e um fim, ele está ali.',
-      'Um ciclo curto pesa menos que a dúvida de não ter nenhum.',
+      'Já tem arena, que era a parte difícil. O ciclo pode ser curto e sem ambição.',
+      'Sem ciclo também se anda. {acao} cabe hoje, se você quiser.',
+      'Fazer vale mais que organizar. O ciclo espera.',
     ],
   },
 

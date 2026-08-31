@@ -9109,7 +9109,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             completedSeasonMissions: [...preservedFlags, nextFlag],
         });
         if (shouldToast) {
-            showToast('Metas zeradas. Seu historico e XP continuam salvos.', 'success');
+            showToast('Rodada concluída. As arenas estão livres de novo, e o histórico ficou.', 'success');
         }
     };
 

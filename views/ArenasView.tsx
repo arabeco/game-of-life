@@ -1190,7 +1190,8 @@ export const ArenasView: React.FC = () => {
         if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
         return tasks.filter(task => task.date >= activeCycle.startDate && task.date <= activeCycle.endDate);
     }, [activeCycle, freeProgressResetAt, tasks]);
-    const canResetFreeGoals = !activeCycle && cycleScopedTasks.some((task) => task.completed);
+    const completedFreeTasksCount = cycleScopedTasks.filter((task) => task.completed).length;
+    const canResetFreeGoals = !activeCycle && completedFreeTasksCount > 0;
     const tasksByActionId = useMemo(() => {
         const map = new Map<string, ScheduledTask[]>();
         cycleScopedTasks.forEach((task) => {
@@ -2103,16 +2104,31 @@ export const ArenasView: React.FC = () => {
                     </div>
                 </div>
 
+                {/* A rodada livre, dita em voz alta.
+                    Isto era um botao fantasma no canto direito chamado "Zerar
+                    metas" — e o nome brigava com o que ele faz. Ele NAO apaga: as
+                    conclusoes ficam no historico e a experiencia ja foi creditada
+                    dia a dia. Ele fecha uma rodada e libera as arenas para a
+                    proxima, que e a unica saida de quem joga sem ciclo — sem ela a
+                    arena enche e acaba sem acao disponivel.
+                    Nome de coisa destrutiva em acao boa faz ninguem tocar. */}
                 {canResetFreeGoals && (
-                    <div className="mb-4 flex justify-end">
+                    <div className="mb-4 flex items-center gap-3 rounded-2xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/[0.06] px-3 py-2.5">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-black uppercase tracking-[0.1em] text-[var(--ui-text-accent)]">
+                                Rodada livre · {completedFreeTasksCount} {completedFreeTasksCount === 1 ? 'ação concluída' : 'ações concluídas'}
+                            </p>
+                            <p className="mt-0.5 text-[10px] leading-snug text-white/50">
+                                Concluir libera as arenas para a próxima rodada. O histórico e a experiência ficam.
+                            </p>
+                        </div>
                         <button
                             type="button"
                             onClick={resetFreeProgress}
-                            className="inline-flex h-9 items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-white/70 transition-all hover:border-[var(--skin-accent-color)]/35 hover:text-white"
-                            title="Zerar a contagem de metas livres sem apagar historico"
+                            className="luxe-skin-button inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.12em]"
                         >
                             <RefreshCwIcon className="h-3.5 w-3.5" />
-                            Zerar metas
+                            Concluir rodada
                         </button>
                     </div>
                 )}

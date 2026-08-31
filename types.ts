@@ -918,6 +918,8 @@ export interface SanctuaryAreaStats {
 
 export interface Mood {
   label: string;
+  /** Nivel na escala de 0 a 1000. Nao e a posicao no slider — ver MOODS_DATA. */
+  level: number;
   min: number;
   max: number;
   color: string;

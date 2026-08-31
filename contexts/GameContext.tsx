@@ -827,6 +827,8 @@ export interface GameContextType {
     deleteSequenceItem: (id: string) => void;
     updateUserProfile: (profileData: Partial<UserProfile>) => void;
     updateMood: (mood: number) => void;
+    recordMoodEntry: (value: number) => Promise<void>;
+    fetchMoodHistory: (limit?: number) => Promise<Array<{ value: number; recordedAt: string }>>;
     setCurrentSkin: (skinId: string) => void;
     addFriend: (nickname: string) => void;
     searchPlayers: (query: string) => Promise<UserProfile[]>;
@@ -8813,6 +8815,48 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const updateMood = (mood: number) => updateUserProfile({ mood });
 
+    /**
+     * Grava um ponto na linha do tempo do humor.
+     *
+     * Separado de updateMood de proposito: aquele roda a cada movimento do
+     * slider, e gravar ali daria centenas de linhas por arrasto. Aqui e chamado
+     * quando o dedo solta — uma marcacao por vez que a pessoa decidiu algo.
+     */
+    const recordMoodEntry = async (value: number) => {
+        const userId = getSupabaseUserId();
+        if (!userId) return;
+        const seguro = Math.max(0, Math.min(100, Math.round(value)));
+        const { error } = await supabase
+            .from('mood_entries')
+            .insert({ user_id: userId, value: seguro });
+        if (error) console.error('Failed to record mood:', error.message);
+    };
+
+    /**
+     * As ultimas marcacoes, do mais recente para tras.
+     *
+     * Vinte pontos e o suficiente para enxergar uma linha e custa cerca de um
+     * kilobyte — e so e buscado quando alguem abre o humor, nao a cada carga do
+     * app.
+     */
+    const fetchMoodHistory = async (limit = 20): Promise<Array<{ value: number; recordedAt: string }>> => {
+        const userId = getSupabaseUserId();
+        if (!userId) return [];
+        const { data, error } = await supabase
+            .from('mood_entries')
+            .select('value, recorded_at')
+            .eq('user_id', userId)
+            .order('recorded_at', { ascending: false })
+            .limit(limit);
+        if (error) {
+            console.error('Failed to read mood history:', error.message);
+            return [];
+        }
+        return (data || [])
+            .map((linha) => ({ value: Number(linha.value || 0), recordedAt: String(linha.recorded_at) }))
+            .reverse();
+    };
+
     const updateLevelUnlocks = (next: LevelUnlocks) => {
         setLevelUnlocks(next);
     };
@@ -14161,7 +14205,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             session,
             getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
             abortSeasonQuest,
-            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,

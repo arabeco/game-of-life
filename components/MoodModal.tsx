@@ -7,7 +7,9 @@ import { XIcon } from './Icons';
 import { Portal } from './Portal';
 
 export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { userProfile, dailyCommitment, updateMood, updateOperationalScratch } = useGame();
+    const { userProfile, dailyCommitment, updateMood, updateOperationalScratch, recordMoodEntry, fetchMoodHistory } = useGame();
+    const [historico, setHistorico] = React.useState<Array<{ value: number; recordedAt: string }>>([]);
+    const [registrando, setRegistrando] = React.useState(false);
     const [localMood, setLocalMood] = useState(userProfile.mood);
 
     const resolveMood = (value: number) => 
@@ -21,11 +23,37 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         } satisfies React.CSSProperties;
     }, [currentMoodInfo.trackEnd, currentMoodInfo.trackStart, localMood]);
 
+    /**
+     * Arrastar nao registra nada.
+     *
+     * O slider dispara onChange a cada movimento — gravar ali daria centenas de
+     * pontos por arrasto, e a linha do tempo viraria ruido do dedo em vez de
+     * historico. Arrastar so move o cursor; registrar e um ato separado, com
+     * nome e numero na frente.
+     */
     const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = Number(e.target.value);
-        setLocalMood(newValue);
-        updateMood(newValue);
+        setLocalMood(Number(e.target.value));
     };
+
+    const mudou = localMood !== userProfile.mood;
+
+    const handleRegistrar = async () => {
+        if (registrando) return;
+        setRegistrando(true);
+        try {
+            updateMood(localMood);
+            await recordMoodEntry(localMood);
+            setHistorico(await fetchMoodHistory(20));
+        } finally {
+            setRegistrando(false);
+        }
+    };
+
+    React.useEffect(() => {
+        void fetchMoodHistory(20).then(setHistorico);
+        // Uma leitura por abertura do humor, nao por carga do app: vinte pontos
+        // custam cerca de um kilobyte, e so quem abre paga por eles.
+    }, []);
     
     const moodLabels = ['VERGONHA', 'CORAGEM', 'AMOR', 'PAZ', 'ILUMINADO'];
 
@@ -64,7 +92,67 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <div className="flex justify-between text-[10px] text-gray-400 font-bold px-1">
                         {moodLabels.map(label => <span key={label}>{label}</span>)}
                     </div>
+
+                    {/* Registrar tem nome e numero na frente: e a pessoa dizendo
+                        "hoje eu estou assim", nao o app anotando o dedo dela. */}
+                    <button
+                        type="button"
+                        onClick={() => { void handleRegistrar(); }}
+                        disabled={!mudou || registrando}
+                        className="luxe-skin-button w-full rounded-xl py-2.5 text-[11px] font-black uppercase tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        {registrando ? '...' : mudou ? `Registrar · ${currentMoodInfo.label} (${currentMoodInfo.level})` : 'Já registrado'}
+                    </button>
                 </div>
+
+                {/* A linha do tempo.
+                    O humor era um numero so, sobrescrito: registrar como voce esta
+                    hoje apagava como voce estava ontem. Num app inteiro sobre
+                    perceber trajetoria, era o unico lugar sem passado. */}
+                {historico.length > 1 && (
+                    <div className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/40">
+                            Últimas {historico.length} marcações
+                        </p>
+                        <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-16 w-full" role="img" aria-label="Histórico de humor">
+                            <polyline
+                                fill="none"
+                                stroke="var(--skin-accent-color)"
+                                strokeWidth="1"
+                                strokeLinejoin="round"
+                                strokeLinecap="round"
+                                vectorEffect="non-scaling-stroke"
+                                points={historico
+                                    .map((ponto, indice) => {
+                                        const x = historico.length === 1 ? 50 : (indice / (historico.length - 1)) * 100;
+                                        const y = 30 - (Math.max(0, Math.min(100, ponto.value)) / 100) * 28;
+                                        return `${x},${y}`;
+                                    })
+                                    .join(' ')}
+                            />
+                            {historico.map((ponto, indice) => {
+                                const x = historico.length === 1 ? 50 : (indice / (historico.length - 1)) * 100;
+                                const y = 30 - (Math.max(0, Math.min(100, ponto.value)) / 100) * 28;
+                                return (
+                                    <circle
+                                        key={`${ponto.recordedAt}-${indice}`}
+                                        cx={x}
+                                        cy={y}
+                                        r="1.6"
+                                        fill="var(--skin-accent-color)"
+                                        vectorEffect="non-scaling-stroke"
+                                    >
+                                        <title>{`${resolveMood(ponto.value).label} (${resolveMood(ponto.value).level}) · ${new Date(ponto.recordedAt).toLocaleDateString('pt-BR')}`}</title>
+                                    </circle>
+                                );
+                            })}
+                        </svg>
+                        <div className="flex justify-between text-[9px] text-white/30">
+                            <span>{new Date(historico[0].recordedAt).toLocaleDateString('pt-BR')}</span>
+                            <span>{new Date(historico[historico.length - 1].recordedAt).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">

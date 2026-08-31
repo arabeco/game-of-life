@@ -53,19 +53,24 @@ export const CampaignArenaStack: React.FC<CampaignArenaStackProps> = ({ arenas, 
                     const actionCount = actionSource.filter((action) => action.arenaId === arena.id).length;
 
                     return (
+                        /* O quadradinho tentava caber icone + nome + "4 acoes" lado a
+                           lado, em um terco da largura do card. Nao cabia: a palavra
+                           era cortada e levava o nome da arena junto. O numero vira
+                           marcador no canto — numero nao precisa de rotulo quando esta
+                           sobre um icone de arena. */
                         <div
                             key={arena.id}
-                            className="flex min-w-0 items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-1.5 py-1"
+                            className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-white/10 bg-black/30 px-1 py-1"
                         >
-                            <span className="shrink-0 text-base leading-none" aria-hidden>{arena.icon || '\u25c7'}</span>
-                            <span className="min-w-0">
-                                <span className="block truncate text-[8px] font-black uppercase tracking-[0.06em] text-white/85">
-                                    {arena.name}
-                                </span>
-                                <span className="block text-[7px] font-bold uppercase tracking-[0.08em] text-white/45">
-                                    {actionCount} {actionCount === 1 ? 'ação' : 'ações'}
-                                </span>
+                            <span className="text-base leading-none" aria-hidden>{arena.icon || '◇'}</span>
+                            <span className="w-full truncate text-center text-[8px] font-black uppercase leading-tight tracking-[0.04em] text-white/85">
+                                {arena.name}
                             </span>
+                            {actionCount > 0 && (
+                                <span className="absolute right-0.5 top-0.5 flex h-3 min-w-3 items-center justify-center rounded-full bg-white/15 px-1 text-[7px] font-black leading-none text-white/80">
+                                    {actionCount}
+                                </span>
+                            )}
                         </div>
                     );
                 }) : (

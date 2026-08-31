@@ -30,12 +30,22 @@ begin;
 -- fragmentos tem. Forjar e reciclar ja passam pelo servidor; comprar bau seria a
 -- unica porta em que a carteira e conferida por quem gasta.
 
+-- A tabela e user_profiles, nao profiles: a primeira versao desta migracao
+-- errou o nome e a propria guarda pegou, que e para isso que ela existe.
+--
+-- E grant_chest e conferido por NOME, sem fixar a assinatura: ela nao nasceu
+-- numa migracao deste repositorio, entao o tipo exato dos parametros nao esta
+-- versionado aqui e travar nele quebraria por um detalhe que nao importa.
 do $$
 begin
-  if to_regclass('public.profiles') is null then
-    raise exception 'CHEST_PURCHASE_MISSING: public.profiles';
+  if to_regclass('public.user_profiles') is null then
+    raise exception 'CHEST_PURCHASE_MISSING: public.user_profiles';
   end if;
-  if to_regproc('public.grant_chest(uuid, text)') is null then
+  if not exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'grant_chest'
+  ) then
     raise exception 'CHEST_PURCHASE_MISSING: public.grant_chest';
   end if;
 end;
@@ -72,8 +82,8 @@ begin
     raise exception 'CHEST_NOT_FOR_SALE';
   end if;
 
-  select coalesce(wallet, '{}'::jsonb) into v_wallet
-  from public.profiles
+  select coalesce(wallet, '{"gold": 0, "fragments": 0}'::jsonb) into v_wallet
+  from public.user_profiles
   where id = v_uid
   for update;
 
@@ -83,13 +93,13 @@ begin
     raise exception 'NOT_ENOUGH_FRAGMENTS';
   end if;
 
-  update public.profiles
+  update public.user_profiles
   set wallet = jsonb_set(v_wallet, '{fragments}', to_jsonb(v_fragments - v_price))
   where id = v_uid;
 
   -- Cobra primeiro, concede depois, na mesma transacao: se a concessao falhar, o
   -- desconto volta junto.
-  perform public.grant_chest(v_uid, p_chest_type);
+  perform public.grant_chest(p_user_id := v_uid, p_chest_type := p_chest_type);
 
   return jsonb_build_object(
     'success', true,

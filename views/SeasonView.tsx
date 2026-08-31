@@ -59,6 +59,33 @@ const MissionSection: React.FC<{
     </section>
 );
 
+/**
+ * O cartao de missao.
+ *
+ * Ele tinha tres defeitos que se somavam ate nao sobrar informacao nenhuma:
+ *
+ *   - "ACEITAR" era um CHIP DE ESTADO vestido de botao — fundo de destaque,
+ *     caixa alta, negrito — ao lado de "Ver", que e o botao de verdade. Dois
+ *     botoes, e o mais chamativo nao clicava.
+ *   - a barra de progresso so aparecia com a missao ja aceita, entao a maioria
+ *     dos cartoes nao mostrava progresso nenhum — que e a unica coisa que
+ *     justifica um cartao existir numa lista.
+ *   - `reward` era passado por sete lugares e o componente nunca o declarava.
+ *     A recompensa chegava e era jogada fora.
+ *
+ * Agora: UM botao (Ver), o estado como texto quieto que ninguem confunde com
+ * botao, a barra sempre visivel — inclusive vazia — e a recompensa a vista.
+ */
+type SeasonQuestFamily = 'temporada' | 'iniciante' | 'individual' | 'grupo';
+
+/** Faixa de cor por familia: da para saber de onde a missao vem sem ler o rotulo. */
+const QUEST_FAMILY_TINT: Record<SeasonQuestFamily, string> = {
+    temporada: 'linear-gradient(100deg, var(--skin-accent-color) 0%, transparent 62%)',
+    iniciante: 'linear-gradient(100deg, rgba(203,213,225,0.85) 0%, transparent 62%)',
+    individual: 'linear-gradient(100deg, rgba(234,179,8,0.85) 0%, transparent 62%)',
+    grupo: 'linear-gradient(100deg, rgba(56,189,248,0.85) 0%, transparent 62%)',
+};
+
 const SeasonQuestCard: React.FC<{
     title: string;
     icon?: string;
@@ -68,9 +95,15 @@ const SeasonQuestCard: React.FC<{
     progressLabel?: string;
     participants?: number;
     artUrl?: string;
+    reward?: string;
+    family?: SeasonQuestFamily;
     onClick: () => void;
-}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, artUrl, onClick }) => {
+}> = ({ title, icon, metaLabel, isAccepted, progress, progressLabel, participants, artUrl, reward, family = 'temporada', onClick }) => {
     const isCompleted = progress >= 100;
+    const estado = isCompleted ? 'Concluída' : isAccepted ? 'Em curso' : 'Não iniciada';
+    const corDoEstado = isCompleted
+        ? 'text-green-300'
+        : isAccepted ? 'text-[var(--ui-text-accent)]' : 'text-[var(--ui-core-caption-color)]';
 
     return (
         <GlassCard
@@ -80,6 +113,13 @@ const SeasonQuestCard: React.FC<{
                 : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] hover:border-[var(--ui-border-accent-soft)]'}`}
             onClick={onClick}
         >
+            {/* A faixa de familia vive na borda esquerda, fina: identifica sem
+                competir com o texto por cima dela. */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-16 opacity-[0.18]"
+                style={{ background: QUEST_FAMILY_TINT[family] }}
+            />
             {artUrl && (
                 <>
                     <div
@@ -96,7 +136,6 @@ const SeasonQuestCard: React.FC<{
                     />
                 </>
             )}
-            {isAccepted && <div className="absolute inset-y-0 left-0 z-10 w-[2px] bg-[var(--skin-accent-color)]/75" />}
             <div className="relative z-10 flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--ui-core-surface-border)] bg-[var(--ui-core-pill-bg)] text-xl shadow-inner">
                     {artUrl
@@ -107,37 +146,39 @@ const SeasonQuestCard: React.FC<{
                 <div className="min-w-0 flex-1">
                     <h3 className="truncate text-[13px] font-bold leading-tight text-[var(--ui-card-text)]" title={title}>{title}</h3>
 
-                    <div className="mt-1 flex items-center gap-2">
-                        {/* "Aceitar" is an invitation and should pull the eye; "Aceito" is
-                            just a state, so it stays quiet and lets the progress bar lead. */}
-                        <span className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] ${isCompleted
-                            ? 'bg-green-500/15 text-green-300'
-                            : isAccepted
-                                ? 'bg-[var(--ui-core-pill-bg)] text-[var(--ui-core-label-color)]'
-                                : 'bg-[var(--skin-accent-color)]/16 text-[var(--ui-text-accent)]'}`}>
-                            {isCompleted ? 'Concluída' : isAccepted ? 'Aceito' : 'Aceitar'}
-                        </span>
-                        <span className="truncate text-[9px] font-bold uppercase tracking-[0.06em] text-[var(--ui-core-caption-color)]">{metaLabel}</span>
+                    {/* Estado em texto, com um ponto. Sem fundo e sem caixa alta de
+                        botao: nada aqui pode parecer clicavel alem do "Ver". */}
+                    <div className="mt-1 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.06em]">
+                        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isCompleted ? 'bg-green-400' : isAccepted ? 'bg-[var(--skin-accent-color)]' : 'bg-white/25'}`} />
+                        <span className={`shrink-0 ${corDoEstado}`}>{estado}</span>
+                        <span className="truncate text-[var(--ui-core-caption-color)]">· {metaLabel}</span>
                         {typeof participants === 'number' && (
-                            <span className="flex shrink-0 items-center gap-1 text-[9px] font-bold text-[var(--ui-core-caption-color)]">
+                            <span className="flex shrink-0 items-center gap-1 text-[var(--ui-core-caption-color)]">
                                 <UsersIcon className="h-3 w-3" />
                                 {participants}
                             </span>
                         )}
                     </div>
 
-                    {isAccepted && !isCompleted && (
+                    {/* Sempre visivel, mesmo em zero. Uma lista de cartoes sem
+                        progresso e uma lista de nomes: e o progresso que responde
+                        "para que serve este cartao". */}
+                    {!isCompleted && (
                         <div className="mt-1.5 flex items-center gap-2">
                             <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-[var(--ui-core-pill-bg)]">
                                 <div
                                     className="h-full rounded-full bg-[var(--skin-accent-color)] transition-all duration-700 ease-out"
-                                    style={{ width: `${Math.min(100, progress)}%` }}
+                                    style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
                                 />
                             </div>
                             <span className="shrink-0 text-[9px] font-black tabular-nums text-[var(--ui-card-text-soft)]">
-                                {progressLabel || `${progress}%`}
+                                {progressLabel || `${Math.round(progress)}%`}
                             </span>
                         </div>
+                    )}
+
+                    {reward && (
+                        <p className="mt-1 truncate text-[9px] font-bold text-[var(--ui-core-caption-color)]">{reward}</p>
                     )}
                 </div>
 
@@ -590,6 +631,7 @@ export const SeasonView: React.FC = () => {
                                             icon={quest.actionTemplate.icon}
                                             artUrl={quest.artUrl}
                                             metaLabel="Desafio"
+                                            family="iniciante"
                                             isAccepted={true}
                                             progress={getSystemQuestProgress(quest)}
                                             progressLabel={quest.id === 'system-five-day-proof-streak'
@@ -610,6 +652,7 @@ export const SeasonView: React.FC = () => {
                                             icon={quest.actionTemplate.icon}
                                             artUrl={quest.artUrl}
                                             metaLabel="Com arena"
+                                            family="individual"
                                             isAccepted={true}
                                             progress={calculateQuestProgress(quest)}
                                             reward={formatQuestReward(quest)}
@@ -654,6 +697,7 @@ export const SeasonView: React.FC = () => {
                                             metaLabel="Grupo"
                                             isAccepted={true}
                                             progress={calculateQuestProgress(quest)}
+                                            family="grupo"
                                             participants={clanQuestParticipants[quest.id] || 0}
                                             reward={formatQuestReward(quest)}
                                             onClick={() => setSelectedQuest(quest)}

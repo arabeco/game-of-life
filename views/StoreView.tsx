@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { StoreTopBar, type StoreTab } from '../components/Store/StoreTopBar';
 import { GoldStore } from '../components/Store/GoldStore';
-import { TheForge } from '../components/Store/TheForge';
 import { CodexStore } from '../components/Store/CodexStore';
 import { ItemsStore } from '../components/Store/ItemsStore';
 import { SCREEN_INTRO_TIP_CONTEXT_EVENT, type ScreenIntroTipId } from '../utils/screenIntroTips';
 
-const ALLOWED_TABS: readonly StoreTab[] = ['codexes', 'items', 'forge', 'store'];
+const ALLOWED_TABS: readonly StoreTab[] = ['codexes', 'items', 'store'];
 
 export const StoreView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<StoreTab>('codexes');
@@ -28,9 +27,7 @@ export const StoreView: React.FC = () => {
 
   React.useEffect(() => {
     const tipId: ScreenIntroTipId =
-      activeTab === 'forge'
-        ? 'store_forge'
-        : activeTab === 'items'
+      activeTab === 'items'
           ? 'store_items'
           : activeTab === 'codexes'
             ? 'store_codexes'
@@ -62,7 +59,6 @@ export const StoreView: React.FC = () => {
 
       <div className="min-h-[500px]">
           {activeTab === 'store' && <GoldStore scrollRequest={scrollRequest} />}
-          {activeTab === 'forge' && <TheForge />}
           {activeTab === 'codexes' && <CodexStore />}
           {activeTab === 'items' && <ItemsStore />}
       </div>

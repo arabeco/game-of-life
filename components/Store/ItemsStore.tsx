@@ -2,6 +2,7 @@
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { getCatalogItems, ItemDef, ItemCategory } from '../../constants/items';
+import type { ChestType } from '../../types';
 import { ACTIVE_GOLD_STORE_ITEM_IDS } from '../../constants/goldCatalog';
 import { ItemArt } from '../ItemArt';
 import { ItemDetailModal } from '../ItemDetailModal';
@@ -39,6 +40,21 @@ const RARITY_LABELS: Record<string, string> = {
     mythic: 'Mítico',
 };
 
+/**
+ * Um bau por raridade, menos mitico.
+ *
+ * O preco e 60% do custo de forjar um item exato daquele patamar — o mesmo
+ * desconto do aleatorio, entao a escada de precos continua sendo uma so. Quem
+ * cobra de verdade e o servidor; isto aqui e a vitrine.
+ */
+const BAUS_A_VENDA: Array<{ tipo: ChestType; custo: number; icone: string }> = [
+    { tipo: 'Comum', custo: 24, icone: '📦' },
+    { tipo: 'Incomum', custo: 72, icone: '🎁' },
+    { tipo: 'Raro', custo: 240, icone: '💠' },
+    { tipo: 'Épico', custo: 720, icone: '🔮' },
+    { tipo: 'Lendário', custo: 2400, icone: '👑' },
+];
+
 const RARITY_STYLES: Record<string, string> = {
     common: 'border-white/10 bg-white/5 text-gray-300',
     uncommon: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300',
@@ -48,7 +64,9 @@ const RARITY_STYLES: Record<string, string> = {
 };
 
 export const ItemsStore: React.FC = () => {
-    const { buyStoreItem, inventory, userProfile } = useGame();
+    const { buyStoreItem, inventory, userProfile, buyChestWithFragments } = useGame();
+    const [comprandoBau, setComprandoBau] = useState<string | null>(null);
+    const fragmentosNaCarteira = Number(userProfile.wallet?.fragments || 0);
     const [loading, setLoading] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<ItemDef | null>(null);
     const [pendingPurchaseItem, setPendingPurchaseItem] = useState<ItemDef | null>(null);
@@ -143,6 +161,45 @@ export const ItemsStore: React.FC = () => {
                             />
                             <div className="rounded-full border border-white/10 bg-black/25 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/75">
                                 {filteredItems.length}
+                            </div>
+                        </div>
+
+                        {/* Os baus, comprados com fragmento.
+                            Isto era o "sortear na categoria" da aba Forja, que
+                            custava o MESMO que escolher o item exato — entao ninguem
+                            sortearia, e a opcao existia sem razao de ser usada.
+                            Escolher exato foi para o modal do item; o sorteio virou o
+                            que ele sempre foi por dentro: um bau. Preco de 60% do
+                            exato, que e o desconto do aleatorio.
+                            Mitico fica de fora, e Season e Ciclo nao se vendem — sao
+                            recompensa, e vender esvaziaria o motivo de receber. */}
+                        <div className="space-y-2">
+                            <div className="grid grid-cols-5 gap-1.5">
+                                {BAUS_A_VENDA.map((bau) => {
+                                    const semSaldo = fragmentosNaCarteira < bau.custo;
+                                    return (
+                                        <button
+                                            key={bau.tipo}
+                                            type="button"
+                                            onClick={async () => {
+                                                if (comprandoBau) return;
+                                                setComprandoBau(bau.tipo);
+                                                try { await buyChestWithFragments(bau.tipo); }
+                                                finally { setComprandoBau(null); }
+                                            }}
+                                            disabled={!!comprandoBau || semSaldo}
+                                            className="flex flex-col items-center gap-0.5 rounded-xl border border-white/10 bg-black/25 px-1 py-2 transition-all hover:border-cyan-400/30 disabled:cursor-not-allowed disabled:opacity-40"
+                                            title={`Baú ${bau.tipo}`}
+                                        >
+                                            <span className="text-lg leading-none">{bau.icone}</span>
+                                            <span className="truncate text-[8px] font-black uppercase tracking-[0.04em] text-white/70">{bau.tipo}</span>
+                                            <span className="flex items-center gap-0.5 text-[9px] font-black leading-none text-cyan-300">
+                                                {comprandoBau === bau.tipo ? '...' : bau.custo}
+                                                <span className="text-[9px]">💎</span>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 

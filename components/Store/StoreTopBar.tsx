@@ -2,7 +2,17 @@ import React from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 
-export type StoreTab = 'store' | 'forge' | 'codexes' | 'items';
+/**
+ * A aba Forja saiu.
+ *
+ * Ela guardava quatro coisas, e nenhuma era dela: quebrar item (agora no proprio
+ * item), forjar exato (no modal do item, onde a vontade nasce ao ver a colecao),
+ * sortear na categoria (virou bau, na aba de Itens) e vender campanha por
+ * fragmento (na aba de Campanhas, ao lado do preco em ouro).
+ *
+ * Nenhuma acao foi perdida; todas passaram a morar onde a pessoa ja esta.
+ */
+export type StoreTab = 'store' | 'codexes' | 'items';
 
 type StoreTopBarProps = {
     activeTab: StoreTab;
@@ -12,7 +22,6 @@ type StoreTopBarProps = {
 const STORE_TABS: Array<{ id: StoreTab; label: string; icon: string }> = [
     { id: 'codexes', label: 'Campanhas', icon: '\u{1F4DA}' },
     { id: 'items', label: 'Itens', icon: '\u{1F6E1}\u{FE0F}' },
-    { id: 'forge', label: 'Forja', icon: '\u{1F48E}' },
     { id: 'store', label: 'Ouro', icon: '\u{1FA99}' },
 ];
 

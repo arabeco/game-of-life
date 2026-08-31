@@ -372,9 +372,30 @@ export const createTaskDomain = ({
             durationMs: campaignJustCleared ? 5600 : 5000,
         }, 'marco');
 
+        // Os numeros do feito viram parte do registro, medidos agora.
+        //
+        // "Concluiu Academia" nao deixa a pessoa se achar no proprio feito: cinco
+        // acoes em tres dias e trinta e quatro entregas em vinte e um dias sao
+        // historias diferentes com o mesmo titulo. E gravar em vez de consultar e
+        // o que torna isso honesto — desmarcar uma acao amanha muda o estado da
+        // arena, nao muda o que aconteceu.
+        const arenaActionIdSet = new Set(arenaActions.map((action) => action.id));
+        const entregasDaArena = nextCycleTasks.filter(
+            (task) => task.completed && arenaActionIdSet.has(task.actionId),
+        );
+        const diasDaArena = new Set(
+            entregasDaArena.map((task) => getTaskOperationalDateString(task)).filter(Boolean),
+        );
+
         addFeedEvent({
             type: 'ARENA_COMPLETED',
-            content: { title: arena.name, icon: arena.icon || '🏟️' }
+            content: {
+                title: arena.name,
+                icon: arena.icon || '🏟️',
+                actionCount: arenaActions.length,
+                deliveries: entregasDaArena.length,
+                days: diasDaArena.size,
+            }
         });
 
         setAchievementUnlocked({

@@ -174,6 +174,19 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
     if (!author && !event.authorNickname) return null;
 
     const presentation = getFeedPresentation(event);
+
+    /**
+     * Os numeros gravados no evento, se houver.
+     *
+     * Ausentes em tudo que aconteceu antes destes campos existirem — e ai a linha
+     * some, em vez de mostrar zeros. Zero entregas numa arena concluida seria
+     * mentira; nao ter o dado e so nao ter o dado.
+     */
+    const numerosDoFeito = [
+        event.content.deliveries ? `${event.content.deliveries} ${event.content.deliveries === 1 ? 'entrega' : 'entregas'}` : null,
+        event.content.actionCount ? `${event.content.actionCount} ${event.content.actionCount === 1 ? 'ação' : 'ações'}` : null,
+        event.content.days ? `${event.content.days} ${event.content.days === 1 ? 'dia' : 'dias'}` : null,
+    ].filter((parte): parte is string => Boolean(parte));
     const palette = toneClasses[presentation.tone];
 
     return (
@@ -249,10 +262,28 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                         </button>
                     </div>
 
-                    <p className={`flex items-center justify-center gap-2 pb-0.5 text-center text-[17px] font-black leading-tight ${palette.title}`}>
+                    <p className={`flex items-center justify-center gap-2 text-center text-[17px] font-black leading-tight ${palette.title}`}>
                         <span className="shrink-0 text-xl leading-none" aria-hidden>{presentation.icon}</span>
                         <span className="truncate">{presentation.title}</span>
                     </p>
+
+                    {/* Os numeros do feito, quando o evento os gravou.
+                        "Concluiu Academia" nao deixa ninguem se achar no proprio
+                        feito: cinco acoes em tres dias e trinta e quatro entregas em
+                        vinte e um dias sao historias diferentes com o mesmo titulo.
+                        Eventos antigos nao tem esses campos e simplesmente nao
+                        mostram a linha — instantaneo que nao foi tirado nao se
+                        inventa depois. */}
+                    {numerosDoFeito.length > 0 && (
+                        <p className="flex items-center justify-center gap-2 pb-0.5 text-center text-[10px] font-bold uppercase tracking-[0.1em] text-white/35">
+                            {numerosDoFeito.map((parte, indice) => (
+                                <span key={parte} className="flex items-center gap-2">
+                                    {indice > 0 && <span className="text-white/15">·</span>}
+                                    {parte}
+                                </span>
+                            ))}
+                        </p>
+                    )}
                 </div>
             </div>
         </GlassCard>

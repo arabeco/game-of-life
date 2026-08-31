@@ -1119,6 +1119,19 @@ export interface FeedEvent {
     icon?: string;
     score?: number;
     rankName?: string;
+    /**
+     * Numeros do feito, gravados NO MOMENTO em que ele aconteceu.
+     *
+     * Sao instantaneo, nao consulta: se a pessoa desmarcar uma acao depois, a
+     * arena deixa de estar completa mas o registro continua verdadeiro — ele diz
+     * o que era naquele dia, e e essa a diferenca entre um feed e um painel.
+     *
+     * Sem eles o cartao dizia apenas "concluiu Academia", que nao deixa a pessoa
+     * medir o proprio feito nem se reconhecer nele.
+     */
+    actionCount?: number;
+    deliveries?: number;
+    days?: number;
   };
   timestamp: string;
 }

@@ -342,26 +342,26 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- INSÍGNIAS ---
     // NOBREZA (Ouro)
-    { id: 'insignia_rank_1_vagante', name: 'Ouro: Vagante', category: 'insignia', tier: 1, rarity: 'common', icon: '⚪', description: "Patente de Ouro: Reconhecimento inicial para aqueles que começam sua jornada.", isRankExclusive: true },
-    { id: 'insignia_rank_2_escudeiro', name: 'Ouro: Escudeiro', category: 'insignia', tier: 1, rarity: 'common', icon: '🛡️', description: "Patente de Ouro: Concedida aos que demonstraram compromisso inicial com a ordem.", isRankExclusive: true },
-    { id: 'insignia_rank_3_cavaleiro', name: 'Ouro: Cavaleiro', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '⚔️', description: "Patente de Ouro: Dada aos guerreiros que provaram sua constância em batalha.", isRankExclusive: true },
-    { id: 'insignia_rank_4_lorde', name: 'Ouro: Lorde', category: 'insignia', tier: 3, rarity: 'rare', icon: '🏰', description: "Patente de Ouro: Um título de nobreza para quem lidera pelo exemplo.", isRankExclusive: true },
-    { id: 'insignia_rank_5_barao', name: 'Ouro: Barão', category: 'insignia', tier: 4, rarity: 'epic', icon: '👑', description: "Patente de Ouro: Elite da nobreza, reservada aos mestres da disciplina.", isRankExclusive: true },
-    { id: 'insignia_rank_6_conde', name: 'Ouro: Conde', category: 'insignia', tier: 4, rarity: 'epic', icon: '📜', description: "Patente de Ouro: Reconhecimento por serviços notáveis prestados ao reino.", isRankExclusive: true },
-    { id: 'insignia_rank_7_duque', name: 'Ouro: Duque', category: 'insignia', tier: 5, rarity: 'legendary', icon: '💎', description: "Patente de Ouro: Um alto título de nobreza, concedido apenas aos mais dignos.", isRankExclusive: true },
-    { id: 'insignia_rank_8_principe', name: 'Ouro: Príncipe', category: 'insignia', tier: 5, rarity: 'legendary', icon: '🌟', description: "Patente de Ouro: Sangue real. Seu nome é conhecido em todas as terras.", isRankExclusive: true },
-    { id: 'insignia_rank_9_rei', name: 'Ouro: Rei', category: 'insignia', tier: 5, rarity: 'legendary', icon: '👑', description: "Patente de Ouro: A autoridade máxima. Sua palavra é lei.", isRankExclusive: true },
-    { id: 'insignia_rank_10_soberano', name: 'Ouro: Soberano', category: 'insignia', tier: 5, rarity: 'legendary', icon: '🔱', description: "Patente de Ouro: O ápice da maestria. Poucos alcançam este patamar de soberania.", isRankExclusive: true },
+    { id: 'insignia_rank_1_vagante', name: 'Insígnia do Vagante', category: 'insignia', tier: 1, rarity: 'common', icon: '⚪', description: "Patente de Ouro: Reconhecimento inicial para aqueles que começam sua jornada.", isRankExclusive: true },
+    { id: 'insignia_rank_2_escudeiro', name: 'Insígnia do Escudeiro', category: 'insignia', tier: 1, rarity: 'common', icon: '🛡️', description: "Patente de Ouro: Concedida aos que demonstraram compromisso inicial com a ordem.", isRankExclusive: true },
+    { id: 'insignia_rank_3_cavaleiro', name: 'Insígnia do Cavaleiro', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '⚔️', description: "Patente de Ouro: Dada aos guerreiros que provaram sua constância em batalha.", isRankExclusive: true },
+    { id: 'insignia_rank_4_lorde', name: 'Insígnia do Lorde', category: 'insignia', tier: 3, rarity: 'rare', icon: '🏰', description: "Patente de Ouro: Um título de nobreza para quem lidera pelo exemplo.", isRankExclusive: true },
+    { id: 'insignia_rank_5_barao', name: 'Insígnia do Barão', category: 'insignia', tier: 4, rarity: 'epic', icon: '👑', description: "Patente de Ouro: Elite da nobreza, reservada aos mestres da disciplina.", isRankExclusive: true },
+    { id: 'insignia_rank_6_conde', name: 'Insígnia do Conde', category: 'insignia', tier: 4, rarity: 'epic', icon: '📜', description: "Patente de Ouro: Reconhecimento por serviços notáveis prestados ao reino.", isRankExclusive: true },
+    { id: 'insignia_rank_7_duque', name: 'Insígnia do Duque', category: 'insignia', tier: 5, rarity: 'legendary', icon: '💎', description: "Patente de Ouro: Um alto título de nobreza, concedido apenas aos mais dignos.", isRankExclusive: true },
+    { id: 'insignia_rank_8_principe', name: 'Insígnia do Príncipe', category: 'insignia', tier: 5, rarity: 'legendary', icon: '🌟', description: "Patente de Ouro: Sangue real. Seu nome é conhecido em todas as terras.", isRankExclusive: true },
+    { id: 'insignia_rank_9_rei', name: 'Insígnia do Rei', category: 'insignia', tier: 5, rarity: 'legendary', icon: '👑', description: "Patente de Ouro: A autoridade máxima. Sua palavra é lei.", isRankExclusive: true },
+    { id: 'insignia_rank_10_soberano', name: 'Insígnia do Soberano', category: 'insignia', tier: 5, rarity: 'legendary', icon: '🔱', description: "Patente de Ouro: O ápice da maestria. Poucos alcançam este patamar de soberania.", isRankExclusive: true },
 
     // RELATORIOS (Bronze)
 
     // QUESTS (Prata)
-    { id: 'insignia_quest_master', name: 'Prata: Mestre de Quests', category: 'insignia', tier: 3, rarity: 'rare', icon: '🏆', description: "Missão de Prata: Concedida ao completar missões desafiadoras da temporada.", isQuestExclusive: true },
+    { id: 'insignia_quest_master', name: 'Insígnia de Mestre de Quests', category: 'insignia', tier: 3, rarity: 'rare', icon: '🏆', description: "Missão de Prata: Concedida ao completar missões desafiadoras da temporada.", isQuestExclusive: true },
 
     // NOVAS INSÍGNIAS (Recompensas Automáticas)
-    { id: 'insignia_report_comum', name: 'Bronze: Relatório de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: '📜', description: "Relatório de Bronze: Concedida por concluir um ciclo e selar o relatório final.", isReportExclusive: true },
-    { id: 'insignia_quest_incomum', name: 'Prata: Missão Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🎖️', description: "Missão de Prata: Concedida ao concluir uma missão da temporada.", isQuestExclusive: true },
-    { id: 'insignia_levelup_rara', name: 'Ouro: Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência.", isRankExclusive: true },
+    { id: 'insignia_report_comum', name: 'Insígnia de Relatório de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: '📜', description: "Relatório de Bronze: Concedida por concluir um ciclo e selar o relatório final.", isReportExclusive: true },
+    { id: 'insignia_quest_incomum', name: 'Insígnia de Missão Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🎖️', description: "Missão de Prata: Concedida ao concluir uma missão da temporada.", isQuestExclusive: true },
+    { id: 'insignia_levelup_rara', name: 'Insígnia de Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência.", isRankExclusive: true },
     { id: 'insignia_season_genesis', name: 'Gênesis', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca de quem esteve na Temporada Zero, antes da Primeira Era começar.", isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'insignia' },
     { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia' },
 ];

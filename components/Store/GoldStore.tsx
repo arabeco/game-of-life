@@ -250,37 +250,43 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                 </GlassCard>
 
                 <GlassCard id="gold-store-packs" variant="neutral" className="space-y-4 border-white/10 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-lg font-bold text-[color:var(--ui-card-text)]">Pacotes de Ouro</h3>
-                        <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-300">
-                            {goldPackChannelBadgeCopy}
-                        </div>
-                    </div>
-
+                    {/* O titulo e o selo do canal sairam.
+                        "Pacotes de Ouro" nomeava o que a tela inteira ja e — a aba
+                        "Ouro" esta selecionada logo acima —, e "GOOGLE PLAY" e
+                        detalhe de cobranca que aparece no proprio fluxo de compra.
+                        Os dois ocupavam uma faixa inteira antes dos cards. */}
                     <div className="grid grid-cols-3 gap-3 md:grid-cols-4 lg:grid-cols-6">
                         {GOLD_PACK_CATALOG.map((pack) => (
-                            <GlassCard key={pack.id} className="group relative h-[12.4rem] overflow-hidden p-3 text-center transition-colors hover:bg-white/5">
+                            /* Mais baixo e mais quadrado. A altura fixa de 12,4rem vinha
+                               de tres blocos empilhados com folga — icone grande, nome em
+                               duas linhas com altura minima reservada, e o numero — para
+                               mostrar tres informacoes curtas. O que a pessoa compara e a
+                               QUANTIDADE e o PRECO; o nome do pacote e sabor e cabe numa
+                               linha. E a quantidade vem com o simbolo da moeda, nao com a
+                               palavra ao lado. */
+                            <GlassCard key={pack.id} className="group relative h-[9.2rem] overflow-hidden p-2.5 text-center transition-colors hover:bg-white/5">
                                 {pack.bonusGold > 0 && (
-                                    <div className="absolute right-2 top-2 rounded border border-green-500/30 bg-green-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-green-400">
-                                        +{pack.bonusGold} bônus
+                                    <div className="absolute right-1.5 top-1.5 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-green-400">
+                                        +{pack.bonusGold}
                                     </div>
                                 )}
 
-                                <div className="flex h-full flex-col items-center gap-2">
-                                    <div className="mt-1 text-4xl drop-shadow-[0_0_10px_rgba(255,215,0,0.25)] transition-transform duration-300 group-hover:scale-110">
+                                <div className="flex h-full flex-col items-center gap-1.5">
+                                    <div className="mt-0.5 text-[28px] leading-none drop-shadow-[0_0_10px_rgba(255,215,0,0.25)] transition-transform duration-300 group-hover:scale-110">
                                         {pack.icon}
                                     </div>
 
-                                    <div className="min-h-[2.6rem]">
-                                        <h4 className="line-clamp-2 text-[11px] font-black uppercase tracking-[0.06em] text-[color:var(--ui-card-text)]">{pack.name}</h4>
+                                    <div className="flex items-center gap-1 text-xl font-black leading-none text-[var(--gold)]">
+                                        {pack.totalGold}
+                                        <span className="text-[13px]">🪙</span>
                                     </div>
 
-                                    <div className="text-2xl font-black text-[var(--gold)]">{pack.totalGold}</div>
+                                    <h4 className="truncate text-[9px] font-bold uppercase tracking-[0.06em] text-[color:var(--ui-card-text-soft)]">{pack.name}</h4>
 
                                     <button
                                         onClick={() => handleBuyPack(pack.id)}
                                         disabled={!!loading}
-                                        className="luxe-skin-button mt-auto w-full whitespace-nowrap rounded-xl py-2 text-[13px] font-bold leading-none disabled:opacity-50 sm:text-sm"
+                                        className="luxe-skin-button mt-auto w-full whitespace-nowrap rounded-lg py-1.5 text-[12px] font-bold leading-none disabled:opacity-50"
                                     >
                                         {loading === pack.id ? '...' : `R$ ${pack.priceBrl.toFixed(2)}`}
                                     </button>

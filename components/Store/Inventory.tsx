@@ -283,7 +283,12 @@ export const Inventory: React.FC = () => {
                                     
                                     {/* Item Name */}
                                     <div className="absolute bottom-2 left-1 right-1 text-center">
-                                        <span className="text-[9px] font-bold text-white uppercase tracking-wider truncate block w-full drop-shadow-md">
+                                        {/* Duas linhas: os nomes das insignias deixaram de
+                                            comecar pelo metal ("Ouro: Soberano" virou
+                                            "Insignia do Soberano"), entao o nome util fica
+                                            no fim e truncar em uma linha esconde justamente
+                                            de quem a insignia e. */}
+                                        <span className="line-clamp-2 block w-full text-[9px] font-bold uppercase leading-tight tracking-wider text-white drop-shadow-md">
                                             {item.def?.name}
                                         </span>
                                     </div>

@@ -106,6 +106,10 @@ export const TheForge: React.FC = () => {
             .filter((item) => item.def && !HONOR_CATEGORIES.has(item.def.category));
     }, [inventory]);
 
+    /** Sorteio custa menos que escolher: e o que da sentido a existir sorteio. */
+    const getRandomCraftCost = (tier: number) =>
+        Math.round(getCraftCost(tier) * ECONOMY.random_craft_discount);
+
     const getCraftCost = (tier: number) => {
         switch (tier) {
             case 1: return ECONOMY.craft_costs.tier_1;
@@ -222,17 +226,21 @@ export const TheForge: React.FC = () => {
                                 ))}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-black/15 p-3">
-                                <div>
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Custo de forja</div>
-                                    <div className="mt-1 text-2xl font-black text-cyan-300">
-                                        {getCraftCost(selectedTier)} <span className="text-sm">💎</span>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Saldo</div>
-                                    <div className="mt-1 text-2xl font-black text-white">{userProfile.wallet?.fragments || 0}</div>
-                                </div>
+                            {/* Uma linha, e ela diz a decisao — nao dois rotulos.
+                                "CUSTO DE FORJA" e "SALDO" ocupavam um bloco inteiro
+                                para dois numeros, e o custo mostrado era o de
+                                ESCOLHER, enquanto o botao desta tela sorteia. O que
+                                importa aqui e a diferenca entre os dois precos. */}
+                            <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+                                <span className="flex items-baseline gap-1.5 text-cyan-300">
+                                    <span className="text-xl font-black">{getRandomCraftCost(selectedTier)}</span>
+                                    <span className="text-sm">💎</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">no sorteio</span>
+                                </span>
+                                <span className="flex items-baseline gap-1 text-[11px] font-black text-white/70">
+                                    {userProfile.wallet?.fragments || 0}
+                                    <span className="text-xs">💎</span>
+                                </span>
                             </div>
                         </>
                     ) : (
@@ -400,8 +408,9 @@ export const TheForge: React.FC = () => {
                                             </div>
                                         </GlassCard>
 
-                                        <button onClick={() => handleCraft(category, true)} disabled={!!processing || (userProfile.wallet?.fragments || 0) < getCraftCost(selectedTier)} className="luxe-skin-button inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-50">
-                                            <span>{processing === `craft-${category}` ? '...' : 'Tentar sorte'}</span>
+                                        <button onClick={() => handleCraft(category, true)} disabled={!!processing || (userProfile.wallet?.fragments || 0) < getRandomCraftCost(selectedTier)} className="luxe-skin-button inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-50">
+                                            <span>{processing === `craft-${category}` ? '...' : `Sortear ${getRandomCraftCost(selectedTier)}`}</span>
+                                            <span className="text-[11px] leading-none">💎</span>
                                         </button>
                                     </div>
                                 );

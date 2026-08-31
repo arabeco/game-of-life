@@ -3,7 +3,8 @@ import { useGame } from '../contexts/GameContext';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, Trash2Icon, ShareIcon } from './Icons';
-import { ITEMS_DB, ItemDef, ItemCategory, isItemCatalogVisible } from '../constants/items';
+import { ITEMS_DB, ItemDef, ItemCategory, isItemCatalogVisible, isForgeEligibleItem } from '../constants/items';
+import { ECONOMY } from '../constants/economy';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { UnlockCategory } from '../types';
 import { ItemArt } from './ItemArt';
@@ -31,7 +32,8 @@ const CATEGORY_MAP: Partial<Record<ItemCategory, UnlockCategory>> = {
 };
 
 export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialItem, instanceId: initialInstanceId, type, onClose, onOpen }) => {
-    const { userProfile, updateUserProfile, toggleEquipItem } = useGame();
+    const { userProfile, updateUserProfile, toggleEquipItem, recycleItem, craftItem, buyStoreItem, showToast } = useGame();
+    const [acaoEmCurso, setAcaoEmCurso] = React.useState<string | null>(null);
     const [currentItem, setCurrentItem] = React.useState<ItemDef>(initialItem);
 
     // Reset current item when prop changes
@@ -138,14 +140,61 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
         // Logic to donate would go here
     };
 
-    const handleRecycle = () => {
+    /**
+     * Quanto vale, em fragmentos, cada operacao deste item.
+     *
+     * Sao os mesmos numeros que o item repetido ja usa ao quebrar sozinho
+     * (getDuplicateItemFragmentReward le a mesma tabela), entao quebrar a mao e
+     * quebrar por duplicata pagam igual — como tem de ser, ou uma das duas vira
+     * a esperta.
+     */
+    const patamar = Math.min(6, Math.max(1, Number(currentItem.tier || 1)));
+    const valorAoQuebrar = Number(ECONOMY.recycle_values[`tier_${patamar}` as keyof typeof ECONOMY.recycle_values] || 0);
+    const custoDeForja = Number(ECONOMY.craft_costs[`tier_${patamar}` as keyof typeof ECONOMY.craft_costs] || 0);
+    const fragmentosNaCarteira = Number(userProfile.wallet?.fragments || 0);
+    const ouroNaCarteira = Number(userProfile.wallet?.gold || 0);
+    const podeForjar = isForgeEligibleItem(currentItem);
+    const precoEmOuro = Number(currentItem.costGold || 0);
+
+    /**
+     * Quebrar de verdade.
+     *
+     * Isto era uma SIMULACAO: window.confirm, um alert dizendo "(Simulação)" e
+     * fecha. O botao existia, parecia real e nao chamava recycleItem — o item
+     * continuava no inventario e nenhum fragmento aparecia.
+     */
+    const handleRecycle = async () => {
+        if (!currentInstanceId || acaoEmCurso) return;
         // eslint-disable-next-line no-alert
-        const confirm = window.confirm(`Tem certeza que deseja reciclar ${currentItem.name}? Esta ação não pode ser desfeita.`);
-        if (confirm) {
-            // Logic to remove from inventory
-            // eslint-disable-next-line no-alert
-            alert(`Você reciclou ${currentItem.name}! (Simulação)`);
+        if (!window.confirm(`Quebrar ${currentItem.name} por ${valorAoQuebrar} fragmentos? Isso não pode ser desfeito.`)) return;
+        setAcaoEmCurso('quebrar');
+        try {
+            await recycleItem(currentInstanceId);
             onClose();
+        } finally {
+            setAcaoEmCurso(null);
+        }
+    };
+
+    /** Forjar exatamente este. E o caminho caro, e o unico em que voce escolhe. */
+    const handleForge = async () => {
+        if (acaoEmCurso || fragmentosNaCarteira < custoDeForja) return;
+        setAcaoEmCurso('forjar');
+        try {
+            await craftItem(currentItem.tier, undefined, currentItem.id);
+        } finally {
+            setAcaoEmCurso(null);
+        }
+    };
+
+    /** Comprar daqui, em vez de mandar procurar o mesmo item na loja. */
+    const handleBuy = async () => {
+        if (acaoEmCurso || !precoEmOuro || ouroNaCarteira < precoEmOuro) return;
+        setAcaoEmCurso('comprar');
+        try {
+            await buyStoreItem(currentItem.id);
+        } finally {
+            setAcaoEmCurso(null);
         }
     };
 
@@ -273,18 +322,47 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         </button>
                     )}
                     
-                    <button 
-                        onClick={handleRecycle}
-                        disabled={!isOwned || isInsignia}
-                        className={`py-3 rounded-xl font-bold uppercase tracking-wider border transition-all flex items-center justify-center gap-2
-                            ${(!isOwned || isInsignia)
-                                ? 'bg-transparent text-gray-600 border-gray-800 cursor-not-allowed' 
-                                : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
-                            }`}
-                    >
-                        <Trash2Icon className="w-4 h-4" />
-                        <span className="text-[10px]">Reciclar</span>
-                    </button>
+                    {/* Quebrar diz QUANTO rende.
+                        "Reciclar" com um icone de lixo pede que a pessoa aceite
+                        perder algo sem saber o que ganha — e o que ela ganha e
+                        exatamente o argumento para aceitar. */}
+                    {isOwned && !isInsignia && (
+                        <button
+                            onClick={handleRecycle}
+                            disabled={!!acaoEmCurso || !currentInstanceId}
+                            className="flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 py-3 font-bold uppercase tracking-wider text-red-400 transition-all hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <Trash2Icon className="w-4 h-4" />
+                            <span className="text-[10px]">{acaoEmCurso === 'quebrar' ? '...' : `Quebrar ${valorAoQuebrar}`}</span>
+                            <span className="text-[11px] leading-none">💎</span>
+                        </button>
+                    )}
+
+                    {/* Faltando: as duas saidas ficam AQUI, onde a vontade nasceu.
+                        Ver a colecao e descobrir o que falta e o momento em que a
+                        pessoa quer o item; mandar ela procurar o mesmo item noutra
+                        aba e perder esse momento. */}
+                    {!isOwned && !isInsignia && precoEmOuro > 0 && (
+                        <button
+                            onClick={handleBuy}
+                            disabled={!!acaoEmCurso || ouroNaCarteira < precoEmOuro}
+                            className="luxe-skin-button flex items-center justify-center gap-1.5 rounded-xl py-3 font-bold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <span className="text-[10px]">{acaoEmCurso === 'comprar' ? '...' : precoEmOuro}</span>
+                            <span className="text-[11px] leading-none">🪙</span>
+                        </button>
+                    )}
+
+                    {!isOwned && !isInsignia && podeForjar && (
+                        <button
+                            onClick={handleForge}
+                            disabled={!!acaoEmCurso || fragmentosNaCarteira < custoDeForja}
+                            className="flex items-center justify-center gap-1.5 rounded-xl border border-cyan-400/25 bg-cyan-400/10 py-3 font-bold uppercase tracking-wider text-cyan-200 transition-all hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <span className="text-[10px]">{acaoEmCurso === 'forjar' ? '...' : `Forjar ${custoDeForja}`}</span>
+                            <span className="text-[11px] leading-none">💎</span>
+                        </button>
+                    )}
                     
                     <button 
                         onClick={handleDonate}

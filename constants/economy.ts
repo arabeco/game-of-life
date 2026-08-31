@@ -13,6 +13,19 @@
     tier_6: 3000,
   },
 
+  /**
+   * Forjar SEM escolher custa 60% do preco de escolher.
+   *
+   * Antes as duas formas custavam igual — a forja aceita categoria (sorteio no
+   * patamar) e item exato, e getCraftCost so olhava o patamar. Com o mesmo
+   * preco, ninguem sorteia: escolher e estritamente melhor, entao a opcao
+   * aleatoria existia na tela sem nunca ter razao para ser usada.
+   *
+   * Com desconto, a forja passa a ter uma decisao: pagar menos e aceitar o que
+   * vier, ou pagar cheio e levar o que quer.
+   */
+  random_craft_discount: 0.6,
+
   craft_costs: {
     tier_1: 40,
     tier_2: 120,

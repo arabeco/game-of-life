@@ -109,3 +109,16 @@
   },
 };
 
+/**
+ * O preco em fragmentos de uma campanha casual.
+ *
+ * Morava dentro de TheForge, que era a unica tela que vendia campanha por
+ * fragmento. Como a venda passou para a aba de Campanhas — que e onde campanha
+ * mora —, a regra precisa de um lugar que as duas telas enxerguem.
+ */
+export const getCasualCampaignFragmentCost = (durationDays: number): number => {
+    if (durationDays >= 21) return 42;
+    if (durationDays >= 14) return 34;
+    if (durationDays >= 10) return 28;
+    return 22;
+};

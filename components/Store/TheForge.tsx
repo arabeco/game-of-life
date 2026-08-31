@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { resolveItemDef, getCatalogItems, getCatalogItemsByCategory, isForgeEligibleItem, ItemCategory } from '../../constants/items';
-import { ECONOMY } from '../../constants/economy';
+import { ECONOMY, getCasualCampaignFragmentCost } from '../../constants/economy';
 import { RefreshCwIcon, Trash2Icon } from '../Icons';
 import { getTierVisual, withAlpha } from '../../constants/rarityVisuals';
 import { ItemArt } from '../ItemArt';
@@ -39,13 +39,6 @@ const FEATURED_FRAGMENT_CATEGORIES: ItemCategory[] = [
 ];
 
 const HONOR_CATEGORIES = new Set<ItemCategory>(['insignia', 'insignias']);
-
-const getCasualCampaignFragmentCost = (durationDays: number) => {
-    if (durationDays >= 21) return 42;
-    if (durationDays >= 14) return 34;
-    if (durationDays >= 10) return 28;
-    return 22;
-};
 
 export const TheForge: React.FC = () => {
     const { userProfile, craftItem, recycleItem, inventory, codexCatalog, userCodexes, buyCodexWithFragments, installCodex } = useGame();

@@ -21,21 +21,30 @@ export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange
     const { gold, fragments } = userProfile.wallet || { gold: 0, fragments: 0 };
 
     return (
-        <GlassCard className="sticky top-0 z-50 mb-4 border-white/10 bg-black/40 p-2.5 backdrop-blur-md">
-            <div className="flex items-center gap-2">
-                <div className="shrink-0 rounded-2xl border border-white/10 bg-black/25 px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                    <div className="flex items-center gap-1.5 text-[11px] font-black leading-none text-[var(--skin-accent-color)]">
-                        <span className="text-sm">{'\u{1FA99}'}</span>
-                        <span>{gold.toLocaleString('pt-BR')}</span>
-                    </div>
-                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-black leading-none text-cyan-400">
-                        <span className="text-sm">{'\u{1F48E}'}</span>
-                        <span>{fragments.toLocaleString('pt-BR')}</span>
-                    </div>
+        // Ela e `sticky` sobre conteudo que rola por baixo, entao a opacidade nao
+        // e enfeite: com bg-black/40 o titulo da secao aparecia POR TRAS da caixa
+        // de moedas — "Pacotes de Ouro" e "FORJA" liam-se atraves dela.
+        <GlassCard className="sticky top-0 z-50 mb-3 border-white/10 bg-black/80 p-1.5 backdrop-blur-md">
+            <div className="flex items-center gap-1.5">
+                {/* Ouro e fragmentos LADO A LADO.
+                    Empilhados, eles sozinhos definiam a altura da barra inteira:
+                    duas linhas de texto mais o respiro entre elas, e as abas
+                    tinham de crescer junto para nao ficarem tortas. Em linha, a
+                    barra cabe na altura de um botao. */}
+                <div className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-2 py-1.5">
+                    <span className="flex items-center gap-1 text-[11px] font-black leading-none text-[var(--skin-accent-color)]">
+                        <span className="text-[13px]">{'\u{1FA99}'}</span>
+                        {gold.toLocaleString('pt-BR')}
+                    </span>
+                    <span className="h-3 w-px bg-white/10" />
+                    <span className="flex items-center gap-1 text-[11px] font-black leading-none text-cyan-400">
+                        <span className="text-[13px]">{'\u{1F48E}'}</span>
+                        {fragments.toLocaleString('pt-BR')}
+                    </span>
                 </div>
 
                 <div
-                    className="store-subtab-strip grid flex-1 gap-1.5 rounded-2xl bg-black/30 p-1.5"
+                    className="store-subtab-strip grid flex-1 gap-1 rounded-xl bg-black/30 p-1"
                     style={{ gridTemplateColumns: `repeat(${STORE_TABS.length}, minmax(0, 1fr))` }}
                 >
                     {STORE_TABS.map((tab) => (
@@ -43,11 +52,11 @@ export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange
                             key={tab.id}
                             type="button"
                             onClick={() => onTabChange(tab.id)}
-                            className={`store-subtab-button min-h-[38px] rounded-xl px-1.5 py-2 text-[10px] font-black uppercase tracking-[0.12em] transition-all ${activeTab === tab.id ? 'luxe-skin-button store-subtab-button-active' : 'luxe-button-secondary store-subtab-button-inactive'}`}
+                            className={`store-subtab-button min-h-[30px] rounded-lg px-1 py-1 text-[10px] font-black uppercase tracking-[0.12em] transition-all ${activeTab === tab.id ? 'luxe-skin-button store-subtab-button-active' : 'luxe-button-secondary store-subtab-button-inactive'}`}
                             aria-label={tab.label}
                             title={tab.label}
                         >
-                            <span className="text-[16px] leading-none">{tab.icon}</span>
+                            <span className="text-[15px] leading-none">{tab.icon}</span>
                         </button>
                     ))}
                 </div>

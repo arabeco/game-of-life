@@ -23,6 +23,22 @@ const STORE_CATEGORY_LABELS: Record<ItemDef['category'], string> = {
     insignias: 'Insígnia',
 };
 
+/**
+ * O nome da raridade em portugues.
+ *
+ * A tela mostrava `item.rarity` cru, que e a chave do banco: COMMON, RARE,
+ * LEGENDARY. Chave de dados nao e texto de interface — e a unica palavra em
+ * ingles de um app inteiro em portugues fica sublinhada na tela.
+ */
+const RARITY_LABELS: Record<string, string> = {
+    common: 'Comum',
+    uncommon: 'Incomum',
+    rare: 'Raro',
+    epic: 'Épico',
+    legendary: 'Lendário',
+    mythic: 'Mítico',
+};
+
 const RARITY_STYLES: Record<string, string> = {
     common: 'border-white/10 bg-white/5 text-gray-300',
     uncommon: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300',
@@ -131,12 +147,10 @@ export const ItemsStore: React.FC = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Tipos de item</div>
-                                <div className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-300">
-                                    10 a 500
-                                </div>
-                            </div>
+                            {/* "Tipos de item" rotulava uma fileira de chips que ja
+                                se explica, e "10 a 500" anunciava a faixa de preco de
+                                um catalogo inteiro — informacao que nao ajuda a
+                                escolher nada. As duas ocupavam uma linha inteira. */}
                             <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
                                 <button
                                     type="button"
@@ -188,37 +202,39 @@ export const ItemsStore: React.FC = () => {
                                 </div>
 
                                 <div className="absolute bottom-2 left-1 right-1 text-center">
-                                    <span className="text-[9px] font-bold text-white uppercase tracking-wider truncate block w-full drop-shadow-md">{item.name}</span>
+                                    <span className="line-clamp-2 block w-full text-[9px] font-bold uppercase leading-tight tracking-wider text-white drop-shadow-md">{item.name}</span>
                                     <span className="block text-[8px] uppercase tracking-[0.18em] text-gray-500 font-bold mt-0.5">{STORE_CATEGORY_LABELS[item.category]} · T{item.tier}</span>
                                 </div>
 
                                 <div className={`absolute top-1.5 right-1.5 px-1.5 py-1 rounded-full text-[8px] font-bold uppercase tracking-[0.18em] border ${RARITY_STYLES[item.rarity] ?? 'border-white/10 bg-white/5 text-gray-300'}`}>
-                                    {item.rarity}
+                                    {RARITY_LABELS[item.rarity] || item.rarity}
                                 </div>
+
+                                {/* "Ja possui" era um BOTAO desabilitado numa faixa
+                                    propria embaixo do card: uma linha inteira, em todo
+                                    item que voce ja tem, para dizer que nao ha nada a
+                                    fazer. Item que voce tem nao precisa de botao — precisa
+                                    de um selo. O espaco vai para os que voce ainda pode
+                                    comprar. */}
+                                {alreadyOwns && (
+                                    <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-500/20 text-[10px] leading-none text-emerald-200">
+                                        ✓
+                                    </div>
+                                )}
                             </GlassCard>
 
+                            {!alreadyOwns && (
                             <button
                                 onClick={(event) => handleBuy(event, item)}
-                                disabled={!!loading || alreadyOwns || !item.costGold}
-                                className={`h-8 w-full rounded-xl text-[10px] font-black uppercase tracking-[0.18em] inline-flex items-center justify-center gap-1.5 transition-all ${
-                                    alreadyOwns
-                                        ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 cursor-default'
-                                        : 'luxe-skin-button'
-                                } ${
-                                    !alreadyOwns && (!!loading || !item.costGold)
-                                        ? 'opacity-50 cursor-not-allowed'
-                                        : ''
+                                disabled={!!loading || !item.costGold}
+                                className={`h-8 w-full rounded-xl text-[10px] font-black uppercase tracking-[0.18em] inline-flex items-center justify-center gap-1.5 transition-all luxe-skin-button ${
+                                    (!!loading || !item.costGold) ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                             >
-                                {alreadyOwns ? (
-                                    <span>Ja possui</span>
-                                ) : (
-                                    <>
-                                        <span className="text-[11px] leading-none">🪙</span>
-                                        <span>{isBusy ? '...' : item.costGold}</span>
-                                    </>
-                                )}
+                                <span className="text-[11px] leading-none">🪙</span>
+                                <span>{isBusy ? '...' : item.costGold}</span>
                             </button>
+                            )}
                             </div>
                         );
                     })}

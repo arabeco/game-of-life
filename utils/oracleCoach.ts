@@ -171,6 +171,12 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
    * que voce assume uma META. Antes dele da para executar e ajustar o tamanho das
    * arenas — que e onde a meta ja mora, nas repeticoes. Dizer isso tira o ciclo do
    * caminho de quem so quer comecar, sem tirar o ciclo de quem quer se comprometer.
+   *
+   * Sao SEIS por voz, e nao uma, porque esta e a ideia que ele mais vai precisar
+   * repetir: quem esta sem ciclo costuma ficar semanas assim. Dizer a mesma coisa
+   * com as mesmas palavras vira cobranca; dizer a mesma coisa por angulos
+   * diferentes — a meta ja esta nas repeticoes, o prazo e que falta, compromisso
+   * se assume quando da vontade — continua sendo conversa.
    */
   sem_ciclo: {
     neutro: [
@@ -178,24 +184,32 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
       'Vá concluindo e ajustando as repetições das arenas. O ciclo entra quando você quiser meta.',
       'Sem ciclo as ações continuam valendo. {acao} está lá para hoje.',
       'Nenhum ciclo aberto, e nenhuma ação bloqueada por isso.',
+      'A meta já está nas repetições que você definiu. O ciclo só acrescenta prazo.',
+      'Dá para jogar assim por tempo indeterminado. O ciclo é opcional, não o começo.',
     ],
     coach: [
       'Abra um ciclo de sete dias ou menos. Curto é mais fácil de terminar do que longo.',
       'Sem ciclo você ainda executa. Faz {acao} hoje e decide o prazo depois.',
       'Não precisa planejar para começar. Escolhe uma ação da sua arena e fecha ela.',
       'Executa e ajusta as repetições até o tamanho ficar certo. Aí sim um ciclo, com meta.',
+      'Primeiro descobre quanto cabe no seu dia. Depois o ciclo transforma isso em compromisso.',
+      'Mexe nas repetições até parecer possível. O prazo vem quando o tamanho estiver certo.',
     ],
     reflexivo: [
       'Você tem arena, mas não marcou um período. Quanto tempo você quer se dar?',
       'Você já sabe o tamanho que consegue manter, ou ainda está descobrindo? O ciclo pede essa resposta.',
       'Você está esperando o plano ficar pronto, ou dá para começar por {acao}?',
       'A arena já existe. O que ainda falta para executar hoje?',
+      'O que falta para você querer marcar um prazo: clareza do tamanho, ou vontade de se comprometer?',
+      'A meta já existe nas suas repetições. O que o prazo acrescentaria a ela?',
     ],
     calmo: [
       'Não precisa de ciclo hoje. Quando quiser um começo e um fim, ele está ali.',
       'Sem pressa de ciclo. Vá fazendo e ajustando as repetições; a meta pode vir depois.',
       'Sem ciclo também se anda. {acao} cabe hoje, se você quiser.',
       'Fazer vale mais que organizar. O ciclo espera.',
+      'O ciclo é um compromisso, e compromisso se assume quando dá vontade. Até lá, é só fazer.',
+      'Nada aqui expira por não ter ciclo. Ele fica disponível para quando fizer sentido.',
     ],
   },
 

@@ -521,7 +521,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         if (!selectedCampaign) return;
         
         if (!canEditCampaignStructure || (isReadOnlyCodexCampaign && !isPreviewCampaign)) {
-            alert("Campanha recebida fica protegida e nao pode ser remodelada.");
+            showToast('Campanha recebida fica protegida e não pode ser remodelada.', 'info');
             return;
         }
 

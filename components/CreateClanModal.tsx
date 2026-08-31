@@ -13,7 +13,7 @@ import { ClanEmblem } from './ClanEmblem';
 const recruitmentOptions: RecruitmentStatus[] = ['Aberto', 'Privado'];
 
 export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { createClan, userProfile } = useGame();
+    const { createClan, userProfile, showToast } = useGame();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState<string>(CLAN_EMBLEM_OPTIONS[0].value);
@@ -26,7 +26,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
 
     const performSave = async () => {
         if (!name.trim()) {
-            alert('O nome do grupo nao pode estar vazio.');
+            showToast('O nome do grupo não pode ficar vazio.', 'error');
             return;
         }
 
@@ -42,7 +42,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const handleSave = async () => {
         if (isSubmitting) return;
         if (!name.trim()) {
-            alert('O nome do grupo nao pode estar vazio.');
+            showToast('O nome do grupo não pode ficar vazio.', 'error');
             return;
         }
         if (!canAffordClanCreation) {

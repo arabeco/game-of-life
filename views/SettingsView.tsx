@@ -1823,7 +1823,7 @@ const GeralTab: React.FC = () => {
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     const [showMastery, setShowMastery] = useState(false);
 
-    const handleSave = () => { updateUserProfile({ nickname }); alert("Perfil salvo!"); };
+    const handleSave = () => { updateUserProfile({ nickname }); showToast('Perfil salvo.', 'success'); };
 
     const handleLogout = async () => {
         // Clear user-specific local storage
@@ -2254,7 +2254,7 @@ const PreferenciasTab: React.FC = () => {
 };
 
 const LegacyPremiumTab: React.FC = () => {
-    const { userProfile, oraclePreferences } = useGame();
+    const { userProfile, oraclePreferences, showToast } = useGame();
     const [isLinksOpen, setLinksOpen] = useState(false);
     const [isOracleSettingsOpen, setOracleSettingsOpen] = useState(false);
     const [showCampaignsCodex, setShowCampaignsCodex] = useState(false);
@@ -2335,7 +2335,7 @@ const LegacyPremiumTab: React.FC = () => {
                     onClose={() => setOracleSettingsOpen(false)}
                     onOpenChat={() => {
                         if (!isIAEnabled) {
-                            alert("Ative a IA na aba Geral para usar o Chat.");
+                            showToast('Ative a IA na aba Geral para usar o Chat.', 'info');
                             // Re-open settings so they can enable it? 
                             // Or just let them figure it out. 
                             // Since the modal closes on button click, we might want to re-open it here if we really wanted to be helpful, 

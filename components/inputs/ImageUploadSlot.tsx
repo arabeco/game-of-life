@@ -19,7 +19,7 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
     const [imageToCrop, setImageToCrop] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const { userProfile } = useGame();
+    const { userProfile, showToast } = useGame();
     const maxBytes = 2 * 1024 * 1024;
     const bucketName = 'user-images';
     const userFolder = userProfile.id && userProfile.id !== 'placeholder_user' ? userProfile.id : 'guest';
@@ -28,7 +28,7 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
         const file = event.target.files?.[0];
         if (file) {
             if (file.size > maxBytes) {
-                alert('Imagem muito grande. Limite de 2MB.');
+                showToast('Imagem muito grande. O limite é 2 MB.', 'error');
                 return;
             }
             const reader = new FileReader();
@@ -56,7 +56,7 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
             blobToUpload = await response.blob();
             extension = blobToUpload.type.split('/')[1] || 'png';
             if (blobToUpload.size > maxBytes) {
-                alert('Imagem muito grande. Limite de 2MB.');
+                showToast('Imagem muito grande. O limite é 2 MB.', 'error');
                 return dataUrl;
             }
         }
@@ -69,7 +69,7 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
             upsert: true
         });
         if (error) {
-            alert('Falha ao enviar imagem.');
+            showToast('Não foi possível enviar a imagem.', 'error');
             return dataUrl;
         }
         const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
@@ -83,7 +83,7 @@ export const ImageUploadSlot: React.FC<ImageUploadSlotProps> = ({ value, onChang
             onChange({ ...value, imageUrl: uploadedUrl });
             setImageToCrop(null);
         } catch {
-            alert('Falha ao enviar imagem.');
+            showToast('Não foi possível enviar a imagem.', 'error');
         } finally {
             setIsUploading(false);
         }

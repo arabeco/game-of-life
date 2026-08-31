@@ -34,6 +34,7 @@ export const XIcon: React.FC<{ className?: string }> = ({ className }) => (<Icon
 export const CloseIcon = XIcon;
 export const MinusIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><line x1="5" y1="12" x2="19" y2="12"></line></IconWrapper>);
 export const LightbulbIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 1 5 12.25V17a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-2.75A7 7 0 0 1 12 2z" /></IconWrapper>);
+export const FilterIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></IconWrapper>);
 export const ShareIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></IconWrapper>);
 export const EyeIcon: React.FC<{ className?: string }> = ({ className }) => (<IconWrapper className={className}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></IconWrapper>);
 export const FocusIcon: React.FC<{ className?: string }> = ({ className }) => (

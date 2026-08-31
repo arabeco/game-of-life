@@ -1,7 +1,7 @@
 ﻿import React, { useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
-import { CheckIcon, LightbulbIcon } from '../Icons';
+import { CheckIcon, FilterIcon, LightbulbIcon } from '../Icons';
 import { CampaignsCodex } from '../CampaignsCodex';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { buildCodexCampaignPreview, type CodexCampaignPreview } from '../../utils/codexPreview';
@@ -276,25 +276,15 @@ export const CodexStore: React.FC = () => {
     return (
         <>
             <div className="space-y-3 animate-fade-in pb-8">
-                <section className="overflow-hidden border-b border-[var(--skin-accent-color)]/20 px-1 pb-4 pt-1">
-                    <h1 className="text-2xl font-black uppercase tracking-[0.06em] text-white">
-                        Campanhas
-                    </h1>
-                    <button
-                        type="button"
-                        onClick={handleQuizTeaser}
-                        className="luxe-skin-button mt-4 flex min-h-[52px] w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left"
-                    >
-                        <span className="flex min-w-0 items-center gap-3">
-                            <LightbulbIcon className="h-5 w-5 shrink-0" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.12em]">{quizButtonLabel}</span>
-                        </span>
-                        <span className="shrink-0 rounded-full border border-black/15 bg-black/15 px-2 py-1 text-[7px] font-black uppercase tracking-[0.1em]">
-                            {quizStatusLabel}
-                        </span>
-                    </button>
-                </section>
+                {/* O titulo "CAMPANHAS" e a faixa do quiz sairam daqui.
+                    O titulo nomeava a tela com a aba "Campanhas" ja selecionada
+                    logo acima, e o quiz era um botao de largura inteira com rotulo,
+                    icone e selo de status — 52px so para oferecer uma ajuda opcional,
+                    antes de qualquer campanha aparecer. Os dois empurravam o conteudo
+                    para fora da primeira dobra.
 
+                    O quiz virou um botao quadrado na mesma faixa da busca e do filtro:
+                    continua ao alcance, sem cobrar a abertura da tela. */}
                 <GlassCard variant="neutral" className="overflow-hidden border-white/10 p-3">
                     <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -310,11 +300,30 @@ export const CodexStore: React.FC = () => {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setFiltersOpen((current) => !current)}
-                                className={`inline-flex min-h-[42px] shrink-0 items-center justify-center rounded-xl border px-3 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${areFiltersOpen || activeFilterCount > 0 ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)]' : 'border-white/10 bg-white/5 text-white/78 hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white'}`}
-                                aria-expanded={areFiltersOpen}
+                                onClick={handleQuizTeaser}
+                                className="luxe-skin-button relative inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl"
+                                aria-label={quizButtonLabel}
+                                title={quizButtonLabel}
                             >
-                                Filtros{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+                                <LightbulbIcon className="h-5 w-5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFiltersOpen((current) => !current)}
+                                className={`relative inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border transition-all ${areFiltersOpen || activeFilterCount > 0 ? 'border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/10 text-[var(--ui-text-accent)]' : 'border-white/10 bg-white/5 text-white/78 hover:border-[var(--skin-accent-color)]/35 hover:bg-white/10 hover:text-white'}`}
+                                aria-expanded={areFiltersOpen}
+                                aria-label="Filtros"
+                                title="Filtros"
+                            >
+                                <FilterIcon className="h-4 w-4" />
+                                {/* O numero de filtros ativos vira marcador no canto: a
+                                    palavra "Filtros · 2" so cabia porque o botao era
+                                    largo, e era o botao largo o problema. */}
+                                {activeFilterCount > 0 && (
+                                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--skin-accent-color)] px-1 text-[9px] font-black leading-none text-black">
+                                        {activeFilterCount}
+                                    </span>
+                                )}
                             </button>
                         </div>
 

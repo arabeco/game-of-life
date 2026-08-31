@@ -130,6 +130,11 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     })
                                     .join(' ')}
                             />
+                            {/* A LINHA usa a cor da skin — identidade da pessoa, e o que
+                                da continuidade ao tracado. Os PONTOS usam a cor do proprio
+                                estado: as dezessete ja existem no espectro, e um grafico de
+                                humor todo de uma cor so joga fora a unica informacao que ele
+                                tinha de graca. */}
                             {historico.map((ponto, indice) => {
                                 const x = historico.length === 1 ? 50 : (indice / (historico.length - 1)) * 100;
                                 const y = 30 - (Math.max(0, Math.min(100, ponto.value)) / 100) * 28;
@@ -138,8 +143,10 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         key={`${ponto.recordedAt}-${indice}`}
                                         cx={x}
                                         cy={y}
-                                        r="1.6"
-                                        fill="var(--skin-accent-color)"
+                                        r="1.8"
+                                        fill={resolveMood(ponto.value).trackEnd}
+                                        stroke="rgba(0,0,0,0.35)"
+                                        strokeWidth="0.4"
                                         vectorEffect="non-scaling-stroke"
                                     >
                                         <title>{`${resolveMood(ponto.value).label} (${resolveMood(ponto.value).level}) · ${new Date(ponto.recordedAt).toLocaleDateString('pt-BR')}`}</title>

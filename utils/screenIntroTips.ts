@@ -295,9 +295,9 @@ const SCREEN_INTRO_TIP_VARIANTS: Partial<Record<ScreenIntroTipId, (state: Screen
     items: ['escolha uma para hoje. As outras nao vao a lugar nenhum.'],
   }),
   planner: (state) => (state.hasActiveCycle ? null : {
-    title: 'Falta o ciclo.',
-    summary: 'O Planner mostra as acoes de um ciclo aberto. Sem ciclo, ele fica vazio mesmo.',
-    items: ['abra um ciclo curto primeiro. Uma semana ja basta.'],
+    title: 'Ainda sem ciclo.',
+    summary: 'Dá para executar sem ciclo: as ações valem e a experiência entra igual. O ciclo é quando você quer assumir uma meta com prazo.',
+    items: ['vá concluindo e ajustando as repetições. O ciclo pode vir depois.'],
   }),
   reports: (state) => (state.hasClosedCycle ? null : {
     title: 'Ainda nao ha o que comparar.',

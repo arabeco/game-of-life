@@ -166,11 +166,16 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
    *
    * {acao} e a acao prioritaria de hoje, e so existe quando existe: sem ela, as
    * linhas que a citam sao invalidadas sozinhas e sobram as outras.
+   *
+   * E o enquadramento que faltava: o ciclo nao e o comeco do jogo, e o momento em
+   * que voce assume uma META. Antes dele da para executar e ajustar o tamanho das
+   * arenas — que e onde a meta ja mora, nas repeticoes. Dizer isso tira o ciclo do
+   * caminho de quem so quer comecar, sem tirar o ciclo de quem quer se comprometer.
    */
   sem_ciclo: {
     neutro: [
       'Você tem arena e não tem ciclo aberto. O ciclo é o que dá começo e fim ao período.',
-      'Não há ciclo aberto. As ações existem soltas no tempo.',
+      'Vá concluindo e ajustando as repetições das arenas. O ciclo entra quando você quiser meta.',
       'Sem ciclo as ações continuam valendo. {acao} está lá para hoje.',
       'Nenhum ciclo aberto, e nenhuma ação bloqueada por isso.',
     ],
@@ -178,17 +183,17 @@ export const COACH_LINES: Record<string, CoachToneLines> = {
       'Abra um ciclo de sete dias ou menos. Curto é mais fácil de terminar do que longo.',
       'Sem ciclo você ainda executa. Faz {acao} hoje e decide o prazo depois.',
       'Não precisa planejar para começar. Escolhe uma ação da sua arena e fecha ela.',
-      'Abre um ciclo hoje e já coloca as arenas que você quer tocar nesta semana.',
+      'Executa e ajusta as repetições até o tamanho ficar certo. Aí sim um ciclo, com meta.',
     ],
     reflexivo: [
       'Você tem arena, mas não marcou um período. Quanto tempo você quer se dar?',
-      'Sem ciclo, como você vai saber que esse período acabou?',
+      'Você já sabe o tamanho que consegue manter, ou ainda está descobrindo? O ciclo pede essa resposta.',
       'Você está esperando o plano ficar pronto, ou dá para começar por {acao}?',
       'A arena já existe. O que ainda falta para executar hoje?',
     ],
     calmo: [
       'Não precisa de ciclo hoje. Quando quiser um começo e um fim, ele está ali.',
-      'Já tem arena, que era a parte difícil. O ciclo pode ser curto e sem ambição.',
+      'Sem pressa de ciclo. Vá fazendo e ajustando as repetições; a meta pode vir depois.',
       'Sem ciclo também se anda. {acao} cabe hoje, se você quiser.',
       'Fazer vale mais que organizar. O ciclo espera.',
     ],

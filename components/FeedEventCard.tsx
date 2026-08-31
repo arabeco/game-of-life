@@ -193,51 +193,44 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                     Agora o objeto entra como uma FAIXA de uma linha, com o icone
                     pequeno: continua sendo o destaque do cartao, sem ser um cartao
                     dentro do cartao. */}
-                {/* DUAS linhas, e o titulo manda.
-                    Antes eram tres blocos de peso igual — autor, objeto, e uma
-                    faixa so para dois icones — e nenhum deles se destacava. A
-                    noticia do evento e O QUE foi concluido: "Academia" e o que a
-                    pessoa quer ler de relance. Quem fez e o que fez sao contexto, e
-                    contexto cabe numa linha pequena por cima.
-
-                    Os dois icones entram na linha do titulo. Eles ocupavam uma
-                    faixa inteira para usar quarenta pixels dela. */}
-                <div className="relative space-y-1.5 p-3">
+                {/* O feito no centro, o resto na margem.
+                    Alinhado a esquerda, o titulo terminava no meio do cartao e o
+                    que sobrava a direita lia como espaco esquecido. Centralizado,
+                    a mesma largura vira moldura — e num feed de AVANCOS o item
+                    concluido merece ser apresentado como placa, nao como linha de
+                    registro.
+                    Tudo que e secundario — autor, acao, horario e os dois botoes —
+                    desce para uma unica linha miuda por cima. Os icones estavam
+                    quebrando a simetria do centro so para ficarem ao lado do
+                    titulo, e nenhum dos dois e o motivo do cartao existir. */}
+                <div className="relative space-y-1 px-3 py-2.5">
                     <div className="flex items-center gap-2">
                         {authorAvatar ? (
                             <img
                                 src={authorAvatar}
                                 alt={authorName}
-                                className="h-6 w-6 shrink-0 rounded-full border border-white/15 object-cover"
+                                className="h-5 w-5 shrink-0 rounded-full border border-white/15 object-cover"
                             />
                         ) : (
-                            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[9px] font-semibold text-white/80">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[8px] font-semibold text-white/80">
                                 {authorName.slice(0, 2).toUpperCase()}
                             </div>
                         )}
 
-                        <p className="min-w-0 flex-1 truncate text-[11px] leading-tight text-white/45">
-                            <span className="font-semibold text-white/75">{authorName}</span>
+                        <p className="min-w-0 flex-1 truncate text-[10px] leading-tight text-white/40">
+                            <span className="font-semibold text-white/70">{authorName}</span>
                             <span> · {presentation.message}</span>
-                            {authorClanName ? <span className="text-white/30"> · {authorClanName}</span> : null}
                         </p>
 
-                        <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-white/30">
+                        <span className="shrink-0 text-[9px] uppercase tracking-[0.12em] text-white/25">
                             {timeAgo(new Date(event.timestamp))}
                         </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <span className="shrink-0 text-xl leading-none" aria-hidden>{presentation.icon}</span>
-                        <p className={`min-w-0 flex-1 truncate text-[17px] font-black leading-tight ${palette.title}`}>
-                            {presentation.title}
-                        </p>
 
                         <button
-                            className="shrink-0 rounded-full p-1 text-white/25 transition-colors hover:bg-white/5 hover:text-[var(--skin-accent-color)]"
+                            className="shrink-0 rounded-full p-1 text-white/20 transition-colors hover:bg-white/5 hover:text-[var(--skin-accent-color)]"
                             data-html2canvas-ignore
                         >
-                            <CrownIcon className="h-4 w-4" />
+                            <CrownIcon className="h-3.5 w-3.5" />
                         </button>
                         <button
                             onClick={() => {
@@ -249,12 +242,17 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                                     errorMessage: 'Nao foi possivel preparar a conquista para compartilhar.',
                                 });
                             }}
-                            className="shrink-0 rounded-full p-1 text-white/25 transition-colors hover:bg-white/5 hover:text-white"
+                            className="shrink-0 rounded-full p-1 text-white/20 transition-colors hover:bg-white/5 hover:text-white"
                             data-html2canvas-ignore
                         >
-                            <ShareIcon className="h-4 w-4" />
+                            <ShareIcon className="h-3.5 w-3.5" />
                         </button>
                     </div>
+
+                    <p className={`flex items-center justify-center gap-2 pb-0.5 text-center text-[17px] font-black leading-tight ${palette.title}`}>
+                        <span className="shrink-0 text-xl leading-none" aria-hidden>{presentation.icon}</span>
+                        <span className="truncate">{presentation.title}</span>
+                    </p>
                 </div>
             </div>
         </GlassCard>

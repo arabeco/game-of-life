@@ -184,45 +184,52 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
         >
             <div className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_45%)]" />
-                <div className="relative space-y-4 p-4">
-                    <div className="flex items-start gap-3">
+                {/* Eram TRES blocos empilhados com respiro de 4, e o do meio repetia a
+                    estrutura do de cima: outro icone de 44px so para carregar um
+                    titulo. Autor-e-acao numa linha e o objeto em outra, cada uma com
+                    seu proprio icone grande, davam quase 200px por evento — quatro
+                    eventos nao cabiam numa tela.
+
+                    Agora o objeto entra como uma FAIXA de uma linha, com o icone
+                    pequeno: continua sendo o destaque do cartao, sem ser um cartao
+                    dentro do cartao. */}
+                <div className="relative space-y-2.5 p-3">
+                    <div className="flex items-start gap-2.5">
                         {authorAvatar ? (
                             <img
                                 src={authorAvatar}
                                 alt={authorName}
-                                className="h-11 w-11 rounded-2xl border border-white/15 object-cover shadow-[0_10px_30px_rgba(0,0,0,0.22)]"
+                                className="h-9 w-9 rounded-xl border border-white/15 object-cover shadow-[0_10px_30px_rgba(0,0,0,0.22)]"
                             />
                         ) : (
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold text-white/80">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-white/80">
                                 {authorName.slice(0, 2).toUpperCase()}
                             </div>
                         )}
 
                         <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-sm font-semibold text-white">{authorName}</p>
-                                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${palette.badge}`}>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <p className="text-[13px] font-semibold text-white">{authorName}</p>
+                                <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] ${palette.badge}`}>
                                     {presentation.badge}
                                 </span>
-                                <span className="ml-auto text-[11px] uppercase tracking-[0.18em] text-white/35">
+                                <span className="ml-auto text-[10px] uppercase tracking-[0.14em] text-white/35">
                                     {timeAgo(new Date(event.timestamp))}
                                 </span>
                             </div>
 
-                            <p className="mt-1 text-sm text-white/60">
+                            <p className="mt-0.5 text-[12px] leading-snug text-white/60">
                                 {presentation.message}
                                 {authorClanName ? <span className="text-white/35"> · {authorClanName}</span> : null}
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-start gap-3 rounded-[20px] border border-white/8 bg-black/15 p-3">
-                        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border ${palette.iconWrap}`}>
+                    <div className="flex items-center gap-2 rounded-2xl border border-white/8 bg-black/15 px-2.5 py-2">
+                        <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border text-sm ${palette.iconWrap}`}>
                             {presentation.icon}
                         </div>
-                        <div className="min-w-0 flex-1">
-                            <p className={`text-base font-semibold leading-tight ${palette.title}`}>{presentation.title}</p>
-                        </div>
+                        <p className={`min-w-0 flex-1 truncate text-[14px] font-semibold leading-tight ${palette.title}`}>{presentation.title}</p>
                     </div>
 
                     <div className="flex items-center justify-end gap-3 border-t border-white/8 pt-1">

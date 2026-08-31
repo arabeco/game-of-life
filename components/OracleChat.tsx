@@ -929,11 +929,26 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   return (
     <Portal>
         <>
-        <div className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6 pointer-events-none">
-            {/* Backdrop for mobile mostly, but let's keep it clickable through except the chat */}
-            <div className="absolute inset-0 bg-transparent" onClick={onClose} />
-            
-            <div className="pointer-events-auto w-full max-w-sm mt-16 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] max-h-[80vh] animate-in slide-in-from-top-5 fade-in duration-300">
+        <div
+            className="fixed inset-0 z-50 flex items-start justify-center px-3 pointer-events-none"
+            style={{
+                // Alturas reais do aparelho, nao do documento. `vh` no Android ignora
+                // a barra de status e a de navegacao, entao o painel nascia mais alto
+                // que a area visivel e o topo dele ficava fora da tela.
+                paddingTop: 'calc(var(--safe-area-top, 0px) + 4.5rem)',
+                paddingBottom: 'calc(var(--safe-area-bottom, 0px) + 0.75rem)',
+            }}
+        >
+            {/* pointer-events-auto no FUNDO tambem.
+                O pai e pointer-events-none e so o painel reativava os eventos — entao
+                este `onClick={onClose}` nunca podia disparar: o toque fora atravessava
+                o fundo inteiro sem encontrar nada. Com o chat alto, o X do topo saia
+                da area visivel e nao sobrava jeito nenhum de fechar. */}
+            <div className="pointer-events-auto absolute inset-0 bg-black/20" onClick={onClose} />
+
+            {/* Centralizado. Com justify-end ele encostava na borda direita e parecia
+                empurrado para fora, sobrando margem so de um lado. */}
+            <div className="pointer-events-auto relative flex h-full max-h-[38rem] w-full max-w-sm flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/90 shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-5 fade-in duration-300">
                 {content}
             </div>
         </div>

@@ -73,18 +73,11 @@ export const HallOfFameView: React.FC = () => {
 
     return (
         <div className="space-y-4">
-            <div className="rounded-[26px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
-                <div className="flex items-end justify-between gap-3">
-                    <div>
-                        <h2 className="text-xl font-semibold text-white">Sinais do reino</h2>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/15 px-3 py-2 text-right">
-                        <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">Eventos</p>
-                        <p className="text-lg font-semibold text-white">{filteredFeed.length}</p>
-                    </div>
-                </div>
-            </div>
-
+            {/* O cabecalho inteiro saiu.
+                "Sinais do reino" nomeava a tela — que ja e a aba selecionada — e o
+                bloco "EVENTOS 14" contava quantos cartoes estao logo abaixo, um
+                numero que a propria lista mostra. Juntos ocupavam a primeira dobra
+                da tela sem entregar nada: o conteudo comecava so depois deles. */}
             <div className="flex items-center justify-center rounded-2xl bg-black/20 p-1">
                 {(['Reino', 'Grupo', 'Aliados'] as FeedFilter[]).map((entry) => (
                     <button

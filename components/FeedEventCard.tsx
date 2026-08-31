@@ -193,76 +193,67 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                     Agora o objeto entra como uma FAIXA de uma linha, com o icone
                     pequeno: continua sendo o destaque do cartao, sem ser um cartao
                     dentro do cartao. */}
-                <div className="relative space-y-2 p-3">
-                    <div className="flex items-start gap-2.5">
+                {/* DUAS linhas, e o titulo manda.
+                    Antes eram tres blocos de peso igual — autor, objeto, e uma
+                    faixa so para dois icones — e nenhum deles se destacava. A
+                    noticia do evento e O QUE foi concluido: "Academia" e o que a
+                    pessoa quer ler de relance. Quem fez e o que fez sao contexto, e
+                    contexto cabe numa linha pequena por cima.
+
+                    Os dois icones entram na linha do titulo. Eles ocupavam uma
+                    faixa inteira para usar quarenta pixels dela. */}
+                <div className="relative space-y-1.5 p-3">
+                    <div className="flex items-center gap-2">
                         {authorAvatar ? (
                             <img
                                 src={authorAvatar}
                                 alt={authorName}
-                                className="h-9 w-9 rounded-xl border border-white/15 object-cover shadow-[0_10px_30px_rgba(0,0,0,0.22)]"
+                                className="h-6 w-6 shrink-0 rounded-full border border-white/15 object-cover"
                             />
                         ) : (
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-white/80">
+                            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[9px] font-semibold text-white/80">
                                 {authorName.slice(0, 2).toUpperCase()}
                             </div>
                         )}
 
-                        <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                <p className="text-[13px] font-semibold text-white">{authorName}</p>
-                                <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] ${palette.badge}`}>
-                                    {presentation.badge}
-                                </span>
-                                <span className="ml-auto text-[10px] uppercase tracking-[0.14em] text-white/35">
-                                    {timeAgo(new Date(event.timestamp))}
-                                </span>
-                            </div>
+                        <p className="min-w-0 flex-1 truncate text-[11px] leading-tight text-white/45">
+                            <span className="font-semibold text-white/75">{authorName}</span>
+                            <span> · {presentation.message}</span>
+                            {authorClanName ? <span className="text-white/30"> · {authorClanName}</span> : null}
+                        </p>
 
-                            <p className="mt-0.5 text-[12px] leading-snug text-white/60">
-                                {presentation.message}
-                                {authorClanName ? <span className="text-white/35"> · {authorClanName}</span> : null}
-                            </p>
-                        </div>
+                        <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-white/30">
+                            {timeAgo(new Date(event.timestamp))}
+                        </span>
                     </div>
 
-                    {/* A faixa do objeto ainda era um cartao dentro do cartao: borda,
-                        fundo, cantos e respiro proprios para carregar UMA linha de
-                        texto ao lado de um icone, com o titulo perdido a esquerda de
-                        um vazio enorme.
-                        Vira uma linha de texto grande, alinhada com o resto do
-                        cartao: o titulo E a informacao do evento, entao ele lidera
-                        em vez de morar numa caixa. */}
-                    <p className={`flex items-center gap-2 text-[15px] font-bold leading-tight ${palette.title}`}>
-                        <span className="shrink-0 text-base leading-none" aria-hidden>{presentation.icon}</span>
-                        <span className="min-w-0 flex-1 truncate">{presentation.title}</span>
-                    </p>
+                    <div className="flex items-center gap-2">
+                        <span className="shrink-0 text-xl leading-none" aria-hidden>{presentation.icon}</span>
+                        <p className={`min-w-0 flex-1 truncate text-[17px] font-black leading-tight ${palette.title}`}>
+                            {presentation.title}
+                        </p>
 
-                    {/* Sem borda e sem folga: dois icones nao precisam de uma faixa
-                        separada por linha divisoria para existir. */}
-                    <div className="flex items-center justify-end gap-1">
-                        <div className="flex items-center gap-1">
-                            <button
-                                className="rounded-full p-1.5 text-white/30 transition-colors hover:bg-white/5 hover:text-[var(--skin-accent-color)]"
-                                data-html2canvas-ignore
-                            >
-                                <CrownIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                                onClick={() => {
-                                    void shareElementWithFeedback(showToast, `feed-event-${event.id}`, {
-                                        title: `Conquista de ${authorName} - Life OS`,
-                                        preparingMessage: 'Preparando compartilhamento da conquista...',
-                                        sharedMessage: 'Conquista compartilhada.',
-                                        cancelledMessage: 'Compartilhamento cancelado.',
-                                        errorMessage: 'Nao foi possivel preparar a conquista para compartilhar.',
-                                    });
-                                }}
-                                className="rounded-full p-2 text-white/35 transition-colors hover:bg-white/5 hover:text-white"
-                                data-html2canvas-ignore
-                            >
-                                <ShareIcon className="h-4 w-4" />
-                            </button>
-                        </div>
+                        <button
+                            className="shrink-0 rounded-full p-1 text-white/25 transition-colors hover:bg-white/5 hover:text-[var(--skin-accent-color)]"
+                            data-html2canvas-ignore
+                        >
+                            <CrownIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                            onClick={() => {
+                                void shareElementWithFeedback(showToast, `feed-event-${event.id}`, {
+                                    title: `Conquista de ${authorName} - Life OS`,
+                                    preparingMessage: 'Preparando compartilhamento da conquista...',
+                                    sharedMessage: 'Conquista compartilhada.',
+                                    cancelledMessage: 'Compartilhamento cancelado.',
+                                    errorMessage: 'Nao foi possivel preparar a conquista para compartilhar.',
+                                });
+                            }}
+                            className="shrink-0 rounded-full p-1 text-white/25 transition-colors hover:bg-white/5 hover:text-white"
+                            data-html2canvas-ignore
+                        >
+                            <ShareIcon className="h-4 w-4" />
+                        </button>
                     </div>
                 </div>
             </div>

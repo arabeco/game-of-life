@@ -93,6 +93,13 @@ const suites = {
       interactions: ['os resgates passam pelo mesmo ritual', 'subida de patente entra em todos', 'missao de item paga XP por reward_exp'],
     },
     {
+      id: 'exp-ledger',
+      label: 'Exp ledger regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'exp-ledger.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['o dia deposita e o fecho paga', 'abrir ciclo fecha a rodada', 'o fecho do ciclo nao recalcula a base ja paga'],
+    },
+    {
       id: 'oracle-reaction',
       label: 'Oracle reaction regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'oracle-reaction.regression.mjs')]],

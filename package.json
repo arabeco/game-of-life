@@ -14,6 +14,7 @@
     "test:arena-pacts": "node tests/arena-pacts.regression.mjs",
     "test:xp-scale": "node tests/xp-scale.regression.mjs",
     "test:mission-reward": "node tests/mission-reward-unification.regression.mjs",
+    "test:exp-ledger": "node tests/exp-ledger.regression.mjs",
     "test:oracle-reaction": "node tests/oracle-reaction.regression.mjs",
     "test:sensory-grammar": "node tests/sensory-grammar.regression.mjs",
     "test:oracle-arbiter": "node tests/oracle-arbiter.regression.mjs",

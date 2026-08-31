@@ -1080,6 +1080,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const [judgedTaskIdsByDate, setJudgedTaskIdsByDate] = useState<Record<string, string[]>>({});
 
     const [cycleExpBonus, setCycleExpBonus] = useState<number>(0);
+    /**
+     * O acumulado da RODADA — o mesmo papel que cycleExpBonus faz para o ciclo.
+     *
+     * Rodada e ciclo sao o mesmo recipiente: o julgamento do dia deposita, e o
+     * fecho paga. A diferenca e so que o ciclo tambem gera relatorio e legado.
+     * Antes, sem ciclo, a experiencia caia direto no perfil no fecho do dia — o
+     * que a tornava irreversivel na hora e, por tabela, tirava de quem joga sem
+     * ciclo a janela de editar um dia julgado.
+     */
+    const [roundExpBonus, setRoundExpBonus] = useState<number>(0);
     const [cycleProgress, setCycleProgress] = useState<number>(0);
 
     const [oraclePreferences, setOraclePreferences] = useState<OraclePreferences | null>(null);
@@ -4667,6 +4677,46 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         );
     }, [activeCycle, actions, getSupabaseUserId, isClanQuestActionId, refreshOpenCycleDerivedState, resolveOperationalScoredTaskIds, showToast, summarizeOperationalDayCommitment, tasks]);
 
+    /**
+     * Re-hidrata o acumulado da rodada a partir do banco.
+     *
+     * Espelha o que refreshOpenCycleDerivedState faz para o ciclo, e pelo mesmo
+     * motivo: sem isto, um reload zeraria o acumulado e a experiencia da rodada
+     * sumiria. A verdade mora em daily_commitments.exp_deposited, e o estado
+     * local e so um cache dela.
+     *
+     * A rodada comeca no ultimo "concluir rodada" — ou no inicio de tudo, se
+     * nunca houve um.
+     */
+    const refreshRoundExpBonus = useCallback(async () => {
+        const userId = getSupabaseUserId();
+        if (!userId || activeCycle) {
+            setRoundExpBonus(0);
+            return;
+        }
+
+        const resetAt = getFreeProgressResetAt(userProfile);
+        const desde = resetAt ? resetAt.slice(0, 10) : '1970-01-01';
+
+        const { data, error } = await supabase
+            .from('daily_commitments')
+            .select('exp_deposited')
+            .eq('user_id', userId)
+            .eq('stage', 'judgment')
+            .gte('date', desde);
+
+        if (error) {
+            console.error('Failed to read round exp:', error.message);
+            return;
+        }
+
+        setRoundExpBonus((data || []).reduce((soma, linha) => soma + Number(linha.exp_deposited || 0), 0));
+    }, [activeCycle, getSupabaseUserId, userProfile.completedSeasonMissions]);
+
+    useEffect(() => {
+        void refreshRoundExpBonus();
+    }, [refreshRoundExpBonus]);
+
     const reconcileJudgedDayTaskMutation = useCallback(async ({
         operationalDate,
         previousTasks,
@@ -4678,8 +4728,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }) => {
         const userId = getSupabaseUserId();
 
-        if (!userId || !activeCycle || !operationalDate) return;
-        if (operationalDate < activeCycle.startDate || operationalDate > activeCycle.endDate) return;
+        // A guarda de ciclo saiu daqui.
+        //
+        // Ela fazia com que editar um dia ja julgado so reconciliasse para quem
+        // tinha ciclo. Agora que a rodada tambem acumula a partir de
+        // exp_deposited, uma edicao sem ciclo que nao atualizasse o registro
+        // faria a rodada pagar um valor velho no fecho.
+        if (!userId || !operationalDate) return;
+        if (activeCycle && (operationalDate < activeCycle.startDate || operationalDate > activeCycle.endDate)) return;
 
         const { data: commitmentRowRaw, error: commitmentError } = await supabase
             .from('daily_commitments')
@@ -4758,6 +4814,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (updateCommitmentError) throw updateCommitmentError;
 
+        // Sem ciclo nao ha sitrep: o relatorio diario pertence a um ciclo, e a
+        // rodada nao gera relatorio nenhum — so acumula.
+        if (!activeCycle) {
+            await refreshRoundExpBonus();
+            return;
+        }
+
         const sitrepPayload = {
             date: operationalDate,
             score: nextSummary.score,
@@ -4830,7 +4893,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 : `Dia ${formattedDate} recalculado no ciclo.`,
             'success'
         );
-    }, [actions, activeCycle, dailyCommitment.date, dailyCommitment.stage, getSupabaseUserId, refreshOpenCycleDerivedState, resolveOperationalScoredTaskIds, showToast, userProfile]);
+    }, [actions, activeCycle, dailyCommitment.date, dailyCommitment.stage, getSupabaseUserId, refreshOpenCycleDerivedState, refreshRoundExpBonus, resolveOperationalScoredTaskIds, showToast, userProfile]);
 
     // --- Supabase Data Sync ---
     useEffect(() => {
@@ -7840,12 +7903,21 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             closeDate <= activeCycle.endDate
         );
 
-        if (shouldDepositIntoCycle && expDeposited > 0) {
-            setCycleExpBonus(prev => prev + expDeposited);
-            if (!options.silent) showToast(`${expDeposited} EXP foi adicionada ao seu ciclo.`);
-        } else if (expDeposited > 0) {
-            updateUserProfile({ nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + expDeposited } });
-            if (!options.silent) showToast(`+${expDeposited} EXP`, 'success');
+        // O dia DEPOSITA; quem PAGA e o fecho — da rodada ou do ciclo.
+        //
+        // Antes, sem ciclo, esta linha creditava direto em nobility.exp. Isso
+        // tornava a experiencia irreversivel no mesmo instante e, como credito nao
+        // volta (voltar rebaixaria patente), tirava de quem joga sem ciclo o
+        // direito de corrigir um dia ja julgado — direito que quem tem ciclo
+        // sempre teve, justamente porque nada tinha sido pago ainda.
+        if (expDeposited > 0) {
+            if (shouldDepositIntoCycle) {
+                setCycleExpBonus(prev => prev + expDeposited);
+                if (!options.silent) showToast(`${expDeposited} EXP entrou no seu ciclo.`);
+            } else {
+                setRoundExpBonus(prev => prev + expDeposited);
+                if (!options.silent) showToast(`${expDeposited} EXP entrou na sua rodada.`);
+            }
         }
 
         const supabaseUserId = getSupabaseUserId();
@@ -9088,9 +9160,37 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         [userProfile.completedSeasonMissions]
     );
 
-    const resetFreeProgress = () => {
-        setFreeProgressResetMarker(new Date().toISOString(), true);
+    /**
+     * Conclui a rodada: PAGA o acumulado e libera as arenas.
+     *
+     * E o fecho da rodada que credita, do mesmo jeito que o fecho do ciclo. O
+     * credito e definitivo — nao volta, porque devolver rebaixaria patente —, e e
+     * por isso que ele so acontece aqui, depois de a pessoa ter tido todo o
+     * periodo para corrigir os dias.
+     */
+    const concludeFreeRound = (motivo: 'manual' | 'ciclo' = 'manual') => {
+        const aPagar = Math.max(0, Math.round(roundExpBonus));
+        if (aPagar > 0) {
+            updateUserProfile({
+                nobility: { ...userProfile.nobility, exp: userProfile.nobility.exp + aPagar },
+            });
+        }
+        setRoundExpBonus(0);
+        setFreeProgressResetMarker(new Date().toISOString(), false);
+
+        if (motivo === 'manual') {
+            showToast(
+                aPagar > 0
+                    ? `Rodada concluída. +${aPagar} EXP, e as arenas estão livres de novo.`
+                    : 'Rodada concluída. As arenas estão livres de novo.',
+                'success',
+            );
+        } else if (aPagar > 0) {
+            showToast(`Rodada anterior fechada: +${aPagar} EXP.`, 'success');
+        }
     };
+
+    const resetFreeProgress = () => concludeFreeRound('manual');
 
     const continueFreeProgressFrom = (resetAt: string) => {
         setFreeProgressResetMarker(resetAt, false);
@@ -9253,6 +9353,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             showToast('Voce ja tem um ciclo ativo ou agendado. Encerre ou remova o atual antes de criar outro.', 'error');
             return;
         }
+        // Abrir ciclo FECHA a rodada, e paga o que ela acumulou.
+        //
+        // A alternativa seria absorver o acumulado para dentro do ciclo, mas ai a
+        // experiencia de antes entraria num relatorio que nao mediu aqueles dias —
+        // o ciclo diria ter produzido o que aconteceu fora dele.
+        concludeFreeRound('ciclo');
+
         const trimmedName = name.trim();
         const normalizedStartDate = (startDate || today).trim();
         const normalizedEndDate = endDate.trim();
@@ -9524,7 +9631,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return sum + getTaskBaseExp(task, action);
         }, 0);
         const premiumBonusExp = Math.round(cycleBaseExp * getCycleXpBonusRate(userProfile));
-        const rawExp = cycleExpBonus + cycleBaseExp + premiumBonusExp;
+        // cycleBaseExp NAO entra na conta: ele recalcula a base das mesmas tarefas
+        // que ja estao somadas em cycleExpBonus, vindas de daily_commitments. Somar
+        // os dois pagava a mesma base duas vezes — e o bonus premium junto, porque
+        // ele incide sobre a base recalculada. Fechar um ciclo pagava perto do
+        // dobro do que foi ganho.
+        //
+        // O que sobra aqui e o que e do CICLO: o acumulado dos dias, mais o bonus
+        // premium que so quem fecha ciclo recebe.
+        const rawExp = cycleExpBonus + premiumBonusExp;
         const expBoostBonus = 0;
         const expGained = rawExp;
 

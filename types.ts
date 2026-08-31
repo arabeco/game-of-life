@@ -1604,12 +1604,17 @@ export type NotificationType =
   | 'title_unlocked'
   | 'oracle_prompt'
   | 'codex_gift'
+  | 'item_gift'
   | 'partnership_invite'
   | 'arena_access'
   | 'competition_result'
   | 'action_reminder'
   | 'system';
 export interface NotificationMetadata {
+  /** Presente de item: quem mandou e o que veio. */
+  itemId?: string;
+  instanceId?: string;
+  senderName?: string;
   shareId?: string;
   codexId?: string;
   codexName?: string;

@@ -158,6 +158,16 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'C',
     label: 'Campanha',
   },
+  // Presente de item, no mesmo lugar do presente de campanha: alguem escolheu te
+  // dar uma coisa, e isso nunca e ruido.
+  item_gift: {
+    lane: 'essential',
+    priority: 'actionable',
+    badge: true,
+    gameVisible: true,
+    icon: 'P',
+    label: 'Presente',
+  },
   partnership_invite: {
     lane: 'essential',
     priority: 'critical',

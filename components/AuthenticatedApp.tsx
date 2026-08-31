@@ -1447,7 +1447,16 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         isProfileLoaded,
         showToast,
         oraclePreferences,
+        notifications,
+        markNotificationRead,
     } = useGame();
+    /** O presente mais antigo ainda nao aberto — um de cada vez, na ordem em que chegaram. */
+    const presenteRecebido = useMemo(
+        () => notifications
+            .filter((item) => item.type === 'item_gift' && !item.read)
+            .sort((esquerda, direita) => esquerda.createdAt.localeCompare(direita.createdAt))[0] || null,
+        [notifications],
+    );
     const { isTutorialCompleted } = useTutorial();
     const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ?true : navigator.onLine);
     const { trigger } = useSensoryFeedback();
@@ -2078,6 +2087,30 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         open={shouldShowVanguardWelcome}
                         payload={userProfile.vanguardWelcomePayload}
                         onClose={handleCloseVanguardWelcome}
+                    />
+                )}
+                {/* O presente recebido usa o MESMO modal de recompensa do resto do
+                    app. Um item chegando de outra pessoa merece a mesma cerimonia
+                    que um item vindo de bau — e reaproveitar o modal e o que
+                    garante que ele va se parecer com os outros daqui a um ano.
+
+                    Marcar como lida ao fechar e o que impede o modal de voltar a
+                    cada abertura do app: a notificacao E o estado. */}
+                {presenteRecebido && (
+                    <RewardPackModal
+                        open
+                        payload={{
+                            itemIds: presenteRecebido.metadata?.itemId ? [presenteRecebido.metadata.itemId] : [],
+                            eyebrow: 'Presente',
+                            title: presenteRecebido.metadata?.senderName
+                                ? `${presenteRecebido.metadata.senderName} doou um item`
+                                : 'Você recebeu um item',
+                            summary: 'Ele já está no seu arsenal.',
+                            buttonLabel: 'Guardar',
+                            itemSectionTitle: 'O que chegou',
+                            emptyMessage: 'O item foi entregue no seu arsenal.',
+                        }}
+                        onClose={() => { void markNotificationRead(presenteRecebido.id); }}
                     />
                 )}
                 {shouldShowPremiumReward && (

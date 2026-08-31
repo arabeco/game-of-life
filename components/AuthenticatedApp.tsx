@@ -791,12 +791,25 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         return () => window.clearTimeout(timer);
     }, [currentView, pendingSitrepDate, pendingSitrepOpen]);
 
-    // Uma fala de abertura por vinda ao app. Volta a valer quando o app retorna do
-    // segundo plano, que e o que "abrir de novo" quer dizer num celular.
+    /**
+     * Uma fala de abertura por VINDA ao app — e vinda tem intervalo minimo.
+     *
+     * A trava zerava em todo `visibilitychange`, entao bloquear e desbloquear o
+     * celular contava como abrir o app de novo. Trocar de aba por dez segundos,
+     * atender uma mensagem, olhar a hora: cada uma dessas rendia uma fala nova, e
+     * o Oraculo virava alguem que cumprimenta toda vez que voce levanta a cabeca.
+     *
+     * Meia hora e o corte. Voltar em menos que isso e a MESMA vinda, continuada —
+     * ninguem some por vinte minutos e volta querendo ser recebido de novo.
+     */
+    const RETORNO_MINIMO_MS = 30 * 60 * 1000;
     const openingSpokenThisSessionRef = useRef(false);
+    const lastOpeningSpeechAtRef = useRef(0);
     useEffect(() => {
         const onVisible = () => {
-            if (document.visibilityState === 'visible') openingSpokenThisSessionRef.current = false;
+            if (document.visibilityState !== 'visible') return;
+            if (Date.now() - lastOpeningSpeechAtRef.current < RETORNO_MINIMO_MS) return;
+            openingSpokenThisSessionRef.current = false;
         };
         document.addEventListener('visibilitychange', onVisible);
         return () => document.removeEventListener('visibilitychange', onVisible);
@@ -907,6 +920,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         // decisao e precisa ser explicavel igual. "Por que ele nao falou nada?" e
         // uma pergunta tao comum quanto "por que ele falou isso?".
         recordOracleDecision(decisao);
+        lastOpeningSpeechAtRef.current = Date.now();
 
         const speech = decisao.chosen;
         if (!speech) return;

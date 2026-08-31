@@ -193,7 +193,7 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                     Agora o objeto entra como uma FAIXA de uma linha, com o icone
                     pequeno: continua sendo o destaque do cartao, sem ser um cartao
                     dentro do cartao. */}
-                <div className="relative space-y-2.5 p-3">
+                <div className="relative space-y-2 p-3">
                     <div className="flex items-start gap-2.5">
                         {authorAvatar ? (
                             <img
@@ -225,17 +225,24 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 rounded-2xl border border-white/8 bg-black/15 px-2.5 py-2">
-                        <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border text-sm ${palette.iconWrap}`}>
-                            {presentation.icon}
-                        </div>
-                        <p className={`min-w-0 flex-1 truncate text-[14px] font-semibold leading-tight ${palette.title}`}>{presentation.title}</p>
-                    </div>
+                    {/* A faixa do objeto ainda era um cartao dentro do cartao: borda,
+                        fundo, cantos e respiro proprios para carregar UMA linha de
+                        texto ao lado de um icone, com o titulo perdido a esquerda de
+                        um vazio enorme.
+                        Vira uma linha de texto grande, alinhada com o resto do
+                        cartao: o titulo E a informacao do evento, entao ele lidera
+                        em vez de morar numa caixa. */}
+                    <p className={`flex items-center gap-2 text-[15px] font-bold leading-tight ${palette.title}`}>
+                        <span className="shrink-0 text-base leading-none" aria-hidden>{presentation.icon}</span>
+                        <span className="min-w-0 flex-1 truncate">{presentation.title}</span>
+                    </p>
 
-                    <div className="flex items-center justify-end gap-3 border-t border-white/8 pt-1">
+                    {/* Sem borda e sem folga: dois icones nao precisam de uma faixa
+                        separada por linha divisoria para existir. */}
+                    <div className="flex items-center justify-end gap-1">
                         <div className="flex items-center gap-1">
                             <button
-                                className="rounded-full p-2 text-white/35 transition-colors hover:bg-white/5 hover:text-[var(--skin-accent-color)]"
+                                className="rounded-full p-1.5 text-white/30 transition-colors hover:bg-white/5 hover:text-[var(--skin-accent-color)]"
                                 data-html2canvas-ignore
                             >
                                 <CrownIcon className="h-4 w-4" />

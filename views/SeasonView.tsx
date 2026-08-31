@@ -79,11 +79,11 @@ const MissionSection: React.FC<{
 type SeasonQuestFamily = 'temporada' | 'iniciante' | 'individual' | 'grupo';
 
 /** Faixa de cor por familia: da para saber de onde a missao vem sem ler o rotulo. */
-const QUEST_FAMILY_TINT: Record<SeasonQuestFamily, string> = {
-    temporada: 'linear-gradient(100deg, var(--skin-accent-color) 0%, transparent 62%)',
-    iniciante: 'linear-gradient(100deg, rgba(203,213,225,0.85) 0%, transparent 62%)',
-    individual: 'linear-gradient(100deg, rgba(234,179,8,0.85) 0%, transparent 62%)',
-    grupo: 'linear-gradient(100deg, rgba(56,189,248,0.85) 0%, transparent 62%)',
+const QUEST_FAMILY_COLOR: Record<SeasonQuestFamily, string> = {
+    temporada: 'var(--skin-accent-color)',
+    iniciante: 'rgb(203,213,225)',
+    individual: 'rgb(234,179,8)',
+    grupo: 'rgb(56,189,248)',
 };
 
 const SeasonQuestCard: React.FC<{
@@ -113,12 +113,20 @@ const SeasonQuestCard: React.FC<{
                 : 'border-[var(--ui-core-surface-border)] bg-[var(--ui-core-surface-bg)] hover:border-[var(--ui-border-accent-soft)]'}`}
             onClick={onClick}
         >
-            {/* A faixa de familia vive na borda esquerda, fina: identifica sem
-                competir com o texto por cima dela. */}
+            {/* A familia colore o cartao inteiro, de leve, e marca a borda esquerda.
+                A primeira versao era uma mancha de 16px a 18% num canto — pequena
+                demais para identificar e sem relacao com a forma do cartao. Um
+                gradiente que atravessa da o tom sem disputar com o texto, e a barra
+                cheia na borda e o que se ve de relance numa lista. */}
             <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 left-0 w-16 opacity-[0.18]"
-                style={{ background: QUEST_FAMILY_TINT[family] }}
+                className="pointer-events-none absolute inset-0 opacity-[0.13]"
+                style={{ background: `linear-gradient(105deg, ${QUEST_FAMILY_COLOR[family]} 0%, transparent 78%)` }}
+            />
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl"
+                style={{ background: QUEST_FAMILY_COLOR[family], opacity: 0.75 }}
             />
             {artUrl && (
                 <>
@@ -144,11 +152,13 @@ const SeasonQuestCard: React.FC<{
                 </div>
 
                 <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-[13px] font-bold leading-tight text-[var(--ui-card-text)]" title={title}>{title}</h3>
+                    {/* Maior e centralizado: o titulo e a unica coisa que diz QUAL
+                        missao e esta, e ele estava do tamanho da legenda ao lado. */}
+                    <h3 className="truncate text-center text-[14px] font-bold leading-tight text-[var(--ui-card-text)]" title={title}>{title}</h3>
 
                     {/* Estado em texto, com um ponto. Sem fundo e sem caixa alta de
                         botao: nada aqui pode parecer clicavel alem do "Ver". */}
-                    <div className="mt-1 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.06em]">
+                    <div className="mt-1 flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.06em]">
                         <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isCompleted ? 'bg-green-400' : isAccepted ? 'bg-[var(--skin-accent-color)]' : 'bg-white/25'}`} />
                         <span className={`shrink-0 ${corDoEstado}`}>{estado}</span>
                         <span className="truncate text-[var(--ui-core-caption-color)]">· {metaLabel}</span>

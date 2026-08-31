@@ -63,7 +63,7 @@ export const CampaignArenaStack: React.FC<CampaignArenaStackProps> = ({ arenas, 
                             className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-white/10 bg-black/30 px-1 py-1"
                         >
                             <span className="text-base leading-none" aria-hidden>{arena.icon || '◇'}</span>
-                            <span className="w-full truncate text-center text-[8px] font-black uppercase leading-tight tracking-[0.04em] text-white/85">
+                            <span className="w-full truncate px-0.5 text-center text-[8px] font-black uppercase leading-tight tracking-[0.04em] text-white/85">
                                 {arena.name}
                             </span>
                             {actionCount > 0 && (

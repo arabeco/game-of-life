@@ -1,6 +1,6 @@
 # Smoke test manual do Glyph
 
-Este e o roteiro curto para validar uma versao antes do teste fechado ou da producao. Em cada item, execute todos os passos descritos e marque somente quando o resultado observado for igual ao esperado. Registre aparelho, versao, conta e captura ao encontrar uma falha.
+Este e o roteiro curto para validar uma versao antes do teste fechado ou da producao. O que mudou ou nasceu na 1.0.81 esta em [CHECKLIST-NOVIDADES.md](CHECKLIST-NOVIDADES.md). Em cada item, execute todos os passos descritos e marque somente quando o resultado observado for igual ao esperado. Registre aparelho, versao, conta e captura ao encontrar uma falha.
 
 ## Preparacao
 
@@ -30,7 +30,7 @@ Este e o roteiro curto para validar uma versao antes do teste fechado ou da prod
 - [ ] **12. Inicio do ciclo:** criar ciclo de duracao curta, selecionar metas e conferir datas, carga, tempo e progresso; somente arenas escolhidas devem participar dos calculos.
 - [ ] **13. Ajuste honesto:** durante o ciclo, mudar repeticoes ou metas ainda nao julgadas; o app deve recalcular o objetivo sem retirar EXP ja consolidada nem bloquear outras acoes.
 - [ ] **14. Resumo e virada do dia:** abrir o painel diario, conferir ontem e hoje e validar a virada das 4h; streak e resumo devem mudar de dia sem fechar ou julgar todas as acoes anteriores.
-- [ ] **15. Fechamento e opcoes:** fechar ciclo e testar separadamente `Novo ciclo`, `Zerar metas` e `Sair`; relatorio, metas e proximo estado devem corresponder exatamente a opcao escolhida.
+- [ ] **15. Fechamento e opcoes:** fechar ciclo e testar separadamente `Novo ciclo`, `Concluir rodada` e `Sair`; relatorio, metas e proximo estado devem corresponder exatamente a opcao escolhida.
 - [ ] **16. Exclusao e memoria:** excluir ciclo recente e antigo e depois editar ou excluir arena atual; outros ciclos e registros historicos nao podem recuperar metas antigas nem mudar seus dados.
 
 ## Missoes e recompensas
@@ -41,7 +41,7 @@ Este e o roteiro curto para validar uma versao antes do teste fechado ou da prod
 
 ## Oraculo
 
-- [ ] **20. Abertura e conversa:** tocar no Oraculo superior e na Rest Screen, enviar mensagem e pedir card premium; todos os botoes devem responder no primeiro toque e o limite diario deve ser respeitado.
+- [ ] **20. Abertura e conversa:** tocar no Oraculo superior e na Rest Screen, usar `Ler meu dia` e `Pedir missao` e pedir card premium; todos os botoes devem responder no primeiro toque e o limite diario deve ser respeitado.
 - [ ] **21. Presenca inteligente:** testar os tres niveis de presenca durante progresso, atraso e retorno ao app; falas devem ser ocasionais, curtas e relevantes, usando balao fino, enquanto erros serios usam aviso do sistema.
 
 ## Mentoria

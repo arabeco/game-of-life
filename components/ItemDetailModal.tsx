@@ -402,7 +402,11 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         "Reciclar" com um icone de lixo pede que a pessoa aceite
                         perder algo sem saber o que ganha — e o que ela ganha e
                         exatamente o argumento para aceitar. */}
-                    {isOwned && !isInsignia && (
+                    {/* Item equipado nao aparece aqui. O servidor recusa quebrar o que
+                        esta em uso — apagar deixaria o perfil apontando para um item
+                        que nao existe mais — e oferecer um botao que sempre falha e
+                        pior do que nao oferecer botao. Para quebrar, desequipe. */}
+                    {isOwned && !isInsignia && !isEquipped && (
                         <button
                             onClick={handleRecycle}
                             disabled={!!acaoEmCurso || !currentInstanceId}

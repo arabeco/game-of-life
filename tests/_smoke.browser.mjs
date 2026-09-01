@@ -267,6 +267,12 @@ export async function withBrowser({ baseUrl, debugPort }, callback) {
       '--disable-gpu',
       `--remote-debugging-port=${debugPort}`,
       `--user-data-dir=${userDataDir}`,
+      // O Edge passou a abrir a tela "estamos sincronizando seus dados de navegacao"
+      // dentro do perfil temporario, herdando a conta Microsoft da maquina. Ela cobre
+      // a pagina e o teste falha esperando um botao do app que existe e esta atras do
+      // aviso — falha de ambiente lida como falha de produto.
+      '--disable-sync',
+      '--disable-features=msImplicitSignin,msEdgeIdentityWebSignIn',
       '--no-first-run',
       '--no-default-browser-check',
       baseUrl,

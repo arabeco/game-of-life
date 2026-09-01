@@ -47,9 +47,14 @@ repetido vira fragmento sozinho quando cai, e baú também dá alguns.
 
 ## Já estiveram quebradas
 
-- [ ] **7. Quebrar item.** Abra um item seu no Arsenal: o botão diz quanto rende
-  (`Quebrar 10 💎` num comum) e realmente quebra — o item sai, os fragmentos
-  entram. Era um alerta de simulação que não fazia nada.
+- [ ] **7. Quebrar item — confira o número.** Abra um item seu no Arsenal, anote
+  o que o botão diz (`Quebrar 10 💎` num comum) e quebre. O item tem que sair e o
+  saldo tem que subir **exatamente aquilo**. Item equipado não mostra o botão: é
+  para desequipar antes.
+
+  Era um alerta de simulação. Depois passou a ser duas funções brigando no banco,
+  e depois um valor que não batia com o prometido — por isso o pedido agora é
+  conferir o número, e não só ver o item sumir.
 
 - [ ] **8. O Oráculo não cumprimenta a cada desbloqueio.** Bloqueie e desbloqueie
   o celular: ele deve ficar quieto.

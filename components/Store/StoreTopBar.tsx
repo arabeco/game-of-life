@@ -26,7 +26,7 @@ const STORE_TABS: Array<{ id: StoreTab; label: string; icon: string }> = [
 ];
 
 export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange }) => {
-    const { userProfile } = useGame();
+    const { userProfile, showToast } = useGame();
     const { gold, fragments } = userProfile.wallet || { gold: 0, fragments: 0 };
 
     return (
@@ -40,16 +40,34 @@ export const StoreTopBar: React.FC<StoreTopBarProps> = ({ activeTab, onTabChange
                     duas linhas de texto mais o respiro entre elas, e as abas
                     tinham de crescer junto para nao ficarem tortas. Em linha, a
                     barra cabe na altura de um botao. */}
+                {/* As moedas explicam o que sao ao serem tocadas.
+                    Elas apareciam como emoji e numero, sem rotulo em lugar nenhum —
+                    e "fragmento" ainda por cima ja significa outra coisa no app, a
+                    categoria "Fragmentos de Sabedoria" do Oraculo. Quem chega
+                    encontra um diamante com um numero do lado e nenhuma pista de
+                    para que serve nem de onde vem.
+                    Em celular nao ha `title` que se leia: tocar e o unico gesto
+                    disponivel, e a resposta cabe num toast. */}
                 <div className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-2 py-1.5">
-                    <span className="flex items-center gap-1 text-[11px] font-black leading-none text-[var(--skin-accent-color)]">
+                    <button
+                        type="button"
+                        onClick={() => showToast('Ouro: compra itens e campanhas, e vem dos pacotes.', 'info')}
+                        className="flex items-center gap-1 text-[11px] font-black leading-none text-[var(--skin-accent-color)]"
+                        aria-label={`Ouro: ${gold}`}
+                    >
                         <span className="text-[13px]">{'\u{1FA99}'}</span>
                         {gold.toLocaleString('pt-BR')}
-                    </span>
+                    </button>
                     <span className="h-3 w-px bg-white/10" />
-                    <span className="flex items-center gap-1 text-[11px] font-black leading-none text-cyan-400">
+                    <button
+                        type="button"
+                        onClick={() => showToast('Fragmentos: você ganha quebrando itens que não usa. Compram baús, campanhas e a forja do item exato.', 'info')}
+                        className="flex items-center gap-1 text-[11px] font-black leading-none text-cyan-400"
+                        aria-label={`Fragmentos: ${fragments}`}
+                    >
                         <span className="text-[13px]">{'\u{1F48E}'}</span>
                         {fragments.toLocaleString('pt-BR')}
-                    </span>
+                    </button>
                 </div>
 
                 <div

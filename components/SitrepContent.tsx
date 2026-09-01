@@ -154,6 +154,17 @@ export const SitrepContent: React.FC<{
 
     const [isShareChoiceOpen, setIsShareChoiceOpen] = useState(false);
     const selectedDate = selectedDateOverride || dailyCommitment?.date || getOperationalDateString();
+
+    /**
+     * Olhando um dia que nao e hoje, algumas coisas param de ser verdade.
+     *
+     * A leitura do Oraculo e a proposta de missao falam do AGORA — mostra-las
+     * sobre o painel de ontem seria apresentar o presente como se fosse aquele
+     * dia. E a sequencia atual nao pertence a nenhum dia especifico: no lugar
+     * dela, ontem mostra como o dia fechou, que e a pergunta que se faz sobre
+     * ontem.
+     */
+    const ehHoje = selectedDate === getOperationalDateString();
     const actionsById = useMemo(() => new Map(actions.map((action) => [action.id, action])), [actions]);
     const arenas = getArenas();
     const arenasById = useMemo(() => new Map(arenas.map((arena) => [arena.id, arena])), [arenas]);
@@ -396,7 +407,7 @@ export const SitrepContent: React.FC<{
                         altura variavel da coluna — junto com a leitura de hoje, eram
                         o que estourava a tela em aparelho curto. A leitura de hoje
                         ganha, por ser a mais especifica. */}
-                    {(!fillHeight || !todayReading) && historicalInsight && (
+                    {ehHoje && (!fillHeight || !todayReading) && historicalInsight && (
                         <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
                             <OracleSpeakerMark tone="info" size="sm" className="mt-0.5 shrink-0" />
                             <div className="min-w-0">
@@ -406,7 +417,7 @@ export const SitrepContent: React.FC<{
                         </div>
                     )}
 
-                    {todayReading && (
+                    {ehHoje && todayReading && (
                         <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
                             <OracleSpeakerMark tone="info" size="sm" className="mt-0.5 shrink-0" />
                             <div className="min-w-0 flex-1">
@@ -433,7 +444,7 @@ export const SitrepContent: React.FC<{
                         </div>
                     )}
 
-                    <ArenaPactBalloon />
+                    {ehHoje && <ArenaPactBalloon />}
 
                     {activeCycle && cyclePattern && (
                         <div className="sitrep-neutral-panel rounded-2xl p-3">
@@ -463,12 +474,21 @@ export const SitrepContent: React.FC<{
                     <div className="grid grid-cols-3 gap-2">
                         <PanelMetric label="Feitas" value={`${completedRows.length}/${dailyRows.length}`} hint="acoes do dia" />
                         <PanelMetric label="EXP" value={`+${dayExp}`} hint="confirmado" accent />
-                        <PanelMetric
-                            label="Streak"
-                            value={userProfile.dailyProofStreak?.current || 0}
-                            hint="sequencia atual"
-                            accent={(userProfile.dailyProofStreak?.current || 0) > 0}
-                        />
+                        {ehHoje ? (
+                            <PanelMetric
+                                label="Streak"
+                                value={userProfile.dailyProofStreak?.current || 0}
+                                hint="sequencia atual"
+                                accent={(userProfile.dailyProofStreak?.current || 0) > 0}
+                            />
+                        ) : (
+                            <PanelMetric
+                                label="Fechou em"
+                                value={`${dayProgress}%`}
+                                hint="do que tinha"
+                                accent={dayProgress >= 100}
+                            />
+                        )}
                     </div>
 
                     {!fillHeight && topArena && (
@@ -512,8 +532,13 @@ export const SitrepContent: React.FC<{
 
                     <div className={fillHeight ? 'flex min-h-0 flex-1 flex-col gap-2' : 'space-y-2'}>
                         <div className="flex items-center justify-between gap-2">
-                            <p className="core-label">Acoes do dia</p>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">somente leitura</p>
+                            {/* Ontem pergunta "o que eu fiz"; hoje pergunta "o que falta".
+                                E a mesma lista, e o rotulo e o que diz qual das duas
+                                perguntas ela esta respondendo. */}
+                            <p className="core-label">{ehHoje ? 'Ações de hoje' : 'O que foi feito'}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">
+                                {ehHoje ? `${completedRows.length}/${dailyRows.length}` : 'somente leitura'}
+                            </p>
                         </div>
                         {/* Sem rolagem quando o painel precisa caber inteiro: mostra o
                             que cabe e diz quantas ficaram de fora. Uma barra de rolagem

@@ -196,6 +196,23 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const checklistDoneCount = checklistItems.filter(item => item.completed).length;
     const checklistTotalCount = checklistItems.length;
     const restOperationalDate = React.useMemo(() => getOperationalDateString(currentTime), [currentTime]);
+
+    /**
+     * Duas abas no painel, e a data e a unica coisa que muda.
+     *
+     * SitrepContent ja derivava tudo — acoes, entregas, experiencia — de uma data
+     * que podia vir de fora. Todo o painel de ontem ja existia; nao havia so
+     * nenhuma forma de pedir por ele.
+     *
+     * Ontem responde "como foi", hoje responde "o que tem". Sao perguntas
+     * diferentes e ate agora a segunda ocupava a tela inteira, o que deixava a
+     * primeira sem lugar nenhum: no instante em que o dia virava, o que voce fez
+     * ontem sumia.
+     */
+    const [painelDiarioAba, setPainelDiarioAba] = React.useState<'hoje' | 'ontem'>('hoje');
+    const dataDoPainel = painelDiarioAba === 'ontem'
+        ? shiftLocalDateString(restOperationalDate, -1)
+        : restOperationalDate;
     const restScopedTasks = React.useMemo(() => (
         activeCycle
             ? filterCycleTasksByScope(tasks, actions, activeCycle, activeCycle.startDate, activeCycle.endDate)
@@ -986,10 +1003,26 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         <div className="restscreen-neutral-pill w-8 h-8 rounded-xl flex items-center justify-center">
                                             <CheckCircleIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                         </div>
-                                        <div>
-                                            {/* "Acoes e ciclo" era legenda de um titulo que ja
-                                                diz o que e. Uma linha basta. */}
-                                            <h2 className="restscreen-neutral-label text-[10px] font-black uppercase tracking-[0.2em]">RESUMO DIARIO</h2>
+                                        {/* As abas ocupam o lugar do titulo.
+                                            "RESUMO DIARIO" nomeava um painel que a
+                                            pessoa acabou de abrir de proposito, e o
+                                            espaco dele vale mais como escolha do que
+                                            como rotulo. */}
+                                        <div className="flex items-center gap-1 rounded-full bg-black/35 p-0.5">
+                                            {(['hoje', 'ontem'] as const).map((aba) => (
+                                                <button
+                                                    key={aba}
+                                                    type="button"
+                                                    onClick={() => setPainelDiarioAba(aba)}
+                                                    className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] transition-colors ${
+                                                        painelDiarioAba === aba
+                                                            ? 'bg-[var(--skin-accent-color)]/18 text-[var(--skin-accent-color)]'
+                                                            : 'text-white/40 hover:text-white/70'
+                                                    }`}
+                                                >
+                                                    {aba}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
 
@@ -1014,7 +1047,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                 dentro do painel. O painel inteiro rolando era o que
                                 fazia ele parecer que nao coube. */}
                             <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-h-0 scale-y-95 translate-y-[-8px] opacity-0 pointer-events-none' : 'flex-1 min-h-0 scale-y-100 translate-y-0 opacity-100 pointer-events-auto'}`}>
-                                {!isSitrepLocked && <SitrepContent fillHeight />}
+                                {!isSitrepLocked && <SitrepContent fillHeight selectedDateOverride={dataDoPainel} />}
                             </div>
                         </GlassCard>
                     </div>

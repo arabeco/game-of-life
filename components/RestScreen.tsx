@@ -210,6 +210,17 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
      * ontem sumia.
      */
     const [painelDiarioAba, setPainelDiarioAba] = React.useState<'hoje' | 'ontem'>('hoje');
+
+    /**
+     * Fechar o painel volta para hoje.
+     *
+     * O estado sobrevive ao painel: quem espiou ontem e fechou reabria em ontem,
+     * horas depois, sem lembrar de ter escolhido — e leria o dia errado achando
+     * que era o de agora. Ontem e uma consulta; hoje e onde se mora.
+     */
+    React.useEffect(() => {
+        if (isSitrepLocked) setPainelDiarioAba('hoje');
+    }, [isSitrepLocked]);
     const dataDoPainel = painelDiarioAba === 'ontem'
         ? shiftLocalDateString(restOperationalDate, -1)
         : restOperationalDate;
@@ -1009,7 +1020,10 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                             espaco dele vale mais como escolha do que
                                             como rotulo. */}
                                         <div className="flex items-center gap-1 rounded-full bg-black/35 p-0.5">
-                                            {(['hoje', 'ontem'] as const).map((aba) => (
+                                            {/* Ontem a esquerda, hoje a direita: o tempo corre nessa direcao, e
+                                                uma aba de datas que inverte isso faz a pessoa
+                                                pensar antes de tocar. */}
+                                            {(['ontem', 'hoje'] as const).map((aba) => (
                                                 <button
                                                     key={aba}
                                                     type="button"

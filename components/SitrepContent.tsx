@@ -634,21 +634,29 @@ export const SitrepContent: React.FC<{
                 >
                     <ShareIcon className="h-5 w-5" />
                 </button>
-                <button
-                    onClick={() => {
-                        window.dispatchEvent(new CustomEvent('planner:focus-date', {
-                            detail: {
-                                dateString: selectedDate,
-                                viewMode: 'day',
-                            },
-                        }));
-                        showToast(`Planner aberto em ${selectedDate}.`);
-                        if (onClose) onClose();
-                    }}
-                    className="w-full rounded-xl luxe-skin-button py-2 text-sm"
-                >
-                    Ver no Planner
-                </button>
+                {/* "Ver no Planner" so existe no MODAL.
+                    Dentro do painel da tela de descanso ele mentia: dispara
+                    `planner:focus-date` e avisa "Planner aberto em...", mas a tela
+                    de descanso nao navega para lugar nenhum e nao ha onClose ali —
+                    a pessoa continuava exatamente onde estava, lendo um toast que
+                    dizia o contrario. */}
+                {!fillHeight && (
+                    <button
+                        onClick={() => {
+                            window.dispatchEvent(new CustomEvent('planner:focus-date', {
+                                detail: {
+                                    dateString: selectedDate,
+                                    viewMode: 'day',
+                                },
+                            }));
+                            showToast(`Planner aberto em ${selectedDate}.`);
+                            if (onClose) onClose();
+                        }}
+                        className="w-full rounded-xl luxe-skin-button py-2 text-sm"
+                    >
+                        Ver no Planner
+                    </button>
+                )}
             </div>
 
             <ShareChoiceSheet

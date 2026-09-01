@@ -435,11 +435,23 @@ const detectStreakMilestones = (input: OracleCandidateInput): OracleCandidate[] 
 const detectStreakEvents = (input: OracleCandidateInput): OracleCandidate[] => {
   const streak = input.dailyProofStreakCurrent ?? 0;
   const hora = input.hourOfDay ?? null;
-  const semEntregaHoje = (input.daysSinceLastProof ?? 0) >= 1;
+  // A sequencia esta em risco quando a ultima entrega foi ONTEM e hoje esta
+  // vazio. Isto era `>= 1`, que e verdadeiro tanto para quem entregou ontem
+  // quanto para quem entregou ha 23 dias.
+  //
+  // `current` guardado no perfil e um RETRATO da data da ultima entrega, nao um
+  // contador vivo: nada o decai, porque nada roda nos dias em que a pessoa nao
+  // abre o app. Quem le precisa derivar a validade pela data, e aqui nao derivava
+  // — entao quem tinha sequencia morta de 5 dias recebia "sua sequencia esta em
+  // risco" toda noite, sobre algo que ja tinha acabado.
+  //
+  // Avisar de perda depois da perda nao e aviso, e cobranca. Mesma correcao feita
+  // no aviso por push, e pelo mesmo motivo.
+  const entregouOntem = (input.daysSinceLastProof ?? 0) === 1;
 
   if (hora === null) return [];
   if (streak < STREAK_MINIMO_PARA_AVISO) return [];
-  if (!semEntregaHoje) return [];
+  if (!entregouOntem) return [];
   // O dia operacional vira as 4h, entao a madrugada ainda e "hoje" e ainda da tempo.
   if (hora < HORA_DE_RISCO && hora >= 4) return [];
 

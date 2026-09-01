@@ -908,4 +908,38 @@ assert.match(texto, /=>/, 'o texto diz no que deu');
 assert.match(texto, new RegExp(decisao.chosen.entry.type), 'o texto nomeia o vencedor');
 assert.match(formatOracleDecisionLog([]), /Sem decisoes/, 'log vazio nao quebra o texto');
 
+// A sequencia morta nao pede socorro.
+//
+// `dailyProofStreakCurrent` e um retrato da data da ultima entrega, nao um
+// contador vivo — nada o decai nos dias em que a pessoa nao abre o app. Quem
+// tinha 5 dias em agosto e parou continua com 5 gravado hoje, e a condicao antiga
+// (`daysSinceLastProof >= 1`) achava que isso era risco. Avisar de perda depois
+// da perda e cobranca, nao aviso.
+{
+  const base = {
+    hourOfDay: 21,
+    dailyProofStreakCurrent: 5,
+  };
+
+  const viva = detectOracleCandidates({ ...base, daysSinceLastProof: 1 });
+  assert.ok(
+    viva.some((candidato) => candidato.type === 'streak_em_risco'),
+    'entregou ontem e hoje esta vazio: e exatamente o caso que o aviso existe para pegar',
+  );
+
+  for (const distancia of [2, 7, 23]) {
+    const morta = detectOracleCandidates({ ...base, daysSinceLastProof: distancia });
+    assert.ok(
+      !morta.some((candidato) => candidato.type === 'streak_em_risco'),
+      `ultima entrega ha ${distancia} dias: a sequencia ja acabou, nao ha o que salvar`,
+    );
+  }
+
+  const entregueHoje = detectOracleCandidates({ ...base, daysSinceLastProof: 0 });
+  assert.ok(
+    !entregueHoje.some((candidato) => candidato.type === 'streak_em_risco'),
+    'ja entregou hoje: a sequencia esta de pe',
+  );
+}
+
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

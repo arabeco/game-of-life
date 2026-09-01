@@ -4,14 +4,20 @@
 -- cards: 1 em 7 dias onde deveria haver uma passada a cada 10 minutos. A entrega
 -- está boa — quando há card, ele sai — então o mudo é o gerador, não o envio.
 --
--- A migração que agenda faz isso dentro de `exception when undefined_table then
--- null`. Se o pg_cron não estivesse instalado naquele momento, ela não agendou
--- nada e não reclamou. O mesmo bloco protege o cron dos lembretes de ação, então
--- os dois podem ter sumido juntos.
+-- RESPOSTA (01/09/2026): não foi falha de agendamento. O cron existe, com a
+-- agenda certa de 10 em 10 minutos, e está com `active = false`. Alguém o
+-- desligou. E o cron dos lembretes de ação, que a migração agendou para cada
+-- minuto, está rodando a cada cinco — também mexido à mão.
 --
--- Isto lista o que existe e confere se as funções que os crons chamam estão lá —
--- agendar um cron que chama função inexistente só troca silêncio por erro a cada
--- 10 minutos.
+-- Os dois foram ajustados na mesma direção, menos passadas, o que tem cara de
+-- corte de custo e não de acidente. Fica registrado porque a minha primeira
+-- hipótese foi outra — que a migração tivesse agendado no vazio, já que ela faz
+-- isso dentro de um bloco que engole "undefined_table" — e essa hipótese está
+-- errada. Quem ler isto depois merece a versão certa.
+--
+-- Religar é `cron.alter_job(jobid, active := true)`, e é uma decisão de custo:
+-- volta uma chamada à edge function a cada 10 minutos, mais os envios.
+
 select
   coalesce(j.jobname, '(nao agendado)') as tarefa,
   coalesce(j.schedule, '—') as quando,

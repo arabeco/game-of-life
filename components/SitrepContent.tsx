@@ -380,9 +380,40 @@ export const SitrepContent: React.FC<{
     // Quantas linhas cabem sem rolagem. Numero fixo porque a altura disponivel
     // varia com o aparelho e medir em tempo de execucao para cortar lista costuma
     // piscar; o resto vira uma linha de "+N", que informa sem ocupar espaco.
-    const MAX_LINHAS_SEM_ROLAGEM = 5;
-    const visibleDailyRows = fillHeight ? dailyRows.slice(0, MAX_LINHAS_SEM_ROLAGEM) : dailyRows;
-    const hiddenDailyCount = fillHeight ? Math.max(0, dailyRows.length - MAX_LINHAS_SEM_ROLAGEM) : 0;
+    /**
+     * O corte em cinco linhas saiu.
+     *
+     * Ele existia porque a lista nao rolava: mostrava cinco e dizia "+3 no
+     * Planner", mandando a pessoa a outra tela para ver o resto do proprio dia.
+     * Agora ela rola com a barra escondida, entao cortar so esconderia coisa que
+     * cabe — e quem tem doze acoes e justamente quem mais precisa ve-las.
+     */
+    const visibleDailyRows = dailyRows;
+    const hiddenDailyCount = 0;
+
+    /**
+     * Ontem em numeros, nao em lista.
+     *
+     * Uma lista de ontem responde "quais", e ninguem pergunta isso sobre um dia
+     * que ja passou — pergunta-se "quanto" e "onde". Alem disso lista cresce e o
+     * painel nao: com doze acoes, ontem empurraria o resto para fora da tela por
+     * uma informacao que ninguem foi buscar.
+     *
+     * Por arena e o recorte que responde as duas: quanto voce entregou e em que
+     * frentes da sua vida isso aconteceu.
+     */
+    const ontemPorArena = useMemo(() => {
+        if (ehHoje) return [];
+        const contagem = new Map<string, number>();
+        for (const row of dailyRows) {
+            if (!row.task.completed) continue;
+            const nome = arenasById.get(row.action?.arenaId || '')?.name || 'Sem arena';
+            contagem.set(nome, (contagem.get(nome) || 0) + 1);
+        }
+        return Array.from(contagem.entries())
+            .sort((esquerda, direita) => direita[1] - esquerda[1])
+            .slice(0, 6);
+    }, [arenasById, dailyRows, ehHoje]);
 
     return (
         <div className={fillHeight ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-4'}>
@@ -540,11 +571,6 @@ export const SitrepContent: React.FC<{
                                 {ehHoje ? `${completedRows.length}/${dailyRows.length}` : 'somente leitura'}
                             </p>
                         </div>
-                        {/* Sem rolagem quando o painel precisa caber inteiro: mostra o
-                            que cabe e diz quantas ficaram de fora. Uma barra de rolagem
-                            dentro de um painel que ja e uma tela cheia parece que a
-                            informacao nao coube — e a conta de quantas cabem depende do
-                            aparelho, entao o corte e por numero, que e previsivel. */}
                         {/* A lista ROLA, com a barra escondida.
                             Com `overflow-hidden` ela cortava o ultimo cartao no
                             meio: a altura disponivel quase nunca e multipla da
@@ -552,6 +578,23 @@ export const SitrepContent: React.FC<{
                             fatiado na borda. Meio cartao parece defeito; cartao
                             inteiro com rolagem escondida parece lista.
                             O que nao pode rolar e o PAINEL — esse continua fixo. */}
+                        {!ehHoje ? (
+                            <div className="flex flex-wrap gap-1.5">
+                                {ontemPorArena.length > 0 ? ontemPorArena.map(([nome, quantas]) => (
+                                    <span
+                                        key={nome}
+                                        className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[10px] font-bold text-white/70"
+                                    >
+                                        <span className="truncate max-w-[8rem]">{nome}</span>
+                                        <span className="font-black text-[var(--skin-accent-color)]">{quantas}</span>
+                                    </span>
+                                )) : (
+                                    <p className="w-full py-2 text-center text-[11px] text-white/35">
+                                        Nada foi concluído nesse dia.
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
                         <div className={`space-y-1.5 pr-1 hide-scrollbar ${fillHeight ? 'min-h-0 flex-1 overflow-y-auto' : 'max-h-56 overflow-y-auto'}`}>
                             {visibleDailyRows.map((row) => (
                                 <ActionSummaryCard
@@ -560,11 +603,6 @@ export const SitrepContent: React.FC<{
                                     getActionBackgroundStyle={getActionBackgroundStyle}
                                 />
                             ))}
-                            {hiddenDailyCount > 0 && (
-                                <p className="pt-0.5 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-white/38">
-                                    {`+${hiddenDailyCount} ${hiddenDailyCount === 1 ? 'acao' : 'acoes'} no Planner`}
-                                </p>
-                            )}
                             {dailyRows.length === 0 && (
                                 <div className="sitrep-neutral-panel rounded-2xl p-4 text-center">
                                     <CheckCircleIcon className="mx-auto h-6 w-6 text-white/35" />
@@ -572,11 +610,14 @@ export const SitrepContent: React.FC<{
                                 </div>
                             )}
                         </div>
+                        )}
                     </div>
 
-                    <p className="text-center text-[10px] text-gray-500">
-                        Este painel nao trava metas nem julga o dia. Ele so le as acoes registradas no Planner e mostra o padrao do ciclo.
-                    </p>
+                    {!fillHeight && (
+                        <p className="text-center text-[10px] text-gray-500">
+                            Este painel nao trava metas nem julga o dia. Ele so le as acoes registradas no Planner e mostra o padrao do ciclo.
+                        </p>
+                    )}
                 </div>
             </div>
 

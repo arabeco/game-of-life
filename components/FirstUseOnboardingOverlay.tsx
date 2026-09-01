@@ -232,13 +232,24 @@ export const FirstUseOnboardingOverlay: React.FC<{
     {
       id: 'finish',
       title: 'Tudo pronto',
-      text: purpose === 'organizar'
+      // A ponte para o resto do tutorial fica AQUI, e so aqui.
+      //
+      // O app tem quatro secoes de tutorial com vinte passos, e a unica porta
+      // para elas e um botao "Reabrir" dentro de Ajustes. Ninguem procura o que
+      // nao sabe que existe: quem termina o onboarding e a unica pessoa que
+      // acabou de provar que quer aprender, e e a ela que vale contar.
+      //
+      // Contar no fim, e nao no comeco, tambem e escolha: vinte passos oferecidos
+      // na entrada assustam; oferecidos depois de a pessoa ja ter criado arena,
+      // acao e ciclo, soam como "tem mais quando voce quiser".
+      text: (purpose === 'organizar'
         ? 'Sua primeira base está viva. Quando ela estiver clara, adicione outras áreas aos poucos.'
         : purpose === 'habitos'
           ? 'O hábito tem onde morar agora. O resto é aparecer e registrar.'
           : purpose === 'retomar'
             ? 'O primeiro ponto está de pé. Recomeçar é isso: um lugar por vez.'
-            : 'Seu foco está pronto. Agora basta agir e registrar quando fizer.',
+            : 'Seu foco está pronto. Agora basta agir e registrar quando fizer.')
+        + ' Cada tela se apresenta na primeira vez que você entra, e o tutorial completo fica em Ajustes quando quiser.',
       navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
       final: true,
     },

@@ -658,11 +658,16 @@ const normalizeDailyProofStreak = (value: unknown) => {
   return {
     current: Math.max(0, Math.round(asNumber(entry.current, 0))),
     best: Math.max(0, Math.round(asNumber(entry.best, 0))),
-    totalClosedDays: Math.max(0, Math.round(asNumber(entry.totalClosedDays, 0))),
-    lastClosedDate: asTrimmedString(entry.lastProofDate) || asTrimmedString(entry.lastClosedDate) || null,
-    lastProofActionId: asTrimmedString(entry.lastProofActionId) || null,
-    lastProofArenaId: asTrimmedString(entry.lastProofArenaId) || null,
-    lastProofCycleId: asTrimmedString(entry.lastProofCycleId) || null,
+    totalClosedDays: Math.max(0, Math.round(asNumber(entry.total_closed_days ?? entry.totalClosedDays, 0))),
+    // O jsonb e gravado em snake_case pelo app (`last_proof_date`), e aqui ele
+    // era lido em camelCase. So `current` e `best` coincidiam, por serem palavra
+    // unica — todo o resto vinha undefined, e `lastClosedDate` era SEMPRE null.
+    // Com ele null, a guarda "ja entregou hoje" nunca era verdadeira.
+    lastClosedDate: asTrimmedString(entry.last_proof_date) || asTrimmedString(entry.lastProofDate)
+      || asTrimmedString(entry.last_closed_date) || asTrimmedString(entry.lastClosedDate) || null,
+    lastProofActionId: asTrimmedString(entry.last_proof_action_id) || asTrimmedString(entry.lastProofActionId) || null,
+    lastProofArenaId: asTrimmedString(entry.last_proof_arena_id) || asTrimmedString(entry.lastProofArenaId) || null,
+    lastProofCycleId: asTrimmedString(entry.last_proof_cycle_id) || asTrimmedString(entry.lastProofCycleId) || null,
     lastScore: Number.isFinite(entry.lastScore) ? Math.round(asNumber(entry.lastScore, 0)) : null,
     lastExpDeposited: Number.isFinite(entry.lastExpDeposited) ? Math.round(asNumber(entry.lastExpDeposited, 0)) : null,
     lastCompletedTasksCount: Number.isFinite(entry.lastCompletedTasksCount) ? Math.round(asNumber(entry.lastCompletedTasksCount, 0)) : null,
@@ -1191,9 +1196,23 @@ const maybeSendStreakAlert = async (
     return { status: "skipped", reason: "streak_curto" };
   }
 
-  // normalizeDailyProofStreak ja resolve lastProofDate dentro de lastClosedDate.
-  if (asTrimmedString(streak.lastClosedDate) === today) {
+  const ultimoDia = asTrimmedString(streak.lastClosedDate);
+
+  if (ultimoDia === today) {
     return { status: "skipped", reason: "ja_entregou_hoje" };
+  }
+
+  // A sequencia so esta EM RISCO se a ultima entrega foi ontem. `current` nao
+  // decai sozinho no perfil: quem fez 5 dias em agosto e parou continua com
+  // current=5 gravado ate hoje. Sem esta condicao, essa pessoa receberia
+  // "5 dias seguidos, e hoje ainda sem nenhuma acao" toda noite, para sempre,
+  // sobre uma sequencia que morreu ha semanas.
+  //
+  // Aviso de perda iminente que chega depois da perda nao e aviso, e cobranca —
+  // e cobranca noturna e o caminho mais curto para a pessoa desligar tudo.
+  const ontem = shiftDateString(today, -1);
+  if (ultimoDia !== ontem) {
+    return { status: "skipped", reason: ultimoDia ? "sequencia_ja_morreu" : "sem_data_de_entrega" };
   }
 
   // Uma vez por dia. O cron passa a cada dez minutos dentro da janela, entao sem

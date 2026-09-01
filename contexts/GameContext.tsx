@@ -2484,6 +2484,13 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (codigo === 'PGRST202' || motivo.includes('Could not find the function') || motivo.includes('does not exist')) {
             return `${acao} ainda nao existe no servidor. Avise o Afonso: falta a migracao.`;
         }
+        // Funcao duplicada no banco: duas versoes com o mesmo nome de argumento e
+        // tipos diferentes. O PostgREST nao consegue escolher e recusa a chamada.
+        // Foi o que derrubou o quebrar item, e nao ha nada que a pessoa possa
+        // fazer a respeito — entao a mensagem manda avisar quem pode.
+        if (codigo === 'PGRST203' || motivo.includes('Could not choose the best candidate')) {
+            return `${acao} esta duplicada no servidor. Avise o Afonso: ha duas versoes da mesma funcao.`;
+        }
         if (motivo.includes('permission denied')) {
             return `Sem permissao para ${acao.toLowerCase()}. Avise o Afonso: falta o grant.`;
         }

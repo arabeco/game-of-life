@@ -2465,6 +2465,35 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         showToast(`Débito de ${cost} Ouro. Ativo adicionado ao Arsenal.`, "success");
     };
 
+    /**
+     * Traduz a falha de uma chamada ao banco em algo que a pessoa possa REPETIR
+     * para mim.
+     *
+     * As duas chamadas abaixo diziam "Falha na sincronizacao de dados" para
+     * qualquer erro: funcao inexistente, falta de permissao e falta de fragmento
+     * saiam identicas na tela. Foi exatamente o que aconteceu no teste do item 7 —
+     * o relato chegou sem a causa porque a causa nunca apareceu.
+     *
+     * O ultimo ramo mostra a mensagem crua de proposito. Feia, mas nomeavel: e
+     * melhor a pessoa conseguir copiar um codigo estranho do que descrever de novo
+     * um erro que o app se recusou a nomear.
+     */
+    const explicarErroDeRpc = (erro: any, acao: string): string => {
+        const motivo = String(erro?.message || '');
+        const codigo = String(erro?.code || '');
+        if (codigo === 'PGRST202' || motivo.includes('Could not find the function') || motivo.includes('does not exist')) {
+            return `${acao} ainda nao existe no servidor. Avise o Afonso: falta a migracao.`;
+        }
+        if (motivo.includes('permission denied')) {
+            return `Sem permissao para ${acao.toLowerCase()}. Avise o Afonso: falta o grant.`;
+        }
+        if (motivo.includes('NOT_ENOUGH_FRAGMENTS')) return '\u{1F48E} Fragmentos insuficientes.';
+        if (motivo.includes('ITEM_NOT_OWNED')) return 'Esse item nao esta mais com voce.';
+        if (motivo.includes('ITEM_EQUIPPED')) return 'Desequipe o item antes.';
+        if (motivo.includes('AUTH_REQUIRED')) return 'Sessao expirada. Entre de novo.';
+        return `Nao foi possivel: ${motivo.slice(0, 120) || 'erro sem mensagem'}`;
+    };
+
     const recycleItem = async (instanceId: string) => {
         const userId = getSupabaseUserId();
         if (!userId) return;
@@ -2477,7 +2506,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error recycling:", error);
-            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
+            showToast(explicarErroDeRpc(error, 'Quebrar item'), "error");
             return;
         }
 
@@ -2487,7 +2516,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
 
             showToast(`Item desconstruído. ${data.fragments_gained} \u{1F48E} fragmentos adicionados ao inventário.`, "success");
+            return;
         }
+
+        // Antes, `success: false` nao produzia nada: o botao aceitava o toque e a
+        // tela ficava igual, sem erro e sem resultado.
+        showToast(String(data?.error || 'Nao foi possivel quebrar este item.'), 'error');
     };
 
     /**
@@ -2581,7 +2615,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         if (error) {
             console.error("Error crafting:", error);
-            showToast("Falha na sincronização de dados. Tente novamente ou verifique a conexão.", "error");
+            showToast(explicarErroDeRpc(error, 'Forjar item'), "error");
             return null;
         }
 

@@ -14,7 +14,6 @@ export type ScreenIntroTipId =
   | 'store'
   | 'store_codexes'
   | 'store_items'
-  | 'store_forge'
   | 'store_gold'
   | 'season'
   | 'arsenal'
@@ -158,13 +157,6 @@ export const SCREEN_INTRO_TIPS: Record<ScreenIntroTipId, ScreenIntroTipDef> = {
     title: 'Identidade e presenca.',
     summary: 'Itens mudam como sua conta aparece: visual, perfil, jardim e estilo.',
     items: ['compre so o que voce quer ver no seu perfil ou inventario.'],
-  },
-  store_forge: {
-    id: 'store_forge',
-    label: 'Forja',
-    title: 'Fragmentos viram coisa util.',
-    summary: 'Aqui voce recicla sobras e transforma fragmentos em itens ou liberacoes.',
-    items: ['use quando tiver fragmentos parados.'],
   },
   store_gold: {
     id: 'store_gold',

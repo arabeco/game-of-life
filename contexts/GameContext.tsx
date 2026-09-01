@@ -2486,7 +2486,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             const newFragments = (userProfile.wallet?.fragments || 0) + data.fragments_gained;
             updateUserProfile({ wallet: { ...userProfile.wallet, fragments: newFragments } });
 
-            showToast(`Item desconstruído. ${data.fragments_gained} fragmentos adicionados ao inventário.`, "success");
+            showToast(`Item desconstruído. ${data.fragments_gained} \u{1F48E} fragmentos adicionados ao inventário.`, "success");
         }
     };
 
@@ -2508,7 +2508,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (error) {
             const motivo = String(error.message || '');
             showToast(
-                motivo.includes('NOT_ENOUGH_FRAGMENTS') ? 'Fragmentos insuficientes.'
+                motivo.includes('NOT_ENOUGH_FRAGMENTS') ? '\u{1F48E} Fragmentos insuficientes.'
                     : motivo.includes('CHEST_NOT_FOR_SALE') ? 'Esse baú não está à venda.'
                         : 'Não foi possível comprar o baú.',
                 'error',
@@ -6061,7 +6061,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const currentFragments = Math.max(0, Number(userProfile.wallet?.fragments || 0));
         if (currentFragments < safeFragmentCost) {
             const missingFragments = Math.max(0, safeFragmentCost - currentFragments);
-            showToast(`Fragmentos insuficientes. Faltam ${missingFragments} para adquirir ${catalogItem.title}.`, 'warning');
+            showToast(`\u{1F48E} Fragmentos insuficientes. Faltam ${missingFragments} para adquirir ${catalogItem.title}.`, 'warning');
             return null;
         }
 
@@ -6104,7 +6104,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         if (!options?.silentSuccess) {
-            showToast(`Campanha "${catalogItem.title}" liberada por ${safeFragmentCost} fragmentos.`, 'success');
+            showToast(`Campanha "${catalogItem.title}" liberada por ${safeFragmentCost} \u{1F48E} fragmentos.`, 'success');
         }
 
         return normalizedPurchasedCodex;
@@ -7691,8 +7691,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         // Show reward clearly, especially when duplicate conversion happens.
         const rewardMsg = data.is_duplicate
-            ? `\u{1F381} ${data.item_name} repetido. Convertido em +${data.fragments_gained} fragmentos.`
-            : `\u{1F381} ${data.item_name} recebido. +${data.fragments_gained} fragmentos do baú.`;
+            ? `\u{1F381} ${data.item_name} repetido. Convertido em +${data.fragments_gained} \u{1F48E} fragmentos.`
+            : `\u{1F381} ${data.item_name} recebido. +${data.fragments_gained} \u{1F48E} fragmentos do baú.`;
         showToast(rewardMsg, data.is_duplicate ? 'info' : 'success');
 
         // Update local state
@@ -8969,7 +8969,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const duplicateFragments = getDuplicateItemFragmentReward(itemId);
                 const nextFragments = (userProfile.wallet?.fragments || 0) + duplicateFragments;
                 updateUserProfile({ wallet: { ...userProfile.wallet, fragments: nextFragments } });
-                showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} fragmentos.`, 'info');
+                showToast(`Item repetido: ${itemDef?.name || itemId}. Convertido em +${duplicateFragments} \u{1F48E} fragmentos.`, 'info');
                 return { item: localExisting, granted: false, duplicateConverted: true, fragmentsGranted: duplicateFragments };
             }
 

@@ -319,15 +319,31 @@ try {
 
   await clickSelector('#nav-assets');
   await waitFor('assets overview', `(() => document.querySelectorAll('[data-testid="asset-overview-card"]').length === 5)()`, 15000);
+  // A janela era 2.3-2.5 e o CSS declara `aspect-ratio: 2.8 / 1` desde 7389bac.
+  // O teste nunca foi atualizado, entao cobrava uma proporcao que o desenho
+  // abandonou — e falhava sem haver defeito.
+  //
+  // Medir so a proporcao tambem nao basta. O cartao tem `max-height: calc(100% - 6px)`
+  // de proposito: em tela baixa ele achata para os cinco caberem, e achatar faz a
+  // proporcao SUBIR acima de 2.8 legitimamente. O que nao pode acontecer e os cinco
+  // deixarem de caber, que e a falha que a pessoa ve. Entao o teto de 3.4 guarda o
+  // cartao de virar tarja, e a soma das alturas guarda o que importa de verdade.
   const assetsLayout = await evaluate(`(() => {
     const cards = Array.from(document.querySelectorAll('[data-testid="asset-overview-card"]'));
-    return cards.map((card) => {
+    const grid = document.querySelector('.asset-overview-grid');
+    const gridHeight = grid ? grid.getBoundingClientRect().height : 0;
+    const rows = cards.map((card) => {
       const rect = card.getBoundingClientRect();
       return { width: rect.width, height: rect.height, ratio: rect.width / Math.max(1, rect.height) };
     });
+    const alturaTotal = rows.reduce((soma, card) => soma + card.height, 0);
+    return { rows, gridHeight, alturaTotal, cabe: gridHeight > 0 && alturaTotal <= gridHeight + 1 };
   })()`);
-  if (!Array.isArray(assetsLayout) || assetsLayout.some((card) => card.ratio < 2.3 || card.ratio > 2.5)) {
+  if (!assetsLayout || !Array.isArray(assetsLayout.rows) || assetsLayout.rows.some((card) => card.ratio < 2.7 || card.ratio > 3.4)) {
     throw new Error(`Assets cards lost their responsive aspect ratio: ${JSON.stringify(assetsLayout)}`);
+  }
+  if (!assetsLayout.cabe) {
+    throw new Error(`Assets cards no longer fit their grid: ${JSON.stringify(assetsLayout)}`);
   }
   const headerMasteryIndex = await evaluate(`document.querySelector('[data-testid="header-mastery-index"]')?.textContent?.trim()`);
   if (headerMasteryIndex !== '10') {

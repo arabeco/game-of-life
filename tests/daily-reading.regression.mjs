@@ -21,7 +21,7 @@ const livre = buildTodayDailyReading(base, 'livre');
 assert.equal(livre.depth, 'livre');
 assert.equal(livre.comparison, null, 'o nivel livre nao pode expor regua');
 assert.match(livre.text, /4 de 6/);
-assert.doesNotMatch(livre.text, /medi[ao]|padrao historico/i, 'o nivel livre nao compara');
+assert.doesNotMatch(livre.text, /m[eé]di[ao]|padr[aã]o hist[oó]rico/i, 'o nivel livre nao compara');
 
 // --- premium: compara com o proprio dia medio no ciclo ---------------------
 const premium = buildTodayDailyReading(base, 'premium');
@@ -29,7 +29,7 @@ assert.equal(premium.depth, 'premium');
 assert.ok(premium.comparison, 'premium precisa de regua');
 assert.match(premium.comparison, /Hoje 4/);
 assert.match(premium.comparison, /2,0/, 'a media do ciclo entra na regua');
-assert.match(premium.text, /acima do seu dia medio/);
+assert.match(premium.text, /acima do seu dia m[eé]dio/);
 // Premium olha o dia, nunca o historico de ciclos.
 assert.doesNotMatch(premium.comparison, /mediana/);
 
@@ -38,7 +38,7 @@ const platinum = buildTodayDailyReading(base, 'platinum');
 assert.equal(platinum.depth, 'platinum');
 assert.match(platinum.comparison, /mediana em 5 ciclos/);
 assert.match(platinum.comparison, /70%/);
-assert.match(platinum.text, /acima do seu padrao historico/);
+assert.match(platinum.text, /acima do seu padr[aã]o hist[oó]rico/);
 
 // Platinum sem historico suficiente nao inventa comparacao nem quebra.
 const platinumSemHistorico = buildTodayDailyReading(
@@ -53,7 +53,7 @@ const diaFraco = buildTodayDailyReading(
   { ...base, completedCount: 1, cycleActiveDayAverage: 5 },
   'premium',
 );
-assert.match(diaFraco.text, /abaixo do seu dia medio/);
+assert.match(diaFraco.text, /abaixo do seu dia m[eé]dio/);
 assert.match(diaFraco.text, /cabe no ciclo/, 'dia abaixo da media nao pode soar como falha');
 assert.doesNotMatch(diaFraco.text, /falh|fracass|perdeu|desperdic/i);
 
@@ -61,7 +61,7 @@ const cicloFraco = buildTodayDailyReading(
   { ...base, currentCycleExecutionPct: 30, pastCyclesExecutionMedianPct: 60 },
   'platinum',
 );
-assert.match(cicloFraco.text, /abaixo do seu padrao historico/);
+assert.match(cicloFraco.text, /abaixo do seu padr[aã]o hist[oó]rico/);
 assert.match(cicloFraco.text, /carga planejada/, 'ciclo abaixo aponta causa, nao culpa');
 assert.doesNotMatch(cicloFraco.text, /falh|fracass|preguic/i);
 
@@ -70,7 +70,7 @@ const semPlano = buildTodayDailyReading(
   { ...base, completedCount: 0, plannedCount: 0 },
   'premium',
 );
-assert.match(semPlano.text, /Nenhuma acao registrada/);
+assert.match(semPlano.text, /Nenhuma a[cç][aã]o registrada/);
 
 const semDiaAnterior = buildTodayDailyReading(
   { ...base, cycleActiveDayAverage: null },

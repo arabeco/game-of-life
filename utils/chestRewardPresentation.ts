@@ -6,7 +6,7 @@ export const buildChestRewardPayload = (
 ): RewardModalPayload => {
   const metricCards = [
     { label: 'Baú', value: chestType },
-    { label: 'Fragmentos', value: `+${result.fragmentsGained || 0}` },
+    { label: '\u{1F48E} Fragmentos', value: `+${result.fragmentsGained || 0}` },
     { label: 'Status', value: result.isDuplicate ? 'Duplicado' : 'Novo' },
   ];
 
@@ -18,7 +18,7 @@ export const buildChestRewardPayload = (
     eyebrow: 'RECOMPENSA',
     title: result.itemName || 'Recompensa recebida',
     summary: result.isDuplicate
-      ? `Você já tinha esse item. Convertido em ${result.fragmentsGained || 0} fragmentos.`
+      ? `Você já tinha esse item. Convertido em ${result.fragmentsGained || 0} \u{1F48E} fragmentos.`
       : `Seu baú ${chestType.toLowerCase()} foi aberto e o prêmio já entrou no Arsenal.`,
     buttonLabel: 'Fechar',
     itemSectionTitle: 'Item recebido',

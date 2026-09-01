@@ -201,7 +201,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
     const handleRecycle = async () => {
         if (!currentInstanceId || acaoEmCurso) return;
         // eslint-disable-next-line no-alert
-        if (!window.confirm(`Quebrar ${currentItem.name} por ${valorAoQuebrar} fragmentos? Isso não pode ser desfeito.`)) return;
+        if (!window.confirm(`Quebrar ${currentItem.name} por ${valorAoQuebrar} \u{1F48E} fragmentos? Isso não pode ser desfeito.`)) return;
         setAcaoEmCurso('quebrar');
         try {
             await recycleItem(currentInstanceId);

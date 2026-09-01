@@ -81,8 +81,8 @@ const buildRewardFromResult = (result: ChestOpenResult | null, chestType: ChestT
         goldGained: result.goldGained || 0,
         isDuplicate: result.isDuplicate,
         description: result.isDuplicate
-            ? `Recompensa repetida. ${result.fragmentsGained} Fragmentos creditados${goldSuffix}.`
-            : `Arsenal sincronizado com ${result.fragmentsGained} Fragmentos${goldSuffix}.`,
+            ? `Recompensa repetida. ${result.fragmentsGained} \u{1F48E} Fragmentos creditados${goldSuffix}.`
+            : `Arsenal sincronizado com ${result.fragmentsGained} \u{1F48E} Fragmentos${goldSuffix}.`,
     };
 };
 

@@ -42,7 +42,17 @@ assert.match(clanDetail, /PRODUCT_FEATURES\.clanMissions && activeTab === 'misso
 assert.match(clanDetail, /if \(!PRODUCT_FEATURES\.clanMissions \|\| !clan\?\.id\) return/);
 
 assert.match(gameContext, /const isStackableHonorItem/);
-assert.match(gameContext, /itemId\.startsWith\('insignia_quest_'\)/);
+// A regra inverteu em 31aa379 e este teste ficou preso na forma antiga, passando
+// a cobrar uma linha que o codigo nao tem mais — vermelho sem defeito nenhum.
+// Antes era lista de PERMISSAO: so `insignia_quest_*` empilhava. Agora e lista de
+// EXCECAO: toda insignia empilha, menos as que sao uma-de-cada. As de missao
+// continuam empilhando por nao estarem na excecao, que e o que importa aqui;
+// entao o teste passa a fixar a excecao, que e onde mora a decisao.
+assert.match(gameContext, /const isOneOfEach = Boolean\(itemDef\?\.isSeasonExclusive\)/);
+assert.match(gameContext, /itemId\.startsWith\('insignia_rank_'\)/);
+assert.match(gameContext, /itemId\.startsWith\('insignia_season_'\)/);
+assert.match(gameContext, /return !isOneOfEach;/);
+assert.doesNotMatch(gameContext, /isOneOfEach[\s\S]{0,200}insignia_quest_/);
 // Every completed mission grants an insignia: the one it names, or the generic
 // stackable badge for its tier. The second argument is the stackable flag, so it
 // must be true exactly when the generic badge is the one being granted.

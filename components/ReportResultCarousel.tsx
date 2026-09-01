@@ -565,7 +565,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 ? { label: 'XP', value: `+${report.expGained || expGained}` }
                 : null,
             ((fragmentsGained || 0) > 0)
-                ? { label: 'Fragmentos', value: `+${fragmentsGained}` }
+                ? { label: '\u{1F48E} Fragmentos', value: `+${fragmentsGained}` }
                 : null,
             ((report.metrics.goldGained || 0) > 0)
                 ? { label: 'Ouro', value: `+${report.metrics.goldGained}` }

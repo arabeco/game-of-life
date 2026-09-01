@@ -94,11 +94,22 @@ async function navigateToCampaignStore(page) {
     return true;
   })()`);
   await dismissScreenTipIfPresent(page);
+  // O quiz deixou de ser um botao de largura inteira com rotulo escrito e virou
+  // um botao quadrado de icone na faixa da busca. O rotulo nao sumiu: mudou de
+  // innerText para aria-label e title. Esta sonda lia so o texto visivel, entao
+  // parou de achar um botao que esta na tela e funciona.
+  //
+  // Olhar tambem os atributos continua certo depois de consertado: botao de icone
+  // SEM nome acessivel e defeito de verdade, e assim o teste passa a cobrar um.
   await page.waitFor(
     'campaign quiz entry button',
     `(() => {
       const body = (document.body?.innerText || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
-      return body.includes('FAZER QUIZ') || body.includes('USAR QUIZ DISPONIVEL') || body.includes('ENCONTRAR MINHA CAMPANHA') || body.includes('QUIZ');
+      const rotulos = Array.from(document.querySelectorAll('button'))
+        .map((node) => ((node.getAttribute('aria-label') || '') + ' ' + (node.getAttribute('title') || '')).toUpperCase())
+        .join(' | ');
+      const alvo = body + ' | ' + rotulos;
+      return alvo.includes('FAZER QUIZ') || alvo.includes('USAR QUIZ DISPONIVEL') || alvo.includes('ENCONTRAR MINHA CAMPANHA') || alvo.includes('QUIZ');
     })()`,
     30000,
   );
@@ -110,7 +121,9 @@ async function openQuiz(page) {
       .filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
     const target = buttons.find((node) => {
       const text = (node.innerText || node.textContent || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
-      return text.includes('FAZER QUIZ') || text.includes('USAR QUIZ DISPONIVEL') || text.includes('ENCONTRAR MINHA CAMPANHA') || text.trim() === 'QUIZ';
+      const rotulos = ((node.getAttribute('aria-label') || '') + ' ' + (node.getAttribute('title') || '')).toUpperCase();
+      const alvo = text + ' | ' + rotulos;
+      return alvo.includes('FAZER QUIZ') || alvo.includes('USAR QUIZ DISPONIVEL') || alvo.includes('ENCONTRAR MINHA CAMPANHA') || text.trim() === 'QUIZ';
     });
     if (!(target instanceof HTMLElement)) return false;
     target.click();
@@ -249,10 +262,13 @@ try {
 
     await openQuiz(page);
     await page.waitFor(
+      // O rotulo do escopo mudou de 'Primeiro quiz gratuito' / 'Filtro inicial:
+      // gratuitas' para 'Entre as campanhas gratuitas'. O que o teste quer saber
+      // e o mesmo: o quiz abriu limitado ao acervo gratuito.
       'free quiz mode',
       `(() => {
         const body = (document.body?.innerText || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toUpperCase();
-        return body.includes('PRIMEIRO QUIZ GRATUITO') || body.includes('FILTRO INICIAL: GRATUITAS');
+        return body.includes('ENTRE AS CAMPANHAS GRATUITAS') || body.includes('PRIMEIRO QUIZ GRATUITO') || body.includes('FILTRO INICIAL: GRATUITAS');
       })()`,
       10000,
     );

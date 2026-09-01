@@ -6,8 +6,13 @@ Dez coisas. São as que mexem em **dinheiro**, as que **nasceram agora** e as qu
 
 Em falha: o número, o que viu e o texto exato do erro, se houver.
 
-**Antes de começar:** a conta precisa de ouro, **fragmentos** e pelo menos um
-amigo. Sem fragmento, metade disto não roda.
+**Antes de começar:** ouro, um amigo, e **itens no arsenal que você não usa**.
+
+Fragmentos (💎) você não recebe de ninguém — **fabrica quebrando item**. Comum dá
+10, e o baú mais barato custa 24, então três itens comuns já bastam. Item
+repetido vira fragmento sozinho quando cai, e baú também dá alguns.
+
+**Por isso faça o 7 antes do 3**: ele é quem paga o baú.
 
 ---
 
@@ -21,8 +26,8 @@ amigo. Sem fragmento, metade disto não roda.
   *"entrou na sua rodada"* e o nível **não** muda. Em Arenas, **Concluir rodada**
   credita e libera as arenas.
 
-- [ ] **3. Baú.** Compre um Comum na aba Itens: saldo cai **24** e ele aparece no
-  Arsenal.
+- [ ] **3. Baú.** Com fragmentos do item 7, compre um Comum na aba Itens: saldo
+  cai **24** e ele aparece no Arsenal.
 
 ---
 
@@ -42,8 +47,9 @@ amigo. Sem fragmento, metade disto não roda.
 
 ## Já estiveram quebradas
 
-- [ ] **7. Quebrar item.** Diz `Quebrar 20 💎` e realmente quebra. Era um alerta
-  de simulação que não fazia nada.
+- [ ] **7. Quebrar item.** Abra um item seu no Arsenal: o botão diz quanto rende
+  (`Quebrar 10 💎` num comum) e realmente quebra — o item sai, os fragmentos
+  entram. Era um alerta de simulação que não fazia nada.
 
 - [ ] **8. O Oráculo não cumprimenta a cada desbloqueio.** Bloqueie e desbloqueie
   o celular: ele deve ficar quieto.

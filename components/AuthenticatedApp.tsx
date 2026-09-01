@@ -639,6 +639,16 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 window.dispatchEvent(new CustomEvent('tutorialOpenArena', { detail: { arenaId: null } }));
             }
 
+            // O `tab` dos passos do tutorial era ignorado aqui.
+            //
+            // MundoView escuta `tutorialTabChange` e sabe trocar de aba, mas nada
+            // ligava um canal no outro: os passos que apontam para Arsenal ou Loja
+            // trocavam de VIEW e paravam na aba errada, com o holofote procurando
+            // um elemento que nao estava na tela.
+            if (e.detail.tab) {
+                window.dispatchEvent(new CustomEvent('tutorialTabChange', { detail: { tab: e.detail.tab } }));
+            }
+
             if (e.detail.view) {
                 handleSetView(e.detail.view);
             }

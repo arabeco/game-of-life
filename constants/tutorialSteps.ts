@@ -79,14 +79,14 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     {
         category: 'ALICERCE',
         title: '04. CICLO',
-        text: 'O ciclo e o ritmo que segura a jornada. Ele te ajuda a ver onde voce esta, o que vem agora e quando revisar a fase.',
+        text: 'O ciclo e opcional: da para executar sem ele, e a experiencia entra igual. Ele existe para quando voce quiser assumir uma meta com prazo, e e o que gera relatorio e legado no fim.',
         view: 'planner',
         targetId: 'cycle-hud',
     },
     {
         category: 'ALICERCE',
-        title: '05. FECHAMENTO DO DIA',
-        text: 'O fechamento do dia guarda o que voce fez, mostra o resultado e limpa a cabeca para o proximo movimento. Se voce entender Arena, Planner, Ciclo e Fechamento, ja consegue usar o Glyph de verdade.',
+        title: '05. RESUMO DO DIA',
+        text: 'O dia fecha sozinho na virada: voce nao precisa selar nada. Este botao abre o resumo do que ficou registrado. Se voce entender Arena, Planner e Ciclo, ja consegue usar o Glyph de verdade.',
         view: 'planner',
         targetId: 'sitrep-button',
     },
@@ -144,10 +144,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     },
     {
         category: 'ARQUITETO',
-        title: '13. CAMPANHAS',
-        text: 'Campanhas juntam fases, acoes e progresso em jornadas longas. E assim que cursos, projetos grandes e trilhas guiadas ficam legiveis sem virar caos.',
-        view: 'arenas',
-        targetId: 'campaigns-button',
+        title: '13. OURO E FRAGMENTOS',
+        text: 'Item repetido vira fragmento sozinho, e voce pode quebrar o que nao quer direto no proprio item. Com fragmento se compra bau, campanha e o item exato que faltar na sua colecao.',
+        view: 'social',
+        tab: 'loja',
     },
     {
         category: 'ARQUITETO',

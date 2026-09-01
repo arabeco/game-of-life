@@ -1172,11 +1172,19 @@ const maybeSendStreakAlert = async (
   // conclui uma acao a 1h da manha ainda entregou "hoje" e nao pode ser avisado.
   const today = getOperationalDateString(now);
 
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
+  // A tabela e `user_profiles`. Estava escrito `profiles`, que nao existe — a
+  // linha 962 deste mesmo arquivo ja usava a certa. Como o erro nao era checado,
+  // o perfil vinha nulo, a sequencia era lida como 0 e TODO MUNDO caia em
+  // "streak_curto". O aviso nunca disparou para ninguem, e nunca reclamou.
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from("user_profiles")
     .select("daily_proof_streak")
     .eq("id", userId)
     .maybeSingle();
+
+  // Ler o perfil e falhar nao e o mesmo que a pessoa nao ter sequencia. Tratar os
+  // dois como "pular" foi o que escondeu o erro acima por uma versao inteira.
+  if (profileError) return { status: "error", reason: profileError.message };
 
   const streak = normalizeDailyProofStreak((profile as JsonRecord | null)?.daily_proof_streak);
   if (streak.current < STREAK_ALERT_MIN) {
@@ -1195,7 +1203,12 @@ const maybeSendStreakAlert = async (
     .select("id")
     .eq("user_id", userId)
     .eq("context_snapshot->>purpose", "streak_alert")
-    .gte("created_at", `${today}T00:00:00Z`)
+    // O dia OPERACIONAL comeca as 4h de Sao Paulo, que e 07:00Z — nao a
+    // meia-noite UTC. A diferenca nao era cosmetica: o aviso sai entre 21h e 23h
+    // de SP, ou seja 00h-02h UTC do dia SEGUINTE. Com o limite em T00:00:00Z, o
+    // aviso de ontem caia dentro da janela de hoje e a trava se fechava sozinha —
+    // o alerta dispararia dia sim, dia nao, e depois nunca mais.
+    .gte("created_at", `${today}T07:00:00Z`)
     .limit(1);
 
   if ((jaAvisado || []).length > 0) {

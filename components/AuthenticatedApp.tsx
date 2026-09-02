@@ -1709,14 +1709,15 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         updateUserProfile({
             ...buildOnboardingCompletePatch(userProfile),
             acceptedSystemChallenges,
-            onboardingAgeRange: answers.ageRange,
             onboardingPurpose: answers.purpose,
         });
-        // A presenca vai para onde o app ja a le: o portao de fala em cima deste
-        // arquivo e o modal de ajustes leem presenceLevel, nao o perfil.
-        if (answers.oraclePresenceLevel !== null) {
-            void updateOraclePreferences({ presenceLevel: answers.oraclePresenceLevel });
-        }
+        // A presenca do Oraculo deixou de ser perguntada aqui: ela ja existe em
+        // Ajustes > Oraculo & Alertas, nasce num padrao razoavel, e NAO e o
+        // consentimento de push — quem decide isso e o pedido de permissao do
+        // sistema, que este mesmo arquivo dispara logo depois do onboarding.
+        // A faixa etaria saiu junto: nao mudava nada e pedia um dado pessoal
+        // antes de a pessoa ter visto o app fazer qualquer coisa. O campo
+        // continua no tipo do perfil para nao perder o que ja foi respondido.
         setFirstUseOnboardingActive(false);
         window.setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tutorialNavigate', {
@@ -1731,7 +1732,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 showToast('Missao aceita. Ela ja esta acompanhando seu progresso.', 'success');
             }
         }, 120);
-    }, [showToast, updateOraclePreferences, updateUserProfile, userProfile]);
+    }, [showToast, updateUserProfile, userProfile]);
 
     useEffect(() => {
         if (!isProfileLoaded || showTerms) return;

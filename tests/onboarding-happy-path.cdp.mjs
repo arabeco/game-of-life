@@ -338,21 +338,13 @@ async function main() {
     await holdTermsPrimary(page, 950);
     checkpoints.push('terms-accepted');
 
-    await waitForOnboardingTitle(page, 'Qual sua faixa etaria?', 25000);
+    await waitForOnboardingTitle(page, 'Pra que voce quer usar o app?', 25000);
     checkpoints.push('onboarding-open');
 
-    // As tres perguntas de primeiro uso. Cada uma avanca ao escolher, sem botao
-    // Proximo, entao o clique na opcao e a unica saida do passo.
-    await page.clickSelector('#onboarding-age-25_34');
-    await waitForOnboardingTitle(page, 'Pra que voce quer usar o app?', 12000);
-    checkpoints.push('age-answered');
-
+    // A unica pergunta de primeiro uso. Avanca ao escolher, sem botao Proximo,
+    // entao o clique na opcao e a unica saida do passo.
     await page.clickSelector('#onboarding-purpose-organizar');
-    await waitForOnboardingTitle(page, 'Quanta presenca voce quer do Oraculo?', 12000);
     checkpoints.push('purpose-answered');
-
-    await page.clickSelector('#onboarding-oracle-2');
-    checkpoints.push('oracle-presence-answered');
 
     await waitForOnboardingTitle(page, 'Sua primeira arena', 12000);
     await advanceOverlay(page, 'Sua primeira arena');

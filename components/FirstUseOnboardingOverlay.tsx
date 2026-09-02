@@ -3,7 +3,7 @@ import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { SYSTEM_CHALLENGES } from '../constants/systemChallenges';
-import type { OnboardingAgeRange, OnboardingPurpose, OraclePresenceLevel } from '../types';
+import type { OnboardingPurpose } from '../types';
 
 type AppView = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
@@ -27,32 +27,20 @@ type StepDef = {
 };
 
 export type OnboardingAnswers = {
-  ageRange: OnboardingAgeRange | null;
   purpose: OnboardingPurpose | null;
-  oraclePresenceLevel: OraclePresenceLevel | null;
 };
 
-// As tres perguntas de primeiro uso. Nenhuma delas muda so texto: as respostas
-// vao para o perfil, e a presenca do Oraculo governa quanto ele fala depois.
-const AGE_RANGES = [
-  { id: 'ate_17' as const, label: 'Ate 17' },
-  { id: '18_24' as const, label: '18 a 24' },
-  { id: '25_34' as const, label: '25 a 34' },
-  { id: '35_49' as const, label: '35 a 49' },
-  { id: '50_mais' as const, label: '50+' },
-];
+// A UNICA pergunta de primeiro uso, e a unica que muda alguma coisa: o proposito
+// escolhe o texto dos passos seguintes.
+//
+// Saiu a faixa etaria, que nao mudava nada e pedia um dado pessoal antes de a
+// pessoa ter visto o app fazer qualquer coisa.
 
 const PURPOSES = [
   { id: 'organizar' as const, icon: '\u{1F5C2}', label: 'Organizar a vida', detail: 'Por ordem no que ja existe' },
   { id: 'habitos' as const, icon: '\u{1F331}', label: 'Criar habitos', detail: 'Firmar o que ainda nao pegou' },
   { id: 'objetivo' as const, icon: '\u{1F3AF}', label: 'Perseguir um objetivo', detail: 'Uma coisa que importa agora' },
   { id: 'retomar' as const, icon: '\u{1F9ED}', label: 'Retomar o controle', detail: 'Voltar a um rumo que se perdeu' },
-];
-
-const ORACLE_PRESENCES = [
-  { id: 1 as const, icon: '\u{1F311}', label: 'Discreta', detail: 'So no que importa' },
-  { id: 2 as const, icon: '\u{1F313}', label: 'Equilibrada', detail: 'Marca os momentos' },
-  { id: 3 as const, icon: '\u{1F315}', label: 'Presente', detail: 'Acompanha de perto' },
 ];
 
 const getTargetElement = (selector?: string) => {
@@ -96,9 +84,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [createdArenaId, setCreatedArenaId] = useState<string | null>(null);
-  const [ageRange, setAgeRange] = useState<OnboardingAgeRange | null>(null);
   const [purpose, setPurpose] = useState<OnboardingPurpose | null>(null);
-  const [oraclePresenceLevel, setOraclePresenceLevel] = useState<OraclePresenceLevel | null>(null);
   const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([]);
   const autoAdvanceStepRef = useRef<string | null>(null);
   const currentStepRef = useRef<StepDef | undefined>(undefined);
@@ -106,23 +92,9 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
   const steps = useMemo<StepDef[]>(() => [
     {
-      id: 'age-range',
-      title: 'Qual sua faixa etária?',
-      text: 'Ajuda a calibrar o ritmo e a linguagem. Fica só no seu perfil.',
-      navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
-      hideNext: true,
-    },
-    {
       id: 'purpose',
       title: 'Pra que você quer usar o app?',
       text: 'Não existe resposta errada, e dá pra mudar depois.',
-      navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
-      hideNext: true,
-    },
-    {
-      id: 'oracle-presence',
-      title: 'Quanta presença você quer do Oráculo?',
-      text: 'Ele comenta o que você faz. Você decide o quanto.',
       navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
       hideNext: true,
     },
@@ -249,7 +221,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
           : purpose === 'retomar'
             ? 'O primeiro ponto está de pé. Recomeçar é isso: um lugar por vez.'
             : 'Seu foco está pronto. Agora basta agir e registrar quando fizer.')
-        + ' Cada tela se apresenta na primeira vez que você entra, e o tutorial completo fica em Ajustes quando quiser.',
+        + ' Cada tela se apresenta na primeira vez que você entra, e o tutorial completo fica em Ajustes quando quiser.'
+        + ' O quanto eu falo também se ajusta lá, em Oráculo & Alertas.',
       navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
       final: true,
     },
@@ -300,9 +273,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       setDisplayedText('');
       setIsTyping(false);
       setCreatedArenaId(null);
-      setAgeRange(null);
       setPurpose(null);
-      setOraclePresenceLevel(null);
       setSelectedMissionIds([]);
       autoAdvanceStepRef.current = null;
       currentStepRef.current = undefined;
@@ -565,7 +536,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     if (!step) return;
 
     if (step.final) {
-      onComplete(selectedMissionIds, { ageRange, purpose, oraclePresenceLevel });
+      onComplete(selectedMissionIds, { purpose });
       return;
     }
 
@@ -584,7 +555,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
     }
 
     advanceStep();
-  }, [advanceStep, ageRange, isTyping, onComplete, oraclePresenceLevel, purpose, selectedMissionIds, step]);
+  }, [advanceStep, isTyping, onComplete, purpose, selectedMissionIds, step]);
 
   useEffect(() => {
     if (!active) return;
@@ -614,7 +585,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       ? 'Abrir'
       : 'Próximo';
   const helperText = step.hideNext
-    ? step.id === 'age-range' || step.id === 'purpose' || step.id === 'oracle-presence'
+    ? step.id === 'purpose'
       ? 'Não existe escolha errada. Dá para mudar depois, nos ajustes.'
       : step.id === 'arena-save'
       ? 'Crie a arena e eu já sigo para a próxima etapa.'
@@ -706,25 +677,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
                     {isTyping && <span className="ml-1 inline-block h-3 w-1 animate-pulse align-middle bg-[#f3d48a] opacity-80 md:h-4 md:w-1.5" />}
                   </p>
 
-                  {step.id === 'age-range' && (
-                    <div className="mt-3 grid grid-cols-5 gap-1.5">
-                      {AGE_RANGES.map(option => (
-                        <button
-                          key={option.id}
-                          id={`onboarding-age-${option.id}`}
-                          type="button"
-                          onClick={() => handleAnswerAndAdvance(() => setAgeRange(option.id))}
-                          className={`min-w-0 rounded-xl border px-1 py-3 text-center transition-all active:scale-[0.98] ${
-                            ageRange === option.id
-                              ? 'border-[#f3d48a]/70 bg-[#f3d48a]/18 text-[#fff0c7]'
-                              : 'border-white/10 bg-white/[0.04] text-white/74 hover:border-[#f3d48a]/35 hover:bg-[#f3d48a]/8'
-                          }`}
-                        >
-                          <span className="block text-[9px] font-black uppercase tracking-[0.04em] md:text-[10px]">{option.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
 
                   {step.id === 'purpose' && (
                     <div className="mt-3 grid grid-cols-2 gap-2">
@@ -748,27 +700,6 @@ export const FirstUseOnboardingOverlay: React.FC<{
                     </div>
                   )}
 
-                  {step.id === 'oracle-presence' && (
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {ORACLE_PRESENCES.map(option => (
-                        <button
-                          key={option.id}
-                          id={`onboarding-oracle-${option.id}`}
-                          type="button"
-                          onClick={() => handleAnswerAndAdvance(() => setOraclePresenceLevel(option.id))}
-                          className={`min-w-0 rounded-xl border px-2 py-3 text-center transition-all active:scale-[0.98] ${
-                            oraclePresenceLevel === option.id
-                              ? 'border-[#f3d48a]/70 bg-[#f3d48a]/18 text-[#fff0c7]'
-                              : 'border-white/10 bg-white/[0.04] text-white/74 hover:border-[#f3d48a]/35 hover:bg-[#f3d48a]/8'
-                          }`}
-                        >
-                          <span className="block text-lg leading-none">{option.icon}</span>
-                          <span className="mt-2 block text-[9px] font-black uppercase tracking-[0.08em] md:text-[10px]">{option.label}</span>
-                          <span className="mt-1 block text-[8px] text-white/42 md:text-[9px]">{option.detail}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
 
                   {step.id === 'missions' && (
                     <div className="mt-3 space-y-2">

@@ -15,7 +15,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-/dev-*.log
+# Todo log fica fora do git. A regra era so `/dev-*.log`, e 34 logs de smoke,
+# preview e hardening acabaram versionados por nao casarem com esse padrao.
+*.log
 
 # Editor directories and files
 .vscode
@@ -28,6 +30,9 @@ pnpm-debug.log*
 *.sw?
 
 # Backup and temporary files
+tmp_*
+temp_*
+ts_errors*.txt
 *_BACKUP.txt
 *.bak
 temp/

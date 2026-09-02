@@ -22,4 +22,21 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
     assert.match(source, /__APP_VERSION__/, 'AuthenticatedApp deve usar __APP_VERSION__');
 }
 
+// 2. JSX morto mantido vivo com `{false && (` nao pode voltar.
+//
+// Sao telas antigas que ninguem apaga "por seguranca" e que passam a ser lidas,
+// mantidas e refatoradas por engano — codigo que custa atencao e nao renderiza
+// nada. O git guarda o que foi removido; o arquivo nao precisa guardar tambem.
+{
+    const files = [
+        'views/ArenasView.tsx',
+        'views/MundoView.tsx',
+        'views/SettingsView.tsx',
+        'views/SovereignPanelView.tsx',
+    ];
+    for (const file of files) {
+        assert.doesNotMatch(read(file), /\{false && \(/, `${file} ainda tem JSX morto com {false && (`);
+    }
+}
+
 console.log('ui-hygiene: ok');

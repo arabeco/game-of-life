@@ -2427,59 +2427,6 @@ export const SovereignPanelView: React.FC = () => {
         </GlassCard>
       </section>
 
-      {false && (
-        <>
-          <section>
-            <GlassCard variant="neutral" className="p-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-500">Laborat??rio de Legado</p>
-                  <h2 className="text-lg font-black text-white">Visualiza????o de Amostra</h2>
-                  <p className="text-xs text-zinc-400">Abra uma proje????o premium de legado com 3 eras e 9 ciclos curados, ou um relat??rio de ciclo nota S pronto para print.</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <LegacyPreviewButton />
-                  <CycleReportPreviewButton />
-                </div>
-              </div>
-            </GlassCard>
-          </section>
-
-          <section>
-            <GlassCard variant="neutral" className="p-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-400">Laborat??rio de Plano</p>
-                  <h2 className="text-lg font-black text-white">Preview do modal de renova????o</h2>
-                  <p className="text-xs text-zinc-400">Abra o mesmo modal usado no app para validar Premium e Platinum sem depender de compra real.</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <MembershipRewardPreviewButton tier="premium" />
-                  <MembershipRewardPreviewButton tier="platinum" />
-                </div>
-              </div>
-            </GlassCard>
-          </section>
-
-          <section>
-            <GlassCard variant="neutral" className="p-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500">Laboratorio de Notificacoes</p>
-                  <h2 className="text-lg font-black text-white">Fabrica de Eventos</h2>
-                  <p className="text-xs text-zinc-400">Tres testes objetivos: sistema, card do Oraculo e sistema com push local em 15 segundos.</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <NotificationTypeButton type="system" label="Sistema Agora" color="blue" />
-                  <NotificationTypeButton type="oracle_card" label="Card do Oraculo" color="purple" />
-                  <NotificationTestButton />
-                </div>
-              </div>
-            </GlassCard>
-          </section>
-
-        </>
-      )}
 
       {selectedRow && <PlayerInsightModal row={selectedRow} onClose={() => setSelectedRow(null)} />}
     </div>

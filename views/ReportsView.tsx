@@ -3,7 +3,7 @@
 
 import React, { Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { Report, Cycle, ChestType, FeedEvent, RewardModalPayload } from '../types';
+import { Report, Cycle, ChestType, FeedEvent } from '../types';
 import { GlassCard } from '../components/GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ShareIcon, Trash2Icon, EditIcon } from '../components/Icons';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -17,7 +17,6 @@ import { LegacyGrandPlaque } from '../components/LegacyGrandPlaque';
 import { EraRibbon, ERA_RIBBON_SKINS, getEraRibbonSkin } from '../components/EraRibbon';
 import { MetalReportCard } from '../components/MetalReportCard';
 import { Portal } from '../components/Portal';
-import { RewardPackModal } from '../components/RewardPackModal';
 
 import { NOBILITY_RANKS } from '../constants/nobility';
 import { getGoldMechanicPrice } from '../constants/goldCatalog';
@@ -25,7 +24,6 @@ import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks } from '../utils/fairScoreUtils.js';
 import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
-import { buildChestRewardPayload } from '../utils/chestRewardPresentation';
 import { getLegacyProjectionScenePrice, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
 const CycleComparator = React.lazy(() => import('../components/CycleComparator').then(m => ({ default: m.CycleComparator })));
 const ReportGenerationModal = React.lazy(() => import('../components/ReportGenerationModal').then(m => ({ default: m.ReportGenerationModal })));
@@ -631,7 +629,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         reports, activeCycle, upcomingCycle, startCycle, updateCycle, endCycle, assets, actions,
         applyExp, addChest, addFeedEvent, seasons, userProfile,
         oraclePreferences, showToast, grantInventoryItem, grantUserUnlock, updateUserProfile,
-        deleteCycle, fetchNotifications, openChest, continueFreeProgressFrom
+        deleteCycle, fetchNotifications, continueFreeProgressFrom
     } = useGame();
     const [view, setView] = useState<'hub' | 'scanning' | 'results' | 'comparing' | 'reward'>('hub');
     const [isStartingCycle, setIsStartingCycle] = useState(false);
@@ -664,7 +662,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [postCycleChestOpened, setPostCycleChestOpened] = useState(false);
     const [postCycleChestPrepared, setPostCycleChestPrepared] = useState(false);
     const [isOpeningPostCycleChest, setIsOpeningPostCycleChest] = useState(false);
-    const [reportRewardPayload, setReportRewardPayload] = useState<RewardModalPayload | null>(null);
     const [isExportingLegacy, setIsExportingLegacy] = useState(false);
     const [showLegacyProjectionModal, setShowLegacyProjectionModal] = useState(false);
     const [legacyShareUnlocked, setLegacyShareUnlocked] = useState(false);
@@ -961,7 +958,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setPostCycleRewardsGranted(false);
         setPostCycleChestOpened(false);
         setPostCycleChestPrepared(false);
-        setReportRewardPayload(null);
         setIsOpeningPostCycleChest(false);
 
         return { ok: true, chest: chestType };
@@ -1290,20 +1286,27 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             }
 
             if (!chestReady) {
-                showToast('Não foi possível preparar o baú deste ciclo.', 'error');
+                showToast('Não foi possível guardar o baú deste ciclo.', 'error');
                 return;
             }
 
-            const result = await openChest(earnedChest);
-            if (!result) {
-                return;
-            }
-
+            // O bau para AQUI, fechado, no Arsenal — nao abre mais em linha.
+            //
+            // Abrir junto encadeava duas cerimonias: o video do selo do relatorio
+            // e, logo atras, o video do bau. Na segunda a pessoa ja quer chegar ao
+            // fim, e a recompensa maior do app virava a espera antes do resultado.
+            //
+            // Guardado, ele vira promessa: um bau fechado esperando no Arsenal vale
+            // mais que um video assistido com pressa. E devolve a escolha de quando
+            // abrir, que e a unica parte de abrir bau que e da pessoa.
+            //
+            // O caminho do Arsenal ja existe e ja funciona (handleInventoryChestOpen),
+            // entao isto remove um segundo caminho em vez de criar um.
             setPostCycleChestOpened(true);
-            setReportRewardPayload(buildChestRewardPayload(result, earnedChest));
+            showToast(`Baú ${earnedChest} guardado no Arsenal. Abra quando quiser.`, 'success');
         } catch (error) {
-            console.error('Erro ao abrir o baú do ciclo:', error);
-            showToast('Não foi possível abrir o baú deste ciclo.', 'error');
+            console.error('Erro ao guardar o baú do ciclo:', error);
+            showToast('Não foi possível guardar o baú deste ciclo.', 'error');
         } finally {
             setIsOpeningPostCycleChest(false);
         }
@@ -1314,7 +1317,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         postCycleChestPrepared,
         ensurePostCycleRewardsGranted,
         addChest,
-        openChest,
         showToast,
     ]);
 
@@ -1332,7 +1334,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setGrantedInsignias([]);
         setFragmentsGained(0);
         setPostCycleChestPrepared(false);
-        setReportRewardPayload(null);
     };
 
     const handleForceClose = useCallback((event?: { preventDefault?: () => void; stopPropagation?: () => void }) => {
@@ -1351,7 +1352,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setPostCycleChestPrepared(false);
         setIsOpeningPostCycleChest(false);
         setFragmentsGained(0);
-        setReportRewardPayload(null);
         if (typeof window !== 'undefined') {
             (window as any).__glyphPendingCycleResults = null;
         }
@@ -1389,7 +1389,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         setGrantedInsignias([]);
         setFragmentsGained(0);
         setPostCycleChestPrepared(false);
-        setReportRewardPayload(null);
         setView('hub');
     };
 
@@ -3058,11 +3057,6 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     onCancel={() => setShowConfirmEndCycle(false)}
                 />
             )}
-            <RewardPackModal
-                open={!!reportRewardPayload}
-                payload={reportRewardPayload}
-                onClose={() => setReportRewardPayload(null)}
-            />
         </>
     );
 };

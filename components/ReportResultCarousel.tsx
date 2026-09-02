@@ -776,9 +776,9 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                         onClick={onOpenChest}
                                         disabled={chestOpened || isOpeningChest}
                                         className={`shrink-0 rounded-xl border px-4 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${chestOpened || isOpeningChest ? 'h-12 cursor-default border-white/[0.04] bg-white/[0.03] text-gray-600' : 'h-12 border-white/[0.08] bg-black/60 text-white hover:border-[var(--skin-accent-color)]/40 hover:bg-white/[0.05]'}`}
-                                        title={chestOpened ? 'Baú já aberto' : 'Abrir baú agora'}
+                                        title={chestOpened ? 'Já está no seu Arsenal' : 'Guardar o baú no Arsenal'}
                                     >
-                                        {isOpeningChest ? 'Abrindo...' : chestOpened ? 'Baú aberto' : 'Abrir baú'}
+                                        {isOpeningChest ? 'Guardando...' : chestOpened ? 'No Arsenal' : 'Guardar baú'}
                                     </button>
                                 )}
 

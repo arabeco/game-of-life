@@ -177,7 +177,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                                     {isAttachMode ? `Arenas para ${targetCampaign?.title || 'campanha'}` : 'Criar campanha'}
                                 </h3>
                             </div>
-                            <button onClick={onClose} className="rounded-full border border-white/12 bg-black/20 p-2 text-white/70 transition-all hover:bg-white/8 hover:text-white">
+                            <button aria-label="Fechar" onClick={onClose} className="rounded-full border border-white/12 bg-black/20 p-2 text-white/70 transition-all hover:bg-white/8 hover:text-white">
                                 <XIcon className="h-4 w-4" />
                             </button>
                         </div>

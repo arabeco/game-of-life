@@ -31,7 +31,7 @@ const Selector: React.FC<{
     <div className="flex flex-col items-center gap-1 w-full">
         <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</span>
         <div className="flex items-center justify-between w-full bg-black/20 rounded-lg p-1 border border-white/5">
-            <button onClick={onPrev} className="p-2 hover:bg-white/10 rounded-md transition-colors text-white/70 hover:text-white">
+            <button aria-label="Anterior" onClick={onPrev} className="p-2 hover:bg-white/10 rounded-md transition-colors text-white/70 hover:text-white">
                 <ChevronLeftIcon className="w-4 h-4" />
             </button>
             
@@ -44,7 +44,7 @@ const Selector: React.FC<{
                 </span>
             </div>
 
-            <button onClick={onNext} className="p-2 hover:bg-white/10 rounded-md transition-colors text-white/70 hover:text-white">
+            <button aria-label="Próximo" onClick={onNext} className="p-2 hover:bg-white/10 rounded-md transition-colors text-white/70 hover:text-white">
                 <ChevronRightIcon className="w-4 h-4" />
             </button>
         </div>
@@ -306,7 +306,7 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
                         <EditIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />
                         Customizar
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <button aria-label="Fechar" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                         <XIcon className="w-5 h-5 text-gray-400" />
                     </button>
                 </div>

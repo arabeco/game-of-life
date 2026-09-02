@@ -110,7 +110,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                                 )}
                             </button>
                         </div>
-                        <button
+                        <button aria-label="Fechar"
                             onClick={onClose}
                             className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                         >

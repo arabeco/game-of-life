@@ -57,6 +57,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArc
                                         <button
                                             key={arena.id}
                                             type="button"
+                                            aria-label={`Abrir ${arena.name}`}
                                             onClick={interactive ? () => setViewingArenaId(arena.id) : undefined}
                                             disabled={!interactive}
                                             className={`w-[9.25rem] shrink-0 ${index > 0 ? '-ml-6' : ''}`}

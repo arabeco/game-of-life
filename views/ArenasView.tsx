@@ -1898,7 +1898,7 @@ export const ArenasView: React.FC = () => {
                                                 {action.actionType} • {action.duration}m{action.actionType === 'Ação Recorrente' ? ` • x${action.repetitions}` : ''}
                                             </div>
                                         </div>
-                                        <button onClick={() => handleRemovePendingAction(action.id)} className="p-1 text-gray-400 hover:text-gray-200">
+                                        <button aria-label="Remover ação" onClick={() => handleRemovePendingAction(action.id)} className="p-1 text-gray-400 hover:text-gray-200">
                                             <XIcon className="w-4 h-4" />
                                         </button>
                                     </div>

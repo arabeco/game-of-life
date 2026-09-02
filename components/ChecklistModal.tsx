@@ -82,10 +82,10 @@ const ChecklistRow: React.FC<ChecklistRowProps> = ({ item, onToggle, onUpdate, o
                     {item.text}
                 </span>
             )}
-            <button type="button" onClick={() => setIsEditing((prev) => !prev)} className="p-1 text-white/45 transition-colors hover:text-white">
+            <button aria-label="Editar item" type="button" onClick={() => setIsEditing((prev) => !prev)} className="p-1 text-white/45 transition-colors hover:text-white">
                 <EditIcon className="h-4 w-4" />
             </button>
-            <button type="button" onClick={() => onDelete(item.id)} className="p-1 text-white/35 transition-colors hover:text-rose-400">
+            <button aria-label="Excluir item" type="button" onClick={() => onDelete(item.id)} className="p-1 text-white/35 transition-colors hover:text-rose-400">
                 <Trash2Icon className="h-4 w-4" />
             </button>
         </div>
@@ -230,7 +230,7 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
                     </div>
                 </button>
 
-                <button type="button" onClick={() => setIsEditing((prev) => !prev)} className="p-1 text-white/45 transition-colors hover:text-white">
+                <button aria-label="Editar item" type="button" onClick={() => setIsEditing((prev) => !prev)} className="p-1 text-white/45 transition-colors hover:text-white">
                     <EditIcon className="h-4 w-4" />
                 </button>
             </div>
@@ -243,21 +243,21 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
 
                 {isEditing ? (
                     <div className="flex items-center gap-2">
-                        <button
+                        <button aria-label="Diminuir"
                             type="button"
                             onClick={() => onAdjust(item.id, -1)}
                             className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-white/80 transition-colors hover:bg-black/35"
                         >
                             <MinusIcon className="h-4 w-4" />
                         </button>
-                        <button
+                        <button aria-label="Aumentar"
                             type="button"
                             onClick={() => onAdjust(item.id, 1)}
                             className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-white/80 transition-colors hover:bg-black/35"
                         >
                             <PlusIcon className="h-4 w-4" />
                         </button>
-                        <button
+                        <button aria-label="Excluir item"
                             type="button"
                             onClick={() => onDelete(item.id)}
                             className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-400/25 bg-rose-500/10 text-rose-300 transition-colors hover:bg-rose-500/18"
@@ -331,7 +331,7 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                             <h2 className="text-lg font-black uppercase tracking-[0.16em] text-white">Checklist</h2>
                             <p className="mt-1 text-xs text-white/45">Checklist diario e sequencias manuais.</p>
                         </div>
-                        <button type="button" onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-white/65 transition-colors hover:bg-black/35 hover:text-white">
+                        <button aria-label="Fechar" type="button" onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-white/65 transition-colors hover:bg-black/35 hover:text-white">
                             <XIcon className="h-4 w-4" />
                         </button>
                     </div>
@@ -390,7 +390,7 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                     onKeyDown={(event) => event.key === 'Enter' && handleAddChecklistItem()}
                                     className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-white/28 focus:border-[var(--skin-accent-color)]/45 focus:outline-none"
                                 />
-                                <button type="button" onClick={handleAddChecklistItem} className="flex h-[3rem] w-[3rem] items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-white transition-colors hover:bg-black/35">
+                                <button aria-label="Adicionar item ao checklist" type="button" onClick={handleAddChecklistItem} className="flex h-[3rem] w-[3rem] items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-white transition-colors hover:bg-black/35">
                                     <PlusIcon className="h-5 w-5" />
                                 </button>
                             </div>
@@ -429,7 +429,7 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                         className="w-full rounded-2xl border border-white/10 bg-black/25 py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/28 focus:border-[var(--skin-accent-color)]/45 focus:outline-none"
                                     />
                                 </div>
-                                <button type="button" onClick={handleAddSequenceItem} className="flex h-[3rem] w-[3rem] items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-white transition-colors hover:bg-black/35">
+                                <button aria-label="Adicionar passo à sequência" type="button" onClick={handleAddSequenceItem} className="flex h-[3rem] w-[3rem] items-center justify-center rounded-2xl border border-white/10 bg-black/25 text-white transition-colors hover:bg-black/35">
                                     <PlusIcon className="h-5 w-5" />
                                 </button>
                             </div>

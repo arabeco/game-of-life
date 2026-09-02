@@ -203,7 +203,7 @@ export const ChestOpeningModal: React.FC<ChestOpeningModalProps> = ({ chestType,
                     style={{ borderColor: `${skinBorderColor}40`, borderWidth: '1px' }}
                 >
                     <div className="absolute right-3 top-3 z-50">
-                        <button onClick={onClose} className="rounded-full border border-white/10 bg-black/40 p-2 text-white/80 backdrop-blur-md transition-all hover:bg-black/60 hover:text-white">
+                        <button aria-label="Fechar" onClick={onClose} className="rounded-full border border-white/10 bg-black/40 p-2 text-white/80 backdrop-blur-md transition-all hover:bg-black/60 hover:text-white">
                             <XIcon className="h-4 w-4" />
                         </button>
                     </div>

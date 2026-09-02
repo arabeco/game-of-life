@@ -69,18 +69,18 @@ export const FolderDetailModal: React.FC<FolderDetailModalProps> = ({ folder, on
                     </div>
                     <div className="flex items-center gap-2">
                          {isEditing ? (
-                            <button onClick={handleSave} className="p-2 text-green-400 hover:bg-white/10 rounded-full">
+                            <button aria-label="Salvar" onClick={handleSave} className="p-2 text-green-400 hover:bg-white/10 rounded-full">
                                 <CheckIcon className="w-5 h-5" />
                             </button>
                         ) : (
-                            <button onClick={() => setIsEditing(true)} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full">
+                            <button aria-label="Editar pasta" onClick={() => setIsEditing(true)} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full">
                                 <EditIcon className="w-5 h-5" />
                             </button>
                         )}
-                        <button onClick={handleDelete} className="p-2 text-red-400 hover:bg-white/10 rounded-full">
+                        <button aria-label="Excluir pasta" onClick={handleDelete} className="p-2 text-red-400 hover:bg-white/10 rounded-full">
                             <Trash2Icon className="w-5 h-5" />
                         </button>
-                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full">
+                        <button aria-label="Fechar" onClick={onClose} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full">
                             <XIcon className="w-6 h-6" />
                         </button>
                     </div>

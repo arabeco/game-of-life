@@ -15,7 +15,7 @@ export const SitrepModal: React.FC<{ onClose: () => void; selectedDate?: string 
                             <LightbulbIcon className="w-6 h-6 accent-text" />
                             <h2 className="text-lg font-bold uppercase tracking-wider text-center">Resumo Diario</h2>
                         </div>
-                        <button onClick={onClose} className="absolute right-4 p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
+                        <button aria-label="Fechar" onClick={onClose} className="absolute right-4 p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
                         <SitrepContent onClose={onClose} selectedDateOverride={selectedDate} />

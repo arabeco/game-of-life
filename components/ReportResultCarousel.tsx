@@ -700,7 +700,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                     {autoPlayPaused ? 'Pausado' : 'Auto'}
                                 </span>
                             )}
-                            <button
+                            <button aria-label="Fechar"
                                 onClick={onOk}
                             className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/[0.05] transition-all border border-transparent hover:border-white/[0.05]"
                             >

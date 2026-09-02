@@ -2008,7 +2008,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         onError={(e) => (e.currentTarget.style.display = 'none')}
                                                     />
                                                     {mode === 'edit' && (
-                                                        <button
+                                                        <button aria-label="Remover mídia"
                                                             onClick={() => { setNewAssetUrl(''); setMediaSlot({ imageUrl: '', caption: '' }); setEditableAction(p => ({ ...p, assets: [] })); }}
                                                             className="absolute top-2 right-2 p-1.5 bg-red-500/80 rounded-full text-white hover:bg-red-500 transition-colors"
                                                         >
@@ -2152,7 +2152,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         <div className="mt-1 w-2 h-2 rounded-full bg-[var(--skin-accent-color)]/50 group-hover:bg-[var(--skin-accent-color)] group-hover:shadow-[0_0_8px_var(--sephirot-glow-color)] transition-all" />
                                                         <span className="text-sm text-gray-300 font-medium leading-snug flex-1">{item}</span>
                                                         {mode === 'edit' && canEditAuthorialContent && (
-                                                            <button
+                                                            <button aria-label="Remover item do checklist"
                                                                 onClick={() => setEditableAction(prev => ({ ...prev, preFlight: prev.preFlight?.filter((_, idx) => idx !== i) }))}
                                                                 className="text-gray-500 hover:text-red-400 opacity-50 hover:opacity-100 transition-opacity"
                                                             >
@@ -2184,7 +2184,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                         placeholder="Adicionar item..."
                                                         className="flex-1 p-3 bg-black/30 border border-white/8 rounded-xl text-xs focus:outline-none focus:border-[var(--skin-accent-color)]"
                                                     />
-                                                    <button
+                                                    <button aria-label="Adicionar item ao checklist"
                                                         onClick={() => {
                                                             if (newChecklistItem.trim()) {
                                                                 setEditableAction(prev => ({ ...prev, preFlight: [...(prev.preFlight || []), newChecklistItem.trim()] }));

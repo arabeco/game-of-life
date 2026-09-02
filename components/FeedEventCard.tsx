@@ -239,12 +239,19 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                             {timeAgo(new Date(event.timestamp))}
                         </span>
 
-                        <button
-                            className="shrink-0 rounded-full p-1 text-white/20 transition-colors hover:bg-white/5 hover:text-[var(--skin-accent-color)]"
+                        {/* Coroa decorativa, nao botao.
+                            Estava escrita como <button> sem onClick nenhum: recebia foco,
+                            era anunciada como botao para leitor de tela e nao fazia nada.
+                            Botao que nao age e pior do que icone parado, porque promete um
+                            toque que nao existe. Os estilos de hover ficaram — sao herança
+                            de quando ela ia fazer algo — e nada mais muda na tela. */}
+                        <span
+                            aria-hidden="true"
+                            className="inline-flex shrink-0 rounded-full p-1 text-white/20"
                             data-html2canvas-ignore
                         >
                             <CrownIcon className="h-3.5 w-3.5" />
-                        </button>
+                        </span>
                         <button
                             onClick={() => {
                                 void shareElementWithFeedback(showToast, `feed-event-${event.id}`, {

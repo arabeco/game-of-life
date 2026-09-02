@@ -267,7 +267,7 @@ export const ClanChat: React.FC = () => {
           placeholder="Mensagem para o grupo..."
           className="flex-1 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs text-white transition-colors placeholder-gray-600 focus:border-[var(--skin-accent-color)]/50 focus:outline-none"
         />
-        <button
+        <button aria-label="Enviar mensagem"
           onClick={() => void handleSend()}
           disabled={!inputValue.trim()}
           className="rounded-full bg-[var(--skin-accent-color)]/20 p-2 text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/30 disabled:cursor-not-allowed disabled:opacity-50"

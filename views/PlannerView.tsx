@@ -2177,9 +2177,9 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             </button>
                         </div>
                         <div className="flex items-center justify-center space-x-0.5" id="cycle-hud">
-                            <button onClick={() => changeDate(-1)} className="planner-soft-control p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button>
+                            <button aria-label="Dia anterior" onClick={() => changeDate(-1)} className="planner-soft-control p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronLeftIcon className="w-4 h-4" /></button>
                             <span className="planner-date-label tracking-[0.06em] text-[12px] font-semibold w-[5.75rem] text-center text-gray-200 capitalize truncate">{currentDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}</span>
-                            <button onClick={() => changeDate(1)} className="planner-soft-control p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
+                            <button aria-label="Próximo dia" onClick={() => changeDate(1)} className="planner-soft-control p-1 rounded-full hover:bg-white/8 text-gray-400 hover:text-white"><ChevronRightIcon className="w-4 h-4" /></button>
                         </div>
                         <div className="hidden">
                             <PlannerSegmentedToggle
@@ -2268,7 +2268,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                             )}
                         </div>
                         <div className={`relative flex-shrink-0 ${bayAreaHeight} transition-all duration-300`}>
-                            <button onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="planner-bay-surface w-10 h-full rounded-2xl flex items-center justify-center hover:bg-white/[0.05] transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" /></svg></button>
+                            <button aria-label="Metas disponíveis" onClick={() => setIsMilestonePoolOpen(prev => !prev)} className="planner-bay-surface w-10 h-full rounded-2xl flex items-center justify-center hover:bg-white/[0.05] transition-colors"><svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--accent-silver)] transform rotate-45 opacity-70"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" /></svg></button>
                             {isMilestonePoolOpen && (<div className="absolute top-full right-0 mt-2 max-h-[42vh] w-56 overflow-y-auto core-surface-strong rounded-xl p-2 space-y-1 z-[80] animate-fade-in shadow-[0_18px_44px_rgba(0,0,0,0.42)]"><h4 className="core-label text-center pb-1 border-b border-white/6">Marcos</h4>{milestoneActions.length > 0 ?milestoneActions.map(action => (<MilestonePoolAction key={action.id} action={action} onCustomDragStart={handleCustomDragStart} onComplete={scheduleAndCompleteMilestoneNow} onActionClick={(a) => setModalData({ action: a })} />)) : (<p className="text-[10px] text-center text-gray-600 py-2">Vazio</p>)}</div>)}
                         </div>
                     </div>
@@ -2373,7 +2373,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                         placeholder={'A\u00E7\u00E3o @ Arena...'}
                                         className="planner-oracle-input flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--skin-accent-color)]/50 placeholder-gray-500"
                                     />
-                                    <button
+                                    <button aria-label="Enviar ao Oráculo"
                                         onClick={handleOracleSubmit}
                                         className="p-2 bg-[var(--ui-button-primary-bg)] text-[var(--ui-text-on-accent)] rounded-lg hover:brightness-110 transition-colors"
                                     >
@@ -2402,7 +2402,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <span className="planner-date-label font-bold text-[9px] leading-none text-white/72">{zoomLevel}x</span>
                     <button onClick={() => setZoomLevel(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} disabled={zoomLevel === 1} className="planner-soft-control p-1.5 disabled:opacity-50" title="Afastar"><MinusIcon className="w-3.5 h-3.5" /></button>
                 </div>
-                <button onClick={() => setIsActionModalOpen(true)} className="w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-6 h-6 text-black" /></button>
+                <button aria-label="Nova ação" onClick={() => setIsActionModalOpen(true)} className="w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-6 h-6 text-black" /></button>
             </div>
             {isChecklistVisible && <ChecklistModal onClose={() => setChecklistVisible(false)} />}
             {isSitrepVisible && <SitrepModal selectedDate={sitrepDate} onClose={() => setIsSitrepVisible(false)} />}

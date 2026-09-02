@@ -217,7 +217,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                                 {formatBrl(props.amount)} - {productSummary}
                             </p>
                         </div>
-                        <button onClick={props.onClose} className="rounded-full p-2 text-gray-400 transition-all hover:scale-110 hover:bg-white/10 hover:text-white">
+                        <button aria-label="Fechar" onClick={props.onClose} className="rounded-full p-2 text-gray-400 transition-all hover:scale-110 hover:bg-white/10 hover:text-white">
                             <XIcon className="h-5 w-5" />
                         </button>
                     </div>

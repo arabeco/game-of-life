@@ -351,7 +351,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                         </button>
                                     </>
                                 )}
-                                <button 
+                                <button aria-label="Voltar para as conversas" 
                                     onClick={() => setSelectedParticipantId(null)}
                                     className="sm:hidden p-2 rounded-full hover:bg-white/10 text-gray-400 active:scale-90 transition-transform"
                                 >
@@ -447,7 +447,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                     disabled={isSelectedUserBlocked}
                                 />
                             </div>
-                            <button 
+                            <button aria-label="Enviar mensagem" 
                                 onClick={handleSend}
                                 disabled={!inputValue.trim() || isSelectedUserBlocked}
                                 className="w-12 h-12 rounded-2xl bg-[var(--skin-accent-color)] flex items-center justify-center text-black hover:scale-105 active:scale-95 disabled:opacity-20 disabled:grayscale disabled:scale-100 transition-all shadow-xl"

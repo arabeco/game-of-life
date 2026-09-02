@@ -112,7 +112,7 @@ const SovereignDetailModal: React.FC<{ member: EnrichedClanMember; onClose: () =
         <Portal>
             <div className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
                 <GlassCard variant="accent" className="w-full max-w-sm m-4 p-6 relative flex flex-col items-center space-y-4" onClick={e => e.stopPropagation()}>
-                    <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/20 text-gray-400 hover:text-white transition-colors">
+                    <button aria-label="Fechar" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/20 text-gray-400 hover:text-white transition-colors">
                         <XIcon className="w-5 h-5" />
                     </button>
 
@@ -1315,7 +1315,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                             <ClanHeader userClanRole={userClanRole} expandDescription={expandDescription} />
 
                             {/* Header Actions */}
-                            <button onClick={onClose} className="absolute top-4 right-4 z-50 p-1 rounded-full bg-black/50 hover:bg-black/80 text-white"><XIcon className="w-5 h-5" /></button>
+                            <button aria-label="Fechar" onClick={onClose} className="absolute top-4 right-4 z-50 p-1 rounded-full bg-black/50 hover:bg-black/80 text-white"><XIcon className="w-5 h-5" /></button>
 
                             {/* Leader Edit Button */}
                             {userClanRole === 'leader' && (

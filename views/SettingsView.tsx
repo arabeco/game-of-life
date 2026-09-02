@@ -230,7 +230,7 @@ const PrivacyPreferencesModal: React.FC<{
                             <h2 className="text-lg font-black uppercase tracking-[0.08em] text-white">Pacto e visibilidade</h2>
                             <p className="text-xs leading-relaxed text-gray-400">Revise o pacto do jogo e controle o que os outros conseguem ver.</p>
                         </div>
-                        <button onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-gray-400 transition-colors hover:text-white">
+                        <button aria-label="Fechar" onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-gray-400 transition-colors hover:text-white">
                             <XIcon className="w-4 h-4" />
                         </button>
                     </div>
@@ -1116,7 +1116,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center">
                         <div className="text-xs font-bold uppercase tracking-wider accent-text">VÍNCULOS</div>
-                        <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
+                        <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
 
                     <div className="flex space-x-2">
@@ -1538,7 +1538,7 @@ const ChallengeSelectionModal: React.FC<{ title?: string; onClose: () => void; o
                 <GlassCard variant="neutral" className="w-full max-w-sm max-h-[70vh] flex flex-col rounded-3xl p-4" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-sm font-black uppercase tracking-widest text-white">{title}</h3>
-                        <button onClick={onClose}><XIcon className="w-5 h-5 text-gray-400" /></button>
+                        <button aria-label="Fechar" onClick={onClose}><XIcon className="w-5 h-5 text-gray-400" /></button>
                     </div>
 
                     <input
@@ -1710,7 +1710,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <div className="text-xs font-bold uppercase tracking-wider accent-text">Relatório de Inteligência Beta</div>
                             <div className="text-[10px] text-gray-500">ID: {userProfile.nickname}</div>
                         </div>
-                        <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
+                        <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
 
                     <div className="space-y-5 max-h-[62vh] overflow-y-auto pr-1">
@@ -2578,7 +2578,7 @@ const MentorCodexModal: React.FC<{
                             <div className="text-[10px] font-black tracking-widest text-gray-400">MENTORIA</div>
                             <div className="text-base font-bold text-white">Campanha para {pupil?.nickname || 'Pupilo'}</div>
                         </div>
-                        <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50">
+                        <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50">
                             <XIcon className="w-5 h-5" />
                         </button>
                     </div>
@@ -2660,7 +2660,7 @@ const CodexActionModal: React.FC<CodexActionModalProps> = ({ codex, onClose, onA
                     {/* Background Glow */}
                     <div className="absolute top-0 left-0 w-full h-1/2 bg-[var(--skin-accent-color)]/10 blur-[50px] pointer-events-none" />
 
-                    <button onClick={onClose} className="absolute top-4 right-4 p-1 rounded-full bg-black/20 hover:bg-black/50 z-10">
+                    <button aria-label="Fechar" onClick={onClose} className="absolute top-4 right-4 p-1 rounded-full bg-black/20 hover:bg-black/50 z-10">
                         <XIcon className="w-6 h-6" />
                     </button>
 

@@ -52,7 +52,7 @@ export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ curren
                             {isCreating ? 'Nova Arena' : 'Escolher Arena'}
                         </h2>
                         {isCreating && (
-                            <button onClick={() => setIsCreating(false)} className="p-1 rounded-full hover:bg-white/10">
+                            <button aria-label="Cancelar" onClick={() => setIsCreating(false)} className="p-1 rounded-full hover:bg-white/10">
                                 <XIcon className="w-5 h-5 text-gray-400" />
                             </button>
                         )}

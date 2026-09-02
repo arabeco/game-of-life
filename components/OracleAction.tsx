@@ -1857,7 +1857,7 @@ export const OracleAction: React.FC = () => {
                 <MicIcon className="h-4 w-4" />
               </button>
             )}
-            <button
+            <button aria-label="Enviar"
               onClick={() => void handleSendMessage()}
               disabled={!input.trim() || isWorking}
               className="rounded-lg bg-white/10 p-2 text-[var(--skin-accent-color)] transition-colors hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10"

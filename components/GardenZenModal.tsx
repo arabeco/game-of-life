@@ -891,7 +891,7 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
                                 {hasUnsavedChanges ? 'Salvar' : 'Salvo'}
                             </button>
                         )}
-                        <button type="button" onClick={onClose} className="rounded-full border border-white/12 bg-black/42 p-2.5 text-white/76 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-colors hover:text-white">
+                        <button aria-label="Fechar" type="button" onClick={onClose} className="rounded-full border border-white/12 bg-black/42 p-2.5 text-white/76 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-colors hover:text-white">
                             <XIcon className="h-4 w-4" />
                         </button>
                     </div>
@@ -932,17 +932,17 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
                             {selectedItem ? (
                                 <div className="grid gap-2 p-2">
                                     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-2xl border border-amber-200/18 bg-amber-100/[0.07] px-2 py-2">
-                                        <button type="button" onClick={() => adjustSelectedItemScale(-0.14)} className="h-9 w-9 rounded-xl bg-black/30 text-base font-black text-white/72">-</button>
+                                        <button aria-label="Diminuir item" type="button" onClick={() => adjustSelectedItemScale(-0.14)} className="h-9 w-9 rounded-xl bg-black/30 text-base font-black text-white/72">-</button>
                                         <div className="text-center">
                                             <div className="text-[8px] font-black uppercase tracking-[0.18em] text-amber-100/50">Tamanho</div>
                                             <div className="text-[11px] font-black uppercase tracking-[0.1em] text-white/76">{Math.round(Number(selectedItem.scale || 1) * 100)}%</div>
                                         </div>
-                                        <button type="button" onClick={() => adjustSelectedItemScale(0.14)} className="h-9 w-9 rounded-xl bg-black/30 text-base font-black text-white/72">+</button>
+                                        <button aria-label="Aumentar item" type="button" onClick={() => adjustSelectedItemScale(0.14)} className="h-9 w-9 rounded-xl bg-black/30 text-base font-black text-white/72">+</button>
                                     </div>
                                     <div className="mt-1 grid grid-cols-[1fr_1fr_auto] gap-1">
                                         <button type="button" onClick={() => adjustSelectedItemRotation(-15)} className="rounded-2xl border border-white/8 bg-white/5 px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/70">Girar -</button>
                                         <button type="button" onClick={() => adjustSelectedItemRotation(15)} className="rounded-2xl border border-white/8 bg-white/5 px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-white/70">Girar +</button>
-                                        <button type="button" onClick={removeSelectedItem} className="inline-flex items-center justify-center rounded-2xl border border-red-300/18 bg-red-500/8 px-3 py-2.5 text-white/70">
+                                        <button aria-label="Remover item" type="button" onClick={removeSelectedItem} className="inline-flex items-center justify-center rounded-2xl border border-red-300/18 bg-red-500/8 px-3 py-2.5 text-white/70">
                                             <Trash2Icon className="h-3.5 w-3.5" />
                                         </button>
                                     </div>

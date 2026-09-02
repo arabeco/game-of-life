@@ -117,7 +117,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                 <div id="new-cycle-setup-view" className="w-full max-w-[420px] mx-auto h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="flex-shrink-0 flex justify-between items-center text-white pb-4">
                         <div className="flex items-center space-x-2">
-                            <button onClick={onCancel} className="p-2 -ml-2"><ChevronLeftIcon /></button>
+                            <button aria-label="Voltar" onClick={onCancel} className="p-2 -ml-2"><ChevronLeftIcon /></button>
                             <h1 className="text-xl font-black uppercase tracking-widest">Novo ciclo</h1>
                         </div>
                     </div>

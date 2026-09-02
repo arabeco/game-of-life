@@ -95,7 +95,7 @@ const ShareCodexModal: React.FC<{ codex: UserCodex; onClose: () => void }> = ({ 
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Compartilhar campanha</div>
               <h3 className="mt-1 text-lg font-bold text-white">{codex.name}</h3>
             </div>
-            <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/40 text-gray-300">
+            <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/40 text-gray-300">
               <XIcon className="w-5 h-5" />
             </button>
           </div>
@@ -424,7 +424,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
                   <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Biblioteca</div>
                   <h2 className="mt-1 text-lg font-bold text-white">Campanhas</h2>
                 </div>
-                <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/40 text-gray-300">
+                <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/40 text-gray-300">
                   <XIcon className="w-5 h-5" />
                 </button>
               </div>

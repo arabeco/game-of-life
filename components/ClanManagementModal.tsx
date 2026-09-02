@@ -58,7 +58,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                 <GlassCard variant="gold" className="w-full max-w-md space-y-5 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 z-10 flex justify-between items-center bg-[color:var(--modal-bg,#0a0b0f)]/92 backdrop-blur-md rounded-t-3xl -mx-0 px-0">
                         <h2 className="text-lg font-bold uppercase tracking-wider">Gerenciar Grupo</h2>
-                        <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
+                        <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
 
                     <div className="flex flex-col items-center space-y-4">
@@ -150,7 +150,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
                                 {member.role === 'leader' ? (
                                     <CrownIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />
                                 ) : (
-                                    <button onClick={() => setMemberToKick(member.id)} className="p-1">
+                                    <button aria-label="Remover membro do clã" onClick={() => setMemberToKick(member.id)} className="p-1">
                                         <XIcon className="w-5 h-5 text-red-500" />
                                     </button>
                                 )}

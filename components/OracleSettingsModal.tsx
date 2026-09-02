@@ -431,7 +431,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                         <h2 className="text-sm font-black uppercase tracking-widest text-[var(--skin-accent-color)]">
                             {variant === 'preferences' ? 'Preferências do Oráculo' : 'Configurar Oráculo'}
                         </h2>
-                        <button onClick={onClose} className="rounded-full p-2 transition-colors hover:bg-white/10">
+                        <button aria-label="Fechar" onClick={onClose} className="rounded-full p-2 transition-colors hover:bg-white/10">
                             <XIcon className="h-5 w-5 text-gray-400" />
                         </button>
                     </div>

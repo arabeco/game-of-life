@@ -129,21 +129,21 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--skin-accent-color)]">Calendario</p>
                             <h3 className="mt-1 text-base font-black tracking-[0.04em] text-white">{title}</h3>
                         </div>
-                        <button onClick={onClose} className="rounded-full border border-white/12 bg-white/5 p-2 transition-colors hover:bg-white/10">
+                        <button aria-label="Fechar" onClick={onClose} className="rounded-full border border-white/12 bg-white/5 p-2 transition-colors hover:bg-white/10">
                             <XIcon className="w-4 h-4 text-gray-300" />
                         </button>
                     </div>
                     
                     {/* Month Navigation */}
                     <div className="mb-4 flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-2 py-2">
-                        <button 
+                        <button aria-label="Mês anterior" 
                             onClick={handlePreviousMonth}
                             className="rounded-xl p-2 transition-colors hover:bg-white/10"
                         >
                             <ChevronLeftIcon className="w-4 h-4 text-gray-300" />
                         </button>
                         <h4 className="text-sm font-black uppercase tracking-[0.14em] text-white">{formatMonth(currentMonth)}</h4>
-                        <button 
+                        <button aria-label="Próximo mês" 
                             onClick={handleNextMonth}
                             className="rounded-xl p-2 transition-colors hover:bg-white/10"
                         >

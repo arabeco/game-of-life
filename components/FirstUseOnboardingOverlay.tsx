@@ -664,7 +664,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
                       </h3>
                     </div>
 
-                    <button
+                    <button aria-label="Pular apresentação"
                       onClick={handleDismiss}
                       className="shrink-0 px-1 text-[10px] uppercase tracking-[0.18em] text-gray-500 transition-colors hover:text-white"
                     >

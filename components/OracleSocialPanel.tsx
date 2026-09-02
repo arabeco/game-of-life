@@ -326,7 +326,7 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
                     </button>
                   </>
                 )}
-                <button
+                <button aria-label="Voltar"
                   onClick={() => setSelection(null)}
                   className="rounded-full p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white sm:hidden"
                 >
@@ -384,7 +384,7 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
                     </button>
                   </>
                 )}
-                <button
+                <button aria-label="Voltar"
                   onClick={() => setSelection(null)}
                   className="rounded-full p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white sm:hidden"
                 >
@@ -469,7 +469,7 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
                   disabled={isSelectedUserBlocked}
                 />
               </div>
-              <button
+              <button aria-label="Enviar mensagem"
                 onClick={() => void handleSend()}
                 disabled={!inputValue.trim() || isSelectedUserBlocked}
                 className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--skin-accent-color)] text-black shadow-xl transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:grayscale disabled:opacity-20 disabled:hover:scale-100"

@@ -707,7 +707,7 @@ export const ArenaDetailModal: React.FC<{
                         )}
 
                         <div className="flex-shrink-0 flex flex-col items-center text-center space-y-1">
-                            <button
+                            <button aria-label="Escolher ícone da arena"
                                 onClick={() => isEditing && setIsIconPickerOpen(true)}
                                 disabled={!isEditing}
                                 className="w-20 h-20 bg-white/10 rounded-xl flex items-center justify-center cursor-pointer disabled:cursor-default"
@@ -809,7 +809,7 @@ export const ArenaDetailModal: React.FC<{
                                         />
                                     ))}
                                     {!previewMode && !isReadOnlyArena && (
-                                        <button id="add-action-button" ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
+                                        <button aria-label="Nova ação" id="add-action-button" ref={newActionRef} onClick={openNewAction} className="w-24 h-24 flex-shrink-0 border-2 border-dashed border-[var(--skin-accent-color)] rounded-xl flex flex-col items-center justify-center hover:border-[var(--skin-accent-color)] transition-colors text-gray-500 hover:text-white">
                                             <PlusIcon className="w-8 h-8" />
                                         </button>
                                     )}
@@ -862,7 +862,7 @@ export const ArenaDetailModal: React.FC<{
                     <div className="arena-link-panel bg-black/70 border border-white/8 w-full max-w-sm m-4 space-y-3 rounded-2xl p-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center">
                             <div className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">VINCULAR ALIADO</div>
-                            <button onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">?</span></button>
+                            <button aria-label="Fechar" onClick={() => setIsLinkingObserver(false)} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><span className="text-white">?</span></button>
                         </div>
                         <div className="text-xs text-gray-400">Escolha o tipo de v?nculo e convide um amigo para {editableArena.name || arena.name}.</div>
 

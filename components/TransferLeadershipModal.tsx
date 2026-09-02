@@ -23,7 +23,7 @@ export const TransferLeadershipModal: React.FC<TransferLeadershipModalProps> = (
                 <GlassCard variant="gold" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center">
                         <h2 className="text-lg font-bold uppercase tracking-wider">Transferir Liderança</h2>
-                        <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
+                        <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5"/></button>
                     </div>
 
                     <p className="text-sm text-center text-gray-300">Você precisa nomear uma nova pessoa líder antes de sair do grupo.</p>

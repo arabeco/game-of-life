@@ -52,7 +52,7 @@ export const ModerationReportModal: React.FC<ModerationReportModalProps> = ({
                                 <h2 className="ui-modal-title">{title}</h2>
                                 <p className="ui-modal-copy">Alvo: <span className="font-bold text-white">{subjectLabel}</span></p>
                             </div>
-                            <button
+                            <button aria-label="Fechar"
                                 type="button"
                                 onClick={onClose}
                                 className="rounded-full border border-white/10 bg-black/20 p-2 text-white/70 transition-colors hover:bg-black/35 hover:text-white"

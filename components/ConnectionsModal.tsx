@@ -616,7 +616,7 @@ export const ConnectionsModal: React.FC<{
           <div className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black text-white">{typeCopy[inviteType].invite}</h3>
-              <button type="button" onClick={() => setInviteType(null)} className="p-2 text-white/55"><XIcon className="h-4 w-4" /></button>
+              <button aria-label="Voltar" type="button" onClick={() => setInviteType(null)} className="p-2 text-white/55"><XIcon className="h-4 w-4" /></button>
             </div>
             <div className="mt-3 space-y-2">
               {inviteCandidates.length === 0 ? (

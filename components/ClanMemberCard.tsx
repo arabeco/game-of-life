@@ -45,7 +45,7 @@ export const ClanMemberCard: React.FC<ClanMemberCardProps> = ({ member, isLeader
                 <p className="text-xs text-gray-400 truncate">{isOfficeClan ? 'Na equipe' : 'Membro'} há {timeSince(member.joined_at)}</p>
             </div>
             {isLeaderView && member.role !== 'leader' && onKick && (
-                <button onClick={() => onKick(member)} className="p-1 text-red-500 hover:text-red-400">
+                <button aria-label="Remover membro do clã" onClick={() => onKick(member)} className="p-1 text-red-500 hover:text-red-400">
                     <XIcon className="w-5 h-5" />
                 </button>
             )}

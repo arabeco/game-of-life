@@ -82,7 +82,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
                 <GlassCard variant="neutral" className="w-full max-w-md m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center">
                         <h2 className="text-lg font-bold uppercase tracking-wider">Entrada no Grupo</h2>
-                        <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
+                        <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-gray-300">
                         A pessoa pode aceitar ou recusar o convite diretamente em Solicitacoes.

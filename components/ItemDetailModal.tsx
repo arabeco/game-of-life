@@ -260,7 +260,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                     className={`custom-scrollbar relative flex max-h-[86svh] w-full max-w-[22rem] flex-col items-center gap-4 overflow-y-auto rounded-[30px] p-5 plasma-card plasma-bg ${rarityClass}`} 
                     onClick={e => e.stopPropagation()}
                 >
-                <button onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors z-20">
+                <button aria-label="Fechar" onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors z-20">
                     <XIcon className="w-6 h-6" />
                 </button>
 
@@ -375,7 +375,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         <div className="col-span-2 space-y-2 rounded-2xl border border-white/12 bg-black/60 p-3">
                             <div className="flex items-center justify-between">
                                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Doar para</p>
-                                <button
+                                <button aria-label="Voltar"
                                     type="button"
                                     onClick={() => setEscolhendoAmigo(false)}
                                     className="rounded-full p-1 text-white/40 hover:text-white"

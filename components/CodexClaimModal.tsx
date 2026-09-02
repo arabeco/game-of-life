@@ -85,7 +85,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/42">Campanha recebida</div>
                 <h2 className="mt-1 text-lg font-bold text-white">Reivindicar campanha</h2>
               </div>
-              <button onClick={onClose} className="rounded-full bg-black/20 p-1 text-gray-300 hover:bg-black/40">
+              <button aria-label="Fechar" onClick={onClose} className="rounded-full bg-black/20 p-1 text-gray-300 hover:bg-black/40">
                 <XIcon className="h-5 w-5" />
               </button>
             </div>

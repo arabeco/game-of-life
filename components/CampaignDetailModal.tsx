@@ -65,7 +65,7 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({ campai
                     </div>
                     <div className="flex items-center gap-2">
                         {!isEditing && (
-                            <button onClick={() => setIsEditing(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
+                            <button aria-label="Editar campanha" onClick={() => setIsEditing(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
                                 <EditIcon className="w-4 h-4" />
                             </button>
                         )}
@@ -74,10 +74,10 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({ campai
                                 Salvar
                             </button>
                         )}
-                        <button onClick={handleDelete} className="p-2 hover:bg-red-500/20 rounded-full transition-colors text-red-400 hover:text-red-300">
+                        <button aria-label="Excluir campanha" onClick={handleDelete} className="p-2 hover:bg-red-500/20 rounded-full transition-colors text-red-400 hover:text-red-300">
                             <TrashIcon className="w-4 h-4" />
                         </button>
-                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <button aria-label="Fechar" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                             <XIcon className="w-5 h-5 text-gray-400" />
                         </button>
                     </div>

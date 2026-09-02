@@ -119,7 +119,7 @@ const SocialSearch: React.FC<{
                 />
                 <PlusIcon className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
-            <button
+            <button aria-label="Adicionar amigo"
                 onClick={handleAdd}
                 disabled={!query.trim()}
                 className="p-3 bg-[var(--skin-accent-color)] text-white rounded-xl shadow-lg shadow-[var(--skin-accent-color)]/20 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
@@ -330,8 +330,8 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                     onClick={() => setSelectedProfile(senderProfile)}
                                     actions={
                                         <div className="flex gap-2">
-                                            <button onClick={() => acceptFriendRequest(request.id)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
-                                            <button onClick={() => declineFriendRequest(request.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
+                                            <button aria-label="Aceitar pedido de amizade" onClick={() => acceptFriendRequest(request.id)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
+                                            <button aria-label="Recusar pedido de amizade" onClick={() => declineFriendRequest(request.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
                                         </div>
                                     }
                                 />
@@ -355,8 +355,8 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                                     onClick={() => setSelectedProfile(requesterProfile)}
                                     actions={
                                         <div className="flex gap-2">
-                                            <button onClick={() => approveClanJoinRequest(request)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
-                                            <button onClick={() => rejectClanJoinRequest(request)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
+                                            <button aria-label="Aprovar entrada no clã" onClick={() => approveClanJoinRequest(request)} className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30"><CheckIcon className="w-4 h-4" /></button>
+                                            <button aria-label="Recusar entrada no clã" onClick={() => rejectClanJoinRequest(request)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30"><XIcon className="w-4 h-4" /></button>
                                         </div>
                                     }
                                 />

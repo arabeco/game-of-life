@@ -707,7 +707,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
               </div>
             </div>
           </div>
-          <button 
+          <button aria-label="Fechar" 
             onClick={onClose}
             className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
           >

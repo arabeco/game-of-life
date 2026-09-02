@@ -62,4 +62,46 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
     assert.deepEqual(offenders, [], `window.confirm ainda usado em: ${offenders.join(', ')}`);
 }
 
+// 4. Botao so com icone precisa dizer o proprio nome.
+//
+// Sem nome ele sai como "botao" e nada mais para leitor de tela, e quem navega
+// assim recebe uma fila de botoes indistinguiveis, adivinhando pela posicao.
+//
+// A heuristica e a mesma do scripts/list-unlabeled-buttons.mjs e e frouxa de
+// proposito: erra para o lado de NAO acusar. Ela ja custou caro na primeira
+// versao — dividia a tag no primeiro `>`, que em JSX quase nunca e o fim dela
+// (`onClick={() => x}` tem um), e acusava 453 botoes quando havia 92. Rotular um
+// botao que ja fala e pior do que nao rotular: aria-label SUBSTITUI o texto
+// visivel, entao um rotulo diferente do que esta escrito faz a tela dizer duas
+// coisas.
+{
+    const walk = (dir, out = []) => {
+        for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+            const relative = path.join(dir, entry.name);
+            if (entry.isDirectory()) walk(relative, out);
+            else if (relative.endsWith('.tsx')) out.push(relative);
+        }
+        return out;
+    };
+    const mudos = [];
+    for (const file of [...walk('views'), ...walk('components')]) {
+        const source = read(file);
+        const pattern = /<button\b([^>]*)>([\s\S]*?)<\/button>/g;
+        let match;
+        while ((match = pattern.exec(source))) {
+            const bloco = match[0];
+            const temTexto = />[^<>{}]*[A-Za-zÀ-ú]{2,}[^<>{}]*</.test(bloco)
+                || /\{[^}]*['"`][A-Za-zÀ-ú]{2,}/.test(bloco)
+                || />\s*\{[^}]+\}\s*</.test(bloco)
+                || /\{[^}]*(label|name|title|text|children)[^}]*\}/i.test(bloco)
+                || />[^<>]{0,200}[A-Za-zÀ-ú]{2,}[^<>]{0,200}</.test(bloco);
+            const temNome = /aria-label|title=/.test(bloco);
+            if (!temTexto && !temNome) {
+                mudos.push(`${file}:${source.slice(0, match.index).split('\n').length}`);
+            }
+        }
+    }
+    assert.deepEqual(mudos, [], `botao sem nome acessivel em: ${mudos.join(', ')}`);
+}
+
 console.log('ui-hygiene: ok');

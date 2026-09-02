@@ -212,7 +212,7 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
                             </h2>
                             <p className="text-[10px] text-gray-400 uppercase tracking-widest">OBSERVANDO {pupilName}</p>
                         </div>
-                        <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10">
+                        <button aria-label="Fechar" onClick={onClose} className="p-2 rounded-full hover:bg-white/10">
                             <CloseIcon className="w-5 h-5 text-gray-400" />
                         </button>
                     </div>

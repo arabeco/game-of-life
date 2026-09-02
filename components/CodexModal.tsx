@@ -603,7 +603,7 @@ export const CodexModal: React.FC<{
         <GlassCard variant="neutral" className="w-full max-w-sm m-4 space-y-4 rounded-3xl" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-center">
             <div className="text-xs font-bold uppercase tracking-wider accent-text">CAMPANHAS</div>
-            <button onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
+            <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full bg-black/20 hover:bg-black/50"><XIcon className="w-5 h-5" /></button>
           </div>
 
           {!activeCodex ? (
@@ -832,7 +832,7 @@ export const CodexModal: React.FC<{
                                       <div className="text-xs font-bold truncate text-white">{asset.title || 'Sem título'}</div>
                                       <div className="text-[10px] text-gray-500 truncate">{asset.url}</div>
                                   </div>
-                                  <button onClick={() => {
+                                  <button aria-label="Remover mídia" onClick={() => {
                                       const newAssets = [...(actionDraft.assets || [])];
                                       newAssets.splice(idx, 1);
                                       setActionDraft(prev => ({ ...prev, assets: newAssets }));
@@ -882,7 +882,7 @@ export const CodexModal: React.FC<{
                                       className="flex-1 bg-transparent text-sm focus:outline-none"
                                       placeholder="Item do checklist..."
                                   />
-                                  <button onClick={() => {
+                                  <button aria-label="Remover item do checklist" onClick={() => {
                                       const newChecklist = [...(actionDraft.preFlight || [])];
                                       newChecklist.splice(idx, 1);
                                       setActionDraft(prev => ({ ...prev, preFlight: newChecklist }));

@@ -341,7 +341,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                             <p className="ui-modal-eyebrow mt-1 text-left text-white/52">{occupant ? 'Ocupado' : 'Disponível'}</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10"><XIcon className="w-5 h-5"/></button>
+                    <button aria-label="Fechar" onClick={onClose} className="p-1 rounded-full hover:bg-white/10"><XIcon className="w-5 h-5"/></button>
                 </div>
 
                 {/* Content */}

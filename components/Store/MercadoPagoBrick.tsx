@@ -480,7 +480,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                                 {isMembershipCheckout ? `${brlAmountLabel} - ${membershipName}` : `${brlAmountLabel} - ${goldAmount} ouro`}
                             </p>
                         </div>
-                        <button onClick={onClose} className="rounded-full p-2 text-gray-400 transition-all hover:scale-110 hover:bg-white/10 hover:text-white">
+                        <button aria-label="Fechar" onClick={onClose} className="rounded-full p-2 text-gray-400 transition-all hover:scale-110 hover:bg-white/10 hover:text-white">
                             <XIcon className="h-5 w-5" />
                         </button>
                     </div>

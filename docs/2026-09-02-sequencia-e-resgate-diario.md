@@ -18,8 +18,36 @@ Verificado no código, não suposto.
 | `system-five-day-proof-streak` | `constants/systemChallenges.ts` | única missão que paga por sequência |
 | fecho automático do dia | `checkDailyRollover` → `closeDailyCommitment` | roda a cada 60s com o app aberto |
 | aba "ontem" no painel diário | `RestScreen` | mostra contagem por arena |
-| modal de recompensa | usado por baú e por doação | pronto para reuso |
+| `RewardPackModal` | `components/RewardPackModal.tsx` | **o modal compartilhado** — presente, premium, beta, baú e relatório de ciclo |
+| `DailyCompletionPromptModal` | 100 linhas, próprio | mostra score e EXP do dia — **já existe e já dispara** |
+| `emitDailyCompletionPrompt` | `utils/dailyCompletionPrompt.ts` | evento vivo, mas só no caminho de reconciliação |
+| `kind: 'task'` | mesmo arquivo | **ramo morto** — ninguém dispara |
 | congelamento | — | **não existe** |
+
+### Correção: eu propus construir o que já está pronto
+
+A primeira versão deste plano falava em "criar o modal de resgate". Não precisa.
+O `RewardPackModal` já existe, já é o padrão de ciclo, missão e patente, e o
+payload dele já carrega `gold`, `chestType`, `itemIds`, `metricCards` e
+`rewardHighlights`.
+
+E o prompt do dia anterior também existe: `DailyCompletionPromptModal` mostra o
+percentual do dia e a EXP depositada, e `emitDailyCompletionPrompt` ainda dispara
+— só que **apenas quando dias pendentes são reconciliados**, nunca na virada
+normal do dia. É por isso que ele parece desativado: o gatilho estreitou.
+
+O `kind: 'task'` ficou órfão quando o fechamento manual saiu do painel diário.
+
+**Então o que falta é bem menor do que este plano dizia:**
+
+1. disparar o prompt na **primeira abertura do dia**, para o dia anterior julgado
+   e ainda não coletado — hoje ele só aparece em reconciliação;
+2. `fragments` no `RewardModalPayload` — ele tem `gold`, não tem fragmento;
+3. o pagamento em si (RPC + `collected_at`);
+4. decidir se o resumo diário passa a usar o `RewardPackModal` — o padrão dos
+   outros — ou mantém o modal próprio de 100 linhas. **Recomendo unificar no
+   `RewardPackModal`**: hoje há dois desenhos de recompensa no mesmo app, e o do
+   dia a dia é justamente o menos caprichado, sendo o mais visto.
 
 ---
 
@@ -186,7 +214,9 @@ E uma RPC `collect_daily_summary(p_date date)` que:
 |---|---|
 | `components/RestScreen.tsx` | painel abre em "ontem" na primeira vez do dia, se houver dia julgado não coletado |
 | `contexts/GameContext.tsx` | `collectDailySummary()`, espelhando `buyChestWithFragments` |
-| modal de recompensa | reuso do que o baú e a doação já usam |
+| `contexts/GameContext.tsx:4788` | `emitDailyCompletionPrompt` passa a disparar também na virada, não só na reconciliação |
+| `types.ts:326` | `fragments?: number` no `RewardModalPayload` |
+| `DailyCompletionPromptModal` | unificar no `RewardPackModal`, ou assumir que são dois desenhos |
 | `utils/oracleCandidates.ts` | marcos passam a emitir evento de recompensa, não só fala |
 | `pg_cron` | consumo de congelamento na virada do dia |
 

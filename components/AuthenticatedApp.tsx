@@ -102,7 +102,10 @@ const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
 
-const APP_VERSION = '1.0.48';
+// Vem do package.json via vite.config.ts (define). Nunca escrever a mao aqui:
+// foi assim que ficou travada em 1.0.48 enquanto o app ia para 1.0.81, e
+// isBroadcastCompatibleWithVersion filtrava comunicados contra o numero velho.
+const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.0.0';
 const APP_BROADCAST_SEEN_FLAG_PREFIX = 'app_broadcast_seen:';
 const PLANNER_ORACLE_LAST_OPEN_PREFIX = 'planner_oracle_last_open:';
 const PLANNER_ORACLE_LAST_SPEECH_PREFIX = 'planner_oracle_last_speech:';

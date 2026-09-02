@@ -1,8 +1,13 @@
 // FIX: `__dirname` is not available in ES modules. Import `fileURLToPath` and `URL` from the 'url' module to construct the path.
 import { fileURLToPath, URL } from 'url';
+import { readFileSync } from 'fs';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+
+const packageJson = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+) as { version: string };
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
@@ -66,6 +71,11 @@ export default defineConfig(({ mode }) => {
       }
     },
     define: {
+      // A versao vem do package.json, nunca escrita a mao no app. Ela ficou em
+      // '1.0.48' enquanto o projeto chegava a 1.0.81, e o filtro de comunicados por
+      // min_app_version comparava contra o numero velho — comunicado mirado nas
+      // versoes atuais nao chegava a ninguem, sem erro nenhum.
+      __APP_VERSION__: JSON.stringify(packageJson.version),
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       // FIX: Expose Supabase environment variables through process.env to align with project standards and fix type errors in supabaseClient.ts.

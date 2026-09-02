@@ -98,6 +98,22 @@ const ScreenIntroTipOverlay = React.lazy(() => import('./ScreenIntroTipOverlay')
 const RewardVideoPreviewModal = React.lazy(() => import('./RewardVideoPreviewModal').then((m) => ({ default: m.RewardVideoPreviewModal })));
 const AppBroadcastModal = React.lazy(() => import('./AppBroadcastModal').then((m) => ({ default: m.AppBroadcastModal })));
 
+/**
+ * O que aparece enquanto uma tela pesada carrega.
+ *
+ * Historico e Perfil usavam `fallback={null}`: durante o download do chunk a
+ * area ficava PRETA, sem nada. Numa conexao ruim isso dura segundos e nao se
+ * distingue de um toque que nao funcionou — a pessoa toca de novo.
+ *
+ * O spinner ja existia escrito a mao dentro de renderView; aqui ele so passa a
+ * ter um nome e um lugar, em vez de tres copias.
+ */
+const LazyViewFallback: React.FC = () => (
+    <div className="flex h-full w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--skin-accent-color)] border-t-transparent" />
+    </div>
+);
+
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 type View = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
@@ -1215,11 +1231,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
 
         return (
             <Suspense
-                fallback={
-                    <div className="flex h-full w-full items-center justify-center">
-                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--skin-accent-color)] border-t-transparent" />
-                    </div>
-                }
+                fallback={<LazyViewFallback />}
             >
                 <div
                     key={currentView}
@@ -1377,14 +1389,14 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             <main className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ paddingTop: mainPaddingTop, paddingBottom: mainPaddingBottom }}>
                 <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col overflow-hidden">
                     {isReportsVisible ? (
-                        <Suspense fallback={null}>
+                        <Suspense fallback={<LazyViewFallback />}>
                             <ReportsView onClose={() => setReportsVisible(false)} />
                         </Suspense>
                     ) : renderView()}
                 </div>
             </main>
 
-            <Suspense fallback={null}>
+            <Suspense fallback={isProfileVisible ? <LazyViewFallback /> : null}>
                 {isProfileVisible && <ProfileView onClose={() => setProfileVisible(false)} />}
             </Suspense>
 

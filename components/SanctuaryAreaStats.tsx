@@ -67,7 +67,7 @@ export const SanctuaryAreaStats: React.FC<SanctuaryAreaStatsProps> = ({ clanId }
       <GlassCard variant="neutral" className="p-3">
         <div className="flex justify-center items-center">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-400"></div>
-          <span className="ml-2 text-xs text-gray-400">Loading stats...</span>
+          <span className="ml-2 text-xs text-gray-400">Carregando...</span>
         </div>
       </GlassCard>
     );

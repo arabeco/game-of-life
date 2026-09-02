@@ -25,7 +25,7 @@ import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks } from '../utils/fairScoreUtils.js';
 import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
-import { buildChestRewardPayload } from '../utils/chestRewardPresentation';
+import { buildChestRewardPayload, buildCycleRewardPayload } from '../utils/chestRewardPresentation';
 import { getLegacyProjectionScenePrice, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
 const CycleComparator = React.lazy(() => import('../components/CycleComparator').then(m => ({ default: m.CycleComparator })));
 const ReportGenerationModal = React.lazy(() => import('../components/ReportGenerationModal').then(m => ({ default: m.ReportGenerationModal })));
@@ -1290,20 +1290,32 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             }
 
             if (!chestReady) {
-                showToast('Não foi possível preparar o baú deste ciclo.', 'error');
+                showToast('Não foi possível guardar o baú deste ciclo.', 'error');
                 return;
             }
 
-            const result = await openChest(earnedChest);
-            if (!result) {
-                return;
-            }
-
+            // O bau NAO abre aqui. Ele foi concedido acima (addChest) e fica
+            // fechado no Arsenal.
+            //
+            // Abrir em linha encadeava duas cerimonias — o video do selo do
+            // relatorio e, logo atras, o do bau — e fazia o modal do ciclo falar
+            // com o vocabulario de uma compra, porque reusava o payload do bau.
+            //
+            // O que a tela mostra continua sendo TUDO: a EXP creditada, os
+            // fragmentos, as insignias e o bau conquistado. So o ato de abrir e
+            // que passou para o Arsenal, onde ja funciona e onde a escolha de
+            // quando abrir e de quem ganhou.
             setPostCycleChestOpened(true);
-            setReportRewardPayload(buildChestRewardPayload(result, earnedChest));
+            setReportRewardPayload(buildCycleRewardPayload({
+                exp: rewardState.awardedExp,
+                fragments: rewardState.awardedFragments,
+                insigniaIds: rewardState.awardedInsignias,
+                chestType: earnedChest,
+                cycleName: selectedReport?.cycleName || null,
+            }));
         } catch (error) {
-            console.error('Erro ao abrir o baú do ciclo:', error);
-            showToast('Não foi possível abrir o baú deste ciclo.', 'error');
+            console.error('Erro ao entregar as recompensas do ciclo:', error);
+            showToast('Não foi possível entregar as recompensas deste ciclo.', 'error');
         } finally {
             setIsOpeningPostCycleChest(false);
         }

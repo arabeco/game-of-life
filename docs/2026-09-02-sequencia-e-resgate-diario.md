@@ -36,7 +36,11 @@ percentual do dia e a EXP depositada, e `emitDailyCompletionPrompt` ainda dispar
 — só que **apenas quando dias pendentes são reconciliados**, nunca na virada
 normal do dia. É por isso que ele parece desativado: o gatilho estreitou.
 
-O `kind: 'task'` ficou órfão quando o fechamento manual saiu do painel diário.
+O `kind: 'task'` ficou órfão quando o fechamento manual saiu do painel diário — e
+**deve continuar morto**. Ele servia para realizar ações pelo painel, separando
+ações "daquele dia", o que criava uma segunda lista concorrendo com a baía real.
+Foi removido de propósito. Ressuscitar o gatilho junto com o resto seria trazer
+de volta a confusão que motivou a remoção.
 
 **Então o que falta é bem menor do que este plano dizia:**
 
@@ -71,6 +75,41 @@ pessoa entender o próprio jogo. O recibo dá corpo ao que já acontece em silê
 ---
 
 ## A mecânica
+
+### A anatomia do modal, que ja resolve o desenho
+
+`RewardPackModal` tem duas secoes, e elas ja separam exatamente o que precisamos:
+
+| parte | como aparece | serve para |
+|---|---|---|
+| `metricCards` | quadradinhos, grid de 1/2/3 colunas — label pequeno dourado, valor em negrito, `detail` opcional | **o recibo** |
+| `rewardHighlights` | linhas largas com icone de presente e tom de cor, sob o titulo **"Entregue agora"** | **o pagamento** |
+| `itemIds` | grade de itens | bau nos marcos |
+
+O modal **ja codifica a diferenca** entre "isto aconteceu" e "isto esta sendo
+entregue agora" — o titulo da segunda secao e literalmente "Entregue agora". Nao
+ha nada a inventar.
+
+`gold` e `chestType` existem no tipo mas NAO sao desenhados: quem chama traduz
+para `rewardHighlights`. O precedente pronto e `utils/chestRewardPresentation.ts`,
+que monta o payload do bau. O resgate diario e um `buildDailySummaryPayload` ao
+lado dele, no mesmo formato.
+
+O tom `cyan` dos highlights e a mesma cor que os fragmentos ja tem na barra da
+loja. Coincidencia util: o pagamento sai na cor da moeda.
+
+### Onde o resgate aparece
+
+O painel diario ja tem **ontem** e **hoje**.
+
+- **ontem** ganha um botao **"Ver recompensas"**, que abre o modal — e abre
+  tambem depois de ja ter coletado. Coletado, o modal mostra os mesmos
+  quadradinhos e a secao de entrega diz que ja foi resgatado; o botao vira
+  "Fechar". `collected_at` e o que distingue os dois estados.
+- **hoje** mostra a sequencia, mas **discreta**. Numero grande e a estetica de
+  cobranca, e o app nao e isso.
+- na primeira abertura do dia, se houver dia julgado nao coletado, o modal abre
+  sozinho uma vez. Depois disso, so pelo botao.
 
 ### O que o modal mostra e paga
 

@@ -23,6 +23,7 @@ import {
     launchAppleSignIn,
 } from '../utils/appleAuth';
 import { saveSessionBackup } from '../utils/sessionBackup';
+import { EyeIcon, EyeOffIcon } from '../components/Icons';
 import './login-ui.css';
 
 const PROFILE_FLAG_TERMS_PENDING = '__flag_terms_pending_v1';
@@ -61,6 +62,7 @@ export const LoginView: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [appleToastVisible, setAppleToastVisible] = useState(false);
+    const [passwordVisible, setPasswordVisible] = useState(false);
     const [accessGuide, setAccessGuide] = useState<{ title: string; text: string } | null>(null);
     const canonicalAppOrigin = React.useMemo(() => getCanonicalAppOrigin(), []);
 
@@ -665,6 +667,12 @@ export const LoginView: React.FC = () => {
                                 <span className="text-sm">Entrar com Google</span>
                             </button>
 
+                            {/* Apple so aparece quando ha provedor configurado.
+                                Sem a URL, o botao existia, parecia uma forma de entrar,
+                                e ao ser tocado dizia que faltava configurar — uma porta
+                                pintada na parede. O handler e o toast ficam: voltam a
+                                servir no dia em que a URL existir. */}
+                            {isAppleSignInConfigured() && (
                             <button
                                 id="login-apple-button"
                                 type="button"
@@ -687,6 +695,7 @@ export const LoginView: React.FC = () => {
                                 </span>
                                 <span className="text-sm">Entrar com Apple</span>
                             </button>
+                            )}
                         </div>
 
                         {!showManualFields && (
@@ -757,15 +766,29 @@ export const LoginView: React.FC = () => {
                                     )}
 
                                     <div className="space-y-1">
-                                        <input
-                                            id="login-password-input"
-                                            type="password"
-                                            autoComplete={isSigningUp ? 'new-password' : 'current-password'}
-                                            placeholder="Senha"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="login-field"
-                                        />
+                                        {/* Sem "mostrar senha", errar a digitacao num teclado de
+                                            celular so se descobre pelo login recusado — e a pessoa
+                                            nao sabe se errou a senha ou se a conta e outra. */}
+                                        <div className="relative">
+                                            <input
+                                                id="login-password-input"
+                                                type={passwordVisible ? 'text' : 'password'}
+                                                autoComplete={isSigningUp ? 'new-password' : 'current-password'}
+                                                placeholder="Senha"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="login-field pr-11"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setPasswordVisible((visivel) => !visivel)}
+                                                aria-label={passwordVisible ? 'Ocultar senha' : 'Mostrar senha'}
+                                                aria-pressed={passwordVisible}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/55 hover:text-white"
+                                            >
+                                                {passwordVisible ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                                            </button>
+                                        </div>
                                         {!isSigningUp && (
                                             <div className="flex justify-end px-1">
                                                 <button
@@ -830,7 +853,7 @@ export const LoginView: React.FC = () => {
                                         onClick={clearForm}
                                         className="login-secondary-link"
                                     >
-                                        Voltar ao Google
+                                        Voltar
                                     </button>
                                 </div>
                             </div>

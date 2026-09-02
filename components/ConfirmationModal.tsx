@@ -21,7 +21,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     onCancel,
     confirmLabel = 'CONFIRMAR',
     cancelLabel = 'CANCELAR',
-    eyebrow = 'CONFIRMACAO',
+    eyebrow = 'CONFIRMAÇÃO',
     variant = 'default',
     icon,
 }) => {

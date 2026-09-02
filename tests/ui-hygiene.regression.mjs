@@ -39,4 +39,27 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
     }
 }
 
+// 3. Confirmacoes usam ConfirmationModal, nunca o dialogo nativo.
+//
+// No Android o `window.confirm` chega cinza, fora do tema, com o nome do pacote
+// em cima — e some ao girar a tela, levando junto a decisao que ainda nao foi
+// tomada. Ele tambem trava a thread enquanto estiver aberto.
+{
+    const walk = (dir, out = []) => {
+        for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+            const relative = path.join(dir, entry.name);
+            if (entry.isDirectory()) walk(relative, out);
+            else if (relative.endsWith('.tsx')) out.push(relative);
+        }
+        return out;
+    };
+    // O confirm nativo recebe uma string; o hook useConfirmation recebe um objeto.
+    // Por isso o padrao exige aspas logo depois do parentese — assim `confirm({`
+    // do hook nao e confundido com `confirm('` do navegador.
+    const offenders = [...walk('views'), ...walk('components')].filter((file) => (
+        /(^|[^A-Za-z.])(window\.)?confirm\(\s*['"`]/.test(read(file).replace(/\/\/.*$/gm, ''))
+    ));
+    assert.deepEqual(offenders, [], `window.confirm ainda usado em: ${offenders.join(', ')}`);
+}
+
 console.log('ui-hygiene: ok');

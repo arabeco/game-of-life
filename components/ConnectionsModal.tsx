@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useConfirmation } from '../hooks/useConfirmation';
 import type {
   Arena,
   LinkedRelationshipArena,
@@ -132,6 +133,7 @@ export const ConnectionsModal: React.FC<{
     showToast,
     userProfile,
   } = useGame();
+  const { confirm, confirmationElement } = useConfirmation();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -304,7 +306,12 @@ export const ConnectionsModal: React.FC<{
   // Desistir encerra o duelo sem declarar vencedor. Fica atras de confirmacao
   // porque o ouro nao volta e a dupla so libera depois disso.
   const desistChallenge = async (challengeId: string) => {
-    if (!window.confirm('Desistir encerra este duelo sem vencedor, e os 50 de ouro nao voltam. Continuar?')) return;
+    if (!(await confirm({
+      title: 'Desistir do duelo?',
+      message: 'O duelo encerra sem vencedor, e os 50 de ouro não voltam.',
+      confirmLabel: 'DESISTIR',
+      variant: 'danger',
+    }))) return;
     setBusyKey(`challenge-cancel:${challengeId}`);
     try {
       if (await cancelCompetitionChallenge(challengeId)) {
@@ -331,7 +338,12 @@ export const ConnectionsModal: React.FC<{
   };
 
   const endLink = async (link: RelationshipLink) => {
-    if (!window.confirm('Encerrar esta conexao? O historico de progresso nao sera apagado.')) return;
+    if (!(await confirm({
+      title: 'Encerrar esta conexão?',
+      message: 'O histórico de progresso não será apagado.',
+      confirmLabel: 'ENCERRAR',
+      variant: 'danger',
+    }))) return;
     setBusyKey(`end:${link.id}`);
     try {
       if (await endRelationshipLink(link.id)) await refresh();
@@ -721,6 +733,7 @@ export const ConnectionsModal: React.FC<{
         </div>
       )}
 
+      {confirmationElement}
     </Portal>
   );
 };

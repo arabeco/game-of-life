@@ -4,7 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { MOODS_DATA, SKINS_DATA, BORDERS_DATA } from '../constants';
 import { getUnreadBadgeCount, getVisibleNotificationsForProfile } from '../constants/oracleNotificationPolicy';
 import { getMasteryIndexFromAssets } from '../constants/lifeAreas';
-import { SparklesIcon, LockIcon } from './Icons';
+import { SparklesIcon, MoonIcon } from './Icons';
 import { GlassCard } from './GlassCard';
 import './global-header.css';
 import {
@@ -284,7 +284,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                             <button 
                                 onClick={() => setMoodModalOpen(true)} 
                                 className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-8 w-full z-0 flex items-center"
-                                aria-label="Adjust mood"
+                                aria-label="Ajustar humor"
                             >
                                  <div className="w-full h-1.5 rounded-full p-px bg-[var(--skin-accent-color)]/40 shadow-[0_0_12px_rgba(0,0,0,0.35)]">
                                     <div className="relative h-full w-full bg-black/40 rounded-full">
@@ -307,8 +307,13 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                     onClick={() => setRestScreenOpen(true)}
                                     className="shell-float-button absolute right-full mr-2 group"
                                     aria-label="Tela de Descanso"
+                                    title="Tela de Descanso"
                                 >
-                                    <LockIcon className="shell-float-icon w-4 h-4 group-hover:text-white transition-colors drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
+                                    {/* Lua, nao cadeado. O cadeado comunica "bloqueado" — algo
+                                        que voce nao pode fazer — e esta tela e o oposto: e onde
+                                        o dia descansa. O `id` fica como esta, um smoke aponta
+                                        para ele. */}
+                                    <MoonIcon className="shell-float-icon w-4 h-4 group-hover:text-white transition-colors drop-shadow-[0_0_8px_var(--skin-accent-color)]" />
                                 </button>
 
                                 <button onClick={onProfileClick} className="flex flex-col items-center relative group flex-shrink-0" id="nobility-badge">
@@ -350,7 +355,7 @@ export const GlobalHeader: React.FC<{ onProfileClick: () => void; topOffsetPx?: 
                                         handleOracleClick();
                                     }}
                                     className={`shell-float-button pointer-events-auto absolute left-full z-[80] ml-2 group ${hasUnread ? 'animate-pulse ring-1 ring-amber-500/50' : ''}`}
-                                    aria-label="Oracle Assistant"
+                                    aria-label="Oráculo"
                                 >
                                     <SparklesIcon className={`shell-oracle-icon w-4 h-4 transition-all ${hasUnread ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'group-hover:text-amber-100 group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'}`} />
                                     {unreadNotificationsCount > 0 && (

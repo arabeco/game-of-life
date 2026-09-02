@@ -54,7 +54,6 @@ for (const arquivo of [
   'components/ClanDetailModal.tsx',
   'components/ClanManagementModal.tsx',
   'components/ConnectionsModal.tsx',
-  'components/RelationshipHubModal.tsx',
   'components/TransferLeadershipModal.tsx',
   'views/SettingsView.tsx',
 ]) {

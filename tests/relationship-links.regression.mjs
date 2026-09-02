@@ -27,7 +27,12 @@ import {
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const migration = read('supabase/migrations/20260826120000_relationship_link_as_timed_product.sql');
-const hub = read('components/RelationshipHubModal.tsx');
+const gameContext = read('contexts/GameContext.tsx');
+// A tela viva dos vinculos. Era RelationshipHubModal, que ninguem montava:
+// ArenaDetailModal sempre abriu ConnectionsModal.
+const telaDeVinculos = read('components/ConnectionsModal.tsx')
+  .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+  .replace(/^\s*\/\/.*$/gm, '');
 
 // --- o preco exibido e o preco cobrado ------------------------------------
 // Sao dois arquivos porque um roda no navegador e o outro no Postgres. Nada
@@ -151,26 +156,25 @@ assert.match(
   'o servidor tambem precisa recusar a partir do primeiro duelo aberto',
 );
 
-// --- a devolucao acontece, mas nenhuma tela a explica --------------------
-// Recusar devolve o ouro de verdade — e por isso que cobrar no envio e seguro.
-// O que nao volta e o PARAGRAFO: o texto antigo descrevia a politica inteira
-// numa tela onde a cobranca era de zero. O ouro simplesmente volta.
-const semComentarios = hub.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/^\s*\/\/.*$/gm, '');
-assert.doesNotMatch(semComentarios, /reembolso/i, 'o texto de reembolso de convite nao volta');
-assert.doesNotMatch(semComentarios, /mentoria basica/i, '"basica" era sobra de um modo que nao existe mais');
-
 // --- o cliente nao promete mais duelos do que o banco aceita --------------
-// Havia indice unico (relationship_link_id where completed_at is null) desde
-// marco, e a tela dizia 3: o segundo forjar morria com erro do servidor.
-// A proposta pendente tambem ocupa a vaga. Se nao ocupasse, daria para propor
-// duas e a segunda so morreria na hora em que alguem aceitasse — e o erro
-// apareceria para quem aceitou, nao para quem propos.
+// Estas travas liam components/RelationshipHubModal.tsx, uma tela de 2928 linhas
+// que nenhum ponto do app montava — ArenaDetailModal abre ConnectionsModal. Ela
+// foi removida, e as travas mudaram de sujeito em vez de sumir com ela.
+//
+// A regra continua valendo, e sempre esteve no lugar mais forte: ha indice unico
+// no banco (relationship_link_id where completed_at is null) desde marco. O que
+// falta e a pessoa entender a recusa — sem traducao, o segundo duelo morreria
+// com um erro cru de Postgres na cara de quem tentou.
 assert.match(
-  hub,
-  /const competitionCanLaunch = openCompetitionChallenges\.length === 0 && !pendingProposal;/,
-  'um duelo por vez, contando tambem o que esta so proposto',
+  gameContext,
+  /RELATIONSHIP_INVITE_ALREADY_PENDING/,
+  'convite ja pendente precisa virar frase, nao erro cru do banco',
 );
-assert.doesNotMatch(semComentarios, /3 duelos abertos/, 'o limite de 3 nunca existiu no banco');
+assert.match(
+  gameContext,
+  /RELATIONSHIP_LINK_ALREADY_ACTIVE/,
+  'vinculo ja ativo precisa virar frase, nao erro cru do banco',
+);
 
 
 // --- o duelo e proposto, nao imposto --------------------------------------
@@ -254,6 +258,6 @@ assert.match(
 assert.match(corpoOferecer, /status = 'installed'[\s\S]{0,200}arena_slots/, 'a vaga e consumida pela entrega instalada');
 
 // E a tela nao manda mais o mentor fazer o que o banco recusa.
-assert.doesNotMatch(semComentarios, /Abra uma arena ou entregue uma campanha/, 'a instrucao impossivel sai');
+assert.doesNotMatch(telaDeVinculos, /Abra uma arena ou entregue uma campanha/, 'a instrucao impossivel sai');
 
 console.log('Vinculo como produto: um preco, um prazo, renovacao pela metade, e nada cobrando por dentro.');

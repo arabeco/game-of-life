@@ -58,8 +58,20 @@ const fixWords = (text) => text.replace(wordPattern, (match) => {
   return fixed;
 });
 
-const ABRE = '\u0001';
-const FECHA = '\u0002';
+// O sentinela e ALFANUMERICO de proposito, e isso nao e detalhe.
+//
+// Palavra partida por interpolacao existe e e comum:
+//     `com ${n} acao${n === 1 ? '' : 'es'} pendente`
+// "acao" e "es" sao a mesma palavra, cortada ao meio pelo plural. Com sentinela
+// de pontuacao ou de controle, o corte vira FRONTEIRA DE PALAVRA: a regex casa
+// com "acao", troca por "acao" acentuada, e o resultado e "acaoes" com acento no
+// meio. Rodei assim e o teste do coach de ciclo pegou — depois de eu ter revisado
+// o diff de views/ e nao o de utils/.
+//
+// Sendo letras, nao ha fronteira ali e a palavra partida fica intocada. Ela
+// continua sem acento, o que e o certo: acentua-la exigiria entender o codigo.
+const ABRE = 'zzmarcadorzz';
+const FECHA = 'zzfimzz';
 
 /**
  * Tira de circulação tudo que estiver entre chaves, e devolve depois.
@@ -69,7 +81,7 @@ const FECHA = '\u0002';
  * substituido por nada, e a pessoa le "{ações}" na tela. A segunda: dentro de
  * chaves ha CODIGO, e codigo nao se acentua.
  *
- * O sentinela usa dois caracteres de controle, que nao aparecem em texto. Uma
+ * Sobre a escolha do sentinela, veja o bloco acima da constante ABRE. Uma
  * versao anterior usava " N " com espacos ao redor — isso destroi qualquer frase
  * que ja contenha um numero isolado, porque "Faltam 3 moedas" tem " 3 " e a
  * restauracao trocaria esse 3 pelo marcador de indice 3, ou por `undefined` se
@@ -78,7 +90,11 @@ const FECHA = '\u0002';
  */
 const protegeMarcadores = (text) => {
   const guardados = [];
-  const semMarcadores = text.replace(/\{[^{}]*\}/g, (todo) => {
+  // O `$` de `${...}` entra na protecao. Deixado de fora, ele sobra colado na
+  // palavra anterior — e `$` nao e caractere de palavra, entao cria a fronteira
+  // que o sentinela alfanumerico existe para evitar. Foi assim que
+  // `acao${n === 1 ? '' : 'es'}` virou "acaoes" com acento no meio.
+  const semMarcadores = text.replace(/\$?\{[^{}]*\}/g, (todo) => {
     guardados.push(todo);
     return `${ABRE}${guardados.length - 1}${FECHA}`;
   });
@@ -94,13 +110,21 @@ const corrige = (trecho) => {
   return devolve(fixWords(semMarcadores));
 };
 
-const fixSource = (source) => source
-  .replace(/(['"`])((?:\\.|(?!\1)[^\\])*)\1/g, (whole, quote, body) => (
+// A regra do texto JSX (`>isto aqui<`) so vale em .tsx.
+//
+// Em .ts nao ha JSX, mas ha comparacao: `a > ultima && inicio < b` casa com o
+// mesmo padrao, e o script acentuou IDENTIFICADORES — `ultima` virou `última` e
+// o arquivo parou de compilar. Rodei assim uma vez e revertei. Literal de string
+// continua valendo nas duas extensoes, porque la o conteudo e texto de verdade.
+const fixSource = (source, ehTsx) => {
+  const comStrings = source.replace(/(['"`])((?:\\.|(?!\1)[^\\])*)\1/g, (whole, quote, body) => (
     /\s/.test(body.trim()) ? `${quote}${corrige(body)}${quote}` : whole
-  ))
-  .replace(/>([^<>{}]+)</g, (whole, body) => (
+  ));
+  if (!ehTsx) return comStrings;
+  return comStrings.replace(/>([^<>{}]+)</g, (whole, body) => (
     /\s/.test(body.trim()) ? `>${corrige(body)}<` : whole
   ));
+};
 
 const root = process.cwd();
 const files = [];
@@ -108,16 +132,21 @@ const walk = (dir) => {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full);
-    else if (full.endsWith('.tsx')) files.push(full);
+    else if (/\.(tsx|ts)$/.test(full)) files.push(full);
   }
 };
-walk(path.join(root, 'views'));
-walk(path.join(root, 'components'));
+// As pastas vem por argumento, com views e components como padrao. As falas do
+// Oraculo moram em utils/ e em supabase/functions/_shared/, e ficaram de fora da
+// primeira passada — justamente o texto mais lido do app.
+const alvos = process.argv.slice(2);
+for (const alvo of (alvos.length ? alvos : ['views', 'components'])) {
+  walk(path.join(root, alvo));
+}
 
 let changed = 0;
 for (const file of files) {
   const before = fs.readFileSync(file, 'utf8');
-  const after = fixSource(before);
+  const after = fixSource(before, file.endsWith('.tsx'));
   if (after !== before) {
     // Rede final: sentinela que sobrou significa restauracao incompleta, e
     // gravar isso corromperia o arquivo em silencio.

@@ -17,8 +17,8 @@ export type OracleSpeechPayload = {
   /** Botoes de navegacao que acompanham a fala, quando ela sugere um caminho. */
   quickActions?: Array<Record<string, unknown>>;
   /**
-   * Fala que nao deve ficar gravada. Usado pelas reacoes de rotina — "voce fez 5
-   * acoes hoje" dispara quase todo dia e, empilhado no historico, vira papel de
+   * Fala que nao deve ficar gravada. Usado pelas reacoes de rotina — "você fez 5
+   * ações hoje" dispara quase todo dia e, empilhado no historico, vira papel de
    * parede. Marco fica; rotina passa.
    */
   ephemeral?: boolean;

@@ -57,7 +57,7 @@ const lastDay = buildOracleCycleCoachBrief({
   cyclePace: 'atrasado',
   cyclePendingActions: 3,
 });
-assert.match(lastDay.content, /ultimo dia/);
+assert.match(lastDay.content, /[uú]ltimo dia/);
 assert.deepEqual(lastDay.quickActions.map((action) => action.kind), ['open_planner', 'open_cycle']);
 
 const completed = buildOracleCycleCoachBrief({

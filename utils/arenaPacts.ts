@@ -195,19 +195,19 @@ const buildPact = (
   const textos: Record<ArenaPactKind, { title: string; description: string }> = {
     constancia: {
       title: `Entregar em ${nome} por ${goal} dias`,
-      description: `Conclua ao menos uma acao de ${nome} em ${goal} dias diferentes. Nao precisam ser seguidos.`,
+      description: `Conclua ao menos uma ação de ${nome} em ${goal} dias diferentes. Não precisam ser seguidos.`,
     },
     conclusao: {
       title: `Fechar ${nome}`,
       description: goal === 1
-        ? `Falta uma acao para ${nome} chegar ao fim.`
-        : `Faltam ${goal} acoes para ${nome} chegar ao fim.`,
+        ? `Falta uma ação para ${nome} chegar ao fim.`
+        : `Faltam ${goal} ações para ${nome} chegar ao fim.`,
     },
     retomada: {
       title: `Voltar a ${nome}`,
       description: stats.daysSinceLastDelivery
-        ? `${nome} esta parada ha ${stats.daysSinceLastDelivery} dias. Uma acao concluida reabre o caminho.`
-        : `Uma acao concluida em ${nome} reabre o caminho.`,
+        ? `${nome} esta parada ha ${stats.daysSinceLastDelivery} dias. Uma ação concluida reabre o caminho.`
+        : `Uma ação concluida em ${nome} reabre o caminho.`,
     },
   };
 

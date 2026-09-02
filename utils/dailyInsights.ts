@@ -272,5 +272,5 @@ export const buildTodayDailyReading = (
   if (completed === 0) {
     return { text: `${base} Seu dia ativo médio neste ciclo é ${formatDecimal(average)}.`, comparison, depth };
   }
-  return { text: `${base} Esta na media dos seus dias ativos neste ciclo.`, comparison, depth };
+  return { text: `${base} Esta na média dos seus dias ativos neste ciclo.`, comparison, depth };
 };

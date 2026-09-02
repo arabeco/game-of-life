@@ -202,7 +202,7 @@ assert.match(
   /if \(userProfile\.onboardingPushPromptedAt\) return;/,
   'respondeu uma vez, nao pergunta mais',
 );
-assert.match(blocoPush, /Ajustes > Oraculo & Alertas/, 'a recusa precisa dizer onde ligar depois');
+assert.match(blocoPush, /Ajustes > Or[aá]culo & Alertas/, 'a recusa precisa dizer onde ligar depois');
 
 
 // --- as tres coisas sao tres, e as tres sao reais ------------------------

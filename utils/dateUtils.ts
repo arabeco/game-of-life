@@ -66,5 +66,5 @@ export const getScoreGrade = (score: number, fairness?: FairnessLike | null) => 
     if (score >= 70) return { grade: 'B', color: 'text-yellow-400', phrase: 'Bom ciclo. Algumas brechas a selar.' };
     if (score >= 55) return { grade: 'C', color: 'text-orange-400', phrase: 'Metade do caminho. O que travou?' };
     if (score >= 40) return { grade: 'D', color: 'text-red-400', phrase: 'Ciclo comprometido. Revise o plano.' };
-    return { grade: 'E', color: 'text-red-900', phrase: 'O plano existiu. A execucao, nao.' };
+    return { grade: 'E', color: 'text-red-900', phrase: 'O plano existiu. A execucao, não.' };
 };

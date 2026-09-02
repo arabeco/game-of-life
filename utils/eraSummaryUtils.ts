@@ -26,7 +26,7 @@ const getArenaPhrase = (arena: string) => {
 const getActionPhrase = (actions: { name: string; count: number }[]) => {
     const topAction = actions[0];
     if (!topAction?.name || topAction.name === 'Nenhuma') {
-        return 'sem uma acao dominante registrada';
+        return 'sem uma ação dominante registrada';
     }
     return `${topAction.name} como ação-chave da fase`;
 };

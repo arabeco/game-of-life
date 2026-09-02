@@ -126,7 +126,7 @@ const tudoAcima = buildCycleComparison(
   historico,
 );
 const fechoBom = buildComparisonClosingLine(tudoAcima);
-assert.match(fechoBom, /nao competiu com ninguem/i, 'ciclo acima em tudo celebra sem comparar com outros');
+assert.match(fechoBom, /n[aã]o competiu com ningu[eé]m/i, 'ciclo acima em tudo celebra sem comparar com outros');
 
 const tudoAbaixo = buildCycleComparison(
   cycle('ruim', { exec: 15, dias: 3, seq: 1, lacunas: 22, score: 25 }),

@@ -85,7 +85,7 @@ export const ensureClosedBetaUserProfile = async (session: Session): Promise<{ s
     if (error) {
       return {
         success: false,
-        error: error.message || 'Nao consegui criar ou reparar o perfil dessa conta.',
+        error: error.message || 'Não consegui criar ou reparar o perfil dessa conta.',
       };
     }
 
@@ -93,7 +93,7 @@ export const ensureClosedBetaUserProfile = async (session: Session): Promise<{ s
   } catch (error: any) {
     return {
       success: false,
-      error: error?.message || 'Nao consegui criar ou reparar o perfil dessa conta.',
+      error: error?.message || 'Não consegui criar ou reparar o perfil dessa conta.',
     };
   }
 };

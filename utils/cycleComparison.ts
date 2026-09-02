@@ -95,7 +95,7 @@ const READERS: Array<{
   },
   {
     id: 'sequencia',
-    label: 'Maior sequencia',
+    label: 'Maior sequência',
     suffix: '',
     lowerIsBetter: false,
     tolerance: 1,
@@ -148,7 +148,7 @@ const buildHeadline = (metrics: CycleMetricComparison[], sampleSize: number): st
  * O fecho da comparacao, no lugar do resumo seco.
  *
  * A headline diz PARA ONDE foi; esta diz o que fazer com isso. Sao coisas
- * diferentes: "ficou acima em tudo" e leitura, "nao precisa provar de novo
+ * diferentes: "ficou acima em tudo" e leitura, "não precisa provar de novo
  * amanha" e a frase que sobra na cabeca depois de fechar a tela.
  *
  * Nenhuma cobra. O ciclo ja fechou — nao ha o que corrigir nele, so o que levar
@@ -161,15 +161,15 @@ export const buildComparisonClosingLine = (comparison: CycleComparison): string 
   const total = comparison.metrics.length;
 
   if (favoraveis === total) {
-    return 'Voce nao competiu com ninguem aqui. Superou a sua propria media, e isso conta diferente.';
+    return 'Você não competiu com ninguem aqui. Superou a sua propria média, e isso conta diferente.';
   }
   if (favoraveis === 0) {
-    return 'Um ciclo abaixo do seu normal continua sendo um ciclo. O que ele mostra vale para o proximo.';
+    return 'Um ciclo abaixo do seu normal continua sendo um ciclo. O que ele mostra vale para o próximo.';
   }
   if (favoraveis >= total / 2) {
-    return 'Nem tudo subiu, e nao precisava. O que segurou o ciclo esta acima do seu padrao.';
+    return 'Nem tudo subiu, e não precisava. O que segurou o ciclo esta acima do seu padrao.';
   }
-  return 'A maior parte cedeu, mas nao tudo. O que resistiu e por onde comecar da proxima vez.';
+  return 'A maior parte cedeu, mas não tudo. O que resistiu e por onde comecar da próxima vez.';
 };
 
 export const buildCycleComparison = (

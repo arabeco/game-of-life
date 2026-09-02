@@ -62,12 +62,12 @@ export const buildArenaLimitMessage = (
     }
 
     if (summary.isPlatinum) {
-        return `Voce atingiu o limite de ${summary.limit} arenas. Exclua uma arena para continuar.`;
+        return `Você atingiu o limite de ${summary.limit} arenas. Exclua uma arena para continuar.`;
     }
 
     if (summary.isPremium) {
-        return `Voce atingiu o limite de ${summary.limit} arenas. Exclua uma arena para continuar ou suba para o Platinum com ${PLATINUM_ARENA_LIMIT}.`;
+        return `Você atingiu o limite de ${summary.limit} arenas. Exclua uma arena para continuar ou suba para o Platinum com ${PLATINUM_ARENA_LIMIT}.`;
     }
 
-    return `Voce atingiu o limite de ${summary.limit} arenas. Exclua uma arena, ative Premium para ${PREMIUM_ARENA_LIMIT} ou Platinum para ${PLATINUM_ARENA_LIMIT}.`;
+    return `Você atingiu o limite de ${summary.limit} arenas. Exclua uma arena, ative Premium para ${PREMIUM_ARENA_LIMIT} ou Platinum para ${PLATINUM_ARENA_LIMIT}.`;
 };

@@ -29,7 +29,7 @@ export const buildVanguardRewardsToast = (payload?: VanguardWelcomePayload | nul
     }
 
     if (payload.chestType) {
-        parts.push(`Bau ${payload.chestType} entregue.`);
+        parts.push(`Baú ${payload.chestType} entregue.`);
     }
 
     if (itemNames.length > 3) {

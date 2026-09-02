@@ -99,37 +99,37 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
   streak_marco: {
     importance: 4, urgency: 3, novelty: 4, actionability: 0,
     cooldownDays: 0, // Zero: cada marco e um numero diferente, e so pode acontecer uma vez cada.
-    why: 'Novidade 4 e nao 5 porque marco e PREVISIVEL: quem esta no dia 6 sabe que amanha e 7. Uma retomada surpreende, um marco chega marcado. E o que faz o dia 7 perder para uma arena parada ha nove dias enquanto o dia 100 ganha — a diferenca vem do boost, nao da base. Urgencia 3 porque comemoracao adiada e comemoracao perdida. Acionabilidade zero de proposito: pedir alguma coisa aqui estragaria o unico momento do app em que a pessoa nao deve nada.',
+    why: 'Novidade 4 e não 5 porque marco e PREVISIVEL: quem esta no dia 6 sabe que amanha e 7. Uma retomada surpreende, um marco chega marcado. E o que faz o dia 7 perder para uma arena parada ha nove dias enquanto o dia 100 ganha — a diferenca vem do boost, não da base. Urgencia 3 porque comemoracao adiada e comemoracao perdida. Acionabilidade zero de proposito: pedir alguma coisa aqui estragaria o unico momento do app em que a pessoa não deve nada.',
   },
   streak_em_risco: {
     importance: 4, urgency: 5, novelty: 3, actionability: 5,
     cooldownDays: 0, // Zero: cada noite e um risco novo, e nao avisar porque avisou ontem seria deixar morrer por elegancia.
-    why: 'A unica coisa no app que morre sozinha se ninguem disser nada. Uma arena fechada continua fechada daqui a vinte minutos; um streak de 23 dias vira 0 na virada. Vence ate a estrutura inflada — a conta que nao fecha continua nao fechando amanha de manha, e a sequencia nao.',
+    why: 'A unica coisa no app que morre sozinha se ninguem disser nada. Uma arena fechada continua fechada daqui a vinte minutos; um streak de 23 dias vira 0 na virada. Vence ate a estrutura inflada — a conta que não fecha continua não fechando amanha de manha, e a sequência não.',
   },
   meta_inflada: {
     importance: 5, urgency: 3, novelty: 4, actionability: 5,
     cooldownDays: 3, // Tres dias: a estrutura nao muda sozinha, e repetir todo dia vira cobranca sobre algo que ela ja ouviu.
-    why: 'A nota mais alta da tabela, inclusive acima de "sumiu" — de proposito, porque costuma ser a CAUSA de ter sumido. E o unico caso em que o problema nao e a pessoa: ela pode se esforcar o mes inteiro e continuar falhando, porque a conta nao fecha. Acionabilidade maxima: baixar a repeticao resolve na hora.',
+    why: 'A nota mais alta da tabela, inclusive acima de "sumiu" — de proposito, porque costuma ser a CAUSA de ter sumido. E o unico caso em que o problema não e a pessoa: ela pode se esforcar o mes inteiro e continuar falhando, porque a conta não fecha. Acionabilidade maxima: baixar a repeticao resolve na hora.',
   },
   ausente: {
     importance: 4, urgency: 5, novelty: 3, actionability: 3,
     cooldownDays: 1, // Um dia: se ela voltou a sumir amanha, isso e um fato novo.
-    why: 'Quem sumiu pode nao voltar. E a unica situacao em que o silencio do app decide o desfecho, entao urgencia maxima.',
+    why: 'Quem sumiu pode não voltar. E a unica situacao em que o silencio do app decide o desfecho, entao urgencia maxima.',
   },
   arena_retomada: {
     importance: 4, urgency: 2, novelty: 5, actionability: 2,
     cooldownDays: 2, // Dois dias: retomada e um momento, nao um estado. Repetir transforma reconhecimento em bajulacao.
-    why: 'Novidade maxima: e a unica coisa que a pessoa NAO ve na tela, porque a tela mostra o estado e nao a mudanca. Vence a queixa sobre a mesma arena de proposito — dizer "reduza a meta" no dia em que ela voltou a andar e o pior erro que o Oraculo pode cometer.',
+    why: 'Novidade maxima: e a unica coisa que a pessoa NÃO ve na tela, porque a tela mostra o estado e não a mudanca. Vence a queixa sobre a mesma arena de proposito — dizer "reduza a meta" no dia em que ela voltou a andar e o pior erro que o Oráculo pode cometer.',
   },
   sem_ciclo: {
     importance: 4, urgency: 3, novelty: 2, actionability: 5,
     cooldownDays: 2, // Dois dias: com um, quem esta sem ciclo ouvia sobre ciclo dia sim dia nao — e a solucao proposta e sempre a mesma, entao repetir nao acrescenta.
-    why: 'Sem ciclo nada mais funciona, e resolver e um toque. Acionabilidade maxima, urgencia media porque nao piora sozinho.',
+    why: 'Sem ciclo nada mais funciona, e resolver e um toque. Acionabilidade maxima, urgencia média porque não piora sozinho.',
   },
   ciclo_longo: {
     importance: 3, urgency: 2, novelty: 2, actionability: 4,
     cooldownDays: 3, // Tres dias: ciclo arrastado leva dias para mudar, entao nao ha o que dizer de novo antes disso.
-    why: 'Ciclo arrastado e problema estrutural: importa, mas nao muda nada dizer hoje em vez de amanha.',
+    why: 'Ciclo arrastado e problema estrutural: importa, mas não muda nada dizer hoje em vez de amanha.',
   },
   sem_entrega: {
     importance: 4, urgency: 4, novelty: 2, actionability: 3,
@@ -154,7 +154,7 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
   prioridade: {
     importance: 2, urgency: 3, novelty: 1, actionability: 5,
     cooldownDays: 1, // Um dia: a acao prioritaria muda de um dia para o outro, entao amanha costuma ser outra frase.
-    why: 'Sozinha nao e grande coisa, mas e a unica que entrega o proximo movimento pronto. E o eixo de acionabilidade que a carrega.',
+    why: 'Sozinha não e grande coisa, mas e a unica que entrega o próximo movimento pronto. E o eixo de acionabilidade que a carrega.',
   },
   ja_entregou: {
     importance: 2, urgency: 1, novelty: 2, actionability: 0,
@@ -164,7 +164,7 @@ export const ORACLE_CANDIDATE_WEIGHTS: Record<OracleCandidateType, OracleCandida
   estrutura_enxuta: {
     importance: 2, urgency: 1, novelty: 3, actionability: 3,
     cooldownDays: 3, // Tres dias: estrutura pequena nao e defeito e nao tem pressa nenhuma.
-    why: 'Quase nunca dispara, entao quando dispara e informacao nova. Nenhuma pressa: estrutura pequena nao e defeito.',
+    why: 'Quase nunca dispara, entao quando dispara e informacao nova. Nenhuma pressa: estrutura pequena não e defeito.',
   },
 };
 
@@ -442,7 +442,7 @@ const detectStreakEvents = (input: OracleCandidateInput): OracleCandidate[] => {
   // `current` guardado no perfil e um RETRATO da data da ultima entrega, nao um
   // contador vivo: nada o decai, porque nada roda nos dias em que a pessoa nao
   // abre o app. Quem le precisa derivar a validade pela data, e aqui nao derivava
-  // — entao quem tinha sequencia morta de 5 dias recebia "sua sequencia esta em
+  // — entao quem tinha sequencia morta de 5 dias recebia "sua sequência esta em
   // risco" toda noite, sobre algo que ja tinha acabado.
   //
   // Avisar de perda depois da perda nao e aviso, e cobranca. Mesma correcao feita

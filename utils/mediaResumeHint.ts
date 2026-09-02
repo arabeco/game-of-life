@@ -31,7 +31,7 @@ export const persistActiveMediaHint = (kind: ActiveMediaHint['kind']) => {
   try {
     window.localStorage.setItem(ACTIVE_MEDIA_HINT_STORAGE_KEY, JSON.stringify(payload));
   } catch (error) {
-    console.error('Failed to persist active media hint:', error);
+    console.error('Failed to persist active média hint:', error);
   }
 };
 
@@ -52,7 +52,7 @@ export const clearActiveMediaHint = (kind?: ActiveMediaHint['kind']) => {
       window.localStorage.removeItem(ACTIVE_MEDIA_HINT_STORAGE_KEY);
     }
   } catch (error) {
-    console.error('Failed to clear active media hint:', error);
+    console.error('Failed to clear active média hint:', error);
   }
 };
 
@@ -68,7 +68,7 @@ export const hasRecentActiveMediaHint = (maxAgeMs = ACTIVE_MEDIA_HINT_MAX_AGE_MS
 
     return parsed.playing && (now - parsed.updatedAt) <= maxAgeMs;
   } catch (error) {
-    console.error('Failed to inspect active media hint:', error);
+    console.error('Failed to inspect active média hint:', error);
     return false;
   }
 };

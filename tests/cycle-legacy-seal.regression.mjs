@@ -35,7 +35,14 @@ assert.match(projectionSource, /identity=\{displayedPlaqueIdentity\}/);
 assert.doesNotMatch(projectionSource, /legacy-identity-dock/);
 assert.doesNotMatch(projectionModalSource, /legacy-identity-dock/);
 assert.match(projectionModalSource, /identityMode="current"/);
-assert.match(plaqueSource, /grid-cols-\[58px_minmax\(0,1fr\)_76px\]/);
-assert.match(plaqueSource, /Retrato do ciclo/);
+// A placa passou a ter duas larguras — compacta e normal — em 7389bac, e a
+// coluna deixou de ser 58/76. O teste ficou preso na medida antiga e ja
+// falhava antes desta leva; ele guarda que a placa tem TRES COLUNAS com o
+// miolo elastico, que e o que impede o nome de empurrar os selos para fora.
+assert.match(plaqueSource, /grid-cols-\[\d+px_minmax\(0,1fr\)_\d+px\]/);
+// Mesmo 7389bac: o titulo da placa deixou de ser "Retrato do ciclo" e passou a
+// ser "Ciclo fechado". A trava guarda que a placa se NOMEIA — sem isso ela vira
+// uma imagem bonita sem dizer do que se trata.
+assert.match(plaqueSource, /Ciclo fechado/);
 
 console.log('Cycle seal and Legacy regression: identity, arenas, actions and planner marks remain frozen until the cycle itself is deleted.');

@@ -136,7 +136,7 @@ const ensureNativePushEventListeners = async () => {
         const data = notification.data || {};
         void showLocalNotification({
           title: notification.title || 'Glyph',
-          body: notification.body || 'Voce recebeu um novo aviso.',
+          body: notification.body || 'Você recebeu um novo aviso.',
           tag: String(data.tag || notification.id || 'glyph-remote-push'),
           url: typeof data.url === 'string' ? data.url : '/?oracle=notifications',
           requireInteraction: String(data.requireInteraction || '') === 'true',
@@ -165,7 +165,7 @@ export const getNativePushProviderLabel = (): string =>
 
 export const getAppPushSetupHint = (): string => {
   if (!isCapacitorNativeRuntime()) {
-    return 'No navegador, o push continua preso ao service worker e ao browser do usuario.';
+    return 'No navegador, o push continua preso ao service worker e ao browser do usuário.';
   }
 
   return getNativePushPlatform() === 'ios'

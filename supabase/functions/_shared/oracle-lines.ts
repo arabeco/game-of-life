@@ -32,39 +32,39 @@ export interface OracleLineContext {
  */
 const STATE_LINES: Record<OracleHostOperationalState, string[]> = {
   sem_direcao: [
-    "Voce ainda nao tem uma arena. Escolhe uma area e cria a primeira: e o que faz o resto do app comecar a existir.",
-    "Nada definido ainda. Uma arena so, com uma acao pequena, ja te da o que registrar hoje.",
-    "Sem direcao definida. Comeca pelo que voce faria de qualquer jeito hoje e transforma em arena.",
+    "Você ainda não tem uma arena. Escolhe uma area e cria a primeira: e o que faz o resto do app comecar a existir.",
+    "Nada definido ainda. Uma arena so, com uma ação pequena, ja te da o que registrar hoje.",
+    "Sem direcao definida. Comeca pelo que você faria de qualquer jeito hoje e transforma em arena.",
   ],
   disperso: [
-    "Voce tem {pendentes} pendencias hoje espalhadas. Escolhe uma e fecha antes de abrir outra frente.",
+    "Você tem {pendentes} pendencias hoje espalhadas. Escolhe uma e fecha antes de abrir outra frente.",
     "Muita coisa aberta ao mesmo tempo. Fechar uma pequena vale mais que adiantar tres pela metade.",
-    "O dia esta espalhado. {arena} e a que mais precisa de voce agora.",
+    "O dia esta espalhado. {arena} e a que mais precisa de você agora.",
   ],
   atrasado: [
-    "Voce tem {overdue} acoes vencidas. Nao precisa recuperar tudo: pega a mais antiga e resolve.",
-    "O atraso acumulou. Fechar uma vencida hoje ja muda o numero de amanha.",
+    "Você tem {overdue} ações vencidas. Não precisa recuperar tudo: pega a mais antiga e resolve.",
+    "O atraso acumulou. Fechar uma vencida hoje ja muda o número de amanha.",
     "{arena} ficou pra tras. Uma passada curta ali corta o acumulo.",
   ],
   em_ritmo: [
-    "Ritmo firme. Nao aumenta o escopo agora, so mantem o que ja esta funcionando.",
-    "Voce esta em dia. O melhor movimento hoje e nao inventar nada novo.",
+    "Ritmo firme. Não aumenta o escopo agora, so mantem o que ja esta funcionando.",
+    "Você esta em dia. O melhor movimento hoje e não inventar nada novo.",
     "Consistencia e isso: {arena} andando sem precisar de esforco extra.",
   ],
   em_risco: [
     "O ciclo esta em risco. Corta o que da pra cortar e protege {arena}.",
-    "Nao da pra salvar tudo neste ciclo. Escolhe o que importa e deixa o resto ir.",
-    "O ciclo aperta. Um ajuste honesto de meta agora vale mais que forcar o numero.",
+    "Não da pra salvar tudo neste ciclo. Escolhe o que importa e deixa o resto ir.",
+    "O ciclo aperta. Um ajuste honesto de meta agora vale mais que forcar o número.",
   ],
   retomando: [
-    "Voce voltou. Nao tenta compensar os dias parados: faz uma acao pequena e fecha o dia.",
+    "Você voltou. Não tenta compensar os dias parados: faz uma ação pequena e fecha o dia.",
     "Retomar conta. Comeca por {acao}, que e curta.",
-    "Depois de uma pausa, o objetivo e voltar a registrar, nao recuperar o atraso.",
+    "Depois de uma pausa, o objetivo e voltar a registrar, não recuperar o atraso.",
   ],
   proximo_compromisso: [
     "{acao} esta perto. Deixa o que precisa separado antes de comecar.",
     "Tem compromisso chegando em {arena}. Cinco minutos de preparo evitam meia hora de atrito.",
-    "O proximo bloco ja esta marcado. Vale deixar o caminho livre agora.",
+    "O próximo bloco ja esta marcado. Vale deixar o caminho livre agora.",
   ],
   pronto_para_fechar: [
     "O dia esta pronto pra fechar. Faz o julgamento e leva a EXP.",
@@ -74,31 +74,31 @@ const STATE_LINES: Record<OracleHostOperationalState, string[]> = {
   arena_esquecida: [
     "{arena} esta parada ha um tempo. Ou volta com algo pequeno, ou tira do ciclo sem culpa.",
     "Tem arena sem movimento. Deixar parada e uma escolha valida, desde que seja escolha.",
-    "{arena} nao recebe atencao ha dias. Vale decidir se ela continua no ciclo.",
+    "{arena} não recebe atencao ha dias. Vale decidir se ela continua no ciclo.",
   ],
   escopo_pesado: [
-    "O escopo esta maior do que o ciclo aguenta. Reduzir meta agora nao tira EXP ja conquistada.",
-    "Voce planejou mais do que cabe. Ajustar e mais honesto que arrastar.",
-    "Tem {pendentes} pendencias so hoje. Isso e sinal de escopo, nao de falta de esforco.",
+    "O escopo esta maior do que o ciclo aguenta. Reduzir meta agora não tira EXP ja conquistada.",
+    "Você planejou mais do que cabe. Ajustar e mais honesto que arrastar.",
+    "Tem {pendentes} pendencias so hoje. Isso e sinal de escopo, não de falta de esforco.",
   ],
   oportunidade_util: [
     "Da pra encaixar {acao} agora sem atrapalhar o resto do dia.",
-    "Voce tem uma janela util. {arena} e onde ela rende mais.",
-    "Momento bom pra uma acao curta. Nao precisa ser a mais dificil.",
+    "Você tem uma janela util. {arena} e onde ela rende mais.",
+    "Momento bom pra uma ação curta. Não precisa ser a mais dificil.",
   ],
   streak_mantida: [
-    "{streak} dias seguidos de prova. Mantem o tamanho da acao, nao aumenta.",
-    "Sequencia de {streak} dias viva. O que sustenta isso e o tamanho pequeno.",
-    "Voce esta em {streak} dias, com recorde de {recorde}. Hoje basta nao quebrar.",
+    "{streak} dias seguidos de prova. Mantem o tamanho da ação, não aumenta.",
+    "Sequência de {streak} dias viva. O que sustenta isso e o tamanho pequeno.",
+    "Você esta em {streak} dias, com recorde de {recorde}. Hoje basta não quebrar.",
   ],
   streak_quebrada: [
-    "A sequencia quebrou. Recomecar hoje custa uma acao; adiar custa a semana.",
-    "Perdeu a sequencia, nao o progresso. O que ja foi registrado continua seu.",
-    "Seu recorde e {recorde} dias. Ele continua la, esperando a proxima tentativa.",
+    "A sequência quebrou. Recomecar hoje custa uma ação; adiar custa a semana.",
+    "Perdeu a sequência, não o progresso. O que ja foi registrado continua seu.",
+    "Seu recorde e {recorde} dias. Ele continua la, esperando a próxima tentativa.",
   ],
   primeira_acao_do_dia: [
     "Primeira do dia. {acao} e um bom ponto de partida.",
-    "O dia ainda nao tem registro. Uma acao pequena ja abre o placar.",
+    "O dia ainda não tem registro. Uma ação pequena ja abre o placar.",
     "Comeca por {arena}: e a que sustenta o resto do dia.",
   ],
 };

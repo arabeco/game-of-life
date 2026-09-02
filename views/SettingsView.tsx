@@ -2248,8 +2248,12 @@ const LegacyPremiumTab: React.FC = () => {
         <div className="space-y-8 animate-fade-in pb-10">
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1 border-b border-[var(--skin-accent-color)]/20 pb-2">
-                    <h2 className="text-sm font-bold accent-text uppercase tracking-widest">Premium</h2>
-                    {!isPremium && <span className="text-[10px] font-bold text-gray-500 bg-white/5 px-2 py-1 rounded">BLOQUEADO</span>}
+                    {/* Esta secao chamava-se "Premium" e trazia um selo BLOQUEADO, mas so
+                        `campaigns-button` tem `disabled={!isPremium}`. Vinculos, Biblioteca
+                        e Assistente sempre funcionaram sem assinar — o app escondia de graca
+                        o que ja entregava, e ainda repetia o nome da aba Premium de verdade,
+                        que fica ao lado com os planos. */}
+                    <h2 className="text-sm font-bold accent-text uppercase tracking-widest">Vínculos e biblioteca</h2>
                 </div>
 
                 <GlassCard variant="neutral" className="p-4 space-y-3">
@@ -2274,8 +2278,6 @@ const LegacyPremiumTab: React.FC = () => {
                         <button
                             id="assistant-button"
                             onClick={() => {
-                                // Open Settings/Config for everyone
-                                console.log("PremiumTab: Assistant button clicked -> Opening Settings");
                                 setOracleSettingsOpen(true);
                             }}
                             className={`p-4 rounded-xl bg-black/40 border border-white/10 hover:border-[var(--skin-accent-color)]/50 transition-all flex flex-col items-center gap-2 text-center group aspect-square justify-center`}
@@ -2297,7 +2299,7 @@ const LegacyPremiumTab: React.FC = () => {
                     </div>
                     {!isPremium && (
                         <div className="text-center pt-2">
-                            <p className="text-xs text-gray-400">Ative o Premium para desbloquear.</p>
+                            <p className="text-xs text-gray-400">Campanhas exige Premium. O resto já está liberado.</p>
                         </div>
                     )}
                 </GlassCard>
@@ -2801,6 +2803,16 @@ export const SettingsView: React.FC = () => {
         }
     }
 
+    // So o TEXTO muda. O id do botao e derivado do nome (settings-tab-geral), o
+    // tipo viaja em telemetria e no parametro de URL, e um smoke clica em
+    // #settings-tab-preferencias. Renomear o valor quebraria os tres de uma vez.
+    const tabLabels: Record<SettingsTab, string> = {
+        'Geral': 'Perfil',
+        'Preferências': 'Preferências',
+        'Premium': 'Premium',
+        'Temporada': 'Temporada',
+    };
+
     let tabs: SettingsTab[] = ['Geral', 'Preferências', 'Premium'];
 
     return (
@@ -2815,7 +2827,7 @@ export const SettingsView: React.FC = () => {
                             className={`w-full px-2 py-2 text-xs font-semibold rounded-xl transition-colors ${activeTab === tab ? 'bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)] border border-[var(--skin-accent-color)]/28 shadow-[0_0_14px_var(--sephirot-glow-color-soft)]' : 'text-gray-400 hover:bg-white/5'
                                 }`}
                         >
-                            {tab}
+                            {tabLabels[tab]}
                         </button>
                     ))}
                 </div>

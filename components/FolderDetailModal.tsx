@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ArenaFolder } from '../types';
 import { useGame } from '../contexts/GameContext';
+import { useConfirmation } from '../hooks/useConfirmation';
 import { ArenaCard } from './ArenaCard';
 import { XIcon, Trash2Icon, EditIcon, CheckIcon } from './Icons';
 import { IconPickerModal } from './IconPickerModal';
@@ -14,6 +15,7 @@ interface FolderDetailModalProps {
 
 export const FolderDetailModal: React.FC<FolderDetailModalProps> = ({ folder, onClose }) => {
     const { getArenas, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, getActionsForArena } = useGame();
+    const { confirm, confirmationElement } = useConfirmation();
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(folder.name);
     const [icon, setIcon] = useState(folder.icon);
@@ -27,10 +29,14 @@ export const FolderDetailModal: React.FC<FolderDetailModalProps> = ({ folder, on
     };
 
     const handleDelete = async () => {
-        if (confirm('Tem certeza que deseja excluir esta pasta? As arenas serão movidas para a raiz.')) {
-            await deleteArenaFolder(folder.id);
-            onClose();
-        }
+        if (!(await confirm({
+            title: 'Excluir pasta?',
+            message: 'As arenas continuam existindo — elas voltam para a raiz.',
+            confirmLabel: 'EXCLUIR',
+            variant: 'danger',
+        }))) return;
+        await deleteArenaFolder(folder.id);
+        onClose();
     };
 
     const handleRemoveArena = async (arenaId: string) => {
@@ -120,6 +126,7 @@ export const FolderDetailModal: React.FC<FolderDetailModalProps> = ({ folder, on
                 />
             )}
 </div>
+            {confirmationElement}
         </Portal>
     );
 };

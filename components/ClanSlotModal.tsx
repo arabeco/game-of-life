@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { useGame } from '../contexts/GameContext';
+import { useConfirmation } from '../hooks/useConfirmation';
 import { AldeiaSlotId, EnrichedClanMember, UserProfile, ClanCustomQuest } from '../types';
 import { UserAvatar } from './UserAvatar';
 import { PlusIcon, XIcon, CheckIcon } from './Icons';
@@ -46,6 +47,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
     startInCreateMode = false
 }) => {
     const { userProfile, showToast, clan, getArenas, getActionsForArena, deleteAction } = useGame();
+    const { confirm, confirmationElement } = useConfirmation();
     const isOfficeClan = clan?.clanType?.toLowerCase() === 'office';
     const [view, setView] = useState<'details' | 'create-quest' | 'edit-slot' | 'move-quest'>('details');
     
@@ -189,7 +191,12 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
 
     const handleDeleteQuest = async (quest: ClanCustomQuest) => {
         if (userRole !== 'leader') return;
-        if (!window.confirm(`Apagar a tarefa "${quest.title}"?`)) return;
+        if (!(await confirm({
+            title: 'Apagar tarefa?',
+            message: `"${quest.title}" sai do clã para todo mundo.`,
+            confirmLabel: 'APAGAR',
+            variant: 'danger',
+        }))) return;
 
         try {
             const runtimeAction = findRuntimeQuestAction(quest);
@@ -970,6 +977,7 @@ export const ClanSlotModal: React.FC<ClanSlotModalProps> = ({
                 )}
 
             </GlassCard>
+            {confirmationElement}
         </div>
         </Portal>
     );

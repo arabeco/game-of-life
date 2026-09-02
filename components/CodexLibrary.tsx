@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useConfirmation } from '../hooks/useConfirmation';
 import { CodexShareDeliveryMethod, UserCodex } from '../types';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
@@ -272,6 +273,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
     userProfile,
     refreshCodexes,
   } = useGame();
+  const { confirm, confirmationElement } = useConfirmation();
 
   const [activeTab, setActiveTab] = useState<'created' | 'imported'>('created');
   const [campaignPreview, setCampaignPreview] = useState<CodexCampaignPreview | null>(null);
@@ -303,7 +305,12 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
   };
 
   const handleDelete = async (codex: UserCodex) => {
-    if (!confirm(`Excluir ${codex.name}? Essa acao remove a campanha da sua biblioteca.`)) return;
+    if (!(await confirm({
+      title: `Excluir ${codex.name}?`,
+      message: 'A campanha sai da sua biblioteca.',
+      confirmLabel: 'EXCLUIR',
+      variant: 'danger',
+    }))) return;
     await deleteUserCodex(codex.id);
   };
 
@@ -457,6 +464,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
       {isCreatorOpen && (
         <CodexModal onClose={handleCreatorClose} />
       )}
+      {confirmationElement}
     </>
   );
 };

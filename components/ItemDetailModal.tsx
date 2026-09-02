@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useConfirmation } from '../hooks/useConfirmation';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, Trash2Icon, GiftIcon } from './Icons';
@@ -33,6 +34,7 @@ const CATEGORY_MAP: Partial<Record<ItemCategory, UnlockCategory>> = {
 
 export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialItem, instanceId: initialInstanceId, type, onClose, onOpen }) => {
     const { userProfile, updateUserProfile, toggleEquipItem, recycleItem, craftItem, buyStoreItem, showToast, donateItem, friends } = useGame();
+    const { confirm, confirmationElement } = useConfirmation();
     const [escolhendoAmigo, setEscolhendoAmigo] = React.useState(false);
     const [acaoEmCurso, setAcaoEmCurso] = React.useState<string | null>(null);
     const [currentItem, setCurrentItem] = React.useState<ItemDef>(initialItem);
@@ -162,7 +164,11 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
     const confirmarDoacao = async (amigoId: string, amigoNome: string) => {
         if (!currentInstanceId || acaoEmCurso) return;
         // eslint-disable-next-line no-alert
-        if (!window.confirm(`Doar ${currentItem.name} para ${amigoNome}? Isso não pode ser desfeito.`)) return;
+        if (!(await confirm({
+            title: 'Doar item?',
+            message: `${currentItem.name} vai para ${amigoNome}. Não há como desfazer.`,
+            confirmLabel: 'DOAR',
+        }))) return;
         setAcaoEmCurso('doar');
         try {
             const ok = await donateItem(currentInstanceId, amigoId);
@@ -201,7 +207,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
     const handleRecycle = async () => {
         if (!currentInstanceId || acaoEmCurso) return;
         // eslint-disable-next-line no-alert
-        if (!window.confirm(`Quebrar ${currentItem.name} por ${valorAoQuebrar} \u{1F48E} fragmentos? Isso não pode ser desfeito.`)) return;
+        if (!(await confirm({
+            title: 'Quebrar item?',
+            message: `${currentItem.name} vira ${valorAoQuebrar} \u{1F48E} fragmentos. O item não volta.`,
+            confirmLabel: 'QUEBRAR',
+            variant: 'danger',
+        }))) return;
         setAcaoEmCurso('quebrar');
         try {
             await recycleItem(currentInstanceId);
@@ -462,6 +473,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                 </div>
             </div>
         </div>
+            {confirmationElement}
         </Portal>
     );
 };

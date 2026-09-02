@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useConfirmation } from '../hooks/useConfirmation';
 import { Campaign, Arena } from '../types';
 import { XIcon, TrashIcon, EditIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
@@ -13,6 +14,7 @@ interface CampaignDetailModalProps {
 
 export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({ campaign, onClose }) => {
     const { getArenas, updateCampaign, deleteCampaign } = useGame();
+    const { confirm, confirmationElement } = useConfirmation();
     const [isEditing, setIsEditing] = useState(false);
     const [title, setTitle] = useState(campaign.title);
     const [description, setDescription] = useState(campaign.description || '');
@@ -32,11 +34,15 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({ campai
         }
     };
 
-    const handleDelete = () => {
-        if (confirm('Tem certeza que deseja excluir esta campanha? TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
-            deleteCampaign(campaign.id);
-            onClose();
-        }
+    const handleDelete = async () => {
+        if (!(await confirm({
+            title: 'Excluir campanha?',
+            message: 'Todas as arenas e ações dentro dela serão excluídas permanentemente.',
+            confirmLabel: 'EXCLUIR',
+            variant: 'danger',
+        }))) return;
+        deleteCampaign(campaign.id);
+        onClose();
     };
 
     return (
@@ -124,6 +130,7 @@ export const CampaignDetailModal: React.FC<CampaignDetailModalProps> = ({ campai
                     onClose={() => setSelectedArenaId(null)}
                 />
             )}
+            {confirmationElement}
         </Portal>
     );
 };

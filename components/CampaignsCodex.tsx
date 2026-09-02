@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useConfirmation } from '../hooks/useConfirmation';
 import { Action, Arena, Campaign } from '../types';
 import { PlusIcon, LockIcon, TrashIcon, EditIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, LightbulbIcon } from './Icons';
 import { ArenaCard } from './ArenaCard';
@@ -188,6 +189,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
     previewMeta,
 }) => {
     const { campaigns, getArenas, actions, tasks, activeCycle, freeProgressResetAt, updateCampaign, deleteCampaign, getClanQuestsForArena, getClanQuestProgress, getSharedActionPoolProgress, userCodexes, installCodex, showToast } = useGame();
+    const { confirm, confirmationElement } = useConfirmation();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId || null);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [isCreateCampaignModalOpen, setIsCreateCampaignModalOpen] = useState(false);
@@ -410,7 +412,12 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         if (!selectedCampaign) return;
 
         if (canDeletePreviewCampaign) {
-            if (confirm('Tem certeza que deseja remover esta campanha deste vínculo? Isso não pode ser desfeito.')) {
+            if (await confirm({
+                title: 'Remover campanha do vínculo?',
+                message: 'Isso não pode ser desfeito.',
+                confirmLabel: 'REMOVER',
+                variant: 'danger',
+            })) {
                 await Promise.resolve(onDeletePreviewCampaign?.());
                 onClose();
             }
@@ -418,7 +425,12 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
         }
 
         if (isPreviewCampaign || isReadOnlyCodexCampaign) return;
-        if (confirm('Tem certeza que deseja excluir esta campanha?TODAS as arenas e ações dentro dela serão excluídas permanentemente.')) {
+        if (await confirm({
+            title: 'Excluir campanha?',
+            message: 'Todas as arenas e ações dentro dela serão excluídas permanentemente.',
+            confirmLabel: 'EXCLUIR',
+            variant: 'danger',
+        })) {
             deleteCampaign(selectedCampaign.id);
             setSelectedCampaignId(null);
         }
@@ -516,7 +528,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
             .map(([phase, arenas]) => ({ phase, arenas }));
     }, [selectedCampaign, sortedArenas]);
     
-    const handleRemoveArena = (arenaId: string, e: React.MouseEvent) => {
+    const handleRemoveArena = async (arenaId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (!selectedCampaign) return;
         
@@ -525,7 +537,11 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
             return;
         }
 
-        if (window.confirm("Tem certeza que deseja remover esta arena da campanha?")) {
+        if (await confirm({
+            title: 'Remover arena da campanha?',
+            message: 'A arena continua existindo fora da campanha.',
+            confirmLabel: 'REMOVER',
+        })) {
             const newArenaIds = selectedCampaign.arenaIds.filter(id => id !== arenaId);
             const newConfig = { ...selectedCampaign.arenaConfig };
             delete newConfig[arenaId];
@@ -1358,6 +1374,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                     )}
                 </GlassCard>
             </div>
+            {confirmationElement}
         </Portal>
     );
 };

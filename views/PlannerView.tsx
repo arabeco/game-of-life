@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, PlusIcon, MinusIcon, SquareCheckIcon, PanelIcon, FlameIcon, ArchiveBoxIcon, ZapIcon } from '../components/Icons';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
+import { useConfirmation } from '../hooks/useConfirmation';
 import { Action, ScheduledTask, DayOfWeek, Arena, DailyCommitment, SeasonQuest, ActionType, PlannerMatrixQuadrant, Report } from '../types';
 import { ChecklistModal } from '../components/ChecklistModal';
 import { WeeklyPlannerGrid } from '../components/WeeklyPlannerGrid';
@@ -185,6 +186,9 @@ const Sparkles: React.FC = () => (
 
 const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: number, operationalDate: string, onCustomDragStart: (event: MouseEvent | TouchEvent, item: any, ghost: React.ReactNode, ref: React.RefObject<HTMLDivElement>) => void, onTaskClick: (task: ScheduledTask) => void }> = ({ task, action, scaleFactor, operationalDate, onCustomDragStart, onTaskClick }) => {
     const { getActionBackgroundStyle, toggleTaskCompletion, deleteTask } = useGame();
+    // Chamado antes do early return da tarefa corrompida: hook nao pode ficar
+    // atras de condicao.
+    const { confirm, confirmationElement } = useConfirmation();
     const [isHolding, setIsHolding] = useState(false);
     const [showSparkles, setShowSparkles] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -224,17 +228,22 @@ const TaskSlot: React.FC<{ task: ScheduledTask, action?: Action, scaleFactor: nu
                 ref={taskRef}
                 className="absolute inset-x-0 cursor-pointer z-10"
                 style={{ top: `${top}px`, height: `${height}px` }}
-                onClick={(e) => {
+                onClick={async (e) => {
                     e.stopPropagation();
-                    if (window.confirm("Tarefa corrompida detectada (sem a\u00E7\u00E3o vinculada). Deseja delet\u00E1-la?")) {
-                        deleteTask(task.id);
-                    }
+                    if (!(await confirm({
+                        title: 'Tarefa corrompida',
+                        message: 'Esta tarefa perdeu a ação vinculada e não pode ser aberta. Excluir?',
+                        confirmLabel: 'EXCLUIR',
+                        variant: 'danger',
+                    }))) return;
+                    deleteTask(task.id);
                 }}
             >
                 <div className="h-full w-full bg-red-900/40 border border-red-500/30 rounded-lg flex flex-col items-center justify-center p-1 backdrop-blur-sm hover:bg-red-900/60 transition-colors">
                      <span className="text-lg">{'\u26A0\uFE0F'}</span>
                      <span className="text-[10px] text-red-200 font-bold text-center leading-tight mt-1">{'DADOS INV\u00C1LIDOS'}<br/>Toque para limpar</span>
                 </div>
+                {confirmationElement}
             </div>
         );
     }

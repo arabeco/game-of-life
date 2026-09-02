@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useConfirmation } from '../hooks/useConfirmation';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
 import { XIcon, EyeIcon, PlusIcon, ChevronRightIcon, CheckIcon, Trash2Icon } from './Icons';
@@ -78,6 +79,7 @@ export const CodexModal: React.FC<{
   onDelivered?: () => void;
 }> = ({ onClose, recipientId, recipientName, relationshipLinkId = null, onDelivered }) => {
   const { assets, addArena, addAction, scheduleMultipleTasks, createMentorCodexForRecipient, userProfile } = useGame();
+  const { confirm, confirmationElement } = useConfirmation();
   const isMentorDraftMode = Boolean(recipientId);
   const draftStorageKey = isMentorDraftMode
     ? `mentorCodexDrafts:${relationshipLinkId || recipientId}`
@@ -472,9 +474,14 @@ export const CodexModal: React.FC<{
     setEditingActionId(null);
   };
 
-  const handleDeleteCodex = (id: string, e: React.MouseEvent) => {
+  const handleDeleteCodex = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Tem certeza que deseja excluir esta campanha?')) {
+    if (await confirm({
+      title: 'Excluir campanha?',
+      message: 'Isso não pode ser desfeito.',
+      confirmLabel: 'EXCLUIR',
+      variant: 'danger',
+    })) {
         setCodexes(prev => prev.filter(c => c.id !== id));
         if (!isMentorDraftMode) {
           supabase
@@ -491,7 +498,11 @@ export const CodexModal: React.FC<{
 
   const handleApplyCodex = async () => {
     if (!activeCodex) return;
-    if (!confirm('Deseja instalar todas as arenas e ações desta campanha no seu jogo?')) return;
+    if (!(await confirm({
+      title: 'Instalar campanha?',
+      message: 'Todas as arenas e ações desta campanha entram no seu jogo.',
+      confirmLabel: 'INSTALAR',
+    }))) return;
 
     const arenaCapacity = getArenaCapacitySummary(assets, userProfile);
     if (arenaCapacity.total + activeCodex.arenas.length > arenaCapacity.limit) {
@@ -990,6 +1001,7 @@ export const CodexModal: React.FC<{
           previewActions={campaignPreview.actions}
         />
       )}
+      {confirmationElement}
     </Portal>
   );
 };

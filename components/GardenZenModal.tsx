@@ -866,7 +866,7 @@ export const GardenZenModal: React.FC<{ onClose: () => void; profile?: UserProfi
                                     onClick={undoStroke}
                                     disabled={(gardenState.strokes || []).length === 0}
                                     className="grid h-9 w-9 place-items-center rounded-full text-amber-50/78 transition-colors hover:bg-white/10 disabled:cursor-default disabled:text-white/24"
-                                    aria-label="Desfazer ultimo risco"
+                                    aria-label="Desfazer último risco"
                                 >
                                     <ChevronLeftIcon className="h-4 w-4" />
                                 </button>

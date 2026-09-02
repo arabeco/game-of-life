@@ -358,15 +358,15 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
     const [activeTab, setActiveTab] = useState<ClanDetailTab>('santuario');
     const enrichedClanMembersRef = useRef(enrichedClanMembers);
     const groupBoardTabLabel = isOfficeClan ? 'Prioridade' : 'Missao';
-    const groupBoardTitle = isOfficeClan ? 'Prioridade atual da equipe' : 'Missao atual do grupo';
+    const groupBoardTitle = isOfficeClan ? 'Prioridade atual da equipe' : 'Missão atual do grupo';
     const getMissionTypeLabel = (missionType: ClanCustomQuest['mission_type']) => {
         if (isOfficeClan) return missionType === 'singular' ? 'Atribuida' : 'Coletiva';
         return missionType === 'singular' ? 'Individual' : 'Coletiva';
     };
     const getGroupActionLabel = (quest: ClanCustomQuest, isInstalled: boolean) => {
-        if (isInstalled) return isOfficeClan ? 'Abrir entrega' : 'Abrir missao';
+        if (isInstalled) return isOfficeClan ? 'Abrir entrega' : 'Abrir missão';
         if (isOfficeClan) return quest.mission_type === 'singular' ? 'Assumir entrega' : 'Participar';
-        return quest.mission_type === 'singular' ? 'Assumir missao' : 'Participar';
+        return quest.mission_type === 'singular' ? 'Assumir missão' : 'Participar';
     };
 
     useEffect(() => {
@@ -553,7 +553,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                 if (existingPlannerAction.arenaId !== clanArena.id) {
                     updateAction(existingPlannerAction.id, { arenaId: clanArena.id });
                 }
-                showToast(`Essa acao ja esta na arena "${clanArena.name}".`, "info");
+                showToast(`Essa ação ja esta na arena "${clanArena.name}".`, "info");
                 return;
             }
 
@@ -586,7 +586,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                 setMyParticipations(prev => Array.from(new Set([...prev, quest.id])));
                 const { data } = await supabase.from('clan_custom_quests').select('*').eq('clan_id', clan.id);
                 if (data) setClanQuests(data as ClanCustomQuest[]);
-                showToast(quest.mission_type === 'singular' ? "Tarefa assumida no seu app." : "Acao instalada no seu app.");
+                showToast(quest.mission_type === 'singular' ? "Tarefa assumida no seu app." : "Ação instalada no seu app.");
                 return;
             }
 
@@ -680,7 +680,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                 if (unlockError) throw unlockError;
             }
 
-            showToast("Acao removida do seu app.");
+            showToast("Ação removida do seu app.");
             setMyParticipations(prev => prev.filter(id => id !== quest.id));
 
             // Refresh quests
@@ -1725,7 +1725,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
 
                                         {groupBoardCount === 0 && (
                                             <GlassCard variant="neutral" className="space-y-3 p-4 text-center text-sm text-gray-300">
-                                                <div>{isOfficeClan ? 'Nenhuma prioridade da equipe ativa agora.' : 'Nenhuma missao ativa agora.'}</div>
+                                                <div>{isOfficeClan ? 'Nenhuma prioridade da equipe ativa agora.' : 'Nenhuma missão ativa agora.'}</div>
                                                 {userClanRole === 'leader' && (
                                                     <button
                                                         onClick={() => {
@@ -1734,7 +1734,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                         }}
                                                         className="mx-auto rounded-xl border border-[var(--skin-accent-color)]/35 bg-[var(--skin-accent-color)]/12 px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/18"
                                                     >
-                                                        {isOfficeClan ? 'Criar prioridade' : 'Criar missao'}
+                                                        {isOfficeClan ? 'Criar prioridade' : 'Criar missão'}
                                                     </button>
                                                 )}
                                             </GlassCard>
@@ -1819,7 +1819,7 @@ export const ClanDetailModal: React.FC<{ clanName?: string; onClose: () => void;
                                                             onClick={() => handleAbortMission(quest)}
                                                             className="mx-auto block rounded-lg border border-red-500/20 bg-transparent px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-red-300/80 hover:bg-red-900/20"
                                                         >
-                                                            {isOfficeClan ? 'Sair da prioridade' : 'Sair da missao'}
+                                                            {isOfficeClan ? 'Sair da prioridade' : 'Sair da missão'}
                                                         </button>
                                                     </div>
                                                 ),

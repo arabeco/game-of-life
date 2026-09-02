@@ -833,7 +833,7 @@ export const ArenaDetailModal: React.FC<{
                                     : isClanQuestArena
                                     ?`${clanQuestTotals.totalProgress}/${clanQuestTotals.totalGoal}`
                                     : isSharedPool
-                                        ? `${allActionInstances - allCompletedInstances} acoes restantes`
+                                        ? `${allActionInstances - allCompletedInstances} ações restantes`
                                         : `${progress.toFixed(0)}%`}
                             </p>
                         </div>

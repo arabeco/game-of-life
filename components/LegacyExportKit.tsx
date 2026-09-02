@@ -226,7 +226,7 @@ export const LegacyExportKit = forwardRef<LegacyExportKitHandle, LegacyExportKit
                         <GlyphIcon className="h-10 w-10 text-[var(--skin-accent-color)]" />
                     </div>
                     <p className="mt-8 text-[11px] font-black uppercase tracking-[0.36em] text-[var(--skin-accent-color)]">Fecho do Glyph</p>
-                    <h2 className="mt-4 max-w-3xl text-5xl font-black tracking-tight text-white">Trajetoria condensada em eras, ciclos e memoria operacional.</h2>
+                    <h2 className="mt-4 max-w-3xl text-5xl font-black tracking-tight text-white">Trajetoria condensada em eras, ciclos e memória operacional.</h2>
                     <p className="mt-5 max-w-3xl text-lg leading-relaxed text-gray-300">{summary.plaqueInscription}</p>
                     <div className="mt-10 grid grid-cols-3 gap-4">
                         <div className="legacy-panel-soft p-5">

@@ -91,13 +91,13 @@ export const QuestDetailModal: React.FC<{
         }
 
         const normalizedDescription = targetQuest.description.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        if (normalizedDescription.includes('Bau Season') || normalizedDescription.includes('Bau Temporada')) return 'Season';
-        if (normalizedDescription.includes('Bau Comum')) return 'Comum';
-        if (normalizedDescription.includes('Bau Incomum')) return 'Incomum';
-        if (normalizedDescription.includes('Bau Ciclo')) return 'Ciclo';
-        if (normalizedDescription.includes('Bau Raro')) return 'Raro';
-        if (normalizedDescription.includes('Bau Epico')) return 'Épico';
-        if (normalizedDescription.includes('Bau Lendario')) return 'Lendário';
+        if (normalizedDescription.includes('Baú Season') || normalizedDescription.includes('Baú Temporada')) return 'Season';
+        if (normalizedDescription.includes('Baú Comum')) return 'Comum';
+        if (normalizedDescription.includes('Baú Incomum')) return 'Incomum';
+        if (normalizedDescription.includes('Baú Ciclo')) return 'Ciclo';
+        if (normalizedDescription.includes('Baú Raro')) return 'Raro';
+        if (normalizedDescription.includes('Baú Epico')) return 'Épico';
+        if (normalizedDescription.includes('Baú Lendario')) return 'Lendário';
         return null;
     };
 
@@ -386,7 +386,7 @@ const SeasonTransitionModal: React.FC<{
     const previousTitle = fromConfig?.celebrationTitle || `${fromSeason.name} encerrada`;
     const previousSummary = fromConfig?.celebrationSummary || 'Parabens por atravessar esta fase do GLYPH.';
     const nextTitle = toSeason.launchTitle || toSeason.name;
-    const nextSummary = toSeason.launchSummary || toSeason.description || 'A proxima Temporada entra agora com uma nova trilha de jornadas, itens e identidade visual.';
+    const nextSummary = toSeason.launchSummary || toSeason.description || 'A próxima Temporada entra agora com uma nova trilha de jornadas, itens e identidade visual.';
 
     return (
         <Portal>
@@ -655,7 +655,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                         <div className="custom-scrollbar relative z-10 flex-1 space-y-5 overflow-y-auto px-4 pb-4 pt-4">
                             <div className="space-y-2 rounded-[16px] border border-white/8 bg-black/24 p-4">
                                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/58">Descricao</div>
-                                <p className="text-[13px] leading-relaxed text-white/76">{seasonLoreText || 'Uma nova fase esta ativa. Explore a imagem e desca para ver as missoes e jornadas disponiveis.'}</p>
+                                <p className="text-[13px] leading-relaxed text-white/76">{seasonLoreText || 'Uma nova fase esta ativa. Explore a imagem e desca para ver as missões e jornadas disponiveis.'}</p>
                                 <div className="h-2 overflow-hidden rounded-full border border-white/6 bg-black/40 p-[1px]">
                                     <div className="h-full rounded-full bg-gradient-to-r from-[var(--skin-accent-color)] to-white transition-all duration-700" style={{ width: `${Math.min(100, seasonProgressPercent)}%` }} />
                                 </div>
@@ -666,7 +666,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                                     <div className="rounded-[16px] border border-[var(--skin-accent-color)]/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.22))] p-4">
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                             <div>
-                                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/52">Proxima abertura</div>
+                                                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/52">Próxima abertura</div>
                                                 <div className="mt-1 text-lg font-black uppercase tracking-[0.12em] text-white">{nextSeason.name}</div>
                                                 <div className="mt-1 text-[12px] leading-relaxed text-white/70">{nextSeason.description}</div>
                                             </div>
@@ -720,7 +720,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                             )}
                             {eraCalendarYears.length > 0 && (
                                 <div className="space-y-3">
-                                    <SectionTitle title="Calendario das eras" />
+                                    <SectionTitle title="Calendário das eras" />
                                     <div className="space-y-3">
                                         {eraCalendarYears.map((eraYear) => (
                                             <div key={eraYear.year} className="rounded-[16px] border border-white/8 bg-black/24 p-4">
@@ -753,7 +753,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                             )}
                             {visibleMissionItems.length > 0 && (
                                 <div className="space-y-3">
-                                    <SectionTitle title="Missoes da temporada" tone="white" />
+                                    <SectionTitle title="Missões da temporada" tone="white" />
                                     <div className="space-y-2">
                                         {visibleMissionItems.map((mission) => <CompactSeasonEntryCard key={mission.id} title={mission.title} icon={mission.icon} metaLabel={mission.type === 'clan' ? 'Desafio do grupo' : 'Desafio da temporada'} progress={getMissionProgress(mission)} isClaimed={false} onClick={() => setSelectedMission(mission)} />)}
                                     </div>
@@ -770,7 +770,7 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                             {visibleMissionItems.length === 0 && visibleQuestItems.length === 0 && (
                                 <div className="flex flex-col items-center justify-center gap-3 rounded-[16px] border border-white/8 bg-black/24 py-10 text-center text-white/50">
                                     <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/8 bg-white/5 text-xl">?</div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.2em]">Nenhum conteudo disponivel</p>
+                                    <p className="text-[11px] font-black uppercase tracking-[0.2em]">Nenhum conteúdo disponivel</p>
                                 </div>
                             )}
                         </div>

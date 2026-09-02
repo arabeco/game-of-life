@@ -166,7 +166,7 @@ export const MoodModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/56">
                             Rascunho operacional
                         </p>
-                        <p className="text-[10px] text-white/35">zera no proximo dia operacional</p>
+                        <p className="text-[10px] text-white/35">zera no próximo dia operacional</p>
                     </div>
                     <textarea
                         value={dailyCommitment.operationalScratch || ''}

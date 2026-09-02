@@ -57,7 +57,7 @@ const buildRewardFromResult = (result: ChestOpenResult | null, chestType: ChestT
             rarity: chestType,
             fragmentsGained: 0,
             goldGained: 0,
-            description: 'Nao foi possivel abrir este bau agora. Tente novamente.',
+            description: 'Não foi possível abrir este baú agora. Tente novamente.',
         };
     }
 

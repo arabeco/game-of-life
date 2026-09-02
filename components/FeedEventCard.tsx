@@ -32,7 +32,7 @@ const timeAgo = (date: Date): string => {
 };
 
 const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
-    const title = event.content.title?.trim() || 'Feito sem titulo';
+    const title = event.content.title?.trim() || 'Feito sem título';
     const score = event.content.score ?? null;
     const rankName = event.content.rankName?.trim() || 'Novo patamar';
     const fallbackGlyph = event.content.icon ? (
@@ -109,7 +109,7 @@ const getFeedPresentation = (event: FeedEvent): FeedEventPresentation => {
         case 'LEVEL_UP':
             return {
                 title,
-                message: 'evoluiu de nivel',
+                message: 'evoluiu de nível',
                 badge: 'Nivel',
                 tone: 'progress',
                 variant: 'accent',
@@ -259,7 +259,7 @@ export const FeedEventCard: React.FC<{ event: FeedEvent }> = ({ event }) => {
                                     preparingMessage: 'Preparando compartilhamento da conquista...',
                                     sharedMessage: 'Conquista compartilhada.',
                                     cancelledMessage: 'Compartilhamento cancelado.',
-                                    errorMessage: 'Nao foi possivel preparar a conquista para compartilhar.',
+                                    errorMessage: 'Não foi possível preparar a conquista para compartilhar.',
                                 });
                             }}
                             className="shrink-0 rounded-full p-1 text-white/20 transition-colors hover:bg-white/5 hover:text-white"

@@ -86,7 +86,7 @@ const createMessageId = () => `${Date.now()}_${Math.random().toString(16).slice(
 const ACTION_INTRO = [
   'Aba operacional do GLYPH.',
   'Eu executo o core loop com perguntas curtas, rascunho e confirmacao antes de aplicar.',
-  'Posso criar ciclo, ajustar a data final do ciclo, criar/editar arena, criar/editar/programar acao, concluir por horario, desmarcar tarefa e priorizar o dia no Planner.',
+  'Posso criar ciclo, ajustar a data final do ciclo, criar/editar arena, criar/editar/programar ação, concluir por horário, desmarcar tarefa e priorizar o dia no Planner.',
   'Excluir arena fica manual por seguranca.',
 ].join('\n\n');
 
@@ -154,14 +154,14 @@ const extractQuotedText = (text: string): string | null => {
 
 const extractEntityTail = (text: string, keyword: 'ciclo' | 'arena' | 'acao'): string | null => {
   const aliases = keyword === 'acao' ? '(?:acao|ação)' : keyword;
-  const match = text.match(new RegExp(`${aliases}\\s+(?:de\\s+|do\\s+|da\\s+|chamad[oa]\\s+)?(.+?)(?=\\s+(?:na|no|em|com|ate|até|para|pra|descricao|descrição|prioridade|dificuldade|seg|ter|qua|qui|sex|sab|dom|as\\b|\\d{1,2}[/:h]|$))`, 'i'));
+  const match = text.match(new RegExp(`${aliases}\\s+(?:de\\s+|do\\s+|da\\s+|chamad[oa]\\s+)?(.+?)(?=\\s+(?:na|no|em|com|ate|até|para|pra|descrição|descrição|prioridade|dificuldade|seg|ter|qua|qui|sex|sab|dom|as\\b|\\d{1,2}[/:h]|$))`, 'i'));
   return match?.[1] ? normalizeSpaces(match[1]) : null;
 };
 
 const extractRenameTarget = (text: string): string | null => {
   const quoted = extractQuotedText(text);
   if (quoted) return quoted;
-  const match = text.match(/(?:renome(?:ar|ia)|muda(?:r)?(?: o nome)?(?: para)?|nome(?: para)?)\s+(.+?)(?=\s+(?:com|descricao|descrição|prioridade|dificuldade|seg|ter|qua|qui|sex|sab|dom|as\b|\d{1,2}[/:h]|$))/i);
+  const match = text.match(/(?:renome(?:ar|ia)|muda(?:r)?(?: o nome)?(?: para)?|nome(?: para)?)\s+(.+?)(?=\s+(?:com|descrição|descrição|prioridade|dificuldade|seg|ter|qua|qui|sex|sab|dom|as\b|\d{1,2}[/:h]|$))/i);
   return match?.[1] ? normalizeSpaces(match[1]) : null;
 };
 
@@ -182,7 +182,7 @@ const extractActionReference = (text: string): string | null => {
     /(?:agendar|agenda|programar|programa|marcar|marca)\s+(.+?)(?=\s+(?:para|pra|amanha|hoje|de manha|demanha|manha|tarde|noite|seg|ter|qua|qui|sex|sab|dom|as\b|ass\b|\d{1,2}[/:h]|$))/i,
     /(?:fiz|feito|feita|realizei|terminei|completei|completar|completa|concluir|conclui)\s+(.+?)(?=\s+(?:agora|para|pra|amanha|hoje|de manha|demanha|manha|tarde|noite|as\b|ass\b|\d{1,2}[/:h]|$))/i,
     /(?:desmarcar|desmarca|desfazer|desfaz|descompletar|descompleta|tirar|remove|remover)\s+(.+?)(?=\s+(?:do planner|da agenda|de hoje|amanha|hoje|as\b|ass\b|\d{1,2}[/:h]|$))/i,
-    /(?:editar|edita|alterar|altera|mudar|muda|renomear|renomeia|ajustar|ajusta)\s+(.+?)(?=\s+(?:com|para|pra|na|no|descricao|descrição|dificuldade|duracao|repeticoes|repetições|$))/i,
+    /(?:editar|edita|alterar|altera|mudar|muda|renomear|renomeia|ajustar|ajusta)\s+(.+?)(?=\s+(?:com|para|pra|na|no|descrição|descrição|dificuldade|duracao|repeticoes|repetições|$))/i,
   ];
 
   for (const pattern of patterns) {
@@ -204,7 +204,7 @@ const extractArenaReference = (text: string): string | null => {
 
   const normalized = normalizeText(text);
   const patterns = [
-    /(?:editar|edita|alterar|altera|mudar|muda|arquivar|arquiva|desarquivar|desarquiva)\s+(.+?)(?=\s+(?:com|para|pra|descricao|descrição|prioridade|$))/i,
+    /(?:editar|edita|alterar|altera|mudar|muda|arquivar|arquiva|desarquivar|desarquiva)\s+(.+?)(?=\s+(?:com|para|pra|descrição|descrição|prioridade|$))/i,
     /(?:remover|remove|deletar|deleta|apagar|apaga|excluir|exclui)\s+(.+?)(?=\s+(?:agora|$))/i,
   ];
 
@@ -1098,7 +1098,7 @@ export const OracleAction: React.FC = () => {
       const arena = allArenas.find((item) => item.id === payload.targetArenaId);
       const changes: string[] = [];
       if (payload.name) changes.push(`nome -> ${payload.name}`);
-      if (payload.description) changes.push(`descricao -> ${payload.description}`);
+      if (payload.description) changes.push(`descrição -> ${payload.description}`);
       if (payload.priority) changes.push(`prioridade -> ${payload.priority}`);
       if (payload.isArchived === true) changes.push('estado -> arquivada');
       if (payload.isArchived === false) changes.push('estado -> ativa');
@@ -1117,8 +1117,8 @@ export const OracleAction: React.FC = () => {
           : '';
       const approxLine = payload.startTimeApprox ? 'Horario inferido (manha/tarde/noite). Se quiser, ajuste.' : '';
       return formatAssistantText([
-        `Rascunho pronto: criar a acao "${payload.name}" na arena "${getPayloadArenaLabel(payload)}" com ${payload.duration || 30} min.${scheduleLine}`,
-        payload.createArenaName ? `Como essa arena ainda nao existe, eu tambem vou criar "${payload.createArenaName}".` : '',
+        `Rascunho pronto: criar a ação "${payload.name}" na arena "${getPayloadArenaLabel(payload)}" com ${payload.duration || 30} min.${scheduleLine}`,
+        payload.createArenaName ? `Como essa arena ainda não existe, eu também vou criar "${payload.createArenaName}".` : '',
         approxLine,
         'Manual tambem e simples: da para criar pelo +. Se quiser, eu deixo o rascunho pronto para voce.',
         ...buildConfirmationFooter(kind),
@@ -1130,14 +1130,14 @@ export const OracleAction: React.FC = () => {
       const targetArena = payload.targetArenaId ? allArenas.find((item) => item.id === payload.targetArenaId) : null;
       const changes: string[] = [];
       if (payload.name) changes.push(`nome -> ${payload.name}`);
-      if (payload.description) changes.push(`descricao -> ${payload.description}`);
+      if (payload.description) changes.push(`descrição -> ${payload.description}`);
       if (payload.duration) changes.push(`duracao -> ${payload.duration} min`);
       if (payload.repetitions) changes.push(`repeticoes -> ${payload.repetitions}x`);
       if (payload.difficulty) changes.push(`dificuldade -> ${payload.difficulty}`);
       if (payload.actionType) changes.push(`tipo -> ${payload.actionType}`);
       if (targetArena && action?.arenaId !== targetArena.id) changes.push(`arena -> ${targetArena.name}`);
       return formatAssistantText([
-        `Rascunho pronto: atualizar a acao "${action?.name || 'selecionada'}": ${changes.join(' | ')}.`,
+        `Rascunho pronto: atualizar a ação "${action?.name || 'selecionada'}": ${changes.join(' | ')}.`,
         ...buildConfirmationFooter(kind),
       ]);
     }
@@ -1150,7 +1150,7 @@ export const OracleAction: React.FC = () => {
       const actionLabel = action?.name || payload.name || 'a acao';
       const creationLine = action
         ? ''
-        : `Como a acao ainda nao existe, eu vou criar "${actionLabel}" na arena "${getPayloadArenaLabel(payload)}"${payload.createArenaName ? ' e criar essa arena tambem' : ''}.`;
+        : `Como a ação ainda não existe, eu vou criar "${actionLabel}" na arena "${getPayloadArenaLabel(payload)}"${payload.createArenaName ? ' e criar essa arena tambem' : ''}.`;
       const approxLine = payload.startTimeApprox ? 'Horario inferido (manha/tarde/noite). Se quiser, ajuste.' : '';
       return formatAssistantText([
         `Rascunho pronto: programar "${actionLabel}" em ${scheduleLine}.`,
@@ -1168,7 +1168,7 @@ export const OracleAction: React.FC = () => {
         : ' agora';
       const creationLine = action
         ? ''
-        : `Como a acao ainda nao existe, eu vou criar "${actionLabel}" na arena "${getPayloadArenaLabel(payload)}"${payload.createArenaName ? ' e criar essa arena tambem' : ''}.`;
+        : `Como a ação ainda não existe, eu vou criar "${actionLabel}" na arena "${getPayloadArenaLabel(payload)}"${payload.createArenaName ? ' e criar essa arena tambem' : ''}.`;
       const approxLine = payload.startTimeApprox ? 'Horario inferido (manha/tarde/noite). Se quiser, ajuste.' : '';
       return formatAssistantText([
         `Rascunho pronto: concluir "${actionLabel}"${timeLine}.`,
@@ -1221,11 +1221,11 @@ export const OracleAction: React.FC = () => {
       return `Atualizar arena "${arena?.name || 'selecionada'}".`;
     }
     if (kind === 'create_action') {
-      return `Criar acao "${payload.name}" na arena ${getPayloadArenaLabel(payload)}.`;
+      return `Criar ação "${payload.name}" na arena ${getPayloadArenaLabel(payload)}.`;
     }
     if (kind === 'update_action') {
       const action = actions.find((item) => item.id === payload.targetActionId);
-      return `Atualizar acao "${action?.name || 'selecionada'}".`;
+      return `Atualizar ação "${action?.name || 'selecionada'}".`;
     }
     if (kind === 'schedule_action') {
       const action = actions.find((item) => item.id === payload.targetActionId);
@@ -1367,7 +1367,7 @@ export const OracleAction: React.FC = () => {
         await scheduleTask(createdAction, payload.date, payload.startTime);
       }
 
-      return `Acao "${payload.name}" criada.`;
+      return `Ação "${payload.name}" criada.`;
     }
 
     if (kind === 'update_action') {
@@ -1426,7 +1426,7 @@ export const OracleAction: React.FC = () => {
           payload.startTime,
           payload.targetTaskId,
         );
-        return `Acao concluida em ${formatTimeLabel(payload.startTime)}.`;
+        return `Ação concluida em ${formatTimeLabel(payload.startTime)}.`;
       }
 
       await scheduleAndCompleteNow(targetAction.id, payload.targetTaskId);
@@ -1440,7 +1440,7 @@ export const OracleAction: React.FC = () => {
         : findTaskForActionAndDate(tasks, payload.targetActionId!, targetDate);
 
       if (!targetTask) {
-        return `Nao achei uma instancia de "${actions.find((action) => action.id === payload.targetActionId)?.name || 'acao'}" em ${formatDateLabel(targetDate)}.`;
+        return `Não achei uma instancia de "${actions.find((action) => action.id === payload.targetActionId)?.name || 'acao'}" em ${formatDateLabel(targetDate)}.`;
       }
 
       if (targetTask.completed) {
@@ -1469,7 +1469,7 @@ export const OracleAction: React.FC = () => {
         'Status rapido do dia:',
         `Pendencias hoje: ${pendingToday.length}`,
         `Concluidas hoje: ${completedToday.length}`,
-        `Estoque de Acoes: ${bayAreaCount}`,
+        `Estoque de Ações: ${bayAreaCount}`,
         focusArenaName ? `Arena foco do ciclo: ${focusArenaName}` : '',
       ]);
     }
@@ -1532,7 +1532,7 @@ export const OracleAction: React.FC = () => {
       return 'Nao encontrei acoes boas para priorizar agora.';
     }
 
-    updateOperationalScratch(`Prioridade sugerida em modo ${payload.organizeMode || 'padrao'} pela aba Acao.`);
+    updateOperationalScratch(`Prioridade sugerida em modo ${payload.organizeMode || 'padrao'} pela aba Ação.`);
     return formatAssistantText([
       `Separei ${selectedTaskIds.length} frente(s) boas para hoje no Planner.`,
       selectedNames.length > 0 ? `Prioridade: ${selectedNames.join(', ')}.` : '',
@@ -1656,7 +1656,7 @@ export const OracleAction: React.FC = () => {
         });
         appendAssistant(
           formatAssistantText([
-            `Essa acao ja existe: "${existingAction?.name || 'acao selecionada'}".`,
+            `Essa ação ja existe: "${existingAction?.name || 'acao selecionada'}".`,
             'Diga quando programar (data/horario ou dias).',
           ]),
         );
@@ -1787,7 +1787,7 @@ export const OracleAction: React.FC = () => {
             <EditIcon className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-[11px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">Acao</div>
+            <div className="text-[11px] font-black uppercase tracking-[0.22em] text-[var(--skin-accent-color)]">Ação</div>
             <div className="text-[10px] uppercase tracking-[0.16em] text-gray-500">Executor do core loop</div>
           </div>
         </div>

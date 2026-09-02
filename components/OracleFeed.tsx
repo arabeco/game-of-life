@@ -283,7 +283,7 @@ const NotificationItem: React.FC<{
     const laneLabel = getNotificationLaneLabel(notification.type);
     const icon = getNotificationIcon(notification.type);
     const title = getNotificationTitle(notification);
-    const readStateLabel = notification.read ? 'Lida' : 'Nao lida';
+    const readStateLabel = notification.read ? 'Lida' : 'Não lida';
 
     const laneVisuals = {
         essential: {
@@ -447,7 +447,7 @@ const NotificationDetailModal: React.FC<{
                                     {laneLabel}
                                 </span>
                                 <span className={`text-[9px] font-bold uppercase tracking-[0.2em] ${notification.read ? 'text-white/30' : 'text-white/60'}`}>
-                                    {notification.read ? 'Lida' : 'Nao lida'}
+                                    {notification.read ? 'Lida' : 'Não lida'}
                                 </span>
                             </div>
                             <h3 className="mt-2 text-lg font-black leading-tight text-white">

@@ -104,4 +104,34 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
     assert.deepEqual(mudos, [], `botao sem nome acessivel em: ${mudos.join(', ')}`);
 }
 
+// 5. Marcador de texto nunca leva acento.
+//
+// As falas do Oraculo trazem marcadores como {acoes} e {dias}, preenchidos por
+// `template.replace(/\{(\w+)\}/g, ...)`. `\w` e [A-Za-z0-9_]: uma vez acentuado,
+// o marcador deixa de casar, nao e substituido por nada, e a pessoa le "{ações}"
+// na tela.
+//
+// Isto ja quase aconteceu numa passada de acentuacao, e vai voltar a acontecer:
+// para quem revisa texto, {acoes} parece um erro de portugues. Nao e — e uma
+// chave.
+{
+    const walk = (dir, out = []) => {
+        for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+            const relative = path.join(dir, entry.name);
+            if (entry.isDirectory()) walk(relative, out);
+            else if (/\.(ts|tsx)$/.test(relative)) out.push(relative);
+        }
+        return out;
+    };
+    // Um marcador e so letras entre chaves. Expressao JSX de verdade tem ponto,
+    // parentese, espaco ou operador — e identificador acentuado nao existe aqui.
+    const acentuado = /\{[A-Za-z_]*[À-úÀ-ÿ][A-Za-zÀ-ú_]*\}/;
+    const quebrados = [];
+    for (const file of [...walk('views'), ...walk('components'), ...walk('utils')]) {
+        const match = read(file).match(acentuado);
+        if (match) quebrados.push(`${file}: ${match[0]}`);
+    }
+    assert.deepEqual(quebrados, [], `marcador acentuado nao e substituido e vaza cru na tela: ${quebrados.join(', ')}`);
+}
+
 console.log('ui-hygiene: ok');

@@ -403,9 +403,9 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         return effectiveTaskPool.find(task => task.actionId === action.id && !task.completed) || null;
     }, [action, effectiveTaskPool]);
     const lockedEditMessage = arenaFlags.isSeasonQuest
-        ? 'Missoes de temporada sao fixas e nao podem ser editadas.'
+        ? 'Missões de temporada sao fixas e não podem ser editadas.'
         : isInstalledCampaignAction
-            ? 'Campanhas mantem o conteudo protegido. Aqui voce ajusta so a execucao local.'
+            ? 'Campanhas mantem o conteúdo protegido. Aqui você ajusta so a execucao local.'
             : null;
 
     const isOfficeMode = PRODUCT_FEATURES.clanSharedActions && clan?.clanType === 'Office';
@@ -948,7 +948,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         }
 
         if (isEditingTaskInstance) {
-            showToast('A arena fica travada nesta ocorrencia. Para trocar, edite a acao base.', 'warning');
+            showToast('A arena fica travada nesta ocorrencia. Para trocar, edite a ação base.', 'warning');
             return;
         }
 
@@ -1327,7 +1327,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     const requestActionBaseEdit = () => {
         if (isLockedFromSource) {
-            showToast(lockedEditMessage || 'Essa acao nao pode ser editada.', 'warning');
+            showToast(lockedEditMessage || 'Essa ação não pode ser editada.', 'warning');
             return;
         }
         switchEditScope('action');
@@ -1599,10 +1599,10 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                             <div className="flex items-center justify-between gap-3">
                                                                 <div>
                                                                     <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]/90">
-                                                                        Mudar tipo da acao
+                                                                        Mudar tipo da ação
                                                                     </div>
                                                                     <div className="mt-1 text-[12px] leading-relaxed text-white/68">
-                                                                        Abra a acao base para trocar recorrente, compromisso, marco ou livre.
+                                                                        Abra a ação base para trocar recorrente, compromisso, marco ou livre.
                                                                     </div>
                                                                 </div>
                                                                 <ChevronRightIcon className="h-4 w-4 shrink-0 text-white/44" />
@@ -2433,7 +2433,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
             {isConfirmDeleteOpen && (
                 <ConfirmationModal
                     title="Confirmar exclusao"
-                    message={`Tem certeza que deseja excluir a acao "${action?.name}"?`}
+                    message={`Tem certeza que deseja excluir a ação "${action?.name}"?`}
                     onConfirm={() => { void confirmDelete(); }}
                     onCancel={() => setConfirmDeleteOpen(false)}
                 />

@@ -121,9 +121,9 @@ const getPlannerWeekDates = (anchorDate: Date) => {
 
 const PLANNER_MATRIX_LAYOUT: Array<{ key: PlannerMatrixQuadrant; label: string; title: string }> = [
     { key: 'ui', label: 'UI', title: 'Urgente + Importante' },
-    { key: 'nui', label: 'NUI', title: 'Nao urgente + Importante' },
-    { key: 'uni', label: 'UNI', title: 'Urgente + Nao importante' },
-    { key: 'nuni', label: 'NUNI', title: 'Nao urgente + Nao importante' },
+    { key: 'nui', label: 'NUI', title: 'Não urgente + Importante' },
+    { key: 'uni', label: 'UNI', title: 'Urgente + Não importante' },
+    { key: 'nuni', label: 'NUNI', title: 'Não urgente + Não importante' },
 ];
 
 const DayHeader: React.FC<{
@@ -442,10 +442,10 @@ const UnscheduledTaskCard: React.FC<{
     const completionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const backgroundStyle = action ?getActionBackgroundStyle(action.id) : { background: 'var(--asset-grad-default)' };
     const isScheduled = hasScheduledTime(task);
-    const stateLabel = task.completed ?'Concluida' : isScheduled ?'Com horario' : 'Sem horario';
+    const stateLabel = task.completed ?'Concluida' : isScheduled ?'Com horário' : 'Sem horário';
     const timeLabel = isScheduled
         ? `${String(Math.floor(task.startTime / 60)).padStart(2, '0')}:${String(task.startTime % 60).padStart(2, '0')}`
-        : 'sem horario';
+        : 'sem horário';
 
     const shouldUseActionSkin = Boolean(executionCard && action);
     const cardStyle = {
@@ -569,7 +569,7 @@ const UnscheduledTaskCard: React.FC<{
                     <EmojiGlyph symbol={action?.icon || '\u{1F4DD}'} size="action" className="text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div className={`${compact ?'text-[12px]' : 'text-[13px]'} truncate font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]`}>{action?.name || 'Acao sem vinculo'}</div>
+                    <div className={`${compact ?'text-[12px]' : 'text-[13px]'} truncate font-black uppercase tracking-[0.08em] text-white [text-shadow:0_1px_6px_rgba(2,6,23,0.82)]`}>{action?.name || 'Ação sem vinculo'}</div>
                     <div className={`${compact ?'mt-0 text-[8px]' : 'mt-0.5 text-[10px]'} flex items-center gap-2 font-bold uppercase tracking-[0.14em] text-white/52`}>
                         <span className={task.completed ?'text-emerald-200/70' : ''}>{stateLabel}</span>
                         <span className="h-1 w-1 rounded-full bg-white/18" />
@@ -661,10 +661,10 @@ const PlannerSimpleList: React.FC<{
                         <div className="mb-4 h-2 w-full rounded-full bg-[var(--skin-accent-color)]/70 shadow-[0_0_18px_rgba(250,204,21,0.22)]" />
                     )}
                     {!compactEmpty && <div className="text-3xl opacity-45">{'\u{1F4DD}'}</div>}
-                    <div className={`${compactEmpty ? '' : 'mt-3'} text-[11px] font-black uppercase tracking-[0.16em]`}>{compactEmpty ? 'Sem acoes' : 'Lista vazia'}</div>
+                    <div className={`${compactEmpty ? '' : 'mt-3'} text-[11px] font-black uppercase tracking-[0.16em]`}>{compactEmpty ? 'Sem ações' : 'Lista vazia'}</div>
                     {!compactEmpty && (
                         <p className="mt-2 max-w-[14rem] text-[11px] leading-relaxed">
-                            Arraste uma acao da baia para colocar na sua ordem.
+                            Arraste uma ação da baia para colocar na sua ordem.
                         </p>
                     )}
                 </div>
@@ -1230,7 +1230,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     const newArena = await addArena(geralAsset.id, {
                         name: arenaName,
                         icon: '🏟️',
-                        description: 'Arena criada pelo Oraculo'
+                        description: 'Arena criada pelo Oráculo'
                     });
                     targetArenaId = newArena.id;
                 }
@@ -1244,7 +1244,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     const newArena = await addArena(geralAsset.id, {
                         name: 'Outros',
                         icon: '📦',
-                        description: 'Arena criada pelo Oraculo'
+                        description: 'Arena criada pelo Oráculo'
                     });
                     targetArenaId = newArena.id;
                 }
@@ -2155,7 +2155,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                     <div className="relative z-10">
                     <div className="relative flex h-11 items-center justify-center px-3 pt-2 text-lg font-bold">
                         <div className="absolute left-3 flex min-w-0 items-center space-x-1" id="planner-tools">
-                            <button onClick={() => setChecklistVisible(true)} className={`planner-soft-control relative rounded-full border px-2 py-1.5 transition-colors ${shouldSurfaceChecklist ? 'border-[var(--skin-accent-color)]/38 bg-[var(--skin-accent-color)]/14 text-[var(--skin-accent-color)] shadow-[0_0_12px_rgba(212,175,55,0.14)]' : 'border-white/8 bg-white/[0.025] text-gray-500 hover:border-white/18 hover:bg-white/[0.055] hover:text-gray-200'}`} title={shouldSurfaceChecklist ? 'Checklist diario: pendencias da noite' : 'Checklist diario'} aria-label="Abrir checklist diario">
+                            <button onClick={() => setChecklistVisible(true)} className={`planner-soft-control relative rounded-full border px-2 py-1.5 transition-colors ${shouldSurfaceChecklist ? 'border-[var(--skin-accent-color)]/38 bg-[var(--skin-accent-color)]/14 text-[var(--skin-accent-color)] shadow-[0_0_12px_rgba(212,175,55,0.14)]' : 'border-white/8 bg-white/[0.025] text-gray-500 hover:border-white/18 hover:bg-white/[0.055] hover:text-gray-200'}`} title={shouldSurfaceChecklist ? 'Checklist diário: pendencias da noite' : 'Checklist diário'} aria-label="Abrir checklist diário">
                                 <SquareCheckIcon className={`h-4 w-4 ${allTasksCompleted ? 'text-[var(--skin-accent-color)]' : ''}`} />
                                 {shouldSurfaceChecklist && (
                                     <ClockIcon className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-black/70 p-[1px] text-[var(--skin-accent-color)]" />
@@ -2167,12 +2167,12 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                     </span>
                                 )}
                             </button>
-                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Resumo diario">
+                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Resumo diário">
                                 <PanelIcon className="h-3.5 w-3.5" />
                             </button>
                         </div>
                         <div className="absolute right-3 flex items-center" id="planner-history-tool">
-                            <button id="report-button" onClick={onReportsClick} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Historico do ciclo" aria-label="Abrir historico do ciclo">
+                            <button id="report-button" onClick={onReportsClick} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Histórico do ciclo" aria-label="Abrir histórico do ciclo">
                                 <ArchiveBoxIcon className="h-3.5 w-3.5" />
                             </button>
                         </div>
@@ -2187,7 +2187,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                 value={viewMode}
                                 onChange={(value) => setViewMode(value as 'day' | 'week')}
                                 options={[
-                                    { value: 'day', label: 'Dia', hint: 'Visao diaria', icon: <span className="text-[10px] font-black leading-none tracking-[0.08em]">D</span> },
+                                    { value: 'day', label: 'Dia', hint: 'Visao diária', icon: <span className="text-[10px] font-black leading-none tracking-[0.08em]">D</span> },
                                     { value: 'week', label: 'Semana', hint: 'Visao semanal', icon: <span className="text-[10px] font-black leading-none tracking-[0.08em]">S</span> },
                                 ]}
                                 iconOnly
@@ -2284,7 +2284,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                 value={viewMode}
                                 onChange={(value) => setViewMode(value as 'day' | 'week')}
                                 options={[
-                                    { value: 'day', label: 'Dia', hint: 'Visao diaria', icon: <span className="text-[10px] font-black leading-none tracking-[0.08em]">D</span> },
+                                    { value: 'day', label: 'Dia', hint: 'Visao diária', icon: <span className="text-[10px] font-black leading-none tracking-[0.08em]">D</span> },
                                     { value: 'week', label: 'Semana', hint: 'Visao semanal', icon: <span className="text-[10px] font-black leading-none tracking-[0.08em]">S</span> },
                                 ]}
                                 iconOnly
@@ -2305,7 +2305,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                         <div className="flex min-h-[48vh] items-center justify-center px-6">
                             <div className="max-w-[18rem] rounded-[24px] border border-white/8 bg-black/20 px-5 py-5 text-center shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
                                 <div className="text-sm font-semibold text-white">Nada aqui ainda.</div>
-                        <div className="mt-1 text-[12px] leading-relaxed text-white/54">Adicione uma arena para comecar a criar acoes e organizar o dia.</div>
+                        <div className="mt-1 text-[12px] leading-relaxed text-white/54">Adicione uma arena para comecar a criar ações e organizar o dia.</div>
                             </div>
                         </div>
                     ) : isSimpleList && viewMode === 'day' ?(

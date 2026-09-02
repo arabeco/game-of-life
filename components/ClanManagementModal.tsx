@@ -176,7 +176,7 @@ export const ClanManagementModal: React.FC<{ onClose: () => void }> = ({ onClose
             </div>
             {isIconPickerOpen && <IconPickerModal onSelect={(i) => { setIcon(i); setIsIconPickerOpen(false); }} onClose={() => setIsIconPickerOpen(false)} />}
             {memberToKick && <ConfirmationModal title="Remover Pessoa" message={`Tem certeza que deseja remover ${enrichedClanMembers.find(m => m.id === memberToKick)?.nickname}?`} onConfirm={handleKickMember} onCancel={() => setMemberToKick(null)} />}
-            {isConfirmingDelete && <ConfirmationModal title="Excluir Grupo" message="Essa acao apaga o grupo definitivamente. O progresso pessoal e os ciclos permanecem." onConfirm={handleDeleteClan} onCancel={() => setIsConfirmingDelete(false)} />}
+            {isConfirmingDelete && <ConfirmationModal title="Excluir Grupo" message="Essa ação apaga o grupo definitivamente. O progresso pessoal e os ciclos permanecem." onConfirm={handleDeleteClan} onCancel={() => setIsConfirmingDelete(false)} />}
             {isAddMemberModalOpen && <AddClanMemberModal onClose={() => setIsAddMemberModalOpen(false)} />}
         </Portal>
     );

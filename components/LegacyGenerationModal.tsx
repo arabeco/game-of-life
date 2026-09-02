@@ -9,7 +9,7 @@ interface LegacyGenerationModalProps {
 }
 
 const PHRASES = [
-    { threshold: 18, text: 'Consultando historico...' },
+    { threshold: 18, text: 'Consultando histórico...' },
     { threshold: 38, text: 'Agrupando eras...' },
     { threshold: 58, text: 'Condensando ciclos...' },
     { threshold: 78, text: 'Acionando a placa...' },

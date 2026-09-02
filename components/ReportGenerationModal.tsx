@@ -12,7 +12,7 @@ interface ReportGenerationModalProps {
 const PHRASES = [
     { threshold: 20, text: 'Consultando registros...' },
     { threshold: 40, text: 'Analisando arenas...' },
-    { threshold: 60, text: 'Contabilizando acoes...' },
+    { threshold: 60, text: 'Contabilizando ações...' },
     { threshold: 80, text: 'Calculando resultado...' },
     { threshold: 100, text: 'Selando ciclo...' },
 ];
@@ -78,10 +78,10 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({ on
                 await new Promise((resolve) => window.setTimeout(resolve, EXIT_DURATION_MS));
                 if (isMounted) onCompleteRef.current();
             } catch (error) {
-                console.error('Erro ao finalizar geracao do relatorio:', error);
+                console.error('Erro ao finalizar geracao do relatório:', error);
                 if (isMounted) {
                     window.cancelAnimationFrame(animationFrame);
-                    setFinishError('Nao foi possivel selar o ciclo. Tente novamente.');
+                    setFinishError('Não foi possível selar o ciclo. Tente novamente.');
                     setIsClosing(false);
                     setIsFinishing(false);
                 }

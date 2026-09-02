@@ -184,7 +184,7 @@ export const ClanChat: React.FC = () => {
   };
 
   if (!clan) {
-    return <div className="p-4 text-center text-xs text-gray-500">Voce precisa estar em um grupo para acessar o chat.</div>;
+    return <div className="p-4 text-center text-xs text-gray-500">Você precisa estar em um grupo para acessar o chat.</div>;
   }
 
   return (
@@ -237,7 +237,7 @@ export const ClanChat: React.FC = () => {
 
               {isBlockedSender ? (
                 <div className="max-w-[85%] rounded-2xl rounded-tl-none border border-red-500/12 bg-red-500/8 px-3 py-2 text-[11px] leading-relaxed text-red-100/80">
-                  Mensagem oculta de usuario bloqueado.
+                  Mensagem oculta de usuário bloqueado.
                 </div>
               ) : (
                 <div
@@ -278,10 +278,10 @@ export const ClanChat: React.FC = () => {
 
       {showBlockConfirm && blockTarget && (
         <ConfirmationModal
-          title={blockedSet.has(blockTarget.userId) ? 'Desbloquear usuario' : 'Bloquear usuario'}
+          title={blockedSet.has(blockTarget.userId) ? 'Desbloquear usuário' : 'Bloquear usuário'}
           message={blockedSet.has(blockTarget.userId)
             ? `Deseja voltar a ver as mensagens de ${blockTarget.nickname}?`
-            : `As mensagens de ${blockTarget.nickname} ficarao ocultas no chat do grupo e o contato direto sera bloqueado.`}
+            : `As mensagens de ${blockTarget.nickname} ficarao ocultas no chat do grupo e o contato direto será bloqueado.`}
           onConfirm={() => void handleToggleBlock()}
           onCancel={() => {
             setShowBlockConfirm(false);

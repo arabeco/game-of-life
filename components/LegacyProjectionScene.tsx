@@ -695,7 +695,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                                             }
                                             jumpToCycle(activeIndex + 1);
                                         }}
-                                        aria-label={activeIndex >= cycleEntries.length - 1 ? 'Concluir legado' : 'Proximo ciclo'}
+                                        aria-label={activeIndex >= cycleEntries.length - 1 ? 'Concluir legado' : 'Próximo ciclo'}
                                         className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/10 text-[var(--skin-accent-color)] shadow-[0_0_18px_rgba(212,175,55,0.08)] text-[1rem] font-black leading-none transition hover:bg-[var(--skin-accent-color)]/16"
                                     >
                                         <span aria-hidden="true">›</span>

@@ -156,7 +156,7 @@ export const Inventory: React.FC = () => {
             tier: rarity === 'legendary' ? 5 : rarity === 'epic' ? 4 : rarity === 'rare' ? 3 : rarity === 'uncommon' ? 2 : 1,
             rarity: rarity === 'quest' ? 'rare' : rarity,
             icon: getChestIcon(type),
-            description: 'Um bau contendo recompensas misteriosas. Abra para descobrir o que ha dentro!'
+            description: 'Um baú contendo recompensas misteriosas. Abra para descobrir o que ha dentro!'
         };
     };
 
@@ -215,7 +215,7 @@ export const Inventory: React.FC = () => {
                     userChests.length === 0 ? (
                          <div className="col-span-full text-center py-20 text-gray-500 opacity-50">
                             <div className="text-4xl mb-4">🎒</div>
-                            <p>Nenhum bau disponivel.</p>
+                            <p>Nenhum baú disponivel.</p>
                         </div>
                     ) : (
                         userChests.map((chest, idx) => (

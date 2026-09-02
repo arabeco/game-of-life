@@ -23,7 +23,7 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
     saveClosedBetaGoogleRedirect({
       mode: 'login',
       email: session.user.email || '',
-      message: 'O acesso com Google foi encerrado porque o Bilhete Dourado nao foi validado. Quando tiver um bilhete, toque em Entrar com Google novamente.',
+      message: 'O acesso com Google foi encerrado porque o Bilhete Dourado não foi validado. Quando tiver um bilhete, toque em Entrar com Google novamente.',
     });
 
     try {
@@ -49,7 +49,7 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
       if (!profileResult.success) {
         return {
           success: false,
-          error: profileResult.error || 'Nao consegui criar seu perfil depois de validar o bilhete.',
+          error: profileResult.error || 'Não consegui criar seu perfil depois de validar o bilhete.',
         };
       }
 
@@ -64,7 +64,7 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
     } catch (submitError: any) {
       return {
         success: false,
-        error: submitError?.message || 'Nao consegui validar seu acesso agora.',
+        error: submitError?.message || 'Não consegui validar seu acesso agora.',
       };
     }
   };
@@ -73,7 +73,7 @@ export const ClosedBetaGoogleInviteModal: React.FC<{
     <ClosedBetaInviteModal
       open={true}
       title="Insira seu Bilhete"
-      description="Seu Google entrou, mas esta conta ainda nao foi liberada no beta. Valide o acesso com o Bilhete Dourado para continuar."
+      description="Seu Google entrou, mas esta conta ainda não foi liberada no beta. Valide o acesso com o Bilhete Dourado para continuar."
       emailLabel={session.user.email || 'Conta Google conectada'}
       onCancel={handleCancel}
       onValidateInvite={handleValidateInvite}

@@ -221,7 +221,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
             {isDatePickerOpen && (
                 <DatePickerModal
                     selectedDate={activeDateField === 'start' ? cycleStartLocalDate : cycleEndLocalDate}
-                    title={activeDateField === 'start' ? 'Escolher inicio do ciclo' : 'Escolher fim do ciclo'}
+                    title={activeDateField === 'start' ? 'Escolher início do ciclo' : 'Escolher fim do ciclo'}
                     minDate={activeDateField === 'start' ? todayLocalDate : cycleStartLocalDate}
                     onClose={() => setDatePickerOpen(false)}
                     onSelect={handleDateSelect}

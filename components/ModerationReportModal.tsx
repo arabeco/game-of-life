@@ -8,7 +8,7 @@ const REPORT_REASON_OPTIONS: { value: ModerationReportReason; label: string; des
     { value: 'abuse', label: 'Abuso', description: 'Agressao, ataque pessoal ou comportamento abusivo.' },
     { value: 'harassment', label: 'Assedio', description: 'Perseguicao, insistencia ou constrangimento.' },
     { value: 'spam', label: 'Spam', description: 'Mensagens repetidas, propaganda ou flood.' },
-    { value: 'sexual_content', label: 'Sexual', description: 'Conteudo sexual ou inapropriado.' },
+    { value: 'sexual_content', label: 'Sexual', description: 'Conteúdo sexual ou inapropriado.' },
     { value: 'hate', label: 'Odio', description: 'Discurso de odio ou ataque a grupo protegido.' },
     { value: 'impersonation', label: 'Imitacao', description: 'Se passando por outra pessoa.' },
     { value: 'other', label: 'Outro', description: 'Outro motivo que precisa de revisao.' },

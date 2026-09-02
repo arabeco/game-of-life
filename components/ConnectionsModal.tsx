@@ -235,7 +235,7 @@ export const ConnectionsModal: React.FC<{
     } catch (error) {
       if (isStale()) return;
       console.error('Connections load failed:', error);
-      showToast('Nao foi possivel carregar suas conexoes.', 'error');
+      showToast('Não foi possível carregar suas conexões.', 'error');
     } finally {
       if (!isStale()) {
         setLoading(false);
@@ -395,10 +395,10 @@ export const ConnectionsModal: React.FC<{
               <h2 className="mt-0.5 text-lg font-black text-white">Conexões</h2>
             </div>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => void refresh()} className="p-2 text-white/55 hover:text-white" aria-label="Atualizar conexoes">
+              <button type="button" onClick={() => void refresh()} className="p-2 text-white/55 hover:text-white" aria-label="Atualizar conexões">
                 <RefreshCwIcon className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
-              <button type="button" onClick={onClose} className="p-2 text-white/55 hover:text-white" aria-label="Fechar conexoes">
+              <button type="button" onClick={onClose} className="p-2 text-white/55 hover:text-white" aria-label="Fechar conexões">
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
@@ -474,7 +474,7 @@ export const ConnectionsModal: React.FC<{
               {loading ? (
                 <div className="mt-3 h-24 animate-pulse rounded-lg bg-white/5" />
               ) : visibleLinks.length === 0 ? (
-                <div id="connections-active-empty" className="mt-2 rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/42">Nenhuma conexao ativa.</div>
+                <div id="connections-active-empty" className="mt-2 rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/42">Nenhuma conexão ativa.</div>
               ) : (
                 <div id="connections-active-list" data-active-count={visibleLinks.length} className="mt-2 space-y-3">
                   {visibleLinks.map((link) => {
@@ -489,11 +489,11 @@ export const ConnectionsModal: React.FC<{
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-black text-white">{other?.nickname || 'Aliado'}</div>
                             <div className="mt-0.5 text-[10px] text-white/44">
-                              {link.linkType === 'mentoria' ? (isMentor ? 'Voce orienta' : 'Orienta voce') : typeCopy[link.linkType as VisibleConnectionType].label}
+                              {link.linkType === 'mentoria' ? (isMentor ? 'Você orienta' : 'Orienta você') : typeCopy[link.linkType as VisibleConnectionType].label}
                             </div>
                           </div>
                           <button type="button" onClick={() => openMessages(otherId)} className="rounded-md border border-white/10 p-2 text-white/65 hover:text-white" aria-label={`Conversar com ${other?.nickname || 'aliado'}`}><MessageIcon className="h-4 w-4" /></button>
-                          <button type="button" disabled={Boolean(busyKey)} onClick={() => void endLink(link)} className="p-2 text-white/35 hover:text-rose-200" aria-label="Encerrar conexao"><TrashIcon className="h-4 w-4" /></button>
+                          <button type="button" disabled={Boolean(busyKey)} onClick={() => void endLink(link)} className="p-2 text-white/35 hover:text-rose-200" aria-label="Encerrar conexão"><TrashIcon className="h-4 w-4" /></button>
                         </div>
 
                         {link.linkType === 'competicao' ? (
@@ -637,7 +637,7 @@ export const ConnectionsModal: React.FC<{
         <div className="fixed inset-0 z-[10030] flex items-end justify-center bg-black/70 p-3 sm:items-center" onClick={() => setArenaPickerLink(null)}>
           <div className="w-full max-w-sm rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-base font-black text-white">Minha arena na parceria</h3>
-            <p className="mt-1 text-[11px] text-white/45">A outra pessoa acompanha o progresso. Voce continua sendo dono da arena.</p>
+            <p className="mt-1 text-[11px] text-white/45">A outra pessoa acompanha o progresso. Você continua sendo dono da arena.</p>
             <select value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
               <option value="">Escolha uma arena</option>
               {ownArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
@@ -719,12 +719,12 @@ export const ConnectionsModal: React.FC<{
         <div className="fixed inset-0 z-[10030] flex items-end justify-center bg-black/70 p-3 sm:items-center" onClick={() => setMentorshipPickerLink(null)}>
           <div className="w-full max-w-sm rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-base font-black text-white">Arena acompanhada</h3>
-            <p className="mt-1 text-[11px] leading-relaxed text-white/45">O mentor podera ver o progresso e conversar com voce, mas nao podera criar, editar ou apagar suas acoes. A primeira escolha custa 50 de ouro; trocar depois nao cobra novamente.</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-white/45">O mentor podera ver o progresso e conversar com você, mas não podera criar, editar ou apagar suas ações. A primeira escolha custa 50 de ouro; trocar depois não cobra novamente.</p>
             <select value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
               <option value="">Escolha uma arena</option>
               {ownArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
             </select>
-            {ownArenas.length === 0 && <p className="mt-2 text-[10px] text-amber-200/70">Crie uma arena primeiro; o mentor nao fara isso por voce.</p>}
+            {ownArenas.length === 0 && <p className="mt-2 text-[10px] text-amber-200/70">Crie uma arena primeiro; o mentor não fara isso por você.</p>}
             <div className="mt-4 flex gap-2">
               <button type="button" onClick={() => setMentorshipPickerLink(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
               <button type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void saveMentorshipArena()} className="flex-1 rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Compartilhar</button>

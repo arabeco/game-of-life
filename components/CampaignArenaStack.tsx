@@ -53,10 +53,10 @@ export const CampaignArenaStack: React.FC<CampaignArenaStackProps> = ({ arenas, 
                     const actionCount = actionSource.filter((action) => action.arenaId === arena.id).length;
 
                     return (
-                        /* O quadradinho tentava caber icone + nome + "4 acoes" lado a
-                           lado, em um terco da largura do card. Nao cabia: a palavra
-                           era cortada e levava o nome da arena junto. O numero vira
-                           marcador no canto — numero nao precisa de rotulo quando esta
+                        /* O quadradinho tentava caber icone + nome + "4 ações" lado a
+                           lado, em um terco da largura do card. Não cabia: a palavra
+                           era cortada e levava o nome da arena junto. O número vira
+                           marcador no canto — número não precisa de rotulo quando esta
                            sobre um icone de arena. */
                         <div
                             key={arena.id}

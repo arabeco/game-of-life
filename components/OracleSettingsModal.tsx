@@ -63,23 +63,23 @@ const getRemotePushFailureMessage = (result: AppPushSyncResult): string => {
         case 'not_signed_in':
             return 'Push local ativado, mas a sessao expirou antes do registro remoto.';
         case 'permission_denied':
-            return 'Push local ativado, mas este aparelho nao liberou notificacoes.';
+            return 'Push local ativado, mas este aparelho não liberou notificacoes.';
         case 'missing_public_key':
-            return 'Push local ativado, mas a chave publica do push remoto nao entrou neste build.';
+            return 'Push local ativado, mas a chave pública do push remoto não entrou neste build.';
         case 'unsupported':
-            return 'Push local ativado. Este aparelho nao suporta push remoto completo.';
+            return 'Push local ativado. Este aparelho não suporta push remoto completo.';
         case 'invoke_failed':
             return `Push local ativado, mas o backend recusou o registro remoto${result.detail ? `: ${result.detail}` : '.'}`;
         case 'subscribe_failed':
-            return `Push local ativado, mas o navegador nao conseguiu criar uma subscription valida${result.detail ? `: ${result.detail}` : '.'}`;
+            return `Push local ativado, mas o navegador não conseguiu criar uma subscription valida${result.detail ? `: ${result.detail}` : '.'}`;
         case 'native_permission_denied':
             return 'Push nativo negado no aparelho.';
         case 'native_permission_prompt':
-            return 'O aparelho ainda nao liberou a permissao de push.';
+            return 'O aparelho ainda não liberou a permissao de push.';
         case 'native_register_failed':
-            return `${nativePlatform === 'ios' ? 'O iPhone' : 'O Android'} nao conseguiu registrar o push nativo${result.detail ? `: ${result.detail}` : '.'}`;
+            return `${nativePlatform === 'ios' ? 'O iPhone' : 'O Android'} não conseguiu registrar o push nativo${result.detail ? `: ${result.detail}` : '.'}`;
         case 'native_backend_register_failed':
-            return `O aparelho gerou o token nativo, mas o backend ainda nao conseguiu salvar esse aparelho${result.detail ? `: ${result.detail}` : '.'}`;
+            return `O aparelho gerou o token nativo, mas o backend ainda não conseguiu salvar esse aparelho${result.detail ? `: ${result.detail}` : '.'}`;
         case 'native_remote_pending':
             return `O aparelho ja gerou o token nativo. Falta concluir a trilha ${providerLabel}/backend para o push remoto chegar com o app fechado.`;
         case 'native_ok':
@@ -158,7 +158,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
     // que o React nao aceita.
     //
     // E ele nao devolve mais vazio. Vazio era o bug que se via: o toque em
-    // "Oraculo & Alertas" marcava o modal como aberto, o componente desenhava
+    // "Oráculo & Alertas" marcava o modal como aberto, o componente desenhava
     // nada, e a tela ficava igual — parecia botao morto. No navegador as
     // preferencias ja estao carregadas quando se chega em Ajustes; num aparelho
     // recem-instalado, nao.
@@ -210,12 +210,12 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         await updateOraclePreferences({ pushEnabled: true, notificationsEnabled: true });
 
         if (!pushSupport.supported) {
-            showToast('Push local ativado. Este aparelho nao suporta push remoto completo.', 'warning');
+            showToast('Push local ativado. Este aparelho não suporta push remoto completo.', 'warning');
             return;
         }
 
         if (!pushSupport.configured) {
-            showToast('Push local ativado. Falta configurar a chave publica do push remoto.', 'warning');
+            showToast('Push local ativado. Falta configurar a chave pública do push remoto.', 'warning');
             return;
         }
 
@@ -260,7 +260,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
         // parece defeito, nao ajuste. Quem quer o Oraculo calado usa a presenca:
         // tema escolhe SOBRE O QUE ele fala, nao SE ele fala.
         if (current.length <= 1 && current.includes(category)) {
-            showToast('Precisa de pelo menos um tema. Para calar o Oraculo, use a presenca.', 'info');
+            showToast('Precisa de pelo menos um tema. Para calar o Oráculo, use a presenca.', 'info');
             return;
         }
         const next = current.includes(category)
@@ -391,7 +391,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                     <div className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Temas assinados</div>
                     <p className="mt-1 text-[11px] leading-relaxed text-gray-400">
                         {isPremium
-                            ? 'Um card por dia entra sozinho. Aqui voce escolhe de que assunto ele fala, e pode pedir mais na hora.'
+                            ? 'Um card por dia entra sozinho. Aqui você escolhe de que assunto ele fala, e pode pedir mais na hora.'
                             : 'Um card por dia entra sozinho, sempre. Escolher o assunto e pedir na hora e do Premium.'}
                     </p>
                 </div>
@@ -447,8 +447,8 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Temas dos cards</h3>
                                     {renderSwitchRow({
                                         icon: 'CD',
-                                        label: 'Receber conteudo automaticamente',
-                                        description: 'No maximo um por dia. No chat, ainda da para pedir um de cada tema.',
+                                        label: 'Receber conteúdo automaticamente',
+                                        description: 'No máximo um por dia. No chat, ainda da para pedir um de cada tema.',
                                         enabled: Boolean(oraclePreferences.dailyFocusCardEnabled),
                                         onToggle: () => handleToggle('dailyFocusCardEnabled'),
                                         accentClass: 'bg-amber-500/70',
@@ -462,8 +462,8 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                         existe para quem esta no Silencioso tambem. */}
                                     {renderSwitchRow({
                                         icon: '!',
-                                        label: 'Avisar antes de perder a sequencia',
-                                        description: 'A noite, se o dia ainda estiver sem nenhuma acao. Independe da presenca do Oraculo.',
+                                        label: 'Avisar antes de perder a sequência',
+                                        description: 'A noite, se o dia ainda estiver sem nenhuma ação. Independe da presenca do Oráculo.',
                                         enabled: Boolean(oraclePreferences.importantAlertsEnabled),
                                         onToggle: () => handleToggle('importantAlertsEnabled'),
                                         accentClass: 'bg-rose-500/70',
@@ -472,7 +472,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                     {renderSwitchRow({
                                         icon: 'DM',
                                         label: 'Mensagens e convites',
-                                        description: 'Independem do jeito de falar e da presenca do Oraculo.',
+                                        description: 'Independem do jeito de falar e da presenca do Oráculo.',
                                         enabled: Boolean(oraclePreferences.dmNotificationsEnabled),
                                         onToggle: () => handleToggle('dmNotificationsEnabled'),
                                         accentClass: 'bg-sky-500/70',
@@ -562,7 +562,7 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
                                 }}
                                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 py-2.5 text-white/50 transition-colors hover:border-white/25 hover:text-white/80"
                             >
-                                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Copiar diagnostico do Oraculo</span>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">Copiar diagnostico do Oráculo</span>
                             </button>
                         )}
 

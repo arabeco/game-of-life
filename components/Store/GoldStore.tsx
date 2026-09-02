@@ -259,10 +259,10 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
                         {GOLD_PACK_CATALOG.map((pack) => (
                             /* Mais baixo e mais quadrado. A altura fixa de 12,4rem vinha
                                de tres blocos empilhados com folga — icone grande, nome em
-                               duas linhas com altura minima reservada, e o numero — para
+                               duas linhas com altura minima reservada, e o número — para
                                mostrar tres informacoes curtas. O que a pessoa compara e a
                                QUANTIDADE e o PRECO; o nome do pacote e sabor e cabe numa
-                               linha. E a quantidade vem com o simbolo da moeda, nao com a
+                               linha. E a quantidade vem com o simbolo da moeda, não com a
                                palavra ao lado. */
                             <GlassCard key={pack.id} className="group relative h-[9.2rem] overflow-hidden p-2.5 text-center transition-colors hover:bg-white/5">
                                 {pack.bonusGold > 0 && (

@@ -224,7 +224,7 @@ const OracleSpeechOverlay: React.FC = () => {
                     type="button"
                     onClick={() => setSpeech(null)}
                     className="pointer-events-auto absolute right-2.5 top-2 rounded-full border border-white/8 bg-white/[0.04] p-1 text-white/45 transition-colors hover:text-white"
-                    aria-label="Fechar fala do Oraculo"
+                    aria-label="Fechar fala do Oráculo"
                 >
                     <XIcon className="h-3 w-3" />
                 </button>
@@ -849,8 +849,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         //
         // Estava presa a tres coisas que nao vieram da regra: so disparava no
         // Planner, so uma vez por dia, e ainda passava por shouldShowPlannerCoach,
-        // que e uma moeda de 55% no nivel Presente. "Fala toda vez que voce abre"
-        // virava "45% das vezes que voce abre o Planner, uma vez por dia".
+        // que e uma moeda de 55% no nivel Presente. "Fala toda vez que você abre"
+        // virava "45% das vezes que você abre o Planner, uma vez por dia".
         const presenceRules = getOraclePresenceRules(oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL);
         if (presenceRules.openingLine === 'nunca') return;
         if (isRestScreenVisible || userProfile.id === 'placeholder_user') return;
@@ -946,7 +946,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         }, Math.random, resolveOracleSpeechTone(oraclePreferences?.speechTone), presenceRules.value, speechMemory, today);
 
         // O registro vem ANTES da guarda de silencio, de proposito: silencio e uma
-        // decisao e precisa ser explicavel igual. "Por que ele nao falou nada?" e
+        // decisao e precisa ser explicavel igual. "Por que ele não falou nada?" e
         // uma pergunta tao comum quanto "por que ele falou isso?".
         recordOracleDecision(decisao);
         lastOpeningSpeechAtRef.current = Date.now();
@@ -1266,7 +1266,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const baseBottomPadding = 64;
     // O cabecalho e fixo e agora desce a altura da barra de status junto; o
     // conteudo tem de descer com ele, senao as primeiras linhas de cada tela
-    // (em Ajustes, "Interface & Som" e "Oraculo & Alertas") ficam por baixo do
+    // (em Ajustes, "Interface & Som" e "Oráculo & Alertas") ficam por baixo do
     // cabecalho, que captura o toque no lugar delas.
     const mainPaddingTop = `calc(${baseTopPadding}px + var(--safe-area-top))`;
     // A excecao de 'assets' existe porque aquela tela cuida do proprio rodape. Mas o
@@ -1414,7 +1414,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                     tipId={activeScreenTipId}
                     // A dica passa a olhar o que existe antes de dar conselho: a
                     // tela de Arenas dizia "crie uma arena simples" para quem
-                    // chegava com seis, e o Planner dizia "puxa uma acao" para
+                    // chegava com seis, e o Planner dizia "puxa uma ação" para
                     // quem nao tinha ciclo — e ali o Planner esta vazio.
                     state={{
                         arenasCount: assets.reduce((total, asset) => total + asset.arenas.length, 0),
@@ -1729,7 +1729,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 },
             }));
             if (acceptedSystemChallenges.length > 0) {
-                showToast('Missao aceita. Ela ja esta acompanhando seu progresso.', 'success');
+                showToast('Missão aceita. Ela ja esta acompanhando seu progresso.', 'success');
             }
         }, 120);
     }, [showToast, updateUserProfile, userProfile]);
@@ -1771,11 +1771,11 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 }
                 if (nextPermission === 'granted') {
                     await updateOraclePreferences({ pushEnabled: true });
-                    showToast('Push ativado. O Oraculo ja pode te acompanhar fora da tela.', 'success');
+                    showToast('Push ativado. O Oráculo ja pode te acompanhar fora da tela.', 'success');
                 } else if (nextPermission === 'denied') {
                     // Nao insiste depois. Quem quiser ligar depois precisa saber
                     // onde, e este e o unico momento em que da para dizer.
-                    showToast('Tudo bem. Se mudar de ideia, e em Ajustes > Oraculo & Alertas.', 'warning');
+                    showToast('Tudo bem. Se mudar de ideia, e em Ajustes > Oráculo & Alertas.', 'warning');
                 }
             } finally {
                 if (!cancelled) setOnboardingPushBusy(false);
@@ -2159,7 +2159,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         onClose={handleCloseBetaReward}
                         fallbackEyebrow="Beta 14 de 14"
                         fallbackTitle="Recompensa da vigilia"
-                        fallbackSummary="Voce atravessou os 14 dias completos do beta e a recompensa final ja foi entregue."
+                        fallbackSummary="Você atravessou os 14 dias completos do beta e a recompensa final ja foi entregue."
                         fallbackButtonLabel="Receber"
                         fallbackItemSectionTitle="Entregue no fim do beta"
                         fallbackEmptyMessage="Seu bonus final ja entrou no perfil."

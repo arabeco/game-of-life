@@ -763,7 +763,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                     <LightbulbIcon className="h-3.5 w-3.5" /> Descobrir campanhas
                                 </button>
                             </div>
-                            <div className="mt-2 text-center text-[10px] text-white/48">Escolha uma pronta ou acompanhe as que ja estao em uso.</div>
+                            <div className="mt-2 text-center text-[10px] text-white/48">Escolha uma pronta ou acompanhe as que ja estão em uso.</div>
                         </div>
                         
                         <div className="overflow-y-auto p-4">
@@ -1015,7 +1015,7 @@ export const CampaignsCodex: React.FC<CampaignsCodexProps> = ({
                                         />
                                         {!canEditCampaignStructure && (
                                             <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-center text-[11px] leading-relaxed text-white/70">
-                                                Campanha recebida aceita so ajustes locais de nome e descricao. Fases, arenas e ordem continuam protegidas.
+                                                Campanha recebida aceita so ajustes locais de nome e descrição. Fases, arenas e ordem continuam protegidas.
                                             </div>
                                         )}
                                         <div className="flex justify-center gap-2">

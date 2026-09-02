@@ -65,7 +65,7 @@ const ShareCodexModal: React.FC<{ codex: UserCodex; onClose: () => void }> = ({ 
       showToast('Link copiado.', 'success');
     } catch (error) {
       console.error('Clipboard write failed:', error);
-      showToast('Nao foi possivel copiar o link.', 'warning');
+      showToast('Não foi possível copiar o link.', 'warning');
     }
   };
 
@@ -204,7 +204,7 @@ const CodexCard: React.FC<{
               {!shareable && <SourceBadge label="Rascunho" />}
             </div>
             <h3 className="mt-2 text-lg font-bold text-white truncate">{codex.name}</h3>
-            <p className="mt-1 text-sm text-gray-400 line-clamp-2">{codex.description || 'Sem descricao registrada.'}</p>
+            <p className="mt-1 text-sm text-gray-400 line-clamp-2">{codex.description || 'Sem descrição registrada.'}</p>
             <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/40 line-clamp-2">{sourceDescription}</p>
           </div>
         </div>
@@ -237,7 +237,7 @@ const CodexCard: React.FC<{
           </div>
         )) : (
           <div className="rounded-2xl border border-dashed border-white/10 px-3 py-4 text-sm text-gray-500">
-            Essa campanha ainda nao esta pronta para instalar ou compartilhar.
+            Essa campanha ainda não esta pronta para instalar ou compartilhar.
           </div>
         )}
       </div>
@@ -287,7 +287,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
 
   const openPreview = (codex: UserCodex) => {
     if (!isShareableCodex(codex)) {
-      showToast('Essa campanha ainda nao tem trilha pronta para visualizar.', 'warning');
+      showToast('Essa campanha ainda não tem trilha pronta para visualizar.', 'warning');
       return;
     }
 
@@ -369,7 +369,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
         </GlassCard>
 
         <GlassCard variant="neutral" className="rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.18))] p-5">
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Leitura rapida</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Leitura rápida</div>
           <div className="mt-3 space-y-2">
             <div className="rounded-2xl bg-black/25 border border-white/10 px-3 py-3 flex items-center justify-between">
               <span className="inline-flex items-center gap-2 text-sm text-gray-300"><LayersIcon className="w-4 h-4" />Criados</span>
@@ -404,8 +404,8 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
         </p>
         <p className="mt-2 text-sm text-gray-300">
           {activeTab === 'created'
-            ? 'So campanhas autorais podem ser compartilhadas. Campanha comprada ou recebida nao entra na forja como produto revendavel.'
-            : 'Campanha comprada pode ser adaptada na sua execucao. Campanha recebida entra como biblioteca protegida e nao abre edicao.'}
+            ? 'So campanhas autorais podem ser compartilhadas. Campanha comprada ou recebida não entra na forja como produto revendavel.'
+            : 'Campanha comprada pode ser adaptada na sua execucao. Campanha recebida entra como biblioteca protegida e não abre edicao.'}
         </p>
       </GlassCard>
 
@@ -454,7 +454,7 @@ export const CodexLibrary: React.FC<CodexLibraryProps> = ({ mode = 'page', onClo
             author: previewCodex?.author || 'Autor desconhecido',
             note: activeTab === 'created'
               ? 'Sua campanha esta pronta para ser instalada ou refinada.'
-              : 'Voce ja possui esta campanha na biblioteca e pode explorar a trilha completa.',
+              : 'Você ja possui esta campanha na biblioteca e pode explorar a trilha completa.',
           }}
         />
       )}

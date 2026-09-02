@@ -306,7 +306,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
             <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-[22px] border border-[var(--skin-accent-color)]/16 bg-[linear-gradient(180deg,rgba(255,208,0,0.08)_0%,rgba(0,0,0,0.18)_100%)] px-3 py-3">
-                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Para voce</div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">Para você</div>
                         <div className="mt-1 text-2xl font-black text-[color:var(--ui-card-text)]">{incomingRequestCount}</div>
                         <div className="text-[11px] text-[color:var(--ui-card-text-soft)]">amizades, vinculos e grupos</div>
                     </div>
@@ -318,7 +318,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                 </div>
 
                 {incomingRequestCount > 0 && (
-                    <RequestSection title="Para voce" count={incomingRequestCount} tone="gold">
+                    <RequestSection title="Para você" count={incomingRequestCount} tone="gold">
                         {friendRequestsIncoming.map(request => {
                             const senderProfile = request.senderProfile || buildFallbackProfile(request.senderId);
                             return (

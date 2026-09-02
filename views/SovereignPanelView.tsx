@@ -96,9 +96,9 @@ const formatStageLabel = (value: string | null | undefined) => {
 };
 
 const formatDateTime = (value: string | null | undefined) => {
-  if (!value) return 'Nao informado';
+  if (!value) return 'Não informado';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Nao informado';
+  if (Number.isNaN(date.getTime())) return 'Não informado';
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -115,7 +115,7 @@ const getDisplayName = (row: Marco1BetaScoreboardRow) => {
   const emailPrefix = row.email?.split('@')[0]?.trim();
   if (emailPrefix) return emailPrefix;
 
-  return 'Usuario sem nome';
+  return 'Usuário sem nome';
 };
 
 const getInitials = (value: string) => {
@@ -509,7 +509,7 @@ const GmSkinPaletteSection: React.FC = () => {
                   <SkinPaletteLine label="Leitura" background={skin.preview.cardBackground} borderColor={skin.preview.borderColor}>
                     <div className="flex w-full items-center justify-between gap-3">
                       <span className="text-[10px] font-black uppercase tracking-[0.12em]" style={{ color: skin.preview.cardTextColor }}>
-                        Titulo seguro
+                        Título seguro
                       </span>
                       <span className="text-[10px] font-semibold tracking-[0.08em]" style={{ color: skin.preview.subtleTextColor }}>
                         subtom
@@ -547,7 +547,7 @@ const GM_SHOWCASE_REPORT = {
   windowLabel: '42 dias de campo',
   commandLabel: 'ALPHA . T1 FUNDACAO',
   headline:
-    'A cena ja sustenta narrativa publica: onboarding claro, motor de retorno acima da meta e primeiros ciclos fechando com consistencia suficiente para print de campanha.',
+    'A cena ja sustenta narrativa pública: onboarding claro, motor de retorno acima da meta e primeiros ciclos fechando com consistencia suficiente para print de campanha.',
   metrics: {
     population: 34,
     populationGoal: 50,
@@ -562,9 +562,9 @@ const GM_SHOWCASE_REPORT = {
   },
   signals: [
     { title: 'Tempo medio ate ativar', value: '17h', helper: 'do bilhete ao primeiro loop fechado' },
-    { title: 'Dias ativos (14d)', value: '8.6', helper: 'media realista para base ainda enxuta' },
+    { title: 'Dias ativos (14d)', value: '8.6', helper: 'média realista para base ainda enxuta' },
     { title: 'Aceite de convite', value: '83%', helper: 'bilhete ouro, prata e bronze' },
-    { title: 'Sessao util media', value: '18 min', helper: 'janela boa para celular e D0' },
+    { title: 'Sessao util média', value: '18 min', helper: 'janela boa para celular e D0' },
   ],
   tiers: [
     { tier: 'ouro' as const, count: 8, note: 'Alta resposta, mais clareza e feedback rico' },
@@ -727,7 +727,7 @@ const GmShowcaseSection: React.FC = () => {
             icon={RotateCcw}
             title="Retorno D2"
             value={formatPercent(GM_SHOWCASE_REPORT.metrics.d2Pct)}
-            helper="taxa forte o bastante para narrativa publica"
+            helper="taxa forte o bastante para narrativa pública"
             progressPct={GM_SHOWCASE_REPORT.metrics.d2Pct}
             tone={getProgressTone(GM_SHOWCASE_REPORT.metrics.d2Pct, KPI_GOALS.d2Pct)}
           />
@@ -915,7 +915,7 @@ const PlayerInsightModal: React.FC<{
               <Mail className="h-4 w-4" />
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Email</p>
             </div>
-            <p className="mt-2 break-all text-sm font-semibold text-white">{row.email || 'Nao informado'}</p>
+            <p className="mt-2 break-all text-sm font-semibold text-white">{row.email || 'Não informado'}</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
             <div className="flex items-center gap-2 text-zinc-300">
@@ -929,14 +929,14 @@ const PlayerInsightModal: React.FC<{
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <DetailMetric
             title="Ativacao"
-            value={row.activation_passed ? 'Passou' : 'Nao passou'}
+            value={row.activation_passed ? 'Passou' : 'Não passou'}
             helper={row.activation_passed ? 'loop criado' : 'pendente'}
             progressPct={row.activation_passed ? 100 : 18}
             tone={getProgressTone(row.activation_passed ? 100 : 18, KPI_GOALS.activationPct)}
           />
           <DetailMetric
             title="Retorno D2"
-            value={row.d2_returned ? 'Voltou' : 'Nao voltou'}
+            value={row.d2_returned ? 'Voltou' : 'Não voltou'}
             helper={row.d2_returned ? 'dia 2' : 'pendente'}
             progressPct={row.d2_returned ? 100 : 12}
             tone={getProgressTone(row.d2_returned ? 100 : 12, KPI_GOALS.d2Pct)}
@@ -961,7 +961,7 @@ const PlayerInsightModal: React.FC<{
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">Bilhete</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold text-zinc-200">
-              Convite: {row.claimed_invite_code || row.invite_code || 'nao informado'}
+              Convite: {row.claimed_invite_code || row.invite_code || 'não informado'}
             </span>
             {row.manual_stage && row.manual_stage !== stage && (
               <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold text-zinc-200">
@@ -1303,7 +1303,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       skinId: '1',
       description: 'Fase de fundacao em que o ritmo aparece, a saude ancora a disciplina e o sistema deixa de ser promessa para virar pratica.',
       finalSummary: 'A Aurora provou tracao: o ritual matinal e os blocos de foco amarraram saude, trabalho e estudo numa mesma cadencia.',
-      aiSummary: 'Primeiro bloco historico com sinais claros de consistencia e adesao ao loop.',
+      aiSummary: 'Primeiro bloco histórico com sinais claros de consistencia e adesao ao loop.',
       cycles: eraOneCycles,
       startDate: '2025-01-06',
       endDate: '2025-02-16',
@@ -1353,7 +1353,7 @@ const LEGACY_SHOWCASE_ERAS: LegacyRenderEraSummary[] = (() => {
       label: 'Era do Trono',
       defaultLabel: 'Era 3',
       skinId: '3',
-      description: 'A fase mais cinematografica: o legado deixa de ser apenas historico e vira objeto de exibicao, memoria e prova de sistema vivo.',
+      description: 'A fase mais cinematografica: o legado deixa de ser apenas histórico e vira objeto de exibicao, memória e prova de sistema vivo.',
       finalSummary: 'O Trono fecha a narrativa: comando, legado e identidade se condensam em uma leitura premium pronta para vitrine.',
       aiSummary: 'Momento de maturidade alta, com leitura clara de valor e simbolo.',
       cycles: eraThreeCycles,
@@ -1774,7 +1774,7 @@ const CycleReportPreviewButton: React.FC = () => {
                 className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/20 px-6 py-3 text-xs font-black uppercase tracking-[0.2em] text-emerald-300 transition-all hover:bg-emerald-500/30 hover:scale-[1.02]"
             >
                 <CalendarDays className="h-4 w-4" />
-                Visualizar Relatorio Nota S
+                Visualizar Relatório Nota S
             </button>
 
             {showPreview && (
@@ -1797,7 +1797,7 @@ type NotificationLabType = 'system' | 'oracle_card';
 
 const GM_NOTIFICATION_TEST_CONTENT: Record<NotificationLabType, string> = {
     system: 'TESTE GM: Aviso de sistema entregue em Avisos. Este item deve aparecer imediatamente na aba de notificacoes.',
-    oracle_card: 'TESTE GM: Card do Oraculo entregue em Avisos. O icone do Oraculo deve destacar ate voce abrir a aba.',
+    oracle_card: 'TESTE GM: Card do Oráculo entregue em Avisos. O icone do Oráculo deve destacar ate você abrir a aba.',
 };
 
 const NOTIFICATION_LAB_DEBUG_PREFIX = '[GM Notification Lab]';
@@ -1950,7 +1950,7 @@ const NotificationTypeButton: React.FC<{ type: NotificationLabType; label: strin
 
             showToast(
                 type === 'oracle_card'
-                    ? 'Card do Oraculo criado em Avisos.'
+                    ? 'Card do Oráculo criado em Avisos.'
                     : 'Notificacao de sistema criada em Avisos.',
                 'success',
             );
@@ -2108,7 +2108,7 @@ const NotificationTestButton: React.FC = () => {
                     showToast('Notificacao interna entregue, mas o aparelho bloqueou o push local.', 'warning');
                     logNotificationLabStep('Sistema + Push (15s)', 'toast-warning-denied');
                 } else {
-                    showToast('Notificacao interna entregue. O push local nao apareceu neste aparelho.', 'warning');
+                    showToast('Notificacao interna entregue. O push local não apareceu neste aparelho.', 'warning');
                     logNotificationLabStep('Sistema + Push (15s)', 'toast-warning-no-push');
                 }
             } catch (err) {
@@ -2179,7 +2179,7 @@ export const SovereignPanelView: React.FC = () => {
 
       if (error) {
         setRows([]);
-        setErrorMessage(error.message || 'Nao foi possivel carregar o painel do GM.');
+        setErrorMessage(error.message || 'Não foi possível carregar o painel do GM.');
         setLoading(false);
         return;
       }

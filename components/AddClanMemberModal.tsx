@@ -50,7 +50,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
         try {
             const result = await SupabaseService.sendClanInvitation(friendId);
             if (!result.ok) {
-                showToast(result.reason === 'already_invited' ? 'Esse convite ja esta pendente.' : 'Nao foi possivel enviar o convite.', 'warning');
+                showToast(result.reason === 'already_invited' ? 'Esse convite ja esta pendente.' : 'Não foi possível enviar o convite.', 'warning');
                 return;
             }
             setPendingInviteeIds(current => current.includes(friendId) ? current : [...current, friendId]);
@@ -66,7 +66,7 @@ export const AddClanMemberModal: React.FC<{ onClose: () => void }> = ({ onClose 
         try {
             const revoked = await SupabaseService.revokeClanInvitation(friendId);
             if (!revoked) {
-                showToast('Nao foi possivel cancelar o convite.', 'error');
+                showToast('Não foi possível cancelar o convite.', 'error');
                 return;
             }
             setPendingInviteeIds(current => current.filter(id => id !== friendId));

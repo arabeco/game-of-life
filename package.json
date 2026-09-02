@@ -22,6 +22,7 @@
     "test:device-only": "node tests/safe-area-insets.regression.mjs",
     "test:relationship-links": "node tests/relationship-links.regression.mjs",
     "test:ui-hygiene": "node tests/ui-hygiene.regression.mjs",
+    "lint:buttons": "node scripts/list-unlabeled-buttons.mjs",
     "test:cycle-delete-smoke": "node tests/cycle-delete-smoke.cdp.mjs",
     "test:launch": "node tests/launch-readiness.mjs",
     "test:launch:full": "node tests/launch-readiness.mjs --suite=full",

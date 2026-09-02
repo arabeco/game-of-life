@@ -168,7 +168,7 @@ export const SpectatorArenaModal: React.FC<SpectatorArenaModalProps> = ({
 
     const normalizedArena = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const clanQuests = getClanQuestsForArena(arena, actions);
-    const isClanQuestArena = clanQuests.length > 0 || normalizedArena.includes('quests - cla');
+    const isClanQuestArena = clanQuests.length > 0 || normalizedArena.includes('quests - clã');
 
     const totalPlanned = actions.reduce((acc, a) => acc + (a.repetitions || 0), 0);
     const totalCompleted = tasks.filter(t => actions.some(a => a.id === t.actionId) && t.completed).length;

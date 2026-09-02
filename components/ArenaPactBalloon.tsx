@@ -17,7 +17,7 @@ import type { ArenaPact, ArenaPactDifficulty } from '../utils/arenaPacts';
  * o app ja tem lista de tarefas. A forca disso e ter UMA coisa pendente.
  *
  * A proposta e PEDIDA, nunca empurrada: so aparece depois de a pessoa clicar em
- * "Pedir uma missao ao Oraculo". Num app de disciplina, o app oferecendo missao
+ * "Pedir uma missão ao Oráculo". Num app de disciplina, o app oferecendo missao
  * sozinho vira interrupcao — a pessoa procurando, nao.
  *
  * Dentro da proposta ha dois caminhos, que servem a momentos diferentes: as tres
@@ -97,13 +97,13 @@ export const ArenaPactBalloon: React.FC = () => {
             <OracleSpeakerMark tone={completed ? 'success' : 'guide'} size="sm" className="mt-0.5 shrink-0" pulse={completed} />
             <div className="min-w-0 flex-1">
                 <p className="core-label text-[var(--skin-accent-color)]">
-                    {completed ? 'Missao cumprida' : 'Missao em curso'}
+                    {completed ? 'Missão cumprida' : 'Missão em curso'}
                 </p>
                 <p className="mt-1 text-[12px] font-black leading-tight text-white">{activeArenaPact.title}</p>
 
                 {completed ? (
                     <p className="mt-1 text-[11px] leading-relaxed text-white/70">
-                        Voce fez o que combinou. Pegue o que e seu.
+                        Você fez o que combinou. Pegue o que e seu.
                     </p>
                 ) : (
                     <>
@@ -138,7 +138,7 @@ export const ArenaPactBalloon: React.FC = () => {
                             onClick={() => void run(abandonArenaPact)}
                             className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-white/50 transition-colors hover:text-white/80 disabled:opacity-50"
                         >
-                            Abandonar missao
+                            Abandonar missão
                         </button>
                     )}
                 </div>
@@ -201,12 +201,12 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void }> = ({ onClose 
         <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
             <OracleSpeakerMark tone="guide" size="sm" className="mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
-                <p className="core-label text-[var(--skin-accent-color)]">Proposta do Oraculo</p>
+                <p className="core-label text-[var(--skin-accent-color)]">Proposta do Oráculo</p>
 
                 {!mostrandoEscolha && (
                     <>
                         <p className="mt-1 text-[11px] leading-relaxed text-white/78">
-                            Estas usam arenas que voce ja tem. Uma missao de cada vez.
+                            Estas usam arenas que você ja tem. Uma missão de cada vez.
                         </p>
                         <div className="mt-2 space-y-2">
                             {arenaPactCandidates.map((pact) => (
@@ -218,7 +218,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void }> = ({ onClose 
 
                 {mostrandoEscolha && !arenaEscolhida && (
                     <>
-                        <p className="mt-1 text-[11px] leading-relaxed text-white/78">Qual arena voce quer mover?</p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-white/78">Qual arena você quer mover?</p>
                         <div className="mt-2 flex flex-wrap gap-2">
                             {arenasComPacto.map(({ arena }) => (
                                 <button
@@ -237,7 +237,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void }> = ({ onClose 
 
                 {mostrandoEscolha && arenaEscolhida && (
                     <>
-                        <p className="mt-1 text-[11px] leading-relaxed text-white/78">O que voce quer combinar?</p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-white/78">O que você quer combinar?</p>
                         <div className="mt-2 space-y-2">
                             {opcoesDaArena.map((pact) => (
                                 <PactOption key={pact.id} pact={pact} onAccept={handleAccept} busy={busy} />

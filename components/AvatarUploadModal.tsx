@@ -97,7 +97,7 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
       });
 
       if (uploadError) {
-        setError('Nao consegui enviar a imagem agora.');
+        setError('Não consegui enviar a imagem agora.');
         return;
       }
 
@@ -105,7 +105,7 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({ currentAva
       const nextAvatarUrl = data.publicUrl || webpDataUrl;
       onSave(nextAvatarUrl);
     } catch {
-      setError('Nao consegui processar a imagem.');
+      setError('Não consegui processar a imagem.');
     } finally {
       setIsUploading(false);
     }

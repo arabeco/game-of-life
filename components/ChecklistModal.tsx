@@ -225,7 +225,7 @@ const SequenceRow: React.FC<SequenceRowProps> = ({ item, onMarkToday, onUpdate, 
                             <div className="truncate text-sm font-black uppercase tracking-[0.08em] text-white">{item.title}</div>
                         )}
                         <div className={`mt-1 text-[11px] leading-relaxed ${justReset ? 'text-rose-300/80' : 'text-white/52'}`}>
-                            {justReset ? 'Sequencia reiniciada.' : 'Segure o titulo para quebrar a sequencia.'}
+                            {justReset ? 'Sequência reiniciada.' : 'Segure o título para quebrar a sequência.'}
                         </div>
                     </div>
                 </button>
@@ -329,7 +329,7 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                     <div className="flex items-center justify-between gap-3">
                         <div>
                             <h2 className="text-lg font-black uppercase tracking-[0.16em] text-white">Checklist</h2>
-                            <p className="mt-1 text-xs text-white/45">Checklist diario e sequencias manuais.</p>
+                            <p className="mt-1 text-xs text-white/45">Checklist diário e sequencias manuais.</p>
                         </div>
                         <button aria-label="Fechar" type="button" onClick={onClose} className="rounded-full border border-white/10 bg-black/20 p-2 text-white/65 transition-colors hover:bg-black/35 hover:text-white">
                             <XIcon className="h-4 w-4" />
@@ -412,7 +412,7 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                     ))
                                 ) : (
                                     <div className="rounded-2xl border border-dashed border-white/10 bg-black/18 px-4 py-6 text-center text-sm text-white/45">
-                                        Crie uma sequencia como <span className="font-semibold text-white/75">Sem fumar</span> ou <span className="font-semibold text-white/75">Ler todo dia</span>.
+                                        Crie uma sequência como <span className="font-semibold text-white/75">Sem fumar</span> ou <span className="font-semibold text-white/75">Ler todo dia</span>.
                                     </div>
                                 )}
                             </div>
@@ -422,7 +422,7 @@ export const ChecklistModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                     <FlameIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--skin-accent-color)]/75" />
                                     <input
                                         type="text"
-                                        placeholder="Nova sequencia... (ex: Sem fumar)"
+                                        placeholder="Nova sequência... (ex: Sem fumar)"
                                         value={newSequenceTitle}
                                         onChange={(event) => setNewSequenceTitle(event.target.value)}
                                         onKeyDown={(event) => event.key === 'Enter' && handleAddSequenceItem()}

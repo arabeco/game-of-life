@@ -85,7 +85,7 @@ export const ShareChoiceSheet: React.FC<ShareChoiceSheetProps> = ({
                             </div>
                             <div className="min-w-0">
                                 <div className="text-sm font-black text-white">{feedLabel}</div>
-                                <div className="mt-1 text-xs text-white/55">Publica esse resultado dentro do feed social do app.</div>
+                                <div className="mt-1 text-xs text-white/55">Pública esse resultado dentro do feed social do app.</div>
                             </div>
                         </button>
                     </div>

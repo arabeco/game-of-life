@@ -71,7 +71,7 @@ export const LoginView: React.FC = () => {
         if (!redirectState) return;
 
         const isSignupRedirect = redirectState.mode === 'signup';
-        const isBlockedGoogleRedirect = redirectState.message.toLowerCase().includes('nao pode entrar novamente');
+        const isBlockedGoogleRedirect = redirectState.message.toLowerCase().includes('não pode entrar novamente');
         setIsSigningUp(isSignupRedirect);
         setManualEntryExpanded(isSignupRedirect);
         setGoogleResumeMode(!isSignupRedirect && !!redirectState.email && !isBlockedGoogleRedirect);
@@ -84,12 +84,12 @@ export const LoginView: React.FC = () => {
         if (isSignupRedirect) {
             setAccessGuide({
                 title: 'Conta nova detectada',
-                text: 'Esse acesso ainda nao tem conta no app. Se quiser, voce pode criar agora com Google ou e-mail.',
+                text: 'Esse acesso ainda não tem conta no app. Se quiser, você pode criar agora com Google ou e-mail.',
             });
         } else if (redirectState.email) {
             setAccessGuide({
                 title: 'Acesso com Google',
-                text: 'Para entrar com Google no primeiro acesso, voce nao precisa preencher e-mail, nickname ou senha aqui. Ignore os campos abaixo e toque em Entrar com Google.',
+                text: 'Para entrar com Google no primeiro acesso, você não precisa preencher e-mail, nickname ou senha aqui. Ignore os campos abaixo e toque em Entrar com Google.',
             });
         }
     }, []);
@@ -625,7 +625,7 @@ export const LoginView: React.FC = () => {
                             GLYPH
                         </h1>
                         <p className="login-subtitle">
-                            Google e o caminho mais rapido. Se preferir, crie sua conta com e-mail.
+                            Google e o caminho mais rápido. Se preferir, crie sua conta com e-mail.
                         </p>
                     </div>
 
@@ -768,7 +768,7 @@ export const LoginView: React.FC = () => {
                                     <div className="space-y-1">
                                         {/* Sem "mostrar senha", errar a digitacao num teclado de
                                             celular so se descobre pelo login recusado — e a pessoa
-                                            nao sabe se errou a senha ou se a conta e outra. */}
+                                            não sabe se errou a senha ou se a conta e outra. */}
                                         <div className="relative">
                                             <input
                                                 id="login-password-input"

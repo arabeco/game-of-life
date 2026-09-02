@@ -95,7 +95,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                 setAndroidProduct(product);
             } catch (error) {
                 if (cancelled) return;
-                setAndroidError(error instanceof Error ? error.message : 'Nao foi possivel consultar o produto na Google Play.');
+                setAndroidError(error instanceof Error ? error.message : 'Não foi possível consultar o produto na Google Play.');
             } finally {
                 if (!cancelled) {
                     setIsLoadingAndroidProduct(false);
@@ -151,7 +151,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
             };
 
             if (!purchaseContext.purchaseToken) {
-                throw new Error('A Google Play nao retornou o recibo da compra.');
+                throw new Error('A Google Play não retornou o recibo da compra.');
             }
 
             const { data, error } = await supabase.functions.invoke('google-play-purchase', {
@@ -172,7 +172,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
 
             if (error || !(data as any)?.success) {
                 console.error('Google Play membership validation failed:', error || data);
-                throw new Error('Plano nao validado pela Google Play. Se houve cobranca, me avise para conciliar.');
+                throw new Error('Plano não validado pela Google Play. Se houve cobranca, me avise para conciliar.');
             }
 
             updateUserProfile({
@@ -245,7 +245,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                                         </>
                                     )}
                                     {!isLoadingAndroidProduct && !androidError && !androidProduct && (
-                                        <p>Esta compra ainda nao apareceu na Google Play deste aparelho.</p>
+                                        <p>Esta compra ainda não apareceu na Google Play deste aparelho.</p>
                                     )}
                                 </div>
                             </div>
@@ -256,7 +256,7 @@ export const BillingCheckoutGate: React.FC<BillingCheckoutGateProps> = (props) =
                                 <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-100">Estado da App Store</div>
                                 <div className="mt-2 space-y-2 text-[12px] leading-relaxed text-slate-100/90">
                                     <p className="font-bold text-white">{productSummary}</p>
-                                    <p>A compra pela App Store sera liberada na versao iOS.</p>
+                                    <p>A compra pela App Store será liberada na versao iOS.</p>
                                     {iosStatusMessage && (
                                         <p className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] leading-relaxed text-slate-50">
                                             {iosStatusMessage}

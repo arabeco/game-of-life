@@ -399,7 +399,7 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10">
                     <XCircleIcon className="h-8 w-8 text-red-300" />
                   </div>
-                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-white">Usuario bloqueado</p>
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-white">Usuário bloqueado</p>
                   <p className="mt-2 max-w-[240px] text-[11px] leading-relaxed text-white/55">
                     As mensagens desta conversa ficaram ocultas. Desbloqueie para voltar a ver e responder.
                   </p>
@@ -483,10 +483,10 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
 
       {showBlockConfirm && selectedParticipantId && (
         <ConfirmationModal
-          title={isSelectedUserBlocked ? 'Desbloquear usuario' : 'Bloquear usuario'}
+          title={isSelectedUserBlocked ? 'Desbloquear usuário' : 'Bloquear usuário'}
           message={isSelectedUserBlocked
             ? 'Deseja permitir contato novamente nesta conversa?'
-            : 'As mensagens dessa pessoa serao ocultadas e a conversa ficara bloqueada para envio.'}
+            : 'As mensagens dessa pessoa serão ocultadas e a conversa ficara bloqueada para envio.'}
           onConfirm={() => void handleToggleBlock()}
           onCancel={() => setShowBlockConfirm(false)}
           confirmLabel={isSelectedUserBlocked ? 'DESBLOQUEAR' : 'BLOQUEAR'}
@@ -495,7 +495,7 @@ export const OracleSocialPanel: React.FC<{ initialParticipantId?: string | null 
 
       <ModerationReportModal
         open={!!reportTarget && !!selectedParticipantId}
-        title={reportTarget?.type === 'user' ? 'Denunciar usuario' : 'Denunciar mensagem'}
+        title={reportTarget?.type === 'user' ? 'Denunciar usuário' : 'Denunciar mensagem'}
         subjectLabel={reportTarget?.type === 'user'
           ? (selectedConversation && 'profile' in selectedConversation ? selectedConversation.profile.nickname : 'Contato')
           : `"${reportTarget?.messageContent?.slice(0, 48) || ''}${(reportTarget?.messageContent || '').length > 48 ? '...' : ''}"`}

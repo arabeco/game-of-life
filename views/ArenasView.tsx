@@ -330,7 +330,7 @@ export const ArenasView: React.FC = () => {
             ...rootArenas.filter(a => a.priority === 'alta'),
             ...campaigns.filter(c => c.priority === 'alta')
         ],
-        media: [
+        média: [
             ...rootArenas.filter(a => a.priority === 'media' || !a.priority),
             ...campaigns.filter(c => c.priority === 'media' || !c.priority)
         ],
@@ -983,7 +983,7 @@ export const ArenasView: React.FC = () => {
                      const targetArena = allArenas.find(a => a.id === activeDrop);
                      const targetCampaign = campaigns.find(c => c.id === activeDrop);
                      
-                     // Default to media if not found, though it should be found
+                     // Default to média if not found, though it should be found
                      const targetPriority = targetArena?.priority || targetCampaign?.priority || 'media';
                      
                      dragOverSideRef.current = activeDropSide;
@@ -1749,7 +1749,7 @@ export const ArenasView: React.FC = () => {
                 </div>
                 <div className="px-2.5 pb-2">
                     <div className="mb-1 flex items-center justify-between text-[8px] font-black uppercase tracking-[0.14em] text-white/58">
-                        <span>{progressSummary.totalPlanned > 0 ? `${progressSummary.totalCompleted}/${progressSummary.totalPlanned} acoes` : 'Sem meta'}</span>
+                        <span>{progressSummary.totalPlanned > 0 ? `${progressSummary.totalCompleted}/${progressSummary.totalPlanned} ações` : 'Sem meta'}</span>
                         <span>{progressSummary.clearedArenaCount}/{progressSummary.totalArenaCount} arenas</span>
                     </div>
                     {progressSummary.totalPlanned > 0 ? (

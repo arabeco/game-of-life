@@ -230,7 +230,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
             );
         } catch (error) {
             console.error('Erro ao exportar cena do legado:', error);
-            onToast('Nao foi possivel exportar a cena do legado.', 'error');
+            onToast('Não foi possível exportar a cena do legado.', 'error');
         }
     }, [onToast, sovereignName]);
 
@@ -369,7 +369,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                     >
                         <div className="relative z-10 flex h-full flex-col items-center">
                             <div className="mt-[92px] rounded-full border border-[var(--skin-accent-color)]/24 bg-black/42 px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-amber-200/90 backdrop-blur-xl">
-                                Sequencia concluida
+                                Sequência concluida
                             </div>
 
                             <div
@@ -394,7 +394,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                             <div className="mt-4 w-full max-w-[332px] rounded-[24px] border border-white/10 bg-black/34 px-4 py-4 text-center shadow-[0_18px_42px_rgba(0,0,0,0.32)] backdrop-blur-md">
                                 <h2 className="text-[1.28rem] font-black tracking-tight text-white">Legado projetado com sucesso</h2>
                                 <p className="mt-2 text-sm leading-relaxed text-gray-300">
-                                    A cena terminou. Agora voce pode exportar o quadro ou seguir para a placa final.
+                                    A cena terminou. Agora você pode exportar o quadro ou seguir para a placa final.
                                 </p>
                             </div>
 

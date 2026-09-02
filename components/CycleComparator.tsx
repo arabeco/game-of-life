@@ -21,7 +21,7 @@ const calculateAnalysis = (report: Report, allTasks: any[], allActions: any[], a
     const arena = allAssets.flatMap((asset: any) => asset.arenas).find((item: any) => item.id === action.arenaId);
     if (!arena?.name) return false;
     const normalized = arena.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    return normalized.includes('quests - cla');
+    return normalized.includes('quests - clã');
   };
 
   const xpGained = report.metrics.totalHours * 60;

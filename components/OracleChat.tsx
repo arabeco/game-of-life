@@ -193,7 +193,7 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
     feedId: `notification:${notification.id}`,
     feedCategory: 'analise_padroes',
     feedPresentation: 'info_card',
-    feedSummary: 'Sinal do Oraculo',
+    feedSummary: 'Sinal do Oráculo',
     feedTrigger: 'app_open',
   };
 };
@@ -453,16 +453,16 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     const lowerCmd = cmd.toLowerCase().trim();
 
     if (lowerCmd.startsWith('!criar-arena')) {
-      return 'Eu nao crio arenas pelo chat. Abra Arenas e toque no +; se quiser, eu posso ajudar voce a decidir o nome, a prioridade e o que vale acompanhar.';
+      return 'Eu não crio arenas pelo chat. Abra Arenas e toque no +; se quiser, eu posso ajudar você a decidir o nome, a prioridade e o que vale acompanhar.';
     }
 
     if (lowerCmd.startsWith('!criar-acao')) {
-      return 'Eu nao crio acoes pelo chat. Abra a arena, toque no + e use o formulario direto; posso ajudar a escolher uma meta realista antes disso.';
+      return 'Eu não crio ações pelo chat. Abra a arena, toque no + e use o formulario direto; posso ajudar a escolher uma meta realista antes disso.';
     }
     
     // Help Command
     if (lowerCmd === '?ajuda' || lowerCmd === '?help') {
-        return "**Como eu posso ajudar**\n\nPergunte sobre seu ciclo, suas arenas ou o que fazer hoje. Eu leio o progresso, aponto riscos e ajudo voce a decidir. Para criar ou editar algo, use os botoes do proprio app.";
+        return "**Como eu posso ajudar**\n\nPergunte sobre seu ciclo, suas arenas ou o que fazer hoje. Eu leio o progresso, aponto riscos e ajudo você a decidir. Para criar ou editar algo, use os botoes do proprio app.";
     }
 
     // Explanation Commands (?)
@@ -491,32 +491,32 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const { trigger: sensory } = useSensoryFeedback();
   const [pactPanelOpen, setPactPanelOpen] = useState(false);
 
-  // Sem arena elegivel nao ha pacto possivel. O botao fica opaco em vez de sumir:
-  // sumir faz o rodape pular, e nao explica nada.
+  // Sem arena elegivel não ha pacto possível. O botao fica opaco em vez de sumir:
+  // sumir faz o rodape pular, e não explica nada.
   const missionAvailable = (arenaPactCandidates?.length || 0) > 0;
 
   /**
    * A leitura do proprio estado, na hora e de graca.
    *
-   * Tudo que ela precisa ja esta na memoria: arenas, acoes, tarefas e ciclo. Nao
+   * Tudo que ela precisa ja esta na memória: arenas, ações, tarefas e ciclo. Não
    * ha ida ao servidor, entao ela pode ser livre e gratuita — e da ao plano
-   * gratuito um botao para apertar, coisa que o rodape nao tinha.
+   * gratuito um botao para apertar, coisa que o rodape não tinha.
    *
    * Apertar duas vezes devolve a mesma frase de proposito: o que muda a leitura e
-   * o seu estado mudar, nao o Oraculo ter mais sinonimos.
+   * o seu estado mudar, não o Oráculo ter mais sinonimos.
    *
-   * E ela NAO fica gravada. E resposta a um toque, sobre algo que a pessoa esta
-   * olhando — como o painel de missao, que aparece, recebe as duas escolhas e
-   * some. Gravar encheria o historico de linhas iguais num mesmo dia, e o
-   * historico existe para o que o Oraculo disse por conta propria.
+   * E ela NÃO fica gravada. E resposta a um toque, sobre algo que a pessoa esta
+   * olhando — como o painel de missão, que aparece, recebe as duas escolhas e
+   * some. Gravar encheria o histórico de linhas iguais num mesmo dia, e o
+   * histórico existe para o que o Oráculo disse por conta propria.
    */
-  // A leitura sai NO CHAT, nao em balao flutuante. O balao existe para te alcancar
-  // quando voce esta em outra tela; pedir a leitura de dentro do proprio Oraculo e
+  // A leitura sai NO CHAT, não em balao flutuante. O balao existe para te alcancar
+  // quando você esta em outra tela; pedir a leitura de dentro do proprio Oráculo e
   // receber um balao que aparece ATRAS do painel aberto e o pior dos dois mundos.
   //
-  // E ela nao empilha: o mesmo feedId sai e volta, entao pedir de novo troca a
+  // E ela não empilha: o mesmo feedId sai e volta, entao pedir de novo troca a
   // leitura no lugar e a hora muda junto. Continua sem gravar no banco — some ao
-  // fechar o Oraculo, como a proposta de missao.
+  // fechar o Oráculo, como a proposta de missão.
   const handleReadMyDay = useCallback(() => {
     const brief = buildOracleCycleCoachBrief(operationalContext);
     if (!brief?.content) return;
@@ -607,7 +607,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       case 'cooldown':
         return `Novo card manual em ${formatCooldownLabel(cooldownMs || 0)}.`;
       case 'error':
-        return 'Nao consegui gerar o card agora. Tente novamente em instantes.';
+        return 'Não consegui gerar o card agora. Tente novamente em instantes.';
       default:
         return null;
     }
@@ -666,14 +666,14 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     ? 'Premium'
     : isGeneratingCard
       ? 'Gerando...'
-      : 'Card do Oraculo';
+      : 'Card do Oráculo';
   const selectedThemeLabel = selectedThemeCount === 1 ? '1 tema marcado' : `${selectedThemeCount} temas marcados`;
-  // O card automatico virou um por dia para todo mundo, inclusive no gratuito: a
+  // O card automático virou um por dia para todo mundo, inclusive no gratuito: a
   // pool tem 3 variacoes por estado, entao volume maior entregaria repeticao. O
   // que o Premium compra agora e escolher o tema e pedir na hora — profundidade,
-  // nao quantidade. O texto tem de dizer isso, senao vende o que nao existe.
+  // não quantidade. O texto tem de dizer isso, senao vende o que não existe.
   const oracleInputHint = !isPremiumUser
-    ? 'Um card por dia, todo dia. No Premium voce escolhe o tema e pode pedir na hora.'
+    ? 'Um card por dia, todo dia. No Premium você escolhe o tema e pode pedir na hora.'
     : selectedThemeCount > 0
       ? `Um card por dia entra sozinho. Pedir agora consome a vaga de um dos seus ${selectedThemeLabel}.`
       : 'Escolha temas para pedir card na hora. O card do dia entra sozinho de qualquer forma.';
@@ -752,15 +752,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
              const isFeedCard = msg.role === 'assistant' && Boolean(msg.feedId);
              const feedCategory = msg.feedCategory || 'frases_inspiradoras';
              const feedPresentation = msg.feedPresentation || 'ambient_pulse';
-             // Categoria desconhecida nao pode derrubar o painel. Sem esta rede,
+             // Categoria desconhecida não pode derrubar o painel. Sem esta rede,
              // uma linha gravada com categoria fora da lista fazia
-             // `feedVisual.borderClass` estourar e, como nao ha error boundary no
-             // app, o Oraculo inteiro sumia ao abrir.
+             // `feedVisual.borderClass` estourar e, como não ha error boundary no
+             // app, o Oráculo inteiro sumia ao abrir.
              const feedVisual = ORACLE_CATEGORY_VISUALS[feedCategory]
                || ORACLE_CATEGORY_VISUALS.frases_inspiradoras;
-             // A fala nao e card de conteudo, entao nao usa o rotulo do tema.
+             // A fala não e card de conteúdo, entao não usa o rotulo do tema.
              const isSpeech = msg.feedPurpose === 'oracle_speech';
-             const feedLabel = isSpeech ? 'Oraculo' : feedVisual.label;
+             const feedLabel = isSpeech ? 'Oráculo' : feedVisual.label;
 
              return (
             <div 
@@ -932,14 +932,14 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         <div
             className="fixed inset-0 z-50 flex items-start justify-center px-3 pointer-events-none"
             style={{
-                // Alturas reais do aparelho, nao do documento. `vh` no Android ignora
+                // Alturas reais do aparelho, não do documento. `vh` no Android ignora
                 // a barra de status e a de navegacao, entao o painel nascia mais alto
                 // que a area visivel e o topo dele ficava fora da tela.
                 paddingTop: 'calc(var(--safe-area-top, 0px) + 4.5rem)',
                 paddingBottom: 'calc(var(--safe-area-bottom, 0px) + 0.75rem)',
             }}
         >
-            {/* pointer-events-auto no FUNDO tambem.
+            {/* pointer-events-auto no FUNDO também.
                 O pai e pointer-events-none e so o painel reativava os eventos — entao
                 este `onClick={onClose}` nunca podia disparar: o toque fora atravessava
                 o fundo inteiro sem encontrar nada. Com o chat alto, o X do topo saia

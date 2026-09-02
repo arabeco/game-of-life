@@ -16,7 +16,7 @@ interface LegacyPlaqueForgeModalProps {
 const PHRASES = [
     { threshold: 20, text: 'Condensando a base...' },
     { threshold: 42, text: 'Organizando as Eras...' },
-    { threshold: 66, text: 'Gravando score e memoria...' },
+    { threshold: 66, text: 'Gravando score e memória...' },
     { threshold: 88, text: 'Selando o registro...' },
     { threshold: 100, text: 'Placa do Legado pronta.' },
 ];
@@ -81,7 +81,7 @@ export const LegacyPlaqueForgeModal: React.FC<LegacyPlaqueForgeModalProps> = ({ 
                                 <p className="text-[10px] font-black uppercase tracking-[0.38em] text-[var(--skin-accent-color)]">Placa do Legado</p>
                                 <h2 className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">Forjando o registro final</h2>
                                 <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-300">
-                                    Suas Eras estao sendo condensadas em uma unica placa. Depois disso, ela fica pronta para abrir e compartilhar quando voce quiser.
+                                    Suas Eras estão sendo condensadas em uma unica placa. Depois disso, ela fica pronta para abrir e compartilhar quando você quiser.
                                 </p>
                             </div>
 

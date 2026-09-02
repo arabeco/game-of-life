@@ -200,13 +200,13 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     /**
      * Duas abas no painel, e a data e a unica coisa que muda.
      *
-     * SitrepContent ja derivava tudo — acoes, entregas, experiencia — de uma data
-     * que podia vir de fora. Todo o painel de ontem ja existia; nao havia so
+     * SitrepContent ja derivava tudo — ações, entregas, experiência — de uma data
+     * que podia vir de fora. Todo o painel de ontem ja existia; não havia so
      * nenhuma forma de pedir por ele.
      *
      * Ontem responde "como foi", hoje responde "o que tem". Sao perguntas
      * diferentes e ate agora a segunda ocupava a tela inteira, o que deixava a
-     * primeira sem lugar nenhum: no instante em que o dia virava, o que voce fez
+     * primeira sem lugar nenhum: no instante em que o dia virava, o que você fez
      * ontem sumia.
      */
     const [painelDiarioAba, setPainelDiarioAba] = React.useState<'hoje' | 'ontem'>('hoje');
@@ -501,18 +501,18 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                         await scheduleAndCompleteMilestoneNow(actionSession.actionId);
                     } else {
                         if (!actionSession.taskId || !currentActionSessionTask) {
-                            showToast('Essa acao nao esta mais no Planner de hoje.', 'error');
+                            showToast('Essa ação não esta mais no Planner de hoje.', 'error');
                             onClearActionSession?.();
                             return;
                         }
                         await scheduleAndCompleteNow(actionSession.actionId, actionSession.taskId);
                     }
 
-                    showToast('Acao concluida.', 'success');
+                    showToast('Ação concluida.', 'success');
                     onClearActionSession?.();
                 } catch (error) {
                     console.error('Action session completion failed:', error);
-                    showToast('Nao foi possivel concluir a acao.', 'error');
+                    showToast('Não foi possível concluir a ação.', 'error');
                 } finally {
                     setActionSessionCompleteProgress(0);
                     setIsActionSessionCompleting(false);
@@ -641,7 +641,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                 <EmojiGlyph symbol={actionSession.actionIcon || '📝'} size="action" className="text-3xl" />
                             </div>
                             <div className="text-[10px] font-black uppercase tracking-[0.34em] text-white/45">
-                                {actionSessionTimeLeft < 0 ? 'Tempo excedido' : 'Acao ativa'}
+                                {actionSessionTimeLeft < 0 ? 'Tempo excedido' : 'Ação ativa'}
                             </div>
                             <h2 className="mt-3 max-w-[16rem] text-2xl font-black uppercase tracking-[0.08em] text-white">
                                 {actionSession.actionName}
@@ -705,7 +705,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div className="text-sm font-semibold leading-none">
-                                            {isActionSessionCompleted ? 'Acao concluida' : 'Completar agora'}
+                                            {isActionSessionCompleted ? 'Ação concluida' : 'Completar agora'}
                                         </div>
                                         <div className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/55">
                                             {isActionSessionCompleting ? 'Concluindo' : 'Segure 1s para concluir'}
@@ -715,7 +715,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             </button>
 
                             <div className="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
-                                O cronometro continua se voce voltar ao app.
+                                O cronometro continua se você voltar ao app.
                             </div>
                         </div>
                     </div>
@@ -892,7 +892,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     <button
                         onClick={() => onClearActionSession?.()}
                         className="absolute top-5 right-5 z-20 w-10 h-10 rounded-full border border-white/10 bg-black/45 backdrop-blur-md flex items-center justify-center text-gray-300 hover:text-white hover:border-white/20 transition-colors"
-                        aria-label="Fechar cronometro da acao"
+                        aria-label="Fechar cronometro da ação"
                     >
                         <XIcon className="w-4 h-4" />
                     </button>
@@ -954,7 +954,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         <EmojiGlyph symbol={actionSession.actionIcon || '📝'} size="action" className="text-white" />
                                     </div>
                                     <div className="min-w-0 text-left">
-                                        <div className="text-[9px] uppercase tracking-[0.18em] text-gray-500 font-black">Acao atual</div>
+                                        <div className="text-[9px] uppercase tracking-[0.18em] text-gray-500 font-black">Ação atual</div>
                                         <div className="text-xs font-semibold text-white truncate">{actionSession.actionName}</div>
                                     </div>
                                 </div>
@@ -967,7 +967,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                         {/* Date/Status */}
                         <div className="mt-1 flex items-center gap-2 text-[8px] font-bold uppercase tracking-[0.28em] opacity-70">
                             <span className={`${actionSession && actionSessionTimeLeft < 0 ? 'text-amber-300' : 'text-[var(--skin-accent-color)]'}`}>
-                                {actionSession ? (actionSessionTimeLeft < 0 ? 'TEMPO EXCEDIDO' : 'ACAO EM CURSO') : deepWorkActive ? 'DEEP WORK ATIVO' : formatDate(currentTime)}
+                                {actionSession ? (actionSessionTimeLeft < 0 ? 'TEMPO EXCEDIDO' : 'AÇÃO EM CURSO') : deepWorkActive ? 'DEEP WORK ATIVO' : formatDate(currentTime)}
                             </span>
                             {actionSession && (
                                 <span className={`rounded-full border px-2 py-1 text-[7px] tracking-[0.18em] ${actionSessionTimeLeft < 0 ? 'border-amber-400/20 bg-amber-400/10 text-amber-200' : 'border-white/10 bg-white/[0.04] text-gray-400'}`}>
@@ -1015,7 +1015,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                             <CheckCircleIcon className="w-4 h-4 text-[var(--skin-accent-color)]" />
                                         </div>
                                         {/* As abas ocupam o lugar do titulo.
-                                            "RESUMO DIARIO" nomeava um painel que a
+                                            "RESUMO DIÁRIO" nomeava um painel que a
                                             pessoa acabou de abrir de proposito, e o
                                             espaco dele vale mais como escolha do que
                                             como rotulo. */}
@@ -1094,7 +1094,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         <CheckCircleIcon className="w-4 h-4" />
                                     </div>
                                     <div className="min-w-0">
-                                        <div className="text-xs font-semibold leading-none">{isActionSessionCompleted ? 'Acao concluida' : 'Concluir acao'}</div>
+                                        <div className="text-xs font-semibold leading-none">{isActionSessionCompleted ? 'Ação concluida' : 'Concluir ação'}</div>
                                         <div className="mt-1 text-[9px] uppercase tracking-[0.18em] text-gray-500 font-black">
                                             {isActionSessionCompleting ? 'Concluindo' : 'Segure 1s para concluir'}
                                         </div>
@@ -1215,7 +1215,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             onTouchStart={() => handleQuickActionStart('real_oracle')}
                             onTouchEnd={handleQuickActionEnd}
                             className="flex min-h-[4rem] min-w-[3.75rem] touch-manipulation flex-col items-center justify-center gap-1.5 group active:scale-95 transition-transform relative"
-                            aria-label="Abrir Oraculo"
+                            aria-label="Abrir Oráculo"
                         >
                             <div className={`relative flex h-10 w-10 items-center justify-center overflow-visible rounded-full border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg transition-colors group-hover:border-[var(--skin-accent-color)]/50 ${actionProgress?.id === 'real_oracle' ? 'scale-110 border-[var(--skin-accent-color)]' : ''}`}>
                                 {actionProgress?.id === 'real_oracle' && (

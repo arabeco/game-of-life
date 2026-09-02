@@ -60,15 +60,15 @@ const MissionSection: React.FC<{
 );
 
 /**
- * O cartao de missao.
+ * O cartao de missão.
  *
- * Ele tinha tres defeitos que se somavam ate nao sobrar informacao nenhuma:
+ * Ele tinha tres defeitos que se somavam ate não sobrar informacao nenhuma:
  *
  *   - "ACEITAR" era um CHIP DE ESTADO vestido de botao — fundo de destaque,
  *     caixa alta, negrito — ao lado de "Ver", que e o botao de verdade. Dois
- *     botoes, e o mais chamativo nao clicava.
- *   - a barra de progresso so aparecia com a missao ja aceita, entao a maioria
- *     dos cartoes nao mostrava progresso nenhum — que e a unica coisa que
+ *     botoes, e o mais chamativo não clicava.
+ *   - a barra de progresso so aparecia com a missão ja aceita, entao a maioria
+ *     dos cartoes não mostrava progresso nenhum — que e a unica coisa que
  *     justifica um cartao existir numa lista.
  *   - `reward` era passado por sete lugares e o componente nunca o declarava.
  *     A recompensa chegava e era jogada fora.
@@ -78,7 +78,7 @@ const MissionSection: React.FC<{
  */
 type SeasonQuestFamily = 'temporada' | 'iniciante' | 'individual' | 'grupo';
 
-/** Faixa de cor por familia: da para saber de onde a missao vem sem ler o rotulo. */
+/** Faixa de cor por familia: da para saber de onde a missão vem sem ler o rotulo. */
 const QUEST_FAMILY_COLOR: Record<SeasonQuestFamily, string> = {
     temporada: 'var(--skin-accent-color)',
     iniciante: 'rgb(203,213,225)',
@@ -233,7 +233,7 @@ export const SeasonView: React.FC = () => {
     const [isSeasonDetailOpen, setSeasonDetailOpen] = useState(false);
     const [isSeasonTransitionOpen, setSeasonTransitionOpen] = useState(false);
     const [isMissionLibraryOpen, setMissionLibraryOpen] = useState(false);
-    // O pacto de arena e pedido, nao empurrado: so abre depois deste clique.
+    // O pacto de arena e pedido, não empurrado: so abre depois deste clique.
     const [isPactRequestOpen, setPactRequestOpen] = useState(false);
     const [pendingAbandon, setPendingAbandon] = useState<{ id: string; title: string; kind: 'system' | 'season' } | null>(null);
     const [isCompletedOpen, setCompletedOpen] = useState(false);
@@ -431,12 +431,12 @@ export const SeasonView: React.FC = () => {
             showToast(`"${quest?.title || 'Missão'}" substituiu "${replaced.title}". O progresso da anterior foi mantido.`, 'info');
             return;
         }
-        showToast(`Missao escolhida${quest ? `: ${quest.title}` : ''}.`, 'success');
+        showToast(`Missão escolhida${quest ? `: ${quest.title}` : ''}.`, 'success');
     };
 
     const abandonSystemQuest = (questId: string) => {
         updateUserProfile({ acceptedSystemChallenges: (userProfile.acceptedSystemChallenges || []).filter((id) => id !== questId) });
-        showToast('Missao removida. Seu progresso foi mantido.', 'info');
+        showToast('Missão removida. Seu progresso foi mantido.', 'info');
     };
 
     const individualQuests = useMemo(
@@ -647,7 +647,7 @@ export const SeasonView: React.FC = () => {
                                             progressLabel={quest.id === 'system-five-day-proof-streak'
                                                 ? `${Math.min(currentProofStreak, 5)}/5 dias`
                                                 : quest.id === 'system-twenty-actions'
-                                                    ? `${Math.min(completedRealActions, 20)}/20 acoes`
+                                                    ? `${Math.min(completedRealActions, 20)}/20 ações`
                                                     : quest.id === 'system-first-arena-gold'
                                                         ? `${Math.min(clearedArenaCount, 1)}/1 arena`
                                                         : undefined}
@@ -685,7 +685,7 @@ export const SeasonView: React.FC = () => {
                                             onClick={() => setPactRequestOpen(true)}
                                             className="w-full rounded-2xl border border-dashed border-[var(--skin-accent-color)]/28 bg-[var(--skin-accent-color)]/[0.04] px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.14em] text-[var(--skin-accent-color)] transition-colors hover:bg-[var(--skin-accent-color)]/10"
                                         >
-                                            Pedir uma missao ao Oraculo
+                                            Pedir uma missão ao Oráculo
                                         </button>
                                     )}
 

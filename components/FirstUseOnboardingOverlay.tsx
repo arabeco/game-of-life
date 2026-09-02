@@ -38,7 +38,7 @@ export type OnboardingAnswers = {
 
 const PURPOSES = [
   { id: 'organizar' as const, icon: '\u{1F5C2}', label: 'Organizar a vida', detail: 'Por ordem no que ja existe' },
-  { id: 'habitos' as const, icon: '\u{1F331}', label: 'Criar habitos', detail: 'Firmar o que ainda nao pegou' },
+  { id: 'habitos' as const, icon: '\u{1F331}', label: 'Criar habitos', detail: 'Firmar o que ainda não pegou' },
   { id: 'objetivo' as const, icon: '\u{1F3AF}', label: 'Perseguir um objetivo', detail: 'Uma coisa que importa agora' },
   { id: 'retomar' as const, icon: '\u{1F9ED}', label: 'Retomar o controle', detail: 'Voltar a um rumo que se perdeu' },
 ];
@@ -197,8 +197,8 @@ export const FirstUseOnboardingOverlay: React.FC<{
     },
     {
       id: 'missions',
-      title: 'Quer uma missao para comecar?',
-      text: 'Escolha uma ou nenhuma. Ela apenas acompanha o que voce fizer e pode ser abandonada depois.',
+      title: 'Quer uma missão para comecar?',
+      text: 'Escolha uma ou nenhuma. Ela apenas acompanha o que você fizer e pode ser abandonada depois.',
       navigation: { view: 'assets', showReports: false, showRestScreen: false, showArenaId: null },
     },
     {
@@ -213,7 +213,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
       //
       // Contar no fim, e nao no comeco, tambem e escolha: vinte passos oferecidos
       // na entrada assustam; oferecidos depois de a pessoa ja ter criado arena,
-      // acao e ciclo, soam como "tem mais quando voce quiser".
+      // acao e ciclo, soam como "tem mais quando você quiser".
       text: (purpose === 'organizar'
         ? 'Sua primeira base está viva. Quando ela estiver clara, adicione outras áreas aos poucos.'
         : purpose === 'habitos'

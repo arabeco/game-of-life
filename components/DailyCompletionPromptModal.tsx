@@ -11,9 +11,9 @@ interface DailyCompletionPromptModalProps {
 const buildPromptCopy = (payload: DailyCompletionPromptPayload) => {
     if (payload.kind === 'sitrep') {
         return {
-            eyebrow: 'Resumo Diario',
+            eyebrow: 'Resumo Diário',
             title: 'Progresso consolidado',
-            message: 'O resumo do dia foi atualizado com as acoes registradas. Quer ver os detalhes agora?',
+            message: 'O resumo do dia foi atualizado com as ações registradas. Quer ver os detalhes agora?',
         };
     }
 

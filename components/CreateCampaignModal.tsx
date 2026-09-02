@@ -147,7 +147,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
             showToast(
                 orderedSelectedArenaIds.length > 0
                     ? `Campanha ${trimmedTitle} criada com ${orderedSelectedArenaIds.length} arena${orderedSelectedArenaIds.length === 1 ? '' : 's'}.`
-                    : `Campanha ${trimmedTitle} criada. Agora voce pode montar ela do seu jeito.`,
+                    : `Campanha ${trimmedTitle} criada. Agora você pode montar ela do seu jeito.`,
                 'success',
             );
             onCreated?.(createdCampaign);
@@ -259,8 +259,8 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                                     </div>
                                     <div className="mt-1 text-xs text-white/45">
                                         {isAttachMode
-                                            ? 'Todas as arenas disponiveis ja estao em campanhas.'
-                                            : 'Voce ainda pode criar a campanha vazia e montar depois.'}
+                                            ? 'Todas as arenas disponiveis ja estão em campanhas.'
+                                            : 'Você ainda pode criar a campanha vazia e montar depois.'}
                                     </div>
                                 </div>
                             ) : (
@@ -281,7 +281,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                                                     <div className="min-w-0 flex-1">
                                                         <div className="truncate text-sm font-black text-white">{arena.name}</div>
                                                         <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/48">
-                                                            {arena.description || 'Sem descricao.'}
+                                                            {arena.description || 'Sem descrição.'}
                                                         </div>
                                                     </div>
                                                     <div className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] ${selected ? 'border-[var(--skin-accent-color)]/50 bg-[var(--skin-accent-color)]/18 text-[var(--skin-accent-color)]' : 'border-white/10 bg-white/5 text-white/34'}`}>

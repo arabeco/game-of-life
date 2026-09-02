@@ -42,7 +42,7 @@ export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sove
             );
         } catch (error) {
             console.error('Erro ao exportar a Placa do Legado:', error);
-            onToast('Nao foi possivel exportar a Placa do Legado.');
+            onToast('Não foi possível exportar a Placa do Legado.');
         }
     };
 
@@ -55,7 +55,7 @@ export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sove
                 preparingMessage: 'Preparando compartilhamento da placa...',
                 sharedMessage: 'Placa do Legado compartilhada.',
                 cancelledMessage: 'Compartilhamento cancelado.',
-                errorMessage: 'Nao foi possivel preparar a Placa do Legado para compartilhar.',
+                errorMessage: 'Não foi possível preparar a Placa do Legado para compartilhar.',
             }
         );
     };
@@ -74,7 +74,7 @@ export const LegacyPlaqueModal: React.FC<LegacyPlaqueModalProps> = ({ eras, sove
                                 </p>
                             </div>
                             <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] ${plaqueForged ? 'border-amber-300/30 bg-amber-400/10 text-amber-100' : 'border-white/10 bg-white/5 text-gray-400'}`}>
-                                {plaqueForged ? 'Forjada' : 'Nao forjada'}
+                                {plaqueForged ? 'Forjada' : 'Não forjada'}
                             </div>
                         </div>
 

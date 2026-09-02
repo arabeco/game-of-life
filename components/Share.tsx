@@ -49,7 +49,7 @@ const loadToPng = async () => {
 const getTargetElement = (elementId: string) => {
     const element = document.getElementById(elementId);
     if (!element) {
-        throw new Error('Elemento para exportacao nao encontrado.');
+        throw new Error('Elemento para exportacao não encontrado.');
     }
     return element;
 };
@@ -166,7 +166,7 @@ export const handleShare = async (
     title: string = 'Meu Progresso - Life OS'
 ): Promise<ShareResult> => {
     if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
-        throw new Error('A funcao de compartilhar nao e suportada neste navegador.');
+        throw new Error('A funcao de compartilhar não e suportada neste navegador.');
     }
 
     const element = getTargetElement(elementId);
@@ -189,8 +189,8 @@ export const shareElementWithFeedback = async (
         preparingMessage = 'Preparando compartilhamento...',
         sharedMessage = 'Imagem compartilhada.',
         cancelledMessage = 'Compartilhamento cancelado.',
-        unsupportedMessage = 'O compartilhamento nao esta disponivel neste aparelho.',
-        errorMessage = 'Nao foi possivel preparar a imagem para compartilhar.',
+        unsupportedMessage = 'O compartilhamento não esta disponivel neste aparelho.',
+        errorMessage = 'Não foi possível preparar a imagem para compartilhar.',
     }: ShareWithFeedbackOptions = {}
 ): Promise<ShareWithFeedbackResult> => {
     showToast(preparingMessage, 'info');
@@ -207,7 +207,7 @@ export const shareElementWithFeedback = async (
     } catch (error) {
         console.error('Erro ao compartilhar imagem:', error);
         const message = error instanceof Error ? error.message : String(error || '');
-        const isUnavailable = message.toLowerCase().includes('nao e suportada')
+        const isUnavailable = message.toLowerCase().includes('não e suportada')
             || message.toLowerCase().includes('indisponivel neste aparelho');
 
         showToast(isUnavailable ? unsupportedMessage : errorMessage, isUnavailable ? 'warning' : 'error');

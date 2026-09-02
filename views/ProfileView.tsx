@@ -279,7 +279,7 @@ const isWidgetValueEmpty = (value: Slot['value'] | undefined): boolean => {
     if (value === undefined || value === null) return true;
     if (typeof value === 'string') {
         const normalized = value.trim().toLowerCase();
-        return normalized.length === 0 || normalized === 'nao definido' || normalized === 'não definido';
+        return normalized.length === 0 || normalized === 'não definido' || normalized === 'não definido';
     }
     if (typeof value === 'number') return false;
     return !value.imageUrl?.trim();
@@ -709,7 +709,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                 preparingMessage: 'Preparando compartilhamento do perfil...',
                                                 sharedMessage: 'Perfil compartilhado.',
                                                 cancelledMessage: 'Compartilhamento cancelado.',
-                                                errorMessage: 'Nao foi possivel preparar o perfil para compartilhar.',
+                                                errorMessage: 'Não foi possível preparar o perfil para compartilhar.',
                                             });
                                         }}
                                         className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm"
@@ -933,7 +933,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         <div className="bg-black/30 backdrop-blur-sm p-1.5 rounded-2xl border border-white/5 w-full space-y-2">
                                             <div className="grid grid-cols-3 gap-2">
                                                 <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Nivel Geral</div>
+                                                    <div className="text-[8px] uppercase tracking-[0.22em] text-gray-500">Nível Geral</div>
                                                     <div className="text-2xl font-bold text-[var(--ui-text-accent)]">{masteryIndex}</div>
                                                 </div>
                                                 <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
@@ -958,12 +958,12 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             <div className="bg-black/20 p-2 rounded-xl border border-white/5 space-y-1.5">
                                                 <div className="flex items-center justify-between gap-3">
                                                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
-                                                        {isOwnProfile ? 'Progresso do ciclo' : 'Media da maestria'}
+                                                        {isOwnProfile ? 'Progresso do ciclo' : 'Média da maestria'}
                                                     </span>
                                                     <span className="text-[11px] font-bold text-white">
                                                         {isOwnProfile
                                                             ? `${summaryProgressPercent}%`
-                                                            : `Nivel ${masteryAverageLevel.toFixed(1).replace('.', ',')}`}
+                                                            : `Nível ${masteryAverageLevel.toFixed(1).replace('.', ',')}`}
                                                     </span>
                                                 </div>
                                                 <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">

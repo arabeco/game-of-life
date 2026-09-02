@@ -106,7 +106,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                 />
                                 <textarea
                                     id="create-clan-description-input"
-                                    placeholder="Recado / descricao do grupo..."
+                                    placeholder="Recado / descrição do grupo..."
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     rows={2}

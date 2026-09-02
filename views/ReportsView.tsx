@@ -238,7 +238,7 @@ const UpcomingCycleCard: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => void
         <GlassCard variant="neutral" className="mb-4 px-4 py-3">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Proximo ciclo</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Próximo ciclo</p>
                     <h3 className="mt-1 text-sm font-black uppercase text-white">{cycle.name || 'Ciclo agendado'}</h3>
                     <p className="mt-1 text-xs text-gray-400">
                         Comeca em {formatDate(cycle.startDate)} e vai ate {formatDate(cycle.endDate)}.
@@ -982,7 +982,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const finalizeReportGeneration = async () => {
         const outcome = await performEndOfCycle();
-        if (!outcome.ok) throw new Error('Nao foi possivel selar o ciclo.');
+        if (!outcome.ok) throw new Error('Não foi possível selar o ciclo.');
         return outcome;
     };
 
@@ -1062,13 +1062,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         if (error) {
             console.error('Erro no fallback delete_cycle_safely:', error);
-            showToast('Nao foi possivel excluir esse ciclo.', 'error');
+            showToast('Não foi possível excluir esse ciclo.', 'error');
             return false;
         }
 
         if (!data?.success) {
             console.error('Fallback delete_cycle_safely retornou falha:', data);
-            showToast('Nao foi possivel excluir esse ciclo.', 'error');
+            showToast('Não foi possível excluir esse ciclo.', 'error');
             return false;
         }
 
@@ -1079,7 +1079,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const handleDeleteReportCycle = useCallback(async (report: Report) => {
         const cycleId = report.cycleId || report.id;
         if (!cycleId) {
-            showToast('Nao foi possivel identificar esse ciclo para excluir.', 'error');
+            showToast('Não foi possível identificar esse ciclo para excluir.', 'error');
             return false;
         }
 
@@ -1095,8 +1095,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             }
             return deleted;
         } catch (error) {
-            console.error('Erro ao excluir ciclo pelo historico:', error);
-            showToast('Nao foi possivel excluir esse ciclo.', 'error');
+            console.error('Erro ao excluir ciclo pelo histórico:', error);
+            showToast('Não foi possível excluir esse ciclo.', 'error');
             return false;
         }
     }, [deleteCycleFromReports, showToast]);
@@ -1122,7 +1122,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         switch (mode) {
             case 'coach':
-                return `${cycleName} fechou em ${score}. Agora revisa o que te deu mais resultado em ${focus} e sobe o proximo ciclo.`;
+                return `${cycleName} fechou em ${score}. Agora revisa o que te deu mais resultado em ${focus} e sobe o próximo ciclo.`;
             case 'tatico':
                 return `${cycleName} encerrou com score ${score}. Consolide o que funcionou em ${focus} e descarte o resto.`;
             case 'estrategico':
@@ -1130,11 +1130,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             case 'reflexivo':
                 return `${cycleName} foi encerrado. Vale rever o que ${focus} te ensinou nesta fase.`;
             case 'calmo':
-                return `${cycleName} foi concluido. Seu relatorio ja pode ser revisado com calma.`;
+                return `${cycleName} foi concluido. Seu relatório ja pode ser revisado com calma.`;
             case 'personalizado':
             case 'neutro':
             default:
-                return `O relatorio de ${cycleName} esta pronto para revisao.`;
+                return `O relatório de ${cycleName} esta pronto para revisao.`;
         }
     }, [oraclePreferences?.activeMode]);
 
@@ -2051,7 +2051,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 }
                 return false;
             }
-            showToast('Nao foi possivel debitar o ouro da cena do legado.', 'error');
+            showToast('Não foi possível debitar o ouro da cena do legado.', 'error');
             return false;
         }
 
@@ -2184,7 +2184,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const handleExportLegacy = async () => {
         if (eraSummaries.length === 0) {
-            showToast('Nao ha Eras concluidas para exportar.');
+            showToast('Não ha Eras concluidas para exportar.');
             return;
         }
 
@@ -2212,7 +2212,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             );
         } catch (error) {
             console.error('Erro ao exportar legado completo:', error);
-            showToast('Nao foi possivel exportar o Legado Completo.');
+            showToast('Não foi possível exportar o Legado Completo.');
         } finally {
             setIsExportingLegacy(false);
         }
@@ -2220,7 +2220,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const handleStartLegacyExport = () => {
         if (eraSummaries.length === 0) {
-            showToast('Nao ha Eras concluidas para gerar o legado.');
+            showToast('Não ha Eras concluidas para gerar o legado.');
             return;
         }
 
@@ -2230,11 +2230,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const handleShareReport = async (report: Report) => {
         const { shareElementWithFeedback } = await import('../components/Share');
         await shareElementWithFeedback(showToast, 'report-summary-card-capture', {
-            title: `Relatorio de Ciclo ${formatDate(report.startDate)} - Life OS`,
-            preparingMessage: 'Preparando compartilhamento do relatorio...',
-            sharedMessage: 'Relatorio compartilhado.',
+            title: `Relatório de Ciclo ${formatDate(report.startDate)} - Life OS`,
+            preparingMessage: 'Preparando compartilhamento do relatório...',
+            sharedMessage: 'Relatório compartilhado.',
             cancelledMessage: 'Compartilhamento cancelado.',
-            errorMessage: 'Nao foi possivel preparar o relatorio para compartilhar.',
+            errorMessage: 'Não foi possível preparar o relatório para compartilhar.',
         });
     };
 
@@ -2561,7 +2561,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 // Show ReportGenerationModal only if animations enabled AND no error
                 if (oraclePreferences?.animationsEnabled && !scanError) {
                     return (
-                        <Suspense fallback={<div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20"><p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatorio...</p></div>}>
+                        <Suspense fallback={<div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in text-center mt-20"><p className="text-gray-400 font-mono animate-pulse uppercase tracking-[0.2em] text-[10px]">Gerando Relatório...</p></div>}>
                             <ReportGenerationModal
                                 onFinish={finalizeReportGeneration}
                                 onComplete={() => setView('results')}
@@ -2666,9 +2666,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                              * lê — da esquerda para a direita — e termina no ciclo atual.
                              *
                              * O encaixe centraliza um card por vez ao arrastar, entao a
-                             * "aproximacao" acontece sozinha: o que esta no meio e o que voce
-                             * esta olhando, e o toque nele abre o relatorio. Os vizinhos ficam
-                             * espiando nas bordas para a faixa nao parecer uma tela so.
+                             * "aproximacao" acontece sozinha: o que esta no meio e o que você
+                             * esta olhando, e o toque nele abre o relatório. Os vizinhos ficam
+                             * espiando nas bordas para a faixa não parecer uma tela so.
                              */
                             <div className="relative mt-6">
                                 {/* Setas no lugar do arrastar. A tela e grande e o gesto de
@@ -2689,7 +2689,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             type="button"
                                             onClick={() => moveStrip(1)}
                                             disabled={(stripIndex ?? sortedReports.length - 1) >= sortedReports.length - 1}
-                                            aria-label="Proximo ciclo"
+                                            aria-label="Próximo ciclo"
                                             className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/12 bg-black/55 p-2 text-white/70 backdrop-blur-sm transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-white disabled:opacity-0"
                                         >
                                             <ChevronRightIcon className="h-4 w-4" />
@@ -2863,7 +2863,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <>
                 <button
                     type="button"
-                    aria-label="Fechar historico"
+                    aria-label="Fechar histórico"
                     onClick={handleForceClose}
                     onPointerUp={handleForceClose}
                     onTouchEnd={handleForceClose}
@@ -2899,7 +2899,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <button
                                 id="reports-view-back-button"
                                 onClick={handleCloseDynamic}
-                                aria-label={view === 'hub' ? 'Fechar historico' : 'Voltar'}
+                                aria-label={view === 'hub' ? 'Fechar histórico' : 'Voltar'}
                                 className="-ml-2 rounded-xl p-2 text-white/75 transition-colors hover:bg-white/8 hover:text-white"
                             >
                                 <ChevronLeftIcon />

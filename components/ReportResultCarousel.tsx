@@ -169,8 +169,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 showToast('Card do ciclo exportado.', 'success');
             }
         } catch (error) {
-            console.error('Erro ao exportar card do relatorio:', error);
-            showToast('Nao foi possivel exportar o card do ciclo.', 'error');
+            console.error('Erro ao exportar card do relatório:', error);
+            showToast('Não foi possível exportar o card do ciclo.', 'error');
         } finally {
             setIsExportingRewardCard(false);
         }
@@ -227,7 +227,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 </div>
                 <div className="report-panel report-panel-hover p-6 text-center group">
                     <p className="text-3xl font-black text-white mb-1 tracking-tighter">{metrics.avgHoursPerDay ?? (metrics.totalHours / totalDays).toFixed(1)}</p>
-                    <p className="report-micro">Media h/dia</p>
+                    <p className="report-micro">Média h/dia</p>
                 </div>
             </div>
 
@@ -293,7 +293,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 {/* Top 3 Acoes - Roman Numeral Indicators */}
                 {metrics.top3Actions && metrics.top3Actions.length > 0 && (
                     <div className="report-panel p-4 space-y-2">
-                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-2">Acoes Dominantes</p>
+                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-2">Ações Dominantes</p>
                         {metrics.top3Actions.map((action, idx) => (
                             <div key={idx} className="flex items-center justify-between py-1.5">
                                 <div className="flex items-center gap-3">
@@ -410,7 +410,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
             />
             <div className="relative z-10 text-center">
                 <div className="mb-2 flex items-center justify-center gap-2">
-                    <h3 className="text-2xl font-black uppercase tracking-[0.3em] text-white">Contra voce</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-[0.3em] text-white">Contra você</h3>
                     <span
                         className="rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em]"
                         style={{
@@ -604,7 +604,7 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                 </div>
 
                 <p className={`max-w-[280px] text-[11px] font-black uppercase tracking-[0.18em] text-gray-500 transition-all duration-700 ${rewardReveal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-                    {chest ? 'Compartilhe o card, abra o bau ou sele o proximo ciclo.' : 'Compartilhe o card ou sele o proximo ciclo.'}
+                    {chest ? 'Compartilhe o card, abra o baú ou sele o próximo ciclo.' : 'Compartilhe o card ou sele o próximo ciclo.'}
                 </p>
             </div>
         );

@@ -93,7 +93,7 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
                                         key={day.date}
                                         className="relative min-w-0 overflow-hidden rounded-[3px] border border-white/8 bg-white/[0.015]"
                                         style={{ height: `${compactRowHeight}px` }}
-                                        title={`${day.date} - ${day.completedCount}/${day.plannedCount}: ${items.map((item) => `${item.completed ? 'feito' : 'pendente'} ${item.actionName}`).join(', ') || 'sem acoes'}`}
+                                        title={`${day.date} - ${day.completedCount}/${day.plannedCount}: ${items.map((item) => `${item.completed ? 'feito' : 'pendente'} ${item.actionName}`).join(', ') || 'sem ações'}`}
                                     >
                                         <div
                                             className="absolute inset-x-0 bottom-0"
@@ -176,7 +176,7 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
                                 <div
                                     className={`relative ${compact ? 'h-[26px] rounded-[4px]' : 'h-[88px] rounded-[10px]'} w-full overflow-hidden border border-white/6 bg-white/[0.01]`}
                                     style={{ boxShadow: day.isWeekStart ? `inset 1px 0 0 ${accentColor}` : undefined }}
-                                    title={`${day.date} - ${day.completedCount}/${day.plannedCount}: ${[...day.scheduledItems, ...day.unscheduledItems].map((item) => `${item.completed ? 'feito' : 'pendente'} ${item.actionName}`).join(', ') || 'sem acoes'}`}
+                                    title={`${day.date} - ${day.completedCount}/${day.plannedCount}: ${[...day.scheduledItems, ...day.unscheduledItems].map((item) => `${item.completed ? 'feito' : 'pendente'} ${item.actionName}`).join(', ') || 'sem ações'}`}
                                 >
                                     <div
                                         className="absolute inset-x-0 bottom-0 bg-white/5"

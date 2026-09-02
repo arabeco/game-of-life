@@ -62,7 +62,7 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
                                 <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[var(--skin-accent-color)]">Era</p>
                                 <h2 className="mt-2 text-2xl font-black tracking-tight">{era.label}</h2>
                                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-400">
-                                    A Era continua sendo um marcador de fase: faixa, nome, skin e quais ciclos ela contem. O resumo mais pesado fica no legado, nao aqui.
+                                    A Era continua sendo um marcador de fase: faixa, nome, skin e quais ciclos ela contem. O resumo mais pesado fica no legado, não aqui.
                                 </p>
                             </div>
                             <div className="hidden shrink-0 items-center gap-4 rounded-[24px] border border-white/10 bg-black/25 p-4 sm:flex">
@@ -115,7 +115,7 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gray-500">Leitura da fase</p>
-                                            <p className="mt-1 text-xs text-gray-500">Resumo sintetico do periodo. Serve como contexto da Era, nao como novo relatorio.</p>
+                                            <p className="mt-1 text-xs text-gray-500">Resumo sintetico do periodo. Serve como contexto da Era, não como novo relatório.</p>
                                         </div>
                                         <span className="rounded-full border border-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.24em] text-gray-400">IA local</span>
                                     </div>
@@ -162,7 +162,7 @@ export const EraCustomizationModal: React.FC<EraCustomizationModalProps> = ({
                                             onClick={() => setSkinId(defaultSkinId)}
                                             className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-white"
                                         >
-                                            Voltar para a skin automatica
+                                            Voltar para a skin automática
                                         </button>
                                     )}
                                 </div>

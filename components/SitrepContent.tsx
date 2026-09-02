@@ -357,11 +357,11 @@ export const SitrepContent: React.FC<{
 
     const handleShareImage = () => {
         void shareElementWithFeedback(showToast, 'daily-summary-capture-area', {
-            title: 'Meu Resumo Diario - Glyph',
+            title: 'Meu Resumo Diário - Glyph',
             preparingMessage: 'Preparando resumo...',
-            sharedMessage: 'Resumo diario compartilhado.',
+            sharedMessage: 'Resumo diário compartilhado.',
             cancelledMessage: 'Compartilhamento cancelado.',
-            errorMessage: 'Nao foi possivel preparar o resumo.',
+            errorMessage: 'Não foi possível preparar o resumo.',
         });
     };
 
@@ -369,12 +369,12 @@ export const SitrepContent: React.FC<{
         addFeedEvent({
             type: 'REPORT_COMPLETED',
             content: {
-                title: `Resumo diario ${dateLabel}`,
+                title: `Resumo diário ${dateLabel}`,
                 icon: '\u{1F4CA}',
                 score: dayProgress,
             },
         });
-        showToast('Resumo diario postado no feed.', 'success');
+        showToast('Resumo diário postado no feed.', 'success');
     };
 
     // Quantas linhas cabem sem rolagem. Numero fixo porque a altura disponivel
@@ -426,8 +426,8 @@ export const SitrepContent: React.FC<{
                 {!fillHeight && <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--skin-accent-color)_0%,transparent_62%)] opacity-12" />}
                 <div className={`relative z-10 ${fillHeight ? 'flex min-h-0 flex-1 flex-col gap-3' : 'space-y-4'}`}>
                     {/* Antes empilhava quatro coisas dizendo a mesma: a saudacao, o
-                        rotulo "Resumo Diario", o titulo "Resumo de hoje" — e o painel
-                        que abriu ja tem "RESUMO DIARIO" no proprio cabecalho. Quem
+                        rotulo "Resumo Diário", o titulo "Resumo de hoje" — e o painel
+                        que abriu ja tem "RESUMO DIÁRIO" no proprio cabecalho. Quem
                         abriu sabe onde esta. Sobra a data, que e a unica informacao. */}
                     <div className="text-center">
                         <h3 className="arena-title-text text-lg text-white luxe-title-shadow leading-tight">{dateLabel}</h3>
@@ -453,7 +453,7 @@ export const SitrepContent: React.FC<{
                             <OracleSpeakerMark tone="info" size="sm" className="mt-0.5 shrink-0" />
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-2">
-                                    <p className="core-label text-[var(--skin-accent-color)]">Leitura do Oraculo</p>
+                                    <p className="core-label text-[var(--skin-accent-color)]">Leitura do Oráculo</p>
                                     {todayReading.depth === 'platinum' && (
                                         <span className="shrink-0 rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em] text-cyan-100">
                                             Platinum
@@ -503,13 +503,13 @@ export const SitrepContent: React.FC<{
                         como badge no proprio botao de checklist, a dois centimetros
                         daqui na mesma tela. Sobram os tres que sao de hoje. */}
                     <div className="grid grid-cols-3 gap-2">
-                        <PanelMetric label="Feitas" value={`${completedRows.length}/${dailyRows.length}`} hint="acoes do dia" />
+                        <PanelMetric label="Feitas" value={`${completedRows.length}/${dailyRows.length}`} hint="ações do dia" />
                         <PanelMetric label="EXP" value={`+${dayExp}`} hint="confirmado" accent />
                         {ehHoje ? (
                             <PanelMetric
                                 label="Streak"
                                 value={userProfile.dailyProofStreak?.current || 0}
-                                hint="sequencia atual"
+                                hint="sequência atual"
                                 accent={(userProfile.dailyProofStreak?.current || 0) > 0}
                             />
                         ) : (
@@ -606,7 +606,7 @@ export const SitrepContent: React.FC<{
                             {dailyRows.length === 0 && (
                                 <div className="sitrep-neutral-panel rounded-2xl p-4 text-center">
                                     <CheckCircleIcon className="mx-auto h-6 w-6 text-white/35" />
-                                    <p className="mt-2 text-xs text-gray-500">Nenhuma acao registrada para este dia.</p>
+                                    <p className="mt-2 text-xs text-gray-500">Nenhuma ação registrada para este dia.</p>
                                 </div>
                             )}
                         </div>
@@ -615,7 +615,7 @@ export const SitrepContent: React.FC<{
 
                     {!fillHeight && (
                         <p className="text-center text-[10px] text-gray-500">
-                            Este painel nao trava metas nem julga o dia. Ele so le as acoes registradas no Planner e mostra o padrao do ciclo.
+                            Este painel não trava metas nem julga o dia. Ele so le as ações registradas no Planner e mostra o padrao do ciclo.
                         </p>
                     )}
                 </div>
@@ -630,7 +630,7 @@ export const SitrepContent: React.FC<{
                 <button
                     onClick={() => setIsShareChoiceOpen(true)}
                     className="rounded-xl luxe-button-secondary p-3"
-                    aria-label="Compartilhar resumo diario"
+                    aria-label="Compartilhar resumo diário"
                 >
                     <ShareIcon className="h-5 w-5" />
                 </button>
@@ -661,7 +661,7 @@ export const SitrepContent: React.FC<{
 
             <ShareChoiceSheet
                 isOpen={isShareChoiceOpen}
-                title="Resumo diario"
+                title="Resumo diário"
                 subtitle="Escolha se quer compartilhar a imagem ou publicar esse resumo no feed."
                 onShareImage={handleShareImage}
                 onPostToFeed={handlePostToFeed}

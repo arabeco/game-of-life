@@ -252,14 +252,14 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
 
             setPaymentResult(result);
             if (!(result?.point_of_interaction?.transaction_data?.qr_code || result?.point_of_interaction?.transaction_data?.qr_code_base64 || result?.point_of_interaction?.transaction_data?.ticket_url)) {
-                latestRefs.current.showToast('Cobranca criada. O QR ainda nao voltou nesta resposta.', 'info');
+                latestRefs.current.showToast('Cobranca criada. O QR ainda não voltou nesta resposta.', 'info');
             }
         } catch (error: any) {
             console.error('Erro ao criar Pix:', error);
             const rawMessage = String(error?.message || '').trim();
             const nextError =
                 !rawMessage || /failed to fetch|networkerror|load failed/i.test(rawMessage)
-                    ? 'Nao consegui falar com o backend do Pix. Isso costuma ser deploy antigo da edge function ou bloqueio de dominio/CORS.'
+                    ? 'Não consegui falar com o backend do Pix. Isso costuma ser deploy antigo da edge function ou bloqueio de dominio/CORS.'
                     : rawMessage;
             setPaymentError(nextError);
             latestRefs.current.showToast(nextError);
@@ -390,7 +390,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
 
     const handleCopyPixCode = async () => {
         if (!pixQrCode) {
-            showToast('O codigo Pix ainda nao foi retornado pelo Mercado Pago.', 'warning');
+            showToast('O código Pix ainda não foi retornado pelo Mercado Pago.', 'warning');
             return;
         }
 
@@ -409,10 +409,10 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                 document.body.removeChild(textarea);
             }
 
-            showToast('Codigo Pix copiado.', 'success');
+            showToast('Código Pix copiado.', 'success');
         } catch (error) {
-            console.error('Erro ao copiar codigo Pix:', error);
-            showToast('Nao consegui copiar o codigo Pix.', 'error');
+            console.error('Erro ao copiar código Pix:', error);
+            showToast('Não consegui copiar o código Pix.', 'error');
         }
     };
 
@@ -524,7 +524,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                                         </div>
                                         <div className="mt-2 text-base font-bold text-white">Pagamento instantaneo</div>
                                         <div className="mt-1 text-sm text-gray-400">
-                                            Gera QR Code e codigo copia e cola.
+                                            Gera QR Code e código copia e cola.
                                         </div>
                                     </button>
 
@@ -699,7 +699,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                                                     QR aguardando retorno
                                                 </p>
                                                 <p className="mt-2 text-xs text-slate-500">
-                                                    A cobranca foi criada, mas o QR ainda nao voltou nesta resposta.
+                                                    A cobranca foi criada, mas o QR ainda não voltou nesta resposta.
                                                 </p>
                                             </div>
                                         )}
@@ -733,16 +733,16 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                                 <div className="mercado-pago-panel w-full space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                                     <div className="text-left">
                                         <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-500">
-                                            Codigo Pix copia e cola
+                                            Código Pix copia e cola
                                         </div>
                                         <div className="mercado-pago-copybox mt-2 break-all rounded-xl border border-white/10 bg-black/30 p-3 text-xs leading-relaxed text-white">
-                                            {pixQrCode || 'O Mercado Pago ainda nao retornou o codigo copia e cola nesta resposta.'}
+                                            {pixQrCode || 'O Mercado Pago ainda não retornou o código copia e cola nesta resposta.'}
                                         </div>
                                     </div>
 
                                     {!hasPixPayload && (
                                         <div className="rounded-xl border border-amber-300/18 bg-amber-400/10 px-3 py-2 text-left text-[11px] leading-relaxed text-amber-100">
-                                            A cobranca foi criada, mas o Mercado Pago ainda nao devolveu o QR nesta resposta. Se o link da cobranca aparecer abaixo, use ele.
+                                            A cobranca foi criada, mas o Mercado Pago ainda não devolveu o QR nesta resposta. Se o link da cobranca aparecer abaixo, use ele.
                                         </div>
                                     )}
 
@@ -753,7 +753,7 @@ export const MercadoPagoBrick: React.FC<MercadoPagoBrickProps> = (props) => {
                                             disabled={!pixQrCode}
                                             className="luxe-skin-button flex-1 rounded-xl py-3 text-[11px] font-bold uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
                                         >
-                                            Copiar codigo Pix
+                                            Copiar código Pix
                                         </button>
                                         {pixTicketUrl && (
                                             <a

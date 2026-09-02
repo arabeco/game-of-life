@@ -154,7 +154,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                             {preview.codexName}
                           </h3>
                           <p className="mt-3 text-sm leading-relaxed text-white/68">
-                            {preview.codexDescription || 'Sem descricao registrada para esta campanha.'}
+                            {preview.codexDescription || 'Sem descrição registrada para esta campanha.'}
                           </p>
                         </div>
 
@@ -227,7 +227,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                         </button>
                       )) : (
                         <div className="rounded-2xl border border-dashed border-white/10 px-3 py-4 text-sm text-gray-500">
-                          Essa campanha nao trouxe fases suficientes para exibir um resumo.
+                          Essa campanha não trouxe fases suficientes para exibir um resumo.
                         </div>
                       )}
                     </div>
@@ -263,7 +263,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
             coverImage: preview?.codexTemplate?.coverImage,
             badgeLabel: 'Campanha recebida',
             author: preview?.codexAuthor,
-            note: 'Voce pode inspecionar a estrutura completa antes de reivindicar este manuscrito.',
+            note: 'Você pode inspecionar a estrutura completa antes de reivindicar este manuscrito.',
           }}
         />
       )}

@@ -76,7 +76,7 @@ export const ClosedBetaInviteModal: React.FC<{
       await result.onSuccess?.();
     } catch (submitError: any) {
       setPendingMessage(null);
-      setError(submitError?.message || 'Nao consegui validar seu acesso agora.');
+      setError(submitError?.message || 'Não consegui validar seu acesso agora.');
     } finally {
       setIsSubmitting(false);
     }

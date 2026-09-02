@@ -202,7 +202,7 @@ export const ProfileAssetsPreview: React.FC<{
                                         </div>
                                     ) : canShowSelectedAssetWidget ? null : (
                                         <div className="rounded-[22px] border border-white/10 bg-black/25 px-4 py-6 text-center text-sm text-white/58">
-                                            Este ativo nao expõe detalhes neste perfil.
+                                            Este ativo não expõe detalhes neste perfil.
                                         </div>
                                     )}
                                 </div>

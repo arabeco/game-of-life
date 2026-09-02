@@ -24,7 +24,7 @@ export const LegacyAtlasPanel: React.FC<LegacyAtlasPanelProps> = ({ eras, onOpen
                     <p className="text-[10px] font-black uppercase tracking-[0.35em] text-gray-500">Atlas do Legado</p>
                     <h3 className="mt-2 text-lg font-black tracking-tight text-white">Linha historica continua das Eras</h3>
                     <p className="mt-1 max-w-2xl text-sm text-gray-400">
-                        Deslize horizontalmente pela memoria completa: Era por Era, ciclo por ciclo, sem quebrar a narrativa da trajetoria.
+                        Deslize horizontalmente pela memória completa: Era por Era, ciclo por ciclo, sem quebrar a narrativa da trajetoria.
                     </p>
                 </div>
                 <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] ${plaqueUnlocked ? 'border-amber-300/30 bg-amber-400/10 text-amber-100' : 'border-white/10 bg-white/5 text-gray-500'}`}>
@@ -95,7 +95,7 @@ export const LegacyAtlasPanel: React.FC<LegacyAtlasPanelProps> = ({ eras, onOpen
                                                             backgroundColor: 'rgba(0,0,0,0.28)',
                                                             boxShadow: `inset 0 0 0 1px ${skin.glow}10`,
                                                         }}
-                                                        title="Abrir relatorio do ciclo"
+                                                        title="Abrir relatório do ciclo"
                                                     >
                                                         <div className="flex items-start justify-between gap-3">
                                                             <div className="min-w-0">

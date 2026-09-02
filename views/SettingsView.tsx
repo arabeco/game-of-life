@@ -211,8 +211,8 @@ const PrivacyPreferencesModal: React.FC<{
     if (!open) return null;
 
     const legalRows = [
-        'Conta e perfil: usamos o minimo para autenticacao, sincronizacao e seguranca.',
-        'Social e uploads: o que voce compartilhar pode aparecer para vinculos, grupos e links.',
+        'Conta e perfil: usamos o mínimo para autenticacao, sincronizacao e seguranca.',
+        'Social e uploads: o que você compartilhar pode aparecer para vinculos, grupos e links.',
         'Compras e exclusao: pagamentos passam por parceiro e a conta pode ser apagada sob solicitacao.',
     ];
 
@@ -596,7 +596,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
         }));
         showToast(
             enabled
-                ? 'Dicas iniciais ligadas para as proximas telas ainda nao vistas.'
+                ? 'Dicas iniciais ligadas para as proximas telas ainda não vistas.'
                 : 'Dicas iniciais desligadas.',
             'info',
         );
@@ -616,7 +616,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                             <div className="text-[10px] font-black tracking-[0.28em] text-white/45 uppercase">Guias</div>
                             <h2 className="text-base font-black uppercase tracking-[0.14em] text-center">Aprender o app</h2>
                             <p className="text-[11px] text-white/55 leading-snug">
-                                Aqui voce reabre os cards guiados do app. Todos ficam disponiveis, na ordem que quiser.
+                                Aqui você reabre os cards guiados do app. Todos ficam disponiveis, na ordem que quiser.
                             </p>
                         </div>
                     </div>
@@ -631,7 +631,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                         </div>
                                     </div>
                                     <p className="mt-1 text-[10px] leading-snug text-white/58">
-                                        Mostra um balao curto na primeira entrada em cada aba principal. Se a tela ja foi vista, nao repete.
+                                        Mostra um balao curto na primeira entrada em cada aba principal. Se a tela ja foi vista, não repete.
                                     </p>
                                 </div>
                                 <div className={`shrink-0 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.18em] ${screenTipsEnabled ? 'bg-[var(--skin-accent-color)]/14 text-[var(--ui-text-accent)]' : 'bg-white/8 text-white/50'}`}>
@@ -655,7 +655,7 @@ const TutorialSettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                 </button>
                             </div>
                             <p className="mt-2 text-[9px] leading-snug text-white/40">
-                                Se voce desligar no balao, religa por aqui.
+                                Se você desligar no balao, religa por aqui.
                             </p>
                         </div>
 
@@ -718,7 +718,7 @@ const RedeemCodeModal: React.FC<{
     const handleConfirm = async () => {
         const normalized = code.trim();
         if (!normalized) {
-            setError('Digite um codigo.');
+            setError('Digite um código.');
             return;
         }
 
@@ -728,7 +728,7 @@ const RedeemCodeModal: React.FC<{
             await onRedeem(normalized);
             onClose();
         } catch (redeemError: any) {
-            setError(redeemError?.message || 'Nao consegui resgatar esse codigo agora.');
+            setError(redeemError?.message || 'Não consegui resgatar esse código agora.');
         } finally {
             setSubmitting(false);
         }
@@ -744,11 +744,11 @@ const RedeemCodeModal: React.FC<{
                 >
                     <div className="space-y-1">
                         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--ui-card-text-soft)]">
-                            Resgatar codigo
+                            Resgatar código
                         </div>
-                        <h2 className="text-lg font-black uppercase tracking-[0.08em] text-white">Tenho um codigo</h2>
+                        <h2 className="text-lg font-black uppercase tracking-[0.08em] text-white">Tenho um código</h2>
                         <p className="text-sm leading-relaxed text-white/62">
-                            Digite seu codigo para liberar recompensas, campanhas ou vantagens especiais.
+                            Digite seu código para liberar recompensas, campanhas ou vantagens especiais.
                         </p>
                     </div>
 
@@ -756,7 +756,7 @@ const RedeemCodeModal: React.FC<{
                         type="text"
                         value={code}
                         onChange={(event) => setCode(event.target.value.toUpperCase())}
-                        placeholder="Digite o codigo"
+                        placeholder="Digite o código"
                         disabled={submitting}
                         className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-white placeholder:text-white/28 focus:outline-none focus:border-[var(--skin-accent-color)] disabled:opacity-60"
                     />
@@ -1918,7 +1918,7 @@ const GeralTab: React.FC = () => {
                                     Maestria
                                 </span>
                                 <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/55">
-                                    Editar nivel
+                                    Editar nível
                                 </span>
                             </div>
                             <div>
@@ -1929,7 +1929,7 @@ const GeralTab: React.FC = () => {
                                 </div>
                             </div>
                             <p className="max-w-[18rem] text-[11px] leading-relaxed text-gray-400">
-                                Toque aqui para ajustar seu nivel por area e atualizar o mapa de maestria.
+                                Toque aqui para ajustar seu nível por area e atualizar o mapa de maestria.
                             </p>
                         </div>
                         <div className="flex justify-end">
@@ -2110,12 +2110,12 @@ const PreferenciasTab: React.FC = () => {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData.session?.user?.id;
         if (!userId) {
-            throw new Error('Sua sessao nao foi encontrada para resgatar o codigo.');
+            throw new Error('Sua sessao não foi encontrada para resgatar o código.');
         }
 
         const result = await SupabaseService.redeemRewardCode(code, userId);
         if (!result.success) {
-            throw new Error(result.error || 'Nao consegui resgatar esse codigo agora.');
+            throw new Error(result.error || 'Não consegui resgatar esse código agora.');
         }
 
         const { data: profileRow, error: profileError } = await supabase
@@ -2144,7 +2144,7 @@ const PreferenciasTab: React.FC = () => {
             });
         }
 
-        showToast(result.rewardSummary || `Codigo "${result.code}" resgatado.`, 'success');
+        showToast(result.rewardSummary || `Código "${result.code}" resgatado.`, 'success');
     };
 
     const handleUiSkinOptionClick = (skinId: string, unlocked: boolean) => {
@@ -2173,7 +2173,7 @@ const PreferenciasTab: React.FC = () => {
             {/* Grupo Feedback */}
             <section className="space-y-4">
                 <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest px-1 border-b border-white/5 pb-2">Suporte</h2>
-                <SettingSelector label="Resgatar codigo" value="Tenho um codigo" onClick={() => setModal('redeem')} />
+                <SettingSelector label="Resgatar código" value="Tenho um código" onClick={() => setModal('redeem')} />
                 <button
                     onClick={() => setFeedbackOpen(true)}
                     className="w-full py-4 rounded-xl border border-white/10 bg-black/20 hover:bg-black/30 font-bold text-xs tracking-widest accent-text flex items-center justify-center gap-2 transition-all"
@@ -2841,7 +2841,7 @@ export const SettingsView: React.FC = () => {
                                     Operacao GM
                                 </div>
                                 <div className="mt-1 text-xs text-[color:var(--ui-card-text-soft)]">
-                                    Painel interno de staff. Nao faz parte dos beneficios do premium comum.
+                                    Painel interno de staff. Não faz parte dos beneficios do premium comum.
                                 </div>
                             </div>
                             <Suspense fallback={<div className="h-24 rounded-2xl bg-black/20 animate-pulse" />}>

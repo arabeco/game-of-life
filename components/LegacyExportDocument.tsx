@@ -48,11 +48,11 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                             <p className="text-[10px] uppercase tracking-[0.45em] font-black text-[var(--skin-accent-color)]">Glyph 1.003b</p>
                             <h1 className="text-5xl font-black tracking-tight mt-3">Registro de Soberania</h1>
                             <p className="text-sm text-gray-300 mt-3 leading-relaxed">
-                                Consolidado definitivo do legado construido no Glyph. Todas as Eras abaixo foram agrupadas a partir dos ciclos e relatorios reais da jornada.
+                                Consolidado definitivo do legado construido no Glyph. Todas as Eras abaixo foram agrupadas a partir dos ciclos e relatórios reais da jornada.
                             </p>
                         </div>
                         <div className="legacy-panel-strong min-w-[220px] p-6 text-right">
-                            <p className="legacy-kicker legacy-kicker-muted">Score medio historico</p>
+                            <p className="legacy-kicker legacy-kicker-muted">Score medio histórico</p>
                             <p className={`text-6xl font-black mt-3 ${historicalGrade.color}`}>{Math.round(historicalAverageScore)}</p>
                             <p className="text-xs uppercase tracking-[0.25em] text-gray-400 mt-2">Patamar {historicalGrade.grade}</p>
                         </div>
@@ -123,8 +123,8 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                     </div>
                                     <div className="legacy-stat-card p-5">
                                         <p className="legacy-kicker legacy-kicker-muted">Ação-chave da Era</p>
-                                        <p className="text-lg font-black mt-2 tracking-tight">{era.topActions[0]?.name || 'Sem acao dominante'}</p>
-                                        <p className="text-xs text-gray-500 mt-2">acao mais recorrente do periodo</p>
+                                        <p className="text-lg font-black mt-2 tracking-tight">{era.topActions[0]?.name || 'Sem ação dominante'}</p>
+                                        <p className="text-xs text-gray-500 mt-2">ação mais recorrente do periodo</p>
                                     </div>
                                 </div>
 
@@ -138,8 +138,8 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                 <div className="legacy-panel-soft p-6">
                                     <div className="flex items-center justify-between gap-4 mb-4">
                                         <div>
-                                            <p className="legacy-kicker legacy-kicker-muted">Acoes dominantes</p>
-                                            <p className="text-sm text-gray-400 mt-1">As tres acoes que mais definiram esta fase.</p>
+                                            <p className="legacy-kicker legacy-kicker-muted">Ações dominantes</p>
+                                            <p className="text-sm text-gray-400 mt-1">As tres ações que mais definiram esta fase.</p>
                                         </div>
                                         <p className="text-xs text-gray-500">Registro consolidado da {era.label.toLowerCase()}</p>
                                     </div>
@@ -153,7 +153,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
                                             </div>
                                         )) : (
                                             <div className="col-span-3 rounded-[20px] border border-dashed border-white/10 bg-white/[0.02] p-5 text-sm text-gray-500">
-                                                Nenhuma acao dominante registrada nesta Era.
+                                                Nenhuma ação dominante registrada nesta Era.
                                             </div>
                                         )}
                                     </div>
@@ -184,7 +184,7 @@ export const LegacyExportDocument: React.FC<LegacyExportDocumentProps> = ({
 
                 <div className="px-8 py-6 border-t border-white/10 bg-black/30 flex items-end justify-between gap-6">
                     <div>
-                        <p className="legacy-kicker legacy-kicker-muted">Memoria final</p>
+                        <p className="legacy-kicker legacy-kicker-muted">Memória final</p>
                         <p className="text-sm text-gray-300 mt-2 max-w-2xl">
                             Se o app desaparecer, este registro continua como prova visual da sua trajetoria: eras, ciclos, carga, metas e o patamar medio que sustentou seu sistema pessoal.
                         </p>

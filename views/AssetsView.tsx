@@ -96,7 +96,7 @@ const isSlotValueEmpty = (value: SlotValue | undefined): boolean => {
     if (value === undefined || value === null) return true;
     if (typeof value === 'string') {
         const normalized = value.trim().toLowerCase();
-        return normalized.length === 0 || normalized === 'nao definido' || normalized === 'não definido';
+        return normalized.length === 0 || normalized === 'não definido' || normalized === 'não definido';
     }
     if (typeof value === 'number') return false;
     return !value.imageUrl?.trim();
@@ -576,7 +576,7 @@ export const AssetsView: React.FC = () => {
                                             className="text-[14px] font-semibold leading-[1.35] text-white/95"
                                             style={{ WebkitFontSmoothing: 'antialiased', textRendering: 'optimizeLegibility' }}
                                         >
-                                            {selectedAssetMasteryPhrase || 'Essa area ainda nao tem uma frase de maestria definida.'}
+                                            {selectedAssetMasteryPhrase || 'Essa area ainda não tem uma frase de maestria definida.'}
                                         </p>
                                 </div>
                             </div>

@@ -88,7 +88,7 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
 
             <div className={`relative z-10 grid items-center ${compact ? 'grid-cols-[58px_minmax(0,1fr)_58px] gap-2' : 'grid-cols-[64px_minmax(0,1fr)_64px] gap-2 sm:grid-cols-[88px_minmax(0,1fr)_96px] sm:gap-4'}`}>
                 <div className="relative flex items-center justify-center">
-                    <div className={`absolute -bottom-1 right-0 z-20 flex flex-col items-center justify-center rounded-full border border-amber-200/85 bg-[#070a0d] shadow-[0_5px_12px_rgba(0,0,0,0.55),0_0_0_2px_rgba(8,10,12,0.88)] ${compact ? 'h-7 w-7' : 'h-8 w-8 sm:h-10 sm:w-10'}`} aria-label={`Nivel ${level}`}>
+                    <div className={`absolute -bottom-1 right-0 z-20 flex flex-col items-center justify-center rounded-full border border-amber-200/85 bg-[#070a0d] shadow-[0_5px_12px_rgba(0,0,0,0.55),0_0_0_2px_rgba(8,10,12,0.88)] ${compact ? 'h-7 w-7' : 'h-8 w-8 sm:h-10 sm:w-10'}`} aria-label={`Nível ${level}`}>
                         <span className={`${compact ? 'text-[4px]' : 'text-[5px]'} font-black uppercase tracking-[0.08em] text-amber-200/60`}>Nivel</span>
                         <strong className={`${compact ? 'text-[0.72rem]' : 'text-[0.86rem] sm:text-[1rem]'} font-black leading-none tabular-nums text-white`}>{level}</strong>
                     </div>
@@ -113,7 +113,7 @@ export const LegacyGrandPlaque: React.FC<LegacyGrandPlaqueProps> = ({
                     <p className={`${compact ? 'mt-1 text-[7px]' : 'mt-2 text-[10px]'} truncate font-black uppercase tracking-[0.08em] text-sky-50/76`} title={patent}>
                         {patent}
                     </p>
-                    <p className={`${compact ? 'mt-0.5 text-[6px]' : 'mt-1 text-[9px]'} truncate font-semibold text-white/58`} title={clanName || 'Sem cla neste registro'}>
+                    <p className={`${compact ? 'mt-0.5 text-[6px]' : 'mt-1 text-[9px]'} truncate font-semibold text-white/58`} title={clanName || 'Sem clã neste registro'}>
                         {clanName ? `${identity?.clanIcon && !isClanEmblemImage(identity.clanIcon) ? `${identity.clanIcon} ` : ''}${clanName}${clanRank ? ` - ${clanRank}` : ''}` : 'Jornada individual'}
                     </p>
                 </div>

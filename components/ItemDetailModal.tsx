@@ -9,6 +9,9 @@ import { ECONOMY } from '../constants/economy';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { UnlockCategory } from '../types';
 import { ItemArt } from './ItemArt';
+import { ValorIcon } from './ValorIcon';
+import { getRarityVisual } from '../constants/rarityVisuals';
+import { REWARD_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
 
 interface ItemDetailModalProps {
     item: ItemDef;
@@ -16,6 +19,23 @@ interface ItemDetailModalProps {
     type: string;
     onClose: () => void;
     onOpen?: () => void;
+    /**
+     * Aviso curto acima da descricao. Existe para a DUPLICATA do bau.
+     *
+     * Antes, bau com item repetido abria um modal diferente do bau com item
+     * novo: o de recompensa, com o vocabulario de pacote e sem a arte grande.
+     * Mesma acao, duas telas — e a pior das duas justamente quando a noticia ja
+     * era ruim. Agora e sempre esta, e o aviso diz o que aconteceu.
+     */
+    aviso?: string;
+    /** Revelacao de bau: concentra a cena no premio e esconde a vitrine lateral. */
+    focusMode?: boolean;
+    /** Valores adicionais do mesmo baú. O item em destaque não entra aqui. */
+    extrasRecebidos?: Array<{
+        label: string;
+        value: string;
+        simbolo?: 'ouro' | 'fragmento' | 'exp';
+    }>;
 }
 
 const CATEGORY_MAP: Partial<Record<ItemCategory, UnlockCategory>> = {
@@ -32,7 +52,7 @@ const CATEGORY_MAP: Partial<Record<ItemCategory, UnlockCategory>> = {
     // Adicionar outros mapeamentos conforme necessário se existirem no ItemCategory
 };
 
-export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialItem, instanceId: initialInstanceId, type, onClose, onOpen }) => {
+export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialItem, instanceId: initialInstanceId, type, onClose, onOpen, aviso, focusMode = false, extrasRecebidos = [] }) => {
     const { userProfile, updateUserProfile, toggleEquipItem, recycleItem, craftItem, buyStoreItem, showToast, donateItem, friends } = useGame();
     const { confirm, confirmationElement } = useConfirmation();
     const [escolhendoAmigo, setEscolhendoAmigo] = React.useState(false);
@@ -79,21 +99,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
     const imageUrl = currentItem.imageUrl || currentItem.icon;
     
     // Determine rarity styles
-    const rarityClass = currentItem.rarity === 'legendary' ? 'plasma-legendary' : 
-                        currentItem.rarity === 'epic' ? 'plasma-epic' :
-                        currentItem.rarity === 'rare' ? 'plasma-rare' :
-                        currentItem.rarity === 'uncommon' ? 'plasma-uncommon' : 'plasma-common';
-
-    const rarityColor = currentItem.rarity === 'legendary' ? 'text-purple-500' : // Roxo
-                        currentItem.rarity === 'epic' ? 'text-blue-500' :        // Azul
-                        currentItem.rarity === 'rare' ? 'text-[#FFD700]' :      // Ouro
-                        currentItem.rarity === 'uncommon' ? 'text-[#C0C0C0]' :   // Prata
-                        'text-[#A0522D]';                                 // Marrom
-    
-    const rarityLabel = currentItem.rarity === 'legendary' ? 'Lendário' : 
-                        currentItem.rarity === 'epic' ? 'Épico' : 
-                        currentItem.rarity === 'rare' ? 'Raro' : 
-                        currentItem.rarity === 'uncommon' ? 'Incomum' : 'Comum';
+    const rarityClass = `plasma-${currentItem.rarity}`;
+    const rarityVisual = getRarityVisual(currentItem.rarity);
 
     const isEquipped = (
         (currentItem.category === 'border' && userProfile.border === currentItem.id) ||
@@ -150,6 +157,15 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
      */
     const handleDonate = () => {
         if (!currentInstanceId) return;
+        // Bau nao se doa. A colecao de temporada e dimensionada pelo numero de
+        // baus que a temporada entrega — tres missoes mais o fecho, quatro no
+        // total. Doacao fura essa conta: uma conta acumularia baus miticos de
+        // varias pessoas e esgotaria a colecao inteira em uma tarde, enquanto a
+        // outra ficaria sem. O item que sai do bau continua doavel.
+        if (currentItem.category === 'chest') {
+            showToast('Baú não pode ser doado. Abra e doe o item que sair.', 'info');
+            return;
+        }
         if (isEquipped) {
             showToast('Desequipe o item antes de doar.', 'error');
             return;
@@ -257,7 +273,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
         <Portal>
             <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[70] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
                 <div 
-                    className={`custom-scrollbar relative flex max-h-[86svh] w-full max-w-[22rem] flex-col items-center gap-4 overflow-y-auto rounded-[30px] p-5 plasma-card plasma-bg ${rarityClass}`} 
+                    className={`custom-scrollbar relative flex flex-col items-center gap-4 overflow-y-auto rounded-[30px] p-5 plasma-card plasma-bg ${rarityClass} ${focusMode ? 'animate-[scaleIn_.38s_cubic-bezier(.2,.9,.2,1)]' : 'max-h-[86svh] w-full max-w-[22rem]'}`}
+                    style={focusMode ? REWARD_PLATE_VIEWPORT_STYLE : undefined}
                     onClick={e => e.stopPropagation()}
                 >
                 <button aria-label="Fechar" onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors z-20">
@@ -283,15 +300,27 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
 
                 {/* Item Info */}
                 <div className="text-center space-y-2 z-10 w-full">
-                    <h2 className="text-xl font-black text-white uppercase tracking-[0.14em] drop-shadow-lg">{currentItem.name}</h2>
+                    <h2 className={`${focusMode ? 'reward-title-metal' : 'text-white'} text-xl font-black uppercase tracking-[0.14em] drop-shadow-lg`}>
+                        {focusMode ? 'Item recebido!' : currentItem.name}
+                    </h2>
+                    {focusMode && (
+                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/62">
+                            {currentItem.name}
+                        </div>
+                    )}
                     <div className="flex justify-center">
-                        <span className={`text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-white/10 bg-black/40 backdrop-blur-sm ${rarityColor} shadow-lg`}>
-                            {rarityLabel}
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-white/10 bg-black/40 backdrop-blur-sm shadow-lg" style={{ color: rarityVisual.hex }}>
+                            {rarityVisual.label}
                         </span>
                     </div>
                     {isInsignia && (
                         <div className="mt-2 text-[9px] font-bold text-blue-400 uppercase tracking-widest animate-pulse">
                             Colecionável · Somente Visualização
+                        </div>
+                    )}
+                    {aviso && (
+                        <div className="mx-auto mt-3 flex max-w-[92%] items-center justify-center gap-1.5 rounded-xl border border-violet-400/25 bg-violet-400/[0.07] px-3 py-2 text-[11px] font-semibold leading-snug text-violet-100">
+                            {aviso}
                         </div>
                     )}
                     <div className="h-px w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto my-4" />
@@ -300,18 +329,39 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                     </div>
                 </div>
 
+                {focusMode && extrasRecebidos.length > 0 && (
+                    <div className="z-10 w-full">
+                        <div className="mb-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-white/45">
+                            <span>Itens recebidos</span>
+                            <span className="h-px flex-1 bg-white/10" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            {extrasRecebidos.map((extra) => (
+                                <div key={`${extra.label}-${extra.value}`} className="flex min-h-14 items-center gap-2 border border-white/10 bg-black/30 px-2.5 py-2">
+                                    {extra.simbolo && (
+                                        <span className="grid h-8 w-8 shrink-0 place-items-center border border-white/10 bg-black/35">
+                                            <ValorIcon valor={extra.simbolo} tamanho={21} rotulo="" />
+                                        </span>
+                                    )}
+                                    <span className="min-w-0">
+                                        <strong className="block text-[12px] font-black text-white">{extra.value}</strong>
+                                        <small className="block truncate text-[8px] font-black uppercase tracking-[0.13em] text-white/45">{extra.label}</small>
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Related Items Collection */}
-                {relatedItems.length > 1 && (
+                {!focusMode && relatedItems.length > 1 && (
                     <div className="w-full mt-2 z-10">
                         <h3 className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-2 pl-1">Coleção</h3>
                         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent mask-linear-fade">
                             {relatedItems.map(relItem => {
                                 const isRelOwned = checkOwnership(relItem.id, relItem.category);
                                 const isSelected = relItem.id === currentItem.id;
-                                const relRarityColor = relItem.rarity === 'legendary' ? 'bg-purple-500' : 
-                                                    relItem.rarity === 'epic' ? 'bg-blue-500' :
-                                                    relItem.rarity === 'rare' ? 'bg-[#FFD700]' :
-                                                    relItem.rarity === 'uncommon' ? 'bg-[#C0C0C0]' : 'bg-[#A0522D]';
+                                const relRarityColor = getRarityVisual(relItem.rarity).hex;
                                 
                                 return (
                                     <button
@@ -323,7 +373,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                                             ${!isRelOwned ? 'opacity-40 grayscale hover:grayscale-0 hover:opacity-100' : ''}
                                         `}
                                     >
-                                        <div className={`absolute inset-0 opacity-10 ${relRarityColor}`} />
+                                        <div className="absolute inset-0 opacity-10" style={{ backgroundColor: relRarityColor }} />
                                         <div className="relative w-full h-full flex items-center justify-center p-1">
                                             <ItemArt
                                                 itemId={relItem.id}
@@ -344,7 +394,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                 )}
 
                 {/* Actions */}
-                <div className="z-10 mt-1 grid w-full grid-cols-2 gap-2.5">
+                <div className="z-10 mt-auto grid w-full grid-cols-2 gap-2.5 pt-3">
                     {currentItem.category === 'chest' ? (
                         <button 
                             onClick={handleOpen}
@@ -425,7 +475,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                         >
                             <Trash2Icon className="w-4 h-4" />
                             <span className="text-[10px]">{acaoEmCurso === 'quebrar' ? '...' : `Quebrar ${valorAoQuebrar}`}</span>
-                            <span className="text-[11px] leading-none">💎</span>
+                            <ValorIcon valor="fragmento" tamanho={14} rotulo="" />
                         </button>
                     )}
 
@@ -440,7 +490,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                             className="luxe-skin-button flex items-center justify-center gap-1.5 rounded-xl py-3 font-bold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <span className="text-[10px]">{acaoEmCurso === 'comprar' ? '...' : precoEmOuro}</span>
-                            <span className="text-[11px] leading-none">🪙</span>
+                            <ValorIcon valor="ouro" tamanho={14} rotulo="" />
                         </button>
                     )}
 
@@ -451,15 +501,15 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                             className="flex items-center justify-center gap-1.5 rounded-xl border border-cyan-400/25 bg-cyan-400/10 py-3 font-bold uppercase tracking-wider text-cyan-200 transition-all hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <span className="text-[10px]">{acaoEmCurso === 'forjar' ? '...' : `Forjar ${custoDeForja}`}</span>
-                            <span className="text-[11px] leading-none">💎</span>
+                            <ValorIcon valor="fragmento" tamanho={14} rotulo="" />
                         </button>
                     )}
                     
                     <button 
                         onClick={handleDonate}
-                        disabled={!isOwned || isInsignia}
+                        disabled={!isOwned || isInsignia || currentItem.category === 'chest'}
                         className={`py-3 rounded-xl font-bold uppercase tracking-wider border transition-all flex items-center justify-center gap-2
-                            ${(!isOwned || isInsignia)
+                            ${(!isOwned || isInsignia || currentItem.category === 'chest')
                                 ? 'bg-transparent text-gray-600 border-gray-800 cursor-not-allowed' 
                                 : 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
                             }`}

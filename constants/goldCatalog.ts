@@ -117,7 +117,6 @@ export const ACTIVE_GOLD_STORE_ITEMS = [
     { id: 'item_glyph_1_003', name: 'Lajota', category: 'glyph', tier: 1, priceGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_glyph_1_003 },
     { id: 'item_banner_disciplinado', name: 'Disciplinado', category: 'banner', tier: 1, priceGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_disciplinado },
     { id: 'item_border_2_001', name: 'Popular', category: 'border', tier: 2, priceGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_border_2_001 },
-    { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, priceGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_003 },
     { id: 'item_banner_popular', name: 'Popular', category: 'banner', tier: 2, priceGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_popular },
     { id: 'item_plate_2_001', name: 'Placa Pedra', category: 'plate', tier: 2, priceGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_plate_2_001 },
     { id: 'item_banner_t2_veterano', name: 'Veterano', category: 'banner', tier: 2, priceGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_banner_t2_veterano },

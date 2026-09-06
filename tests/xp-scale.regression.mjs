@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { ARENA_PACT_REWARDS } from '../utils/arenaPacts.ts';
+import { INITIAL_MISSION_FRAGMENTS, INITIAL_MISSION_XP, SYSTEM_CHALLENGES } from '../constants/systemChallenges.ts';
 
 /**
  * Uma regua so para toda recompensa em XP.
@@ -27,16 +28,42 @@ const arquivo = (caminho) => readFileSync(new URL(caminho, import.meta.url), 'ut
 const foraDaEscala = (valores) => valores.filter((entry) => !FAIXAS.includes(entry.xp));
 
 // --- missoes de sistema ----------------------------------------------------
-const systemSource = arquivo('../constants/systemChallenges.ts');
-const systemRewards = [...systemSource.matchAll(/title: '([^']+)',[\s\S]*?rewards: \{ xp: (\d+)/g)]
-  .map((match) => ({ nome: match[1], xp: Number(match[2]) }));
+//
+// A escala ganhou um degrau ABAIXO de 100: a missao INICIAL, que se completa
+// sozinha quando a pessoa conhece uma parte do app — criar arena, montar ciclo,
+// instalar campanha. Ela vale 25, meia acao curta, porque nao pede esforco.
+//
+// Antes quatro delas pagavam BAU por marcos de um toque: o mesmo exagero que
+// este arquivo existe para impedir, so que numa moeda que a escala nao
+// enxergava. A regra presa aqui: 25 e EXCLUSIVO da inicial — missao que se
+// aceita nunca desce para esse degrau, e inicial nunca sobe dele.
+const systemRewards = SYSTEM_CHALLENGES.map((quest) => ({
+  nome: quest.title,
+  xp: quest.rewards.xp,
+  inicial: Boolean(quest.inicial),
+}));
 
-assert.ok(systemRewards.length >= 7, 'as missoes de sistema devem ser lidas');
-assert.deepEqual(
-  foraDaEscala(systemRewards),
-  [],
-  'missao de sistema fora da escala 100/300/500',
+assert.ok(systemRewards.length >= 10, 'as missoes de sistema devem ser lidas');
+assert.ok(
+  systemRewards.some((quest) => quest.inicial) && systemRewards.some((quest) => !quest.inicial),
+  'as duas familias existem: inicial e a que se aceita',
 );
+assert.equal(INITIAL_MISSION_XP, 25, 'o degrau da missao inicial');
+
+for (const quest of systemRewards) {
+  if (quest.inicial) {
+    assert.equal(quest.xp, INITIAL_MISSION_XP, quest.nome + ': inicial paga o degrau da inicial');
+  } else {
+    assert.ok(FAIXAS.includes(quest.xp), quest.nome + ': missao aceita fora da escala 100/300/500');
+  }
+}
+
+// Inicial nao da bau, nao da ouro, e paga fragmento fixo. Sao faceis de proposito.
+for (const quest of SYSTEM_CHALLENGES.filter((entry) => entry.inicial)) {
+  assert.ok(!quest.rewardChest, quest.title + ': inicial nao da bau');
+  assert.ok(!quest.rewardGold, quest.title + ': inicial nao da ouro');
+  assert.equal(quest.rewardFragments, INITIAL_MISSION_FRAGMENTS, quest.title + ': fragmentos da inicial');
+}
 
 // --- jornadas da temporada -------------------------------------------------
 const seasonSource = arquivo('../constants/seasonContent.ts');

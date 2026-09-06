@@ -7,10 +7,17 @@ import {
   buildPactCandidatesForArena,
   buildPactsForArena,
   CONSTANCIA_DAYS,
+  faixaPorMeta,
+  buildAppScopePacts,
+  buildArenaEscopoApp,
+  ESCOPO_APP,
+  resolvePactArena,
   DIAS_PARA_RETOMADA,
   isArenaEligible,
   measurePactProgress,
   MIN_ACTIONS_FOR_CONCLUSAO,
+  rebuildActivePact,
+  toArenaPactState,
 } from '../utils/arenaPacts.ts';
 
 // O pacto propoe missao sobre arena que o jogador JA TEM. O risco nao e o calculo,
@@ -140,7 +147,14 @@ const tarefasVariadas = [
 const tres = buildPactCandidates(muitas, actionsFor(...muitas), tarefasVariadas, HOJE);
 assert.ok(tres.length <= 3, 'no maximo tres propostas');
 assert.equal(new Set(tres.map((pact) => pact.arenaId)).size, tres.length, 'uma arena por proposta');
-assert.equal(new Set(tres.map((pact) => pact.difficulty)).size, tres.length, 'dificuldades diferentes');
+// A regra deixou de ser "uma de cada dificuldade": a faixa agora sai da META, e
+// duas propostas boas podem legitimamente pagar igual. O que precisa variar e o
+// TIPO, porque e ele que muda o esforco pedido.
+assert.equal(new Set(tres.map((pact) => pact.kind)).size, tres.length, 'tipos diferentes');
+for (const pact of tres) {
+  assert.equal(pact.difficulty, faixaPorMeta(pact.goal), 'a faixa sai da meta, nao da arena');
+  assert.ok(pact.motivo && /\d/.test(pact.motivo), 'toda proposta nomeia o numero que a gerou');
+}
 
 // --- recompensa escala com a faixa ---------------------------------------
 assert.ok(ARENA_PACT_REWARDS.alta.gold > ARENA_PACT_REWARDS.media.gold);
@@ -265,3 +279,216 @@ const semHistorico = buildArenaStats(doCiclo, acaoUnica, [], HOJE);
 assert.equal(semHistorico.daysSinceLastDelivery, null);
 
 console.log('Arena pacts regression: nao propoe arena invalida, conta dias e ignora o passado.');
+
+// Volume: intervalos inclusivos, virada operacional e registro retroativo.
+{
+  const a = arena('volume');
+  const acts = [...actionsFor(a), {...action('livre', a.id), actionType: 'Livre'}, action('outra', 'fora')];
+  const proposed = buildPactCandidatesForArena(a, acts, [], HOJE).find(p => p.kind === 'volume');
+  assert.ok(proposed, 'arena mensuravel oferece volume');
+  const pact = {...proposed, goal: 3, difficulty: 'leve', startedOn: HOJE, endsOn: '2026-08-29'};
+  const rows = [
+    {...task(a.actionIds[0], HOJE), id:'inicio'},
+    {...task(a.actionIds[0], '2026-08-30'), id:'madrugada', startTime:239},
+    {...task(a.actionIds[1], '2026-08-25'), id:'meio'},
+    {...task(a.actionIds[0], HOJE), id:'antes', startTime:239},
+    {...task(a.actionIds[0], '2026-08-30'), id:'depois', startTime:240},
+    {...task('livre', HOJE), id:'livre'},
+    {...task('outra', HOJE), id:'outra'},
+    {...task(a.actionIds[0], HOJE, false), id:'incompleta'},
+  ];
+  rows.push(rows[0]);
+  assert.deepEqual(measurePactProgress(pact,a,acts,rows,'2026-08-29'),
+    {current:3,goal:3,percent:100,completed:true,windowEnded:false});
+  assert.equal(measurePactProgress(pact,a,acts,rows,HOJE).current,1,'datas futuras nao contam');
+  const late = measurePactProgress(pact,a,acts,rows,'2026-09-10');
+  assert.equal(late.completed,true,'registro tardio de data valida conta');
+  assert.equal(late.windowEnded,true);
+  assert.equal(measurePactProgress(pact,a,acts,[],'2026-09-10').completed,false);
+  const state = toArenaPactState(pact);
+  assert.equal(state.arenaPactEndsOn,pact.endsOn);
+  assert.equal(rebuildActivePact(state,[a],acts,rows,HOJE).endsOn,pact.endsOn);
+  assert.equal(rebuildActivePact({...state,arenaPactEndsOn:null},[a],acts,rows,HOJE),null);
+  assert.equal(toArenaPactState(null).arenaPactEndsOn,null);
+  assert.deepEqual([ARENA_PACT_REWARDS.leve.gold,ARENA_PACT_REWARDS.media.gold,ARENA_PACT_REWARDS.alta.gold],[2,5,10]);
+}
+console.log('Volume: oferta, prazo inclusivo, virada 4h, exclusoes, duplicatas, futuro, retroativo e restauracao validados.');
+
+// ===================================================================
+// A META VEM DO RITMO, E A FAIXA VEM DA META
+//
+// Antes a meta era fixa por faixa e a faixa vinha do progresso da ARENA. Isso
+// media a arena, nao a pessoa: a mesma meta era passeio para quem entrega todo
+// dia e falha por uma para quem entrega tres vezes por semana.
+// ===================================================================
+
+const arenaRitmo = arena('ritmo');
+// Repeticoes altas de proposito: com meta pequena a arena FECHARIA depois de
+// poucas entregas e sairia das propostas — arena concluida nunca recebe pacto, e
+// o cenario aqui e sobre ritmo, nao sobre tamanho.
+const acoesRitmo = arenaRitmo.actionIds.map((id) => action(id, 'ritmo', 40));
+
+// Duas pessoas, a MESMA arena, ritmos opostos nos ultimos 30 dias.
+const diasDoMes = (quantidade, passo) => Array.from({ length: quantidade }, (_, i) => {
+  const d = new Date('2026-08-31T00:00:00');
+  d.setDate(d.getDate() - i * passo);
+  return d.toISOString().slice(0, 10);
+});
+
+const todoDia = diasDoMes(28, 1).map((data, i) => ({ ...task('ritmo-a', data), id: `td-${i}` }));
+const umaPorSemana = diasDoMes(4, 7).map((data, i) => ({ ...task('ritmo-a', data), id: `sm-${i}` }));
+
+const statsTodoDia = buildArenaStats(arenaRitmo, acoesRitmo, todoDia, '2026-08-31');
+const statsSemanal = buildArenaStats(arenaRitmo, acoesRitmo, umaPorSemana, '2026-08-31');
+
+assert.ok(statsTodoDia.deliveryDaysLast30 > statsSemanal.deliveryDaysLast30,
+  'a cadencia distingue os dois ritmos');
+assert.equal(statsSemanal.deliveryDaysLast30, 4, 'quatro dias distintos em trinta');
+
+const volumeDe = (stats) => buildPactsForArena(stats, '2026-08-31').find((p) => p.kind === 'volume');
+const volumeTodoDia = volumeDe(statsTodoDia);
+const volumeSemanal = volumeDe(statsSemanal);
+
+assert.ok(volumeTodoDia && volumeSemanal, 'os dois recebem proposta de volume');
+assert.ok(volumeTodoDia.goal > volumeSemanal.goal,
+  'quem entrega mais recebe meta maior — antes os dois recebiam a mesma');
+assert.ok(volumeSemanal.goal <= 3,
+  'quem entrega uma vez por semana nao recebe meta de tres por semana');
+
+// A faixa — e portanto o premio — sai da meta, nas quatro modalidades.
+for (const stats of [statsTodoDia, statsSemanal]) {
+  for (const pact of buildPactsForArena(stats, '2026-08-31')) {
+    assert.equal(pact.difficulty, faixaPorMeta(pact.goal), `${pact.kind}: faixa vem da meta`);
+    assert.deepEqual(pact.reward, ARENA_PACT_REWARDS[faixaPorMeta(pact.goal)], `${pact.kind}: premio vem da meta`);
+  }
+}
+
+// A blindagem: sumir nao pode pagar mais. Arena sem nenhuma entrega recebe o
+// piso, e piso pequeno significa premio pequeno.
+const statsVazia = buildArenaStats(arena('vazia'), actionsFor(arena('vazia')), [], '2026-08-31');
+for (const pact of buildPactsForArena(statsVazia, '2026-08-31')) {
+  assert.notEqual(pact.difficulty, 'alta', 'arena sem historico nunca abre a faixa alta');
+}
+
+assert.equal(faixaPorMeta(3), 'leve');
+assert.equal(faixaPorMeta(4), 'media');
+assert.equal(faixaPorMeta(7), 'media');
+assert.equal(faixaPorMeta(8), 'alta');
+
+console.log('Ritmo: a cadencia dimensiona a meta, a meta define a faixa, e ficar parado nunca paga mais.');
+
+// ===================================================================
+// O TITULO DIZ PARA QUE SERVE
+//
+// Era a regra outra vez: "Entregar em Leitura por 5 dias" descreve o mecanismo,
+// nao o proposito. Verbo mais nome, sem artigo, e a pessoa sabe o que esta
+// escolhendo antes de ler a letra miuda.
+// ===================================================================
+
+const VERBOS = ['Salvar', 'Acelerar', 'Manter', 'Fechar', 'Retomar'];
+
+const arenaNome = arena('nomes');
+const acoesNome = arenaNome.actionIds.map((id) => action(id, 'nomes', 40));
+const entregasAte = (corte) => Array.from({ length: 12 }, (_, i) => {
+  const d = new Date('2026-08-31T00:00:00');
+  d.setDate(d.getDate() - corte - i * 2);
+  return { ...task('nomes-a', d.toISOString().slice(0, 10)), id: `n-${i}` };
+});
+
+const titulosDe = (corte) => buildPactsForArena(
+  buildArenaStats(arenaNome, acoesNome, entregasAte(corte), '2026-08-31'),
+  '2026-08-31',
+);
+
+// Todo titulo comeca por um dos cinco verbos, e nenhum tem artigo depois dele.
+for (const corte of [1, 5, 20]) {
+  for (const pact of titulosDe(corte)) {
+    const verbo = pact.title.split(' ')[0];
+    assert.ok(VERBOS.includes(verbo), `titulo fora do vocabulario: "${pact.title}"`);
+    assert.doesNotMatch(pact.title, /^\w+ (a|o|as|os|na|no|em) /, `titulo com artigo: "${pact.title}"`);
+    assert.ok(pact.title.includes(arenaNome.name), 'o titulo nomeia a arena');
+  }
+}
+
+// O volume muda de nome conforme a arena esfria: quem entregou ontem ACELERA,
+// quem parou ha dias SALVA. E o proxy que existe sem a linha do tempo do ciclo.
+const volumeNoCorte = (corte) => titulosDe(corte).find((p) => p.kind === 'volume');
+assert.match(volumeNoCorte(1).title, /^Acelerar /, 'arena quente acelera');
+assert.match(volumeNoCorte(5).title, /^Salvar /, 'arena esfriando salva');
+
+// A regra saiu do titulo mas nao sumiu: ela desceu para a descricao.
+const volumeQuente = volumeNoCorte(1);
+assert.match(volumeQuente.description, new RegExp(`${volumeQuente.goal} ações`), 'a descricao carrega o numero');
+assert.match(titulosDe(1).find((p) => p.kind === 'constancia').description, /dias diferentes/, 'a constancia explica a regra dela');
+
+console.log('Titulos: verbo mais nome, sem artigo, e a regra desceu para a descricao.');
+
+// ===================================================================
+// O ESCOPO DO APP INTEIRO
+//
+// A missao individual pode ser de uma arena ou de tudo junto. Em vez de um
+// caminho paralelo — outra medicao, outro texto, outra validacao —, o segundo
+// caso e uma arena SINTETICA com todas as acoes reais. Dai para baixo e o mesmo
+// codigo. No banco isso e arena nula.
+// ===================================================================
+
+const arenasApp = [arena('ap1'), arena('ap2')];
+const acoesApp = arenasApp.flatMap((a) => a.actionIds.map((id) => action(id, a.id, 40)));
+const entregasApp = [
+  ...Array.from({ length: 6 }, (_, i) => {
+    const d = new Date('2026-08-31T00:00:00'); d.setDate(d.getDate() - i * 3);
+    return { ...task('ap1-a', d.toISOString().slice(0, 10)), id: `x1-${i}` };
+  }),
+  ...Array.from({ length: 4 }, (_, i) => {
+    const d = new Date('2026-08-31T00:00:00'); d.setDate(d.getDate() - i * 5 - 1);
+    return { ...task('ap2-a', d.toISOString().slice(0, 10)), id: `x2-${i}` };
+  }),
+];
+
+const doApp = buildAppScopePacts(arenasApp, acoesApp, entregasApp, '2026-08-31');
+assert.equal(doApp.length, 1, 'o escopo do app oferece uma missao');
+assert.equal(doApp[0].kind, 'volume', 'so volume faz sentido sem uma frente especifica');
+assert.equal(doApp[0].arenaId, ESCOPO_APP, 'o escopo e marcado pela ausencia de arena');
+assert.match(doApp[0].motivo, /Você registrou algo em \d+ dos últimos 30 dias/, 'o motivo fala do ritmo geral');
+assert.doesNotMatch(doApp[0].description, /ações de todas as arenas/, 'o texto nao repete o nome sintetico');
+assert.match(doApp[0].description, /em qualquer arena/, 'a descricao diz que vale em qualquer arena');
+
+// A cadencia GERAL soma as duas arenas: mais dias distintos do que qualquer uma
+// delas sozinha.
+const soDaPrimeira = buildArenaStats(arenasApp[0], acoesApp, entregasApp, '2026-08-31');
+const sintetica = buildArenaEscopoApp(arenasApp, acoesApp);
+const geral = buildArenaStats(sintetica, acoesApp, entregasApp, '2026-08-31');
+assert.ok(geral.deliveryDaysLast30 > soDaPrimeira.deliveryDaysLast30, 'o ritmo geral soma as arenas');
+
+// A persistencia converte o sentinela em NULO — e e isso que as RPCs leem.
+const gravado = toArenaPactState(doApp[0]);
+assert.equal(gravado.arenaPactArenaId, null, 'escopo do app grava arena nula');
+assert.equal(gravado.arenaPactKind, 'volume');
+
+// E a restauracao volta a montar a arena sintetica a partir do nulo.
+const restaurado = rebuildActivePact(
+  { ...gravado, arenaPactStartedOn: '2026-08-31', arenaPactEndsOn: '2026-09-13' },
+  arenasApp, acoesApp, entregasApp, '2026-08-31',
+);
+assert.ok(restaurado, 'missao do app inteiro sobrevive ao reload');
+assert.equal(restaurado.arenaId, ESCOPO_APP);
+
+// Um molde que nao seja volume nao pode existir sem arena: constancia sem frente
+// seria a sequencia global de volta.
+assert.equal(
+  rebuildActivePact({ ...gravado, arenaPactKind: 'constancia', arenaPactStartedOn: '2026-08-31' }, arenasApp, acoesApp, entregasApp, '2026-08-31'),
+  null,
+  'sem arena, so volume',
+);
+
+// A medicao conta as duas arenas.
+const progressoApp = measurePactProgress(
+  restaurado,
+  resolvePactArena(restaurado, arenasApp, acoesApp),
+  acoesApp,
+  [task('ap1-a', '2026-09-01'), task('ap2-a', '2026-09-02')],
+  '2026-09-03',
+);
+assert.equal(progressoApp.current, 2, 'conclusoes de arenas diferentes somam no escopo do app');
+
+console.log('Escopo do app: uma arena sintetica, arena nula no banco, e so volume.');

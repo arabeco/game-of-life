@@ -1146,121 +1146,7 @@ const createAutomaticOracleMessage = async (
   return { status: "generated", messageId };
 };
 
-/**
- * O aviso de que a sequencia vai morrer hoje.
- *
- * Ate aqui, nada rodava quando a pessoa NAO fazia nada — e e exatamente ai que
- * o streak morre. Ele e lazy: so e reavaliado quando alguma acao e concluida.
- * Quem passou o dia sem abrir o app perdia a sequencia sem nunca ter sido
- * avisado, e o dado para avisar sempre esteve no perfil.
- *
- * A infra ja existia inteira: este cron roda a cada dez minutos. Faltava uma
- * condicao.
- *
- * Custa UMA leitura de perfil por pessoa: `daily_proof_streak` guarda a
- * sequencia atual e a data da ultima entrega, entao nao e preciso varrer task
- * nenhuma para saber se hoje esta vazio.
- *
- * Ele NAO olha presence_level. Presenca decide o que o Oraculo comenta; isto e
- * aviso de perda iminente e tem interruptor proprio, que nasce desligado.
- */
-const STREAK_ALERT_MIN = 3;
-const STREAK_ALERT_HOUR_START = 21;
-const STREAK_ALERT_HOUR_END = 23;
-
-const maybeSendStreakAlert = async (
-  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
-  userId: string,
-): Promise<{ status: string; reason?: string; messageId?: string }> => {
-  const now = new Date();
-  // Dia OPERACIONAL, nao dia do calendario: ele vira as 4h, entao alguem que
-  // conclui uma acao a 1h da manha ainda entregou "hoje" e nao pode ser avisado.
-  const today = getOperationalDateString(now);
-
-  // A tabela e `user_profiles`. Estava escrito `profiles`, que nao existe — a
-  // linha 962 deste mesmo arquivo ja usava a certa. Como o erro nao era checado,
-  // o perfil vinha nulo, a sequencia era lida como 0 e TODO MUNDO caia em
-  // "streak_curto". O aviso nunca disparou para ninguem, e nunca reclamou.
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from("user_profiles")
-    .select("daily_proof_streak")
-    .eq("id", userId)
-    .maybeSingle();
-
-  // Ler o perfil e falhar nao e o mesmo que a pessoa nao ter sequencia. Tratar os
-  // dois como "pular" foi o que escondeu o erro acima por uma versao inteira.
-  if (profileError) return { status: "error", reason: profileError.message };
-
-  const streak = normalizeDailyProofStreak((profile as JsonRecord | null)?.daily_proof_streak);
-  if (streak.current < STREAK_ALERT_MIN) {
-    return { status: "skipped", reason: "streak_curto" };
-  }
-
-  const ultimoDia = asTrimmedString(streak.lastClosedDate);
-
-  if (ultimoDia === today) {
-    return { status: "skipped", reason: "ja_entregou_hoje" };
-  }
-
-  // A sequencia so esta EM RISCO se a ultima entrega foi ontem. `current` nao
-  // decai sozinho no perfil: quem fez 5 dias em agosto e parou continua com
-  // current=5 gravado ate hoje. Sem esta condicao, essa pessoa receberia
-  // "5 dias seguidos, e hoje ainda sem nenhuma acao" toda noite, para sempre,
-  // sobre uma sequencia que morreu ha semanas.
-  //
-  // Aviso de perda iminente que chega depois da perda nao e aviso, e cobranca —
-  // e cobranca noturna e o caminho mais curto para a pessoa desligar tudo.
-  const ontem = shiftDateString(today, -1);
-  if (ultimoDia !== ontem) {
-    return { status: "skipped", reason: ultimoDia ? "sequencia_ja_morreu" : "sem_data_de_entrega" };
-  }
-
-  // Uma vez por dia. O cron passa a cada dez minutos dentro da janela, entao sem
-  // isto a mesma pessoa receberia o mesmo aviso dezoito vezes numa noite.
-  const { data: jaAvisado } = await supabaseAdmin
-    .from("oracle_messages")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("context_snapshot->>purpose", "streak_alert")
-    // O dia OPERACIONAL comeca as 4h de Sao Paulo, que e 07:00Z — nao a
-    // meia-noite UTC. A diferenca nao era cosmetica: o aviso sai entre 21h e 23h
-    // de SP, ou seja 00h-02h UTC do dia SEGUINTE. Com o limite em T00:00:00Z, o
-    // aviso de ontem caia dentro da janela de hoje e a trava se fechava sozinha —
-    // o alerta dispararia dia sim, dia nao, e depois nunca mais.
-    .gte("created_at", `${today}T07:00:00Z`)
-    .limit(1);
-
-  if ((jaAvisado || []).length > 0) {
-    return { status: "skipped", reason: "ja_avisado_hoje" };
-  }
-
-  const messageId = crypto.randomUUID();
-  const { error: insertError } = await supabaseAdmin
-    .from("oracle_messages")
-    .insert({
-      id: messageId,
-      user_id: userId,
-      // delivery_type 'feed' porque so o feed vira push, e este aviso existe
-      // exatamente para chegar em quem NAO esta com o app aberto.
-      category: "analise_padroes",
-      content: `${streak.current} dias seguidos, e hoje ainda sem nenhuma acao. Uma fecha o dia.`,
-      mode: "neutro",
-      delivery_type: "feed",
-      context_snapshot: {
-        triggerType: "cron",
-        presentation: "ambient_pulse",
-        generatedFor: "feed",
-        purpose: "streak_alert",
-        streak: streak.current,
-        summary: "Sequencia em risco",
-      },
-      read: false,
-      created_at: now.toISOString(),
-    });
-
-  if (insertError) return { status: "error", reason: insertError.message };
-  return { status: "generated", messageId };
-};
+// Alerta global de sequencia aposentado.
 
 const handleAutomaticOracleCron = async (req: Request, origin: string | null) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !WEB_PUSH_WEBHOOK_SECRET) {
@@ -1339,39 +1225,6 @@ const handleAutomaticOracleCron = async (req: Request, origin: string | null) =>
     }
   }
 
-  // Segunda varredura, populacao diferente.
-  //
-  // O card do dia sai para quem tem presenca > 0 e conteudo automatico ligado. O
-  // aviso de sequencia sai para quem ligou ALERTAS, e so isso — presenca decide
-  // o que o Oraculo comenta, e isto nao e comentario, e perda iminente. Quem
-  // esta no Silencioso com alertas ligados recebe; quem nao ligou, nao recebe,
-  // nem no Presente.
-  //
-  // A janela existe porque o cron passa a cada dez minutos: fora dela nem vale
-  // consultar. Dentro, quem ja foi avisado hoje e barrado no proprio handler.
-  const horaLocal = Number(
-    new Intl.DateTimeFormat("en-GB", { timeZone: TIME_ZONE, hour: "2-digit", hour12: false })
-      .format(new Date()),
-  );
-
-  const alertResults: Array<{ userId: string; status: string; reason?: string }> = [];
-  if (horaLocal >= STREAK_ALERT_HOUR_START && horaLocal <= STREAK_ALERT_HOUR_END) {
-    const { data: alertPreferences } = await supabaseAdmin
-      .from("oracle_preferences")
-      .select("user_id")
-      .eq("important_alerts_enabled", true)
-      .eq("notifications_enabled", true);
-
-    for (const row of alertPreferences || []) {
-      const alertUserId = asTrimmedString((row as JsonRecord).user_id);
-      if (!alertUserId) continue;
-      try {
-        alertResults.push({ userId: alertUserId, ...(await maybeSendStreakAlert(supabaseAdmin, alertUserId)) });
-      } catch (error) {
-        alertResults.push({ userId: alertUserId, status: "error", reason: String(error) });
-      }
-    }
-  }
 
   return jsonResponse(origin, 200, {
     ok: true,
@@ -1380,12 +1233,7 @@ const handleAutomaticOracleCron = async (req: Request, origin: string | null) =>
     skipped: results.filter((result) => result.status === "skipped").length,
     errored: results.filter((result) => result.status === "error").length,
     results,
-    streakAlerts: {
-      window: horaLocal >= STREAK_ALERT_HOUR_START && horaLocal <= STREAK_ALERT_HOUR_END,
-      hour: horaLocal,
-      sent: alertResults.filter((result) => result.status === "generated").length,
-      results: alertResults,
-    },
+
   });
 };
 

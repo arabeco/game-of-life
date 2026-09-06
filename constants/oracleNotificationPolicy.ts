@@ -200,6 +200,18 @@ const POLICY: Record<NotificationType, NotificationPolicy> = {
     icon: 'R',
     label: 'Lembrete',
   },
+  cycle_deadline: {
+    // "progress" e nao "essential": o prazo do ciclo e informacao sobre o seu
+    // proprio plano, nao um pedido de outra pessoa. Mas "actionable" porque
+    // chega no celular — e so o servidor sabe que o prazo passou para quem nao
+    // abriu o app.
+    lane: 'progress',
+    priority: 'actionable',
+    badge: false,
+    gameVisible: true,
+    icon: 'C',
+    label: 'Ciclo',
+  },
   system: {
     lane: 'essential',
     priority: 'critical',

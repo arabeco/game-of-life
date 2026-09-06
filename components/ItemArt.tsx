@@ -3,6 +3,54 @@ import { EmojiGlyph } from './EmojiGlyph';
 import { getAuraBackground, getAuraVisual } from '../utils/auraVisuals';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
 
+/**
+ * O icone da CATEGORIA, para quando nao houver arte nem emoji.
+ *
+ * Ate aqui esse fim de linha era o texto "N/A" num quadrado vazio. Item novo
+ * entra no catalogo sem PNG com alguma frequencia — e ai a grade mostrava uma
+ * lacuna que parecia defeito de carregamento em vez de arte que falta.
+ *
+ * Pintado por mascara, e nao <img>: os SVGs usam currentColor e vivem em
+ * public/, entao servidos como imagem resolveriam a cor contra o proprio
+ * documento (preto) e sumiriam em fundo escuro.
+ */
+const ICONE_DA_CATEGORIA: Record<string, string> = {
+    artifact: 'cat-artefato',
+    skin: 'cat-skin',
+    border: 'cat-borda',
+    banner: 'cat-banner',
+    glyph: 'cat-glifo',
+    orb: 'cat-orbe',
+    plate: 'cat-placa',
+};
+
+const IconeDaCategoria: React.FC<{ categoria?: string; className?: string }> = ({ categoria, className }) => {
+    const arquivo = categoria ? ICONE_DA_CATEGORIA[categoria] : undefined;
+    if (!arquivo) return null;
+    const url = `/assets/icons/${arquivo}.svg`;
+    return (
+        <span
+            aria-hidden
+            className={className}
+            style={{
+                // Tamanho por style, e nao por classe do Tailwind: este mesmo
+                // componente e usado em paginas de tools/ que nao carregam o
+                // Tailwind, e la `h-1/2 w-1/2` nao aplica nada — o icone fica
+                // com altura zero e o slot aparece vazio.
+                display: 'block',
+                width: '50%',
+                height: '50%',
+                opacity: 0.4,
+                backgroundColor: 'currentColor',
+                WebkitMaskImage: `url(${url})`, maskImage: `url(${url})`,
+                WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center', maskPosition: 'center',
+                WebkitMaskSize: 'contain', maskSize: 'contain',
+            }}
+        />
+    );
+};
+
 interface ItemArtProps {
     itemId?: string;
     src?: string;
@@ -122,6 +170,8 @@ export const ItemArt: React.FC<ItemArtProps> = ({
                 fallback
             ) : icon ? (
                 <EmojiGlyph symbol={icon} size={emojiSize} className={iconClassName} />
+            ) : ICONE_DA_CATEGORIA[category || ''] ? (
+                <IconeDaCategoria categoria={category} />
             ) : (
                 <span className={textClassName}>{fallbackText}</span>
             )}

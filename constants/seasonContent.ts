@@ -42,6 +42,39 @@ export interface EraCalendarYear {
   checkpoints: EraCheckpoint[];
 }
 
+/**
+ * A REGRA DA COLECAO — vale para toda temporada, sem excecao.
+ *
+ * Toda temporada tem TRES missoes e CINCO pecas. Nao ha escassez, nao ha
+ * temporada com quatro nem com seis: quem desenha uma temporada nova entrega
+ * estes cinco desenhos e escreve estas tres missoes.
+ *
+ *   as 3 missoes  ->  um BAU MITICO cada, que sorteia entre SKIN, BORDA e
+ *                     BANNER — as tres pecas que se veste
+ *   o selo        ->  a INSIGNIA DA TEMPORADA + o TEMA DE INTERFACE
+ *
+ * O baú te veste; o fecho te marca.
+ *
+ * A conta fecha sozinha e por isso nao precisa de sorte: sao exatamente tres
+ * baus, o servidor sorteia primeiro o que a pessoa NAO tem, e o pool tem
+ * exatamente tres pecas. Quem completa a temporada completa a colecao.
+ *
+ * POR QUE O TEMA NO FIM, E NAO O BANNER. O selo ja entrega a insignia, que mora
+ * no PERFIL. Se o banner viesse junto, o fecho daria duas pecas no mesmo lugar,
+ * e no dia seguinte quem fechou a temporada abriria o app e nao veria diferenca
+ * nenhuma — o premio estaria numa tela que ele nao visita. O tema repinta o app
+ * inteiro (120 linhas de CSS dependem dele) e e a unica peca que muda como o
+ * jogo se SENTE, nao como voce aparece. As duas do fecho ficam de naturezas
+ * diferentes: uma para fora, outra para dentro.
+ *
+ * Trocar isso so faz sentido se o Glyph virar principalmente social — feed
+ * forte, perfis muito visitados. Ai a moeda passa a ser o que os outros veem, e
+ * o banner merece o fim.
+ */
+export const PECAS_POR_TEMPORADA = ['skin', 'border', 'banner', 'insignia', 'ui_skin'] as const;
+
+export const MISSOES_POR_TEMPORADA = 3;
+
 export interface SeasonConfig {
   id: string;
   /** Chave que amarra os itens da colecao a esta temporada (items.seasonKey).
@@ -50,7 +83,23 @@ export interface SeasonConfig {
   name: string;
   startDate: string;
   endDate: string;
+  /**
+   * Rotulo interno da identidade: 'genesis', 'aurora', 'zenite', 'eclipse',
+   * 'egide'. NAO governa nada — nenhuma tela le este campo. Quem pinta e
+   * `cores`, abaixo.
+   */
   theme: string;
+  /**
+   * O par de cores da temporada.
+   *
+   * Ate aqui a unica marca visual de uma temporada era a imagem de fundo, e
+   * `theme` era texto que ninguem lia. Com isso, Aurora e Eclipse eram a mesma
+   * tela com fundo trocado: mesmo dourado no titulo, na borda do card e no
+   * destaque das jornadas.
+   *
+   * Sem `cores`, a tela cai no dourado padrao — o comportamento de sempre.
+   */
+  cores?: { primaria: string; secundaria: string };
   description?: string;
   backgroundUrl?: string;
   quests: SeasonQuest[];
@@ -132,7 +181,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
     seasonKey: 'genesis_legacy',
     name: 'Temporada 0 - Genesis',
     description: 'A primeira abertura do GLYPH. Quem entrou a tempo carregou a marca da Primeira Era.',
-    backgroundUrl: `${ROOT_IMAGES_URL}/genesis.png`,
+    backgroundUrl: `${ROOT_IMAGES_URL}/season-genesis-background.webp`,
     startDate: '2025-12-21',
     endDate: '2026-09-22',
     theme: 'genesis',
@@ -207,7 +256,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
     seasonKey: 'aurora_1_2026',
     name: 'Aurora I',
     description: 'Primeiro corte oficial da Primeira Era. Abertura de jornadas, recompensas e novos simbolos da linha principal.',
-    backgroundUrl: `${ROOT_IMAGES_URL}/aurora.png`,
+    backgroundUrl: `${ROOT_IMAGES_URL}/season-aurora-i-background.webp`,
     startDate: '2026-09-22',
     endDate: '2026-12-21',
     theme: 'aurora',
@@ -292,7 +341,7 @@ export const SEASONS: Record<string, SeasonConfig> = {
       {
         id: 'aurora-quest-cla-vigilia',
         title: 'A Vigilia da Aurora',
-        description: 'Como grupo, completem 30 rondas da Aurora para manter a temporada desperta. Recompensa: 1 Bau Season por participante.',
+        description: 'Como grupo, completem 30 rondas da Aurora para manter a temporada desperta. Recompensa: 1 Bau Epico por participante.',
         type: 'clan',
         category: 'social',
         season_id: 'season-aurora-1-2026',
@@ -311,7 +360,11 @@ export const SEASONS: Record<string, SeasonConfig> = {
         goal_value: 30,
         progressLabel: 'rondas',
         reward_type: 'chest',
-        reward_value: 'Season',
+        // Missao de CLA nao paga bau mitico. A colecao da temporada e dimensionada
+        // por tres baus para tres pecas — skin, borda e banner. Um quarto bau
+        // seria duplicata garantida. Cla tem economia propria, e o Epico ja e
+        // recompensa alta.
+        reward_value: 'Épico',
         maxParticipants: 20,
       },
     ],
@@ -484,12 +537,15 @@ export const GM_SEASON_MISSIONS: SeasonMission[] = [
     id: 'sm_genesis_meta_1',
     season_id: 'season-genesis-0',
     title: 'Selo da Genesis',
-    description: 'Conclua as 3 jornadas da Temporada Zero para selar a Primeira Era. Recompensa: Insignia Genesis.',
+    description: 'Conclua as 3 jornadas da Temporada Zero para selar a Primeira Era. Recompensa: Insignia Genesis e o Tema Genesis.',
     goal_type: 'quests_claimed',
     goal_value: 3,
     reward_type: 'item_id',
     reward_value: 'insignia_season_genesis',
-    reward_item_ids: ['insignia_season_genesis'],
+    // A insignia da temporada E o tema de interface. As tres jornadas ja
+    // entregaram skin, borda e banner pelo bau; o fecho entrega o que o bau nao
+    // sorteia.
+    reward_item_ids: ['insignia_season_genesis', 'GENESIS'],
     sourceQuestIds: ['quest-wanderer', 'quest-scholar', 'quest-warrior'],
     reward_exp: 500,
     type: 'individual',
@@ -499,12 +555,17 @@ export const GM_SEASON_MISSIONS: SeasonMission[] = [
     id: 'sm_aurora_meta_1',
     season_id: 'season-aurora-1-2026',
     title: 'Selo de Aurora I',
-    description: 'Conclua as 3 jornadas da Aurora I para selar a abertura oficial da Primeira Era. Recompensa: Guardiao Aurora, Borda Aurora I, Banner Aurora I e Insignia Aurora I.',
+    description: 'Conclua as 3 jornadas da Aurora I para selar a abertura oficial da Primeira Era. Recompensa: Insignia Aurora I e o Tema Aurora I.',
     goal_type: 'quests_claimed',
     goal_value: 3,
     reward_type: 'item_id',
-    reward_value: 'item_skin_aurora_1_2026',
-    reward_item_ids: ['item_skin_aurora_1_2026', 'insignia_season_aurora_1'],
+    reward_value: 'insignia_season_aurora_1',
+    // A SKIN saiu daqui: ela e uma das tres pecas que o bau mitico sorteia.
+    // Entregar pelo selo E pelo bau faria a mesma peca chegar duas vezes.
+    //
+    // A insignia da temporada E o tema, como manda a regra da colecao. As tres
+    // jornadas ja entregam skin, borda e banner pelo bau mitico.
+    reward_item_ids: ['insignia_season_aurora_1', 'AURORA_I'],
     sourceQuestIds: ['aurora-quest-caminhante', 'aurora-quest-leitor', 'aurora-quest-monge'],
     type: 'individual',
     icon: '🌆',
@@ -565,4 +626,3 @@ export const GM_SEASON_QUESTS: SeasonQuest[] = [
     rewards: { xp: 1125, gold: 0 },
   },
 ];
-

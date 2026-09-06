@@ -100,25 +100,15 @@ export interface OracleReactionSignificance {
  * frase da VOLTA: ter voltado e a noticia maior, e a hora e detalhe dela.
  */
 export const PAUSA_MINIMA_PARA_VOLTA = 4;
-export const HORA_DE_SALVAMENTO = 18;
-export const STREAK_MINIMO_PARA_SALVAMENTO = 3;
 
 export const resolveReactionSignificance = (
     contexto: OracleReactionSignificance,
 ): { event: OracleSpeechEvent; vars: Record<string, string | number> } | null => {
-    const { previousProofDate, proofDate, hourOfDay, streakAfter } = contexto;
+    const { previousProofDate, proofDate } = contexto;
 
     const pausa = previousProofDate ? diffDias(previousProofDate, proofDate) : null;
     if (pausa !== null && pausa >= PAUSA_MINIMA_PARA_VOLTA) {
         return { event: 'first_after_pause', vars: { dias: pausa } };
-    }
-
-    if (
-        hourOfDay !== null
-        && streakAfter >= STREAK_MINIMO_PARA_SALVAMENTO
-        && (hourOfDay >= HORA_DE_SALVAMENTO || hourOfDay < 4)
-    ) {
-        return { event: 'streak_saved', vars: { streak: streakAfter } };
     }
 
     return null;

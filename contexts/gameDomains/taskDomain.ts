@@ -1,10 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Action, Arena, Campaign, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, Report, ScheduledTask, SeasonQuest } from '../../types';
+import type { ArenaPact, ArenaPactProgress } from '../../utils/arenaPacts';
 import { mergeTasksIntoCommitment, reconcileTaskInCommitment } from '../../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_START_MINUTE, getOperationalDateString, getTaskOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
 import { isSharedArena } from '../../utils/taskDomain.js';
 import { buildToggledTaskSnapshot, removeEntitiesById, removeTaskIds, restoreTaskSnapshot } from '../../utils/taskMutationUtils.js';
 import { calculateArenaProgress, calculateCampaignProgressSummary } from '../../utils/progressUtils';
+import { describeArenaProgress, getArenaPresentationTasks } from '../../utils/arenaProgressPresentation';
 import { emitArenaAttention } from '../../utils/arenaAttention';
 import { emitAppSensoryCue } from '../../utils/sensoryCue';
 import { emitOracleSpeech as emitOracleSpeechRaw } from '../../utils/oracleSpeech';
@@ -22,7 +24,7 @@ type AchievementState = { type: FeedEventType; data: any } | null;
 type SupabaseLike = { from: (table: string) => any };
 type CompletionAttentionResult = 'arena' | 'campaign' | null;
 
-const DAY_MAP: DayOfWeek[] = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+import { buildRecurringDates, resolveScheduleHorizon } from '../../utils/cycleScheduling';
 
 
 export interface TaskDomainApi {
@@ -43,6 +45,7 @@ export interface TaskDomainApi {
 
 interface CreateTaskDomainParams {
     tasks: ScheduledTask[];
+    freeProgressResetAt?: string | null;
     activeCycle: Cycle | null;
     campaigns: Campaign[];
     reports: Report[];
@@ -54,6 +57,14 @@ interface CreateTaskDomainParams {
     setDailyCommitmentState: Dispatch<SetStateAction<DailyCommitment>>;
     getActionById: (actionId: string) => Action | undefined;
     getArenas: () => Arena[];
+    /**
+     * O pacto ativo, lido na hora da conclusao.
+     *
+     * E getter, e nao valor, porque o dominio de tarefa e montado bem antes de o
+     * pacto ser calculado no provider. Getter tambem garante que a leitura seja
+     * do estado do momento da conclusao, nao do momento da montagem.
+     */
+    getActiveArenaPact?: () => { pact: ArenaPact | null; progress: ArenaPactProgress | null };
     getActionsForArena: (arenaId: string) => Action[];
     getClanQuestForAction: (action: Action | undefined) => SeasonQuest | null;
     getSupabaseUserId: () => string | null | undefined;
@@ -86,6 +97,7 @@ interface CreateTaskDomainParams {
 
 export const createTaskDomain = ({
     tasks,
+    freeProgressResetAt,
     activeCycle,
     campaigns,
     reports,
@@ -97,6 +109,7 @@ export const createTaskDomain = ({
     setDailyCommitmentState,
     getActionById,
     getArenas,
+    getActiveArenaPact,
     getActionsForArena,
     getClanQuestForAction,
     getSupabaseUserId,
@@ -404,6 +417,9 @@ export const createTaskDomain = ({
                 name: arena.name,
                 icon: arena.icon || '🏛️',
                 arenaId: arena.id,
+                actionCount: arenaActions.length,
+                deliveries: entregasDaArena.length,
+                days: diasDaArena.size,
             }
         });
 
@@ -499,12 +515,100 @@ export const createTaskDomain = ({
         return true;
     };
 
+    const showTaskProgressToast = (action: Action | undefined, nextTasks: ScheduledTask[]) => {
+        if (!action) return;
+        const arena = getArenas().find(item => item.id === action.arenaId);
+        if (!arena || isSharedArena(arena) || getClanQuestForAction(action)) return;
+        if (action.actionType === 'Livre') {
+            showToast(`${action.name}: registrada.`, 'success');
+            return;
+        }
+        const arenaActions = getActionsForArena(arena.id);
+        const progress = calculateArenaProgress({
+            arena,
+            actions: arenaActions,
+            tasks: getArenaPresentationTasks(nextTasks, activeCycle, freeProgressResetAt, getLocalDateString()),
+        });
+        const description = describeArenaProgress(arenaActions, progress);
+        if (!description) return;
+        const remaining = description.remaining;
+        const suffix = remaining !== null && remaining > 0
+            ? ` · ${remaining === 1 ? 'falta' : 'faltam'} ${remaining}` : '';
+        showToast(`${arena.name}: ${description.label}${suffix}`, 'success');
+    };
+
+    /**
+     * O pacto fala PRIMEIRO, antes da meta do ciclo.
+     *
+     * Meta de ciclo e estrutura que a pessoa montou; pacto e promessa que ela
+     * aceitou de viva voz para o Oraculo. Quando as duas avancam na mesma
+     * conclusao, a que ela escolheu conscientemente ganha o comentario.
+     *
+     * Sem pacto ativo, ou com a conclusao fora da arena do pacto, isto nao faz
+     * nada — quem nao aceitou nada nunca ouve nada disto.
+     */
+    const maybeTriggerPactProgressAttention = (
+        action: Action | undefined,
+        completedTask: ScheduledTask,
+    ): boolean => {
+        if (!completedTask.completed || !action) return false;
+        const atual = getActiveArenaPact?.();
+        const pacto = atual?.pact;
+        const progresso = atual?.progress;
+        if (!pacto || !progresso) return false;
+        if (action.actionType === 'Livre') return false;
+
+        // A conclusao precisa ser da arena do pacto, senao qualquer tarefa do dia
+        // viraria "avanco no pacto".
+        const arenaDaAcao = getArenas().find((arena) => (arena.actionIds || []).includes(action.id));
+        if (!arenaDaAcao || arenaDaAcao.id !== pacto.arenaId) return false;
+
+        const alvo = Math.max(1, progresso.goal);
+        const feito = Math.min(Math.max(0, progresso.current), alvo);
+        const faltam = Math.max(0, alvo - feito);
+        // Janela vencida nao comemora: o pacto acabou e dizer "faltam 2" seria
+        // cobrar uma coisa que nao esta mais de pe.
+        if (progresso.windowEnded && !progresso.completed) return false;
+
+        // "faltam 3 dias" so existe no pacto de volume; nos outros endsOn e null.
+        const dias = pacto.endsOn
+            ? (() => {
+                const hoje = getOperationalDateString();
+                const restantes = Math.max(0, Math.round(
+                    (new Date(`${pacto.endsOn.slice(0, 10)}T00:00:00`).getTime()
+                        - new Date(`${hoje}T00:00:00`).getTime()) / 86400000,
+                ));
+                return restantes === 0 ? ', e o prazo acaba hoje' : `, e você tem ${restantes} dia${restantes === 1 ? '' : 's'}`;
+            })()
+            : '';
+
+        const evento = progresso.completed
+            ? 'pact_completed'
+            : faltam === 1 ? 'pact_last_one' : 'pact_progress';
+
+        emitOracleSpeech({
+            title: progresso.completed ? 'Missão' : 'Missão em andamento',
+            message: falarReacao(evento, {
+                arena: pacto.arenaName,
+                count: feito,
+                target: alvo,
+                remaining: faltam,
+                dias,
+            }),
+            tone: 'success',
+            durationMs: progresso.completed || faltam <= 1 ? 5200 : 4300,
+        });
+        return true;
+    };
+
     const maybeTriggerTaskCompletionSpeech = (
         action: Action | undefined,
         completedTask: ScheduledTask,
         previousTasks: ScheduledTask[],
         nextTasks: ScheduledTask[],
     ) => {
+        showTaskProgressToast(action, nextTasks);
+        if (maybeTriggerPactProgressAttention(action, completedTask)) return;
         if (maybeTriggerActionCycleProgressAttention(action, completedTask, previousTasks, nextTasks)) return;
         maybeTriggerDailyMomentumAttention(action, completedTask, previousTasks, nextTasks);
     };
@@ -519,19 +623,56 @@ export const createTaskDomain = ({
         if (!action) return;
         const actionId = action.id;
 
+        // ATE ONDE AGENDAR.
+        //
+        // Isto era um laco de 365 dias fixos: marcar "todo dia" gravava o ano
+        // inteiro no primeiro clique. Enchia o banco, descia em toda abertura do
+        // app, e — pior — inventava uma meta que ninguem escolheu, porque o ano
+        // nao significa nada para quem mede a vida em ciclos.
+        //
+        // Agora o limite e o ciclo, o mesmo horizonte que ja recorta a barra da
+        // arena e o relatorio. Sem ciclo aberto, a janela da rodada livre.
+        // Quando o ciclo vira, startNewCycle reagenda — antes isso funcionava por
+        // acidente, porque o ano ja estava gravado.
+        const todayString = getLocalDateString();
+        const scheduleThrough = resolveScheduleHorizon(todayString, activeCycle);
+
+        // A CONFERENCIA DE DUPLICATA PRECISA VIR DO BANCO.
+        //
+        // O estado local so carrega ate o horizonte de leitura (35 dias). Um
+        // ciclo mais longo que isso tem um fim que a memoria nao enxerga — e
+        // conferir duplicata contra o que nao se ve e como nao conferir. Com o
+        // indice unico no banco isso deixaria de duplicar e passaria a ERRAR:
+        // a pessoa marcaria os dias e levaria um toast de falha, sem entender.
+        //
+        // Uma consulta a mais no clique de agendar e barato; ela acontece uma vez
+        // por acao, nao por abertura do app.
         const existingKeys = new Set(tasks.map(task => `${task.actionId}_${task.date}_${task.startTime}`));
+        const scheduleUserId = getSupabaseUserId();
+        if (scheduleUserId) {
+            const { data: jaGravadas, error: leituraErro } = await supabase
+                .from('scheduled_tasks')
+                .select('action_id, date, start_time')
+                .eq('user_id', scheduleUserId)
+                .eq('action_id', actionId)
+                .gte('date', todayString)
+                .lte('date', scheduleThrough);
+
+            if (leituraErro) {
+                console.error('Failed to read existing tasks before scheduling:', leituraErro.message);
+            } else {
+                for (const row of jaGravadas || []) {
+                    existingKeys.add(`${(row as any).action_id}_${(row as any).date}_${(row as any).start_time}`);
+                }
+            }
+        }
+
         const newTasks: ScheduledTask[] = [];
-        const currentDate = new Date();
 
-        for (let i = 0; i < 365; i += 1) {
-            const date = new Date(currentDate);
-            date.setDate(currentDate.getDate() + i);
-            const dayOfWeek = DAY_MAP[date.getDay()];
-            if (!daysOfWeek.includes(dayOfWeek)) continue;
-
-            const dateString = getLocalDateString(date);
+        for (const dateString of buildRecurringDates({ from: todayString, through: scheduleThrough, daysOfWeek })) {
             const key = `${actionId}_${dateString}_${startTimeInMinutes}`;
             if (existingKeys.has(key)) continue;
+            existingKeys.add(key);
 
             newTasks.push({
                 id: crypto.randomUUID(),
@@ -541,7 +682,6 @@ export const createTaskDomain = ({
                 duration: action.duration,
                 completed: false,
             });
-            existingKeys.add(key);
         }
 
         if (newTasks.length === 0) return;
@@ -1107,6 +1247,7 @@ export const createTaskDomain = ({
         const completionAttention = maybeTriggerArenaCompletionAttention(action, tasks, [...tasks, newTask]);
         if (!completionAttention) {
             emitAppSensoryCue('task_complete');
+            showTaskProgressToast(action, [...tasks, newTask]);
             emitOracleSpeech({
                 title: 'Marco',
                 message: falarReacao('milestone_completed', { action: action.name }),

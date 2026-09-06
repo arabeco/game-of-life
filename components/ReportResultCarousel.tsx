@@ -15,6 +15,7 @@ import { exportElementAsImage, shouldPreferNativeShare } from './Share';
 import { ShareChoiceSheet } from './ShareChoiceSheet';
 import './report-ui.css';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
+import { getChestVisual, withAlpha } from '../constants/rarityVisuals';
 const ReportRadarChart = React.lazy(() => import('./ReportRadarChart').then((m) => ({ default: m.ReportRadarChart })));
 
 // Helper functions (duplicated to avoid circular dependencies)
@@ -42,17 +43,12 @@ interface ReportResultCarouselProps {
 }
 
 const ChestVisual: React.FC<{ type: ChestType }> = ({ type }) => {
-    const getColors = (t: ChestType) => {
-        switch (t) {
-            case 'Incomum': return { base: '#C0C0C0', highlight: '#E0E0E0', glow: 'rgba(192, 192, 192, 0.6)' }; // Prata
-            case 'Raro': return { base: '#FFD700', highlight: '#FFFACD', glow: 'rgba(255, 215, 0, 0.6)' };      // Ouro
-            case '\u00c9pico': return { base: '#3B82F6', highlight: '#60A5FA', glow: 'rgba(59, 130, 246, 0.6)' };    // Azul
-            case 'Lend\u00e1rio': return { base: '#A855F7', highlight: '#C084FC', glow: 'rgba(168, 85, 247, 0.6)' }; // Roxo
-            default: return { base: '#A0522D', highlight: '#CD853F', glow: 'rgba(160, 82, 45, 0.6)' };          // Comum (Marrom)
-        }
+    const rarity = getChestVisual(type);
+    const colors = {
+        base: rarity.hex,
+        highlight: `color-mix(in srgb, ${rarity.hex} 72%, white)`,
+        glow: withAlpha(rarity.rgb, 0.6),
     };
-
-    const colors = getColors(type);
 
     return (
         <div className="relative w-32 h-32 flex items-center justify-center">
@@ -830,7 +826,6 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
         </Portal>
     );
 };
-
 
 
 

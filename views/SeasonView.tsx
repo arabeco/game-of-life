@@ -7,7 +7,7 @@ import { SeasonMission, SeasonQuest } from '../types';
 import { MissionDetailModal, QuestDetailModal, SeasonDetailModal, SeasonTransitionModal } from '../components/SeasonDetailModal';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { getNextSeasonConfig, getSeasonLaunchToastStorageKey, isGenesisSeason, resolveRuntimeActiveSeason, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
-import { SYSTEM_CHALLENGES, SystemChallenge } from '../constants/systemChallenges';
+import { SYSTEM_CHALLENGES, AVAILABLE_SYSTEM_CHALLENGES, SystemChallenge } from '../constants/systemChallenges';
 import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { ArenaPactBalloon, ArenaPactProposal } from '../components/ArenaPactBalloon';
@@ -334,10 +334,6 @@ export const SeasonView: React.FC = () => {
         || tasks.some((task) => task.actionId === 'action_tutorial_01' && task.completed);
     const hasInstalledCampaign = allArenas.some((arena) => Boolean(arena.originCodexId));
     const hasCreatedCycle = Boolean(activeCycle) || reports.length > 0;
-    const completedRealActions = useMemo(() => {
-        const realActionIds = new Set(allActions.filter((action) => action.actionType !== 'Livre').map((action) => action.id));
-        return tasks.filter((task) => task.completed && realActionIds.has(task.actionId)).length;
-    }, [allActions, tasks]);
     const clearedArenaCount = useMemo(() => {
         return allArenas.reduce((count, arena) => {
             const arenaActions = getActionsForArena(arena.id);
@@ -353,7 +349,6 @@ export const SeasonView: React.FC = () => {
         }, 0);
     }, [allArenas, getActionsForArena, tasks, getClanQuestsForArena, getClanQuestProgress]);
     const hasCompletedCycle = reports.length > 0;
-    const currentProofStreak = Math.max(0, Number(userProfile.dailyProofStreak?.current || 0));
 
     const getSystemQuestProgress = (quest: SystemChallenge): number => {
         if (completedFlags.has(quest.id)) return 100;
@@ -365,12 +360,8 @@ export const SeasonView: React.FC = () => {
                 return hasInstalledCampaign ? 100 : 0;
             case 'system-first-cycle':
                 return hasCreatedCycle ? 100 : 0;
-            case 'system-five-day-proof-streak':
-                return Math.min(100, Math.round((currentProofStreak / 5) * 100));
             case 'system-first-arena-gold':
                 return Math.min(100, clearedArenaCount * 100);
-            case 'system-twenty-actions':
-                return Math.min(100, Math.round((completedRealActions / 20) * 100));
             case 'system-first-cycle-report':
                 return hasCompletedCycle ? 100 : 0;
             default:
@@ -416,11 +407,20 @@ export const SeasonView: React.FC = () => {
         [acceptedSystemIds, completedFlags]
     );
     const availableSystemQuests = useMemo(
-        () => SYSTEM_CHALLENGES.filter((quest) => quest.id !== activeSystemQuests[0]?.id && !completedFlags.has(quest.id)),
+        () => AVAILABLE_SYSTEM_CHALLENGES.filter((quest) => quest.id !== activeSystemQuests[0]?.id && !completedFlags.has(quest.id)),
         [activeSystemQuests, completedFlags]
     );
 
     const acceptSystemQuest = (questId: string) => {
+        if (!AVAILABLE_SYSTEM_CHALLENGES.some(quest => quest.id === questId)) return;
+
+        // O slot e um so, e pode estar com uma missao individual DE ARENA. Aceitar
+        // por aqui sem olhar deixaria a pessoa com duas em andamento.
+        if (activeArenaPact) {
+            showToast(`Voce ja tem "${activeArenaPact.title}" em andamento. Encerre-a antes de aceitar esta.`, 'warning');
+            return;
+        }
+
         const replaced = activeSystemQuests[0];
         updateUserProfile({ acceptedSystemChallenges: [questId] });
         const quest = SYSTEM_CHALLENGES.find((candidate) => candidate.id === questId);
@@ -631,7 +631,7 @@ export const SeasonView: React.FC = () => {
                             {(activeSystemQuests.length > 0 || activeIndividualQuests.length > 0 || activeArenaPact || arenaPactCandidates.length > 0) && (
                                 <MissionSection
                                     title="Sua escolha"
-                                    hint={`${activeSystemQuests.length}/1 desafio`}
+                                    hint={`${activeSystemQuests.length}/1 missão`}
                                     count={activeSystemQuests.length + activeIndividualQuests.length + (activeArenaPact ? 1 : 0)}
                                 >
                                     {activeSystemQuests.map((quest) => (
@@ -640,15 +640,11 @@ export const SeasonView: React.FC = () => {
                                             title={quest.title}
                                             icon={quest.actionTemplate.icon}
                                             artUrl={quest.artUrl}
-                                            metaLabel="Desafio"
+                                            metaLabel="Missão"
                                             family="iniciante"
                                             isAccepted={true}
                                             progress={getSystemQuestProgress(quest)}
-                                            progressLabel={quest.id === 'system-five-day-proof-streak'
-                                                ? `${Math.min(currentProofStreak, 5)}/5 dias`
-                                                : quest.id === 'system-twenty-actions'
-                                                    ? `${Math.min(completedRealActions, 20)}/20 ações`
-                                                    : quest.id === 'system-first-arena-gold'
+                                            progressLabel={quest.id === 'system-first-arena-gold'
                                                         ? `${Math.min(clearedArenaCount, 1)}/1 arena`
                                                         : undefined}
                                             reward={formatQuestReward(quest)}
@@ -771,7 +767,7 @@ export const SeasonView: React.FC = () => {
                                         title={quest.title}
                                         icon={quest.actionTemplate.icon}
                                         artUrl={quest.artUrl}
-                                        metaLabel={activeSystemQuests.length > 0 ? 'Substitui a atual' : 'Desafio'}
+                                        metaLabel={activeSystemQuests.length > 0 ? 'Substitui a atual' : 'Missão'}
                                         isAccepted={false}
                                         progress={0}
                                         reward={formatQuestReward(quest)}
@@ -895,6 +891,10 @@ export const SeasonView: React.FC = () => {
                     fromSeason={activeSeason}
                     toSeason={nextSeason}
                     onClose={handleCloseSeasonTransition}
+                    onOpenQuest={(quest) => {
+                        handleCloseSeasonTransition();
+                        setSelectedQuest(quest);
+                    }}
                 />
             )}
         </div>

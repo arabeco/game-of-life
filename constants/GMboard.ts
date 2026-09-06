@@ -32,6 +32,8 @@ export const BODY_STYLES = [
   { id: 'body_fem_1', name: 'Feminino 1', url: `${AVATAR_BASE_URL}/body_fem_1.png` },
   { id: 'body_fem_2', name: 'Feminino 2', url: `${AVATAR_BASE_URL}/body_fem_2.png` },
   { id: 'body_fem_3', name: 'Feminino 3', url: `${AVATAR_BASE_URL}/body_fem_3.png` },
+  { id: 'body_fem_4', name: 'Feminino 4', url: `${AVATAR_BASE_URL}/body_fem_4.png` },
+  { id: 'body_fem_5', name: 'Feminino 5', url: `${AVATAR_BASE_URL}/body_fem_5.png` },
 ];
 
 export const FACE_FEATURES_URL = ``;

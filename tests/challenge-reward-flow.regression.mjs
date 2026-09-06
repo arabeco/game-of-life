@@ -16,10 +16,18 @@ const stackableMigration = readFileSync(
 // player now holds one system challenge at a time instead of three. Title, progress
 // maths and UI must keep agreeing with each other.
 assert.match(systemChallenges, /title: 'Complete sua primeira arena'/);
-assert.match(systemChallenges, /title: 'Cinco dias em movimento'/);
+
+// A MISSAO DOS CINCO DIAS E A SEQUENCIA SAIRAM. Aqui prendemos a AUSENCIA.
+//
+// O bonus de sequencia foi aposentado porque o foco passou a ser a missao
+// individual: exigir dias consecutivos premiava quem tem rotina livre e punia
+// quem trabalha por turno — media disponibilidade, nao esforco.
+//
+// As tres linhas que cobravam o contrario travaram a suite inteira depois da
+// remocao. Invertidas, viram a garantia de que nada disso volta por descuido.
+assert.doesNotMatch(systemChallenges, /Cinco dias em movimento/);
+assert.doesNotMatch(seasonView, /currentProofStreak/);
 assert.match(seasonView, /clearedArenaCount \* 100/);
-assert.match(seasonView, /currentProofStreak \/ 5/);
-assert.match(seasonView, /Math\.min\(currentProofStreak, 5\)/);
 assert.match(seasonView, /activeSystemQuests[\s\S]*?\.slice\(0, 1\)/);
 assert.match(seasonView, /createsArena=\{!isSystemQuest\(selectedQuest\)\}/);
 
@@ -27,7 +35,7 @@ assert.match(seasonView, /createsArena=\{!isSystemQuest\(selectedQuest\)\}/);
 // instead of silently dropping the one already in progress.
 assert.match(seasonView, /replaced && replaced\.id !== questId/);
 
-assert.match(seasonDetail, /Desafio pessoal/);
+assert.match(seasonDetail, /Missão pessoal/);
 assert.match(seasonDetail, /Como concluir/);
 // The chest/gold/XP summary still has to reach the detail modal, even though it is
 // no longer rendered as the literal "{rewardLabel} + insignia" string.
@@ -53,11 +61,19 @@ assert.match(gameContext, /itemId\.startsWith\('insignia_rank_'\)/);
 assert.match(gameContext, /itemId\.startsWith\('insignia_season_'\)/);
 assert.match(gameContext, /return !isOneOfEach;/);
 assert.doesNotMatch(gameContext, /isOneOfEach[\s\S]{0,200}insignia_quest_/);
-// Every completed mission grants an insignia: the one it names, or the generic
-// stackable badge for its tier. The second argument is the stackable flag, so it
-// must be true exactly when the generic badge is the one being granted.
-assert.match(gameContext, /await grantInventoryItem\(insigniaId, !rewardsInsignia\)/);
-assert.match(gameContext, /insignia_quest_master' : 'insignia_quest_incomum'/);
+// A insignia de familia nasce dentro do ritual: prata para missao individual e
+// azul-roxa para quest/missao de temporada. Como ela entra em grantedItemIds,
+// o mesmo item e concedido ao inventario e exibido no modal.
+assert.match(gameContext, /const missionInsigniaId = grant\.origem && grant\.origem !== 'missao'/);
+assert.match(gameContext, /\? 'insignia_quest_master'/);
+assert.match(gameContext, /: SYSTEM_CHALLENGE_INSIGNIA_ID/);
+// A concessao da insignia ganhou uma EXCECAO e o teste tem que prender as duas
+// pontas. As missoes iniciais completam sozinhas, nao ocupam o slot e nao pedem
+// aceite — dar insignia nelas igualaria o que a pessoa escolheu fazer ao que o
+// app fez por ela. Por isso 'semInsignia' existe; e por isso o caminho normal,
+// que continua somando a insignia, tambem fica preso aqui.
+assert.match(gameContext, /grant\.semInsignia/);
+assert.match(gameContext, /\[\.\.\.new Set\(\[\.\.\.\(grant\.itemIds \|\| \[\]\), missionInsigniaId\]\)\]/);
 assert.match(gameContext, /automaticChallengeClaimInFlightRef/);
 assert.match(gameContext, /PRODUCT_FEATURES\.clanMissions[\s\S]*?filter\(\(quest\) => quest\.type !== 'clan'\)/);
 assert.match(gameContext, /completedSeasonQuest[\s\S]*?claimSeasonQuest/);

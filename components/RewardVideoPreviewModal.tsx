@@ -4,19 +4,16 @@ import { Portal } from './Portal';
 import { VideoPlayer } from './VideoPlayer';
 import { XIcon } from './Icons';
 
-type PreviewKind = 'chest' | 'levelup' | 'report';
+// 'chest' saiu junto com o ChestOpeningModal: o video de abertura de bau nao e
+// mais usado no jogo, e um preview de algo que nao existe mais so confunde quem
+// abrir esta tela para conferir o que o jogador ve.
+type PreviewKind = 'levelup' | 'report';
 
 interface RewardVideoPreviewModalProps {
     onClose: () => void;
 }
 
 const PREVIEWS: Record<PreviewKind, { label: string; src: string; duration: number; placeholder: string }> = {
-    chest: {
-        label: 'Bau',
-        src: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/chest_normal.mp4`,
-        duration: 4000,
-        placeholder: 'Abrindo baú...',
-    },
     levelup: {
         label: 'Level up',
         src: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/levelup.mp4`,
@@ -32,7 +29,7 @@ const PREVIEWS: Record<PreviewKind, { label: string; src: string; duration: numb
 };
 
 export const RewardVideoPreviewModal: React.FC<RewardVideoPreviewModalProps> = ({ onClose }) => {
-    const [activePreview, setActivePreview] = useState<PreviewKind>('chest');
+    const [activePreview, setActivePreview] = useState<PreviewKind>('levelup');
     const preview = PREVIEWS[activePreview];
 
     return (

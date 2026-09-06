@@ -109,6 +109,9 @@ const POLICY: Record<string, { priority: NotificationPriority; basicVisible: boo
   arena_access: { priority: "actionable", basicVisible: true, gameVisible: true },
   competition_result: { priority: "critical", basicVisible: true, gameVisible: true },
   action_reminder: { priority: "actionable", basicVisible: true, gameVisible: true },
+  // O prazo do ciclo chega no celular porque so o servidor sabe que ele passou
+  // para quem nao abriu o app. E o unico motivo de ele existir.
+  cycle_deadline: { priority: "actionable", basicVisible: true, gameVisible: true },
   system: { priority: "critical", basicVisible: true, gameVisible: true },
 };
 
@@ -588,6 +591,12 @@ const getNotificationTitle = (notification: NormalizedNotification): string => {
         "Esta quase na hora de entrar.",
         "Prepara o terreno: a acao vem ai.",
       ]);
+    case "cycle_deadline":
+      return pickVariant([
+        "Seu ciclo tem prazo.",
+        "O ciclo esta chegando ao fim.",
+        "Uma data do seu ciclo se aproxima.",
+      ]);
     default:
       return pickVariant([
         "Tem um sinal novo no Glyph.",
@@ -640,6 +649,15 @@ const getNotificationBody = (notification: NormalizedNotification): string => {
         "Arruma o minimo em volta e entra sem renegociar.",
         "Comeca pequeno. O importante e nao transformar isso em conversa interna.",
         "Se ainda faz sentido, prepara o ambiente e executa.",
+      ]);
+    // Sem imperativo: o corpo ja diz quantos dias faltam, e mandar correr atras
+    // e exatamente o que o app decidiu nao fazer. Fechar o ciclo com o que deu e
+    // uma saida tao valida quanto acelerar.
+    case "cycle_deadline":
+      return pickVariant([
+        "Da para fechar com o que ja tem, ou ajustar o que sobrou.",
+        "Vale olhar o que ainda cabe — e o que nao cabe mais.",
+        "Nada aqui precisa virar corrida. So vale saber a data.",
       ]);
     case "reward_ready":
     case "mission_redeemable":
@@ -808,18 +826,10 @@ const shouldPushOracleMessage = (
     return false;
   }
 
-  // Aviso de perda iminente tem portao proprio, e sai ANTES do portao de presenca.
-  //
-  // Sem esta saida o aviso morreria tres vezes: presenceLevel <= 0 barra o
-  // Silencioso — que e exatamente quem o interruptor de alertas existe para
-  // servir —, e depois o perfil de modo exige presentation 'info_card' ou recusa
-  // tudo no 'essencial'. A mensagem seria gravada no historico e nunca chegaria
-  // no celular: falha em silencio, a pior especie.
-  //
-  // Presenca decide o que o Oraculo COMENTA. Isto nao e comentario: e a
-  // sequencia morrendo a meia-noite, e recebe so quem ligou o interruptor.
-  if (asTrimmedString(message.contextSnapshot.purpose) === "streak_alert") {
-    return importantAlertsEnabled;
+  // Alertas de sequencia global foram aposentados, inclusive retries antigos.
+  if (asTrimmedString(message.contextSnapshot.purpose) === "streak_alert"
+    || ["streak_mantida", "streak_quebrada"].includes(asTrimmedString(message.contextSnapshot.operationalState))) {
+    return false;
   }
 
   // A presenca decide O QUE o Oraculo fala; quem decide se aquilo vira aviso no

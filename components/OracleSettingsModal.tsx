@@ -458,17 +458,6 @@ export const OracleSettingsModal: React.FC<OracleSettingsModalProps> = ({
 
                                 <div className="space-y-1 pt-1">
                                     <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-500">Avisos</h3>
-                                    {/* Fora do bloco de presenca de proposito: este aviso
-                                        existe para quem esta no Silencioso tambem. */}
-                                    {renderSwitchRow({
-                                        icon: '!',
-                                        label: 'Avisar antes de perder a sequência',
-                                        description: 'A noite, se o dia ainda estiver sem nenhuma ação. Independe da presenca do Oráculo.',
-                                        enabled: Boolean(oraclePreferences.importantAlertsEnabled),
-                                        onToggle: () => handleToggle('importantAlertsEnabled'),
-                                        accentClass: 'bg-rose-500/70',
-                                    })}
-
                                     {renderSwitchRow({
                                         icon: 'DM',
                                         label: 'Mensagens e convites',

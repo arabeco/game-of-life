@@ -1,7 +1,7 @@
 {
   "name": "glyph-app",
   "private": true,
-  "version": "1.0.81",
+  "version": "1.0.82",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
     "test:cycle-comparison": "node tests/cycle-comparison.regression.mjs",
     "test:subscription-xp-bonus": "node tests/subscription-xp-bonus.regression.mjs",
     "test:arena-pacts": "node tests/arena-pacts.regression.mjs",
+    "test:cycle-scheduling": "node tests/cycle-scheduling.regression.mjs",
     "test:xp-scale": "node tests/xp-scale.regression.mjs",
     "test:mission-reward": "node tests/mission-reward-unification.regression.mjs",
     "test:exp-ledger": "node tests/exp-ledger.regression.mjs",
@@ -19,9 +20,13 @@
     "test:sensory-grammar": "node tests/sensory-grammar.regression.mjs",
     "test:oracle-arbiter": "node tests/oracle-arbiter.regression.mjs",
     "test:oracle-presence-policy": "node tests/oracle-presence-policy.regression.mjs",
+    "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",
     "test:relationship-links": "node tests/relationship-links.regression.mjs",
     "test:ui-hygiene": "node tests/ui-hygiene.regression.mjs",
+    "test:item-art": "node tests/item-art.regression.mjs",
+    "test:avatar-offsets": "node tests/avatar-offsets.regression.mjs",
+    "check:avatar-geometry": "node scripts/check-avatar-geometry.mjs",
     "lint:buttons": "node scripts/list-unlabeled-buttons.mjs",
     "test:cycle-delete-smoke": "node tests/cycle-delete-smoke.cdp.mjs",
     "test:launch": "node tests/launch-readiness.mjs",
@@ -30,7 +35,9 @@
     "optimize:catalog": "node scripts/optimize-static-catalog-assets.mjs",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
-    "worker:legacy-render": "node scripts/legacy-render-worker.mjs"
+    "worker:legacy-render": "node scripts/legacy-render-worker.mjs",
+    "bancada": "vite --config vite.preview.config.ts",
+    "folhas": "node scripts/build-ladder-sheet.mjs && node scripts/build-catalog-sheet.mjs && node scripts/build-seasons-sheet.mjs && node scripts/build-modal-sheet.mjs && node scripts/build-oraculo-sheet.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.29",

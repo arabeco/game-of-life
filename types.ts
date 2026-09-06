@@ -81,6 +81,16 @@ export type SlotLayoutType = 1 | 2 | 3 | 4; // 1: wide, 2: square, 3: rect, 4: c
 export type OnboardingAgeRange = 'ate_17' | '18_24' | '25_34' | '35_49' | '50_mais';
 export type OnboardingPurpose = 'organizar' | 'habitos' | 'objetivo' | 'retomar';
 
+/**
+ * Os tipos de bau.
+ *
+ * 'Ciclo' e LEGADO: nada mais o concede. Ele vestia a arte e a cor do Raro e
+ * sorteava pior \u2014 40% de chance de item comum, coisa que o Raro nunca da \u2014 e o
+ * nome fazia parecer que era o bau do fecho de ciclo, que na verdade entrega
+ * Comum/Raro/Epico/Lendario pela nota. O desafio que o pagava passou a dar um
+ * Raro. O tipo continua aqui, e continua resolvendo nome, cor e arte, porque
+ * pode haver um guardado em alguma conta.
+ */
 export type ChestType = 'Comum' | 'Incomum' | 'Raro' | '\u00C9pico' | 'Lend\u00E1rio' | 'Season' | 'Ciclo' | 'Skin Comum';
 
 export interface SlotValueImage {
@@ -314,6 +324,16 @@ export interface RewardMetricCard {
   label: string;
   value: string;
   detail?: string;
+  /**
+   * O simbolo colado no numero: 'exp', 'ouro', 'fragmento', 'acoes',
+   * 'sequencia', 'meta'.
+   *
+   * Quando presente, o RÓTULO some — "+150" com o XP dourado ao lado nao precisa
+   * da palavra "experiencia" em cima. O rotulo fica so onde o simbolo sozinho
+   * nao diz o que o numero e: "3 de 3" precisa dizer *jornadas*, "2 de 10"
+   * precisa dizer *patente*.
+   */
+  simbolo?: 'exp' | 'ouro' | 'fragmento' | 'acoes' | 'sequencia' | 'meta';
 }
 
 export interface RewardHighlightLine {
@@ -321,6 +341,15 @@ export interface RewardHighlightLine {
   value: string;
   detail?: string;
   tone?: 'gold' | 'emerald' | 'cyan' | 'violet';
+  /**
+   * O RGB oficial da raridade ("59,130,246"), de constants/rarityVisuals.ts.
+   * Quando vem preenchido manda no lugar do `tone`: os quatro tons fixos sao
+   * anteriores as seis raridades e nao tem como representar comum nem raro —
+   * um bau raro saia dourado, que e a cor de outra raridade.
+   */
+  rarityRgb?: string;
+  /** Arte grande da recompensa quando a linha representa um item, como baú. */
+  imageUrl?: string;
 }
 
 export interface RewardModalPayload {
@@ -328,11 +357,17 @@ export interface RewardModalPayload {
   gold?: number;
   chestType?: ChestType | null;
   itemIds?: string[];
+  /** Item-herói da entrega. Por padrão sai da grade para não aparecer duas vezes. */
+  featuredItemId?: string;
+  /** Mantém o item-herói também na relação textual quando a identificação precisa ficar abaixo da arte. */
+  repeatFeaturedItemInList?: boolean;
   legacyProjectionSceneCreditsGranted?: number;
   campaignQuizFreeCreditsGranted?: number;
   campaignQuizMediumCreditsGranted?: number;
   eyebrow?: string;
   title?: string;
+  /** Linha curta imediatamente sob o título, usada para código/nome próprio. */
+  subtitle?: string;
   summary?: string;
   buttonLabel?: string;
   itemSectionTitle?: string;
@@ -341,7 +376,16 @@ export interface RewardModalPayload {
   rewardHighlightsTitle?: string;
   rewardHighlights?: RewardHighlightLine[];
   activeBenefitsTitle?: string;
-  activeBenefits?: string[];
+  activeBenefits?: Array<string | RewardBenefitLine>;
+}
+
+export interface RewardBenefitLine {
+  /** Familia funcional: Oraculo, Capacidade, Personalizacao, Legado... */
+  label: string;
+  /** Beneficio que foi ativado. */
+  value: string;
+  detail?: string;
+  tone?: 'gold' | 'emerald' | 'cyan' | 'violet';
 }
 
 export interface VanguardWelcomePayload extends RewardModalPayload {
@@ -514,10 +558,11 @@ export interface UserProfile {
   // Pacto de arena ativo. Uma missao de cada vez, por decisao de produto.
   // Titulo e recompensa nao moram aqui: saem do molde em utils/arenaPacts.ts.
   arenaPactArenaId?: string | null;
-  arenaPactKind?: 'constancia' | 'conclusao' | 'retomada' | null;
+  arenaPactKind?: 'constancia' | 'conclusao' | 'retomada' | 'volume' | null;
   arenaPactDifficulty?: 'leve' | 'media' | 'alta' | null;
   arenaPactGoal?: number | null;
   arenaPactStartedOn?: string | null;
+  arenaPactEndsOn?: string | null;
   role: 'admin' | 'gm' | 'user';
   isPremium?: boolean;
   clanName?: string;
@@ -981,6 +1026,8 @@ export interface RewardCodeRedeemResult {
   premiumDaysGranted?: number | null;
   chestType?: string | null;
   chestCount?: number | null;
+  /** Itens concedidos pelo codigo. O RPC ja devolvia; ninguem lia. */
+  itemIds?: string[];
   legacySceneCreditsGranted?: number | null;
   campaignQuizFreeCreditsGranted?: number | null;
   campaignQuizMediumCreditsGranted?: number | null;
@@ -1471,6 +1518,24 @@ export interface OracleContext {
   dailyProofLastExpDeposited: number | null;
   dailyProofLastCompletedTasksCount: number | null;
   dailyProofLastTotalTasksCount: number | null;
+  /**
+   * O pacto ativo — o compromisso que a PESSOA aceitou.
+   *
+   * Antes disto o Oraculo oferecia o pacto e esquecia na hora: nada do que ele
+   * enxergava dizia que havia um compromisso de pe, entao ele nunca podia falar
+   * dele. Opcional porque o cron do servidor nao monta esta parte — quem fala do
+   * pacto e o cliente, que ja tem perfil e tarefas na memoria.
+   */
+  pactArenaName?: string | null;
+  pactKind?: string | null;
+  pactTitle?: string | null;
+  pactGoal?: number | null;
+  pactCurrent?: number | null;
+  pactRemaining?: number | null;
+  /** null quando o pacto nao tem prazo (constancia, conclusao, retomada). */
+  pactDaysRemaining?: number | null;
+  pactCompleted?: boolean;
+  pactWindowEnded?: boolean;
   activeMode: OracleMode;
   customModeInstructions: string | null;
   enabledCategories: OracleCategory[];
@@ -1609,6 +1674,7 @@ export type NotificationType =
   | 'arena_access'
   | 'competition_result'
   | 'action_reminder'
+  | 'cycle_deadline'
   | 'system';
 export interface NotificationMetadata {
   /** Presente de item: quem mandou e o que veio. */
@@ -1724,4 +1790,3 @@ export interface AldeiaPresence {
   startedAt: string;
   hoursCounted: number;
 }
-

@@ -8,6 +8,7 @@ import { getExpBoostHoursRemaining, getExpBoostLabel, hasActiveExpBoost } from '
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess, isStaffRole } from '../../utils/premiumAccess';
 import { ConfirmationModal } from '../ConfirmationModal';
 import { getGoldPackChannelBadgeCopy, getMoneyCheckoutSalesCopy } from '../../utils/billingRuntime';
+import { ValorIcon } from '../ValorIcon';
 
 type GoldConfirmState = { kind: 'boost'; boostId: string; boostName: string; costGold: number };
 
@@ -278,7 +279,7 @@ export const GoldStore: React.FC<{ scrollRequest?: { section: string; nonce: num
 
                                     <div className="flex items-center gap-1 text-xl font-black leading-none text-[var(--gold)]">
                                         {pack.totalGold}
-                                        <span className="text-[13px]">🪙</span>
+                                        <ValorIcon valor="ouro" tamanho={15} rotulo="" />
                                     </div>
 
                                     <h4 className="truncate text-[9px] font-bold uppercase tracking-[0.06em] text-[color:var(--ui-card-text-soft)]">{pack.name}</h4>

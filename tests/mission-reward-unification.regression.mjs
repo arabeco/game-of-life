@@ -31,22 +31,34 @@ const corpo = (nome, ate) => {
   return source.slice(inicio, fim);
 };
 
-// --- o ritual existe e cuida da patente -----------------------------------
+// --- o ritual existe; a patente tem uma unica autoridade ------------------
 const ritual = corpo('grantMissionReward', '\n    const claimSeasonQuest');
-assert.match(ritual, /NOBILITY_RANKS\.find/, 'o ritual precisa detectar subida de patente');
-assert.match(ritual, /PLAYER_RANK_UP/, 'o ritual precisa abrir a tela de patente');
-assert.match(ritual, /RANK_UP_INSIGNIA_ID/, 'a insignia acumulativa de subida entra junto');
 assert.match(ritual, /completedSeasonMissions/, 'o ritual marca a missao como concluida');
 assert.match(ritual, /addChest/, 'o ritual entrega o bau');
+assert.doesNotMatch(ritual, /NOBILITY_RANKS\.find/, 'o ritual nao pode duplicar a deteccao de patente');
+assert.doesNotMatch(ritual, /PLAYER_RANK_UP/, 'o ritual nao pode abrir um segundo modal de patente');
+
+const rankObserver = source.slice(
+  source.indexOf('const oldRankId = userProfile.nobility.rankId'),
+  source.indexOf('const updateUserProfile = ', source.indexOf('const oldRankId = userProfile.nobility.rankId')),
+);
+assert.match(rankObserver, /RANK_UP_INSIGNIA_ID/, 'o observador unico precisa entregar a insignia acumulativa');
+assert.match(rankObserver, /RANK_REWARDS/, 'o observador unico precisa entregar os cosmeticos da patente');
+assert.match(rankObserver, /PLAYER_RANK_UP/, 'o observador unico precisa abrir a celebracao da patente');
 
 // O XP do ritual vai ao perfil, nao ao ciclo: e o numero que o modal promete
 // na hora. Se voltar a passar por applyExp, o valor exibido e o creditado
 // divergem de novo.
 assert.doesNotMatch(ritual, /applyExp\(/, 'o ritual nao pode delegar o XP para applyExp');
+assert.match(ritual, /grant\.origem && grant\.origem !== 'missao'/, 'o ritual precisa distinguir a familia da temporada');
+assert.match(ritual, /insignia_quest_master/, 'quest e missao de temporada precisam receber a insignia azul-roxa');
+assert.match(ritual, /SYSTEM_CHALLENGE_INSIGNIA_ID/, 'missao individual precisa receber a insignia prata');
+assert.match(ritual, /grantedItemIds/, 'a insignia precisa entrar na mesma lista concedida e mostrada no modal');
 
 // --- os quatro resgates usam o ritual -------------------------------------
 const resgates = [
   ['claimSeasonQuest', '\n    const claimSeasonMission'],
+  ['claimSeasonMission', '\n    const claimSystemChallenge'],
   ['claimArenaPact', '\n    const '],
   ['claimSystemChallenge', '\n    const '],
 ];
@@ -73,12 +85,17 @@ for (const [nome, ate] of resgates) {
 // reward_value carrega o premio principal e nem sempre e numero: quando a missao
 // entrega insignia (o Selo da Genesis), o XP mora em reward_exp. Ler so o
 // primeiro fazia a missao pagar zero sem avisar.
-const claimMission = corpo('claimSeasonMission', 'addFeedEvent');
+const claimMission = corpo('claimSeasonMission', '\n    const claimSystemChallenge');
 assert.match(
   claimMission,
   /reward_exp/,
   'claimSeasonMission precisa cair em reward_exp quando reward_value nao e numero',
 );
+assert.doesNotMatch(claimMission, /insignia_quest_incomum/, 'missao de temporada nao pode receber a insignia prata');
+
+const claimQuest = corpo('claimSeasonQuest', '\n    const claimSeasonMission');
+assert.match(claimQuest, /origem: 'quest_temporada'/, 'quest de temporada precisa selecionar a familia azul-roxa');
+assert.doesNotMatch(claimQuest, /insignia_quest_incomum/, 'quest de temporada nao pode receber a insignia prata');
 
 // --- o Selo da Genesis e uma missao de item com XP proprio ----------------
 const seasonSource = readFileSync(new URL('../constants/seasonContent.ts', import.meta.url), 'utf8');
@@ -91,4 +108,4 @@ assert.match(selo, /reward_exp: \d+/, 'o Selo precisa declarar o XP em reward_ex
 assert.match(selo, /sourceQuestIds: \['quest-wanderer', 'quest-scholar', 'quest-warrior'\]/,
   'o Selo aponta para as tres jornadas reais da Genesis');
 
-console.log('Mission reward unification: um ritual, quatro resgates, patente entregue em todos.');
+console.log('Mission reward unification: um ritual, quatro resgates, uma autoridade de patente.');

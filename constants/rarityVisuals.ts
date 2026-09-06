@@ -13,9 +13,9 @@ export const RARITY_VISUALS: Record<VisualRarity, RarityVisual> = {
     common: { key: 'common', label: 'Comum', hex: '#9CA3AF', rgb: '156,163,175' },
     uncommon: { key: 'uncommon', label: 'Incomum', hex: '#22C55E', rgb: '34,197,94' },
     rare: { key: 'rare', label: 'Raro', hex: '#3B82F6', rgb: '59,130,246' },
-    epic: { key: 'epic', label: 'Epico', hex: '#A855F7', rgb: '168,85,247' },
-    legendary: { key: 'legendary', label: 'Lendario', hex: '#F59E0B', rgb: '245,158,11' },
-    mythic: { key: 'mythic', label: 'Mitico', hex: '#7B61FF', rgb: '123,97,255' },
+    epic: { key: 'epic', label: 'Épico', hex: '#A855F7', rgb: '168,85,247' },
+    legendary: { key: 'legendary', label: 'Lendário', hex: '#F59E0B', rgb: '245,158,11' },
+    mythic: { key: 'mythic', label: 'Mítico', hex: '#7B61FF', rgb: '123,97,255' },
     quest: { key: 'quest', label: 'Temporada', hex: '#14B8A6', rgb: '20,184,166' },
 };
 
@@ -62,9 +62,34 @@ export const getChestVisual = (type: ChestType | string): RarityVisual => {
     if (lower.includes('incomum')) return RARITY_VISUALS.uncommon;
     if (lower.includes('raro') || lower.includes('radiante') || lower.includes('ciclo')) return RARITY_VISUALS.rare;
     if (lower.includes('epico')) return RARITY_VISUALS.epic;
-    if (lower.includes('season')) return RARITY_VISUALS.quest;
+    // `Season` e a chave persistida do Bau Mitico. Nao e uma raridade visual
+    // chamada "Temporada" e nao deve cair no verde-agua das quests.
+    if (lower.includes('season') || lower.includes('mitico')) return RARITY_VISUALS.mythic;
     if (lower.includes('lendario') || lower.includes('legendary')) return RARITY_VISUALS.legendary;
     return RARITY_VISUALS.common;
+};
+
+export const getChestRarity = (type: ChestType | string): ItemRarity => {
+    const visual = getChestVisual(type);
+    return visual.key === 'quest' ? 'mythic' : visual.key;
+};
+
+export const getChestTier = (type: ChestType | string): 1 | 2 | 3 | 4 | 5 | 6 => {
+    const rarity = getChestRarity(type);
+    return rarity === 'mythic' ? 6
+        : rarity === 'legendary' ? 5
+        : rarity === 'epic' ? 4
+        : rarity === 'rare' ? 3
+        : rarity === 'uncommon' ? 2
+        : 1;
+};
+
+export const getChestDisplayName = (type: ChestType | string): string => {
+    const lower = String(type).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (lower.includes('skin') && lower.includes('comum')) return 'Baú de Skin Comum';
+    if (lower.includes('season') || lower.includes('mitico')) return 'Baú Mítico';
+    if (lower.includes('ciclo')) return 'Baú de Ciclo';
+    return `Baú ${getChestVisual(type).label}`;
 };
 
 export const QUEST_VISUAL = RARITY_VISUALS.quest;

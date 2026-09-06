@@ -1,14 +1,16 @@
 ﻿import React, { useEffect, useRef } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { GlassCard } from './GlassCard';
 import { ShareIcon } from './Icons';
 import { FeedEventType } from '../types';
-import { SKINS_DATA } from '../constants/GMboard';
-import { PROOF_STREAK_CHALLENGE_TITLES } from '../constants/systemChallenges';
 import { VideoPlayer } from './VideoPlayer';
 import { Portal } from './Portal';
 import { resolveItemDef } from '../constants/items';
 import { useVideoStageTransition } from '../hooks/useVideoStageTransition';
+import { RewardPackBody } from './RewardPackBody';
+import { buildAchievementRewardPayload } from '../utils/achievementRewardPayload';
+import { getRewardEmblemUrl, getRewardToneRgb } from '../constants/rewardEmblems';
+import { DIRECOES, REWARD_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
+import { SEASONS } from '../constants/seasonContent';
 
 interface AchievementModalProps {
     achievement: { type: FeedEventType; data: any };
@@ -24,50 +26,55 @@ type AchievementRewardDetail = {
 const getAchievementDetails = (type: FeedEventType, data: any) => {
     switch (type) {
         case 'MILESTONE_COMPLETED':
-            return { title: 'Marco concluído', icon: data.icon || '\u{1F3C1}', message: `Você concluiu o marco "${data.name}".` };
+            return { title: 'Conquista concluída!', subtitle: data.name, icon: data.icon || '\u{1F3C1}', message: 'Este marco foi registrado no seu perfil.' };
         case 'ARENA_COMPLETED':
-            return { title: 'Arena concluída', icon: data.icon || '\u{1F3DF}\uFE0F', message: `Você concluiu a arena "${data.name}".` };
+            return { title: 'Arena concluída!', subtitle: data.name, icon: data.icon || '\u{1F3DF}\uFE0F', message: 'Todos os dados desta arena foram consolidados.' };
         case 'PLAYER_RANK_UP':
-            return { title: 'Parabéns', icon: '\u{1F451}', message: `Você subiu de patente para ${data.name}!` };
+            return { title: 'Nova patente!', subtitle: data.name, icon: '\u{1F451}', message: 'Sua nova patente e as recompensas correspondentes foram liberadas.' };
         case 'QUEST_COMPLETED': {
-            const isStreakMilestone = PROOF_STREAK_CHALLENGE_TITLES.includes(data.title);
-            return isStreakMilestone
-                ? {
-                    title: 'Sequência consolidada',
-                    icon: data.icon || '\u{1F525}',
-                    message: 'Você se manteve em movimento por cinco dias seguidos. Não foi sobre perfeição: foi constância suficiente para continuar.',
-                }
-                : { title: 'Desafio concluído', icon: data.icon || '\u{1F3AF}', message: `Você concluiu o desafio "${data.title}".` };
+            return {
+                title: 'Missão concluída!',
+                subtitle: data.title,
+                icon: data.icon || '\u{1F3AF}',
+                message: 'A recompensa desta missão já entrou.',
+            };
         }
         case 'REPORT_COMPLETED':
             return { title: 'Relatório concluído', icon: '\u{1F4DC}', message: 'Você fechou seu relatório de ciclo com sucesso.' };
         case 'COMPETITION_COMPLETED': {
-            const score = `${Number(data.selfCompleted || 0)}/${Number(data.selfTarget || 0)} contra ${Number(data.rivalCompleted || 0)}/${Number(data.rivalTarget || 0)}`;
+            // O placar saiu do texto e foi para os quadradinhos: "4/5 contra
+            // 3/5" no meio de uma frase obrigava a ler a frase inteira para
+            // saber quem ganhou. O titulo diz o resultado, os quadrados dizem
+            // por quanto.
+            const rival = data.opponentNickname ? '@' + data.opponentNickname : 'Rival';
+            const desafio = data.challengeName || 'Desafio';
             if (data.result === 'winner') {
-                return { title: 'DESAFIO VENCIDO', icon: '\u{1F3C6}', message: `Você venceu "${data.challengeName || 'Desafio'}" contra @${data.opponentNickname || 'seu rival'}. ${score}.` };
+                return { title: 'DESAFIO VENCIDO', icon: '\u{1F3C6}', message: `Você venceu "${desafio}" contra ${rival}.` };
             }
             if (data.result === 'draw') {
-                return { title: 'EMPATE', icon: '\u{2696}\uFE0F', message: `"${data.challengeName || 'Desafio'}" terminou empatado. ${score}.` };
+                return { title: 'EMPATE', icon: '\u{2696}\uFE0F', message: `"${desafio}" terminou empatado com ${rival}.` };
             }
-            return { title: 'DESAFIO ENCERRADO', icon: '\u{1F3C1}', message: `@${data.opponentNickname || 'Seu rival'} venceu "${data.challengeName || 'Desafio'}". Você chegou a ${score}.` };
+            return { title: 'DESAFIO ENCERRADO', icon: '\u{1F3C1}', message: `${rival} venceu "${desafio}".` };
         }
         case 'CLAN_RANK_UP':
-            return { title: 'Grupo avançou', icon: '\u{1F6E1}\uFE0F', message: `Seu grupo agora e um ${data.name}!` };
+            return { title: 'Conquista concluída!', subtitle: data.name, icon: '\u{1F6E1}\uFE0F', message: 'A evolução do grupo foi registrada.' };
         default:
             return { title: 'Concluído', icon: '\u2728', message: 'Você realizou um feito notável.' };
     }
 };
 
 export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement, onClose }) => {
-    const { addFeedEvent, userProfile, showToast, oraclePreferences } = useGame();
+    const { addFeedEvent, showToast, oraclePreferences, updateOraclePreferences } = useGame();
     // Quem desliga as telas de comemoracao nao perde nada: a recompensa continua
     // entrando e o aviso vira toast. So a tela cheia deixa de tomar o aparelho.
     const celebrationScreensEnabled = oraclePreferences?.celebrationScreensEnabled !== false;
-    const { title, icon, message } = getAchievementDetails(achievement.type, achievement.data);
+    const { title, subtitle, icon, message } = getAchievementDetails(achievement.type, achievement.data);
     const cardRef = useRef<HTMLDivElement>(null);
     const isArenaComplete = achievement.type === 'ARENA_COMPLETED';
     const isCompetitionResult = achievement.type === 'COMPETITION_COMPLETED';
-    const canRenderAchievement = achievement.type !== 'ARENA_COMPLETED';
+    // ARENA_COMPLETED fazia parte do tipo e do texto, mas era excluida aqui e
+    // fechava no primeiro efeito. Ela volta a usar a mesma placa dos demais.
+    const canRenderAchievement = true;
     const canShareAchievement = !isCompetitionResult;
 
     useEffect(() => {
@@ -87,13 +94,15 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
 
     if (!canRenderAchievement || !celebrationScreensEnabled) return null;
 
-    const userSkin = SKINS_DATA.find((skin) => skin.id === userProfile.skin);
-    const skinColor = userSkin?.color || '#ffffff';
     const isRankUp = achievement.type === 'PLAYER_RANK_UP';
     const isQuestComplete = achievement.type === 'QUEST_COMPLETED';
-    const isStreakMilestone = isQuestComplete && PROOF_STREAK_CHALLENGE_TITLES.includes(achievement.data.title);
     const isReportComplete = achievement.type === 'REPORT_COMPLETED';
-    const showVideo = isRankUp || isQuestComplete || isReportComplete;
+    // `semVideo` existe para o encadeamento: quando a missao ja mostrou o video
+    // dela, a patente que veio junto entra direto na placa. Dois videos
+    // seguidos viram dez segundos de espera antes do primeiro OK.
+    const showVideo = Boolean(oraclePreferences?.animationsEnabled)
+        && (isRankUp || isQuestComplete || isReportComplete)
+        && !achievement.data.semVideo;
     const { showVideoStage, showContentStage, isVideoFading, triggerReveal } = useVideoStageTransition({
         enabled: showVideo,
         revealDelayMs: 4500,
@@ -101,43 +110,88 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
     });
 
     const rawRewards = achievement.data.rewards || achievement.data.reward || {};
-    const rewardDetails: AchievementRewardDetail[] = Array.isArray(rawRewards.rewardDetails)
-        ? rawRewards.rewardDetails
-        : [];
-    const normalizedRewards = {
-        exp: rawRewards.exp,
-        gold: rawRewards.gold,
-        chest: rawRewards.chest,
-        ornament: rawRewards.ornament,
-        items: rawRewards.items || (rawRewards.item ?[rawRewards.item] : []),
-        rewardDetails,
-        uiSkins: rawRewards.uiSkins || [],
-    };
-    const visibleRewardDetails: AchievementRewardDetail[] = normalizedRewards.rewardDetails.length > 0
-        ? normalizedRewards.rewardDetails
-        : normalizedRewards.items.map((itemId: string) => ({ itemId }));
+    const rewardItemIds: string[] = rawRewards.items || (rawRewards.item ? [rawRewards.item] : []);
+    const seloDaTemporada = Boolean(achievement.data.seloDaTemporada)
+        || rewardItemIds.some((itemId) => String(itemId).startsWith('insignia_season_'));
+    // A sobrancelha diz de onde o feito veio. Antes o modal so tinha titulo, e
+    // "Parabens" sozinho nao distinguia subir de patente de fechar um ciclo.
+    const sobrancelha = isCompetitionResult ? 'Resultado do desafio' : '';
+    // O tipo do acontecimento decide DUAS coisas de uma vez: o emblema do topo
+    // e o tom do reflexo. Antes o emblema era emoji escolhido no meio do JSX e
+    // o reflexo era dourado fixo — subir de patente e fechar um ciclo saiam
+    // com a mesma cara.
+    const tipoDaRecompensa = isRankUp
+        ? 'patente' as const
+        : isReportComplete
+            ? 'ciclo' as const
+            : isQuestComplete
+                ? (seloDaTemporada
+                    ? (rewardItemIds.includes('insignia_season_genesis') ? 'genesis' as const : 'temporada' as const)
+                    : achievement.data.origem && achievement.data.origem !== 'missao' ? 'temporada' as const : 'missao' as const)
+                : 'geral' as const;
+    const emblemaDoFeito = isCompetitionResult ? icon : getRewardEmblemUrl(tipoDaRecompensa, achievement.data.name);
+    const tomDoFeito = getRewardToneRgb(tipoDaRecompensa, achievement.data.name);
+    const inferredSeasonId = rewardItemIds.includes('insignia_season_aurora_1')
+        ? 'season-aurora-1-2026'
+        : 'season-genesis-0';
+    const seasonBackground = seloDaTemporada
+        ? SEASONS[achievement.data.seasonId || inferredSeasonId]?.backgroundUrl
+        : undefined;
+    const estiloDaPlaca = DIRECOES.B;
 
-    const getRewardDetailLabel = (detail: AchievementRewardDetail) => {
-        const category = String(detail.category || '').toLowerCase();
-        if (category === 'ui_skins') return 'Tema';
-        if (category === 'insignias') return 'Insignia';
-        if (category === 'borders') return 'Borda';
-        if (category === 'banners') return 'Banner';
-        if (category === 'glyphs') return 'Glyph';
-        if (category === 'skins') return 'Skin';
-        if (category === 'orbs') return 'Orbe';
-        if (category === 'artifacts') return 'Artefato';
-        if (category === 'auras') return 'Aura';
-        return 'Item';
+    const seasonName = SEASONS[achievement.data.seasonId || inferredSeasonId]?.name
+        || String(subtitle || achievement.data.title || '').replace(/^Selo (?:da|de|do) /i, '');
+    const payloadBase = {
+        ...buildAchievementRewardPayload(
+            seloDaTemporada ? 'Temporada concluída!' : title,
+            message,
+            sobrancelha,
+            rawRewards,
+        ),
+        subtitle: seloDaTemporada ? seasonName : subtitle,
     };
-    const headingClass = isCompetitionResult
-        ? 'text-xl font-black uppercase leading-tight tracking-[0.16em] text-white'
-        : 'text-2xl font-black uppercase leading-tight tracking-[0.3em] text-white';
-    const messageClass = isCompetitionResult
-        ? 'mx-auto max-w-[92%] text-xs font-semibold leading-relaxed text-white/72'
-        : 'mx-auto max-w-[85%] text-[10px] font-bold uppercase italic leading-relaxed tracking-[0.1em] text-gray-400 opacity-70';
-    const primaryButtonLabel = achievement.data.buttonLabel || (isCompetitionResult ? 'Continuar' : (isArenaComplete ? 'OK' : 'Prosseguir'));
-    const primaryButtonClass = 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
+    // O desafio nao paga premio: o que ele entrega e o placar. Sem isto o modal
+    // dele ficava so com titulo e frase, e o numero — a unica coisa que a pessoa
+    // quer conferir — nao aparecia com destaque nenhum.
+    const payloadDoFeitoBase = isArenaComplete
+        ? {
+            ...payloadBase,
+            itemIds: [],
+            rewardHighlights: [],
+            metricCards: [
+                { label: 'Ações', value: String(Number(achievement.data.actionCount || 0)) },
+                { label: 'Entregas', simbolo: 'acoes' as const, value: String(Number(achievement.data.deliveries || 0)) },
+                { label: 'Dias ativos', value: String(Number(achievement.data.days || 0)) },
+            ],
+        }
+        : isCompetitionResult
+        ? {
+            ...payloadBase,
+            metricCards: [
+                {
+                    label: 'Você',
+                    simbolo: 'acoes' as const,
+                    value: `${Number(achievement.data.selfCompleted || 0)}/${Number(achievement.data.selfTarget || 0)}`,
+                },
+                {
+                    label: achievement.data.opponentNickname ? '@' + achievement.data.opponentNickname : 'Rival',
+                    simbolo: 'acoes' as const,
+                    value: `${Number(achievement.data.rivalCompleted || 0)}/${Number(achievement.data.rivalTarget || 0)}`,
+                },
+            ],
+        }
+        : payloadBase;
+    const payloadDoFeito = seloDaTemporada
+        ? {
+            ...payloadDoFeitoBase,
+            summary: '',
+            featuredItemId: rewardItemIds.find((itemId) => String(itemId).startsWith('insignia_season_')),
+            repeatFeaturedItemInList: true,
+            itemSectionTitle: 'Também recebido',
+        }
+        : payloadDoFeitoBase;
+    const primaryButtonLabel = achievement.data.buttonLabel || (isCompetitionResult || seloDaTemporada || isArenaComplete ? 'OK' : 'Prosseguir');
+    const primaryButtonClass = 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
 
     const handlePostToFeed = () => {
         if (!canShareAchievement) return;
@@ -221,24 +275,28 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         onClose();
     };
 
+    const handleDisableCelebrations = async () => {
+        await updateOraclePreferences({ celebrationScreensEnabled: false });
+        handleClose();
+    };
+
     return (
         <Portal>
             <div
                 className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md transition-all duration-500"
-                onClick={handleClose}
+                onClick={showVideoStage ? triggerReveal : handleClose}
             >
-                <GlassCard
+                <div
                     ref={cardRef}
-                    variant="neutral"
-                    className={`relative flex w-full flex-col overflow-hidden border-x border-t bg-[#050505] shadow-[0_0_80px_rgba(0,0,0,0.9)] transition-all duration-700 ${isCompetitionResult ? 'max-w-xs' : 'max-w-sm'}`}
+                    className={`relative flex flex-col overflow-hidden text-[#f5f3ed] transition-all duration-700 ${estiloDaPlaca.respiro}`}
                     style={{
-                        borderColor: `${skinColor}30`,
-                        boxShadow: `0 0 60px ${skinColor}10, inset 0 0 30px ${skinColor}05`,
+                        ...estiloDaPlaca.placa(tomDoFeito),
+                        ...REWARD_PLATE_VIEWPORT_STYLE,
                     }}
                     onClick={(event) => event.stopPropagation()}
                 >
                     {showVideoStage && (
-                        <div className={`relative aspect-[9/16] w-full overflow-hidden bg-black transition-all duration-300 ease-out ${isVideoFading ?'scale-[0.985] opacity-0' : 'scale-100 opacity-100'}`}>
+                        <button type="button" aria-label="Pular animação" onClick={triggerReveal} className={`relative aspect-[9/16] w-full overflow-hidden bg-black transition-all duration-300 ease-out ${isVideoFading ?'scale-[0.985] opacity-0' : 'scale-100 opacity-100'}`}>
                             <VideoPlayer
                                 src={isRankUp
                                     ?`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/videos/levelup.mp4`
@@ -248,156 +306,52 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                 onEnd={triggerReveal}
                                 className="h-full w-full object-cover"
                                 videoClassName="scale-[1.08]"
-                                placeholderLabel={isRankUp ? 'Nova patente!' : isReportComplete ? 'Relatório!' : 'Desafio!'}
+                                placeholderLabel={isRankUp ? 'Nova patente!' : isReportComplete ? 'Relatório!' : 'Missão!'}
                                 duration={4000}
                                 playbackRate={1.0}
                                 loop={false}
                                 audioFadeOut={true}
                                 preload="auto"
                             />
-                        </div>
+                            <span className="absolute bottom-4 right-4 z-20 border border-white/20 bg-black/70 px-3 py-2 text-[9px] font-black uppercase tracking-[0.2em] text-white/75">Toque para pular</span>
+                        </button>
                     )}
 
                     {showContentStage && (
-                        <div className="animate-fade-in flex flex-col">
+                        <div className="animate-fade-in flex min-h-0 flex-1 flex-col">
                             <div className="pointer-events-none absolute inset-0 z-50">
                                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--skin-accent-color)]/40 to-transparent" />
                                 <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--skin-accent-color)]/10 to-transparent" />
                             </div>
 
-                            <div className="absolute inset-0 z-0 bg-black">
-                                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/80 to-[#050505]" />
-                                <div className="absolute left-0 top-0 h-1/2 w-full bg-[radial-gradient(circle_at_50%_0%,_var(--skin-accent-color)_0%,_transparent_70%)] opacity-20" />
-                            </div>
-
-                            <div className={`relative z-20 px-8 text-center ${isCompetitionResult ? 'pb-3 pt-7' : 'pb-6 pt-10'}`}>
-                                {isStreakMilestone && (
-                                    <p className="mb-2 text-[9px] font-black uppercase tracking-[0.24em] text-[var(--skin-accent-color)]">
-                                        Bônus de sequência
-                                    </p>
-                                )}
-                                <h2
-                                    className={headingClass}
-                                    style={{ textShadow: `0 0 20px ${skinColor}40` }}
-                                >
-                                    {title}
-                                </h2>
-                                <div className="mx-auto mt-4 h-0.5 w-12 bg-[var(--skin-accent-color)] shadow-[0_0_10px_var(--skin-accent-color)]" />
-                            </div>
-
-                            <div className={`relative z-10 flex w-full items-center justify-center ${isCompetitionResult ? 'h-20' : 'h-32'}`}>
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--skin-accent-color)_0%,_transparent_70%)] opacity-10" />
+                            <div className="absolute inset-0 z-0">
+                                {seasonBackground && <img src={seasonBackground} alt="" className="absolute inset-0 h-full w-full object-cover opacity-45" />}
+                                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/70 to-[#050505]/95" />
                                 <div
-                                    className={`group relative flex rotate-45 items-center justify-center overflow-hidden rounded-2xl border shadow-2xl transition-all duration-700 ${isCompetitionResult ? 'h-14 w-14' : 'h-20 w-20'}`}
-                                    style={{ borderColor: `${skinColor}40`, backgroundColor: `${skinColor}05` }}
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
-                                    <div className="absolute inset-0 -m-1 rounded-2xl border border-white/5 animate-pulse" />
-                                    <span className={`-rotate-45 transition-transform duration-700 group-hover:scale-110 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] ${isCompetitionResult ? 'text-2xl' : 'text-4xl'}`}>
-                                        {icon}
-                                    </span>
-                                </div>
+                                    className="absolute left-0 top-0 h-1/2 w-full opacity-20"
+                                    style={{ background: `radial-gradient(circle at 50% 0%, rgba(${tomDoFeito},.82) 0%, transparent 70%)` }}
+                                />
                             </div>
 
-                            <div className={`relative z-10 text-center ${isCompetitionResult ? 'space-y-4 p-5 pt-2' : 'space-y-6 p-6'}`}>
-                                <div className="relative py-2">
-                                    <p className={messageClass}>
-                                        {message}
-                                    </p>
-                                </div>
+                            <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+                                <RewardPackBody
+                                    payload={payloadDoFeito}
+                                    emblema={seloDaTemporada ? undefined : emblemaDoFeito}
+                                    tom={tomDoFeito}
+                                    fallbackEyebrow={sobrancelha}
+                                    fallbackTitle={title}
+                                    fallbackSummary={seloDaTemporada ? '' : message}
+                                    fallbackEmptyMessage=""
+                                />
+                            </div>
 
-                                {(normalizedRewards.exp || normalizedRewards.gold || normalizedRewards.chest || normalizedRewards.ornament || visibleRewardDetails.length > 0) && (
-                                    <div className="mb-4 flex w-full justify-center gap-2">
-                                        {normalizedRewards.exp && (
-                                            <div className="min-w-0 flex-1 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--skin-accent-color)]/20 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent">
-                                                        <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">?</span>
-                                                    </div>
-                                                    <div className="min-w-0 overflow-hidden text-left">
-                                                        <p className="truncate text-[6px] font-black uppercase tracking-[0.2em] text-gray-500">Experiencia</p>
-                                                        <p className="truncate whitespace-nowrap text-[9px] font-black tracking-tight text-white">
-                                                            +{normalizedRewards.exp} <span className="text-[var(--skin-accent-color)] opacity-70">XP</span>
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {(normalizedRewards.gold || normalizedRewards.chest || normalizedRewards.ornament || visibleRewardDetails.length > 0) && (
-                                            <div className="flex flex-[2] flex-col gap-2">
-                                                {normalizedRewards.gold > 0 && (
-                                                    <div className="min-w-0 overflow-hidden rounded-xl border border-amber-400/15 bg-amber-400/[0.04] p-2.5">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-amber-300/20 bg-amber-300/10 text-sm">G</div>
-                                                            <div className="min-w-0 text-left">
-                                                                <p className="text-[6px] font-black uppercase tracking-[0.2em] text-amber-200/55">Ouro</p>
-                                                                <p className="text-[9px] font-black text-amber-100">+{normalizedRewards.gold}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {visibleRewardDetails.map((detail, index: number) => {
-                                                    const itemId = detail.itemId || '';
-                                                    const itemDef = itemId ? resolveItemDef(itemId) : undefined;
-                                                    return (
-                                                        <div key={`${itemId}-${index}`} className="min-w-0 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
-                                                            <div className="flex items-center gap-2.5">
-                                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--skin-accent-color)]/20 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent">
-                                                                    <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">{itemDef?.icon || (detail.category === 'ui_skins' ? 'T' : 'I')}</span>
-                                                                </div>
-                                                                <div className="min-w-0 overflow-hidden text-left">
-                                                                    <p className="truncate text-[6px] font-black uppercase tracking-[0.2em] text-gray-500">
-                                                                        {itemDef?.category === 'insignia' ?'Insignia' : getRewardDetailLabel(detail)}
-                                                                    </p>
-                                                                    <p className="truncate whitespace-nowrap text-[9px] font-black tracking-tight text-white">
-                                                                        {itemDef?.name || detail.name || itemId.replace(/_/g, ' ')}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-
-                                                {normalizedRewards.chest && (
-                                                    <div className="min-w-0 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--skin-accent-color)]/20 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent">
-                                                                <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">{'\u{1F4E6}'}</span>
-                                                            </div>
-                                                            <div className="min-w-0 overflow-hidden text-left">
-                                                                <p className="truncate text-[6px] font-black uppercase tracking-[0.2em] text-gray-500">Baú</p>
-                                                                <p className="truncate whitespace-nowrap text-[9px] font-black tracking-tight text-white">{normalizedRewards.chest}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {normalizedRewards.ornament && (
-                                                    <div className="min-w-0 overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-all hover:bg-white/[0.04]">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--skin-accent-color)]/20 bg-gradient-to-br from-[var(--skin-accent-color)]/20 to-transparent">
-                                                                <span className="text-sm filter drop-shadow-[0_0_8px_var(--skin-accent-color)]">{resolveItemDef(normalizedRewards.ornament)?.icon || '?'}</span>
-                                                            </div>
-                                                            <div className="min-w-0 overflow-hidden text-left">
-                                                                <p className="truncate text-[6px] font-black uppercase tracking-[0.2em] text-gray-500">Ornamento</p>
-                                                                <p className="truncate whitespace-nowrap text-[9px] font-black tracking-tight text-white">
-                                                                    {resolveItemDef(normalizedRewards.ornament)?.name || 'Ornamento'}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
+                            <div className={`relative z-10 mt-auto ${isCompetitionResult ? 'p-5 pt-3' : 'p-6 pt-4'}`}>
                                 <div className="space-y-3">
-                                    {canShareAchievement && (
+                                    {canShareAchievement && !isArenaComplete && (
                                         <button
                                             onClick={handlePostToFeed}
-                                            className="luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                            className="luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                            style={{ ...estiloDaPlaca.botao, borderWidth: 2 }}
                                         >
                                             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
                                             <ShareIcon className="h-4 w-4" />
@@ -405,9 +359,27 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                                         </button>
                                     )}
 
+                                    {isArenaComplete ? (
+                                        <div className="flex items-center gap-2">
+                                            <button type="button" onClick={handleDisableCelebrations} className="flex min-h-10 flex-1 items-center gap-2 border border-white/10 bg-black/25 px-3 py-2 text-left text-[9px] font-bold uppercase tracking-[0.11em] text-white/52 transition-colors hover:border-white/20 hover:text-white/75">
+                                                <span className="grid h-4 w-4 shrink-0 place-items-center border border-white/25 bg-black/40" aria-hidden="true" />
+                                                Não mostrar novamente
+                                            </button>
+                                            <button type="button" aria-label="Compartilhar no Feed" onClick={handlePostToFeed} className="grid h-10 w-10 shrink-0 place-items-center border border-white/15 bg-white/[0.045] text-white/68 transition-colors hover:border-white/28 hover:bg-white/[0.08] hover:text-white">
+                                                <ShareIcon className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ) : (isQuestComplete || isReportComplete) && (
+                                        <button type="button" onClick={handleDisableCelebrations} className="flex w-full items-center gap-2 border border-white/10 bg-black/25 px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-[0.13em] text-white/52 transition-colors hover:border-white/20 hover:text-white/75">
+                                            <span className="grid h-4 w-4 shrink-0 place-items-center border border-white/25 bg-black/40" aria-hidden="true" />
+                                            Não mostrar novamente
+                                        </button>
+                                    )}
+
                                     <button
                                         onClick={handleClose}
                                         className={primaryButtonClass}
+                                        style={{ ...estiloDaPlaca.botao, borderWidth: 2 }}
                                     >
                                         <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
                                         {primaryButtonLabel}
@@ -416,7 +388,7 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                             </div>
                         </div>
                     )}
-                </GlassCard>
+                </div>
             </div>
         </Portal>
     );

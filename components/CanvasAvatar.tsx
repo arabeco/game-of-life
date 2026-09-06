@@ -3,6 +3,7 @@ import { SovereignConfig } from '../types';
 import { SOVEREIGN_ASSETS, FACE_FEATURES_URL, DEFAULT_SOVEREIGN_CONFIG } from '../constants/avatar';
 import { ITEMS_DB } from '../constants/items';
 import { getBodyUrl, getHairUrl, BODY_DB, HAIR_DB } from '../constants/skins';
+import { applyAvatarOffset, getAvatarOffset, getMascaraDoCorpo, getModoDoCabelo } from '../constants/avatarOffsets';
 import { drawAuraCanvasEffect } from '../utils/auraVisuals';
 
 interface CanvasAvatarProps {
@@ -67,13 +68,26 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                 const offscreenCtx = offscreenCanvas.getContext('2d');
                 if (!offscreenCtx) return;
 
-                const loadAndDrawImage = (url: string | null, options: { 
-                    tintColor?: string; 
-                    filter?: string; 
+                // Qual corpo esta em cena. Um ajuste marcado em `porCorpo` so se
+                // aplica quando bate com ele; enquanto for null — que e o caso
+                // enquanto o proprio corpo esta sendo desenhado — vale so a base.
+                let corpoEmCena: string | null = null;
+
+                const loadAndDrawImage = (url: string | null, options: {
+                    tintColor?: string;
+                    filter?: string;
                     compositeOperation?: GlobalCompositeOperation;
-                    maskMode?: boolean; 
+                    maskMode?: boolean;
+                    /**
+                     * Onde desenhar. O corpo e o rosto vao para uma camada
+                     * propria, porque a mascara da roupa precisa apagar SO eles
+                     * — um clearRect no canvas principal levaria junto a aura e
+                     * a placa, que sao desenhadas antes.
+                     */
+                    alvo?: CanvasRenderingContext2D;
                 } = {}): Promise<boolean> => {
                     if (!url) return Promise.resolve(false);
+                    const destino = options.alvo || offscreenCtx;
 
                     return new Promise((resolve) => {
                         const draw = (img: HTMLImageElement) => {
@@ -82,7 +96,7 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                                 return;
                             }
 
-                            offscreenCtx.save();
+                            destino.save();
                             
                             if (options.maskMode && options.tintColor) {
                                 // Create a temporary canvas for masking
@@ -94,16 +108,23 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                                     tempCtx.fillStyle = options.tintColor;
                                     tempCtx.fillRect(0, 0, width, height);
                                     tempCtx.globalCompositeOperation = 'destination-in';
-                                    tempCtx.drawImage(img, 0, 0, width, height);
-                                    offscreenCtx.drawImage(tempCanvas, 0, 0, width, height);
+                                    // O ajuste entra na MASCARA, nao no desenho final: a
+                                    // tempCanvas e a chapa de cor inteira, e desloca-la
+                                    // moveria a cor, nao a peca.
+                                    const encaixeMascara = applyAvatarOffset(width, height, getAvatarOffset(url, corpoEmCena));
+                                    tempCtx.drawImage(img, encaixeMascara.x, encaixeMascara.y, encaixeMascara.w, encaixeMascara.h);
+                                    destino.drawImage(tempCanvas, 0, 0, width, height);
                                 }
                             } else {
-                                if (options.filter) offscreenCtx.filter = options.filter;
-                                if (options.compositeOperation) offscreenCtx.globalCompositeOperation = options.compositeOperation;
-                                offscreenCtx.drawImage(img, 0, 0, width, height);
+                                if (options.filter) destino.filter = options.filter;
+                                if (options.compositeOperation) destino.globalCompositeOperation = options.compositeOperation;
+                                // Encaixe por arquivo. Sem entrada na tabela isto e
+                                // exatamente drawImage(img, 0, 0, width, height).
+                                const encaixe = applyAvatarOffset(width, height, getAvatarOffset(url, corpoEmCena));
+                                destino.drawImage(img, encaixe.x, encaixe.y, encaixe.w, encaixe.h);
                             }
                             
-                            offscreenCtx.restore();
+                            destino.restore();
                             resolve(true);
                         };
 
@@ -170,51 +191,80 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
 
                 if (!isMounted) return;
 
-                // 1. Body (Masked with Skin Tone)
+                // 1 e 2. Corpo e rosto, numa camada propria.
+                //
+                // Eles vao para um canvas separado porque a roupa pode declarar
+                // que cobre bracos, pernas ou pes — e nesse caso essas partes do
+                // corpo nao devem ser desenhadas por baixo dela. Apagar direto no
+                // canvas principal levaria junto a placa e a aura, que ja foram
+                // desenhadas por baixo.
+                const camadaCorpo = document.createElement('canvas');
+                camadaCorpo.width = width;
+                camadaCorpo.height = height;
+                const ctxCorpo = camadaCorpo.getContext('2d');
+                if (!ctxCorpo) return;
+
                 const newBodyDef = BODY_DB.find(b => b.id === body);
                 let bodyUrl: string | null = null;
 
                 if (newBodyDef) {
                     // New system: Pre-tinted body
                     bodyUrl = getBodyUrl(newBodyDef.gender, newBodyDef.toneId);
-                    await loadAndDrawImage(bodyUrl); // No tint, no mask
+                    await loadAndDrawImage(bodyUrl, { alvo: ctxCorpo }); // No tint, no mask
                 } else {
                     // Old system fallback
                     bodyUrl = getAssetUrl('bodyStyles', body);
                     if (bodyUrl) {
-                        await loadAndDrawImage(bodyUrl, { tintColor: skinTone, maskMode: true });
+                        await loadAndDrawImage(bodyUrl, { tintColor: skinTone, maskMode: true, alvo: ctxCorpo });
                     }
                 }
+
+                corpoEmCena = bodyUrl;
 
                 if (!isMounted) return;
 
                 // 2. Face Features
                 if (bodyUrl && FACE_FEATURES_URL) {
-                    await loadAndDrawImage(FACE_FEATURES_URL);
+                    await loadAndDrawImage(FACE_FEATURES_URL, { alvo: ctxCorpo });
                 }
 
                 if (!isMounted) return;
 
                 // 3. Outfit
                 const outfitUrl = getAssetUrl('outfits', outfit);
-                await loadAndDrawImage(outfitUrl);
+
+                // A roupa apaga do corpo o que ela cobre por inteiro, e so entao
+                // a camada do corpo entra. Sem declaracao na tabela, o laco nao
+                // roda e o resultado e identico ao de antes.
+                for (const [mx, my, mw, mh] of getMascaraDoCorpo(outfitUrl, width, height)) {
+                    ctxCorpo.clearRect(mx, my, mw, mh);
+                }
+                offscreenCtx.drawImage(camadaCorpo, 0, 0);
 
                 if (!isMounted) return;
 
                 // 4. Hair (Tinted or Pre-colored)
+                //
+                // Virou funcao porque a ordem depende da roupa. Cinco das
+                // dezoito cobrem a calota do cranio, e nelas desenhar o cabelo
+                // por cima produz cabelo longo pendurado na frente de um elmo
+                // fechado. Elmo esconde; capuz, bone e turbante deixam o cabelo
+                // espiar por baixo. As outras treze cobrem zero e seguem por
+                // cima, como sempre.
+                const desenharCabelo = async () => {
                     const newHairDef = HAIR_DB.find(h => h.id === hairStyle);
                     if (newHairDef) {
-                         // New system
-                         const url = getHairUrl(hairStyle, hairColor);
-                         
-                         // Se tiver filename fixo, aplicamos filtro de cor
-                         if (newHairDef.filename) {
-                             const filter = hexToCssFilter(hairColor);
-                             await loadAndDrawImage(url, { filter });
-                         } else {
-                             // Se for URL dinâmica (pré-colorida), carregamos direto
-                             await loadAndDrawImage(url);
-                         }
+                        // New system
+                        const url = getHairUrl(hairStyle, hairColor);
+
+                        // Se tiver filename fixo, aplicamos filtro de cor
+                        if (newHairDef.filename) {
+                            const filter = hexToCssFilter(hairColor);
+                            await loadAndDrawImage(url, { filter });
+                        } else {
+                            // Se for URL dinâmica (pré-colorida), carregamos direto
+                            await loadAndDrawImage(url);
+                        }
                     } else {
                         const hairUrl = getAssetUrl('hairStyles', hairStyle);
                         if (hairUrl) {
@@ -222,6 +272,22 @@ export const CanvasAvatar: React.FC<CanvasAvatarProps> = ({
                             await loadAndDrawImage(hairUrl, { filter });
                         }
                     }
+                };
+
+                const modoDoCabelo = getModoDoCabelo(outfitUrl);
+
+                if (modoDoCabelo === 'porBaixo') {
+                    await desenharCabelo();
+                    if (!isMounted) return;
+                }
+
+                await loadAndDrawImage(outfitUrl);
+
+                if (!isMounted) return;
+
+                if (modoDoCabelo === 'porCima') {
+                    await desenharCabelo();
+                }
 
                 if (!isMounted) return;
 

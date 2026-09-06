@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import ts from 'typescript';
 import {
   ORACLE_PRESENCE,
   ORACLE_PRESENCE_ORDER,
@@ -60,8 +61,18 @@ for (let i = 1; i < ordem.length; i += 1) {
 }
 
 // --- valores gravados fora da tabela nao quebram --------------------------
-// A lacuna do 1 e historica: os valores salvos sao 0, 2 e 3.
-assert.equal(normalizeOraclePresence(1), ORACLE_PRESENCE.EQUILIBRADO, '1 aproxima para o meio');
+// A lacuna do 1 DEIXOU de ser lacuna: ele virou o Discreto — nao analisa, mas
+// comemora. Perfil antigo com 1 gravado cai nesse degrau, e recebe MENOS fala do
+// que recebia (antes era aproximado para Equilibrado). Aproximar para cima seria
+// dar voz a quem nao pediu.
+assert.equal(normalizeOraclePresence(1), ORACLE_PRESENCE.DISCRETO, '1 e o Discreto, nao aproxima para cima');
+assert.equal(getOraclePresenceRules(1).label, 'Discreto');
+assert.equal(getOraclePresenceRules(1).openingLine, 'nunca', 'Discreto nao comenta o dia');
+assert.equal(getOraclePresenceRules(1).dailyCard, false, 'Discreto nao recebe card');
+assert.equal(getOraclePresenceRules(1).reactions, 'marcos', 'Discreto comemora o que e grande');
+// Cada degrau acende exatamente UMA coisa a mais que o anterior.
+assert.equal(getOraclePresenceRules(0).reactions, 'nenhuma');
+assert.equal(getOraclePresenceRules(2).openingLine, 'diaria', 'o Equilibrado acrescenta a fala de abertura');
 assert.equal(normalizeOraclePresence(4), ORACLE_PRESENCE.PRESENTE, 'acima do topo vira topo');
 assert.equal(normalizeOraclePresence(-2), ORACLE_PRESENCE.SILENCIOSO);
 assert.equal(normalizeOraclePresence(null), ORACLE_PRESENCE.SILENCIOSO);
@@ -99,6 +110,33 @@ assert.doesNotMatch(
   'o push nao pode voltar a exigir presenca 3',
 );
 assert.match(portao, /presenceLevel\s*<=\s*0/, 'silencioso continua sem push');
+
+// Executa o filtro local real para o card neutro: antes desta regressao, o
+// servidor aceitava Equilibrado enquanto o fallback local o recusava.
+const gameContext = readFileSync(new URL('../contexts/GameContext.tsx', import.meta.url), 'utf8');
+const localFilterStart = gameContext.indexOf('const shouldPushOracleFeedMessage =');
+const localFilterEnd = gameContext.indexOf('export interface GameContextType', localFilterStart);
+assert.ok(localFilterStart >= 0 && localFilterEnd > localFilterStart);
+const localFilterCode = ts.transpile(gameContext.slice(localFilterStart, localFilterEnd), {
+  target: ts.ScriptTarget.ES2022,
+});
+const acceptsLocalCard = new Function('getOracleModeConfig',
+  `${localFilterCode}; return shouldPushOracleFeedMessage;`,
+)(() => ({ pushProfile: 'equilibrado' }));
+const automaticCard = {
+  mode: 'neutro',
+  contextSnapshot: { presentation: 'info_card', triggerType: 'automatic' },
+};
+for (const presence of [0, 1, 2, 3]) {
+  assert.equal(acceptsLocalCard(automaticCard, presence), presence > 0,
+    `card automatico no fallback local, presenca ${presence}`);
+  assert.equal(acceptsLocalCard({ ...automaticCard,
+    contextSnapshot: { ...automaticCard.contextSnapshot, triggerType: 'manual' },
+  }, presence), false, 'pedido manual nunca vira aviso local');
+}
+assert.equal(acceptsLocalCard({ ...automaticCard,
+  contextSnapshot: { presentation: 'ambient_pulse', triggerType: 'automatic' },
+}, 2), false, 'a correcao de presenca nao libera outros formatos no modo neutro');
 
 // --- o painel respeita a frequencia --------------------------------------
 const sitrep = readFileSync(new URL('../components/SitrepContent.tsx', import.meta.url), 'utf8');
@@ -307,3 +345,23 @@ assert.doesNotMatch(
 );
 
 console.log('Oracle presence policy: silencioso cala, equilibrado celebra o grande, presente acompanha tudo.');
+
+// Executa o portao remoto real: alertas antigos nao atravessam nem BASIC.
+const remoteStart = webPush.indexOf('const shouldPushOracleMessage =');
+const remoteEnd = webPush.indexOf('const configureVapid',remoteStart);
+assert.ok(remoteEnd>remoteStart);
+const remoteCode = ts.transpile(webPush.slice(remoteStart,remoteEnd),{target:ts.ScriptTarget.ES2022});
+const acceptsRemote = new Function('asTrimmedString','MODE_PUSH_PROFILE',`${remoteCode}; return shouldPushOracleMessage;`)(
+  value => String(value || '').trim(), {neutro:'equilibrado'});
+for(const level of [0,1,2,3]) {
+  const card = {...automaticCard,deliveryType:'feed',read:false};
+  assert.equal(acceptsRemote(card,'BASIC',true,level,true),level>0);
+  for(const context of [{purpose:'streak_alert'},{operationalState:'streak_mantida'},{operationalState:'streak_quebrada'}]) {
+    const retired = {...card,contextSnapshot:{...card.contextSnapshot,...context}};
+    assert.equal(acceptsRemote(retired,'BASIC',true,level,true),false);
+    assert.equal(acceptsLocalCard(retired,level),false);
+  }
+  assert.equal(acceptsRemote({...card,deliveryType:'chat'},'BASIC',true,level,true),false);
+  assert.equal(acceptsRemote({...card,contextSnapshot:{...card.contextSnapshot,triggerType:'manual'}},'BASIC',true,level,true),false);
+}
+console.log('Push: cards preservados; sequencia antiga bloqueada no servidor e no fallback local em todas as presencas.');

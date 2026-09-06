@@ -1,6 +1,7 @@
 ﻿import { ItemRarity } from '../types';
 import { ACTIVE_GOLD_ITEM_PRICE_BY_ID, GOLD_BOOST_PRODUCTS, GOLD_PACK_CATALOG } from './goldCatalog';
 import { PRODUCT_FEATURES } from './featureFlags';
+import { getHairUrl } from './skins';
 import { CATALOG_ASSET_ROOT, CATALOG_AVATAR_ROOT, CATALOG_GLYPH_ROOT, CATALOG_INTERFACE_ROOT } from './catalogAssets';
 
 export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest' | 'insignia' | 'insignias';
@@ -42,6 +43,15 @@ export interface ItemDef {
 const BASE_URL = CATALOG_AVATAR_ROOT;
 const GLYPHS_BASE_URL = CATALOG_GLYPH_ROOT;
 const INTERFACE_BASE_URL = CATALOG_INTERFACE_ROOT;
+
+/**
+ * A miniatura do penteado para a grade do Arsenal.
+ *
+ * Os 26 PNGs sempre estiveram no disco, mas o caminho so era montado na hora
+ * de desenhar o avatar (getHairUrl, a partir de tier + cor). O item ficava sem
+ * imageUrl e aparecia com emoji na grade — arte pronta, invisivel.
+ */
+const hairPngAsset = (styleId: string): string => getHairUrl(styleId, '1');
 const ROOT_IMAGES_URL = CATALOG_ASSET_ROOT;
 
 type CatalogItemInput = Omit<ItemDef, 'category'>;
@@ -143,8 +153,7 @@ export const ITEMS_DB: ItemDef[] = [
     // T2 (Incomum)
     { id: 'item_skin_2_001', name: 'Executivo', category: 'skin', tier: 2, rarity: 'uncommon', icon: '💼', imageUrl: avatarPngAsset('SKIN_T2_EXECUTIVO'), isRankExclusive: true },
     { id: 'item_skin_2_002', name: 'Tático', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎖️', imageUrl: avatarPngAsset('SKIN_T2_TATICO'), isRankExclusive: true },
-    { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: avatarPngAsset('SKIN_T2_ACADEMICO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_003 },
-    { id: 'item_skin_2_004', name: 'Militar', category: 'skin', tier: 2, rarity: 'uncommon', icon: '\uD83E\uDE96', imageUrl: avatarPngAsset('SKIN_T2_MILITAR'), description: 'Uniforme tático de campo para presença firme e disciplinada.', isRankExclusive: true },
+    { id: 'item_skin_2_003', name: 'Acadêmico', category: 'skin', tier: 2, rarity: 'uncommon', icon: '🎓', imageUrl: avatarPngAsset('SKIN_T2_ACADEMICO'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_2_003, isRankExclusive: true },
     // T3 (Raro)
     { id: 'item_skin_3_001', name: 'Nômade', category: 'skin', tier: 3, rarity: 'rare', icon: '🧭', imageUrl: avatarPngAsset('SKIN_T3_NOMADE'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_001 },
     { id: 'item_skin_3_002', name: 'Alquimista', category: 'skin', tier: 3, rarity: 'rare', icon: '⚗️', imageUrl: avatarPngAsset('SKIN_T3_ALQUIMISTA'), costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.item_skin_3_002 },
@@ -198,22 +207,22 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- CABELOS ---
     // TIER 1 - Common
-    { id: 'cachos', name: 'Cachos', category: 'hair', tier: 1, rarity: 'common', icon: '〰️', isRankExclusive: true },
-    { id: 'medio_reto', name: 'Médio Reto', category: 'hair', tier: 1, rarity: 'common', icon: '💇', isRankExclusive: true },
+    { id: 'cachos', name: 'Cachos', category: 'hair', tier: 1, rarity: 'common', icon: '〰️', isRankExclusive: true, imageUrl: hairPngAsset('cachos') },
+    { id: 'medio_reto', name: 'Médio Reto', category: 'hair', tier: 1, rarity: 'common', icon: '💇', isRankExclusive: true, imageUrl: hairPngAsset('medio_reto') },
 
     // TIER 2 - Uncommon
-    { id: 'textured_crop', name: 'Texturizado', category: 'hair', tier: 2, rarity: 'uncommon', icon: '✂️', isRankExclusive: true },
+    { id: 'textured_crop', name: 'Texturizado', category: 'hair', tier: 2, rarity: 'uncommon', icon: '✂️', isRankExclusive: true, imageUrl: hairPngAsset('textured_crop') },
 
     // TIER 3 - Rare
-    { id: 'dreads', name: 'Dreads', category: 'hair', tier: 3, rarity: 'rare', icon: '🧶', isRankExclusive: true },
-    { id: 'mullet_topete', name: 'Mullet Top', category: 'hair', tier: 3, rarity: 'rare', icon: '💈', isRankExclusive: true },
+    { id: 'dreads', name: 'Dreads', category: 'hair', tier: 3, rarity: 'rare', icon: '🧶', isRankExclusive: true, imageUrl: hairPngAsset('dreads') },
+    { id: 'mullet_topete', name: 'Mullet Top', category: 'hair', tier: 3, rarity: 'rare', icon: '💈', isRankExclusive: true, imageUrl: hairPngAsset('mullet_topete') },
 
     // TIER 4 - Epic
-    { id: 'anime_spikes', name: 'Anime Spiky', category: 'hair', tier: 4, rarity: 'epic', icon: '⚡', isRankExclusive: true },
-    { id: 'princesa', name: 'Princesa', category: 'hair', tier: 4, rarity: 'epic', icon: '👑' },
+    { id: 'anime_spikes', name: 'Anime Spiky', category: 'hair', tier: 4, rarity: 'epic', icon: '⚡', isRankExclusive: true, imageUrl: hairPngAsset('anime_spikes') },
+    { id: 'princesa', name: 'Princesa', category: 'hair', tier: 4, rarity: 'epic', icon: '👑', imageUrl: hairPngAsset('princesa') },
 
     // TIER 5 - Legendary
-    { id: 'fluxo_espiritual', name: 'Fluxo Espiritual', category: 'hair', tier: 5, rarity: 'legendary', icon: '✨', isRankExclusive: true },
+    { id: 'fluxo_espiritual', name: 'Fluxo Espiritual', category: 'hair', tier: 5, rarity: 'legendary', icon: '✨', isRankExclusive: true, imageUrl: hairPngAsset('fluxo_espiritual') },
 
     // --- BORDAS ---
     // T1
@@ -244,6 +253,7 @@ export const ITEMS_DB: ItemDef[] = [
     // T5
     { id: 'item_border_5_001', name: 'GM - Grande Mestre', category: 'border', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/borda_gm.png`, isGmExclusive: true },
     // Novos T5
+    { id: 'item_border_aurora_1_2026', name: 'Aurora I', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_aurora_i.webp` },
     { id: 'item_border_t5_genesis', name: 'Gênesis', category: 'border', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'border', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/borda_t5_genesis.png` },
 
     // --- BANNERS ---
@@ -269,6 +279,7 @@ export const ITEMS_DB: ItemDef[] = [
 
     // T5
     { id: 'item_banner_gm', name: 'Grão Mestre', category: 'banner', tier: 5, rarity: 'legendary', icon: '🏛️', imageUrl: `${INTERFACE_BASE_URL}/banner_gm.png`, isGmExclusive: true },
+    { id: 'item_banner_aurora_1_2026', name: 'Aurora I', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_aurora_i.webp` },
     { id: 'item_banner_t5_genesis', name: 'Gênesis', category: 'banner', tier: 6, rarity: 'mythic', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'banner', icon: '🌌', imageUrl: `${INTERFACE_BASE_URL}/banner_t5_genesis.png` },
 
     // --- GLIFOS ---
@@ -332,6 +343,14 @@ export const ITEMS_DB: ItemDef[] = [
     themeCatalogItem({ id: 'EMBER', name: 'Tema: Chama Viva', tier: 4, rarity: 'epic', icon: '\uD83D\uDD25', asset: 'ember.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.EMBER }),
     themeCatalogItem({ id: 'CYBER', name: 'Tema: Cyberpunk', tier: 4, rarity: 'epic', icon: '\uD83E\uDDBE', asset: 'cyber.jpg', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.CYBER }),
     themeCatalogItem({ id: 'AURORA', name: 'Tema: Aurora Boreal', tier: 4, rarity: 'epic', icon: '\uD83C\uDF0C', asset: 'aurora.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.AURORA }),
+    // O tema da TEMPORADA Aurora I.
+    //
+    // NAO e o 'AURORA' acima. Aquele e o "Tema: Aurora Boreal" da loja de ouro:
+    // tier 4, epico, com preco, e a arte dele e aurora.png. Sao duas coisas com
+    // nome parecido, e trocar a arte de uma pela outra repintaria um tema vendido.
+    // Este e a quinta peca da colecao da Aurora I, entregue pelo selo, e usa o
+    // orbe novo (aurora_i.png), que e outro desenho.
+    themeCatalogItem({ id: 'AURORA_I', name: 'Tema: Aurora I', tier: 6, rarity: 'mythic', icon: '🌌', asset: 'aurora_i.png', isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'ui_skin' }),
     // T5
     themeCatalogItem({ id: 'VOID', name: 'Tema: Vazio Primordial', tier: 5, rarity: 'legendary', icon: '\uD83D\uDD2E', asset: 'void.png', costGold: ACTIVE_GOLD_ITEM_PRICE_BY_ID.VOID }),
     themeCatalogItem({ id: 'GENESIS', name: 'Tema: Genesis', tier: 6, rarity: 'mythic', icon: '\u2726', asset: 'genesis.png', isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'ui_skin' }),
@@ -342,28 +361,28 @@ export const ITEMS_DB: ItemDef[] = [
 
     // --- INSÍGNIAS ---
     // NOBREZA (Ouro)
-    { id: 'insignia_rank_1_vagante', name: 'Insígnia do Vagante', category: 'insignia', tier: 1, rarity: 'common', icon: '⚪', description: "Patente de Ouro: Reconhecimento inicial para aqueles que começam sua jornada.", isRankExclusive: true },
-    { id: 'insignia_rank_2_escudeiro', name: 'Insígnia do Escudeiro', category: 'insignia', tier: 1, rarity: 'common', icon: '🛡️', description: "Patente de Ouro: Concedida aos que demonstraram compromisso inicial com a ordem.", isRankExclusive: true },
-    { id: 'insignia_rank_3_cavaleiro', name: 'Insígnia do Cavaleiro', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '⚔️', description: "Patente de Ouro: Dada aos guerreiros que provaram sua constância em batalha.", isRankExclusive: true },
-    { id: 'insignia_rank_4_lorde', name: 'Insígnia do Lorde', category: 'insignia', tier: 3, rarity: 'rare', icon: '🏰', description: "Patente de Ouro: Um título de nobreza para quem lidera pelo exemplo.", isRankExclusive: true },
-    { id: 'insignia_rank_5_barao', name: 'Insígnia do Barão', category: 'insignia', tier: 4, rarity: 'epic', icon: '👑', description: "Patente de Ouro: Elite da nobreza, reservada aos mestres da disciplina.", isRankExclusive: true },
-    { id: 'insignia_rank_6_conde', name: 'Insígnia do Conde', category: 'insignia', tier: 4, rarity: 'epic', icon: '📜', description: "Patente de Ouro: Reconhecimento por serviços notáveis prestados ao reino.", isRankExclusive: true },
-    { id: 'insignia_rank_7_duque', name: 'Insígnia do Duque', category: 'insignia', tier: 5, rarity: 'legendary', icon: '💎', description: "Patente de Ouro: Um alto título de nobreza, concedido apenas aos mais dignos.", isRankExclusive: true },
-    { id: 'insignia_rank_8_principe', name: 'Insígnia do Príncipe', category: 'insignia', tier: 5, rarity: 'legendary', icon: '🌟', description: "Patente de Ouro: Sangue real. Seu nome é conhecido em todas as terras.", isRankExclusive: true },
-    { id: 'insignia_rank_9_rei', name: 'Insígnia do Rei', category: 'insignia', tier: 5, rarity: 'legendary', icon: '👑', description: "Patente de Ouro: A autoridade máxima. Sua palavra é lei.", isRankExclusive: true },
-    { id: 'insignia_rank_10_soberano', name: 'Insígnia do Soberano', category: 'insignia', tier: 5, rarity: 'legendary', icon: '🔱', description: "Patente de Ouro: O ápice da maestria. Poucos alcançam este patamar de soberania.", isRankExclusive: true },
+    { id: 'insignia_rank_1_vagante', name: 'Insígnia do Vagante', category: 'insignia', tier: 1, rarity: 'common', icon: '⚪', description: "Patente de Ouro: Reconhecimento inicial para aqueles que começam sua jornada.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_1_vagante.webp` },
+    { id: 'insignia_rank_2_escudeiro', name: 'Insígnia do Escudeiro', category: 'insignia', tier: 1, rarity: 'common', icon: '🛡️', description: "Patente de Ouro: Concedida aos que demonstraram compromisso inicial com a ordem.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_2_escudeiro.webp` },
+    { id: 'insignia_rank_3_cavaleiro', name: 'Insígnia do Cavaleiro', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '⚔️', description: "Patente de Ouro: Dada aos guerreiros que provaram sua constância em batalha.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_3_cavaleiro.webp` },
+    { id: 'insignia_rank_4_lorde', name: 'Insígnia do Lorde', category: 'insignia', tier: 3, rarity: 'rare', icon: '🏰', description: "Patente de Ouro: Um título de nobreza para quem lidera pelo exemplo.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_4_lorde.webp` },
+    { id: 'insignia_rank_5_barao', name: 'Insígnia do Barão', category: 'insignia', tier: 4, rarity: 'epic', icon: '👑', description: "Patente de Ouro: Elite da nobreza, reservada aos mestres da disciplina.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_5_barao.webp` },
+    { id: 'insignia_rank_6_conde', name: 'Insígnia do Conde', category: 'insignia', tier: 4, rarity: 'epic', icon: '📜', description: "Patente de Ouro: Reconhecimento por serviços notáveis prestados ao reino.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_6_conde.webp` },
+    { id: 'insignia_rank_7_duque', name: 'Insígnia do Duque', category: 'insignia', tier: 5, rarity: 'legendary', icon: '💎', description: "Patente de Ouro: Um alto título de nobreza, concedido apenas aos mais dignos.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_7_duque.webp` },
+    { id: 'insignia_rank_8_principe', name: 'Insígnia do Príncipe', category: 'insignia', tier: 5, rarity: 'legendary', icon: '🌟', description: "Patente de Ouro: Sangue real. Seu nome é conhecido em todas as terras.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_8_principe.webp` },
+    { id: 'insignia_rank_9_rei', name: 'Insígnia do Rei', category: 'insignia', tier: 5, rarity: 'legendary', icon: '👑', description: "Patente de Ouro: A autoridade máxima. Sua palavra é lei.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_9_rei.webp` },
+    { id: 'insignia_rank_10_soberano', name: 'Insígnia do Soberano', category: 'insignia', tier: 5, rarity: 'legendary', icon: '🔱', description: "Patente de Ouro: O ápice da maestria. Poucos alcançam este patamar de soberania.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_10_soberano.webp` },
 
     // RELATORIOS (Bronze)
 
-    // QUESTS (Prata)
-    { id: 'insignia_quest_master', name: 'Insígnia de Mestre de Quests', category: 'insignia', tier: 3, rarity: 'rare', icon: '🏆', description: "Missão de Prata: Concedida ao completar missões desafiadoras da temporada.", isQuestExclusive: true },
+    // QUESTS E MISSÕES DE TEMPORADA (azul-roxa, acumulável)
+    { id: 'insignia_quest_master', name: 'Insígnia de Missão de Temporada', category: 'insignia', tier: 3, rarity: 'rare', icon: '🏆', description: "Marca azul-roxa acumulável, concedida ao concluir uma quest ou missão de temporada.", isQuestExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_quest_temporada.webp` },
 
     // NOVAS INSÍGNIAS (Recompensas Automáticas)
-    { id: 'insignia_report_comum', name: 'Insígnia de Relatório de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: '📜', description: "Relatório de Bronze: Concedida por concluir um ciclo e selar o relatório final.", isReportExclusive: true },
-    { id: 'insignia_quest_incomum', name: 'Insígnia de Missão Incomum', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🎖️', description: "Missão de Prata: Concedida ao concluir uma missão da temporada.", isQuestExclusive: true },
-    { id: 'insignia_levelup_rara', name: 'Insígnia de Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência.", isRankExclusive: true },
-    { id: 'insignia_season_genesis', name: 'Gênesis', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca de quem esteve na Temporada Zero, antes da Primeira Era começar.", isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'insignia' },
-    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia' },
+    { id: 'insignia_report_comum', name: 'Insígnia de Relatório de Ciclo', category: 'insignia', tier: 1, rarity: 'common', icon: '📜', description: "Relatório de Bronze: Concedida por concluir um ciclo e selar o relatório final.", isReportExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_ciclo_bronze.webp` },
+    { id: 'insignia_quest_incomum', name: 'Insígnia de Missão', category: 'insignia', tier: 2, rarity: 'uncommon', icon: '🎖️', description: "Marca de prata acumulável, concedida ao concluir uma missão individual, inicial ou de arena.", isQuestExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_missao_prata.webp` },
+    { id: 'insignia_levelup_rara', name: 'Insígnia de Patente Rara', category: 'insignia', tier: 3, rarity: 'rare', icon: '⭐', description: "Patente de Ouro: Concedida ao atingir um novo nível de excelência.", isRankExclusive: true, imageUrl: `${INTERFACE_BASE_URL}/insignia_rank_7_duque.webp` },
+    { id: 'insignia_season_genesis', name: 'Gênesis', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca de quem esteve na Temporada Zero, antes da Primeira Era começar.", isSeasonExclusive: true, seasonKey: 'genesis_legacy', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia_season_genesis.webp` },
+    { id: 'insignia_season_aurora_1', name: 'Aurora I', category: 'insignia', tier: 6, rarity: 'mythic', icon: '🌌', description: "Marca roxa da primeira Temporada oficial da Primeira Era.", isSeasonExclusive: true, seasonKey: 'aurora_1_2026', seasonSlot: 'insignia', imageUrl: `${INTERFACE_BASE_URL}/insignia_season_aurora_1.webp` },
 ];
 
 const LEGACY_ITEM_ID_ALIASES: Record<string, string> = {
@@ -461,13 +480,13 @@ export const SEASON_COLLECTIONS: Record<string, SeasonCollectionDef> = {
         storeMode: 'seasonal_high',
         slots: {
             skin: 'item_skin_aurora_1_2026',
-            border: null,
-            banner: null,
+            border: 'item_border_aurora_1_2026',
+            banner: 'item_banner_aurora_1_2026',
             glyph: null,
             orb: null,
             plate: null,
             insignia: 'insignia_season_aurora_1',
-            ui_skin: null,
+            ui_skin: 'AURORA_I',
         },
     },
     genesis_legacy: {
@@ -554,11 +573,14 @@ const PNG_REQUIRED_CATEGORIES = new Set<ItemCategory>([
     'glyph',
     'orb',
     'plate',
+    // Cabelo saiu da lista opcional: os 26 PNGs sempre estiveram no disco, e a
+    // grade do Arsenal mostrava emoji porque o item nao carregava imageUrl.
+    // Agora cada penteado aponta para a propria arte, entao pode exigir.
+    'hair',
 ]);
 
 const PNG_OPTIONAL_CATEGORIES = new Set<ItemCategory>([
     'aura',
-    'hair',
     'ui_skin',
     'chest',
     'insignia',

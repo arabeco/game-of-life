@@ -311,9 +311,9 @@ export const ORACLE_VOICE_EXAMPLES: Record<OracleHostOperationalState, Record<Or
     card: ["PRIORIDADE: retorno real.\nRISCO: transformar quebra em abandono.\nAJA: conclua uma ação pequena hoje."],
   },
   primeira_acao_do_dia: {
-    push: ["Primeira ação feita. Sequência mantida."],
-    balao: ["Primeira ação do dia concluida. A sequência continua viva."],
-    chat: ["Boa. Não precisou ser perfeito; so precisava comecar. A sequência vive de ação, não de intencao."],
+    push: ["Primeira ação do dia concluída."],
+    balao: ["Primeira ação do dia concluída. Seu progresso está registrado."],
+    chat: ["Boa. A primeira ação do dia está registrada."],
     card: ["PRIORIDADE: consolidar o comeco.\nRISCO: abrir outra frente cedo demais.\nAJA: escolha a próxima ação sem aumentar o mapa."],
   },
 };
@@ -334,14 +334,7 @@ export const deriveOracleHostOperationalState = (
   const contextDate = options.operationalDate || getContextDate(context);
   const lastProofDate = context.dailyProofLastClosedDate;
 
-  if (context.dailyProofStreakCurrent > 0 && contextDate && lastProofDate === contextDate) {
-    return context.pendingActionsToday > 0 ? "streak_mantida" : "primeira_acao_do_dia";
-  }
-
-  if (context.dailyProofStreakCurrent === 0 && lastProofDate) {
-    return "streak_quebrada";
-  }
-
+  // Contadores legados não selecionam mais falas de sequência.
   if (context.needsFirstArena || context.needsFirstAction || context.needsFirstTask || !context.hasCycle) {
     return "sem_direcao";
   }
@@ -435,7 +428,7 @@ export const buildOracleHostVoiceDirective = ({
     "- Se a arena estiver atrasada, ofereca ajuste de meta ou repeticoes sem culpa.",
     "- Se a arena não tiver medida, diga que ela pode ficar sem barra ou ganhar uma meta minima.",
     "- Evite palavras soltas em ingles nas falas ao usuário; use portugues natural.",
-    "- Se a sequência estiver em 0, não finja continuidade.",
+    "- Não cobre, celebre ou ameace perda de sequência diária global. O app não exige dias seguidos. Dias consecutivos só podem ser compromisso de uma modalidade explicitamente aceita; não presuma esse aceite.",
     "- Se dailyProofLastClosedDate for hoje, pode tratar como primeira conclusao do dia ja registrada.",
     "",
     "Regras do modo:",

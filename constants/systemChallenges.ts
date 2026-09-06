@@ -1,10 +1,36 @@
-import { ChestType, ConfigSeasonQuest } from '../types';
+import type { ChestType, ConfigSeasonQuest } from '../types';
 
 export type SystemChallenge = ConfigSeasonQuest & {
   source: 'system';
   rewardChest?: ChestType;
   rewardGold?: number;
+  rewardFragments?: number;
+  /**
+   * MISSAO INICIAL: completa-se sozinha, nao ocupa o slot e nao precisa ser
+   * aceita.
+   *
+   * Existe para a pessoa conhecer as partes do app — criar arena, montar ciclo,
+   * instalar campanha. Por ser facil, paga pouco: 25 de EXP e 5 fragmentos, sem
+   * ouro, sem bau e SEM INSIGNIA. Insignia e de compromisso aceito; dar uma por
+   * abrir uma tela esvazia a que a pessoa suou para ter.
+   *
+   * Antes as quatro primeiras pagavam bau — tres Comuns e um Raro — por marcos
+   * de um toque. O comentario da escala de XP logo abaixo conta a mesma
+   * historia com outros numeros: o tutorial chegou a valer 16 horas de
+   * trabalho. Esta e a segunda correcao do mesmo exagero.
+   */
+  inicial?: boolean;
 };
+
+/**
+ * O preco de conhecer uma parte do app.
+ *
+ * EXP e minuto de acao, entao 25 e meia acao curta. Com dez missoes iniciais o
+ * conjunto inteiro da 250 — menos que UMA missao de esforco (300). Explorar o
+ * app todo vale menos que concluir vinte acoes, e e assim que tem de ser.
+ */
+export const INITIAL_MISSION_XP = 25;
+export const INITIAL_MISSION_FRAGMENTS = 5;
 
 /**
  * ESCALA DO XP: no Glyph o XP e minutos de acao (uma acao de 30 min vale ~30).
@@ -35,49 +61,17 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
     rewards: { xp: 300 },
     rewardGold: 1,
   },
-  {
-    id: 'system-five-day-proof-streak',
-    source: 'system',
-    title: 'Cinco dias em movimento',
-    description: 'Registre pelo menos uma acao real por cinco dias seguidos. Recompensa: 2 de ouro.',
-    type: 'individual',
-    category: 'spiritual',
-    actionTemplate: {
-      name: 'Cinco Dias em Movimento',
-      description: 'Manter cinco dias seguidos com ao menos uma acao concluida.',
-      icon: '\u{1F525}',
-      duration: 0,
-      repetitions: 5,
-      isMilestone: true,
-    },
-    requirements: { totalReps: 5, milestone: true },
-    rewards: { xp: 300 },
-    rewardGold: 2,
-  },
-  {
-    id: 'system-twenty-actions',
-    source: 'system',
-    title: 'Conclua 20 acoes',
-    description: 'Registre vinte acoes reais concluidas. Recompensa: 2 de ouro.',
-    type: 'individual',
-    category: 'intellectual',
-    actionTemplate: {
-      name: 'Vinte Acoes Reais',
-      description: 'Concluir vinte acoes que contam para o seu progresso.',
-      icon: '\u2705',
-      duration: 0,
-      repetitions: 20,
-      isMilestone: true,
-    },
-    requirements: { totalReps: 20, milestone: true },
-    rewards: { xp: 300 },
-    rewardGold: 2,
-  },
+  // "Conclua 20 acoes" saiu.
+  //
+  // A missao individual do APP INTEIRO faz a mesma coisa e melhor: a meta sai do
+  // ritmo da pessoa em vez de ser 20 fixo para todo mundo, tem prazo de 14 dias,
+  // e paga pela mesma regua das outras. Manter as duas seria oferecer o mesmo
+  // trabalho em dois lugares, com numeros diferentes.
   {
     id: 'tutorial-quest',
     source: 'system',
     title: 'Concluir o tutorial',
-    description: 'Feche a trilha inicial do sistema. Recompensa: 1 Bau Comum.',
+    description: 'Feche a trilha inicial do sistema.',
     type: 'individual',
     category: 'intellectual',
     actionTemplate: {
@@ -89,14 +83,15 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 1, milestone: true },
-    rewards: { xp: 100 },
-    rewardChest: 'Comum',
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
   },
   {
     id: 'system-first-cycle',
     source: 'system',
     title: 'Criar o primeiro ciclo',
-    description: 'Abra seu primeiro ciclo real. Recompensa: 1 Bau Comum.',
+    description: 'Abra seu primeiro ciclo real.',
     type: 'individual',
     category: 'intellectual',
     actionTemplate: {
@@ -108,14 +103,15 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 1, milestone: true },
-    rewards: { xp: 100 },
-    rewardChest: 'Comum',
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
   },
   {
     id: 'system-first-campaign',
     source: 'system',
     title: 'Instalar a primeira campanha',
-    description: 'Instale uma campanha. Recompensa: 1 Bau Comum.',
+    description: 'Instale uma campanha.',
     type: 'individual',
     category: 'intellectual',
     actionTemplate: {
@@ -127,14 +123,15 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 1, milestone: true },
-    rewards: { xp: 100 },
-    rewardChest: 'Comum',
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
   },
   {
     id: 'system-first-cycle-report',
     source: 'system',
     title: 'Concluir o primeiro ciclo',
-    description: 'Feche um ciclo inteiro e gere o primeiro relatorio. Recompensa: 1 Bau Ciclo.',
+    description: 'Feche um ciclo inteiro e gere o primeiro relatorio.',
     type: 'individual',
     category: 'spiritual',
     actionTemplate: {
@@ -146,8 +143,129 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
       isMilestone: true,
     },
     requirements: { totalReps: 1, milestone: true },
-    rewards: { xp: 500 },
-    rewardChest: 'Ciclo',
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
+  },
+  {
+    id: 'system-first-arena-created',
+    source: 'system',
+    title: 'Criar a primeira arena',
+    description: 'Crie uma arena para uma frente da sua vida.',
+    type: 'individual',
+    category: 'intellectual',
+    actionTemplate: {
+      name: 'Primeira Arena Criada',
+      description: 'Ter ao menos uma arena.',
+      icon: '🏟️',
+      duration: 0,
+      repetitions: 1,
+      isMilestone: true,
+    },
+    requirements: { totalReps: 1, milestone: true },
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
+  },
+  {
+    id: 'system-first-action-done',
+    source: 'system',
+    title: 'Concluir a primeira acao',
+    description: 'Conclua uma acao de verdade.',
+    type: 'individual',
+    category: 'physical',
+    actionTemplate: {
+      name: 'Primeira Acao Concluida',
+      description: 'Ter ao menos uma tarefa concluida.',
+      icon: '✅',
+      duration: 0,
+      repetitions: 1,
+      isMilestone: true,
+    },
+    requirements: { totalReps: 1, milestone: true },
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
+  },
+  {
+    id: 'system-first-planned-day',
+    source: 'system',
+    title: 'Planejar o primeiro dia',
+    description: 'Coloque uma acao no planner.',
+    type: 'individual',
+    category: 'intellectual',
+    actionTemplate: {
+      name: 'Primeiro Dia Planejado',
+      description: 'Ter ao menos uma tarefa no planner.',
+      icon: '🗓️',
+      duration: 0,
+      repetitions: 1,
+      isMilestone: true,
+    },
+    requirements: { totalReps: 1, milestone: true },
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
+  },
+  {
+    id: 'system-first-equipped-item',
+    source: 'system',
+    title: 'Equipar o primeiro item',
+    description: 'Vista algo no Soberano.',
+    type: 'individual',
+    category: 'spiritual',
+    actionTemplate: {
+      name: 'Primeiro Item Equipado',
+      description: 'Ter uma peca equipada no perfil.',
+      icon: '👑',
+      duration: 0,
+      repetitions: 1,
+      isMilestone: true,
+    },
+    requirements: { totalReps: 1, milestone: true },
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
+  },
+  {
+    id: 'system-first-individual-mission',
+    source: 'system',
+    title: 'Escolher a primeira missao individual',
+    description: 'Peca uma missao ao Oraculo e escolha a sua.',
+    type: 'individual',
+    category: 'spiritual',
+    actionTemplate: {
+      name: 'Primeira Missao Individual',
+      description: 'Ter escolhido uma missao individual.',
+      icon: '🔮',
+      duration: 0,
+      repetitions: 1,
+      isMilestone: true,
+    },
+    requirements: { totalReps: 1, milestone: true },
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
+  },
+  {
+    id: 'system-first-clan',
+    source: 'system',
+    title: 'Entrar num cla',
+    description: 'Junte-se a um cla.',
+    type: 'individual',
+    category: 'social',
+    actionTemplate: {
+      name: 'Primeiro Cla',
+      description: 'Fazer parte de um cla.',
+      icon: '🛡️',
+      duration: 0,
+      repetitions: 1,
+      isMilestone: true,
+    },
+    requirements: { totalReps: 1, milestone: true },
+    inicial: true,
+    rewards: { xp: INITIAL_MISSION_XP },
+    rewardFragments: INITIAL_MISSION_FRAGMENTS,
   },
 ];
 
@@ -164,9 +282,24 @@ export const SYSTEM_CHALLENGES: SystemChallenge[] = [
  * desliga a celebracao dele. Sao dois nomes porque o disparo usa ora o titulo
  * do desafio, ora o nome do modelo de acao.
  */
-export const PROOF_STREAK_CHALLENGE_ID = 'system-five-day-proof-streak';
+/**
+ * A missao dos cinco dias foi APAGADA, nao escondida.
+ *
+ * Ela era a ultima coisa que ainda exigia dias consecutivos de todo mundo. O
+ * passo 3 a tirou da oferta e manteve a definicao "para interpretar os aceites
+ * antigos" — mas a conferencia no banco mostrou a coorte vazia: nenhum perfil
+ * com `legacy_five_day_eligible`. Nao havia ninguem para interpretar.
+ *
+ * O gatilho `guard_retired_streak_and_volume_pact` no banco continua removendo o
+ * id de qualquer array de aceites, entao binario antigo tambem nao a ressuscita.
+ */
 
-export const PROOF_STREAK_CHALLENGE_TITLES: readonly string[] = (() => {
-  const desafio = SYSTEM_CHALLENGES.find((item) => item.id === PROOF_STREAK_CHALLENGE_ID);
-  return [desafio?.title, desafio?.actionTemplate?.name].filter((nome): nome is string => Boolean(nome));
-})();
+/**
+ * O catalogo que a pessoa pode ESCOLHER.
+ *
+ * So missao individual entra aqui: a inicial nao se aceita, ela acontece. Sem
+ * este filtro as dez iniciais apareceriam como opcoes para aceitar, competindo
+ * pelo slot com o compromisso de verdade — que e exatamente o que a separacao
+ * entre as duas familias veio desfazer.
+ */
+export const AVAILABLE_SYSTEM_CHALLENGES = SYSTEM_CHALLENGES.filter((challenge) => !challenge.inicial);

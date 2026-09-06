@@ -75,10 +75,25 @@ assert.doesNotMatch(
   'escolha por pista, uma a uma, foi o que produziu as colisoes',
 );
 
-// E o marco de sequencia precisa ter quem o dispare, senao o peso raro e um
-// vocabulario que ninguem fala.
+// A SEQUENCIA SAIU, E LEVOU JUNTO O UNICO FALANTE DO PESO 'marco_raro'.
+//
+// Este teste exigia que o GameContext disparasse 'streak_milestone' nos marcos
+// de 7, 14, 30, 60 e 100 dias. Ele nao dispara mais, e nao deve: o bonus de
+// sequencia foi aposentado em favor da missao individual, porque cobrar dias
+// consecutivos media disponibilidade — quem tem rotina livre ganhava, quem
+// trabalha por turno perdia — e nao esforco.
+//
+// A regra original continua valendo: peso que ninguem fala e vocabulario morto.
+// So que agora ela acusa o contrario do que acusava antes.
 const gameContext = readFileSync(new URL('../contexts/GameContext.tsx', import.meta.url), 'utf8');
-assert.match(gameContext, /emitAppSensoryCue\(marcoDeSequencia \? 'streak_milestone'/);
-assert.match(gameContext, /\[7, 14, 30, 60, 100\]/, 'a lista de marcos e a mesma do banco de falas');
+assert.doesNotMatch(gameContext, /streak_milestone/, 'a sequencia aposentada nao dispara pista nenhuma');
+assert.doesNotMatch(gameContext, /\[7, 14, 30, 60, 100\]/, 'nem a lista de marcos dela sobrou');
+
+// O 'marco_raro' ficou orfao DE PROPOSITO, e isto fica escrito para nao virar
+// esquecimento: e a unica faixa reservada ao que quase nunca acontece, e o
+// candidato natural a herda-la e o fecho de uma missao individual. Enquanto
+// ninguem assume, a faixa existe sem falante — e este assert e quem lembra.
+const orfaos = raros.map(([cue]) => cue).filter(cue => !gameContext.includes(cue));
+assert.deepEqual(orfaos, ['streak_milestone'], 'marco_raro segue sem quem o dispare');
 
 console.log('Sensory grammar: tres pesos, cada pista com o seu, e nada colidindo.');

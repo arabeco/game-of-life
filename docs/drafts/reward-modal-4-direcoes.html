@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Modal de recompensa — 4 direções</title>
+<style>
+  *{box-sizing:border-box} :root{color-scheme:dark;font-family:Inter,Segoe UI,Arial,sans-serif}
+  body{margin:0;background:#090a0d;color:#f4f1e9;min-width:1180px}
+  .sheet{width:1180px;margin:auto;padding:42px 34px 60px}
+  header{display:flex;align-items:end;justify-content:space-between;border-bottom:1px solid #332d22;padding-bottom:22px;margin-bottom:28px}
+  .kicker{font-size:10px;font-weight:900;letter-spacing:.32em;color:#b89453;text-transform:uppercase}
+  h1{margin:8px 0 0;font:900 34px/1.05 Georgia,serif;letter-spacing:.02em}
+  .sub{width:480px;margin:0;color:#96989f;font-size:13px;line-height:1.55;text-align:right}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  .direction{position:relative;min-height:900px;border:1px solid #252831;background:#111318;overflow:hidden}
+  .direction:before{content:"";position:absolute;inset:0;background:linear-gradient(145deg,transparent 20%,rgba(255,255,255,.025),transparent 55%),repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.012) 48px);pointer-events:none}
+  .label{position:relative;z-index:3;display:flex;justify-content:space-between;align-items:baseline;padding:18px 20px;border-bottom:1px solid #292b31;background:#0d0f13}
+  .label b{font-size:15px;letter-spacing:.13em;text-transform:uppercase}.label span{font-size:9px;font-weight:800;letter-spacing:.18em;color:#8d929c;text-transform:uppercase}
+  .stage{position:relative;height:838px;padding-top:28px;background:radial-gradient(circle at 50% 30%,rgba(154,121,56,.09),transparent 42%),linear-gradient(rgba(5,6,8,.76),rgba(5,6,8,.91)),repeating-linear-gradient(0deg,#20232a 0 1px,#15171c 1px 54px)}
+  .stage:before,.stage:after{content:"";position:absolute;left:26px;right:26px;height:1px;background:#282b31}.stage:before{top:72px}.stage:after{bottom:54px}
+  .modal{--metal:#aca79d;--metal-dark:#4a4b4c;--skin-accent-color:#ffd700;--metal-gold:linear-gradient(135deg,#5c4a1f 0%,#d4af37 50%,#5c4a1f 100%);--sephirot-glow-color:rgba(255,215,0,.5);--achievement:59,130,246;position:relative;z-index:2;width:390px;margin:auto;padding:24px 22px 20px;color:#f5f3ed;background:radial-gradient(ellipse at 50% -6%,rgba(var(--achievement),.16),transparent 42%),linear-gradient(145deg,rgba(var(--achievement),.055),transparent 35%,rgba(var(--achievement),.025) 72%,transparent),linear-gradient(160deg,#181a1d,#08090b 58%,#0e1012)}
+  .crest{position:relative;width:84px;height:84px;margin:0 auto 14px;display:grid;place-items:center;background:#0a0b0f}
+  .crest:before,.crest:after{content:"";position:absolute;inset:0;border:1px solid var(--metal)}
+  .crest:after{inset:8px;border-color:rgba(255,255,255,.18)}
+  .crest img{position:relative;z-index:2;width:66px;height:66px;object-fit:contain;filter:drop-shadow(0 3px 8px #000)}
+  .eyebrow{text-align:center;color:#b7b2a8;font-size:9px;font-weight:900;letter-spacing:.34em;text-transform:uppercase}
+  .title{text-align:center;margin:7px 0 5px;font:900 30px/1 Georgia,serif;letter-spacing:.08em;text-transform:uppercase}
+  .summary{text-align:center;margin:0 auto 18px;max-width:300px;color:#9ca0a8;font-size:11px;line-height:1.45}
+  .metrics{display:flex;justify-content:center;gap:14px;margin:0 0 18px}
+  .metric{width:94px;height:94px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;border:1px solid #32353b;background:#111318;text-align:center}
+  .metric-icon{width:33px;height:33px;display:grid;place-items:center;margin-bottom:6px;border:1px solid #3a3e47;background:#07090c}
+  .metric-icon img{width:23px;height:23px;object-fit:contain}.metric strong{display:block;font-size:16px;line-height:1}.metric small{display:block;margin-top:5px;color:#858a93;font-size:7px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+  .section-title{display:flex;align-items:center;gap:10px;margin:0 0 9px;color:#aaadb4;font-size:9px;font-weight:900;letter-spacing:.23em;text-transform:uppercase}.section-title:after{content:"";height:1px;flex:1;background:#303238}
+  .items{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .item{--rarity:#9ca3af;--rarity-rgb:156,163,175;height:68px;display:grid;grid-template-columns:46px 1fr;align-items:center;gap:9px;padding:8px;border:1px solid #292c33;background:#101217}
+  .item.uncommon{--rarity:#22c55e;--rarity-rgb:34,197,94}.item.rare{--rarity:#3b82f6;--rarity-rgb:59,130,246}.item.epic{--rarity:#a855f7;--rarity-rgb:168,85,247}.item.legendary{--rarity:#f59e0b;--rarity-rgb:245,158,11}.item.mythic{--rarity:#7b61ff;--rarity-rgb:123,97,255}
+  .art{width:46px;height:46px;display:grid;place-items:center;border:1px solid rgba(var(--rarity-rgb),.48);background:radial-gradient(circle at 34% 27%,rgba(var(--rarity-rgb),.25),rgba(var(--rarity-rgb),.075) 48%,#07090b 82%);box-shadow:inset 0 0 13px rgba(var(--rarity-rgb),.09);overflow:hidden}.art img{width:100%;height:100%;object-fit:contain}.item b{display:-webkit-box;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:10px;line-height:1.15}.rarity{display:block;margin-top:5px;color:var(--rarity);font-size:7px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+  button{display:block;width:100%;height:48px;margin-top:17px;border:1px solid var(--skin-accent-color);color:#1b1408;background-image:linear-gradient(180deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,0) 38%),var(--metal-gold);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 10px 24px var(--sephirot-glow-color),0 2px 6px rgba(0,0,0,.4);text-shadow:0 1px 0 rgba(255,255,255,.35);font-weight:950;letter-spacing:.24em;text-transform:uppercase}
+
+  /* A — a mesma família do B, com chanfros assimétricos */
+  .fissure .modal{border:1px solid #424548;box-shadow:-7px 9px 0 #060708,0 28px 78px #000;clip-path:polygon(0 32px,32px 0,100% 0,100% calc(100% - 46px),calc(100% - 46px) 100%,0 100%)}
+  .fissure .modal:before{content:"";position:absolute;inset:8px;border:1px solid rgba(255,255,255,.045);clip-path:inherit;pointer-events:none}.fissure .crest{clip-path:polygon(50% 0,100% 32%,82% 100%,18% 100%,0 32%);background:linear-gradient(155deg,#17191c,#060708 62%)}
+  .fissure .metric,.fissure .item{border-color:#30343a;background:linear-gradient(120deg,#14171a,#090b0d 62%)}.fissure button{clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
+
+  /* B — direção escolhida: placa monolítica espessa, sem faixa central */
+  .monolith .modal{padding:30px 28px 26px;border:3px solid #56585a;background:radial-gradient(ellipse at 50% -6%,rgba(var(--achievement),.16),transparent 42%),linear-gradient(145deg,rgba(var(--achievement),.055),transparent 35%,rgba(var(--achievement),.025) 72%,transparent),linear-gradient(160deg,#1a1c1f,#090a0c 58%,#111315);box-shadow:inset 0 0 0 5px #090b0d,inset 0 0 0 6px #33363a,inset 0 0 0 9px #0b0d0f,9px 11px 0 #050607,12px 14px 0 #24272a,0 30px 86px #000,0 0 32px rgba(var(--achievement),.055);clip-path:polygon(0 28px,28px 0,calc(100% - 28px) 0,100% 28px,100% calc(100% - 28px),calc(100% - 28px) 100%,28px 100%,0 calc(100% - 28px))}
+  .monolith .modal:before{content:none}.monolith .crest{transform:none;clip-path:polygon(18% 0,82% 0,100% 18%,100% 82%,82% 100%,18% 100%,0 82%,0 18%);border:1px solid #5b5e62;background:linear-gradient(135deg,#191c20,#07090b 68%);box-shadow:inset 0 0 0 5px #080a0c,inset 0 0 0 6px #30343a,5px 6px 0 #050607}.monolith .crest img{transform:none;width:66px;height:66px}.monolith .crest:before,.monolith .crest:after{transform:none}.monolith .title{font-size:32px}.monolith .metric{border-color:#3b3934;background:#0d0e11}.monolith .item{border-width:0 0 1px;border-color:#302f2c;background:rgba(18,18,19,.78)}.monolith button{clip-path:polygon(18px 0,calc(100% - 18px) 0,100% 50%,calc(100% - 18px) 100%,18px 100%,0 50%)}
+
+  /* C — monólito estratificado: duas linhas internas, sem trilhos luminosos */
+  .shrine .modal{border:1px solid #414449;box-shadow:0 30px 85px #000,inset 0 0 0 7px #0c0e10,inset 0 0 0 8px #282b2e;clip-path:polygon(38px 0,calc(100% - 38px) 0,100% 55px,100% calc(100% - 22px),calc(100% - 22px) 100%,22px 100%,0 calc(100% - 22px),0 55px)}
+  .shrine .modal:before{content:"";position:absolute;left:18px;right:18px;top:12px;height:1px;background:linear-gradient(90deg,transparent,#66645e,transparent);opacity:.55}.shrine .crest{width:90px;height:90px;clip-path:polygon(50% 0,94% 26%,94% 74%,50% 100%,6% 74%,6% 26%);background:linear-gradient(145deg,#17191c,#060708)}.shrine .metrics{padding:10px 0;border-block:1px solid #303338}.shrine .metric,.shrine .item{border-color:#30343a;background:linear-gradient(120deg,#121519,#080a0c)}.shrine button{width:78%;margin-left:auto;margin-right:auto;clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,12px 100%,0 50%)}
+
+  /* D — monólito bipartido: costura metálica mínima no eixo */
+  .split .modal{border:1px solid #42464a;background:radial-gradient(ellipse at 50% 0,rgba(var(--achievement),.06),transparent 38%),linear-gradient(90deg,#14171a,#07090a 49.7%,#111316 50.3%,#090b0d);box-shadow:0 28px 76px #000,inset 0 0 0 6px #0a0c0e;clip-path:polygon(22px 0,calc(100% - 22px) 0,100% 22px,100% calc(100% - 22px),calc(100% - 22px) 100%,22px 100%,0 calc(100% - 22px),0 22px)}
+  .split .modal:before{content:"";position:absolute;left:50%;top:8px;bottom:8px;width:1px;background:linear-gradient(transparent,#3b3e42 18%,#24272a 82%,transparent);pointer-events:none}.split .crest{clip-path:polygon(20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%,0 20%);background:linear-gradient(135deg,#181a1d,#070809 65%)}.split .metric,.split .item{border-color:#30343a;background:linear-gradient(90deg,#111418,#080a0c)}.split button{clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px))}
+</style>
+</head>
+<body>
+<main class="sheet">
+  <header><div><div class="kicker">Exploração isolada · sem alterar o modal atual</div><h1>Recompensa de patente — família Monólito</h1></div><p class="sub">Botão dourado = Skin UI Basic. O azul da patente aparece apenas como reflexo discreto no grafite. Cada item usa a cor real da própria raridade.</p></header>
+  <section class="grid" id="grid"></section>
+</main>
+<script>
+const A='../../public/assets/';
+const items=[
+  ['catalog/avatars/SKIN_T1_STREET.png','Skin: Street','Comum'],
+  ['catalog/avatars/SKIN_T2_EXECUTIVO.png','Skin: Executivo','Incomum'],
+  ['catalog/avatars/SKIN_T3_NOMADE.png','Skin: Nômade','Raro'],
+  ['catalog/cyber.jpg','Tema: Cyberpunk','Épico'],
+  ['catalog/avatars/ARTEFATO_T5_FENIX_COSMICO.png','Artefato: Fênix Cósmico','Lendário'],
+  ['catalog/avatars/SKIN_T5_VESTIDO_REAL.png','Skin: Vestido Real','Mítico']
+];
+const dirs=[
+  ['fissure','A · MONÓLITO CHANFRADO','assimétrico · metal escuro'],
+  ['monolith','B · MONÓLITO CENTRAL — ESCOLHIDO','placa espessa · ícone do D'],
+  ['shrine','C · MONÓLITO ESTRATIFICADO','moldura dupla · metal escuro'],
+  ['split','D · MONÓLITO BIPARTIDO','costura central · metal escuro']
+];
+function card([cls,name,note]){
+  const rarityClass={'Comum':'common','Incomum':'uncommon','Raro':'rare','Épico':'epic','Lendário':'legendary','Mítico':'mythic'};
+  const rows=items.map(([src,title,rarity])=>`<div class="item ${rarityClass[rarity]||'common'}"><div class="art"><img src="${A+src}"></div><div><b>${title}</b><span class="rarity">${rarity}</span></div></div>`).join('');
+  return `<article class="direction ${cls}"><div class="label"><b>${name}</b><span>${note}</span></div><div class="stage"><div class="modal">
+    <div class="crest"><img src="${A}catalog/interface/insignia_rank_2_escudeiro.png"></div>
+    <div class="eyebrow">Nova patente</div><div class="title">Escudeiro</div><p class="summary">Sua nova patente foi reconhecida. As recompensas já entraram no Arsenal.</p>
+    <div class="metrics"><div class="metric"><div class="metric-icon"><img src="${A}icons/exp.png"></div><strong>+1.200</strong><small>Experiência</small></div><div class="metric"><div class="metric-icon"><img src="${A}icons/meta.png"></div><strong>2 / 10</strong><small>Patente</small></div></div>
+    <div class="section-title">Itens recebidos</div><div class="items">${rows}</div><button>OK</button>
+  </div></div></article>`
+}
+document.getElementById('grid').innerHTML=dirs.map(card).join('');
+</script>
+</body>
+</html>

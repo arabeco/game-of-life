@@ -23,6 +23,27 @@ const manualQaNotes = [
 const suites = {
   core: [
     {
+      id: 'avatar-offsets',
+      label: 'Avatar offsets regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'avatar-offsets.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['tabela vazia desenha igual ao comportamento antigo', 'escala cresce do centro da peca', 'o gabarito do corpo bate entre o codigo e o script'],
+    },
+    {
+      id: 'reward-modal',
+      label: 'Reward modal regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'reward-modal.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['trava que existe um miolo so de recompensa', 'impede a letra solta voltar no lugar do simbolo', 'fixa a altura do card de item'],
+    },
+    {
+      id: 'item-art',
+      label: 'Item art regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'item-art.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['confere que todo imageUrl existe no disco', 'trava as categorias que ainda vivem de emoji', 'avisa quando item some do catalogo por falta de arte'],
+    },
+    {
       id: 'challenge-rewards',
       label: 'Challenge reward flow regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'challenge-reward-flow.regression.mjs')]],
@@ -77,6 +98,13 @@ const suites = {
       command: [nodeBin, [path.join(repoRoot, 'tests', 'arena-pacts.regression.mjs')]],
       kind: 'logic',
       interactions: ['nao propoe arena arquivada, travada, vazia ou concluida', 'constancia conta dias e nao acoes', 'entrega anterior ao aceite nao conta'],
+    },
+    {
+      id: 'cycle-scheduling',
+      label: 'Cycle scheduling regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'cycle-scheduling.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['renovar uma arena nao expulsa as outras do ciclo', 'a virada reagenda as acoes recorrentes', 'o agendamento para no fim do ciclo, nao em 365 dias'],
     },
     {
       id: 'xp-scale',

@@ -19,6 +19,10 @@ import { SupabaseService } from '../services/SupabaseService';
 import { ConnectionsModal } from '../components/ConnectionsModal';
 import { LEGAL_PRIVACY_URL_PLACEHOLDER, LEGAL_TERMS_URL_PLACEHOLDER } from '../constants/legal';
 import { TUTORIAL_SECTIONS } from '../constants/tutorialSteps';
+import { RewardPackModal } from '../components/RewardPackModal';
+import { buildRedeemRewardPayload } from '../utils/redeemRewardPresentation';
+import { getRewardEmblemUrl, getRewardToneRgb } from '../constants/rewardEmblems';
+import type { RewardModalPayload } from '../types';
 import { MASTERY_TOTAL_MAX_LEVEL, getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { clearSupabaseSessionStorage, signOutAndClearSupabaseSession } from '../utils/authSession';
 import { getActiveSubscriptionTier, getPremiumDaysRemaining, hasPlatinumAccess, hasPremiumAccess, isStaffRole } from '../utils/premiumAccess';
@@ -2004,6 +2008,9 @@ const GeralTab: React.FC = () => {
 const PreferenciasTab: React.FC = () => {
     const { userProfile, oraclePreferences, updateOraclePreferences, updateUserProfile, activeTheme, toggleTheme, inventory, setCurrentSkin, showToast } = useGame();
     const [modal, setModal] = useState<'oracle' | 'tutorial' | 'privacy' | 'ui' | 'primer' | 'redeem' | null>(null);
+    // O resgate termina numa TELA, nao num toast: e a unica hora em que a
+    // pessoa digita alguma coisa esperando um premio.
+    const [premioResgatado, setPremioResgatado] = useState<RewardModalPayload | null>(null);
     const [isFeedbackOpen, setFeedbackOpen] = useState(false);
     const normalizeAssetsVisibilityOption = (value?: ProfileVisibilityScope): ProfileVisibilityOption => {
         if (value === 'all' || value === 'friends' || value === 'nobody') return value;
@@ -2144,7 +2151,16 @@ const PreferenciasTab: React.FC = () => {
             });
         }
 
-        showToast(result.rewardSummary || `Código "${result.code}" resgatado.`, 'success');
+        // A tela de boas-vindas da Vanguarda tem cerimonia propria e ja abre
+        // sozinha pelo perfil; abrir as duas empilharia recompensa sobre
+        // recompensa.
+        if (profileRow?.vanguard_welcome_pending) {
+            showToast(result.rewardSummary || `Código "${result.code}" resgatado.`, 'success');
+            return;
+        }
+
+        setModal(null);
+        setPremioResgatado(buildRedeemRewardPayload(result));
     };
 
     const handleUiSkinOptionClick = (skinId: string, unlocked: boolean) => {
@@ -2224,6 +2240,17 @@ const PreferenciasTab: React.FC = () => {
                 />
             )}
             {isFeedbackOpen && <FeedbackBetaModal onClose={() => setFeedbackOpen(false)} />}
+            <RewardPackModal
+                open={!!premioResgatado}
+                payload={premioResgatado}
+                onClose={() => setPremioResgatado(null)}
+                emblema={getRewardEmblemUrl('geral')}
+                tom={getRewardToneRgb('geral')}
+                fallbackEyebrow=""
+                fallbackTitle="Recompensa entregue!"
+                fallbackSummary="Tudo já entrou na sua conta."
+                fallbackButtonLabel="Continuar"
+            />
         </div>
     );
 };
@@ -2863,4 +2890,3 @@ export const SettingsView: React.FC = () => {
         </>
     );
 };
-

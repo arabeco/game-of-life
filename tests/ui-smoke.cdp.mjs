@@ -387,7 +387,9 @@ try {
   checkpoints.push('planner-open');
 
   await clickSelector('#sitrep-button');
-  await waitFor('sitrep modal', `(() => document.body && document.body.innerText.toUpperCase().includes('RESUMO DIARIO'))()`, 10000);
+  // A tela escreve 'RESUMO DIARIO' com acento, e toUpperCase() nao tira acento:
+  // esta espera nunca podia dar certo. Normalizamos antes de comparar.
+  await waitFor('painel diario', `(() => document.body && document.body.innerText.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().includes('RESUMO DIARIO'))()`, 10000);
   checkpoints.push('sitrep-open');
 
   await pressEscape();

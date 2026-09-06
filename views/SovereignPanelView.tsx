@@ -21,6 +21,9 @@ import { GlassCard } from '../components/GlassCard';
 import { LegacyProjectionModal } from '../components/LegacyProjectionModal';
 import { ReportResultCarousel } from '../components/ReportResultCarousel';
 import { RewardPackModal } from '../components/RewardPackModal';
+import { getRewardEmblemUrl, getRewardToneRgb } from '../constants/rewardEmblems';
+import { getChestArtUrl } from '../constants/catalogAssets';
+import { getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
 import { SvgRadarChart } from '../components/SvgRadarChart';
 import { supabase } from '../supabaseClient';
 import { useGame } from '../contexts/GameContext';
@@ -1575,89 +1578,50 @@ const CYCLE_REPORT_SHOWCASE: Report = (() => {
 })();
 
 const GM_PREMIUM_ACTIVE_BENEFITS = [
-  'Até 15 arenas ativas',
-  'Fundos premium de perfil',
-  'Todos os tons de fala do Oráculo',
-  'Cena do legado com 50% off',
-  'Bônus de legado +5% XP',
+  { label: 'Capacidade', value: 'Até 15 arenas ativas', tone: 'gold' as const },
+  { label: 'Personalização', value: 'Fundos premium de perfil', tone: 'violet' as const },
+  { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
+  { label: 'Legado', value: 'Cena do legado com 50% de desconto', tone: 'violet' as const },
+  { label: 'Progressão', value: 'Bônus de legado de +5% EXP', tone: 'emerald' as const },
 ];
 
 const GM_PLATINUM_ACTIVE_BENEFITS = [
-  'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
-  'Até 30 arenas ativas',
-  'Cena do legado com 70% off',
-  'Todos os planos de fundo',
-  'Todas as aparências premium',
-  '1 baú raro + 1 baú lendário por ativação',
+  { label: 'Progressão', value: 'Todas as vantagens Premium e +10% EXP', tone: 'emerald' as const },
+  { label: 'Capacidade', value: 'Até 30 arenas ativas', tone: 'gold' as const },
+  { label: 'Personalização', value: 'Todos os fundos e aparências premium', tone: 'violet' as const },
+  { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
+  { label: 'Legado', value: 'Cena do legado com 70% de desconto', tone: 'violet' as const },
 ];
 
 const buildMembershipRewardMockPayload = (tier: 'premium' | 'platinum'): RewardModalPayload => {
   const isPlatinum = tier === 'platinum';
 
   return {
-    eyebrow: isPlatinum ? 'Renovação platinum' : 'Renovação premium',
-    title: isPlatinum ? 'Platinum ativo' : 'Premium ativo',
+    eyebrow: '',
+    title: 'Recompensa entregue!',
+    subtitle: isPlatinum ? 'Platinum ativado' : 'Premium ativado',
     summary: isPlatinum
       ? 'Preview do GM para validar a ativação do plano maior, com as entregas da rodada e as vantagens ativas do Platinum.'
       : 'Preview do GM para validar a ativação do Premium, com as entregas da rodada e as vantagens ativas do plano.',
     buttonLabel: 'Fechar preview',
     metricCards: [
       { label: 'Plano', value: isPlatinum ? 'Platinum' : 'Premium', detail: '30 dias ativos' },
-      { label: 'Ativo até', value: isPlatinum ? '02 mai' : '02 mai', detail: 'validade atual' },
-      {
-        label: 'Entrega',
-        value: isPlatinum ? 'Temporada + raro' : 'Baú raro',
-        detail: isPlatinum ? 'rodada do Platinum' : 'rodada do Premium',
-      },
+      { label: 'Ativo até', value: '02 mai', detail: 'validade atual' },
     ],
-    rewardHighlightsTitle: 'Entregue agora',
-        rewardHighlights: isPlatinum
-      ? [
-          {
-            label: 'Baús',
-            value: 'Temporada + raro',
-            detail: 'Os dois baús da ativação do Platinum.',
-            tone: 'gold',
-          },
-          {
-            label: 'Legado',
-            value: '1 grátis',
-            detail: 'Crédito aplicado para a próxima cena do legado.',
-            tone: 'violet',
-          },
-          {
-            label: 'Quiz',
-            value: '1 ficha média',
-            detail: 'Use no próximo quiz para liberar uma campanha média.',
-            tone: 'cyan',
-          },
-        ]
-      : [
-          {
-            label: 'Baú',
-            value: 'Raro',
-            detail: 'Entrega real da ativação do Premium.',
-            tone: 'gold',
-          },
-          {
-            label: 'Quiz',
-            value: '1 ficha grátis',
-            detail: 'Use no próximo quiz para liberar uma campanha grátis.',
-            tone: 'cyan',
-          },
-          {
-            label: 'Arsenal',
-            value: '2 itens',
-            detail: 'Genesis e cosméticos da Temporada quando faltarem.',
-            tone: 'emerald',
-          },
-        ],
-    itemSectionTitle: 'Cosméticos integrados',
+    rewardHighlightsTitle: 'Itens e créditos entregues',
+    rewardHighlights: [
+      ...(isPlatinum ? (['Lendário', 'Raro'] as ChestType[]) : (['Raro'] as ChestType[])).map((chestType) => {
+        const visual = getChestVisual(chestType);
+        return { label: visual.label, value: getChestDisplayName(chestType), detail: 'Baú entregue ao Arsenal.', rarityRgb: visual.rgb, imageUrl: getChestArtUrl(chestType) };
+      }),
+      ...(isPlatinum ? [{ label: 'Ficha de quiz', value: '1 campanha média', detail: 'Crédito disponível para o próximo quiz.', tone: 'cyan' as const }] : []),
+    ],
+    itemSectionTitle: 'Cosméticos entregues',
     itemIds: isPlatinum ? [] : ['item_border_genesis_01', 'item_banner_origin_01'],
     emptyMessage: isPlatinum
       ? 'Nenhum cosmético novo precisava cair agora, mas os baús, o crédito de legado e a ficha da rodada já foram aplicados.'
       : 'Nenhum cosmético novo precisava cair agora, mas o baú raro e a ficha da rodada já foram aplicados.',
-    activeBenefitsTitle: 'Vantagens ativas',
+    activeBenefitsTitle: 'Vantagens ativadas',
     activeBenefits: isPlatinum ? GM_PLATINUM_ACTIVE_BENEFITS : GM_PREMIUM_ACTIVE_BENEFITS,
     campaignQuizFreeCreditsGranted: isPlatinum ? 0 : 1,
     campaignQuizMediumCreditsGranted: isPlatinum ? 1 : 0,
@@ -1685,6 +1649,8 @@ const MembershipRewardPreviewButton: React.FC<{ tier: 'premium' | 'platinum' }> 
       <RewardPackModal
         open={open}
         payload={payload}
+        emblema={getRewardEmblemUrl('geral')}
+        tom={getRewardToneRgb('geral')}
         onClose={() => setOpen(false)}
         fallbackEyebrow="Renovação premium"
         fallbackTitle="Recompensas do plano"
@@ -2432,4 +2398,3 @@ export const SovereignPanelView: React.FC = () => {
     </div>
   );
 };
-

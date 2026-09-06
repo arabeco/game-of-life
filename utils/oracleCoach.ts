@@ -715,6 +715,23 @@ const compactActions = (
   actions: Array<OracleCycleCoachAction | null>,
 ): OracleCycleCoachAction[] => actions.filter((action): action is OracleCycleCoachAction => Boolean(action)).slice(0, 2);
 
+/**
+ * A leitura do momento — o que o botao "Ler meu dia" devolve.
+ *
+ * ANTES era uma cascata: o primeiro `if` que casasse vencia e os de baixo nunca
+ * eram considerados. Como "atrasado" e "adiantado" ficavam no meio, eles pegavam
+ * quase todo mundo — e qualquer leitura nova colocada depois deles seria escrita
+ * para o vazio.
+ *
+ * Agora cada caso e um CANDIDATO com peso, e o mais pesado entre os aplicaveis
+ * fala. Os pesos abaixo reproduzem exatamente a ordem antiga, entao esta troca
+ * nao muda nenhuma resposta de hoje: ela abre espaco para as leituras que ainda
+ * faltam entrarem no lugar certo da fila, em vez de no fim dela.
+ *
+ * Os textos sao os mesmos, palavra por palavra. O que mudou e quem decide.
+ */
+type CasoDoBrief = OracleCycleCoachBrief & { peso: number };
+
 export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleCoachBrief => {
   const focusArena = context.focusArenaSignal;
   const progress = Math.max(0, Math.round(context.cycleCompletionPercent || 0));
@@ -723,35 +740,46 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
   const total = Math.max(0, context.cycleTotalActions);
   const pending = Math.max(0, context.cyclePendingActions);
 
+  const casos: CasoDoBrief[] = [];
+
   if (!context.hasArenas) {
-    return {
+    casos.push({
+      peso: 100,
       id: 'coach:first-arena',
       content: 'Vamos comecar pequeno. Escolha uma frente importante da sua vida e crie uma arena com uma ação que realmente caiba na sua semana.',
       quickActions: [{ id: 'coach-open-arenas', label: 'Criar primeira arena', kind: 'open_arenas' }],
-    };
+    });
   }
 
   if (!context.hasCycle) {
-    return {
+    casos.push({
+      peso: 95,
       id: 'coach:start-cycle',
       content: `Você ja tem ${context.totalArenas} arena${context.totalArenas === 1 ? '' : 's'}. Agora escolha uma rodada curta para transformar intencao em ritmo. Sete dias ja bastam para aprender o que cabe de verdade.`,
       quickActions: [
         { id: 'coach-open-cycle', label: 'Montar ciclo', kind: 'open_cycle' },
         { id: 'coach-open-arenas', label: 'Rever arenas', kind: 'open_arenas' },
       ],
-    };
+    });
   }
 
   if ((total > 0 && pending === 0) || progress >= 100) {
-    return {
+    // O texto antigo mandava "feche este ciclo". Ciclo VENCIDO fecha sozinho hoje
+    // — este caso e de quem terminou tudo ANTES do prazo, e ai fechar e escolha,
+    // nao instrucao.
+    casos.push({
+      peso: 90,
       id: `coach:cycle-ready:${context.cycleName || 'active'}`,
-      content: `Você concluiu o que estava medido neste ciclo. Antes de abrir outra rodada, feche este ciclo e registre o que funcionou.`,
-      quickActions: [{ id: 'coach-open-cycle', label: 'Fechar ciclo', kind: 'open_cycle' }],
-    };
+      content: context.cycleDaysRemaining && context.cycleDaysRemaining > 0
+        ? `Você concluiu o que estava medido neste ciclo, e ainda faltam ${context.cycleDaysRemaining} dia${context.cycleDaysRemaining === 1 ? '' : 's'}. Pode encerrar agora e registrar o que funcionou, ou deixar rodando.`
+        : 'Você concluiu o que estava medido neste ciclo. Vale encerrar e registrar o que funcionou.',
+      quickActions: [{ id: 'coach-open-cycle', label: 'Ver ciclo', kind: 'open_cycle' }],
+    });
   }
 
   if (total === 0) {
-    return {
+    casos.push({
+      peso: 85,
       id: `coach:unmeasured:${focusArena?.arenaId || 'cycle'}`,
       content: focusArena
         ? `${focusArena.arenaName} ainda não tem uma meta mensuravel neste ciclo. Se quiser acompanhar o ritmo, defina uma repeticao minima que seja honesta.`
@@ -760,61 +788,180 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
         openFocusedArena(context),
         { id: 'coach-open-arenas', label: 'Ver arenas', kind: 'open_arenas' },
       ]),
-    };
+    });
   }
 
   if (context.cycleDaysRemaining === 0 && pending > 0) {
-    return {
+    casos.push({
+      peso: 80,
       id: `coach:last-day:${context.cycleName || 'active'}:${pending}`,
       content: `O ciclo chegou ao último dia com ${pending} acao${pending === 1 ? '' : 'es'} pendente${pending === 1 ? '' : 's'}. Não precisa fingir um fechamento perfeito: faca o que ainda cabe e encerre com uma leitura honesta.`,
       quickActions: [
         { id: 'coach-open-planner', label: 'Ver o que ainda cabe', kind: 'open_planner' },
         { id: 'coach-open-cycle', label: 'Rever ciclo', kind: 'open_cycle' },
       ],
-    };
+    });
   }
 
   if (context.cyclePace === 'atrasado' || context.cyclePace === 'critico') {
     const arenaLine = focusArena
       ? ` ${focusArena.arenaName} pede mais atencao agora.`
       : '';
-    return {
+    casos.push({
+      peso: 75,
       id: `coach:behind:${focusArena?.arenaId || 'cycle'}:${context.cycleDayNumber || 0}`,
       content: `Seu ciclo esta em ${progress}%, enquanto o tempo percorrido aponta cerca de ${expected}%.${arenaLine} Em vez de tentar compensar tudo, escolha uma ação real ou reduza uma meta que deixou de fazer sentido.`,
       quickActions: compactActions([
         openFocusedArena(context),
         { id: 'coach-open-planner', label: 'Escolher uma ação', kind: 'open_planner' },
       ]),
-    };
+    });
   }
 
   if (completed === 0) {
-    return {
+    casos.push({
+      peso: 70,
       id: `coach:first-proof:${context.cycleName || 'active'}`,
-      content: `O ciclo comecou, mas ainda falta a primeira conclusao. Não tente resolver a semana inteira agora: escolha a menor ação que coloca o ciclo em movimento hoje.`,
+      content: 'O ciclo comecou, mas ainda falta a primeira conclusao. Não tente resolver a semana inteira agora: escolha a menor ação que coloca o ciclo em movimento hoje.',
       quickActions: [
         { id: 'coach-open-planner', label: 'Escolher primeira ação', kind: 'open_planner' },
       ],
-    };
+    });
   }
 
   if (context.cyclePace === 'adiantado') {
-    return {
+    casos.push({
+      peso: 40,
       id: `coach:ahead:${context.cycleDayNumber || 0}:${completed}`,
-      content: `Boa: você concluiu ${completed} de ${total} ações e esta adiantado no ciclo. Proteja esse ritmo sem transformar a vantagem em carga extra.`,
+      content: (() => {
+        // A projecao: no ritmo medio ate aqui, quantos dias sobrariam.
+        const dias = context.cycleDayNumber || 0;
+        const ritmo = dias > 0 ? completed / dias : 0;
+        const sobra = ritmo > 0 && pending > 0
+          ? Math.max(0, (context.cycleDaysRemaining ?? 0) - Math.ceil(pending / ritmo))
+          : 0;
+        return sobra > 0
+          ? `Boa: você concluiu ${completed} de ${total} ações e esta adiantado. Nesse ritmo, fecha ${sobra} dia${sobra === 1 ? '' : 's'} antes do prazo.`
+          : `Boa: você concluiu ${completed} de ${total} ações e esta adiantado no ciclo. Proteja esse ritmo sem transformar a vantagem em carga extra.`;
+      })(),
       quickActions: [{ id: 'coach-open-cycle', label: 'Ver andamento', kind: 'open_cycle' }],
-    };
+    });
   }
 
+  /**
+   * A CONTA NAO FECHA — capacidade contra exigencia.
+   *
+   * A leitura mais forte que o app consegue fazer, e ela nao depende de agenda
+   * nenhuma: o que falta dividido pelos dias que sobram, comparado ao melhor dia
+   * que a pessoa ja registrou. Nao manda correr atras: mostra a conta e deixa a
+   * saida ser editar o plano.
+   *
+   * Peso acima de "atrasado" porque e mais especifica: atrasado diz que esta
+   * atras, esta diz por quanto e se ainda cabe.
+   */
+  const melhorDia = Math.max(0, Math.round(context.bestDailyCompletions || 0));
+  const diasRestantes = context.cycleDaysRemaining ?? 0;
+  if (melhorDia > 0 && diasRestantes > 0 && pending > 0) {
+    const porDia = pending / diasRestantes;
+    if (porDia > melhorDia) {
+      const arredondado = porDia >= 2 ? Math.round(porDia) : Math.round(porDia * 10) / 10;
+      casos.push({
+        peso: 78,
+        id: `coach:conta-nao-fecha:${context.cycleDayNumber || 0}:${pending}`,
+        content: `Faltam ${pending} ações e ${diasRestantes} dia${diasRestantes === 1 ? '' : 's'}. Isso pede ${arredondado} por dia, e seu melhor dia até agora ${melhorDia === 1 ? 'foi 1' : `foram ${melhorDia}`}. Reduzir uma meta agora não tira EXP já conquistada.`,
+        quickActions: compactActions([
+          openFocusedArena(context),
+          { id: 'coach-open-cycle', label: 'Rever ciclo', kind: 'open_cycle' },
+        ]),
+      });
+    }
+  }
+
+  /**
+   * ARENA QUE NUNCA COMECOU — diferente de arena parada.
+   *
+   * Arena parada andou e parou; esta nunca andou. O sujeito da frase e o CICLO,
+   * nao a pessoa: "voce desenhou este ciclo com cinco arenas" e um fato sobre o
+   * plano, e a saida obvia (tirar ou comecar) fica sem precisar ser dita.
+   */
+  const natimortas = (context.arenaSignals || []).filter((sinal) => (
+    sinal.completedActions === 0 && (sinal.plannedActions || 0) > 0
+  ));
+  if (natimortas.length > 0 && (context.arenaSignals || []).length > natimortas.length) {
+    const total = (context.arenaSignals || []).length;
+    casos.push({
+      peso: 65,
+      id: `coach:arena-natimorta:${natimortas.length}:${context.cycleDayNumber || 0}`,
+      content: natimortas.length === 1
+        ? `Você desenhou este ciclo com ${total} arenas, e ${natimortas[0].arenaName} ainda não recebeu nenhum registro.`
+        : `Você desenhou este ciclo com ${total} arenas. ${natimortas.length} delas ainda não receberam nenhum registro.`,
+      quickActions: compactActions([
+        natimortas.length === 1
+          ? { id: 'coach-open-arena', label: `Abrir ${natimortas[0].arenaName}`, kind: 'open_arena', arenaId: natimortas[0].arenaId }
+          : null,
+        { id: 'coach-open-arenas', label: 'Ver arenas', kind: 'open_arenas' },
+      ]),
+    });
+  }
+
+  /**
+   * QUANTO FALTA, COM TAMANHO. O que a arena mais atrasada pede, em numero e em
+   * dias — para "essa precisa de atencao" parar de ser vago.
+   */
+  const maisPendente = [...(context.arenaSignals || [])]
+    .filter((sinal) => (sinal.pendingActions || 0) > 0)
+    .sort((a, b) => (b.pendingActions || 0) - (a.pendingActions || 0))[0];
+  if (maisPendente && diasRestantes > 0) {
+    casos.push({
+      peso: 60,
+      id: `coach:quanto-falta:${maisPendente.arenaId}:${maisPendente.pendingActions}`,
+      content: `A que mais precisa agora é ${maisPendente.arenaName}: ${maisPendente.pendingActions} ação${maisPendente.pendingActions === 1 ? '' : 'ões'} em ${diasRestantes} dia${diasRestantes === 1 ? '' : 's'}.`,
+      quickActions: compactActions([
+        { id: 'coach-open-arena', label: `Abrir ${maisPendente.arenaName}`, kind: 'open_arena', arenaId: maisPendente.arenaId },
+        { id: 'coach-open-planner', label: 'Abrir Planner', kind: 'open_planner' },
+      ]),
+    });
+  }
+
+  /**
+   * CONCENTRACAO — nao julga, so revela.
+   *
+   * Quem esta feliz com o proprio foco le e segue; quem nao sabia que estava
+   * fazendo isso toma um susto util. Por isso a frase nao tem conselho: ela
+   * termina no fato.
+   *
+   * A conta e do CICLO, e a frase diz isso — inventar "ultimos 14 dias" com
+   * numero de ciclo seria mentir sobre o que o numero mede.
+   */
+  const comEntrega = (context.arenaSignals || []).filter((sinal) => (sinal.completedActions || 0) > 0);
+  if (comEntrega.length >= 2 && (context.arenaSignals || []).length >= 3) {
+    const totalEntregas = comEntrega.reduce((soma, sinal) => soma + (sinal.completedActions || 0), 0);
+    const dominante = [...comEntrega].sort((a, b) => (b.completedActions || 0) - (a.completedActions || 0))[0];
+    const fatia = totalEntregas > 0 ? (dominante.completedActions || 0) / totalEntregas : 0;
+    if (totalEntregas >= 5 && fatia >= 0.6) {
+      casos.push({
+        peso: 62,
+        id: `coach:concentracao:${dominante.arenaId}:${Math.round(fatia * 100)}`,
+        content: `Você tem ${(context.arenaSignals || []).length} arenas neste ciclo. ${Math.round(fatia * 10)} de cada 10 registros foram em ${dominante.arenaName}.`,
+        quickActions: [{ id: 'coach-open-arenas', label: 'Ver arenas', kind: 'open_arenas' }],
+      });
+    }
+  }
+
+  // O fundo da fila: sempre aplicavel, para o botao nunca ficar mudo.
   const priorityLine = context.priorityActionName
     ? ` Que tal ${context.priorityActionName} hoje?`
     : ' Escolha uma ação que mantenha o fio sem pesar o dia.';
-  return {
+  casos.push({
+    peso: 0,
     id: `coach:on-pace:${context.cycleDayNumber || 0}:${completed}`,
     content: `Você concluiu ${completed} de ${total} ações e esta acompanhando o ritmo do ciclo.${priorityLine}`,
     quickActions: [
       { id: 'coach-open-planner', label: 'Abrir Planner', kind: 'open_planner' },
       { id: 'coach-open-cycle', label: 'Ver ciclo', kind: 'open_cycle' },
     ],
-  };
+  });
+
+  const escolhido = casos.reduce((melhor, caso) => (caso.peso > melhor.peso ? caso : melhor));
+  return { id: escolhido.id, content: escolhido.content, quickActions: escolhido.quickActions };
 };

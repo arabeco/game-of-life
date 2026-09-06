@@ -1,15 +1,46 @@
 import { NobilityRank, UnlockCategory } from '../types';
 
+/**
+ * A escada das dez patentes, ancorada em HORAS.
+ *
+ * A regua do jogo e ~1 EXP por minuto executado, entao cada limiar aqui e um
+ * marco de tempo real. A curva antiga tinha dois defeitos que so aparecem
+ * quando ela e vista inteira:
+ *
+ *  1. ACELERAVA E DEPOIS ACHATAVA. Os primeiros degraus dobravam (10k, 25k,
+ *     50k, 100k) e os QUATRO ultimos eram identicos: +162.500 cada. Do Conde ao
+ *     Soberano viravam 10.833 horas em ritmo constante, sem escalada nenhuma
+ *     justo onde a escalada deveria ser sentida.
+ *  2. O PRIMEIRO DEGRAU ERA LONGE DEMAIS. 10.000 EXP sao 167 horas — dois meses
+ *     a tres horas por dia para sair de Vagante. A primeira promocao e a que
+ *     ensina que a escada existe.
+ *
+ * Agora cada patente cai num numero redondo de HORAS, e o degrau cresce ate o
+ * fim:
+ *
+ *   Escudeiro    100 h      Conde       2.000 h
+ *   Cavaleiro    250 h      Duque       4.000 h
+ *   Lorde        500 h      Principe    7.000 h
+ *   Barao      1.000 h      Rei        11.000 h
+ *                           Soberano   16.667 h  (o milhao de EXP)
+ *
+ * NINGUEM E REBAIXADO por esta troca: todos os limiares novos sao menores ou
+ * iguais aos antigos, e a patente e derivada da EXP a cada leitura. Quem estava
+ * numa patente continua nela ou sobe.
+ *
+ * `levelRequired` nao governa nada — nenhuma parte do app calcula nivel a
+ * partir de EXP. Fica como rotulo.
+ */
 export const NOBILITY_RANKS: NobilityRank[] = [
     { id: 'vagante', name: 'Vagante', levelRequired: 1, expTotalRequired: 0 },
-    { id: 'escudeiro', name: 'Escudeiro', levelRequired: 10, expTotalRequired: 10000 },
-    { id: 'cavaleiro', name: 'Cavaleiro', levelRequired: 20, expTotalRequired: 35000 },
-    { id: 'lorde', name: 'Lorde', levelRequired: 30, expTotalRequired: 85000 },
-    { id: 'barao', name: 'Barão', levelRequired: 40, expTotalRequired: 185000 },
-    { id: 'conde', name: 'Conde', levelRequired: 50, expTotalRequired: 350000 },
-    { id: 'duque', name: 'Duque', levelRequired: 60, expTotalRequired: 512500 },
-    { id: 'principe', name: 'Príncipe', levelRequired: 70, expTotalRequired: 675000 },
-    { id: 'rei', name: 'Rei', levelRequired: 80, expTotalRequired: 837500 },
+    { id: 'escudeiro', name: 'Escudeiro', levelRequired: 10, expTotalRequired: 6000 },
+    { id: 'cavaleiro', name: 'Cavaleiro', levelRequired: 20, expTotalRequired: 15000 },
+    { id: 'lorde', name: 'Lorde', levelRequired: 30, expTotalRequired: 30000 },
+    { id: 'barao', name: 'Barão', levelRequired: 40, expTotalRequired: 60000 },
+    { id: 'conde', name: 'Conde', levelRequired: 50, expTotalRequired: 120000 },
+    { id: 'duque', name: 'Duque', levelRequired: 60, expTotalRequired: 240000 },
+    { id: 'principe', name: 'Príncipe', levelRequired: 70, expTotalRequired: 420000 },
+    { id: 'rei', name: 'Rei', levelRequired: 80, expTotalRequired: 660000 },
     { id: 'soberano', name: 'Soberano', levelRequired: 90, expTotalRequired: 1000000 },
 ];
 
@@ -33,7 +64,7 @@ export const RANK_REWARDS: Record<string, { category: UnlockCategory; itemId: st
     cavaleiro: [
         { category: 'ui_skins', itemId: 'AURORA', name: 'Tema: Aurora Boreal' },
         { category: 'artifacts', itemId: 'item_artifact_1_005', name: 'Trio Café' },
-        { category: 'skins', itemId: 'item_skin_2_004', name: 'Militar' },
+        { category: 'skins', itemId: 'item_skin_2_003', name: 'Acadêmico' },
         { category: 'banners', itemId: 'item_banner_t1_aprendiz', name: 'Banner: Aprendiz' },
         { category: 'insignias', itemId: 'insignia_rank_3_cavaleiro', name: 'Insígnia: Cavaleiro' },
     ],

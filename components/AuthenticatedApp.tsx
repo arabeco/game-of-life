@@ -38,6 +38,7 @@ import {
 import { didProfileExistBeforeSeason } from '../utils/seasonTransitionEligibility';
 import { getActiveSubscriptionTier, getDiscountedPremiumPrice, getPremiumDaysRemaining, hasPremiumAccess } from '../utils/premiumAccess';
 import { buildUiSkinTokens, resolveUiSkinId } from '../utils/uiSkinTokens';
+import { getRewardEmblemUrl, getRewardToneRgb } from '../constants/rewardEmblems';
 import { getGoldMembershipProductByTier, GOLD_PREMIUM_PRODUCT } from '../constants/goldCatalog';
 import {
     SCREEN_INTRO_TIP_CONTEXT_EVENT,
@@ -52,10 +53,9 @@ import {
     type ScreenIntroTipId,
 } from '../utils/screenIntroTips';
 import { ConfirmationModal } from './ConfirmationModal';
-import { DailyCompletionPromptModal } from './DailyCompletionPromptModal';
 import type { AppBroadcast } from './AppBroadcastModal';
-import { DAILY_COMPLETION_PROMPT_EVENT, DailyCompletionPromptPayload } from '../utils/dailyCompletionPrompt';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT, REST_SCREEN_ACTION_VIEW_REQUEST_EVENT, RestScreenActionViewRequestDetail } from '../utils/restScreenActionSession';
+import { BLOCKING_OVERLAY_EVENT } from '../utils/blockingOverlay';
 import { ORACLE_SPEECH_EVENT, emitOracleSpeech, type OracleSpeechPayload } from '../utils/oracleSpeech';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import { resolveOracleSpeechTone } from '../constants/oracleSpeechLibrary';
@@ -381,6 +381,17 @@ const GlobalSeasonTransitionGate: React.FC<{ enabled: boolean }> = ({ enabled })
                 fromSeason={pendingTransition.fromSeason}
                 toSeason={pendingTransition.toSeason}
                 onClose={handleClose}
+                onOpenQuest={() => {
+                    handleClose();
+                    window.dispatchEvent(new CustomEvent(APP_NAVIGATE_EVENT, {
+                        detail: { view: 'social' } satisfies AppNavigatePayload,
+                    }));
+                    window.setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('mundo-tab-request', {
+                            detail: { tab: 'temporada' },
+                        }));
+                    }, 80);
+                }}
             />
         </Suspense>
     );
@@ -393,7 +404,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     onBlockingOverlayChange,
 }) => {
     const { isBuilderMode, draftName, setDraftName, exitBuilderMode, packDraftToJson } = useCodexBuilder();
-    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports } = useGame();
+    const { userProfile, activeTheme, notifications, showToast, assets, actions, tasks, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, achievementUnlocked, updateUserProfile, reports, activeArenaPact, arenaPactProgress } = useGame();
     const historyReady = useRef(false);
 
     const effectiveUiSkin = resolveUiSkinId(userProfile.skin || 'BASIC');
@@ -408,10 +419,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [viewTransitionVersion, setViewTransitionVersion] = useState(0);
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
-    const [dailyCompletionPrompt, setDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
-    const [pendingDailyCompletionPrompt, setPendingDailyCompletionPrompt] = useState<DailyCompletionPromptPayload | null>(null);
     const [pendingSitrepOpen, setPendingSitrepOpen] = useState(false);
-    const [pendingSitrepDate, setPendingSitrepDate] = useState<string | null>(null);
     const [screenTipsEnabled, setScreenTipsEnabled] = useState(() => areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []));
     const [activeScreenTipId, setActiveScreenTipId] = useState<ScreenIntroTipId | null>(null);
     const [screenIntroContextId, setScreenIntroContextId] = useState<ScreenIntroTipId | null>(null);
@@ -439,7 +447,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         void CapacitorApp.addListener('backButton', () => {
             if (isReportsVisible) { setReportsVisible(false); return; }
             if (isProfileVisible) { setProfileVisible(false); return; }
-            if (dailyCompletionPrompt) { setDailyCompletionPrompt(null); return; }
             if (currentView !== 'assets') { handleSetView('assets'); return; }
             void CapacitorApp.exitApp();
         }).then((registered) => {
@@ -451,16 +458,15 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             cancelled = true;
             handle?.remove();
         };
-    }, [currentView, dailyCompletionPrompt, isProfileVisible, isReportsVisible]);
+    }, [currentView, isProfileVisible, isReportsVisible]);
 
     useEffect(() => {
         onBlockingOverlayChange?.(Boolean(
             isRestScreenVisible ||
             isProfileVisible ||
-            isReportsVisible ||
-            dailyCompletionPrompt
+            isReportsVisible
         ));
-    }, [dailyCompletionPrompt, isProfileVisible, isReportsVisible, isRestScreenVisible, onBlockingOverlayChange]);
+    }, [isProfileVisible, isReportsVisible, isRestScreenVisible, onBlockingOverlayChange]);
 
     useEffect(() => {
         void updateInstalledAppBadge(unreadNotificationsCount);
@@ -688,7 +694,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             const customEvent = event as CustomEvent<AppNavigatePayload>;
             if (!customEvent.detail?.view) return;
             if (customEvent.detail.openSitrep) {
-                setDailyCompletionPrompt(null);
                 setPendingSitrepOpen(true);
                 setRestScreenVisible(false);
                 window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
@@ -762,34 +767,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [handleSetView]);
 
     useEffect(() => {
-        const handleDailyCompletionPrompt = (event: Event) => {
-            const customEvent = event as CustomEvent<DailyCompletionPromptPayload>;
-            if (!customEvent.detail) return;
-            if (customEvent.detail.kind === 'task') return;
-            setPendingDailyCompletionPrompt(customEvent.detail);
-        };
-
-        const handleDailyPanelOpened = (event: Event) => {
-            const detail = (event as CustomEvent<{ date?: string | null }>).detail;
-            setPendingDailyCompletionPrompt((pending) => {
-                setDailyCompletionPrompt(pending || {
-                    kind: 'sitrep',
-                    date: detail?.date || null,
-                    timestamp: Date.now(),
-                });
-                return null;
-            });
-        };
-
-        window.addEventListener(DAILY_COMPLETION_PROMPT_EVENT, handleDailyCompletionPrompt as EventListener);
-        window.addEventListener('glyph:daily-panel-opened', handleDailyPanelOpened);
-        return () => {
-            window.removeEventListener(DAILY_COMPLETION_PROMPT_EVENT, handleDailyCompletionPrompt as EventListener);
-            window.removeEventListener('glyph:daily-panel-opened', handleDailyPanelOpened);
-        };
-    }, []);
-
-    useEffect(() => {
         const dispatchPlannerOpenAction = (detail: RestScreenActionViewRequestDetail) => {
             window.dispatchEvent(new CustomEvent(PLANNER_OPEN_ACTION_MODAL_EVENT, { detail }));
         };
@@ -810,15 +787,12 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         if (!pendingSitrepOpen || currentView !== 'planner') return;
 
         const timer = window.setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('openSitrep', {
-                detail: { date: pendingSitrepDate },
-            }));
+            window.dispatchEvent(new CustomEvent('openSitrep'));
             setPendingSitrepOpen(false);
-            setPendingSitrepDate(null);
         }, 180);
 
         return () => window.clearTimeout(timer);
-    }, [currentView, pendingSitrepDate, pendingSitrepOpen]);
+    }, [currentView, pendingSitrepOpen]);
 
     /**
      * Uma fala de abertura por VINDA ao app — e vinda tem intervalo minimo.
@@ -896,6 +870,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             level: userProfile.level || 1,
             dailyCommitment,
             dailyProofStreak: userProfile.dailyProofStreak || null,
+            activeArenaPact,
+            arenaPactProgress,
         });
         const actionById = new Map<string, (typeof actions)[number]>(
             actions.map((action) => [action.id, action] as const),
@@ -1204,15 +1180,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         exitBuilderMode();
     };
 
-    const handleOpenSitrepFromPrompt = useCallback(() => {
-        setPendingSitrepDate(dailyCompletionPrompt?.date || null);
-        setDailyCompletionPrompt(null);
-        setPendingSitrepOpen(true);
-        setRestScreenVisible(false);
-        window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
-        handleSetView('planner');
-    }, [dailyCompletionPrompt?.date, handleSetView]);
-
     const renderView = () => {
         if (defaultRestScreenOpen && isRestScreenVisible) {
             return <div className="h-full w-full" />;
@@ -1373,7 +1340,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                     allowSeasonTransition &&
                     !isRestScreenVisible &&
                     !activeScreenTipId &&
-                    !dailyCompletionPrompt &&
                     !isProfileVisible &&
                     !isReportsVisible &&
                     !achievementUnlocked
@@ -1399,14 +1365,6 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             <Suspense fallback={isProfileVisible ? <LazyViewFallback /> : null}>
                 {isProfileVisible && <ProfileView onClose={() => setProfileVisible(false)} />}
             </Suspense>
-
-            {dailyCompletionPrompt && (
-                <DailyCompletionPromptModal
-                    payload={dailyCompletionPrompt}
-                    onClose={() => setDailyCompletionPrompt(null)}
-                    onOpenSitrep={handleOpenSitrepFromPrompt}
-                />
-            )}
 
             <Suspense fallback={null}>
                 <ScreenIntroTipOverlay
@@ -1487,6 +1445,21 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const { trigger } = useSensoryFeedback();
     const [forceShowTerms, setForceShowTerms] = useState(false);
     const [isInnerBlockingOverlayVisible, setInnerBlockingOverlayVisible] = useState(false);
+
+    // Overlays que moram fundo na arvore e nao tem como receber uma prop daqui.
+    // Hoje e so o SitrepModal, dentro do PlannerView. Ficam separados do sinal de
+    // cima de proposito: um e prop, o outro e anuncio, e misturar os dois numa
+    // variavel so esconderia qual deles esta segurando a celebracao.
+    const [isDeepBlockingOverlayVisible, setDeepBlockingOverlayVisible] = useState(false);
+
+    useEffect(() => {
+        const aoAnunciar = (event: Event) => {
+            const detail = (event as CustomEvent<{ visible: boolean }>).detail;
+            setDeepBlockingOverlayVisible(Boolean(detail?.visible));
+        };
+        window.addEventListener(BLOCKING_OVERLAY_EVENT, aoAnunciar);
+        return () => window.removeEventListener(BLOCKING_OVERLAY_EVENT, aoAnunciar);
+    }, []);
     const [goldShortagePrompt, setGoldShortagePrompt] = useState<{
         requiredGold: number;
         currentGold: number;
@@ -2127,22 +2100,34 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                         open
                         payload={{
                             itemIds: presenteRecebido.metadata?.itemId ? [presenteRecebido.metadata.itemId] : [],
-                            eyebrow: 'Presente',
-                            title: presenteRecebido.metadata?.senderName
-                                ? `${presenteRecebido.metadata.senderName} doou um item`
-                                : 'Você recebeu um item',
+                            eyebrow: '',
+                            title: 'Recompensa entregue!',
+                            subtitle: presenteRecebido.metadata?.senderName
+                                ? `Presente de ${presenteRecebido.metadata.senderName}`
+                                : 'Presente recebido',
                             summary: 'Ele já está no seu arsenal.',
                             buttonLabel: 'Guardar',
                             itemSectionTitle: 'O que chegou',
                             emptyMessage: 'O item foi entregue no seu arsenal.',
                         }}
+                        emblema={getRewardEmblemUrl('geral')}
+                        tom={getRewardToneRgb('geral')}
                         onClose={() => { void markNotificationRead(presenteRecebido.id); }}
                     />
                 )}
                 {shouldShowPremiumReward && (
                     <RewardPackModal
                         open={shouldShowPremiumReward}
-                        payload={userProfile.premiumRewardPayload}
+                        payload={{
+                            ...userProfile.premiumRewardPayload,
+                            eyebrow: '',
+                            title: 'Recompensa entregue!',
+                            subtitle: userProfile.premiumRewardPayload?.subtitle
+                                || userProfile.premiumRewardPayload?.title
+                                || 'Plano ativado',
+                        }}
+                        emblema={getRewardEmblemUrl('geral')}
+                        tom={getRewardToneRgb('geral')}
                         onClose={handleClosePremiumReward}
                         fallbackEyebrow="Premium 30 dias"
                         fallbackTitle="Recompensas do plano"
@@ -2155,7 +2140,16 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                 {shouldShowBetaReward && (
                     <RewardPackModal
                         open={shouldShowBetaReward}
-                        payload={userProfile.betaRewardPayload}
+                        payload={{
+                            ...userProfile.betaRewardPayload,
+                            eyebrow: '',
+                            title: 'Recompensa entregue!',
+                            subtitle: userProfile.betaRewardPayload?.subtitle
+                                || userProfile.betaRewardPayload?.title
+                                || 'Vigília do beta',
+                        }}
+                        emblema={getRewardEmblemUrl('geral')}
+                        tom={getRewardToneRgb('geral')}
                         onClose={handleCloseBetaReward}
                         fallbackEyebrow="Beta 14 de 14"
                         fallbackTitle="Recompensa da vigilia"
@@ -2237,7 +2231,8 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
                     !shouldShowBetaReward &&
                     !shouldShowPremiumRenewalOffer &&
                     !shouldShowAppBroadcast &&
-                    !isInnerBlockingOverlayVisible && (
+                    !isInnerBlockingOverlayVisible &&
+                    !isDeepBlockingOverlayVisible && (
                     <AchievementModal
                         achievement={achievementUnlocked}
                         onClose={() => setAchievementUnlocked(null)}

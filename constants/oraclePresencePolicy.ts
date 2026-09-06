@@ -21,6 +21,15 @@
 export const ORACLE_PRESENCE = {
     /** So o obrigatorio. Ele responde quando chamado e nada mais. */
     SILENCIOSO: 0,
+    /**
+     * Nao analisa, mas comemora.
+     *
+     * O degrau que faltava: quem nao quer coaching mas quer a comemoracao. Ate
+     * aqui a escada pulava de 0 para 2, e quem desligava a analise desligava a
+     * festa junto — nao havia como dizer "me deixa em paz, mas aparece quando eu
+     * fechar algo grande".
+     */
+    DISCRETO: 1,
     /** Um card por dia e uma fala por dia. Nao comenta o que voce faz. */
     EQUILIBRADO: 2,
     /** Fala a cada abertura e reage ao que voce conclui. */
@@ -59,6 +68,16 @@ export const ORACLE_PRESENCE_RULES: Record<OraclePresenceValue, OraclePresenceRu
         openingLine: 'nunca',
         reactions: 'nenhuma',
     },
+    [ORACLE_PRESENCE.DISCRETO]: {
+        value: ORACLE_PRESENCE.DISCRETO,
+        label: 'Discreto',
+        caption: 'Ele não comenta o seu dia. Aparece só quando você fecha algo grande.',
+        // Sem card e sem fala de abertura: a diferenca para o Silencioso e UMA
+        // coisa so, e de proposito. Cada degrau da escada acende exatamente uma.
+        dailyCard: false,
+        openingLine: 'nunca',
+        reactions: 'marcos',
+    },
     [ORACLE_PRESENCE.EQUILIBRADO]: {
         value: ORACLE_PRESENCE.EQUILIBRADO,
         label: 'Equilibrado',
@@ -77,11 +96,20 @@ export const ORACLE_PRESENCE_RULES: Record<OraclePresenceValue, OraclePresenceRu
     },
 };
 
-/** Nivel gravado pode vir de versao antiga; aproxima para o mais perto. */
+/**
+ * Nivel gravado pode vir de versao antiga; aproxima para o mais perto.
+ *
+ * O 1 deixou de ser aproximado: ele virou o Discreto. Perfil antigo com 1
+ * gravado era normalizado para Equilibrado — agora cai no degrau que aquele
+ * numero sempre quis dizer, e recebe MENOS fala, nao mais. Aproximar para cima
+ * seria dar voz a quem nao pediu.
+ */
 export const normalizeOraclePresence = (value: unknown): OraclePresenceValue => {
     const numeric = Number(value);
     if (!Number.isFinite(numeric) || numeric <= 0) return ORACLE_PRESENCE.SILENCIOSO;
-    return numeric >= ORACLE_PRESENCE.PRESENTE ? ORACLE_PRESENCE.PRESENTE : ORACLE_PRESENCE.EQUILIBRADO;
+    if (numeric >= ORACLE_PRESENCE.PRESENTE) return ORACLE_PRESENCE.PRESENTE;
+    if (numeric >= ORACLE_PRESENCE.EQUILIBRADO) return ORACLE_PRESENCE.EQUILIBRADO;
+    return ORACLE_PRESENCE.DISCRETO;
 };
 
 export const getOraclePresenceRules = (value: unknown): OraclePresenceRules =>
@@ -106,6 +134,7 @@ export const allowsOracleReaction = (
 /** Ordem de exibicao do seletor. */
 export const ORACLE_PRESENCE_ORDER: OraclePresenceValue[] = [
     ORACLE_PRESENCE.SILENCIOSO,
+    ORACLE_PRESENCE.DISCRETO,
     ORACLE_PRESENCE.EQUILIBRADO,
     ORACLE_PRESENCE.PRESENTE,
 ];

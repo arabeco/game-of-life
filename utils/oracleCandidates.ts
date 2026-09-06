@@ -386,77 +386,7 @@ const detectArenaIssues = (input: OracleCandidateInput): OracleCandidate[] => {
  */
 const DEMANDA_MINIMA_PARA_SUSPEITA = 8;
 
-/**
- * A sequencia vai morrer hoje.
- *
- * O streak e lazy: so e reavaliado quando a pessoa conclui alguma coisa. Nada
- * roda quando ela NAO faz nada — que e exatamente quando ele morre. O dado para
- * saber estava sempre ali (sequencia atual + nenhuma entrega hoje), e ninguem
- * perguntava.
- *
- * Aqui cobre quem abre o app a noite. Quem nao abre depende do aviso do cron,
- * que e outra metade e passa por outro interruptor — presenca decide o que ele
- * COMENTA, e isto aqui e comentario.
- *
- * Tres dias de piso: perder um streak de 2 nao doi, e avisar sobre ele ensina a
- * pessoa a ignorar o aviso quando ele for sobre 30.
- */
-const STREAK_MINIMO_PARA_AVISO = 3;
-/** A partir daqui o dia ja e curto demais para contar com o acaso. */
-const HORA_DE_RISCO = 18;
-
-/**
- * Marcos de sequencia: 7, 14, 30, 60, 100.
- *
- * Sem eles o numero nao significa nada. Se o dia 30 chega com a mesma frase do
- * dia 12, o acumulado nunca vira acumulado — e o acumulado e justamente o que a
- * pessoa esta construindo.
- *
- * O boost cresce com o marco, e por isso o dia 100 ganha de uma arena parada
- * enquanto o dia 7 nao. Sao coisas diferentes com o mesmo nome.
- *
- * So dispara no dia em que o marco foi alcancado — com entrega hoje. Marco
- * anunciado no dia seguinte e resenha, nao celebracao.
- */
-const STREAK_MARCOS: readonly number[] = [7, 14, 30, 60, 100];
-
-const detectStreakMilestones = (input: OracleCandidateInput): OracleCandidate[] => {
-  const streak = input.dailyProofStreakCurrent ?? 0;
-  const entregouHoje = (input.daysSinceLastProof ?? 1) === 0;
-
-  if (!entregouHoje) return [];
-  const posicao = STREAK_MARCOS.indexOf(streak);
-  if (posicao < 0) return [];
-
-  const boost = SEVERITY_BOOST_CAP * ((posicao + 1) / STREAK_MARCOS.length);
-  return [build('streak_marco', { streak }, { boost })];
-};
-
-const detectStreakEvents = (input: OracleCandidateInput): OracleCandidate[] => {
-  const streak = input.dailyProofStreakCurrent ?? 0;
-  const hora = input.hourOfDay ?? null;
-  // A sequencia esta em risco quando a ultima entrega foi ONTEM e hoje esta
-  // vazio. Isto era `>= 1`, que e verdadeiro tanto para quem entregou ontem
-  // quanto para quem entregou ha 23 dias.
-  //
-  // `current` guardado no perfil e um RETRATO da data da ultima entrega, nao um
-  // contador vivo: nada o decai, porque nada roda nos dias em que a pessoa nao
-  // abre o app. Quem le precisa derivar a validade pela data, e aqui nao derivava
-  // — entao quem tinha sequencia morta de 5 dias recebia "sua sequência esta em
-  // risco" toda noite, sobre algo que ja tinha acabado.
-  //
-  // Avisar de perda depois da perda nao e aviso, e cobranca. Mesma correcao feita
-  // no aviso por push, e pelo mesmo motivo.
-  const entregouOntem = (input.daysSinceLastProof ?? 0) === 1;
-
-  if (hora === null) return [];
-  if (streak < STREAK_MINIMO_PARA_AVISO) return [];
-  if (!entregouOntem) return [];
-  // O dia operacional vira as 4h, entao a madrugada ainda e "hoje" e ainda da tempo.
-  if (hora < HORA_DE_RISCO && hora >= 4) return [];
-
-  return [build('streak_em_risco', { streak })];
-};
+// Tipos antigos permanecem para ler historico; nao ha detectores de sequencia global.
 
 const detectStructuralIssues = (input: OracleCandidateInput): OracleCandidate[] => {
   const demanda = input.plannedDailyDemand ?? null;
@@ -495,8 +425,7 @@ export const detectOracleCandidates = (input: OracleCandidateInput): OracleCandi
   ...detectCycleIssues(input),
   ...detectDeliveryGap(input),
   ...detectArenaIssues(input),
-  ...detectStreakMilestones(input),
-  ...detectStreakEvents(input),
+  // Sequência global aposentada: nenhum candidato, mesmo para perfis legados.
   ...detectStructuralIssues(input),
   ...detectStructure(input),
   ...detectNextMove(input),

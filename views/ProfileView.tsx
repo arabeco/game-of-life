@@ -24,7 +24,25 @@ import { hasPremiumAccess } from '../utils/premiumAccess';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { ConnectionsModal } from '../components/ConnectionsModal';
+import { getRarityVisual, normalizeVisualRarity } from '../constants/rarityVisuals';
+import { NOBILITY_RANKS } from '../constants/nobility';
+import { REWARD_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
 const AssetPentagon = React.lazy(() => import('../components/AssetPentagon').then((m) => ({ default: m.AssetPentagon })));
+const PROFILE_METAL_EDGE = 'color-mix(in srgb, var(--skin-accent-color) 24%, #9b8050)';
+const UI_SKIN_ORB_ART: Record<string, string> = {
+    BASIC: '/assets/catalog/basic.png',
+    DEFAULT: '/assets/catalog/basic.png',
+    GOLD: '/assets/catalog/gold.png',
+    FROST: '/assets/catalog/frost.png',
+    EMBER: '/assets/catalog/ember.png',
+    CYBER: '/assets/catalog/cyber.jpg',
+    AURORA: '/assets/catalog/aurora.png',
+    VOID: '/assets/catalog/void.png',
+    GENESIS: '/assets/catalog/genesis.png',
+    ITEM_THEME_NEBULOSA: '/assets/catalog/genesis.png',
+};
+
+const getUiSkinOrbArt = (skinId?: string) => UI_SKIN_ORB_ART[String(skinId || 'BASIC').toUpperCase()] || UI_SKIN_ORB_ART.BASIC;
 
 const getMasteryIndex = (assets: Asset[]): number => getMasteryIndexFromAssets(assets);
 
@@ -57,20 +75,17 @@ const ProfileMasteryOrb: React.FC<{
         <button
             type="button"
             onClick={onClick}
-            className="group absolute bottom-4 left-4 z-30 rounded-full border border-white/10 bg-black/55 p-1.5 backdrop-blur-sm transition-transform hover:scale-[1.03]"
-            style={{ borderColor: 'var(--skin-accent-color)' }}
+            className="group absolute bottom-4 left-4 z-30 grid h-16 w-16 place-items-center rounded-full border bg-black/65 p-1 backdrop-blur-sm transition-transform hover:scale-[1.03]"
+            style={{ borderColor: PROFILE_METAL_EDGE, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.12), 0 12px 28px rgba(0,0,0,.45)' }}
             title="Ver ativos"
         >
             <div
                 className="relative flex h-14 w-14 items-center justify-center rounded-full"
                 style={{
-                    backgroundImage: 'var(--sephirot-bg-image), var(--sephirot-base-fill), var(--sephirot-bg-gradient)',
-                    backgroundSize: 'var(--sephirot-image-size, 92%), 100% 100%, cover',
-                    backgroundPosition: 'center, center, center',
-                    backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
                     boxShadow: '0 0 9px rgba(0,0,0,0.35), inset 0 0 0 var(--sephirot-ring-width, 0.8px) var(--sephirot-border-color)',
                 }}
             >
+                <img src={getUiSkinOrbArt(skinId)} alt="" className="pointer-events-none absolute inset-0 h-full w-full scale-[1.14] object-contain" />
                 <span
                     className="pointer-events-none relative z-[1] text-[1.15rem] font-black leading-none tracking-[-0.02em]"
                     style={{
@@ -90,13 +105,55 @@ const ProfileGardenOrb: React.FC<{ onClick: () => void; title?: string }> = ({ o
     <button
         type="button"
         onClick={onClick}
-        className="group absolute bottom-4 left-[5.35rem] z-30 flex h-12 w-12 items-center justify-center rounded-full border border-amber-200/35 bg-black/55 text-xl shadow-[0_14px_30px_rgba(0,0,0,0.42),0_0_18px_rgba(244,205,130,0.16)] backdrop-blur-sm transition-transform hover:scale-[1.04]"
+        className="group absolute bottom-4 right-4 z-30 flex h-16 w-16 items-center justify-center rounded-full border bg-black/65 text-2xl backdrop-blur-sm transition-transform hover:scale-[1.04]"
+        style={{
+            borderColor: PROFILE_METAL_EDGE,
+            boxShadow: '0 14px 30px rgba(0,0,0,.42), 0 0 18px color-mix(in srgb, var(--skin-accent-color) 18%, transparent)',
+        }}
         title={title}
         aria-label={title}
     >
         <span className="translate-y-[-1px]">{'\u{1FAB4}'}</span>
     </button>
 );
+
+type ProfileInsignia = { id: string; name: string; imageUrl: string; count: number };
+
+const ProfileInsigniaStrip: React.FC<{
+    badges: ProfileInsignia[];
+    hiddenCount: number;
+    onClick: () => void;
+}> = ({ badges, hiddenCount, onClick }) => {
+    if (badges.length === 0) return null;
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="group mx-auto mt-2 flex max-w-[220px] items-end justify-center gap-1"
+            aria-label="Abrir insígnias e feitos"
+            title="Insígnias"
+        >
+            {badges.map((badge) => (
+                <span key={badge.id} className="relative block h-10 w-10 shrink-0" title={badge.name}>
+                    <img
+                        src={resolveCatalogAssetUrl(badge.imageUrl)}
+                        alt={badge.name}
+                        className="h-full w-full object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,.95)] transition-transform hover:scale-110"
+                    />
+                    {badge.count > 1 && (
+                        <span className="absolute -bottom-0.5 -right-0.5 z-10 font-serif text-[9px] font-black leading-none text-white [text-shadow:0_1px_2px_#000,0_0_5px_#000]">
+                            ×{badge.count}
+                        </span>
+                    )}
+                </span>
+            ))}
+            {hiddenCount > 0 && (
+                <span className="mb-1 text-[9px] font-black text-white/55 [text-shadow:0_1px_3px_#000]">+{hiddenCount}</span>
+            )}
+        </button>
+    );
+};
 
 const UnifiedSovereignDisplay: React.FC<{
     sovereignConfig: UserProfile['sovereign'];
@@ -154,7 +211,7 @@ const UnifiedSovereignDisplay: React.FC<{
                     onClick();
                 }
             }}
-            style={{ borderColor: 'var(--skin-accent-color)' }}
+            style={{ borderColor: PROFILE_METAL_EDGE }}
         >
             {/* Background Gradient/Texture */}
             <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black z-0 opacity-80" />
@@ -225,26 +282,15 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
     const rarity = slot.rarity || (typeof slot.value === 'object' && 'rarity' in slot.value ? slot.value.rarity : undefined);
 
     const getRarityColor = (r?: string) => {
-        if (!r) return null;
-        const lower = r.toLowerCase();
-        // Comum: Marrom
-        if (lower === 'common' || lower === 'comum') return { bg: 'bg-[#A0522D]', color: '#A0522D' };
-        // Incomum: Prata
-        if (lower === 'uncommon' || lower === 'incomum') return { bg: 'bg-[#C0C0C0]', color: '#C0C0C0' };
-        // Raro: Ouro
-        if (lower === 'rare' || lower === 'raro') return { bg: 'bg-[#FFD700]', color: '#FFD700' };
-        // Épico: Azul
-        if (lower === 'epic' || lower === 'épico' || lower === 'epico') return { bg: 'bg-blue-500', color: '#3B82F6' };
-        // Lendário: Roxo
-        if (lower === 'legendary' || lower === 'lendário' || lower === 'lendario') return { bg: 'bg-purple-500', color: '#A855F7' };
-        return null;
+        const normalized = normalizeVisualRarity(r);
+        return normalized ? getRarityVisual(normalized) : null;
     };
 
     const rarityStyle = getRarityColor(rarity);
 
     // Glow for Epic/Legendary
-    const hasGlow = rarityStyle && (rarity?.toLowerCase().includes('epic') || rarity?.toLowerCase().includes('épico') || rarity?.toLowerCase().includes('legendary') || rarity?.toLowerCase().includes('lendário'));
-    const glowStyle = hasGlow ? { boxShadow: `0 0 10px ${rarityStyle.color}40` } : {};
+    const hasGlow = rarityStyle && ['epic', 'legendary', 'mythic'].includes(rarityStyle.key);
+    const glowStyle = hasGlow ? { boxShadow: `0 0 10px ${rarityStyle.hex}40` } : {};
 
     const valueDisplay = typeof slot.value === 'object' && slot.value.imageUrl ? (
         <img
@@ -268,7 +314,7 @@ const ProfileSlotWidget: React.FC<{ slot: Slot, isShareable?: boolean }> = ({ sl
             >
                 {valueDisplay}
                 {rarityStyle && (
-                    <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${rarityStyle.bg} shadow-sm z-10`} />
+                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full shadow-sm z-10" style={{ backgroundColor: rarityStyle.hex }} />
                 )}
             </div>
         </div>
@@ -444,7 +490,7 @@ export const ShareableProfileCard: React.FC<{
 }
 
 export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile }> = ({ onClose, profile }) => {
-    const { userProfile, assets, friends, updateUserProfile, clan, clanRanks, getUserPublicData, cycleProgress, showToast } = useGame();
+    const { userProfile, assets, friends, inventory, updateUserProfile, clan, clanRanks, getUserPublicData, cycleProgress, showToast } = useGame();
     type ProfileTab = 'widgets' | 'summary' | 'mastery';
 
     const isOwnProfile = !profile || profile.id === userProfile.id;
@@ -592,6 +638,40 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
     const canViewArenaMiniatures = isOwnProfile || (canResolvePublicVisibility && (arenaMiniaturesVisibility === 'all' || (arenaMiniaturesVisibility === 'friends' && isFriendProfile)));
     const canViewGarden = isOwnProfile || (canResolvePublicVisibility && (gardenVisibility === 'all' || (gardenVisibility === 'friends' && isFriendProfile)));
     const canOpenAssetsPreview = isOwnProfile || canViewAssetsPreview || canViewArenaMiniatures;
+    const allProfileInsignias = useMemo<ProfileInsignia[]>(() => {
+        if (!canViewArenaMiniatures) return [];
+
+        const sourceInventory = isOwnProfile ? inventory : (displayProfile.inventory || []);
+        const counts = new Map<string, number>();
+        sourceInventory.forEach((entry) => {
+            const def = resolveItemDef(entry.id);
+            if (def?.category !== 'insignia' && def?.category !== 'insignias') return;
+            counts.set(def.id, (counts.get(def.id) || 0) + 1);
+        });
+        Object.entries(displayProfile.unlockedItems?.insignias || {}).forEach(([itemId, unlocked]) => {
+            if (unlocked && !counts.has(itemId)) counts.set(itemId, 1);
+        });
+
+        const currentRankIndex = NOBILITY_RANKS.findIndex((rank) => rank.id === displayProfile.nobility?.rankId);
+        const currentRankBadgeId = currentRankIndex >= 0
+            ? `insignia_rank_${currentRankIndex + 1}_${displayProfile.nobility.rankId}`
+            : '';
+
+        return [...counts.entries()]
+            .map(([itemId, count]) => {
+                const def = resolveItemDef(itemId);
+                if (!def?.imageUrl) return null;
+                if (itemId.startsWith('insignia_rank_') && itemId !== currentRankBadgeId) return null;
+                return { id: itemId, name: def.name, imageUrl: def.imageUrl, count };
+            })
+            .filter((entry): entry is ProfileInsignia => Boolean(entry))
+            .sort((a, b) => {
+                const priority = (id: string) => id === currentRankBadgeId ? 0 : id.startsWith('insignia_season_') ? 1 : id.includes('report') ? 2 : 3;
+                return priority(a.id) - priority(b.id) || b.count - a.count;
+            });
+    }, [canViewArenaMiniatures, displayProfile.inventory, displayProfile.nobility?.rankId, displayProfile.unlockedItems?.insignias, inventory, isOwnProfile]);
+    const visibleProfileInsignias = allProfileInsignias.slice(0, 4);
+    const hiddenProfileInsigniaCount = Math.max(0, allProfileInsignias.length - visibleProfileInsignias.length);
     const profilePentagonLevels = !isOwnProfile
         ? (Object.keys(viewedLevels).length > 0 ? viewedLevels : fallbackViewedLevels)
         : undefined;
@@ -681,8 +761,15 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                 />
             </div>
             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center animate-fade-in p-4" onClick={onClose}>
-                <div className="w-full max-w-[420px] h-[92vh] md:h-[95vh] relative" onClick={e => e.stopPropagation()}>
-                    <GlassCard variant="neutral" className="w-full h-full p-0 overflow-hidden relative shadow-2xl border border-white/10">
+                <div className="relative" style={REWARD_PLATE_VIEWPORT_STYLE} onClick={e => e.stopPropagation()}>
+                    <GlassCard
+                        variant="neutral"
+                        className="relative h-full w-full overflow-hidden border p-0 shadow-2xl"
+                        style={{
+                            borderColor: 'color-mix(in srgb, var(--skin-accent-color) 18%, rgba(255,255,255,.13))',
+                            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.025), 0 28px 80px rgba(0,0,0,.72)',
+                        }}
+                    >
                         {/* Layer 1: Background Image/Gradient */}
                         <div className="absolute inset-0 w-full h-full z-0">
                             {renderBackground()}
@@ -694,7 +781,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                         </div>
 
                         {/* Layer 2: Scrollable Content */}
-                        <div className="absolute inset-0 overflow-y-auto z-10 p-4 space-y-2">
+                        <div className="absolute inset-0 z-10 space-y-2 overflow-hidden p-4 pb-24">
                             <div className="absolute top-4 left-4 right-4 z-30 flex justify-between items-start">
                                 <div className="flex flex-col space-y-2">
                                     {isOwnProfile && (
@@ -734,7 +821,11 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         <button
                                             type="button"
                                             onClick={openExistingAchievements}
-                                            className="group flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/30 bg-black/55 text-amber-100 shadow-[0_10px_26px_rgba(0,0,0,0.36),0_0_16px_rgba(251,191,36,0.12)] backdrop-blur-sm transition-transform hover:scale-[1.04]"
+                                            className="group flex h-10 w-10 items-center justify-center rounded-full border bg-black/60 text-[var(--skin-accent-color)] backdrop-blur-sm transition-transform hover:scale-[1.04]"
+                                            style={{
+                                                borderColor: PROFILE_METAL_EDGE,
+                                                boxShadow: '0 10px 26px rgba(0,0,0,.36), 0 0 16px color-mix(in srgb, var(--skin-accent-color) 16%, transparent)',
+                                            }}
                                             title="Ver feitos"
                                             aria-label="Abrir feitos"
                                         >
@@ -744,8 +835,8 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 </div>
                             </div>
 
-                            <div className="pt-4 flex flex-col items-center text-center">
-                                <div className="relative w-32 h-32">
+                            <div className="-mt-2 flex flex-col items-center text-center">
+                                <div className="relative h-36 w-36">
                                     <button
                                         onClick={() => isEditing && setBorderModalOpen(true)}
                                         disabled={!isEditing}
@@ -755,7 +846,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     />
 
                                     {/* Avatar Button (Top Layer) */}
-                                    <button onClick={() => isEditing && setIsAvatarModalOpen(true)} disabled={!isEditing} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75%] h-[75%] rounded-full group flex items-center justify-center z-30">
+                                    <button onClick={() => isEditing && setIsAvatarModalOpen(true)} disabled={!isEditing} className="group absolute left-1/2 top-1/2 z-30 flex h-[82%] w-[82%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full">
                                         <div className="w-full h-full rounded-full overflow-hidden relative">
                                             <img src={displayProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" />
                                             {isEditing && (
@@ -766,26 +857,20 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         </div>
                                     </button>
 
-                                    <div
-                                        className="absolute -inset-1 pointer-events-none z-40"
-                                        style={
-                                            selectedBorder?.imageUrl
-                                                ? {
-                                                    backgroundImage: `url(${selectedBorder.imageUrl})`,
-                                                    backgroundSize: 'contain',
-                                                    backgroundPosition: 'center',
-                                                    backgroundRepeat: 'no-repeat',
-                                                }
-                                                : {
-                                                    border: `4px solid ${selectedBorder?.color || 'var(--skin-accent-color)'}`,
-                                                    borderRadius: '50%',
-                                                }
-                                        }
-                                    />
+                                    {selectedBorder?.imageUrl ? (
+                                        <img
+                                            src={resolveCatalogAssetUrl(selectedBorder.imageUrl)}
+                                            alt=""
+                                            className="pointer-events-none absolute -inset-1 z-40 h-[calc(100%+8px)] w-[calc(100%+8px)] object-contain"
+                                            crossOrigin="anonymous"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="pointer-events-none absolute -inset-1 z-40 rounded-full border-4"
+                                            style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}
+                                        />
+                                    )}
 
-                                    <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center border-2 z-50" style={{ borderColor: selectedBorder?.color || 'var(--skin-accent-color)' }}>
-                                        <span className="text-lg font-black text-white">{masteryIndex}</span>
-                                    </div>
                                 </div>
 
                                 {isEditing && isOwnProfile && (
@@ -807,10 +892,14 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     </div>
                                 )}
 
-                                <div className="relative mt-1 flex flex-col items-center">
+                                <div className="relative mt-2 flex flex-col items-center">
                                     <div
-                                        className="bg-black/50 backdrop-blur-sm border rounded-xl py-1 px-4 inline-block"
-                                        style={{ borderColor: 'var(--skin-accent-color)' }}
+                                        className="inline-block border bg-black/55 px-4 py-1 backdrop-blur-sm"
+                                        style={{
+                                            borderColor: PROFILE_METAL_EDGE,
+                                            borderBottomWidth: 2,
+                                            boxShadow: 'inset 0 -1px 0 color-mix(in srgb, var(--skin-accent-color) 34%, transparent)',
+                                        }}
                                     >
                                         <h2 className="text-3xl font-bold text-white luxe-title-shadow inline-flex items-center gap-1.5">
                                             {displayProfile.nickname}
@@ -819,7 +908,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             )}
                                         </h2>
                                     </div>
-                                    <button onClick={() => isOwnProfile && clan && setClanModalOpen(true)} disabled={!isOwnProfile || !clan} className="mt-0.5 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-1.5 px-4 inline-flex flex-col items-center hover:bg-black/70 transition-colors disabled:cursor-default">
+                                    <button onClick={() => isOwnProfile && clan && setClanModalOpen(true)} disabled={!isOwnProfile || !clan} className="mt-1.5 bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl py-1.5 px-4 inline-flex flex-col items-center hover:bg-black/70 transition-colors disabled:cursor-default">
                                         <span className="text-sm font-bold text-white">{clanName}</span>
                                         <span className="text-xs text-gray-400">{currentClanRank?.name || 'N/A'}</span>
                                     </button>
@@ -839,10 +928,10 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                 </div>
                             </div>
 
-                            <div className="px-4 pb-0 w-full">
+                            <div className="mt-2 px-4 pb-0 w-full">
                                 {displayProfile.bannerUrl ? (
                                     <div className="relative group mb-0 -my-1 px-4 flex items-center justify-center">
-                                        <img src={resolveCatalogAssetUrl(displayProfile.bannerUrl)} alt="Banner" className="mx-auto h-16 object-contain scale-115" crossOrigin="anonymous" />
+                                        <img src={resolveCatalogAssetUrl(displayProfile.bannerUrl)} alt="Banner" className="mx-auto h-[52px] max-w-[94%] object-contain" crossOrigin="anonymous" />
                                         {isEditing && isOwnProfile && (
                                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer z-10" onClick={() => setBannerModalOpen(true)}>
                                                 <EditIcon className="w-6 h-6 text-white" />
@@ -858,8 +947,11 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                     </div>
                                 ) : null}
 
-                                <div className="space-y-1">
-                                    <div className="flex bg-black/30 backdrop-blur-sm rounded-xl p-0.5 border border-white/5 mb-1 relative z-20">
+                                <div
+                                    className="mx-3 mt-5 space-y-1.5 rounded-[18px] border bg-black/[.16] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.025)]"
+                                    style={{ borderColor: 'color-mix(in srgb, var(--skin-accent-color) 11%, rgba(255,255,255,.075))' }}
+                                >
+                                    <div className="flex bg-black/30 backdrop-blur-sm rounded-xl p-0.5 border border-white/5 mb-2 relative z-20">
                                         <button
                                             onClick={() => setActiveWidgetTab('widgets')}
                                             className={`flex-1 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors ${activeWidgetTab === 'widgets' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
@@ -975,12 +1067,12 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
 
                                     {activeWidgetTab === 'mastery' && (
                                         canViewMastery && hasMeaningfulMastery ? (
-                                            <div className="bg-black/30 backdrop-blur-sm p-1 rounded-2xl border border-white/5 w-full flex items-center justify-center">
-                                                <Suspense fallback={<div className="w-[220px] h-[220px]" />}>
+                                            <div className="relative flex w-full items-center justify-center overflow-hidden py-1 before:absolute before:inset-x-7 before:top-1/2 before:h-36 before:-translate-y-1/2 before:bg-[radial-gradient(ellipse,rgba(190,155,77,.10),transparent_70%)]">
+                                                <Suspense fallback={<div className="h-[210px] w-[210px]" />}>
                                                     <AssetPentagon
                                                         assets={assets}
                                                         tempLevels={profilePentagonLevels}
-                                                        size={220}
+                                                        size={210}
                                                     />
                                                 </Suspense>
                                             </div>
@@ -1007,7 +1099,14 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             </div>
                                         )
                                     )}
+
                                 </div>
+
+                                <ProfileInsigniaStrip
+                                    badges={visibleProfileInsignias}
+                                    hiddenCount={hiddenProfileInsigniaCount}
+                                    onClick={openExistingAchievements}
+                                />
                             </div>
                         </div>
 

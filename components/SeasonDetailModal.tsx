@@ -8,6 +8,7 @@ import type { SeasonConfig, SeasonLaunchHighlights } from '../constants/seasonCo
 import { GM_SEASON_MISSIONS } from '../constants/seasonContent';
 import { buildSeasonFromConfig, getEraCalendarYears, getNextSeasonConfig, getSeasonConfigById, isGenesisSeason, resolveSeasonArchiveLogEntry, resolveSeasonBackgroundUrl, resolveSeasonLoreText } from '../utils/seasonPresentation';
 import { calculateArenaProgress } from '../utils/progressUtils';
+import { REWARD_PLATE_VIEWPORT_STYLE } from '../constants/rewardPlateStyles';
 
 const DetailModalShell: React.FC<{
     title: string;
@@ -245,7 +246,7 @@ export const MissionDetailModal: React.FC<{
         icon={mission.icon}
         artUrl={mission.artUrl}
         description={mission.description}
-        badge={mission.type === 'clan' ? 'Desafio do grupo' : 'Desafio da temporada'}
+        badge={mission.type === 'clan' ? 'Missão do grupo' : 'Missão da temporada'}
         progress={progress}
         onClose={onClose}
         footer={!isCompleted && progress >= 100 ? (
@@ -371,17 +372,36 @@ const formatSeasonDate = (value: string) => {
     }).format(date);
 };
 
+const COR_DA_JORNADA: Record<string, string> = {
+    physical: 'rgb(74,222,128)',
+    intellectual: 'rgb(96,165,250)',
+    spiritual: 'rgb(192,132,252)',
+    social: 'rgb(34,211,238)',
+    emotional: 'rgb(251,113,133)',
+};
+
 const SeasonTransitionModal: React.FC<{
     fromSeason: Season;
     toSeason: SeasonConfig;
     onClose: () => void;
-}> = ({ fromSeason, toSeason, onClose }) => {
+    onOpenQuest?: (quest: SeasonQuest) => void;
+}> = ({ fromSeason, toSeason, onClose, onOpenQuest }) => {
     const [step, setStep] = useState<0 | 1>(0);
     const fromConfig = getSeasonConfigById(fromSeason.id);
     const fromArchive = resolveSeasonArchiveLogEntry(fromSeason);
     const fromBackground = resolveSeasonBackgroundUrl(fromSeason);
     const toSeasonLike = useMemo(() => buildSeasonFromConfig(toSeason), [toSeason]);
     const toBackground = resolveSeasonBackgroundUrl(toSeasonLike);
+
+    // A cor da temporada.
+    //
+    // Ate aqui a unica marca visual era a imagem de fundo, e o campo `theme`
+    // ('aurora', 'eclipse', 'zenite'...) era texto que nenhuma tela lia. Com
+    // isso Aurora e Eclipse eram a mesma tela com fundo trocado, mesmo dourado
+    // no titulo dos dois lados. Sem `cores` na temporada, cai no dourado da
+    // skin, que e o comportamento de sempre.
+    const corDeFecho = fromConfig?.cores?.primaria || 'var(--skin-accent-color)';
+    const corDeAbertura = toSeason.cores?.primaria || 'var(--skin-accent-color)';
 
     const previousTitle = fromConfig?.celebrationTitle || `${fromSeason.name} encerrada`;
     const previousSummary = fromConfig?.celebrationSummary || 'Parabens por atravessar esta fase do GLYPH.';
@@ -391,8 +411,8 @@ const SeasonTransitionModal: React.FC<{
     return (
         <Portal>
             <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
-                <div className="relative w-full max-w-[540px]" onClick={(event) => event.stopPropagation()}>
-                    <div className="dossier-bg relative flex max-h-[92vh] flex-col overflow-hidden rounded-[20px] border border-[var(--skin-accent-color)]/22 shadow-2xl shadow-black/70">
+                <div className="relative" style={REWARD_PLATE_VIEWPORT_STYLE} onClick={(event) => event.stopPropagation()}>
+                    <div className="dossier-bg relative flex h-full flex-col overflow-hidden rounded-[20px] border border-[var(--skin-accent-color)]/22 shadow-2xl shadow-black/70">
                         <div className="flex items-center justify-between border-b border-white/8 bg-black/45 px-4 py-3">
                             <div className="space-y-1">
                                 <div className="text-[9px] font-black uppercase tracking-[0.24em] text-white/50">Passagem de Era</div>
@@ -422,7 +442,7 @@ const SeasonTransitionModal: React.FC<{
                                         <div className="absolute inset-x-0 bottom-0 p-4">
                                             <div className="space-y-2">
                                                 <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/65">Temporada encerrada</div>
-                                                <div className="text-2xl font-black uppercase tracking-[0.14em] text-white luxe-title-shadow">{previousTitle}</div>
+                                                <div className="text-2xl font-black uppercase tracking-[0.14em] luxe-title-shadow" style={{ color: corDeFecho }}>{previousTitle}</div>
                                                 <p className="max-w-[92%] text-[12px] leading-relaxed text-white/82">{previousSummary}</p>
                                             </div>
                                         </div>
@@ -460,7 +480,7 @@ const SeasonTransitionModal: React.FC<{
                                         <div className="absolute inset-x-0 bottom-0 p-4">
                                             <div className="space-y-2">
                                                 <div className="text-[10px] font-black uppercase tracking-[0.24em] text-white/65">Nova Temporada</div>
-                                                <div className="text-2xl font-black uppercase tracking-[0.14em] text-white luxe-title-shadow">{nextTitle}</div>
+                                                <div className="text-2xl font-black uppercase tracking-[0.14em] luxe-title-shadow" style={{ color: corDeAbertura }}>{nextTitle}</div>
                                                 <p className="max-w-[92%] text-[12px] leading-relaxed text-white/82">{nextSummary}</p>
                                             </div>
                                         </div>
@@ -475,6 +495,26 @@ const SeasonTransitionModal: React.FC<{
                                             <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/52">Encerramento previsto</div>
                                             <div className="mt-1 text-lg font-black text-white">{formatSeasonDate(toSeason.endDate)}</div>
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="text-[9px] font-black uppercase tracking-[0.22em] text-white/52">As três jornadas</div>
+                                        {toSeason.quests.slice(0, 3).map((quest, index) => (
+                                            <button
+                                                key={quest.id}
+                                                type="button"
+                                                onClick={() => onOpenQuest?.(quest)}
+                                                className="group flex w-full items-center gap-3 rounded-[14px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(0,0,0,0.42))] px-3 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.07]"
+                                                style={{ borderLeft: `3px solid ${COR_DA_JORNADA[String(quest.category)] || corDeAbertura}` }}
+                                            >
+                                                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[10px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(0,0,0,0.48))] text-lg shadow-[inset_0_0_0_2px_rgba(0,0,0,0.25)]">{quest.actionTemplate?.icon || index + 1}</span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-white/42">Jornada {index + 1}</span>
+                                                    <span className="mt-0.5 block truncate text-[12px] font-black uppercase tracking-[0.08em] text-white/88">{quest.title}</span>
+                                                </span>
+                                                <span className="text-lg text-white/35 transition-transform group-hover:translate-x-0.5">›</span>
+                                            </button>
+                                        ))}
                                     </div>
 
                                     {toSeason.launchHighlights ? (
@@ -755,15 +795,15 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
                                 <div className="space-y-3">
                                     <SectionTitle title="Missões da temporada" tone="white" />
                                     <div className="space-y-2">
-                                        {visibleMissionItems.map((mission) => <CompactSeasonEntryCard key={mission.id} title={mission.title} icon={mission.icon} metaLabel={mission.type === 'clan' ? 'Desafio do grupo' : 'Desafio da temporada'} progress={getMissionProgress(mission)} isClaimed={false} onClick={() => setSelectedMission(mission)} />)}
+                                        {visibleMissionItems.map((mission) => <CompactSeasonEntryCard key={mission.id} title={mission.title} icon={mission.icon} metaLabel={mission.type === 'clan' ? 'Missão do grupo' : 'Missão da temporada'} progress={getMissionProgress(mission)} isClaimed={false} onClick={() => setSelectedMission(mission)} />)}
                                     </div>
                                 </div>
                             )}
                             {visibleQuestItems.length > 0 && (
                                 <div className="space-y-3">
-                                    <SectionTitle title="Desafios" />
+                                    <SectionTitle title="Missões" />
                                     <div className="space-y-2">
-                                        {visibleQuestItems.map((quest) => <CompactSeasonEntryCard key={quest.id} title={quest.title} icon={quest.actionTemplate?.icon} metaLabel={quest.type === 'clan' ? 'Desafio do grupo' : 'Desafio pessoal'} progress={getQuestProgress(quest)} isClaimed={false} participants={quest.type === 'clan' ? clanQuestParticipants[quest.id] : undefined} onClick={() => setSelectedQuest(quest)} />)}
+                                        {visibleQuestItems.map((quest) => <CompactSeasonEntryCard key={quest.id} title={quest.title} icon={quest.actionTemplate?.icon} metaLabel={quest.type === 'clan' ? 'Missão do grupo' : 'Missão pessoal'} progress={getQuestProgress(quest)} isClaimed={false} participants={quest.type === 'clan' ? clanQuestParticipants[quest.id] : undefined} onClick={() => setSelectedQuest(quest)} />)}
                                     </div>
                                 </div>
                             )}
@@ -784,5 +824,3 @@ export const SeasonDetailModal: React.FC<{ season: Season; onClose: () => void; 
 };
 
 export { SeasonTransitionModal };
-
-

@@ -67,25 +67,27 @@ const seasonView = readFileSync(new URL('../views/SeasonView.tsx', import.meta.u
 const achievementModal = readFileSync(new URL('../components/AchievementModal.tsx', import.meta.url), 'utf8');
 const systemChallenges = readFileSync(new URL('../constants/systemChallenges.ts', import.meta.url), 'utf8');
 
-// The streak challenge went from seven days to five in 1.0.57/1.0.58. The claim
-// threshold and the progress bar have to read the same number as its id.
-assert.match(gameContext, /system-five-day-proof-streak[\s\S]*?dailyProofStreak\)\.current >= 5/);
-assert.match(seasonView, /system-five-day-proof-streak[\s\S]*?currentProofStreak \/ 5/);
-// Clamped so the label cannot read "7/5 dias" once the streak passes the goal.
-assert.match(seasonView, /`\$\{Math\.min\(currentProofStreak, 5\)\}\/5 dias`/);
-assert.match(achievementModal, /Bônus de sequência/);
-// Esta assercao pinava o texto 'SETE DIAS REAIS!' — e por isso nao viu o defeito
-// que ela existia para pegar. O desafio caiu de sete para cinco dias, o nome
-// mudou em systemChallenges e o AchievementModal continuou comparando com o
-// literal 'Sete Dias em Movimento'. A comparacao virou sempre falsa: quem
-// fechava a sequencia recebia o "Desafio concluido" generico, e a celebracao
-// escrita para o momento nunca aparecia para ninguem.
+// A missao dos cinco dias foi APAGADA, nao escondida.
 //
-// Agora o modal deriva o nome do proprio desafio, entao o que o teste protege e
-// que ele NAO volte a escrever nome de missao a mao.
-assert.match(achievementModal, /PROOF_STREAK_CHALLENGE_TITLES/, 'o modal reconhece a missao pelos dados dela');
+// Estas tres assercoes prendiam o numero dela — sete virou cinco em 1.0.57, e o
+// teste existia para o rotulo nao dizer "7/5 dias". A mecanica inteira saiu: era
+// a ultima coisa que exigia dias consecutivos de quem nao pediu, e a conferencia
+// no banco mostrou a coorte de compatibilidade VAZIA. Agora prendem o contrario,
+// para ela nao voltar de fininho.
+for (const [nome, fonte] of [['GameContext', gameContext], ['SeasonView', seasonView], ['systemChallenges', systemChallenges]]) {
+  assert.doesNotMatch(fonte, /system-five-day-proof-streak/, nome + ': a missao dos cinco dias nao volta');
+}
+assert.doesNotMatch(seasonView, /currentProofStreak/, 'SeasonView nao mede sequencia global');
+// Estas quatro assercoes prendiam a celebracao dos cinco dias: o bonus, o nome
+// vindo dos dados e o texto "cinco dias seguidos". A historia delas era boa — o
+// desafio caiu de sete para cinco, o modal continuou comparando com o literal
+// antigo, e a comparacao virou sempre falsa sem ninguem ver.
+//
+// A mecanica inteira foi apagada agora, entao elas viram o contrario: o que o
+// teste protege e que nenhum vestigio dela volte a aparecer no modal.
+assert.doesNotMatch(achievementModal, /PROOF_STREAK/, 'o modal nao conhece mais a sequencia global');
 assert.doesNotMatch(achievementModal, /'(Sete|Cinco) Dias em Movimento'/, 'nome de missao escrito a mao volta a apodrecer em silencio');
-assert.match(achievementModal, /cinco dias seguidos/, 'a celebracao diz o numero certo de dias');
-assert.match(systemChallenges, /PROOF_STREAK_CHALLENGE_TITLES/, 'os nomes saem dos dados, nao de uma copia');
+assert.doesNotMatch(achievementModal, /cinco dias seguidos|Bônus de sequência/, 'a celebracao da sequencia global saiu junto com ela');
+assert.doesNotMatch(systemChallenges, /PROOF_STREAK/, 'as constantes da sequencia global sairam');
 
 console.log('Daily insights regression: praise, historical reading, and five-day streak reward are wired.');

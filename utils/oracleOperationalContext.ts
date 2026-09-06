@@ -2,6 +2,7 @@
 // carregar este arquivo direto num teste. Com import de valor ele tentaria
 // resolver '../types' em tempo de execucao e quebraria.
 import type { Action, Asset, Cycle, DailyCommitment, DailyProofStreak, OracleArenaSignal, OracleArenaTrend, OracleCategory, OracleContext, OracleMode, ScheduledTask } from '../types';
+import type { ArenaPact, ArenaPactProgress } from './arenaPacts';
 import { filterCycleTasksByScope } from './coreLoopUtils.js';
 import { getOperationalDateString, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 
@@ -22,6 +23,16 @@ type OracleOperationalContextInput = {
   pendingChests?: number;
   dailyCommitment?: DailyCommitment | null;
   dailyProofStreak?: DailyProofStreak | null;
+  /**
+   * O pacto ativo e o progresso dele chegam PRONTOS de quem chama.
+   *
+   * Este arquivo nao importa `utils/arenaPacts` como valor de proposito: o
+   * comentario do topo explica que ele precisa ser carregavel direto pelo Node
+   * num teste. Medir o pacto exige arenas e tarefas que o chamador ja tem em
+   * maos, entao ele mede e passa o resultado.
+   */
+  activeArenaPact?: ArenaPact | null;
+  arenaPactProgress?: ArenaPactProgress | null;
 };
 
 const getTimeOfDay = (date: Date): OracleContext['timeOfDay'] => {
@@ -264,6 +275,8 @@ export const buildOracleOperationalContext = ({
   pendingChests = 0,
   dailyCommitment = null,
   dailyProofStreak = null,
+  activeArenaPact = null,
+  arenaPactProgress = null,
 }: OracleOperationalContextInput): OracleContext => {
   const operationalDate = getOperationalDateString(now);
   const activeArenas = assets.flatMap((asset) => asset.arenas).filter((arena) => !arena.isArchived);
@@ -517,6 +530,23 @@ export const buildOracleOperationalContext = ({
     plannedDailyDemand,
     bestDailyCompletions,
     daysWithCompletions,
+    // O pacto, para o Oraculo poder falar do compromisso que a pessoa aceitou.
+    // Sem pacto ativo tudo fica null e nenhuma fala de pacto tem como nascer.
+    pactArenaName: activeArenaPact?.arenaName || null,
+    pactKind: activeArenaPact?.kind || null,
+    pactTitle: activeArenaPact?.title || null,
+    pactGoal: activeArenaPact ? arenaPactProgress?.goal ?? activeArenaPact.goal : null,
+    pactCurrent: activeArenaPact ? arenaPactProgress?.current ?? 0 : null,
+    pactRemaining: activeArenaPact
+      ? Math.max(0, (arenaPactProgress?.goal ?? activeArenaPact.goal) - (arenaPactProgress?.current ?? 0))
+      : null,
+    // Só o pacto de volume tem janela. Nos outros o prazo e null, e dizer
+    // "faltam X dias" onde nao ha prazo seria inventar urgencia.
+    pactDaysRemaining: activeArenaPact?.endsOn
+      ? Math.max(0, diffLocalDays(operationalDate, activeArenaPact.endsOn) ?? 0)
+      : null,
+    pactCompleted: Boolean(arenaPactProgress?.completed),
+    pactWindowEnded: Boolean(arenaPactProgress?.windowEnded),
     dailyProofStreakCurrent: Math.max(0, Math.round(dailyProofStreak?.current || 0)),
     dailyProofStreakBest: Math.max(0, Math.round(dailyProofStreak?.best || 0)),
     dailyProofTotalClosedDays: Math.max(0, Math.round(dailyProofStreak?.totalClosedDays || 0)),

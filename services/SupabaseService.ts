@@ -494,6 +494,7 @@ export class SupabaseService {
           premiumDaysGranted: Number.isFinite(payload.premium_days_granted) ? Number(payload.premium_days_granted) : null,
           chestType: typeof payload.chest_type === 'string' ? payload.chest_type : null,
           chestCount: Number.isFinite(payload.chest_count) ? Number(payload.chest_count) : null,
+          itemIds: Array.isArray(payload.item_ids) ? payload.item_ids.map((id: unknown) => String(id)) : [],
           legacySceneCreditsGranted: Number.isFinite(payload.legacy_scene_credits_granted) ? Number(payload.legacy_scene_credits_granted) : null,
           campaignQuizFreeCreditsGranted: Number.isFinite(payload.campaign_quiz_free_credits_granted) ? Number(payload.campaign_quiz_free_credits_granted) : null,
           campaignQuizMediumCreditsGranted: Number.isFinite(payload.campaign_quiz_medium_credits_granted) ? Number(payload.campaign_quiz_medium_credits_granted) : null,

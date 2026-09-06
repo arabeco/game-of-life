@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Aurora I — orbe de nível</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#0c1012;color:#edf2ef;font:14px/1.45 Inter,Segoe UI,sans-serif;padding:34px}h1{margin:0 0 7px;font-size:25px}.intro{max-width:850px;margin:0 0 26px;color:#9eaaa6}
+    .legacy{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:32px}.sample{display:grid;justify-items:center;gap:8px;color:#899591;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+    .orb{--art:none;--num:#fff;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background-image:var(--art);background-size:108% 108%;background-position:center;background-repeat:no-repeat}
+    .number{position:relative;z-index:1;color:var(--num);font-size:1.82rem;font-weight:900;line-height:1;letter-spacing:-.02em;text-shadow:0 1px 0 rgba(255,255,255,.13),0 0 3px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.82);-webkit-text-stroke:1.25px rgba(8,8,10,.97);transform:translateY(-.07em)}
+    .gold{--art:url('../../public/assets/catalog/gold.png');--num:#f6ebd1}.frost{--art:url('../../public/assets/catalog/frost.png');--num:#fff}.ember{--art:url('../../public/assets/catalog/ember.png');--num:#ffc9a6}.old{--art:url('../../public/assets/catalog/aurora.png');--num:#c9ffde}.genesis{--art:url('../../public/assets/catalog/genesis.png');--num:#d7b684}.jade{--art:url('./ui-skin-aurora-i-orb-v1.png');--num:#dde8e1}
+    h2{font-size:18px;margin:0 0 12px}.modes{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:760px}.mode{padding:22px;border-radius:20px;display:flex;align-items:center;gap:18px}.dark{background:linear-gradient(160deg,#23312c,#101715);border:1px solid #66867955}.light{background:linear-gradient(160deg,#f3f6f4,#d4ddd8);border:1px solid #526a6155;color:#17231f;box-shadow:0 15px 38px #0005}.mode .orb{width:76px;height:76px;flex:0 0 76px}.mode .number{font-size:2.45rem}.mode strong{display:block;font-size:15px}.mode p{margin:4px 0 0;font-size:12px;opacity:.67}.tokens{margin-top:22px;max-width:760px;padding:14px 16px;border-left:3px solid #668679;background:#141b19;color:#aab5b1}.tokens code{color:#dbe6df}
+    @media(max-width:700px){.modes{grid-template-columns:1fr}body{padding:24px}}
+  </style>
+</head>
+<body>
+  <h1>Aurora I — bola da Skin UI com número real</h1>
+  <p class="intro">O número não pertence ao PNG: o componente o desenha por cima. Abaixo estão o tamanho real de 56 px, a mesma tipografia, contorno e sombra usados em <code>Sephirot.tsx</code>.</p>
+  <section class="legacy">
+    <div class="sample"><div class="orb gold"><span class="number">12</span></div>Ouro</div>
+    <div class="sample"><div class="orb frost"><span class="number">12</span></div>Gelo</div>
+    <div class="sample"><div class="orb ember"><span class="number">12</span></div>Chama</div>
+    <div class="sample"><div class="orb old"><span class="number">12</span></div>Aurora antiga</div>
+    <div class="sample"><div class="orb genesis"><span class="number">12</span></div>Genesis</div>
+    <div class="sample"><div class="orb jade"><span class="number">12</span></div>Jade Fumê nova</div>
+  </section>
+  <h2>Jade Fumê nos dois modos</h2>
+  <section class="modes">
+    <div class="mode dark"><div class="orb jade"><span class="number">12</span></div><div><strong>Modo escuro</strong><p>Véus verticais, centro quieto e número prata-esverdeado.</p></div></div>
+    <div class="mode light"><div class="orb jade"><span class="number">12</span></div><div><strong>Modo claro</strong><p>A bola não muda; a superfície clara e o contraste ao redor mudam.</p></div></div>
+  </section>
+  <div class="tokens"><b>Tokens propostos:</b> número <code>#DDE8E1</code>, aro/acento <code>#668679</code>, glow <code>rgba(63,143,91,.22)</code>, tamanho raster <code>108%</code>. Diferença central: Aurora antiga gira; Aurora I sobe em véus minerais.</div>
+</body>
+</html>

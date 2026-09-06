@@ -25,7 +25,8 @@ import { filterCycleTasksByScope } from '../utils/coreLoopUtils.js';
 import { buildFairScoreFromTasks } from '../utils/fairScoreUtils.js';
 import { buildCycleWidgetSnapshot } from '../utils/widgetSnapshots';
 import { buildEraAiSummary } from '../utils/eraSummaryUtils';
-import { buildChestRewardPayload, buildCycleRewardPayload } from '../utils/chestRewardPresentation';
+import { buildCycleRewardPayload } from '../utils/chestRewardPresentation';
+import { getRewardEmblemUrl, getRewardToneRgb } from '../constants/rewardEmblems';
 import { getLegacyProjectionScenePrice, hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
 const CycleComparator = React.lazy(() => import('../components/CycleComparator').then(m => ({ default: m.CycleComparator })));
 const ReportGenerationModal = React.lazy(() => import('../components/ReportGenerationModal').then(m => ({ default: m.ReportGenerationModal })));
@@ -3073,6 +3074,8 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <RewardPackModal
                 open={!!reportRewardPayload}
                 payload={reportRewardPayload}
+                emblema={getRewardEmblemUrl('ciclo')}
+                tom={getRewardToneRgb('ciclo')}
                 onClose={() => setReportRewardPayload(null)}
             />
         </>

@@ -200,7 +200,7 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
-  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, showToast } = useGame();
+  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoDeSistemaAtiva, showToast } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -295,7 +295,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     clanName: null,
     seasonName: null,
     pendingChests: userProfile.chests?.reduce((acc, chest) => acc + (chest.count || 0), 0) || 0,
-  }), [activeCycle, actions, assets, currentMode, cycleProgress, dailyCommitment, oraclePreferences, tasks, userProfile]);
+    activeArenaPact,
+    arenaPactProgress,
+  }), [activeArenaPact, arenaPactProgress, activeCycle, actions, assets, currentMode, cycleProgress, dailyCommitment, oraclePreferences, tasks, userProfile]);
 
 
   // Update mode when preferences change
@@ -490,6 +492,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   const { trigger: sensory } = useSensoryFeedback();
   const [pactPanelOpen, setPactPanelOpen] = useState(false);
+  // Trocar e o caminho mais usado: quem tem um pacto raramente quer ficar sem
+  // nenhum, quer outro no lugar. Este estado abre a proposta POR CIMA do pacto
+  // ativo, em vez de exigir encerrar antes.
+  const [trocandoPacto, setTrocandoPacto] = useState(false);
 
   // Sem arena elegivel não ha pacto possível. O botao fica opaco em vez de sumir:
   // sumir faz o rodape pular, e não explica nada.
@@ -540,7 +546,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   const handleAskMission = useCallback(() => {
     if (activeArenaPact) {
+      setTrocandoPacto(false);
       setPactPanelOpen(true);
+      return;
+    }
+    // O slot esta com uma missao de sistema. Abrir a proposta aqui daria um painel
+    // que recusaria o aceite depois — mais honesto dizer onde ela mora.
+    if (missaoDeSistemaAtiva) {
+      sensory('click_soft');
+      showToast(`"${missaoDeSistemaAtiva.title}" esta em andamento. Ela fica na aba Temporada.`, 'info');
       return;
     }
     if (!missionAvailable) {
@@ -550,7 +564,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
     sensory('click_soft');
     setPactPanelOpen(true);
-  }, [activeArenaPact, missionAvailable, sensory, showToast]);
+  }, [activeArenaPact, missaoDeSistemaAtiva, missionAvailable, sensory, showToast]);
 
   const runQuickAction = useCallback((action: ChatQuickAction) => {
     switch (action.kind) {
@@ -842,9 +856,14 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             Nada dele vira mensagem, entao o historico continua limpo. */}
         {pactPanelOpen && (
           <div className="border-t border-white/10 bg-black/30 p-3 flex-shrink-0">
-            {activeArenaPact ? <ArenaPactBalloon /> : <ArenaPactProposal onClose={() => setPactPanelOpen(false)} />}
+            {activeArenaPact && !trocandoPacto
+              ? <ArenaPactBalloon onTrocar={() => setTrocandoPacto(true)} />
+              : <ArenaPactProposal
+                  substituindo={Boolean(activeArenaPact)}
+                  onClose={() => { setTrocandoPacto(false); setPactPanelOpen(false); }}
+                />}
             <button
-              onClick={() => setPactPanelOpen(false)}
+              onClick={() => { setTrocandoPacto(false); setPactPanelOpen(false); }}
               className="mt-2 w-full rounded-xl border border-white/10 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/45 transition-colors hover:text-white/80"
             >
               Fechar
@@ -892,24 +911,36 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                 <span className="mt-0.5 block truncate text-[9px] text-white/38">agora</span>
               </button>
 
-              {/* O mesmo slot, dois estados: sem pacto convida, com pacto informa.
-                  Botao que some faz o rodape pular; opaco com toast diz por que nao
+              {/* UM slot, tres estados: vazio convida, ocupado informa QUEM ocupa.
+                  A missao individual pode ser de arena ou de sistema, e o botao tem
+                  de dizer a verdade nos dois casos — senao a pessoa ve "Escolher
+                  missao", toca, e leva um aviso de que ja tem uma.
+
+                  Botao que some faz o rodape pular; opaco com aviso diz por que nao
                   da, em vez de nao dar e ficar calado. */}
               <button
                 onClick={handleAskMission}
                 className={`min-w-0 flex-1 rounded-2xl border px-2.5 py-2.5 text-left transition-colors ${
-                  activeArenaPact
+                  activeArenaPact || missaoDeSistemaAtiva
                     ? 'border-[var(--skin-accent-color)]/32 bg-[var(--skin-accent-color)]/8 hover:bg-[var(--skin-accent-color)]/12'
                     : missionAvailable
                       ? 'border-white/12 bg-white/[0.04] hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]'
                       : 'border-white/8 bg-white/[0.02] opacity-45'
                 }`}
               >
-                <span className={`block truncate text-[11px] font-black uppercase leading-tight tracking-[0.02em] ${activeArenaPact ? 'text-[var(--skin-accent-color)]' : 'text-white/82'}`}>
-                  {activeArenaPact ? activeArenaPact.title : 'Pedir missao'}
+                <span className={`block truncate text-[11px] font-black uppercase leading-tight tracking-[0.02em] ${activeArenaPact || missaoDeSistemaAtiva ? 'text-[var(--skin-accent-color)]' : 'text-white/82'}`}>
+                  {activeArenaPact
+                    ? activeArenaPact.title
+                    : missaoDeSistemaAtiva
+                      ? missaoDeSistemaAtiva.title
+                      : 'Escolher missão'}
                 </span>
                 <span className="mt-0.5 block truncate text-[9px] text-white/38">
-                  {activeArenaPact ? `${arenaPactProgress.current}/${arenaPactProgress.goal}` : 'uma de cada vez'}
+                  {activeArenaPact
+                    ? `${arenaPactProgress.current}/${arenaPactProgress.goal}`
+                    : missaoDeSistemaAtiva
+                      ? 'em Temporada'
+                      : 'uma de cada vez'}
                 </span>
               </button>
             </div>

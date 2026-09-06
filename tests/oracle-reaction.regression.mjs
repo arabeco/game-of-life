@@ -41,8 +41,7 @@ assert.equal(PAUSA_MINIMA_PARA_VOLTA, 4, 'o corte de pausa e o mesmo do trend');
 const salvou = resolveReactionSignificance({
   previousProofDate: '2026-08-27', proofDate: HOJE, hourOfDay: 22, streakAfter: 23,
 });
-assert.equal(salvou.event, 'streak_saved');
-assert.equal(salvou.vars.streak, 23);
+assert.equal(salvou, null, 'sequencia global nao gera reacao de salvamento');
 
 // Voltar depois de uma pausa longa E fechar tarde: a VOLTA e a noticia maior, e
 // a hora e detalhe dela.

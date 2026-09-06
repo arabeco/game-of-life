@@ -7,6 +7,7 @@ import { ACTIVE_GOLD_STORE_ITEM_IDS } from '../../constants/goldCatalog';
 import { ItemArt } from '../ItemArt';
 import { ItemDetailModal } from '../ItemDetailModal';
 import { ConfirmationModal } from '../ConfirmationModal';
+import { ValorIcon } from '../ValorIcon';
 
 const STORE_CATEGORY_LABELS: Record<ItemDef['category'], string> = {
     skin: 'Skin',
@@ -195,7 +196,7 @@ export const ItemsStore: React.FC = () => {
                                             <span className="truncate text-[8px] font-black uppercase tracking-[0.04em] text-white/70">{bau.tipo}</span>
                                             <span className="flex items-center gap-0.5 text-[9px] font-black leading-none text-cyan-300">
                                                 {comprandoBau === bau.tipo ? '...' : bau.custo}
-                                                <span className="text-[9px]">💎</span>
+                                                <ValorIcon valor="fragmento" tamanho={11} rotulo="" />
                                             </span>
                                         </button>
                                     );
@@ -288,7 +289,7 @@ export const ItemsStore: React.FC = () => {
                                     (!!loading || !item.costGold) ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                             >
-                                <span className="text-[11px] leading-none">🪙</span>
+                                <ValorIcon valor="ouro" tamanho={14} rotulo="" />
                                 <span>{isBusy ? '...' : item.costGold}</span>
                             </button>
                             )}
@@ -315,7 +316,7 @@ export const ItemsStore: React.FC = () => {
                 <ConfirmationModal
                     title="Confirmar compra"
                     message={`${pendingPurchaseItem.name} vai debitar ${pendingPurchaseItem.costGold} ouro da sua conta. Deseja continuar?`}
-                    confirmLabel={`COMPRAR · ${pendingPurchaseItem.costGold} 🪙`}
+                    confirmLabel={`COMPRAR · ${pendingPurchaseItem.costGold} ouro`}
                     onConfirm={() => { void handleConfirmBuy(); }}
                     onCancel={() => setPendingPurchaseItem(null)}
                 />

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Temporadas — Glyph</title>
+<!--
+  Painel das temporadas. Nao existia lugar nenhum para ver ou mexer nisto: as
+  treze temporadas moram em constants/seasonContent.ts e a unica forma de saber
+  o que cada uma carrega era ler o arquivo.
+
+  Nao entra no build: o Vite so empacota o index.html da raiz.
+  Com `npm run dev`, abra /tools/season-editor.html
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 22px 60px;
+    background: #15171b; color: #e8eaee;
+    font: 14px/1.5 system-ui, sans-serif;
+  }
+  header { margin-bottom: 20px; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  header p { color: #969ca6; font-size: 12.5px; margin: 0; max-width: 76ch; }
+  code { font-family: ui-monospace, monospace; font-size: 11.5px; color: #969ca6; }
+
+  .temporada {
+    border: 1px solid #2e323a; border-left-width: 4px; border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 12px; background: #1a1d22;
+  }
+  .temporada.vazia { opacity: .72; }
+  .temporada.erro { border-color: #e08c6a; color: #e08c6a; }
+  .topo { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .topo h2 { font-size: 16px; margin: 0; }
+  .selo {
+    font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px; border: 1px solid #3a3f49; color: #969ca6;
+  }
+  .selo.alerta { border-color: #e08c6a; color: #e08c6a; }
+  .jorn { margin-left: auto; font-size: 11.5px; color: #969ca6; }
+
+  .corpo { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+  .visual { flex: none; width: 210px; }
+  .fundo {
+    height: 118px; border: 1px solid #3a3f49; border-radius: 8px;
+    background-size: cover; background-position: center; background-color: #0f1114;
+    display: flex; align-items: flex-end; padding: 9px 11px;
+  }
+  .fundo span { font-size: 13px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,.9); }
+  .cores { display: flex; gap: 10px; margin-top: 8px; }
+  .cores label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #969ca6; }
+  .cores input { width: 30px; height: 24px; padding: 0; border: 1px solid #3a3f49; border-radius: 5px; background: none; }
+
+  .dados { flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 7px; }
+  .datas { display: flex; gap: 8px; }
+  .datas .campo { flex: 1; }
+  .campo { display: flex; flex-direction: column; gap: 2px; }
+  .campo > span { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #6e747c; }
+  input, textarea, button {
+    background: #14161a; color: #e8eaee; border: 1px solid #3a3f49;
+    border-radius: 6px; padding: 6px 9px; font: inherit; font-size: 12.5px;
+  }
+  textarea { resize: vertical; font-family: inherit; }
+  button { cursor: pointer; }
+  button:hover { border-color: #d8b44c; }
+
+  .colecao { display: flex; gap: 8px; margin-top: 13px; flex-wrap: wrap; }
+  .colecao figure { margin: 0; width: 92px; }
+  .slot {
+    width: 92px; height: 92px; border: 1px solid #3a3f49; border-radius: 9px;
+    background: #14161a; display: flex; align-items: center; justify-content: center;
+    padding: 7px; overflow: hidden;
+  }
+  /* O ItemArt e do app e usa classes do Tailwind, que esta pagina nao carrega.
+     Sem isto a arte sai em tamanho natural e estoura o slot. */
+  .slot > * { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .slot img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+  .colecao .vazio .slot { border-style: dashed; }
+  .falta { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #4a4f57; }
+  .colecao figcaption {
+    margin-top: 5px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #6e747c;
+    display: flex; flex-direction: column; gap: 2px; text-align: center;
+  }
+  .colecao figcaption em {
+    font-style: normal; font-size: 10.5px; letter-spacing: 0; text-transform: none;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  footer { margin-top: 24px; }
+  footer h2 { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #969ca6; margin: 0 0 7px; }
+  footer textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 11.5px; }
+  footer button { margin-top: 8px; padding: 7px 16px; }
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script type="module" src="/tools/season-editor.tsx"></script>
+</body>
+</html>

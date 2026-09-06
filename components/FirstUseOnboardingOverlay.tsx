@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Portal } from './Portal';
 import { FIRST_USE_ONBOARDING_EVENTS } from '../utils/firstUseOnboarding';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
-import { SYSTEM_CHALLENGES } from '../constants/systemChallenges';
+import { AVAILABLE_SYSTEM_CHALLENGES } from '../constants/systemChallenges';
 import type { OnboardingPurpose } from '../types';
 
 type AppView = 'assets' | 'arenas' | 'planner' | 'social' | 'settings' | 'reports';
@@ -703,7 +703,7 @@ export const FirstUseOnboardingOverlay: React.FC<{
 
                   {step.id === 'missions' && (
                     <div className="mt-3 space-y-2">
-                      {SYSTEM_CHALLENGES.slice(0, 3).map((mission) => {
+                      {AVAILABLE_SYSTEM_CHALLENGES.slice(0, 3).map((mission) => {
                         const selected = selectedMissionIds.includes(mission.id);
                         return (
                           <button

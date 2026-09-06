@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Oráculo — Glyph</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:28px 24px 80px; background:#0e1013; color:#e7e9ec;
+         font:14px/1.55 system-ui,-apple-system,Segoe UI,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; }
+  h1 { font-size:26px; margin:0 0 6px; }
+  h2 { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8b929c;
+       margin:38px 0 12px; border-bottom:1px solid #23262c; padding-bottom:7px; }
+  p.lead { color:#969ca6; max-width:74ch; margin:0 0 14px; }
+  .carimbo { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 8px; }
+  .carimbo span { font:11px/1 ui-monospace,monospace; color:#8b929c; border:1px solid #2a2e35;
+                  border-radius:5px; padding:6px 9px; background:#14171b; }
+  .placar { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:16px 0 4px; }
+  .placar div { border:1px solid #23262c; border-radius:9px; background:#111417; padding:12px 14px; }
+  .placar b { display:block; font-size:24px; font-variant-numeric:tabular-nums; }
+  .placar span { display:block; margin-top:3px; font:9px ui-monospace,monospace; letter-spacing:.12em;
+                 text-transform:uppercase; color:#858a93; }
+  .nota { margin-top:12px; padding:11px 13px; border-left:2px solid #d8b44c; background:#14171b;
+          color:#969ca6; font-size:13.5px; }
+  .nota strong { color:#e7e9ec; }
+  .nota.alerta { border-left-color:#e9a268; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th,td { text-align:left; padding:7px 12px 7px 0; border-bottom:1px solid #23262c; vertical-align:top; }
+  th { font:9px ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase; color:#7c828c; }
+  td.n { font-variant-numeric:tabular-nums; }
+  code { font:11.5px ui-monospace,monospace; color:#c9cdd3; background:#181b1f;
+         border:1px solid #262a30; border-radius:4px; padding:1px 5px; }
+  code.morto { color:#e9a268; border-color:#4a3a2a; text-decoration:line-through; }
+  s { color:#6e747c; font:11.5px ui-monospace,monospace; }
+  .nada { color:#4d535b; }
+  .sim { color:#7fd8a4; } .nao { color:#e9a268; }
+  ol.cascata { counter-reset:c; list-style:none; padding:0; margin:0; }
+  ol.cascata li { counter-increment:c; border-bottom:1px solid #23262c; padding:6px 0 6px 34px; position:relative; }
+  ol.cascata li::before { content:counter(c); position:absolute; left:0; top:6px;
+      font:10px ui-monospace,monospace; color:#7c828c; border:1px solid #2a2e35; border-radius:4px;
+      width:22px; text-align:center; padding:2px 0; }
+  footer { margin-top:52px; padding-top:16px; border-top:1px solid #23262c; color:#6e747c; font-size:12.5px; }
+</style></head><body><div class="wrap">
+
+<h1>O Oráculo</h1>
+<p class="lead">O Oráculo fala por <strong>quatro superfícies</strong>, e o repertório dele mora em
+<strong>três arquivos</strong>, com três lógicas de escolha. Esta folha lê os três e mostra o que
+está vivo, o que está morto e onde os assuntos se repetem — para caber na cabeça de uma pessoa
+antes de alguém escrever frase nova.</p>
+
+<div class="carimbo">
+  <span>gerada 06/09/2026, 07:51</span>
+  <span>commit 9363eb9</span>
+  <span>npm run folhas</span>
+</div>
+
+<div class="placar">
+  <div><b>12<span style="font-size:14px;color:#6e747c">/14</span></b><span>candidatos vivos</span></div>
+  <div><b>9<span style="font-size:14px;color:#6e747c">/14</span></b><span>estados do servidor</span></div>
+  <div><b>15</b><span>eventos de reação</span></div>
+  <div><b>13</b><span>casos do "ler meu dia"</span></div>
+  <div><b>222</b><span>frases escritas</span></div>
+</div>
+
+<h2>As quatro superfícies</h2>
+<table>
+  <thead><tr><th>superfície</th><th>quando aparece</th><th>quem controla</th><th>vira push?</th></tr></thead>
+  <tbody>
+    <tr><td><b>Card</b></td><td>no máximo um por dia, gerado por IA</td><td>interruptor próprio + presença</td><td class="sim">sim</td></tr>
+    <tr><td><b>Fala de abertura</b></td><td>ao abrir uma tela</td><td>presença</td><td class="nao">não — é gravada como chat</td></tr>
+    <tr><td><b>Reação</b></td><td>ao concluir algo</td><td>presença</td><td class="nao">não — é gravada como chat</td></tr>
+    <tr><td><b>Chat</b> (ler meu dia, pedir pacto)</td><td>quando a pessoa pede</td><td>ninguém — ela pediu</td><td class="nao">nunca</td></tr>
+  </tbody>
+</table>
+<div class="nota">Toda a complexidade do repertório está dentro de <strong>duas</strong> dessas
+caixas: fala de abertura e reação. O que o usuário vê já é simples; o motor é que está
+implementado duas vezes.</div>
+
+<h2>Presença — a escada</h2>
+<table>
+  <thead><tr><th>nível</th><th>nome</th><th>card</th><th>fala de abertura</th><th>reações</th><th>legenda na tela</th></tr></thead>
+  <tbody><tr>
+    <td class="n">0</td><td><b>Silencioso</b></td>
+    <td><span class="nao">não</span></td>
+    <td>nunca</td><td>nenhuma</td>
+    <td style="color:#8b929c">Só o essencial. Ele fala quando você chama, e a missão que você pedir segue normal.</td></tr><tr>
+    <td class="n">1</td><td><b>Discreto</b></td>
+    <td><span class="nao">não</span></td>
+    <td>nunca</td><td>marcos</td>
+    <td style="color:#8b929c">Ele não comenta o seu dia. Aparece só quando você fecha algo grande.</td></tr><tr>
+    <td class="n">2</td><td><b>Equilibrado</b></td>
+    <td><span class="sim">sim</span></td>
+    <td>diaria</td><td>marcos</td>
+    <td style="color:#8b929c">Um card e uma fala por dia, e ele celebra quando você fecha algo grande.</td></tr><tr>
+    <td class="n">3</td><td><b>Presente</b></td>
+    <td><span class="sim">sim</span></td>
+    <td>sempre</td><td>todas</td>
+    <td style="color:#8b929c">Fala toda vez que você abre e acompanha o seu dia de perto.</td></tr></tbody>
+</table>
+
+
+<h2>Candidatos de abertura <span style="color:#6e747c;font-weight:400">· cliente · <code>utils/oracleCandidates.ts</code></span></h2>
+<p class="lead">Um árbitro escolhe <strong>no máximo um</strong>, por peso, e o silêncio é resposta
+válida. Um tipo só está vivo se algum detector chamar <code>build('tipo'</code> — declarado no tipo
+não basta.</p>
+<table>
+  <thead><tr><th>tipo</th><th>peso</th><th>estado</th></tr></thead>
+  <tbody><tr>
+    <td><code class="morto">streak_marco</code></td>
+    <td class="n">—</td>
+    <td><span class="nao">declarado, sem detector</span></td>
+  </tr><tr>
+    <td><code class="morto">streak_em_risco</code></td>
+    <td class="n">—</td>
+    <td><span class="nao">declarado, sem detector</span></td>
+  </tr><tr>
+    <td><code>meta_inflada</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>ausente</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>arena_retomada</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>sem_ciclo</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>ciclo_longo</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>sem_entrega</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>arena_atrasada</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>arena_parada</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>ciclo_atrasado</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>prioridade</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>ja_entregou</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr><tr>
+    <td><code>estrutura_enxuta</code></td>
+    <td class="n">—</td>
+    <td><span class="sim">vivo</span></td>
+  </tr></tbody>
+</table>
+
+<h2>Estados operacionais <span style="color:#6e747c;font-weight:400">· servidor · <code>_shared/oracle-host-voice.ts</code></span></h2>
+<p class="lead">Cascata de <code>if</code>: o primeiro que casa vence. <strong>Não têm variação de
+tom</strong> — são frases fixas, enquanto as reações têm quatro tons. Mesma casa, duas políticas.</p>
+<table>
+  <thead><tr><th>estado</th><th>frases</th><th>alcançável?</th></tr></thead>
+  <tbody><tr>
+    <td><code>sem_direcao</code></td>
+    <td class="n">3</td>
+    <td><span class="sim">sim</span></td>
+  </tr><tr>
+    <td><code>disperso</code></td>
+    <td class="n">3</td>
+    <td><span class="sim">sim</span></td>
+  </tr><tr>
+    <td><code>atrasado</code></td>
+    <td class="n">3</td>
+    <td><span class="sim">sim</span></td>
+  </tr><tr>
+    <td><code>em_ritmo</code></td>
+    <td class="n">3</td>
+    <td><span class="sim">sim</span></td>
+  </tr><tr>
+    <td><code>em_risco</code></td>
+    <td class="n">3</td>
+    <td><span class="sim">sim</span></td>
+  </tr><tr>
+    <td><code class="morto">retomando</code></td>
+    <td class="n">3</td>
+    <td><span class="nao">nunca retornado</span></td>
+  </tr><tr>
+    <td><code class="morto">proximo_compromisso</code></td>
+    <td class="n">3</td>
+    <td><span class="nao">nunca retornado</span></td>
+  </tr><tr>
+    <td><code>pronto_para_fechar</code></td>
+    <td class="n">3</td>
+    <td><span class="sim">sim</span></td>
+  </tr><tr>
+    <td><code>arena_esquecida</code></td>
+    <td class="n">3</td>
+    <td><span class="sim">sim</span></td>
+  </tr><tr>
+    <td><code>escopo_pesado</code></td>
+    <td class="n">3</td>
+    <td><span class="sim">sim</span></td>
+  </tr><tr>
+    <td><code>oportunidade_util</code></td>
+    <td class="n">3</td>
+    <td><span class="sim">sim</span></td>
+  </tr><tr>
+    <td><code class="morto">streak_mantida</code></td>
+    <td class="n">3</td>
+    <td><span class="nao">nunca retornado</span></td>
+  </tr><tr>
+    <td><code class="morto">streak_quebrada</code></td>
+    <td class="n">3</td>
+    <td><span class="nao">nunca retornado</span></td>
+  </tr><tr>
+    <td><code class="morto">primeira_acao_do_dia</code></td>
+    <td class="n">3</td>
+    <td><span class="nao">nunca retornado</span></td>
+  </tr></tbody>
+</table>
+
+<h2>Reações a evento <span style="color:#6e747c;font-weight:400">· cliente · <code>constants/oracleSpeechLibrary.ts</code></span></h2>
+<p class="lead">O sistema mais bem feito dos três: cada evento tem frase nos quatro tons. Deveria
+ser o modelo dos outros dois.</p>
+<table>
+  <thead><tr><th>evento</th><th>Neutro</th><th>Coach</th><th>Reflexivo</th><th>Calmo</th><th>total</th></tr></thead>
+  <tbody><tr>
+    <td><code>campaign_completed</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>arena_completed</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>daily_reps_high</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>daily_reps_mid</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>daily_reps_low</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>cycle_goal_met</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>pact_progress</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>pact_last_one</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>pact_completed</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>cycle_goal_last_one</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>cycle_goal_first</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>cycle_goal_progress</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>first_after_pause</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>streak_saved</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr><tr>
+    <td><code>milestone_completed</code></td>
+    <td class="n">3</td><td class="n">3</td><td class="n">3</td><td class="n">3</td>
+    <td class="n"><b>12</b></td>
+  </tr></tbody>
+</table>
+
+<h2>"Ler meu dia" <span style="color:#6e747c;font-weight:400">· <code>utils/oracleCoach.ts</code></span></h2>
+<p class="lead">Grátis, local, sem ida ao servidor — e é a única superfície com <strong>botões que
+navegam</strong>. É a casa natural das leituras mais afiadas. Mas é uma <strong>cascata</strong>: o
+primeiro caso que casa vence, e os de baixo nunca são considerados.</p>
+<ol class="cascata"><li><code>coach:first-arena</code></li><li><code>coach:start-cycle</code></li><li><code>coach:cycle-ready</code></li><li><code>coach:unmeasured</code></li><li><code>coach:last-day</code></li><li><code>coach:behind</code></li><li><code>coach:first-proof</code></li><li><code>coach:ahead</code></li><li><code>coach:conta-nao-fecha</code></li><li><code>coach:arena-natimorta</code></li><li><code>coach:quanto-falta</code></li><li><code>coach:concentracao</code></li><li><code>coach:on-pace</code></li></ol>
+<div class="nota alerta"><strong>Consequência da ordem:</strong> <code>coach:behind</code> e
+<code>coach:ahead</code> capturam quase todo mundo, então leituras mais interessantes colocadas
+depois nunca apareceriam. Repertório novo aqui exige trocar a cascata por escolha de relevância —
+como o árbitro dos candidatos já faz.</div>
+
+<h2>Assuntos escritos mais de uma vez</h2>
+<p class="lead">Agrupamento <strong>curado</strong>, não derivado — dizer que duas peças são o mesmo
+assunto é julgamento. O que a folha garante é que cada peça citada existe de fato nas listas acima:
+<s>riscada</s> = não existe mais, <code class="morto">laranja</code> = declarada mas morta.</p>
+<table>
+  <thead><tr><th>assunto</th><th>candidato (cliente)</th><th>estado (servidor)</th><th>reação</th></tr></thead>
+  <tbody><tr>
+    <td><b>Arena parada</b></td>
+    <td><code>arena_parada</code> <code>arena_atrasada</code></td>
+    <td><code>arena_esquecida</code></td>
+    <td><span class="nada">—</span></td>
+  </tr><tr>
+    <td><b>Escopo grande demais</b></td>
+    <td><code>meta_inflada</code></td>
+    <td><code>escopo_pesado</code></td>
+    <td><span class="nada">—</span></td>
+  </tr><tr>
+    <td><b>Ciclo atrasado</b></td>
+    <td><code>ciclo_atrasado</code></td>
+    <td><code>atrasado</code></td>
+    <td><span class="nada">—</span></td>
+  </tr><tr>
+    <td><b>Voltar depois de sumir</b></td>
+    <td><code>arena_retomada</code></td>
+    <td><code class="morto">retomando</code></td>
+    <td><code>first_after_pause</code></td>
+  </tr><tr>
+    <td><b>Sem ciclo</b></td>
+    <td><code>sem_ciclo</code></td>
+    <td><code>sem_direcao</code></td>
+    <td><span class="nada">—</span></td>
+  </tr><tr>
+    <td><b>Sequência (removida)</b></td>
+    <td><code class="morto">streak_marco</code> <code class="morto">streak_em_risco</code></td>
+    <td><code class="morto">streak_mantida</code> <code class="morto">streak_quebrada</code></td>
+    <td><code>streak_saved</code></td>
+  </tr></tbody>
+</table>
+<div class="nota"><strong>É daqui que vem a sensação de não ter controle.</strong> Seis assuntos
+escritos em dois ou três lugares, com textos diferentes e regras de escolha diferentes. Melhorar um
+não melhora os outros — e a mesma pessoa pode ouvir a mesma coisa em duas vozes no mesmo dia.</div>
+
+<h2>As regras que não mudam</h2>
+<div class="nota"><strong>Se não dá para nomear o número que gerou a frase, a frase não sai.</strong>
+É o que separa leitura de bajulação.</div>
+<div class="nota"><strong>O sujeito é a arena, o ciclo ou a ação — nunca "você" como culpado.</strong>
+"A arena Meditações ficou pra trás", não "você abandonou Meditações".</div>
+<div class="nota"><strong>A saída é editar o plano, não pedir mais esforço.</strong> "Reduzir meta
+agora não tira EXP já conquistada."</div>
+<div class="nota"><strong>Duas medidas do mesmo tipo, uma contra a outra.</strong> Medida sozinha é
+placar, não fala.</div>
+<div class="nota"><strong>Convite tem duas portas.</strong> "Deixar parada é uma escolha válida,
+desde que seja escolha."</div>
+<div class="nota"><strong>Falar de novo só quando o número muda</strong> — não quando o dia muda. É a
+única defesa contra virar papel de parede, e ela vale mais que ter mais frases.</div>
+
+<footer>
+  Gerada por <code>scripts/build-oraculo-sheet.mjs</code> · <code>npm run folhas</code>.
+  Não edite este arquivo à mão: a próxima geração apaga.
+</footer>
+</div></body></html>

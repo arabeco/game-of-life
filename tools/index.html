@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bancada do Glyph</title>
+<!--
+  Prova de que o COMPONENTE le a tabela, e nao so os helpers.
+
+  A tools/avatar-align.html reimplementa o desenho para poder editar ao vivo, e
+  os testes cobrem applyAvatarOffset, getMascaraDoCorpo e getModoDoCabelo
+  isolados. Nenhum dos dois garante que o CanvasAvatar — o componente que o jogo
+  usa — esteja lendo a tabela e desenhando na ordem certa.
+
+  Nao entra no build: o `npm run build` empacota so o index.html da raiz do
+  projeto, e esta pagina vive em tools/, que e a raiz de OUTRO servidor.
+  Suba com `npm run bancada` e abra http://localhost:3010
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 18px 20px 40px;
+    background: #15171b; color: #e8eaee;
+    font: 14px/1.5 system-ui, sans-serif;
+  }
+  h1 { font-size: 17px; margin: 0 0 4px; }
+  header p { color: #969ca6; font-size: 12.5px; margin: 0 0 12px; max-width: 70ch; }
+  code { font-family: ui-monospace, monospace; font-size: 12px; color: #d8b44c; }
+  .controles { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+  .controles label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #969ca6; }
+  select {
+    background: #14161a; color: #e8eaee; border: 1px solid #3a3f49;
+    border-radius: 6px; padding: 6px 9px; font: inherit; font-size: 12.5px; min-width: 190px;
+  }
+  .ajuste {
+    margin: 0 0 16px; padding: 8px 10px; border-radius: 6px;
+    background: #0f1114; border: 1px solid #2e323a;
+    font-family: ui-monospace, monospace; font-size: 11.5px; color: #969ca6;
+    white-space: pre-wrap;
+  }
+  main { display: flex; gap: 14px; flex-wrap: wrap; }
+  .modal-grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px; width: 100%; max-width: 1160px;
+  }
+  @media (max-width: 1100px) { .modal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .modal-grid { grid-template-columns: 1fr; } }
+  .assets { margin: 0 0 22px; }
+  .assets h2 { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #969ca6; margin: 0 0 8px; }
+  .grade { display: flex; gap: 8px; flex-wrap: wrap; }
+  .slot {
+    width: 76px; height: 76px; border: 1px solid #3a3f49; border-radius: 10px;
+    background: #14161a; display: flex; align-items: center; justify-content: center;
+    padding: 5px; overflow: hidden;
+  }
+  /* O ItemArt e do app e usa classes do Tailwind. Esta pagina e HTML puro e nao
+     carrega o Tailwind, entao `w-full h-full object-contain` nao faz nada e a
+     arte sai em tamanho natural — os PNGs de bau tem centenas de pixels. O CSS
+     abaixo faz o trabalho que as classes fariam. */
+  .slot > * { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .slot img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+  figure { margin: 0; }
+  .quadro {
+    background: repeating-conic-gradient(#25282e 0 25%, #1b1e23 0 50%) 0 0 / 16px 16px;
+    border: 1px solid #3a3f49; border-radius: 8px; display: block;
+  }
+  figcaption {
+    margin-top: 5px; font-family: ui-monospace, monospace;
+    font-size: 11.5px; color: #d8b44c; text-align: center;
+  }
+  /* O botao de skin vive no index.html do app, nao no index.css — e por isso
+     que aqui ele saia liso, sem placa dourada, mentindo sobre como o modal
+     aparece no jogo. Estas sao as MESMAS variaveis da skin BASIC. */
+  :root {
+    --metal-gold: linear-gradient(135deg, #5c4a1f 0%, #d4af37 50%, #5c4a1f 100%);
+    --skin-accent-color: #ffd700;
+    --sephirot-glow-color: rgba(255, 215, 0, .5);
+    --luxe-button-text-color: #1b1408;
+  }
+  .luxe-skin-button {
+    background-image: linear-gradient(180deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 38%), var(--ui-button-primary-bg, var(--metal-gold));
+    color: var(--ui-text-on-accent, var(--luxe-button-text-color, #1b1408));
+    font-weight: 800;
+    border: 1px solid var(--ui-button-primary-border, var(--skin-accent-color));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 24px var(--ui-button-primary-glow, var(--sephirot-glow-color)), 0 2px 6px rgba(0,0,0,.4);
+    text-shadow: 0 1px 0 rgba(255,255,255,.35);
+  }
+  /* O index.css prende o app na viewport — `position: fixed`, `height: 100%`,
+     `overflow: hidden` — porque ele e uma SPA de tela cheia. A bancada e um
+     documento comprido, e herdava isso junto com as classes do Tailwind: a
+     pagina simplesmente nao rolava, e o que estava embaixo da dobra nao
+     existia. */
+  html, body, #raiz {
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script type="module" src="/avatar-preview.tsx"></script>
+</body>
+</html>

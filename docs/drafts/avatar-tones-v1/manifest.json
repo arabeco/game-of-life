@@ -1,0 +1,62 @@
+[
+  {
+    "source": "body_fem_5.png",
+    "output": "body_fem_6.png",
+    "tone": "#9a6242",
+    "label": "castanho dourado",
+    "width": 500,
+    "height": 500,
+    "changed": 22921,
+    "alphaChanged": 0
+  },
+  {
+    "source": "body_fem_5.png",
+    "output": "body_fem_7.png",
+    "tone": "#744536",
+    "label": "mogno profundo",
+    "width": 500,
+    "height": 500,
+    "changed": 22921,
+    "alphaChanged": 0
+  },
+  {
+    "source": "body_fem_5.png",
+    "output": "body_fem_8.png",
+    "tone": "#49342f",
+    "label": "ébano neutro",
+    "width": 500,
+    "height": 500,
+    "changed": 22921,
+    "alphaChanged": 0
+  },
+  {
+    "source": "body_masc_1.png",
+    "output": "body_masc_4.png",
+    "tone": "#8d5b3d",
+    "label": "castanho dourado",
+    "width": 500,
+    "height": 500,
+    "changed": 22359,
+    "alphaChanged": 0
+  },
+  {
+    "source": "body_masc_1.png",
+    "output": "body_masc_5.png",
+    "tone": "#694033",
+    "label": "mogno profundo",
+    "width": 500,
+    "height": 500,
+    "changed": 22359,
+    "alphaChanged": 0
+  },
+  {
+    "source": "body_masc_1.png",
+    "output": "body_masc_6.png",
+    "tone": "#40302e",
+    "label": "ébano neutro",
+    "width": 500,
+    "height": 500,
+    "changed": 22359,
+    "alphaChanged": 0
+  }
+]

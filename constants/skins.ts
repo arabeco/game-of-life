@@ -16,7 +16,7 @@ export interface SkinItem {
 export interface BodyDefinition {
     id: string; // 'male_1', 'female_2'
     gender: Gender;
-    toneId: string; // '1', '2', '3'
+    toneId: string; // '1', '2', '3', ...
     filename: string;
 }
 
@@ -29,6 +29,8 @@ export const BODY_DB: BodyDefinition[] = [
     { id: 'body_fem_1', gender: 'female', toneId: '1', filename: 'body_fem_1.png' },
     { id: 'body_fem_2', gender: 'female', toneId: '2', filename: 'body_fem_2.png' },
     { id: 'body_fem_3', gender: 'female', toneId: '3', filename: 'body_fem_3.png' },
+    { id: 'body_fem_4', gender: 'female', toneId: '4', filename: 'body_fem_4.png' },
+    { id: 'body_fem_5', gender: 'female', toneId: '5', filename: 'body_fem_5.png' },
 ];
 
 export const HAIR_DB: SkinItem[] = [

@@ -1,0 +1,1643 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Catálogo — Glyph</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:28px 24px 80px; background:#0e1013; color:#e7e9ec;
+         font:14px/1.55 system-ui,-apple-system,Segoe UI,sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; }
+  h1 { font-size:26px; margin:0 0 6px; letter-spacing:-.01em; }
+  h2 { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8b929c;
+       margin:34px 0 10px; border-bottom:1px solid #23262c; padding-bottom:7px;
+       display:flex; align-items:baseline; gap:10px; }
+  h2 .contagem { font:11px ui-monospace,monospace; letter-spacing:.06em; color:#6e747c; text-transform:none; }
+  p.lead { color:#969ca6; max-width:72ch; margin:0 0 14px; }
+  .carimbo { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 6px; }
+  .carimbo span { font:11px/1 ui-monospace,monospace; letter-spacing:.06em; color:#8b929c;
+                  border:1px solid #2a2e35; border-radius:5px; padding:6px 9px; background:#14171b; }
+  .placar { display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 4px; }
+  .placar div { flex:1; min-width:150px; border:1px solid #23262c; border-radius:8px;
+                padding:12px 14px; background:#14171b; }
+  .placar b { display:block; font-size:24px; line-height:1; }
+  .placar span { display:block; font:10px ui-monospace,monospace; letter-spacing:.12em;
+                 text-transform:uppercase; color:#6e747c; margin-top:6px; }
+  .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; }
+  .peca { margin:0; }
+  .peca .arte { position:relative; aspect-ratio:1; display:grid; place-items:center; overflow:hidden;
+                border:1px solid color-mix(in srgb, var(--c) 45%, transparent); border-radius:10px;
+                background:radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--c) 20%, transparent),
+                           color-mix(in srgb, var(--c) 6%, transparent) 55%, #0a0c0f 85%); }
+  .peca .arte img { width:100%; height:100%; object-fit:contain; padding:8px; }
+  .peca .emoji { font-size:30px; filter:grayscale(.2); }
+  .peca.oculta .arte { opacity:.42; }
+  .selo-oculto { position:absolute; bottom:4px; left:4px; font:8px ui-monospace,monospace;
+                 letter-spacing:.1em; text-transform:uppercase; color:#e9a268;
+                 background:rgba(0,0,0,.72); padding:2px 5px; border-radius:3px; }
+  figcaption { margin-top:6px; }
+  .nome { display:block; font-size:11px; line-height:1.25; color:#e7e9ec; }
+  .rar { display:block; font:9px ui-monospace,monospace; letter-spacing:.1em;
+         text-transform:uppercase; margin-top:2px; }
+  .marca { display:inline-block; margin:3px 3px 0 0; font:8px ui-monospace,monospace;
+           letter-spacing:.08em; text-transform:uppercase; color:var(--c);
+           border:1px solid color-mix(in srgb, var(--c) 40%, transparent); border-radius:3px; padding:1px 4px; }
+  .falta { color:#e9a268; }
+  .nota { margin-top:12px; padding:11px 13px; border-left:2px solid #d8b44c; background:#14171b;
+          color:#969ca6; font-size:13.5px; }
+  .nota strong { color:#e7e9ec; }
+  footer { margin-top:52px; padding-top:16px; border-top:1px solid #23262c; color:#6e747c; font-size:12.5px; }
+</style></head><body><div class="wrap">
+
+<h1>O Catálogo</h1>
+<p class="lead">Tudo que existe para ganhar, com a arte de verdade e as marcas que dizem por qual
+caminho cada peça chega. Um item pode ser inalcançável de sete maneiras — e uma delas, ficar sem
+PNG, o esconde do catálogo <strong>sem avisar ninguém</strong>. Aqui isso aparece.</p>
+
+<div class="carimbo">
+  <span>gerada 06/09/2026, 07:51</span>
+  <span>commit 9363eb9</span>
+  <span>fonte: constants/items.ts</span>
+</div>
+
+<div class="placar">
+  <div><b>145</b><span>itens no catálogo</span></div>
+  <div><b>134</b><span>com arte no disco</span></div>
+  <div><b class="falta">11</b><span>ainda com emoji</span></div>
+  <div><b class="falta">3</b><span>escondidos do catálogo</span></div>
+</div>
+
+
+
+<div class="nota"><strong>Item escondido não dá erro.</strong> Categoria que exige PNG some do
+catálogo quando o item não tem <code>imageUrl</code> — sem log, sem aviso, sem tela. Para quem joga,
+o item simplesmente deixa de existir. Os marcados <em>oculto</em> aqui estão nessa situação.</div>
+
+<h2>Os baús <span class="contagem">8 tipos · 6 artes</span></h2>
+<div class="grade"><figure class="peca">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/interface/bau_comum.webp" alt="" loading="lazy">
+      </div>
+      <figcaption>
+        <span class="nome">Baú Comum</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#6E747C">Comum</span>
+      </figcaption>
+    </figure><figure class="peca">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/interface/bau_incomum.webp" alt="" loading="lazy">
+      </div>
+      <figcaption>
+        <span class="nome">Baú Incomum</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#6E747C">Incomum</span>
+      </figcaption>
+    </figure><figure class="peca">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/bau_raro.webp" alt="" loading="lazy">
+      </div>
+      <figcaption>
+        <span class="nome">Baú Raro</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#6E747C">Raro</span>
+      </figcaption>
+    </figure><figure class="peca">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/bau_raro.webp" alt="" loading="lazy">
+      </div>
+      <figcaption>
+        <span class="nome">Baú de Ciclo</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#6E747C">Ciclo</span>
+      </figcaption>
+    </figure><figure class="peca">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/bau_epico.webp" alt="" loading="lazy">
+      </div>
+      <figcaption>
+        <span class="nome">Baú Épico</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#6E747C">Épico</span>
+      </figcaption>
+    </figure><figure class="peca">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/interface/bau_mitico.webp" alt="" loading="lazy">
+      </div>
+      <figcaption>
+        <span class="nome">Baú Mítico</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#6E747C">Season</span>
+      </figcaption>
+    </figure><figure class="peca">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/interface/bau_lendario.webp" alt="" loading="lazy">
+      </div>
+      <figcaption>
+        <span class="nome">Baú Lendário</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#6E747C">Lendário</span>
+      </figcaption>
+    </figure><figure class="peca">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/interface/bau_comum.webp" alt="" loading="lazy">
+      </div>
+      <figcaption>
+        <span class="nome">Baú de Skin Comum</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#6E747C">Skin Comum</span>
+      </figcaption>
+    </figure></div>
+<div class="nota"><strong>Oito tipos, seis desenhos.</strong> Comum e Skin Comum dividem a arte;
+Raro e Ciclo também. O tipo gravado na conta é o que está na etiqueta cinza — o nome de cima é o
+que a pessoa lê.</div>
+
+<h2>Skins
+      <span class="contagem">19 · <b class="falta">2 sem arte</b></span>
+    </h2>
+    <div class="grade"><figure class="peca " title="item_skin_1_001">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/SKIN_T1_NAUFRAGO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Náufrago</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_1_002">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/SKIN_T1_CASUAL.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Casual</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_1_003">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/SKIN_T1_GYM_RAT.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Gym Rat</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_1_004">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/SKIN_T1_STREET.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Street</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_1_005">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/SKIN_T1_CACADOR.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Caçador</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_1_006">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/SKIN_T1_CASUAL_2.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Casual 2</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_2_001">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/SKIN_T2_EXECUTIVO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Executivo</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_2_002">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/SKIN_T2_TATICO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tático</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_2_003">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/SKIN_T2_ACADEMICO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Acadêmico</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_3_001">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/SKIN_T3_NOMADE.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Nômade</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_3_002">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/SKIN_T3_ALQUIMISTA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Alquimista</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_3_003">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/SKIN_T3_HIBRIDO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Híbrido</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_4_001">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/SKIN_T4_ARMADURA_PLACA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Armadura Placa</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_4_002">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/SKIN_T4_MAGO_CIRCULO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Mago Círculo</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca oculta" title="item_skin_5_001">
+      <div class="arte" style="--c:#F59E0B">
+        <span class="emoji">✨</span>
+        <span class="selo-oculto">oculto</span>
+      </div>
+      <figcaption>
+        <span class="nome">Entidade de Luz</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_5_002">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/avatars/SKIN_T5_VESTIDO_REAL.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Vestido Real</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_season_001">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/SKIN_SEASON_CRIADOR.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">O Criador</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_skin_aurora_1_2026">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/avatars/SKIN_QUEST_GUARDIAO_AURORA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Guardião Aurora</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span><span class="marca" style="--c:#14B8A6">quest</span>
+      </figcaption>
+    </figure><figure class="peca oculta" title="item_skin_exclusive_001">
+      <div class="arte" style="--c:#A855F7">
+        <span class="emoji">💼</span>
+        <span class="selo-oculto">oculto</span>
+      </div>
+      <figcaption>
+        <span class="nome">Empreendedor</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        
+      </figcaption>
+    </figure></div><h2>Cabelos
+      <span class="contagem">8 · completa</span>
+    </h2>
+    <div class="grade"><figure class="peca " title="cachos">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/hair/CABELO_T1_CACHOS_cast.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Cachos</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="medio_reto">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/hair/CABELO_T1_MEDIO_RETO_bran.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Médio Reto</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="textured_crop">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/hair/CABELO_T2_TEXTURED_CROP_bran.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Texturizado</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="dreads">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/hair/CABELO_T3_DREADS_bran.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Dreads</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="mullet_topete">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/hair/CABELO_T3_MULLET_TOPETE_ama.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Mullet Top</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="anime_spikes">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/hair/CABELO_T4_ANIME_SPIKES_ama.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Anime Spiky</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="princesa">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/hair/CABELO_T4_PRINCESA_bran.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Princesa</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="fluxo_espiritual">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/avatars/hair/CABELO_T5_FLUXO_ESPIRITUAL_ama.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Fluxo Espiritual</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure></div><h2>Insígnias
+      <span class="contagem">16 · completa</span>
+    </h2>
+    <div class="grade"><figure class="peca " title="insignia_rank_1_vagante">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/interface/insignia_rank_1_vagante.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Vagante</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_rank_2_escudeiro">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/interface/insignia_rank_2_escudeiro.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Escudeiro</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_rank_3_cavaleiro">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/interface/insignia_rank_3_cavaleiro.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Cavaleiro</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_rank_4_lorde">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/insignia_rank_4_lorde.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Lorde</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_rank_5_barao">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/insignia_rank_5_barao.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Barão</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_rank_6_conde">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/insignia_rank_6_conde.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Conde</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_rank_7_duque">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/interface/insignia_rank_7_duque.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Duque</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_rank_8_principe">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/interface/insignia_rank_8_principe.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Príncipe</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_rank_9_rei">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/interface/insignia_rank_9_rei.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Rei</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_rank_10_soberano">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/interface/insignia_rank_10_soberano.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia do Soberano</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_quest_master">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/insignia_quest_temporada.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia de Missão de Temporada</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#14B8A6">quest</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_report_comum">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/interface/insignia_ciclo_bronze.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia de Relatório de Ciclo</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#B87333">relatório</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_quest_incomum">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/interface/insignia_missao_prata.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia de Missão</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#14B8A6">quest</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_levelup_rara">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/insignia_rank_7_duque.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Insígnia de Patente Rara</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_season_genesis">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/interface/insignia_season_genesis.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Gênesis</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span>
+      </figcaption>
+    </figure><figure class="peca " title="insignia_season_aurora_1">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/interface/insignia_season_aurora_1.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Aurora I</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span>
+      </figcaption>
+    </figure></div><h2>Bordas
+      <span class="contagem">17 · <b class="falta">1 sem arte</b></span>
+    </h2>
+    <div class="grade"><figure class="peca " title="item_border_1_002">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/interface/borda_disciplinado.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Disciplinado</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_t1_aprendiz">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/interface/borda_t1_aprendiz.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Aprendiz</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_2_001">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/interface/borda_popular.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Popular</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_t2_veterano">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/interface/borda_t2_veterano.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Veterano</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_3_001">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/borda_imparavel.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Imparável</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_t3_mistico">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/borda_t3_mistico.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Místico</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_t3_transcendente">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/borda_t3_transcendente.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Transcendente</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_vanguarda_01">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/borda_vanguarda.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Borda Vanguarda</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_4_001">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/borda_lendaviva.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Lenda Viva</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca oculta" title="item_border_4_002">
+      <div class="arte" style="--c:#A855F7">
+        <span class="emoji">👑</span>
+        <span class="selo-oculto">oculto</span>
+      </div>
+      <figcaption>
+        <span class="nome">Soberano</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_border_t4_celestial">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/borda_t4_celestial.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Celestial</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_t4_guardia">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/borda_t4_guardia.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Guardiã</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_t4_oraculo">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/borda_t4_oraculo.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Oráculo</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_5_001">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/interface/borda_gm.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">GM - Grande Mestre</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_border_aurora_1_2026">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/interface/borda_aurora_i.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Aurora I</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_t5_genesis">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/interface/borda_t5_genesis.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Gênesis</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_border_genesis_01">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/borda_t5_genesis.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Borda Gênesis</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span><span class="marca" style="--c:#6E747C">aposentado</span>
+      </figcaption>
+    </figure></div><h2>Banners
+      <span class="contagem">16 · completa</span>
+    </h2>
+    <div class="grade"><figure class="peca " title="item_banner_disciplinado">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/interface/banner_disciplinado.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Disciplinado</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_t1_aprendiz">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/interface/banner_t1_aprendiz.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Aprendiz</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_popular">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/interface/banner_popular.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Popular</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_t2_veterano">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/interface/banner_t2_veterano.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Veterano</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_imparavel">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/banner_imparavel.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Imparável</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_t3_mistico">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/banner_t3_mistico.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Místico</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_vanguarda_01">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/interface/banner_vanguarda.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Banner Vanguarda</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_lendaviva">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/banner_lendaviva.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Lenda Viva</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_t4_celestial">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/banner_t4_celestial.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Celestial</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_t4_guardia">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/banner_t4_guardia.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Guardiã</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_t4_oraculo">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/banner_t4_oraculo.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Oráculo</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_t4_transcendente">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/banner_t4_transcendente.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Transcendente</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_gm">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/interface/banner_gm.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Grão Mestre</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_aurora_1_2026">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/interface/banner_aurora_i.webp" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Aurora I</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_t5_genesis">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/interface/banner_t5_genesis.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Gênesis</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_banner_origin_01">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/interface/banner_origem.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Banner Origem</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span><span class="marca" style="--c:#6E747C">aposentado</span>
+      </figcaption>
+    </figure></div><h2>Temas de interface
+      <span class="contagem">9 · completa</span>
+    </h2>
+    <div class="grade"><figure class="peca " title="BASIC">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/basic.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tema: Básico Profissional</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="GOLD">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/gold.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tema: Ouro Soberano</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="FROST">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/frost.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tema: Gelo Eterno</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="EMBER">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/ember.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tema: Chama Viva</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="CYBER">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/cyber.jpg" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tema: Cyberpunk</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="AURORA">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/aurora.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tema: Aurora Boreal</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="AURORA_I">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/aurora_i.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tema: Aurora I</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span>
+      </figcaption>
+    </figure><figure class="peca " title="VOID">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/void.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tema: Vazio Primordial</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="GENESIS">
+      <div class="arte" style="--c:#7B61FF">
+        <img src="../public/assets/catalog/genesis.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tema: Genesis</span>
+        <span class="rar" style="color:#7B61FF">Mítico</span>
+        <span class="marca" style="--c:#7B61FF">temporada</span>
+      </figcaption>
+    </figure></div><h2>Artefatos
+      <span class="contagem">29 · completa</span>
+    </h2>
+    <div class="grade"><figure class="peca " title="item_artifact_1_001">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/artefato_t1_adagaaprendiz.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Adaga Aprendiz</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_1_002">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/artefato_t1_cachorrobeagle.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Cachorro Beagle</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_1_003">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/artefato_t1_gatolaranja.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Gato Laranja</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_1_004">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/artefato_t1_halterespar.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Halteres</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_1_005">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/artefato_t1_triocafe.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Trio Café</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_garden_stone_1">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/JARDIM_PEDRA_SERENA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Pedra Serena</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_garden_plant_1">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/JARDIM_MUSGO_VIVO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Musgo Vivo</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_garden_tool_1">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/JARDIM_GARFO_3_DENTES.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Garfo de Areia</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_2_001">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/artefato_t2_cachorrohusky.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Cachorro Husky</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_2_002">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/artefato_t2_gatosiames.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Gato Siamês</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_2_003">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/artefato_t2_setup.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Setup</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_garden_stone_2">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/JARDIM_PEDRA_LUNAR.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Pedra Lunar</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_garden_lantern_1">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/JARDIM_LANTERNA_PEDRA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Lanterna de Pedra</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_garden_plant_2">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/JARDIM_BAMBU_JOVEM.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Bambu Jovem</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_garden_stone_3">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/JARDIM_PEDRA_OBSIDIANA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Pedra Obsidiana</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_garden_bridge_1">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/JARDIM_PONTE_MADEIRA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Ponte de Madeira</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_garden_statue_1">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/JARDIM_ESTATUA_MEDITACAO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Estatua de Meditacao</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_3_001">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/artefato_t3_cachorrojack.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Cachorro Jack</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_3_002">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/ARTEFATO_T3_caixamagica.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Caixa Mágica</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_3_003">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/ARTEFATO_T3_cetroesmeralda.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Cetro Esmeralda</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_3_004">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/ARTEFATO_T3_coroaprata.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Coroa Prata</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_3_005">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/artefato_t3_DivineScepter.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Divine Scepter</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_3_006">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/ARTEFATO_T3_espadarunas.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Espada Runas</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_4_001">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/ARTEFATO_T4_COROA_ESPINHOS.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Coroa de Espinhos</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_4_002">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/ARTEFATO_T4_DRAGAO_BEBE.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Dragão Bebê</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_4_003">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/ARTEFATO_T4_GRIMORIO_ARCANO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Grimório Arcano</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_4_004">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/artefato_t4_manta.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Manta</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_5_001">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/avatars/ARTEFATO_T5_FENIX_COSMICO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Fênix Cósmico</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_artifact_5_002">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/avatars/ARTEFATO_T5_tessaract.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tesseract</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        
+      </figcaption>
+    </figure></div><h2>Glifos
+      <span class="contagem">10 · completa</span>
+    </h2>
+    <div class="grade"><figure class="peca " title="item_glyph_1_001">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T1_TABUA_APRENDIZ.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Tábua Aprendiz</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_glyph_1_002">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T1_MANUSCRITO_HOD.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Manuscrito</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_glyph_1_003">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T1_LAJOTA_CALCARIO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Lajota</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_glyph_2_002">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T2_GRANITO_RUNICO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Granito Rúnico</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_glyph_3_002">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T3_MECANISMO_BRONZE.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Mecanismo Bronze</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_glyph_3_003">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T3_MECANISMO_RUNICO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Mecanismo Rúnico</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_glyph_4_001">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T4_CRISOL_GEOMANTICO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Crisol Geomântico</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_glyph_4_002">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T4_CRISTAL_BRANCO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Cristal Branco</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_glyph_5_001">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T5_A_FORJA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">A FORJA - Losango 3D</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_glyph_5_002">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/avatars/glyphs/MOLDE_T5_ARTEFATO_SOMBRIO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Artefato Sombrio</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure></div><h2>Orbes
+      <span class="contagem">7 · completa</span>
+    </h2>
+    <div class="grade"><figure class="peca " title="item_orb_1_002">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/glyphs/ORBE_T1_COBRE.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Orbe de Cobre</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_orb_2_002">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/glyphs/ORBE_T2_SOMBRIO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Orbe Sombrio</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_orb_2_003">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/glyphs/ORBE_T2_TEMPESTADE.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Orbe Tempestade</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_orb_3_001">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/glyphs/ORBE_T3_OURO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Orbe de Ouro</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_orb_4_001">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/glyphs/ORBE_T4_DIAMANTE.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Orbe de Diamante</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_orb_5_001">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/avatars/glyphs/ORBE_T5_GENESE.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Orbe Gênese</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#F59E0B">patente</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_orb_5_002">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/avatars/glyphs/ORBE_T5_SOBERANO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Orbe Soberano</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure></div><h2>Placas
+      <span class="contagem">6 · completa</span>
+    </h2>
+    <div class="grade"><figure class="peca " title="item_plate_1_001">
+      <div class="arte" style="--c:#9CA3AF">
+        <img src="../public/assets/catalog/avatars/glyphs/PLACA_MADEIRA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Placa Madeira</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_plate_2_001">
+      <div class="arte" style="--c:#22C55E">
+        <img src="../public/assets/catalog/avatars/glyphs/PLACA_PEDRA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Placa Pedra</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_plate_3_001">
+      <div class="arte" style="--c:#3B82F6">
+        <img src="../public/assets/catalog/avatars/glyphs/PLACA_PRATA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Placa Prata</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_plate_4_001">
+      <div class="arte" style="--c:#A855F7">
+        <img src="../public/assets/catalog/avatars/glyphs/PLACA_ROXA.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Placa Roxa</span>
+        <span class="rar" style="color:#A855F7">Épico</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_plate_5_001">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/avatars/glyphs/PLACA_OURO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Placa Ouro</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure><figure class="peca " title="item_plate_5_002">
+      <div class="arte" style="--c:#F59E0B">
+        <img src="../public/assets/catalog/avatars/glyphs/PLACA_GELO.png" alt="" loading="lazy">
+        
+      </div>
+      <figcaption>
+        <span class="nome">Placa Gelo</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        <span class="marca" style="--c:#22C55E">loja</span>
+      </figcaption>
+    </figure></div><h2>Auras
+      <span class="contagem">8 · <b class="falta">8 sem arte</b></span>
+    </h2>
+    <div class="grade"><figure class="peca " title="item_aura_1_001">
+      <div class="arte" style="--c:#9CA3AF">
+        <span class="emoji">🌫️</span>
+        
+      </div>
+      <figcaption>
+        <span class="nome">Bruma</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_aura_1_002">
+      <div class="arte" style="--c:#9CA3AF">
+        <span class="emoji">🔵</span>
+        
+      </div>
+      <figcaption>
+        <span class="nome">Safira</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_aura_1_003">
+      <div class="arte" style="--c:#9CA3AF">
+        <span class="emoji">🔴</span>
+        
+      </div>
+      <figcaption>
+        <span class="nome">Rubi</span>
+        <span class="rar" style="color:#9CA3AF">Comum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_aura_2_001">
+      <div class="arte" style="--c:#22C55E">
+        <span class="emoji">🟢</span>
+        
+      </div>
+      <figcaption>
+        <span class="nome">Esmeralda</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_aura_2_002">
+      <div class="arte" style="--c:#22C55E">
+        <span class="emoji">⚪</span>
+        
+      </div>
+      <figcaption>
+        <span class="nome">Prata</span>
+        <span class="rar" style="color:#22C55E">Incomum</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_aura_3_001">
+      <div class="arte" style="--c:#3B82F6">
+        <span class="emoji">🟡</span>
+        
+      </div>
+      <figcaption>
+        <span class="nome">Ouro</span>
+        <span class="rar" style="color:#3B82F6">Raro</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_aura_5_001">
+      <div class="arte" style="--c:#F59E0B">
+        <span class="emoji">🌙</span>
+        
+      </div>
+      <figcaption>
+        <span class="nome">Pedra da Lua</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        
+      </figcaption>
+    </figure><figure class="peca " title="item_aura_5_002">
+      <div class="arte" style="--c:#F59E0B">
+        <span class="emoji">🌌</span>
+        
+      </div>
+      <figcaption>
+        <span class="nome">Multiverso</span>
+        <span class="rar" style="color:#F59E0B">Lendário</span>
+        
+      </figcaption>
+    </figure></div>
+
+<footer>
+  Gerada por <code>scripts/build-catalog-sheet.mjs</code> · <code>npm run folhas</code>.
+  Não edite este arquivo à mão: a próxima geração apaga.
+</footer>
+</div></body></html>

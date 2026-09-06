@@ -188,19 +188,15 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         const currentBodyDef = BODY_DB.find(b => b.id === config.body);
         if (!currentBodyDef) return;
 
-        const currentToneId = parseInt(currentBodyDef.toneId);
-        // Assuming tones are 1, 2, 3
-        const maxTone = 3; 
-        let newToneId = currentToneId + direction;
-        
-        if (newToneId > maxTone) newToneId = 1;
-        if (newToneId < 1) newToneId = maxTone;
+        const bodiesForGender = BODY_DB
+            .filter(b => b.gender === currentBodyDef.gender)
+            .sort((a, b) => Number(a.toneId) - Number(b.toneId));
+        const currentIndex = bodiesForGender.findIndex(b => b.id === currentBodyDef.id);
+        const newIndex = (currentIndex + direction + bodiesForGender.length) % bodiesForGender.length;
+        const nextBody = bodiesForGender[newIndex];
 
-        const newToneStr = newToneId.toString();
-        
-        const matchingBody = BODY_DB.find(b => b.gender === currentBodyDef.gender && b.toneId === newToneStr);
-        if (matchingBody) {
-             setConfig(p => ({ ...p, body: matchingBody.id }));
+        if (nextBody) {
+             setConfig(p => ({ ...p, body: nextBody.id, skinTone: nextBody.toneId }));
         }
     };
 
@@ -646,4 +642,3 @@ export const SovereignCustomizer: React.FC<SovereignCustomizerProps> = ({ initia
         </Portal>
     );
 };
-

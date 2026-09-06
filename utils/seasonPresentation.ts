@@ -99,7 +99,7 @@ export const getPreviousSeasonConfig = (seasonId?: string | null): SeasonConfig 
 
 export const resolveSeasonBackgroundUrl = (season: SeasonLike): string => {
   if (isGenesisSeason(season)) {
-    return GENESIS_SEASON_IMAGE_URL;
+    return SEASONS['season-genesis-0']?.backgroundUrl || GENESIS_SEASON_IMAGE_URL;
   }
 
   const directBackground = season?.background_png_url?.trim();

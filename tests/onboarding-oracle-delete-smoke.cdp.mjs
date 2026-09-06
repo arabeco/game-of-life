@@ -330,7 +330,7 @@ async function runDeleteScenario() {
     })()`);
 
     await page.clickText('Deletar Conta');
-    await page.waitFor('delete confirmation modal', `(() => document.body && document.body.innerText.includes('Tem certeza? Esta ação é irreversível.'))()`, 15000);
+    await page.waitFor('delete confirmation modal', `(() => document.body && document.body.innerText.includes('Não há recuperação'))()`, 15000);
     await page.clickText('CONFIRMAR');
     checkpoints.push('delete-confirmed');
 

@@ -5,11 +5,11 @@ import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { getLocalDateString, useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
 import { calculateArenaProgress } from '../utils/progressUtils';
+import { describeArenaProgress, getArenaPresentationTasks } from '../utils/arenaProgressPresentation';
 import { EmojiGlyph } from './EmojiGlyph';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { getContentVisualPalette, resolveArenaVisualFamily } from '../utils/contentCardVisuals';
 import { getActionSurfaceBadgeClassName, resolveActionSurfaceBadge } from '../utils/actionSurfaceBadges';
-import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
 import './arena-ui.css';
 
 const hexToRgb = (hex: string) => {
@@ -246,15 +246,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
     const tasks = (propTasks || contextTasks) as any[];
     const tasksForCounts = useMemo(() => {
         if (propTasks) return tasks;
-        if (!activeCycle) return filterTasksAfterFreeProgressReset(tasks, freeProgressResetAt);
-
-        const today = getLocalDateString();
-        const cycleEnd = today < activeCycle.endDate ? today : activeCycle.endDate;
-        return tasks.filter(task =>
-            typeof task?.date === 'string' &&
-            task.date >= activeCycle.startDate &&
-            task.date <= cycleEnd
-        );
+        return getArenaPresentationTasks(tasks, activeCycle, freeProgressResetAt, getLocalDateString());
     }, [activeCycle, freeProgressResetAt, propTasks, tasks]);
     const [dragOverActionId, setDragOverActionId] = useState<string | null>(null);
     const [linkType, setLinkType] = useState<string | null>(null);
@@ -393,6 +385,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
         ? progressPercent
         : calculatedProgress.progressPercent;
     const hasMeasurableProgress = calculatedProgress.hasMeasurableProgress;
+    const progressDescription = describeArenaProgress(actions, calculatedProgress, progress);
 
     const getIcon = () => {
         return <EmojiGlyph symbol={arena.icon || '\u{1F3DB}\uFE0F'} size="arena" className="text-white" />;
@@ -693,14 +686,19 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                     </>
                 )}
                 {hasMeasurableProgress ? (
-                    <div className={`arena-plate-progress w-full ${isCompactThumbnail ? 'arena-mini-progress' : 'mt-0.5'}`}>
-                        <div
-                            className={`arena-plate-progress-fill ${highlightPhase === 'celebrate' && progress >= 100 ? 'arena-plate-progress-fill--celebrate' : ''}`}
-                            style={{
-                                width: `${progress}%`,
-                                background: arenaGoldBar,
-                            }}
-                        ></div>
+                    <div className="w-full min-w-0 shrink-0">
+                        <div className="mb-1 truncate text-center text-[11px] font-semibold leading-tight text-white/85" title={progressDescription?.label}>
+                            {progressDescription?.label}
+                        </div>
+                        <div className={`arena-plate-progress w-full ${isCompactThumbnail ? 'arena-mini-progress' : 'mt-0.5'}`}
+                            role="progressbar" aria-label={`Progresso de ${arena.name}`}
+                            aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}
+                            aria-valuetext={progressDescription?.label}>
+                            <div
+                                className={`arena-plate-progress-fill ${highlightPhase === 'celebrate' && progress >= 100 ? 'arena-plate-progress-fill--celebrate' : ''}`}
+                                style={{ width: `${progress}%`, background: arenaGoldBar }}
+                            ></div>
+                        </div>
                     </div>
                 ) : isCompactThumbnail ? (
                     <div className="h-[0.32rem] w-full" aria-label="Sem meta definida" />

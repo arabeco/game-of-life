@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
+import { countRecurringOccurrences, resolveScheduleHorizon } from '../utils/cycleScheduling';
 import { Action, DayOfWeek, ActionType, PlannerMatrixQuadrant, ScheduledTask } from '../types';
 import { GlassCard } from './GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon, CheckCircleIcon } from './Icons';
@@ -259,7 +260,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     collaborativeArenaTasks = [],
     onCollaborativeRefresh,
 }) => {
-    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, clearPendingTasksForAction, scheduleAndCompleteNow, tasks, updateTask, clan, enrichedClanMembers, showToast, userCodexes, oraclePreferences, updateOraclePreferences, userProfile } = useGame();
+    const { addAction, updateAction, deleteAction, getArenas, scheduleMultipleTasks, scheduleTask, clearPendingTasksForAction, scheduleAndCompleteNow, tasks, updateTask, activeCycle, clan, enrichedClanMembers, showToast, userCodexes, oraclePreferences, updateOraclePreferences, userProfile } = useGame();
 
     const isNew = !action;
     const isInstalledCodexAction = Boolean(action?.originCodexId && !action.originCodexId.startsWith('assign:'));
@@ -1150,6 +1151,31 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     // fica na baia para ser concluida quando der. Por isso o seletor SOME em vez
     // de avisar — mostrar um controle que nao faz nada e pior que nao mostrar.
     const temHorario = Boolean(startTime && startTime !== 'Sem Horário');
+
+    // QUANTAS VEZES ISSO VAI ACONTECER.
+    //
+    // A pessoa marca os dias e o horario, mas nunca disse "quantas". Ate agora a
+    // meta era sobra do calendario: o ciclo decidia sozinho se era 30 ou 60, e
+    // ninguem via o numero antes de confirmar. Aqui ele aparece — derivado, nao
+    // perguntado, porque "quantas vezes voce vai tomar remedio" nao e uma
+    // pergunta que alguem sabe responder.
+    const agendaPrevista = React.useMemo(() => {
+        if (editableAction.actionType !== 'Ação Recorrente') return null;
+        if (!temHorario || selectedDays.length === 0) return null;
+
+        const hoje = getLocalDateString();
+        const ate = resolveScheduleHorizon(hoje, activeCycle);
+        const vezes = countRecurringOccurrences({ from: hoje, through: ate, daysOfWeek: selectedDays });
+        if (vezes === 0) return null;
+
+        const [ano, mes, dia] = ate.split('-');
+        return {
+            vezes,
+            ateLabel: `${dia}/${mes}`,
+            dentroDoCiclo: Boolean(activeCycle?.endDate && activeCycle.endDate >= hoje),
+            ano,
+        };
+    }, [activeCycle, editableAction.actionType, selectedDays, temHorario]);
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     useEffect(() => {
         if (advancedSubTab !== 'note' || mode !== 'view') {
@@ -1764,6 +1790,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                         />
                                                                     ))}
                                                                 </div>
+                                                                {agendaPrevista && (
+                                                                    <p className="mt-2 px-1 text-[10px] leading-relaxed text-white/56">
+                                                                        <span className="font-bold text-white/80">{agendaPrevista.vezes} {agendaPrevista.vezes === 1 ? 'vez' : 'vezes'}</span>
+                                                                        {agendaPrevista.dentroDoCiclo ? ' até o fim do ciclo, em ' : ' nos próximos 35 dias, até '}
+                                                                        {agendaPrevista.ateLabel}.
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         )}
 
@@ -1928,6 +1961,13 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                 <div className="grid grid-cols-7 gap-1 mt-1">
                                                                     {week.map(day => <DayToggle key={day} day={day} selected={selectedDays.includes(day)} onClick={() => handleDayToggle(day)} />)}
                                                                 </div>
+                                                                {agendaPrevista && (
+                                                                    <p className="mt-2 px-1 text-[10px] leading-relaxed text-white/56">
+                                                                        <span className="font-bold text-white/80">{agendaPrevista.vezes} {agendaPrevista.vezes === 1 ? 'vez' : 'vezes'}</span>
+                                                                        {agendaPrevista.dentroDoCiclo ? ' até o fim do ciclo, em ' : ' nos próximos 35 dias, até '}
+                                                                        {agendaPrevista.ateLabel}.
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         )}
 

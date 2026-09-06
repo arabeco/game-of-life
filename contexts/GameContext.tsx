@@ -36,7 +36,7 @@ import { getInstallPrompt, promptForInstall, startInstallPromptCapture, subscrib
 import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils/codexPreview';
 import { getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
-import { getCycleXpBonusPercentLabel, getCycleXpBonusRate, getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
+import { getCycleXpBonusRate, getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
@@ -61,7 +61,10 @@ import { ECONOMY } from '../constants/economy';
 import { publishGlyphAndroidWidgetSnapshot } from '../utils/androidWidget';
 import { buildOracleAwareDailyWidgetSnapshot } from '../utils/widgetSnapshots';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
+import { getChestArtUrl } from '../constants/catalogAssets';
+import { getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
 import { SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/systemChallenges';
+import type { SystemChallenge } from '../constants/systemChallenges';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import {
     buildPactCandidates,
@@ -70,9 +73,8 @@ import {
     rebuildActivePact,
     toArenaPactState,
     type ArenaPact,
+    type ArenaPactProgress,
 } from '../utils/arenaPacts';
-import { emitDailyCompletionPrompt } from '../utils/dailyCompletionPrompt';
-import { buildLiveDailyPraise } from '../utils/dailyInsights';
 
 // --- Universal Supabase Data Mappers ---
 
@@ -174,8 +176,21 @@ const normalizeActionDifficulty = (value?: number | null): 0 | 1 | 2 | 3 => {
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
+import { buildCycleRegenerationPlan, resolveCycleArenaIds } from '../utils/cycleScheduling';
+
 export const getLocalDateString = (date: Date = new Date()) => formatLocalDateString(date);
 export const getOperationalDateString = (date: Date = new Date()) => getOperationalDateStringValue(date);
+
+// ATE ONDE A HIDRATACAO BAIXA TAREFAS.
+//
+// Agendar uma acao por dia da semana grava um ANO de tarefas de uma vez (o laco
+// de 365 em taskDomain.ts). Sem teto na leitura, esse ano inteiro descia em toda
+// abertura do app: numa conta real medimos 786 linhas e 235 kB, das quais 560
+// eram datas alem de +90 dias que ninguem abre o app para ver.
+//
+// 35 dias cobre o mes que a pessoa de fato navega. Quem precisar de data alem
+// disso pede por ensureTasksLoadedThrough, que busca so o pedaco que falta.
+export const TASK_LOAD_HORIZON_DAYS = 35;
 
 const ALDEIA_PERIOD_HOURS = 6;
 const ALDEIA_FULL_CARE_MINUTES = 30;
@@ -491,16 +506,18 @@ const PLATINUM_REWARD_LEGACY_SCENE_CREDITS = 0;
 const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_FREE_CREDITS = 0;
 const MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_MEDIUM_CREDITS = 1;
 const PREMIUM_ACTIVE_BENEFITS = [
-    'Até 15 arenas ativas',
-    'Fundos premium de perfil e ativos',
-    'Todos os tons de fala do Oráculo',
-    'Cena do legado com 50% off',
-    'Bônus de legado +5% XP',
+    { label: 'Capacidade', value: 'Até 15 arenas ativas', tone: 'gold' as const },
+    { label: 'Personalização', value: 'Fundos premium de perfil e ativos', tone: 'violet' as const },
+    { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
+    { label: 'Legado', value: 'Cena do legado com 50% de desconto', tone: 'violet' as const },
+    { label: 'Progressão', value: 'Bônus de legado de +5% EXP', tone: 'emerald' as const },
 ] as const;
 const PLATINUM_ACTIVE_BENEFITS = [
-    'Todas as vantagens do Premium, com o dobro do bônus de XP (+10%)',
-    'Até 30 arenas ativas',
-    'Todos os planos de fundo e aparências premium',
+    { label: 'Progressão', value: 'Todas as vantagens Premium e +10% EXP', detail: 'O dobro do bônus do plano Premium.', tone: 'emerald' as const },
+    { label: 'Capacidade', value: 'Até 30 arenas ativas', tone: 'gold' as const },
+    { label: 'Personalização', value: 'Todos os fundos e aparências premium', tone: 'violet' as const },
+    { label: 'Oráculo', value: 'Todos os tons de fala liberados', tone: 'cyan' as const },
+    { label: 'Legado', value: 'Cena do legado com 70% de desconto', tone: 'violet' as const },
 ] as const;
 
 const formatPremiumExpiryLabel = (expiresAt: string): string => {
@@ -700,11 +717,16 @@ const shouldPushOracleFeedMessage = (
     const presentation = message.contextSnapshot?.presentation;
     const triggerType = message.contextSnapshot?.triggerType;
 
+    if (message.contextSnapshot?.purpose === 'streak_alert'
+        || ['streak_mantida', 'streak_quebrada'].includes(String(message.contextSnapshot?.operationalState || ''))) return false;
+
     if (triggerType === 'manual') {
         return false;
     }
 
-    if (presenceLevel < 3) {
+    // Mesmo limite do envio remoto: Equilibrado tambem recebe o card automatico.
+    // Permissao de push e estado do aparelho sao conferidos pelo chamador.
+    if (presenceLevel <= 0) {
         return false;
     }
 
@@ -767,7 +789,6 @@ export interface GameContextType {
     setAchievementUnlocked: (achievement: { type: FeedEventType; data: any; } | null) => void;
     updateLevelUnlocks: (next: LevelUnlocks) => void;
     grantUserUnlock: (category: UnlockCategory, itemId: string) => void;
-    addCompletedMission: (mission: SeasonMission) => Promise<void>;
     acceptSeasonQuest: (questId: string) => void;
     abortSeasonQuest: (questId: string) => Promise<void>;
     addProfileFlag: (flag: string) => void;
@@ -775,11 +796,14 @@ export interface GameContextType {
     addFeedEvent: (eventData: Pick<FeedEvent, 'type' | 'content'>) => void;
     getArenas: () => Arena[];
     activeArenaPact: ArenaPact | null;
-    arenaPactProgress: { current: number; goal: number; percent: number; completed: boolean } | null;
+    arenaPactProgress: { current: number; goal: number; percent: number; completed: boolean; windowEnded?: boolean } | null;
     arenaPactCandidates: ArenaPact[];
     getArenaPactOptionsForArena: (arenaId: string) => ArenaPact[];
-    acceptArenaPact: (pact: ArenaPact) => Promise<void>;
+    acceptArenaPact: (pact: ArenaPact, substituir?: boolean) => Promise<void>;
     abandonArenaPact: () => Promise<void>;
+    /** A missao individual de SISTEMA em curso, se houver. Divide o slot com a de arena. */
+    missaoDeSistemaAtiva: SystemChallenge | null;
+    /** `substituir` troca o pacto ativo pelo novo, encerrando o anterior. */
     claimArenaPact: () => Promise<void>;
     addArena: (assetId: string, arenaData: Omit<Arena, 'id' | 'assetId' | 'actionIds'>, skipDb?: boolean) => Promise<Arena>;
     updateArena: (arenaId: string, arenaData: Partial<Pick<Arena, 'assetId' | 'name' | 'description' | 'icon' | 'folderId' | 'isArchived' | 'priority'>>) => void;
@@ -804,6 +828,7 @@ export interface GameContextType {
     scheduleTask: (actionOrId: string | Action, date: string, startTime: number) => Promise<ScheduledTask | undefined>;
     scheduleMultipleTasks: (actionOrId: string | Action, daysOfWeek: DayOfWeek[], startTimeInMinutes: number) => Promise<void>;
     clearPendingTasksForAction: (actionId: string) => Promise<void>;
+    ensureTasksLoadedThrough: (targetDate: string) => Promise<void>;
     scheduleAndCompleteNow: (actionId: string, taskId?: string) => Promise<void>;
     scheduleAndCompleteAt: (actionId: string, date: string, startTime: number, taskId?: string) => Promise<void>;
     scheduleAndCompleteMilestoneNow: (actionId: string) => Promise<void>;
@@ -837,7 +862,7 @@ export interface GameContextType {
     declineFriendRequest: (requestId: string) => Promise<void>;
     cancelFriendRequest: (requestId: string) => Promise<void>;
     updateAllAssetLevels: (levels: Record<string, number>, levelDescriptions?: Record<string, string[]>) => boolean;
-    startCycle: (name: string, endDate: string, startDate?: string) => void;
+    startCycle: (name: string, endDate: string, startDate?: string) => Cycle | null;
     updateCycle: (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => Promise<void>;
     endCycle: (currentAssets: Asset[], currentActions: Action[]) => Promise<EndCycleResult>;
     applyExp: (expGained: number, options?: ApplyExpOptions) => void;
@@ -1073,6 +1098,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     }, [assets]);
 
     const [tasks, setTasks] = useState<ScheduledTask[]>(() => []);
+    // A ultima data para a qual ja temos tarefas em maos. A hidratacao preenche;
+    // ensureTasksLoadedThrough empurra para frente quando alguem precisa de mais.
+    const loadedTaskHorizonRef = useRef<string | null>(null);
 
     const [reports, setReports] = useState<Report[]>(() => []);
 
@@ -2840,6 +2868,58 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return candidate;
     }, [session?.user.id]);
 
+    // BUSCAR O QUE FICOU ALEM DO HORIZONTE.
+    //
+    // A hidratacao para em TASK_LOAD_HORIZON_DAYS. Dois lugares passam disso:
+    //
+    //   1. o planner, quando a pessoa navega para frente. Sem isto a semana
+    //      apareceria vazia e pareceria que as tarefas sumiram.
+    //   2. o ciclo, quando ele termina depois do horizonte. Este e o grave: o
+    //      total da barra da arena E a contagem de tarefas dentro do ciclo
+    //      (ArenasView), entao faltar tarefa no fim dele faria o progresso
+    //      aparecer MAIOR do que e. Numero errado e pior que tela vazia.
+    //
+    // Idempotente de proposito, porque o planner chama a cada clique.
+    const ensureTasksLoadedThrough = useCallback(async (targetDate: string) => {
+        const userId = getSupabaseUserId();
+        if (!userId || !targetDate) return;
+
+        const horizon = loadedTaskHorizonRef.current;
+        // Sem horizonte ainda: a hidratacao nao terminou, e e ela quem traz a
+        // primeira janela. Pedir agora seria correr contra ela.
+        if (!horizon || targetDate <= horizon) return;
+
+        // O horizonte anda ANTES da rede: dois cliques rapidos pedindo a mesma
+        // faixa viram uma consulta so. Se falhar, o catch devolve o horizonte.
+        loadedTaskHorizonRef.current = targetDate;
+
+        try {
+            const { data, error } = await supabase
+                .from('scheduled_tasks')
+                .select('*')
+                .eq('user_id', userId)
+                .gt('date', horizon)
+                .lte('date', targetDate);
+
+            if (error) throw error;
+            if (!data || data.length === 0) return;
+
+            const fetched = mapToCamelCase(data) as ScheduledTask[];
+            const visibleActionIds = new Set(actions.map(action => action.id));
+            const relevant = fetched.filter(task => visibleActionIds.has(task.actionId));
+            if (relevant.length === 0) return;
+
+            setTasks(prev => {
+                const known = new Set(prev.map(task => task.id));
+                const novas = relevant.filter(task => !known.has(task.id));
+                return novas.length > 0 ? [...prev, ...novas] : prev;
+            });
+        } catch (error: any) {
+            loadedTaskHorizonRef.current = horizon;
+            console.error('Failed to extend scheduled task horizon:', error?.message || error);
+        }
+    }, [actions, getSupabaseUserId]);
+
     const persistFairScoreReports = useCallback(async (nextReports: Report[]) => {
         const userId = getSupabaseUserId();
         if (!userId || nextReports.length === 0) return;
@@ -2974,6 +3054,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     // State reset is now handled in the session change effect above.
 
     const [activeCycle, setActiveCycle] = useState<Cycle | null>(() => null);
+
+    // O ciclo pode terminar depois do horizonte da hidratacao. Quando termina, as
+    // tarefas do fim dele TEM que estar carregadas: o denominador da barra da
+    // arena sai dessa contagem, e faltar tarefa infla o progresso.
+    useEffect(() => {
+        if (!activeCycle?.endDate) return;
+        void ensureTasksLoadedThrough(activeCycle.endDate);
+    }, [activeCycle?.endDate, ensureTasksLoadedThrough]);
     const [upcomingCycle, setUpcomingCycle] = useState<Cycle | null>(() => null);
 
     const [clan, setClan] = useState<Clan | null>(() => null);
@@ -4660,7 +4748,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         let settledCount = 0;
         let settledExpTotal = 0;
         const newlyJudgedDates: string[] = [];
-        let latestSettledSummary: { date: string; score: number; expDeposited: number } | null = null;
 
         for (const operationalDate of historicalDates) {
             const existingCommitment = existingByDate.get(operationalDate);
@@ -4762,11 +4849,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             settledCount += 1;
             settledExpTotal += summary.expDeposited;
             newlyJudgedDates.push(operationalDate);
-            latestSettledSummary = {
-                date: operationalDate,
-                score: summary.score,
-                expDeposited: summary.expDeposited,
-            };
         }
 
         if (settledCount === 0) return;
@@ -4784,14 +4866,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return next;
         });
         await refreshOpenCycleDerivedState(activeCycle);
-        if (latestSettledSummary) {
-            emitDailyCompletionPrompt({
-                kind: 'sitrep',
-                date: latestSettledSummary.date,
-                score: latestSettledSummary.score,
-                expDeposited: latestSettledSummary.expDeposited,
-            });
-        }
         const expLabel = settledExpTotal > 0 ? ` +${settledExpTotal} XP no ciclo.` : '';
         showToast(
             settledCount === 1
@@ -5210,9 +5284,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 }
             }
 
+            // O PISO E O TETO DA BUSCA DE TAREFAS.
+            //
+            // Antes havia so o piso, e o ano inteiro gravado pelo agendamento por
+            // dia da semana descia toda vez. O teto e TASK_LOAD_HORIZON_DAYS;
+            // o resto chega por ensureTasksLoadedThrough, sob demanda.
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
             const minDate = getLocalDateString(threeMonthsAgo);
+            const taskHorizon = new Date();
+            taskHorizon.setDate(taskHorizon.getDate() + TASK_LOAD_HORIZON_DAYS);
+            const maxDate = getLocalDateString(taskHorizon);
 
             const [
                 arenasResult,
@@ -5223,7 +5305,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             ] = await rateLimiter.batchRequests([
                 () => supabase.from('arenas').select('*').eq('user_id', userId),
                 () => supabase.from('actions').select('*').eq('user_id', userId),
-                () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate),
+                () => supabase.from('scheduled_tasks').select('*').eq('user_id', userId).gte('date', minDate).lte('date', maxDate),
                 () => supabase.from('asset_levels').select('*').eq('user_id', userId),
                 () => supabase
                     .from('cycles')
@@ -5297,6 +5379,10 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 const tasks = mapToCamelCase(tasksData) as ScheduledTask[];
                 const visibleActionIds = new Set(loadedActions.map(action => action.id));
                 loadedTasks = tasks.filter(task => visibleActionIds.has(task.actionId));
+                // So marca o horizonte se a busca deu certo. Numa falha o ref fica
+                // nulo e ensureTasksLoadedThrough se cala, em vez de acreditar num
+                // horizonte que nunca foi baixado.
+                loadedTaskHorizonRef.current = maxDate;
             }
 
             const { data: levelsData, error: levelsError } = levelsResult;
@@ -8600,34 +8686,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             // E tambem nao dispara se o novo rank for o inicial (Vagante) para evitar aviso no login para nivel 1
             if (newRankIndex > oldRankIndex && oldRankIndex !== -1 && newRankIndex > 0) {
                 if (newRank) {
-                    // Determine rank insignia ID
                     const rankInsigniaId = `insignia_rank_${newRankIndex + 1}_${newRankId}`;
                     const rankRewardDetails = RANK_REWARDS[newRankId] || [];
-
-                    // Grant specific rank insignia
-                    grantUserUnlock('insignias', rankInsigniaId);
-                    grantInventoryItem(rankInsigniaId, true);
 
                     // A de subida, que acumula, vem junto da unica daquela patente.
                     grantUserUnlock('insignias', RANK_UP_INSIGNIA_ID);
                     grantInventoryItem(RANK_UP_INSIGNIA_ID, true);
 
-                    // Grant Rank Rewards (Escalada do Soberano 5.0)
-                    const rewardNames: string[] = [];
+                    // RANK_REWARDS ja contem a insignia exclusiva da patente.
+                    // Conceder `rankInsigniaId` antes deste loop criava uma
+                    // segunda instancia do mesmo item no inventario.
                     rankRewardDetails.forEach(reward => {
                         grantUserUnlock(reward.category, reward.itemId);
                         if (reward.category !== 'ui_skins') {
-                            grantInventoryItem(reward.itemId);
-                        }
-                        if (reward.category !== 'insignias') {
-                            rewardNames.push(reward.name);
+                            grantInventoryItem(reward.itemId, true);
                         }
                     });
 
                     const rankRewardItemIds = rankRewardDetails
                         .filter(reward => reward.category !== 'ui_skins')
                         .map(reward => reward.itemId);
-                    const allRankRewardItems = [...new Set([rankInsigniaId, ...rankRewardItemIds])];
+                    const allRankRewardItems = [...new Set([rankInsigniaId, RANK_UP_INSIGNIA_ID, ...rankRewardItemIds])];
                     const allRankRewardDetails = [
                         ...rankRewardDetails,
                     ];
@@ -8647,9 +8726,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                         }
                     });
 
-                    if (rewardNames.length > 0) {
-                        showToast(`Patente ${newRank.name} alcançada. Itens de legado integrados ao Arsenal: ${rewardNames.join(', ')}.`, 'success');
-                    }
                 }
             }
             updateUserProfile({ nobility: { ...userProfile.nobility, rankId: newRankId } });
@@ -8762,7 +8838,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'arenaPactKind',
                 'arenaPactDifficulty',
                 'arenaPactGoal',
-                'arenaPactStartedOn'
+                'arenaPactStartedOn',
+                'arenaPactEndsOn'
             ];
             const entries = Object.entries(profileData).filter(([key, value]) => {
                 if (!allowedKeys.includes(key as keyof UserProfile)) return false;
@@ -9089,12 +9166,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return { item: null, granted: false, duplicateConverted: false, fragmentsGranted: 0 };
     };
 
-    const formatMembershipChestLabel = (chestType: ChestType): string => {
-        // O valor gravado segue 'Season' para nao invalidar bau ja guardado.
-        if (chestType === 'Season') return 'Mitico';
-        return chestType;
-    };
-
     const buildMembershipRewardPayload = (
         tier: 'premium' | 'platinum',
         expiresAt: string,
@@ -9105,67 +9176,45 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         campaignQuizMediumCreditsGranted: number,
     ): RewardModalPayload => {
         const isPlatinum = tier === 'platinum';
-        const chestSummary = grantedChests.length > 0
-            ? grantedChests.map(formatMembershipChestLabel).join(' + ')
-            : 'Integrado';
-        const rewardHighlights = isPlatinum
-            ? [
-                {
-                    label: 'Baús',
-                    value: grantedChests.length > 0 ? chestSummary : 'Sem novo baú',
-                    detail: grantedChests.length > 0 ? 'Entregues agora.' : 'Sem novo baú nesta rodada.',
-                    tone: 'gold' as const,
-                },
-                {
-                    label: 'Legado',
-                    value: legacySceneCreditsGranted > 0 ? `${legacySceneCreditsGranted} grátis` : 'Sem crédito',
-                    detail: legacySceneCreditsGranted > 0 ? 'Crédito aplicado para a próxima cena do legado.' : 'Nenhum crédito extra nesta rodada.',
-                    tone: 'violet' as const,
-                },
-                {
-                    label: 'Quiz',
-                    value: campaignQuizMediumCreditsGranted > 0 ? `${campaignQuizMediumCreditsGranted} média` : 'Sem ficha',
-                    detail: campaignQuizMediumCreditsGranted > 0 ? 'Use no próximo quiz para liberar uma campanha média.' : 'Nenhuma ficha extra nesta rodada.',
-                    tone: 'cyan' as const,
-                },
-            ]
-            : [
-                {
-                    label: 'Baú',
-                    value: grantedChests.length > 0 ? chestSummary : 'Sem novo baú',
-                    detail: grantedChests.length > 0 ? 'Baú raro entregue na ativação.' : 'Nenhum baú extra nesta rodada.',
-                    tone: 'gold' as const,
-                },
-                {
-                    label: 'Quiz',
-                    value: campaignQuizFreeCreditsGranted > 0 ? `${campaignQuizFreeCreditsGranted} grátis` : 'Sem ficha',
-                    detail: campaignQuizFreeCreditsGranted > 0 ? 'Use no próximo quiz para liberar uma campanha grátis.' : 'Nenhuma ficha extra nesta rodada.',
-                    tone: 'cyan' as const,
-                },
-                {
-                    label: 'Ciclo',
-                    value: `+${getCycleXpBonusPercentLabel(tier)} XP`,
-                    detail: 'Bônus ativo enquanto a assinatura durar.',
-                    tone: 'emerald' as const,
-                },
-            ];
+        const rewardHighlights: NonNullable<RewardModalPayload['rewardHighlights']> = [];
+        grantedChests.forEach((chestType) => {
+            const visual = getChestVisual(chestType);
+            rewardHighlights.push({
+                label: visual.label,
+                value: getChestDisplayName(chestType),
+                detail: 'Baú entregue ao Arsenal.',
+                rarityRgb: visual.rgb,
+                imageUrl: getChestArtUrl(chestType),
+            });
+        });
+        if (legacySceneCreditsGranted > 0) {
+            rewardHighlights.push({ label: 'Legado', value: `${legacySceneCreditsGranted} cena grátis`, detail: 'Crédito já aplicado.', tone: 'violet' });
+        }
+        if (campaignQuizFreeCreditsGranted > 0 || campaignQuizMediumCreditsGranted > 0) {
+            const quizCredits = campaignQuizMediumCreditsGranted || campaignQuizFreeCreditsGranted;
+            rewardHighlights.push({
+                label: 'Ficha de quiz',
+                value: campaignQuizMediumCreditsGranted > 0 ? `${quizCredits} campanha média` : `${quizCredits} campanha grátis`,
+                detail: 'Crédito disponível para o próximo quiz.',
+                tone: 'cyan',
+            });
+        }
 
         return {
             membershipTier: tier,
-            eyebrow: isPlatinum ? 'Platinum 30 dias' : 'Premium 30 dias',
-            title: isPlatinum ? 'Platinum ativo' : 'Premium ativo',
+            eyebrow: '',
+            title: 'Recompensa entregue!',
+            subtitle: isPlatinum ? 'Platinum ativado' : 'Premium ativado',
             summary: isPlatinum
-                ? 'Seu plano maior ganhou mais 30 dias. Os baús desta ativação, a ficha média de quiz e o crédito grátis de legado já foram liberados.'
-                : 'Seu Premium ganhou mais 30 dias. O baú raro e a ficha grátis de quiz desta ativação já foram liberados.',
-            buttonLabel: 'Seguir',
-            rewardHighlightsTitle: 'Entregue agora',
+                ? 'Mais 30 dias ativos. Os baús e a ficha desta ativação já foram entregues; as vantagens abaixo já estão liberadas.'
+                : 'Mais 30 dias ativos. O baú desta ativação já foi entregue e as vantagens abaixo já estão liberadas.',
+            buttonLabel: 'Continuar',
+            rewardHighlightsTitle: 'Itens e créditos entregues',
             rewardHighlights,
-            itemSectionTitle: 'Cosméticos integrados',
-            activeBenefitsTitle: 'Vantagens ativas',
+            itemSectionTitle: 'Cosméticos entregues',
+            activeBenefitsTitle: 'Vantagens ativadas',
             activeBenefits: isPlatinum ? [...PLATINUM_ACTIVE_BENEFITS] : [...PREMIUM_ACTIVE_BENEFITS],
-            emptyMessage: grantedChests.length > 0 || legacySceneCreditsGranted > 0 || campaignQuizFreeCreditsGranted > 0 || campaignQuizMediumCreditsGranted > 0
-                ? `Nenhum cosmético novo era necessário agora.${chestSummary !== 'Integrado' ? ` Os baús ${chestSummary} já foram entregues.` : ''}${legacySceneCreditsGranted > 0 ? ` Crédito de legado: ${legacySceneCreditsGranted}.` : ''}${campaignQuizFreeCreditsGranted > 0 ? ` Ficha grátis de quiz: ${campaignQuizFreeCreditsGranted}.` : ''}${campaignQuizMediumCreditsGranted > 0 ? ` Ficha média de quiz: ${campaignQuizMediumCreditsGranted}.` : ''}`.trim()
-                : 'Seu plano 30 dias foi ativado e nenhum cosmético novo precisava ser entregue agora.',
+            emptyMessage: '',
             metricCards: [
                 {
                     label: 'Plano',
@@ -9176,11 +9225,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     label: 'Ativo até',
                     value: formatPremiumExpiryLabel(expiresAt),
                     detail: 'validade atual',
-                },
-                {
-                    label: 'Entrega',
-                    value: isPlatinum ? 'Temporada + raro' : 'Baú raro',
-                    detail: isPlatinum ? 'rodada do Platinum' : 'rodada do Premium',
                 },
             ],
             chestType: grantedChests[0] || null,
@@ -9233,83 +9277,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             campaignQuizFreeCreditsGranted: 0,
             campaignQuizMediumCreditsGranted: MEMBERSHIP_REWARD_CAMPAIGN_QUIZ_MEDIUM_CREDITS,
         };
-    };
-
-    const addCompletedMission = async (mission: SeasonMission) => {
-        const completed = userProfile.completedSeasonMissions || [];
-        if (completed.includes(mission.id)) return;
-
-        // O bau que a descricao promete. O EXP continua vindo junto por
-        // reward_exp, entao trocar de 'exp' para 'chest' nao tira nada.
-        if (mission.reward_type === 'chest' && typeof mission.reward_value === 'string') {
-            void addChest(mission.reward_value as ChestType);
-        }
-
-        // Handle XP Reward - Adds to Cycle Bonus to be computed at Cycle End
-        if (mission.reward_type === 'exp' || mission.reward_exp) {
-            const xpAmount = Number(mission.reward_type === 'exp' ? mission.reward_value : mission.reward_exp);
-            if (!isNaN(xpAmount) && xpAmount > 0) {
-                setCycleExpBonus(prev => prev + xpAmount);
-                bankCycleExp(activeCycle?.id, xpAmount);
-                addFeedEvent({
-                    type: 'LEVEL_UP',
-                    content: { title: `Miss\u00E3o Conclu\u00EDda: ${mission.title} (+${xpAmount} XP)`, icon: '\u{1F4DD}' }
-                });
-            }
-        }
-
-        const rewardValue = typeof mission.reward_value === 'string' ?mission.reward_value : '';
-        const rewardParts = rewardValue.includes(':') ?rewardValue.split(':') : [];
-        const rewardCategory = rewardParts[0] as UnlockCategory | undefined;
-        const rewardItemId = rewardParts[1];
-
-        const unlockedItems: UserUnlocks = userProfile.unlockedItems || {
-            bodyStyles: {},
-            hairStyles: {},
-            outfits: {},
-            artifacts: {},
-            codexes: {},
-            skins: {},
-            borders: {},
-            banners: {},
-            glyphs: {},
-            auras: {},
-            orbs: {},
-            plates: {},
-            ornament: {},
-            insignias: {},
-            ui_skins: { BASIC: true },
-        };
-        let nextUnlockedItems = unlockedItems;
-
-        const isItemReward = mission.reward_type === 'item_id' && Boolean(rewardItemId);
-        const rewardsOrnament = isItemReward && rewardCategory === 'ornament';
-        const rewardsInsignia = isItemReward
-            && (rewardCategory as string === 'insignias' || rewardCategory as string === 'insignia');
-
-        if (rewardsOrnament) {
-            await grantInventoryItem(rewardItemId);
-            nextUnlockedItems = {
-                ...nextUnlockedItems,
-                ornament: { ...nextUnlockedItems.ornament, [rewardItemId]: true },
-            };
-        }
-
-        // Every mission awards an insignia: the one it names, or the generic badge
-        // for its tier when the reward is XP or an ornament.
-        const insigniaId = rewardsInsignia
-            ? rewardItemId
-            : ((mission as any).type === 'season' ? 'insignia_quest_master' : 'insignia_quest_incomum');
-        await grantInventoryItem(insigniaId, !rewardsInsignia);
-        nextUnlockedItems = {
-            ...nextUnlockedItems,
-            insignias: { ...nextUnlockedItems.insignias, [insigniaId]: true },
-        };
-
-        updateUserProfile({
-            completedSeasonMissions: [...completed, mission.id],
-            unlockedItems: nextUnlockedItems,
-        });
     };
 
     const addProfileFlag = (flag: string) => {
@@ -9511,13 +9478,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
-    const startCycle = (name: string, endDate: string, startDate?: string, arenaIds?: string[]) => {
+    // Devolve o ciclo criado, ou null se nada foi criado. Quem chama precisa
+    // saber: a virada so pode reagendar as acoes se o ciclo realmente nasceu.
+    const startCycle = (name: string, endDate: string, startDate?: string, arenaIds?: string[]): Cycle | null => {
         const userId = getSupabaseUserId();
-        if (!userId) return;
+        if (!userId) return null;
         const today = getLocalDateString();
         if (activeCycle || upcomingCycle) {
             showToast('Voce ja tem um ciclo ativo ou agendado. Encerre ou remova o atual antes de criar outro.', 'error');
-            return;
+            return null;
         }
         // Abrir ciclo FECHA a rodada, e paga o que ela acumulou.
         //
@@ -9531,15 +9500,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const normalizedEndDate = endDate.trim();
         if (!trimmedName) {
             showToast('Dê um nome para o ciclo.', 'error');
-            return;
+            return null;
         }
         if (!normalizedStartDate || normalizedStartDate < today) {
             showToast('A data inicial do ciclo precisa ser hoje ou uma data futura.', 'error');
-            return;
+            return null;
         }
         if (!normalizedEndDate || normalizedEndDate < normalizedStartDate) {
             showToast('A data final do ciclo precisa ser igual ou depois do inicio.', 'error');
-            return;
+            return null;
         }
         const newCycle: Cycle = {
             id: crypto.randomUUID(),
@@ -9574,6 +9543,8 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         supabase.from('cycles').insert(snakeCaseCycle).then(({ error }) => {
             if (error) console.error("Supabase start cycle error:", error.message);
         });
+
+        return newCycle;
     };
     const updateCycle = async (cycleId: string, updates: Partial<Pick<Cycle, 'name' | 'endDate'>>) => {
         const userId = getSupabaseUserId();
@@ -10390,6 +10361,74 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return true;
     };
 
+    // REAGENDAR AS ACOES RECORRENTES NO CICLO NOVO.
+    //
+    // Isto nao existia porque nao precisava: o agendamento gravava 365 dias, e o
+    // ciclo seguinte ja chegava com tarefas. A virada funcionava por acidente,
+    // como efeito colateral do desperdicio. Agora que a geracao para no fim do
+    // ciclo, alguem tem que recomecar — e a receita ja esta na propria acao
+    // (scheduledDays e scheduledStartTime), entao nada e perguntado a ninguem.
+    const regenerateRecurringTasksForCycle = async (cycle: Cycle) => {
+        const userId = getSupabaseUserId();
+        if (!userId || !cycle?.endDate) return;
+
+        const today = getLocalDateString();
+        const from = cycle.startDate > today ? cycle.startDate : today;
+        if (cycle.endDate < from) return;
+
+        // O que ja existe na janela vem do BANCO, nao da memoria. Depois do teto
+        // de leitura o estado local nao enxerga o fim de um ciclo longo, e
+        // conferir duplicata contra ele criaria tarefa repetida exatamente na
+        // virada — o pior lugar possivel para uma duplicata aparecer.
+        const { data: existingRows, error: readError } = await supabase
+            .from('scheduled_tasks')
+            .select('action_id, date, start_time')
+            .eq('user_id', userId)
+            .gte('date', from)
+            .lte('date', cycle.endDate);
+
+        if (readError) {
+            console.error('Failed to read tasks before cycle regeneration:', readError.message);
+            showToast('Nao consegui reagendar suas ações recorrentes. Confira o planner do ciclo novo.', 'error');
+            return;
+        }
+
+        const planned = buildCycleRegenerationPlan({
+            cycle,
+            today,
+            actions,
+            existingTasks: (existingRows || []).map((row: any) => ({
+                actionId: row.action_id,
+                date: row.date,
+                startTime: row.start_time,
+            })),
+        });
+
+        if (planned.length === 0) return;
+
+        const created: ScheduledTask[] = planned.map(item => ({
+            id: crypto.randomUUID(),
+            actionId: item.actionId,
+            date: item.date,
+            startTime: item.startTime,
+            duration: item.duration,
+            completed: false,
+        }));
+
+        setTasks(prev => [...prev, ...created]);
+
+        const { error: insertError } = await supabase
+            .from('scheduled_tasks')
+            .insert(created.map(task => ({ ...mapToSnakeCase(task), user_id: userId })));
+
+        if (insertError) {
+            const failedIds = new Set(created.map(task => task.id));
+            setTasks(prev => prev.filter(task => !failedIds.has(task.id)));
+            console.error('Failed to regenerate recurring tasks:', insertError.message);
+            showToast('Nao consegui reagendar suas ações recorrentes. Confira o planner do ciclo novo.', 'error');
+        }
+    };
+
     const startNewCycle = async (arenaChanges: ArenaSetupChange[], cycleDetails: { name: string; startDate?: string; endDate: string; }) => {
         setCycleExpBonus(0);
 
@@ -10408,12 +10447,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        // Start the new cycle using the details provided
-        const newArenaIds = arenaChanges
-            .filter(c => c.status === 'renew' || (c.status !== 'archive' && c.status !== 'delete'))
-            .map(c => c.id);
+        // QUAIS ARENAS ENTRAM NO CICLO NOVO.
+        //
+        // Antes era "as que a pessoa marcou renovar" — e a tela so registra as
+        // arenas que ela TOCOU. Marcar renovar em uma arena de oito comecava o
+        // ciclo com uma arena so, e as outras sete sumiam da contagem sem aviso.
+        // O caminho seguro era nao mexer em nada, e o perigoso era cuidar da
+        // arena que mais importava. A regra virou: continuar e o padrao.
+        //
+        // A lista de assets aqui ainda e a de ANTES das mudancas acima, que e
+        // exatamente o que resolveCycleArenaIds espera receber junto das decisoes.
+        const newArenaIds = resolveCycleArenaIds({
+            arenas: assets.flatMap(asset => asset.arenas),
+            changes: arenaChanges,
+        });
 
-        startCycle(cycleDetails.name, cycleDetails.endDate, cycleDetails.startDate, newArenaIds.length > 0 ?newArenaIds : undefined);
+        const createdCycle = startCycle(
+            cycleDetails.name,
+            cycleDetails.endDate,
+            cycleDetails.startDate,
+            newArenaIds.length > 0 ? newArenaIds : undefined,
+        );
+
+        // So reagenda se o ciclo nasceu de verdade. startCycle recusa quando ja
+        // existe ciclo aberto ou quando as datas nao fecham.
+        if (createdCycle) {
+            await regenerateRecurringTasksForCycle(createdCycle);
+        }
     };
 
     const setCurrentSkin = (skinId: string) => updateUserProfile({ skin: skinId });
@@ -12080,11 +12140,38 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         xp: number;
         /** Ouro ja creditado pelo servidor. Entra so na exibicao. */
         goldGranted?: number;
+        /**
+         * Fragmentos, creditados AQUI.
+         *
+         * Diferente do ouro, que passa por RPC: a carteira de fragmento e
+         * escrita pelo cliente em todo o resto do app, e nenhum gatilho de
+         * `user_profiles` a protege. Nao e um buraco novo — e o mesmo modelo de
+         * confianca que ja vale para fragmento em qualquer lugar. Fica
+         * registrado para o dia em que isso for fechado: estas missoes entram
+         * no mesmo pacote.
+         */
+        fragments?: number;
         chest?: ChestType | null;
+        /**
+         * Missao inicial nao ganha insignia.
+         *
+         * Insignia e de compromisso aceito. Dar uma por abrir uma tela esvazia
+         * a que a pessoa suou para ter.
+         */
+        semInsignia?: boolean;
         /** Insignias e itens da propria missao, alem dos de patente. */
         itemIds?: string[];
         feedTitle?: string;
         feedIcon?: string;
+        /**
+         * De onde a missao veio. So muda o EMBLEMA do modal: temporada usa a
+         * insignia de quest, o resto usa a de missao. Sem isto o modal nao tem
+         * como saber, porque as quatro origens chegam aqui iguais.
+         */
+        origem?: 'quest_temporada' | 'missao_temporada' | 'temporada' | 'missao';
+        /** Selo final da temporada: escolhe a apresentacao heroica e o fundo. */
+        seloDaTemporada?: boolean;
+        seasonId?: string;
     }) => {
         const currentExp = userProfile.nobility.exp;
         const addedExp = Math.max(0, Math.round(grant.xp || 0));
@@ -12092,31 +12179,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const chestGranted = grant.chest ? await addChest(grant.chest) : false;
 
+        // A insígnia faz parte da recompensa real, não é decoração do modal.
+        // Toda missão comum (inclusive o antigo "desafio" de sistema e o pacto
+        // de arena) recebe a prata. Quest/missão da temporada recebe a
+        // azul-roxa. O selo final ainda pode trazer, além dela, a insígnia
+        // exclusiva daquela temporada.
+        const missionInsigniaId = grant.origem && grant.origem !== 'missao'
+            ? 'insignia_quest_master'
+            : SYSTEM_CHALLENGE_INSIGNIA_ID;
+        const grantedItemIds = grant.semInsignia
+            ? [...new Set(grant.itemIds || [])]
+            : [...new Set([...(grant.itemIds || []), missionInsigniaId])];
+
         const earnedItemIds: string[] = [];
-        for (const itemId of grant.itemIds || []) {
+        for (const itemId of grantedItemIds) {
             const def = resolveItemDef(itemId);
             if (def?.category === 'insignia') grantUserUnlock('insignias', itemId);
             await grantInventoryItem(itemId, true);
             earnedItemIds.push(itemId);
         }
 
-        // A patente so pode ser conferida com o total ja somado.
-        const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
-        if (nextRank) {
-            const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
-            grantUserUnlock('insignias', rankInsigniaId);
-            await grantInventoryItem(rankInsigniaId, true);
-            earnedItemIds.push(rankInsigniaId);
-
-            // A de subida, que acumula, vem junto da unica daquela patente.
-            grantUserUnlock('insignias', RANK_UP_INSIGNIA_ID);
-            await grantInventoryItem(RANK_UP_INSIGNIA_ID, true);
-            earnedItemIds.push(RANK_UP_INSIGNIA_ID);
-        }
-
+        const addedFragments = Math.max(0, Math.round(grant.fragments || 0));
         updateUserProfile({
             nobility: { ...userProfile.nobility, exp: nextExp },
             completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), grant.completionId],
+            ...(addedFragments > 0
+                ? { wallet: { ...userProfile.wallet, fragments: (userProfile.wallet?.fragments || 0) + addedFragments } }
+                : {}),
         });
 
         if (grant.feedTitle) {
@@ -12129,44 +12218,33 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const allEarnedItems: string[] = [...new Set(earnedItemIds)];
         const chestForModal = chestGranted ? grant.chest : null;
 
-        if (nextRank) {
-            const rankRewards = RANK_REWARDS[nextRank.id] || [];
-            setAchievementUnlocked({
-                type: 'PLAYER_RANK_UP',
-                data: {
-                    name: nextRank.name,
-                    rank: nextRank,
-                    rewards: {
-                        exp: addedExp,
-                        gold: grant.goldGranted || 0,
-                        items: [...new Set([...allEarnedItems, ...rankRewards.filter(reward => reward.category !== 'ui_skins').map(reward => reward.itemId)])],
-                        chest: chestForModal,
-                        rewardDetails: [
-                            ...allEarnedItems.map(itemId => ({ itemId })),
-                            ...rankRewards,
-                        ],
-                        uiSkins: rankRewards
-                            .filter(reward => reward.category === 'ui_skins')
-                            .map(reward => reward.itemId),
-                    },
-                },
-            });
-            return;
-        }
-
+        // As DUAS telas, nesta ordem: a missao primeiro, a patente depois.
+        //
+        // Antes a patente engolia a missao — disparava a celebracao de patente com os
+        // itens das duas juntos e dava `return`, entao o nome da missao que a
+        // pessoa acabou de fechar sumia, e o titulo virava so "ESCUDEIRO".
+        // A ordem aqui e a ordem dos fatos: concluiu a missao, e por causa dela
+        // subiu de patente. A fila do setAchievementUnlocked cuida do resto.
         setAchievementUnlocked({
             type: 'QUEST_COMPLETED',
             data: {
                 title: grant.title,
                 icon: grant.icon,
+                origem: grant.origem || 'missao',
+                seloDaTemporada: grant.seloDaTemporada,
+                seasonId: grant.seasonId,
                 reward: {
                     exp: addedExp,
                     gold: grant.goldGranted || 0,
+                    fragments: addedFragments,
                     items: allEarnedItems,
                     chest: chestForModal,
                 },
             },
         });
+        // A mudanca de EXP aciona o observador unico de patente acima neste
+        // provider. Ele e quem libera os cosmeticos e enfileira a celebracao.
+        // Fazer isso tambem aqui duplicava insignias, inventario e modal.
     };
 
     const claimSeasonQuest = async (questId: string) => {
@@ -12195,7 +12273,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             if (normalizedReward === 'season' || normalizedReward === 'temporada') earnedChest = 'Season';
             else if (normalizedReward === 'comum') earnedChest = 'Comum';
             else if (normalizedReward === 'incomum') earnedChest = 'Incomum';
-            else if (normalizedReward === 'ciclo') earnedChest = 'Ciclo';
             else if (normalizedReward === 'raro') earnedChest = 'Raro';
             else if (normalizedReward === 'epico') earnedChest = 'Épico';
             else if (normalizedReward === 'lendario') earnedChest = 'Lendário';
@@ -12203,7 +12280,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
         if (quest.description.includes("Baú Comum")) earnedChest = 'Comum';
         else if (quest.description.includes("Baú Incomum")) earnedChest = 'Incomum';
-        else if (quest.description.includes("Baú Ciclo")) earnedChest = 'Ciclo';
         else if (quest.description.includes("Baú Raro")) earnedChest = 'Raro';
         else if (quest.description.includes("Ba\u00FA \u00C9pico")) earnedChest = '\u00C9pico';
         else if (quest.description.includes("Ba\u00FA Lend\u00E1rio")) earnedChest = 'Lend\u00E1rio';
@@ -12217,11 +12293,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         await grantMissionReward({
             completionId: questId,
+            origem: 'quest_temporada',
             title: quest.title,
             xp: quest.rewards.xp,
             chest: earnedChest,
-            itemIds: [...(quest.rewards?.items || []), 'insignia_quest_incomum'],
-            feedTitle: `Quest Completada: ${quest.title}`,
+            itemIds: quest.rewards?.items || [],
+            feedTitle: `Missão de temporada concluída: ${quest.title}`,
         });
     };
 
@@ -12229,8 +12306,27 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const mission = findSeasonMissionById(missionId);
         if (!mission) return;
         if (mission.season_id && mission.season_id !== activeRuntimeSeasonId) {
-            showToast("Essa missao pertence a uma temporada encerrada.", 'info');
-            return;
+            // O SELO e a excecao, e so ele.
+            //
+            // Quem fecha a terceira jornada no ultimo dia e nao volta a abrir o
+            // app antes da virada perderia a insignia da temporada e o tema —
+            // justamente quem foi ate o fim. O trabalho ja estava feito e
+            // registrado; o resgate era burocracia.
+            //
+            // A porta continua fechada para todo o resto: so passa a missao cujo
+            // objetivo e "as tres jornadas resgatadas" E cujas tres jornadas
+            // estao em completedSeasonMissions. Nao da para farmar temporada
+            // velha — as jornadas dela tambem nao aceitam resgate depois do fim.
+            const jornadas = mission.sourceQuestIds || [];
+            const concluidas = new Set(userProfile.completedSeasonMissions || []);
+            const selo = mission.goal_type === 'quests_claimed'
+                && jornadas.length > 0
+                && jornadas.every((questId) => concluidas.has(questId));
+
+            if (!selo) {
+                showToast("Essa missao pertence a uma temporada encerrada.", 'info');
+                return;
+            }
         }
 
         if (userProfile.completedSeasonMissions?.includes(missionId)) {
@@ -12238,125 +12334,41 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return;
         }
 
-        // Add XP
-        const currentExp = userProfile.nobility.exp;
         // reward_value carrega o premio principal e nem sempre e XP: quando a
         // missao entrega item (o Selo da Genesis entrega insignia), o XP mora em
         // reward_exp. Lendo so o primeiro, missao de item pagava zero calado.
         const addedExp = typeof mission.reward_value === 'number'
             ? mission.reward_value
             : Math.max(0, Number(mission.reward_exp || 0));
-        const nextExp = currentExp + addedExp;
 
-        // Check for chest rewards in description
-        if (mission.description.includes("Baú Comum")) await addChest('Comum');
-        if (mission.description.includes("Baú Incomum")) await addChest('Incomum');
-        if (mission.description.includes("Baú Ciclo")) await addChest('Ciclo');
-        if (mission.description.includes("Baú Raro")) await addChest('Raro');
-        if (mission.description.includes("Ba\u00FA \u00C9pico")) await addChest('\u00C9pico');
-        if (mission.description.includes("Ba\u00FA Lend\u00E1rio")) await addChest('Lend\u00E1rio');
-
-        // Grant items if it's an item reward
-        const earnedItemIds: string[] = [];
-        let earnedChest: ChestType | undefined =
+        const earnedChest: ChestType | undefined =
             mission.description.includes("Baú Comum") ? 'Comum'
             : mission.description.includes("Baú Incomum") ? 'Incomum'
-            : mission.description.includes("Baú Ciclo") ? 'Ciclo'
             : mission.description.includes("Baú Raro") ? 'Raro'
             : mission.description.includes("Ba\u00FA \u00C9pico") ? '\u00C9pico'
             : mission.description.includes("Ba\u00FA Lend\u00E1rio") ? 'Lend\u00E1rio'
             : undefined;
+
+        const earnedItemIds: string[] = [];
         if (mission.reward_type === 'item_id' && typeof mission.reward_value === 'string') {
-            const itemId = mission.reward_value;
-            const def = resolveItemDef(itemId);
-            if (def?.category === 'insignia') {
-                grantUserUnlock('insignias', itemId);
-            }
-            await grantInventoryItem(itemId, true); // Silent
-            earnedItemIds.push(itemId);
+            earnedItemIds.push(mission.reward_value);
         }
         if (Array.isArray(mission.reward_item_ids)) {
-            for (const itemId of mission.reward_item_ids) {
-                if (!itemId || earnedItemIds.includes(itemId)) continue;
-                const def = resolveItemDef(itemId);
-                if (def?.category === 'insignia') {
-                    grantUserUnlock('insignias', itemId);
-                }
-                await grantInventoryItem(itemId, true);
-                earnedItemIds.push(itemId);
-            }
+            earnedItemIds.push(...mission.reward_item_ids.filter(Boolean));
         }
 
-        // Grant uncommon insignia for mission completion
-        const questInsigniaId = 'insignia_quest_incomum';
-        grantUserUnlock('insignias', questInsigniaId);
-        await grantInventoryItem(questInsigniaId, true);
-        earnedItemIds.push(questInsigniaId);
-
-        // Check if this completion should grant a rank insignia (levelup flow)
-        const nextRank = NOBILITY_RANKS.find(r => r.expTotalRequired <= nextExp && r.expTotalRequired > currentExp);
-        if (nextRank) {
-            const rankInsigniaId = `insignia_rank_${NOBILITY_RANKS.indexOf(nextRank) + 1}_${nextRank.id}`;
-            grantUserUnlock('insignias', rankInsigniaId);
-            await grantInventoryItem(rankInsigniaId, true);
-            earnedItemIds.push(rankInsigniaId);
-
-            // A de subida, que acumula, vem junto da unica daquela patente.
-            grantUserUnlock('insignias', RANK_UP_INSIGNIA_ID);
-            await grantInventoryItem(RANK_UP_INSIGNIA_ID, true);
-            earnedItemIds.push(RANK_UP_INSIGNIA_ID);
-        }
-
-        // Update Profile
-        updateUserProfile({
-            nobility: { ...userProfile.nobility, exp: nextExp },
-            completedSeasonMissions: [...(userProfile.completedSeasonMissions || []), missionId]
+        await grantMissionReward({
+            completionId: missionId,
+            origem: 'missao_temporada',
+            title: mission.title,
+            icon: mission.icon,
+            xp: addedExp,
+            chest: earnedChest,
+            itemIds: [...new Set(earnedItemIds)],
+            feedTitle: `Miss\u00E3o de Temporada: ${mission.title}`,
+            seloDaTemporada: mission.goal_type === 'quests_claimed',
+            seasonId: mission.season_id,
         });
-
-        addFeedEvent({
-            type: 'QUEST_COMPLETED',
-            content: { title: `Miss\u00E3o de Temporada: ${mission.title}`, icon: '\u{1F4DD}', score: Number(addedExp) }
-        });
-
-        // Determine all insignias to show in modal
-        // Deduplicate IDs
-        const allEarnedItems: string[] = [...new Set(earnedItemIds)];
-
-        // If Ranked Up, show PLAYER_RANK_UP modal with all rewards
-        if (nextRank) {
-            const rankRewards = RANK_REWARDS[nextRank.id] || [];
-            setAchievementUnlocked({
-                type: 'PLAYER_RANK_UP',
-                data: {
-                    name: nextRank.name,
-                    rank: nextRank,
-                    rewards: {
-                        exp: addedExp,
-                        items: [...new Set([...allEarnedItems, ...rankRewards.filter(reward => reward.category !== 'ui_skins').map(reward => reward.itemId)])],
-                        chest: earnedChest,
-                        rewardDetails: [
-                            ...allEarnedItems.map(itemId => ({ itemId })),
-                            ...rankRewards,
-                        ],
-                        uiSkins: rankRewards
-                            .filter(reward => reward.category === 'ui_skins')
-                            .map(reward => reward.itemId),
-                    }
-                }
-            });
-        } else {
-            setAchievementUnlocked({
-                type: 'QUEST_COMPLETED',
-                data: {
-                    title: mission.title,
-                    reward: {
-                        exp: addedExp,
-                        items: allEarnedItems,
-                        chest: earnedChest
-                    }
-                }
-            });
-        }
     };
 
     const claimSystemChallenge = async (challengeId: string) => {
@@ -12377,30 +12389,17 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             updateUserProfile({ wallet: { ...userProfile.wallet, gold: nextGold } });
         }
 
-        const markerMission: SeasonMission = {
-            id: challenge.id,
-            season_id: activeRuntimeSeasonId || 'system',
-            title: challenge.title,
-            description: challenge.description,
-            goal_type: 'actions_completed',
-            goal_value: challenge.requirements?.totalReps || 1,
-            reward_type: 'exp',
-            reward_value: 0,
-            type: 'individual',
-            action_name: challenge.actionTemplate.name,
-            icon: challenge.actionTemplate.icon,
-            requirements: challenge.requirements,
-        };
-
-        await addCompletedMission(markerMission);
         await grantMissionReward({
             completionId: challenge.id,
             title: challenge.title,
             icon: challenge.actionTemplate.icon,
             xp: challenge.rewards.xp,
             goldGranted,
+            fragments: challenge.rewardFragments || 0,
             chest: challenge.rewardChest || null,
-            itemIds: [SYSTEM_CHALLENGE_INSIGNIA_ID],
+            // Missao inicial e reconhecimento, nao conquista: sem insignia.
+            semInsignia: Boolean(challenge.inicial),
+            itemIds: challenge.inicial ? [] : [SYSTEM_CHALLENGE_INSIGNIA_ID],
         });
     };
 
@@ -12512,14 +12511,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         if (completedProofTasksToday.length === 0) {
             if ((normalizedStreak.lastProofDate || normalizedStreak.lastClosedDate) !== proofDate) return;
             updateUserProfile({ dailyProofStreak: rollbackDailyProofStreakDate(normalizedStreak, proofDate) });
-            emitOracleSpeech({
-                title: 'Sequencia',
-                message: pickOracleLine([
-                    'A sequencia ficou em risco. Completa uma acao real hoje e ela volta a respirar.',
-                    'O registro de hoje saiu do tabuleiro. Se ainda fizer sentido, uma acao concluida recoloca a sequencia de pe.',
-                ]),
-                tone: 'warning',
-            });
             return;
         }
 
@@ -12542,32 +12533,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         });
 
         updateUserProfile({ dailyProofStreak: streakResult.next });
-        const completedArenaIds = new Set(
-            completedProofTasksToday
-                .map((candidate) => getActionById(candidate.actionId)?.arenaId)
-                .filter((arenaId): arenaId is string => Boolean(arenaId)),
-        );
-        const plannedTasksToday = tasksAfterChange.filter((candidate) => (
-            getTaskOperationalDateString(candidate) === proofDate
-            && Boolean(getActionById(candidate.actionId))
-        ));
-        const arenaName = getArenas().find((arena) => arena.id === action.arenaId)?.name || null;
-        const praise = buildLiveDailyPraise({
-            actionName: action.name,
-            arenaName,
-            completedCount: completedProofTasksToday.length,
-            plannedCount: plannedTasksToday.length,
-            distinctArenaCount: completedArenaIds.size,
-            streakCurrent: streakResult.next.current,
-            isFirstProofToday,
-        });
-
-        // O que esta entrega SIGNIFICOU, e nao so que ela aconteceu.
-        //
-        // Os dois dados ja estavam aqui e ninguem perguntava: a data da entrega
-        // anterior (no proprio streak) e a hora. Fechar uma acao e banal; fechar
-        // a primeira depois de oito dias, ou a que salva a sequencia as 22h, sao
-        // outra coisa — e ate agora as tres recebiam a mesma frase.
         if (streakResult.isNewDate) {
             const entregaAnterior = normalizedStreak.lastProofDate || normalizedStreak.lastClosedDate;
             const significado = resolveReactionSignificance({
@@ -12594,7 +12559,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 if (reacao.message) {
                     writeOracleReactionMemory(reacao.memory);
                     emitOracleSpeech({
-                        title: significado.event === 'first_after_pause' ? 'Retomada' : 'Sequencia',
+                        title: 'Retomada',
                         message: reacao.message,
                         tone: 'success',
                         durationMs: 5200,
@@ -12604,24 +12569,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
         }
 
-        if (streakResult.isNewDate) {
-            // 7, 14, 30, 60, 100 tem peso proprio no pulso. Um dia comum de
-            // sequencia e um 'fecho'; chegar a um marco nao pode chegar igual,
-            // senao o numero nunca vira acumulado para o corpo — que e onde a
-            // antecipacao mora. A lista e a mesma do banco de falas de propria.
-            const marcoDeSequencia = [7, 14, 30, 60, 100].includes(streakResult.next.current);
-            window.setTimeout(
-                () => emitAppSensoryCue(marcoDeSequencia ? 'streak_milestone' : 'daily_streak'),
-                120,
-            );
-        }
-        if (praise) {
-            emitOracleSpeech({
-                title: isFirstProofToday && streakResult.next.current > 1 ? 'Sequencia' : 'Hoje',
-                message: praise,
-                tone: 'success',
-            });
-        }
+
     };
 
     const oracleTone: OracleSpeechTone = (() => {
@@ -12630,8 +12578,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         return saved && ORACLE_PREMIUM_TONES.includes(saved) ? saved : ORACLE_FREE_TONE;
     })();
 
+    /**
+     * O pacto ativo, para quem precisa dele antes de ele existir.
+     *
+     * O dominio de tarefa e montado aqui, e o pacto so e calculado bem mais
+     * abaixo no provider. Um ref preenchido depois resolve a ordem sem mover
+     * nada de lugar — e, de quebra, a leitura passa a ser sempre a do momento da
+     * conclusao, nao a da montagem do dominio.
+     */
+    const arenaPactRef = useRef<{ pact: ArenaPact | null; progress: ArenaPactProgress | null }>({ pact: null, progress: null });
+
     const taskDomain = createTaskDomain({
         tasks,
+        freeProgressResetAt,
         activeCycle,
         campaigns,
         reports,
@@ -12643,6 +12602,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         setDailyCommitmentState,
         getActionById,
         getArenas,
+        getActiveArenaPact: () => arenaPactRef.current,
         getActionsForArena,
         getClanQuestForAction,
         getSupabaseUserId,
@@ -12753,7 +12713,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const acceptedSystemChallengeIds = new Set(userProfile.acceptedSystemChallenges || []);
         const pendingSystemChallenges = SYSTEM_CHALLENGES.filter((challenge) => (
-            acceptedSystemChallengeIds.has(challenge.id) && !completedIds.has(challenge.id)
+            // Missao INICIAL nao se aceita: ela roda para todo mundo, sempre, e
+            // nao ocupa o slot. Era o aceite obrigatorio que fazia uma missao de
+            // "crie um ciclo" competir com um compromisso de verdade.
+            (challenge.inicial || acceptedSystemChallengeIds.has(challenge.id))
+            && !completedIds.has(challenge.id)
         ));
         const clearedArenaCount = allArenas.reduce((count, arena) => {
             const arenaActions = getActionsForArena(arena.id);
@@ -12775,15 +12739,24 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             }
             if (challenge.id === 'system-first-campaign') return allArenas.some((arena) => Boolean(arena.originCodexId));
             if (challenge.id === 'system-first-cycle') return Boolean(activeCycle) || reports.length > 0;
-            if (challenge.id === 'system-five-day-proof-streak') {
-                return normalizeDailyProofStreak(userProfile.dailyProofStreak).current >= 5;
-            }
             if (challenge.id === 'system-first-arena-gold') return clearedArenaCount >= 1;
-            if (challenge.id === 'system-twenty-actions') {
-                const realActionIds = new Set(actions.filter((action) => action.actionType !== 'Livre').map((action) => action.id));
-                return tasks.filter((task) => task.completed && realActionIds.has(task.actionId)).length >= 20;
-            }
             if (challenge.id === 'system-first-cycle-report') return reports.length > 0;
+
+            // As iniciais novas: cada uma e uma parte do app que a pessoa
+            // conheceu. Todas leem estado que este efeito ja tem em maos.
+            if (challenge.id === 'system-first-arena-created') return allArenas.length > 0;
+            if (challenge.id === 'system-first-planned-day') return tasks.length > 0;
+            if (challenge.id === 'system-first-action-done') {
+                const reais = new Set(actions.filter((a) => a.actionType !== 'Livre').map((a) => a.id));
+                return tasks.some((task) => task.completed && reais.has(task.actionId));
+            }
+            if (challenge.id === 'system-first-equipped-item') {
+                return (userProfile.inventory || []).some((item) => item.isEquipped);
+            }
+            // Pelo ref, e nao pelo memo: o memo do pacto e declarado depois deste
+            // efeito no provider, e cita-lo na lista de dependencias quebraria.
+            if (challenge.id === 'system-first-individual-mission') return Boolean(arenaPactRef.current.pact);
+            if (challenge.id === 'system-first-clan') return Boolean(clan?.id);
             return false;
         });
 
@@ -12827,6 +12800,9 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         userProfile.completedSeasonMissions,
         userProfile.dailyProofStreak,
         userProfile.acceptedSystemChallenges,
+        userProfile.inventory,
+        allArenas,
+        clan,
     ]);
 
     const clearPendingTasksForAction = async (actionId: string) => {
@@ -14155,8 +14131,12 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     const arenaPactProgress = useMemo(() => {
         if (!activeArenaPact) return null;
         const arena = allArenas.find((entry) => entry.id === activeArenaPact.arenaId) || null;
-        return measurePactProgress(activeArenaPact, arena, actions, tasks);
-    }, [actions, activeArenaPact, allArenas, tasks]);
+        return measurePactProgress(activeArenaPact, arena, actions, tasks, arenaPactToday);
+    }, [actions, activeArenaPact, allArenas, tasks, arenaPactToday]);
+
+    // O ref acompanha os memos: e por ele que o dominio de tarefa enxerga o pacto
+    // na hora de comentar uma conclusao.
+    arenaPactRef.current = { pact: activeArenaPact, progress: arenaPactProgress };
 
     const arenaPactCandidates = useMemo(
         () => (activeArenaPact
@@ -14177,26 +14157,98 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         [actions, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks],
     );
 
-    const acceptArenaPact = async (pact: ArenaPact) => {
-        if (activeArenaPact) {
-            showToast('Voce ja tem uma missao em andamento. Termine ou abandone antes de aceitar outra.', 'warning');
+    /**
+     * Aceitar — e, com `substituir`, TROCAR.
+     *
+     * Na pratica ninguem quer sair de um pacto: quer trocar por outro. Ate aqui
+     * isso custava quatro passos (encerrar, fechar, reabrir, escolher) porque a
+     * proposta some da tela enquanto ha pacto ativo.
+     *
+     * O servidor recusa aceitar com um pacto de pe (`PACT_ALREADY_ACTIVE`), entao
+     * a troca e encerrar-e-aceitar, nessa ordem. A opcao nova e validada ANTES de
+     * encerrar a antiga — validacao local, sem rede —, para nao derrubar o que a
+     * pessoa tinha por causa de uma proposta que ja tinha expirado.
+     */
+    /**
+     * UM SLOT SO, duas familias.
+     *
+     * A missao individual pode ser DE ARENA ("Salvar Academia") ou DE SISTEMA
+     * ("Conclua 20 acoes"). Ate aqui eram dois slots paralelos: dava para estar
+     * com as duas ao mesmo tempo sem saber de nenhuma.
+     *
+     * Missao INICIAL nao entra na conta — ela nao se aceita, acontece sozinha e
+     * nao ocupa nada.
+     */
+    const missaoDeSistemaAtiva = useMemo(() => {
+        const aceitas = new Set(userProfile.acceptedSystemChallenges || []);
+        const concluidas = new Set(userProfile.completedSeasonMissions || []);
+        return SYSTEM_CHALLENGES.find((desafio) => (
+            !desafio.inicial && aceitas.has(desafio.id) && !concluidas.has(desafio.id)
+        )) || null;
+    }, [userProfile.acceptedSystemChallenges, userProfile.completedSeasonMissions]);
+
+    const acceptArenaPact = async (pact: ArenaPact, substituir = false) => {
+        const anterior = activeArenaPact;
+
+        // O slot pode estar ocupado por uma missao de SISTEMA. Sem isto a pessoa
+        // ficaria com duas em andamento e o Oraculo falaria de uma so.
+        if (missaoDeSistemaAtiva && !substituir) {
+            showToast(`Voce ja tem "${missaoDeSistemaAtiva.title}" em andamento. Termine ou troque antes de aceitar outra.`, 'warning');
             return;
         }
-        await updateUserProfile(toArenaPactState(pact));
-        showToast(`Missao aceita: ${pact.title}`, 'success');
+
+        if (anterior && !substituir) {
+            showToast('Voce ja tem uma missao individual em andamento. Termine ou troque antes de aceitar outra.', 'warning');
+            return;
+        }
+        const fresh = getArenaPactOptionsForArena(pact.arenaId).find(option => option.kind === pact.kind && option.difficulty === pact.difficulty);
+        if (!fresh) { showToast('Esta missão não está mais disponível. Abra as propostas novamente.', 'warning'); return; }
+
+        // Trocar uma de sistema por uma de arena: o progresso da anterior fica
+        // gravado (ele vem das conclusoes, nao de um contador proprio).
+        if (missaoDeSistemaAtiva && substituir) {
+            await updateUserProfile({
+                acceptedSystemChallenges: (userProfile.acceptedSystemChallenges || [])
+                    .filter((id) => id !== missaoDeSistemaAtiva.id),
+            });
+        }
+
+        if (anterior) {
+            const { error: erroAoEncerrar } = await supabase.rpc('abandon_arena_pact');
+            if (erroAoEncerrar) { showToast('Não foi possível trocar de missão agora.', 'error'); throw new Error('PACT_REPLACE_FAILED'); }
+            await updateUserProfile(toArenaPactState(null));
+        }
+
+        const { data, error } = await supabase.rpc('accept_arena_pact', {
+            p_arena_id: fresh.arenaId, p_kind: fresh.kind, p_difficulty: fresh.difficulty, p_goal: fresh.goal,
+        });
+        if (error || !data?.success) {
+            // O anterior JA foi encerrado. Calar isso deixaria a pessoa achando
+            // que continua com ele.
+            showToast(anterior
+                ? `"${anterior.title}" foi encerrada, mas a nova missão não pôde ser salva. Abra as propostas de novo.`
+                : (error?.message || 'Não foi possível salvar a missão. Aplique a atualização SQL.'), 'error');
+            throw new Error('PACT_ACCEPT_FAILED');
+        }
+        await updateUserProfile(toArenaPactState({ ...fresh, startedOn: data.started_on, endsOn: data.ends_on }));
+        showToast(anterior
+            ? `"${fresh.title}" substituiu "${anterior.title}".`
+            : `Missão aceita: ${fresh.title}`, 'success');
     };
 
     const abandonArenaPact = async () => {
         if (!activeArenaPact) return;
+        const { error } = await supabase.rpc('abandon_arena_pact');
+        if (error) { showToast('Não foi possível encerrar o pacto.', 'error'); return; }
         await updateUserProfile(toArenaPactState(null));
-        showToast('Missao abandonada. O Oraculo pode propor outra quando voce pedir.', 'info');
+        showToast('Missao encerrada. O Oraculo pode propor outra quando voce pedir.', 'info');
     };
 
     const claimArenaPact = async () => {
         const pact = activeArenaPact;
         if (!pact) return;
         if (!arenaPactProgress?.completed) {
-            showToast('Essa missao ainda nao esta cumprida.', 'warning');
+            showToast('Essa missão ainda não está cumprida.', 'warning');
             return;
         }
 
@@ -14216,6 +14268,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             wallet: { ...userProfile.wallet, gold: nextGold },
         });
 
+        if (data?.already_claimed) return;
         await grantMissionReward({
             completionId: pact.id,
             title: pact.title,
@@ -14284,14 +14337,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     return (
         <GameContext.Provider value={{
             session,
-            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, addCompletedMission, acceptSeasonQuest,
+            getSharedActionPoolProgress, isNewUser, assets, actions, arenaFolders, tasks, taskPool, checklistItems, sequenceItems, userProfile, friends, friendRequestsIncoming, friendRequestsOutgoing, clanJoinRequestsIncoming, clanJoinRequestsOutgoing, reports, nobilityRanks, clan, clanRanks, enrichedClanMembers, activeCycle, upcomingCycle, dailyCommitment, judgedOperationalDates, judgedTaskIdsByDate, achievementUnlocked, seasons, seasonMissions, seasonQuests, clanQuestProgress, clanQuestParticipants, getClanQuestProgress, getClanQuestForActionName, getClanQuestsForArena, fetchClanQuestParticipants, levelUnlocks, setAchievementUnlocked, updateLevelUnlocks, grantUserUnlock, acceptSeasonQuest,
             abortSeasonQuest,
-            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
+            addProfileFlag, feed, addFeedEvent, getArenas, addArena, updateArena, getActionsForArena, addAction, ...taskDomain, clearPendingTasksForAction, ensureTasksLoadedThrough, updateAction, deleteAction, deleteArena, toggleChecklistItem, addChecklistItem, updateChecklistItem, deleteChecklistItem, addSequenceItem, updateSequenceItem, markSequenceItemToday, adjustSequenceItemDays, resetSequenceItem, deleteSequenceItem, updateUserProfile, addFriend, searchPlayers, sendFriendRequest, acceptFriendRequest, declineFriendRequest, cancelFriendRequest, setCurrentSkin, updateAllAssetLevels, startCycle, updateCycle, endCycle, startNewCycle, updateMood, recordMoodEntry, fetchMoodHistory, getAssetForAction, getActionBackgroundStyle, setDailyCommitment, updateOperationalScratch, lockDailyCommitment, unlockDailyCommitment, endDailyBattle, resetDailyCommitment, manualCloseSITREP, openChest, applyExp, addChest, createClan, updateClan, leaveClan, transferLeadershipAndLeave, deleteClan, kickClanMember, addClanMember, searchClans, joinClan, respondToClanInvite, approveClanJoinRequest, rejectClanJoinRequest, cancelClanJoinRequest,
             directMessages, dmConversations, blockedUsers, blockedUserIds, sendDirectMessage, markDMAsRead, fetchDMs, blockUser, unblockUser, submitModerationReport,
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
-            activeArenaPact, arenaPactProgress, arenaPactCandidates, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact
+            activeArenaPact, arenaPactProgress, arenaPactCandidates, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva
         }}>
             {children}
         </GameContext.Provider>
@@ -14314,5 +14367,3 @@ export const useGame = () => {
     if (!builder.isBuilderMode) return context;
     return { ...context, ...builder.gameOverrides };
 };
-
-

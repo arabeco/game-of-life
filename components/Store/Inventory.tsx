@@ -5,11 +5,11 @@ import { ItemDef, resolveItemDef, isItemCatalogVisible } from '../../constants/i
 import { CheckIcon, SovereignIcon } from '../Icons';
 import { SovereignCustomizer } from '../SovereignCustomizer';
 import { ItemDetailModal } from '../ItemDetailModal';
-import { ChestType, RewardModalPayload } from '../../types';
-import { getChestVisual, getTierVisual, normalizeVisualRarity, withAlpha } from '../../constants/rarityVisuals';
+import { useSensoryFeedback } from '../../hooks/useSensoryFeedback';
+import { ChestType } from '../../types';
+import { getChestDisplayName, getChestRarity, getChestTier, getChestVisual, getTierVisual, withAlpha } from '../../constants/rarityVisuals';
+import { getChestArtUrl } from '../../constants/catalogAssets';
 import { ItemArt } from '../ItemArt';
-import { RewardPackModal } from '../RewardPackModal';
-import { buildChestRewardPayload } from '../../utils/chestRewardPresentation';
 import { resolveCatalogAssetUrl } from '../../constants/catalogAssets';
 
 type InventoryTab = 'all' | 'sovereign' | 'glyph' | 'interface' | 'honors' | 'chests';
@@ -37,13 +37,17 @@ const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
 ];
 
 export const Inventory: React.FC = () => {
-    const { inventory, userProfile, updateUserProfile, openChest } = useGame();
+    const { inventory, userProfile, updateUserProfile, openChest, showToast } = useGame();
     const [activeTab, setActiveTab] = useState<InventoryTab>('all');
     
     // --- Editors State ---
     const [showSovereignEditor, setShowSovereignEditor] = useState(false);
     const [selectedItem, setSelectedItem] = useState<{ def: ItemDef, instanceId: string } | null>(null);
-    const [inventoryRewardPayload, setInventoryRewardPayload] = useState<RewardModalPayload | null>(null);
+    const [avisoDoItem, setAvisoDoItem] = useState<string | null>(null);
+    const [extrasDoBau, setExtrasDoBau] = useState<Array<{ label: string; value: string; simbolo?: 'ouro' | 'fragmento' | 'exp' }>>([]);
+    // Enquanto o bau abre. Segura o modal do item para a animacao acontecer.
+    const [abrindoBau, setAbrindoBau] = useState<ChestType | null>(null);
+    const { trigger } = useSensoryFeedback();
 
     // Toda aba aparece para todo mundo. Quem nao liga para cosmetico simplesmente
     // nao entra nelas - esconder dava trabalho e nao devolvia nada.
@@ -122,6 +126,10 @@ export const Inventory: React.FC = () => {
 
     const userChests = userProfile.chests || [];
 
+    // O emoji do bau passou a ser so a rede de seguranca: a arte de verdade vem
+    // de getChestArtUrl. Vale lembrar o que estes emoji sao, porque nenhum deles
+    // e um bau — o de "epico" e uma URNA DE VOTACAO e o de "comum" e a caixa de
+    // saida de e-mail. Ficaram porque nao havia desenho; agora ha.
     const getChestIcon = (type: string) => {
         const normalized = type.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
         if (normalized.includes('comum') || normalized === 'incomum') return '\u{1F4E4}';
@@ -140,22 +148,23 @@ export const Inventory: React.FC = () => {
         if (normalized === 'raro' || normalized === 'radiante') return 'RARO';
         if (normalized === 'ciclo') return 'CICLO';
         if (normalized === 'epico') return '\u00C9PICO';
-        if (normalized === 'season') return 'TEMPORADA';
+        if (normalized === 'season') return 'MÍTICO';
         if (normalized === 'lendario' || normalized === 'legendary') return 'LENDARIO';
         return type.toUpperCase();
     };
 
     const getChestItemDef = (type: string): ItemDef => {
         const normalized = type.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        const rarity = normalizeVisualRarity(type) || (normalized.includes('ciclo') ? 'rare' : 'common');
+        const rarity = getChestRarity(type);
 
         return {
             id: `chest_${normalized}`,
-            name: type,
+            name: getChestDisplayName(type),
             category: 'chest',
-            tier: rarity === 'legendary' ? 5 : rarity === 'epic' ? 4 : rarity === 'rare' ? 3 : rarity === 'uncommon' ? 2 : 1,
-            rarity: rarity === 'quest' ? 'rare' : rarity,
+            tier: getChestTier(type),
+            rarity,
             icon: getChestIcon(type),
+            imageUrl: getChestArtUrl(type),
             description: 'Um baú contendo recompensas misteriosas. Abra para descobrir o que ha dentro!'
         };
     };
@@ -175,11 +184,59 @@ export const Inventory: React.FC = () => {
         return type;
     };
 
+    /**
+     * Abrir o bau: fecha o modal do bau, mostra a abertura, entrega o item.
+     *
+     * O video de abertura foi retirado — o ChestOpeningModal nao era importado
+     * por ninguem havia tempo, entao os cinco mp4 no storage nunca rodaram para
+     * ninguem. No lugar dele fica uma abertura curta com haptico, e o premio
+     * aparece no MODAL DO ITEM, com arte grande e descricao, em vez do modal de
+     * recompensa, que carrega varias informacoes e rouba o foco do que saiu.
+     *
+     * Duplicata continua no modal de recompensa: ali nao ha item novo para
+     * mostrar, o que interessa e quantos fragmentos entraram.
+     */
     const handleInventoryChestOpen = async (chestName: string) => {
         const chestType = resolveChestTypeFromName(chestName);
-        const result = await openChest(chestType);
+        setSelectedItem(null);
+        setExtrasDoBau([]);
+        setAbrindoBau(chestType);
+        trigger('impact');
+
+        // A espera e do servidor; a pausa minima existe para a abertura nao
+        // piscar quando a resposta volta rapido demais para o olho acompanhar.
+        const [result] = await Promise.all([
+            openChest(chestType),
+            new Promise((resolve) => setTimeout(resolve, 900)),
+        ]);
+
+        setAbrindoBau(null);
         if (!result) return;
-        setInventoryRewardPayload(buildChestRewardPayload(result, chestType));
+
+        // Duplicata cai no MESMO modal. O servidor ja sorteia primeiro entre o
+        // que a pessoa nao tem; duplicata so acontece quando o patamar inteiro
+        // ja e dela. Nesse caso o item existe e tem arte — o que muda e so o
+        // que aconteceu com ele, e isso cabe numa linha.
+        const recebido = result.itemId ? resolveItemDef(result.itemId) : null;
+        if (recebido) {
+            const extras: Array<{ label: string; value: string; simbolo?: 'ouro' | 'fragmento' }> = [];
+            if (Number(result.fragmentsGained || 0) > 0) {
+                extras.push({ label: 'Fragmentos', value: `+${result.fragmentsGained}`, simbolo: 'fragmento' });
+            }
+            if (Number(result.goldGained || 0) > 0) {
+                extras.push({ label: 'Ouro', value: `+${result.goldGained}`, simbolo: 'ouro' });
+            }
+            setExtrasDoBau(extras);
+            trigger(result.isDuplicate ? 'success' : 'fanfare');
+            setAvisoDoItem(result.isDuplicate
+                ? `Você já tinha este item. Convertido em +${result.fragmentsGained || 0} fragmentos.`
+                : null);
+            setSelectedItem({ def: recebido, instanceId: `bau-${result.itemId}` });
+            return;
+        }
+
+        trigger('success');
+        showToast(`Baú aberto. +${result.fragmentsGained || 0} fragmentos.`, 'success');
     };
 
     return (
@@ -226,7 +283,16 @@ export const Inventory: React.FC = () => {
                                 onClick={() => setSelectedItem({ def: getChestItemDef(chest.type), instanceId: `chest-${idx}` })}
                             >
                                 <div className="group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg flex items-center justify-center w-full h-full mb-3">
-                                    <span className="text-4xl">{getChestIcon(chest.type)}</span>
+                                    <ItemArt
+                                        itemId={`chest-${chest.type}`}
+                                        src={getChestArtUrl(chest.type)}
+                                        alt={getChestLabel(chest.type)}
+                                        icon={getChestIcon(chest.type)}
+                                        category="chest"
+                                        className="w-3/4 h-3/4 flex items-center justify-center"
+                                        imgClassName="w-full h-full object-contain"
+                                        iconClassName="text-4xl"
+                                    />
                                 </div>
                                 <div className="absolute bottom-2 left-1 right-1 text-center">
                                     <span className="block w-full truncate text-[9px] font-bold uppercase tracking-wider drop-shadow-md" style={{ color: getChestVisual(chest.type).hex }}>
@@ -303,13 +369,43 @@ export const Inventory: React.FC = () => {
             </div>
             </div>
 
+            {/* A abertura. Curta de proposito: cerimonia longa em acao repetida
+                vira pedagio, e bau se abre varias vezes por ciclo. */}
+            {abrindoBau && (
+                <div className="fixed inset-0 z-[80] flex flex-col items-center justify-center gap-5 bg-black/85 backdrop-blur-sm animate-fade-in">
+                    <div
+                        className="relative flex h-40 w-40 items-center justify-center rounded-3xl border animate-pulse"
+                        style={{
+                            borderColor: withAlpha(getChestVisual(abrindoBau).rgb, 0.5),
+                            background: `radial-gradient(circle at 50% 45%, ${withAlpha(getChestVisual(abrindoBau).rgb, 0.28)}, transparent 70%)`,
+                            boxShadow: `0 0 60px ${withAlpha(getChestVisual(abrindoBau).rgb, 0.35)}`,
+                        }}
+                    >
+                        <img
+                            src={getChestArtUrl(abrindoBau)}
+                            alt=""
+                            className="h-28 w-28 object-contain drop-shadow-2xl"
+                        />
+                    </div>
+                    <p
+                        className="text-[10px] font-black uppercase tracking-[0.3em]"
+                        style={{ color: getChestVisual(abrindoBau).hex }}
+                    >
+                        Abrindo
+                    </p>
+                </div>
+            )}
+
             {/* Editors Modals */}
             {selectedItem && (
                 <ItemDetailModal 
                     item={selectedItem.def} 
                     instanceId={selectedItem.instanceId}
                     type="inventory" 
-                    onClose={() => setSelectedItem(null)}
+                    aviso={avisoDoItem || undefined}
+                    focusMode={selectedItem.instanceId.startsWith('bau-')}
+                    extrasRecebidos={extrasDoBau}
+                    onClose={() => { setSelectedItem(null); setAvisoDoItem(null); setExtrasDoBau([]); }}
                     onOpen={() => {
                         if (selectedItem.def.category === 'chest') {
                             void handleInventoryChestOpen(selectedItem.def.name);
@@ -317,15 +413,6 @@ export const Inventory: React.FC = () => {
                     }} 
                 />
             )}
-            <RewardPackModal
-                open={!!inventoryRewardPayload}
-                payload={inventoryRewardPayload}
-                onClose={() => setInventoryRewardPayload(null)}
-                fallbackEyebrow="RECOMPENSA"
-                fallbackTitle="Baú aberto"
-                fallbackSummary="Seu prêmio já foi integrado ao inventário."
-                fallbackButtonLabel="Fechar"
-            />
             {showSovereignEditor && (
                 <SovereignCustomizer
                     initialConfig={userProfile.sovereign}
@@ -339,4 +426,3 @@ export const Inventory: React.FC = () => {
         </div>
     );
 };
-

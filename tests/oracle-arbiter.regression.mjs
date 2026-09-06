@@ -493,76 +493,6 @@ for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
 }
 
 
-// --- a sequencia que vai morrer hoje ----------------------------------------
-// O streak e lazy: so e reavaliado quando a pessoa conclui alguma coisa. Nada
-// rodava quando ela NAO fazia nada — exatamente quando ele morre. O dado sempre
-// esteve la; ninguem perguntava.
-//
-// E nenhuma das 200 linhas do app mencionava o numero. O que mais segura a
-// pessoa era a unica coisa que o Oraculo nao comentava.
-
-const sequenciaEmRisco = {
-  ...contextoBase,
-  daysSinceLastProof: 1,
-  dailyProofStreakCurrent: 23,
-  hourOfDay: 22,
-};
-const risco = detectOracleCandidates(sequenciaEmRisco).filter((c) => c.type === 'streak_em_risco');
-assert.equal(risco.length, 1, '23 dias, nada hoje, 22h: a sequencia esta em risco');
-
-const falaRisco = buildPlannerCoachSpeech(sequenciaEmRisco, () => 0, 'calmo');
-assert.ok(/23/.test(falaRisco), 'a fala diz o numero — e o numero que reconhece o percurso');
-assert.ok(!/\{\w+\}/.test(falaRisco), 'nenhum marcador pode sobrar');
-
-// Todas as vozes falam o numero: o gate garante que ele existe sempre que dispara.
-for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
-  const linha = buildPlannerCoachSpeech(sequenciaEmRisco, () => 0, tom);
-  assert.ok(/23/.test(linha), `${tom} precisa dizer o numero da sequencia`);
-}
-
-// Vence tudo, inclusive a estrutura inflada: e a unica coisa que morre sozinha
-// se ninguem falar. A conta que nao fecha continua nao fechando amanha de manha.
-assert.equal(
-  rankOracleCandidates({
-    ...sequenciaEmRisco,
-    daysSinceLastPlannerOpen: 6,
-    cycleDayNumber: 12,
-    plannedDailyDemand: 40,
-    bestDailyCompletions: 7,
-    daysWithCompletions: 9,
-  }, ORACLE_PRESENCE.PRESENTE)[0].type,
-  'streak_em_risco',
-  'o que expira hoje fala antes do que expira nunca',
-);
-
-// --- e os portoes ------------------------------------------------------------
-
-const semRisco = (mudancas, motivo) => assert.deepEqual(
-  detectOracleCandidates({ ...sequenciaEmRisco, ...mudancas }).filter((c) => c.type === 'streak_em_risco'),
-  [], motivo,
-);
-
-semRisco({ hourOfDay: 10 }, 'de manha ainda ha dia inteiro pela frente');
-semRisco({ dailyProofStreakCurrent: 2 }, 'perder um streak de 2 nao doi, e avisar ensina a ignorar o aviso');
-semRisco({ daysSinceLastProof: 0 }, 'ja entregou hoje: nao ha risco nenhum');
-
-// A madrugada ainda e o mesmo dia operacional — que vira as 4h — entao 1h da
-// manha continua sendo hora de risco, e nao "amanha de manha cedo".
-assert.equal(
-  detectOracleCandidates({ ...sequenciaEmRisco, hourOfDay: 1 })
-    .filter((c) => c.type === 'streak_em_risco').length,
-  1,
-  'a madrugada pertence ao dia que ainda nao fechou',
-);
-
-// O Silencioso continua calado. Quem quiser ser avisado usa o interruptor de
-// alertas, que e outra coisa: presenca decide o que ele COMENTA.
-assert.deepEqual(
-  rankOracleCandidates(sequenciaEmRisco, ORACLE_PRESENCE.SILENCIOSO), [],
-  'nem a sequencia morrendo fura o pacto do Silencioso',
-);
-
-
 // --- memoria: ele para de repetir --------------------------------------------
 // Cada fala nascia so do estado de AGORA. Ele nunca soube que tinha dito a mesma
 // coisa ontem. Quem esta em `prioridade` fica em `prioridade` por semanas, e com
@@ -679,81 +609,6 @@ for (const tipo of ORACLE_CANDIDATE_TYPES) {
   );
 }
 
-
-// --- marcos de sequencia -----------------------------------------------------
-// Sem eles o numero nao significa nada: se o dia 30 chega com a mesma frase do
-// dia 12, o acumulado nunca vira acumulado.
-
-const marco = (streak) => ({ ...contextoBase, daysSinceLastProof: 0, dailyProofStreakCurrent: streak });
-
-for (const numero of [7, 14, 30, 60, 100]) {
-  const encontrados = detectOracleCandidates(marco(numero)).filter((c) => c.type === 'streak_marco');
-  assert.equal(encontrados.length, 1, `${numero} dias e marco`);
-  const linha = buildPlannerCoachSpeech(marco(numero), () => 0, 'neutro');
-  assert.ok(new RegExp(String(numero)).test(linha), `a fala do marco ${numero} diz o numero`);
-}
-
-// Dia comum nao e marco.
-for (const numero of [6, 12, 31]) {
-  assert.deepEqual(
-    detectOracleCandidates(marco(numero)).filter((c) => c.type === 'streak_marco'),
-    [], `${numero} dias nao e marco`,
-  );
-}
-
-// Marco anunciado no dia seguinte e resenha, nao celebracao.
-assert.deepEqual(
-  detectOracleCandidates({ ...marco(30), daysSinceLastProof: 1 }).filter((c) => c.type === 'streak_marco'),
-  [], 'sem entrega hoje o marco nao foi alcancado hoje',
-);
-
-// O boost cresce com o marco: 100 dias e 7 dias sao coisas diferentes com o
-// mesmo nome, e so o primeiro ganha de uma arena parada.
-const nota = (n) => detectOracleCandidates(marco(n)).find((c) => c.type === 'streak_marco').score;
-assert.ok(nota(100) > nota(30) && nota(30) > nota(7), 'marco maior pesa mais');
-
-const arenaParadaComMarco = {
-  ...marco(100),
-  arenas: [arena({ adjustment: 'pausar_arena', daysSinceProof: 9 })],
-};
-assert.equal(
-  rankOracleCandidates(arenaParadaComMarco, ORACLE_PRESENCE.PRESENTE)[0].type,
-  'streak_marco',
-  'cem dias ganham de uma arena parada',
-);
-assert.equal(
-  rankOracleCandidates({ ...arenaParadaComMarco, dailyProofStreakCurrent: 7 }, ORACLE_PRESENCE.PRESENTE)[0].type,
-  'arena_parada',
-  'sete dias, nao',
-);
-
-// A unica entrada do banco que so oferece: nada de pedir acao no momento em que
-// a pessoa nao deve nada a ninguem.
-for (const tom of ['neutro', 'coach', 'reflexivo', 'calmo']) {
-  const linha = buildPlannerCoachSpeech(marco(30), () => 0, tom);
-  assert.doesNotMatch(
-    semAcento(linha), /escolhe uma|feche uma|abra |uma acao hoje|corte /i,
-    `${tom}: marco nao pede nada`,
-  );
-}
-
-// --- a segunda noite seguida no limite --------------------------------------
-// `diasSeguidos` vem da memoria e nao do detector, e na primeira vez vale null —
-// entao fillCoachLine invalida sozinho as linhas que o usam. A variacao "segunda
-// noite" nao existe ate existir, sem nenhum `if` a mais.
-
-const noiteEmRisco = { ...contextoBase, daysSinceLastProof: 1, dailyProofStreakCurrent: 23, hourOfDay: 22 };
-
-const primeiraNoite = buildPlannerCoachSpeechDetailed(noiteEmRisco, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE, [], HOJE);
-assert.ok(!/\{diasSeguidos\}|undefined|null/.test(primeiraNoite.line), 'primeira noite nao usa a variavel que nao existe');
-assert.equal(primeiraNoite.consecutiveDays, 0, 'primeira noite nao tem dias seguidos');
-
-const segundaNoite = buildPlannerCoachSpeechDetailed(
-  noiteEmRisco, () => 0, 'neutro', ORACLE_PRESENCE.PRESENTE,
-  [{ type: 'streak_em_risco', date: ONTEM, line: 'x' }], HOJE,
-);
-assert.equal(segundaNoite.consecutiveDays, 1, 'ontem tambem foi noite de risco');
-assert.ok(!/\{\w+\}/.test(segundaNoite.line), 'nenhum marcador pode sobrar');
 
 // --- a volta e o acontecimento ----------------------------------------------
 // As linhas antigas anunciavam a ausencia para quem acabara de encerra-la:
@@ -908,38 +763,14 @@ assert.match(texto, /=>/, 'o texto diz no que deu');
 assert.match(texto, new RegExp(decisao.chosen.entry.type), 'o texto nomeia o vencedor');
 assert.match(formatOracleDecisionLog([]), /Sem decisoes/, 'log vazio nao quebra o texto');
 
-// A sequencia morta nao pede socorro.
-//
-// `dailyProofStreakCurrent` e um retrato da data da ultima entrega, nao um
-// contador vivo — nada o decai nos dias em que a pessoa nao abre o app. Quem
-// tinha 5 dias em agosto e parou continua com 5 gravado hoje, e a condicao antiga
-// (`daysSinceLastProof >= 1`) achava que isso era risco. Avisar de perda depois
-// da perda e cobranca, nao aviso.
-{
-  const base = {
-    hourOfDay: 21,
-    dailyProofStreakCurrent: 5,
-  };
-
-  const viva = detectOracleCandidates({ ...base, daysSinceLastProof: 1 });
-  assert.ok(
-    viva.some((candidato) => candidato.type === 'streak_em_risco'),
-    'entregou ontem e hoje esta vazio: e exatamente o caso que o aviso existe para pegar',
-  );
-
-  for (const distancia of [2, 7, 23]) {
-    const morta = detectOracleCandidates({ ...base, daysSinceLastProof: distancia });
-    assert.ok(
-      !morta.some((candidato) => candidato.type === 'streak_em_risco'),
-      `ultima entrega ha ${distancia} dias: a sequencia ja acabou, nao ha o que salvar`,
-    );
+// Nenhum numero, horario ou distancia reativa a sequencia global.
+for (const streak of [0, 2, 7, 14, 23, 30, 60, 100]) {
+  for (const days of [0, 1, 2, 7, 23]) {
+    for (const hour of [1, 10, 22]) {
+      const ctx = { ...contextoBase, dailyProofStreakCurrent: streak, daysSinceLastProof: days, hourOfDay: hour };
+      assert.deepEqual(detectOracleCandidates(ctx).filter(c => c.type.startsWith('streak_')), []);
+    }
   }
-
-  const entregueHoje = detectOracleCandidates({ ...base, daysSinceLastProof: 0 });
-  assert.ok(
-    !entregueHoje.some((candidato) => candidato.type === 'streak_em_risco'),
-    'ja entregou hoje: a sequencia esta de pe',
-  );
 }
 
 console.log('Oracle arbiter: candidatos competem, o pior de cada tipo fala primeiro, e o silencio e uma resposta valida.');

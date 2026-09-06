@@ -1,6 +1,7 @@
 import React from 'react';
 import { GlassCard } from './GlassCard';
 import { Portal } from './Portal';
+import { announceBlockingOverlay } from '../utils/blockingOverlay';
 
 interface ConfirmationModalProps {
     title: string;
@@ -26,6 +27,15 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     icon,
 }) => {
     const isDanger = variant === 'danger';
+
+    // Toda confirmacao do app passa por aqui, entao um anuncio so impede que
+    // QUALQUER celebracao pule na frente de uma pergunta que espera resposta.
+    // Sem isto, o "MISSAO CONCLUIDA" da missao inicial cobria ate o modal de
+    // deletar conta — a pessoa via a festa e nao via o botao que ela procurava.
+    React.useEffect(() => {
+        announceBlockingOverlay(true);
+        return () => announceBlockingOverlay(false);
+    }, []);
 
     return (
         <Portal>

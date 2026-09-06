@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Os Modais — Glyph</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:28px 24px 80px; background:#0e1013; color:#e7e9ec;
+         font:14px/1.55 system-ui,-apple-system,Segoe UI,sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; }
+  h1 { font-size:26px; margin:0 0 6px; }
+  h2 { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8b929c;
+       margin:36px 0 12px; border-bottom:1px solid #23262c; padding-bottom:7px; }
+  p.lead { color:#969ca6; max-width:72ch; margin:0 0 14px; }
+  .carimbo { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 8px; }
+  .carimbo span { font:11px/1 ui-monospace,monospace; color:#8b929c; border:1px solid #2a2e35;
+                  border-radius:5px; padding:6px 9px; background:#14171b; }
+  .nota { margin-top:12px; padding:11px 13px; border-left:2px solid #d8b44c; background:#14171b;
+          color:#969ca6; font-size:13.5px; }
+  .nota strong { color:#e7e9ec; }
+  .eventos { display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px; }
+  .evento { border:1px solid #23262c; border-radius:10px; background:#111417; padding:14px; }
+  .evento header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .emblema { width:52px; height:52px; object-fit:contain; }
+  .evento h3 { margin:0; font-size:15px; }
+  .tom { display:inline-block; margin-top:4px; font:9px ui-monospace,monospace; letter-spacing:.08em;
+         color:var(--c); border:1px solid color-mix(in srgb, var(--c) 45%, transparent);
+         border-radius:3px; padding:2px 6px; }
+  dl { display:grid; grid-template-columns:78px minmax(0,1fr); gap:4px 10px; margin:0 0 12px; }
+  dt { font:9px ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; color:#6e747c; }
+  dd { margin:0; font-size:12px; color:#c9cdd3; overflow-wrap:anywhere; }
+  .metricas { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .metrica { width:84px; border:1px solid #3b3934; background:#0d0e11; padding:8px 4px;
+             text-align:center; }
+  .nicho { display:grid; place-items:center; width:28px; height:28px; margin:0 auto 5px;
+           border:1px solid #3a3e47; background:#07090c; }
+  .nicho.vazio { color:#4d535b; font-size:11px; }
+  .nicho img { width:19px; height:19px; }
+  .metrica b { display:block; font-size:14px; }
+  .metrica span { display:block; margin-top:4px; font:7px ui-monospace,monospace; letter-spacing:.1em;
+                  text-transform:uppercase; color:#858a93; }
+  .faixa { border:1px solid color-mix(in srgb, var(--c) 32%, transparent);
+           background:color-mix(in srgb, var(--c) 9%, transparent); padding:9px 11px; margin-bottom:10px; }
+  .faixa .rot { font:8px ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--c); }
+  .faixa b { display:block; margin-top:3px; font-size:13px; }
+  .faixa .det { display:block; margin-top:3px; font-size:10.5px; color:#8b929c; }
+  .secao { font:9px ui-monospace,monospace; letter-spacing:.2em; text-transform:uppercase;
+           color:#aaadb4; margin:12px 0 7px; }
+  .itens { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .item { display:grid; grid-template-columns:38px minmax(0,1fr); gap:8px; align-items:center;
+          border-bottom:1px solid #302f2c; background:rgba(18,18,19,.78); padding:6px; }
+  .item .arte { width:38px; height:38px; display:grid; place-items:center; overflow:hidden;
+                border:1px solid color-mix(in srgb, var(--c) 48%, transparent);
+                background:radial-gradient(circle at 34% 27%, color-mix(in srgb, var(--c) 22%, transparent), #07090b 82%); }
+  .item .arte img { width:100%; height:100%; object-fit:contain; padding:3px; }
+  .item .nome { display:block; font-size:10px; line-height:1.15; }
+  .item .rar { display:block; margin-top:3px; font:7px ui-monospace,monospace; letter-spacing:.12em;
+               text-transform:uppercase; }
+  .item.falta { grid-column:1/-1; color:#e9a268; font-size:11px; }
+  .direcoes { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; }
+  .direcao { margin:0; }
+  .placa { height:190px; padding:16px; display:flex; flex-direction:column; align-items:center; }
+  .crest { width:44px; height:44px; flex:none; }
+  .linhas { flex:1; width:100%; display:flex; flex-direction:column; justify-content:center; gap:7px; }
+  .linhas span { height:7px; background:rgba(255,255,255,.09); }
+  .linhas span:nth-child(2) { width:70%; }
+  .linhas span:nth-child(3) { width:45%; }
+  .botao { height:26px; width:100%; flex:none;
+           background-image:linear-gradient(180deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,0) 38%),
+                            linear-gradient(135deg,#5c4a1f 0%,#d4af37 50%,#5c4a1f 100%);
+           border:1px solid #ffd700; }
+  .direcao figcaption { margin-top:8px; font:11px ui-monospace,monospace; color:#8b929c; }
+  .direcao b { color:#7fd8a4; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; }
+  th,td { text-align:left; padding:8px 12px 8px 0; border-bottom:1px solid #23262c; }
+  th { font:10px ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase; color:#7c828c; }
+  td.n { font-variant-numeric:tabular-nums; }
+  footer { margin-top:52px; padding-top:16px; border-top:1px solid #23262c; color:#6e747c; font-size:12.5px; }
+</style></head><body><div class="wrap">
+
+<h1>Os Modais</h1>
+<p class="lead">Não são seis modais: é <strong>uma placa</strong> com seis emblemas e seis conteúdos.
+Esta folha não redesenha nada — ela <strong>chama os construtores de payload de verdade</strong> e
+mostra o que cada acontecimento produz. Se um construtor mudar, a folha muda junto.</p>
+
+<div class="carimbo">
+  <span>gerada 04/09/2026, 19:39</span>
+  <span>commit 9363eb9</span>
+  <span>miolo: components/RewardPackBody.tsx</span>
+</div>
+
+<div class="nota"><strong>Para ver o componente rodando, e não a descrição dele:</strong>
+<code>npm run bancada</code> abre a bancada em localhost:3010 com os modais reais, com os mesmos
+dados. Esta folha é o registro; a bancada é a prova.</div>
+
+<h2>Os seis acontecimentos</h2>
+<div class="eventos"><article class="evento">
+      <header>
+        <img class="emblema" src="../public/assets/catalog/interface/recompensa_geral.webp" alt="">
+        <div>
+          <h3>Resgate de código</h3>
+          <span class="tom" style="--c:rgb(245,158,11)">tom 245,158,11</span>
+        </div>
+      </header>
+      <dl>
+        <dt>gatilho</dt><dd>views/SettingsView.tsx · handleRedeemCode</dd>
+        <dt>moldura</dt><dd>RewardPackModal</dd>
+        <dt>sobrancelha</dt><dd>Recompensa entregue</dd>
+        <dt>título</dt><dd>Código resgatado</dd>
+        <dt>resumo</dt><dd>Seu código foi aceito. Tudo já entrou na conta.</dd>
+        <dt>botão</dt><dd>Continuar</dd>
+      </dl>
+      <div class="metricas">
+      <div class="metrica">
+        <span class="nicho"><img src="../public/assets/icons/ouro.png" alt=""></span>
+        <b>+500</b>
+        <span>Ouro</span>
+      </div>
+      <div class="metrica">
+        <span class="nicho"><img src="../public/assets/icons/fragmento.png" alt=""></span>
+        <b>+60</b>
+        <span>Fragmentos</span>
+      </div>
+      <div class="metrica">
+        <span class="nicho vazio">—</span>
+        <b>30 dias</b>
+        <span>Premium</span>
+      </div></div>
+      
+      <div class="faixa" style="--c:rgb(59,130,246)">
+        <span class="rot">Raro</span>
+        <b>Baú Raro</b>
+        <span class="det">Adicionado ao Arsenal</span>
+      </div>
+      <div class="secao">Itens recebidos</div><div class="itens"><div class="item">
+          <div class="arte" style="--c:#9CA3AF">
+            <img src="../public/assets/catalog/interface/borda_t1_aprendiz.png" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Aprendiz</span><span class="rar" style="color:#9CA3AF">Comum</span></div>
+        </div></div>
+    </article><article class="evento">
+      <header>
+        <img class="emblema" src="../public/assets/catalog/interface/insignia_missao_prata.webp" alt="">
+        <div>
+          <h3>Missão concluída</h3>
+          <span class="tom" style="--c:rgb(148,163,184)">tom 148,163,184</span>
+        </div>
+      </header>
+      <dl>
+        <dt>gatilho</dt><dd>contexts/GameContext.tsx · grantMissionReward</dd>
+        <dt>moldura</dt><dd>AchievementModal (com vídeo)</dd>
+        <dt>sobrancelha</dt><dd>Feito concluído</dd>
+        <dt>título</dt><dd>Cinco dias em movimento</dd>
+        <dt>resumo</dt><dd>Você concluiu a missão e a recompensa já entrou.</dd>
+        <dt>botão</dt><dd>Prosseguir</dd>
+      </dl>
+      <div class="metricas">
+      <div class="metrica">
+        <span class="nicho"><img src="../public/assets/icons/exp.png" alt=""></span>
+        <b>+150</b>
+        <span>EXP</span>
+      </div>
+      <div class="metrica">
+        <span class="nicho"><img src="../public/assets/icons/ouro.png" alt=""></span>
+        <b>+120</b>
+        <span>Ouro</span>
+      </div></div>
+      
+      <div class="secao">Itens recebidos</div><div class="itens"><div class="item">
+          <div class="arte" style="--c:#22C55E">
+            <img src="../public/assets/catalog/interface/insignia_missao_prata.webp" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Insígnia de Missão Incomum</span><span class="rar" style="color:#22C55E">Incomum</span></div>
+        </div></div>
+    </article><article class="evento">
+      <header>
+        <img class="emblema" src="../public/assets/catalog/interface/insignia_ciclo_bronze.webp" alt="">
+        <div>
+          <h3>Ciclo fechado</h3>
+          <span class="tom" style="--c:rgb(184,115,51)">tom 184,115,51</span>
+        </div>
+      </header>
+      <dl>
+        <dt>gatilho</dt><dd>views/ReportsView.tsx · fecho do relatório</dd>
+        <dt>moldura</dt><dd>RewardPackModal</dd>
+        <dt>sobrancelha</dt><dd>Ciclo fechado</dd>
+        <dt>título</dt><dd>Reconstrução</dd>
+        <dt>resumo</dt><dd>A EXP já entrou no seu perfil e o baú está esperando no Arsenal.</dd>
+        <dt>botão</dt><dd>Continuar</dd>
+      </dl>
+      <div class="metricas">
+      <div class="metrica">
+        <span class="nicho"><img src="../public/assets/icons/exp.png" alt=""></span>
+        <b>+3.240</b>
+        <span>EXP</span>
+      </div>
+      <div class="metrica">
+        <span class="nicho"><img src="../public/assets/icons/fragmento.png" alt=""></span>
+        <b>+60</b>
+        <span>Fragmentos</span>
+      </div></div>
+      
+      <div class="faixa" style="--c:rgb(59,130,246)">
+        <span class="rot">Baú conquistado</span>
+        <b>Baú Raro · guardado no Arsenal</b>
+        <span class="det">Abra quando quiser, pelo Arsenal.</span>
+      </div>
+      <div class="secao">Insígnias do ciclo</div><div class="itens"><div class="item">
+          <div class="arte" style="--c:#9CA3AF">
+            <img src="../public/assets/catalog/interface/insignia_ciclo_bronze.webp" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Insígnia de Relatório de Ciclo</span><span class="rar" style="color:#9CA3AF">Comum</span></div>
+        </div></div>
+    </article><article class="evento">
+      <header>
+        <img class="emblema" src="../public/assets/catalog/interface/insignia_quest_temporada.webp" alt="">
+        <div>
+          <h3>Quest de temporada</h3>
+          <span class="tom" style="--c:rgb(20,184,166)">tom 20,184,166</span>
+        </div>
+      </header>
+      <dl>
+        <dt>gatilho</dt><dd>contexts/GameContext.tsx · claimSeasonQuest</dd>
+        <dt>moldura</dt><dd>AchievementModal (com vídeo)</dd>
+        <dt>sobrancelha</dt><dd>Selo da temporada</dd>
+        <dt>título</dt><dd>Selo de Aurora I</dd>
+        <dt>resumo</dt><dd>As três jornadas foram seladas.</dd>
+        <dt>botão</dt><dd>Prosseguir</dd>
+      </dl>
+      <div class="metricas">
+      <div class="metrica">
+        <span class="nicho"><img src="../public/assets/icons/exp.png" alt=""></span>
+        <b>+500</b>
+        <span>EXP</span>
+      </div></div>
+      
+      <div class="secao">Itens recebidos</div><div class="itens"><div class="item">
+          <div class="arte" style="--c:#7B61FF">
+            <img src="../public/assets/catalog/interface/insignia_season_aurora_1.webp" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Aurora I</span><span class="rar" style="color:#7B61FF">Mítico</span></div>
+        </div><div class="item">
+          <div class="arte" style="--c:#7B61FF">
+            <img src="../public/assets/catalog/aurora_i.png" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Tema: Aurora I</span><span class="rar" style="color:#7B61FF">Mítico</span></div>
+        </div></div>
+    </article><article class="evento">
+      <header>
+        <img class="emblema" src="../public/assets/catalog/interface/insignia_season_genesis.webp" alt="">
+        <div>
+          <h3>Conquista Genesis</h3>
+          <span class="tom" style="--c:rgb(123,97,255)">tom 123,97,255</span>
+        </div>
+      </header>
+      <dl>
+        <dt>gatilho</dt><dd>contexts/GameContext.tsx · claimSeasonMission (selo)</dd>
+        <dt>moldura</dt><dd>AchievementModal · fundo vertical da temporada</dd>
+        <dt>sobrancelha</dt><dd>Conquista da Genesis</dd>
+        <dt>título</dt><dd>Gênesis</dd>
+        <dt>resumo</dt><dd>Marca de quem esteve antes da Primeira Era começar.</dd>
+        <dt>botão</dt><dd>Prosseguir</dd>
+      </dl>
+      <div class="metricas">
+      <div class="metrica">
+        <span class="nicho"><img src="../public/assets/icons/exp.png" alt=""></span>
+        <b>+1.000</b>
+        <span>EXP</span>
+      </div></div>
+      
+      <div class="secao">Itens recebidos</div><div class="itens"><div class="item">
+          <div class="arte" style="--c:#7B61FF">
+            <img src="../public/assets/catalog/interface/insignia_season_genesis.webp" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Gênesis</span><span class="rar" style="color:#7B61FF">Mítico</span></div>
+        </div><div class="item">
+          <div class="arte" style="--c:#7B61FF">
+            <img src="../public/assets/catalog/genesis.png" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Tema: Genesis</span><span class="rar" style="color:#7B61FF">Mítico</span></div>
+        </div></div>
+    </article><article class="evento">
+      <header>
+        <img class="emblema" src="../public/assets/catalog/interface/insignia_rank_2_escudeiro.webp" alt="">
+        <div>
+          <h3>Subida de patente</h3>
+          <span class="tom" style="--c:rgb(184,146,82)">tom 184,146,82</span>
+        </div>
+      </header>
+      <dl>
+        <dt>gatilho</dt><dd>contexts/GameContext.tsx · observador de patente</dd>
+        <dt>moldura</dt><dd>AchievementModal (com vídeo)</dd>
+        <dt>sobrancelha</dt><dd>Nova patente</dd>
+        <dt>título</dt><dd>Escudeiro</dd>
+        <dt>resumo</dt><dd>Sua patente subiu e o conjunto inteiro entrou no Arsenal.</dd>
+        <dt>botão</dt><dd>Prosseguir</dd>
+      </dl>
+      <div class="metricas">
+      <div class="metrica">
+        <span class="nicho"><img src="../public/assets/icons/exp.png" alt=""></span>
+        <b>+1.200</b>
+        <span>EXP</span>
+      </div></div>
+      
+      <div class="secao">Itens recebidos</div><div class="itens"><div class="item">
+          <div class="arte" style="--c:#A855F7">
+            <img src="../public/assets/catalog/cyber.jpg" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Tema: Cyberpunk</span><span class="rar" style="color:#A855F7">Épico</span></div>
+        </div><div class="item">
+          <div class="arte" style="--c:#9CA3AF">
+            <img src="../public/assets/catalog/avatars/SKIN_T1_STREET.png" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Street</span><span class="rar" style="color:#9CA3AF">Comum</span></div>
+        </div><div class="item">
+          <div class="arte" style="--c:#9CA3AF">
+            <img src="../public/assets/catalog/avatars/SKIN_T1_CASUAL_2.png" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Casual 2</span><span class="rar" style="color:#9CA3AF">Comum</span></div>
+        </div><div class="item">
+          <div class="arte" style="--c:#9CA3AF">
+            <img src="../public/assets/catalog/interface/borda_t1_aprendiz.png" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Aprendiz</span><span class="rar" style="color:#9CA3AF">Comum</span></div>
+        </div><div class="item">
+          <div class="arte" style="--c:#9CA3AF">
+            <img src="../public/assets/catalog/interface/insignia_rank_2_escudeiro.webp" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Insígnia do Escudeiro</span><span class="rar" style="color:#9CA3AF">Comum</span></div>
+        </div><div class="item">
+          <div class="arte" style="--c:#9CA3AF">
+            <img src="../public/assets/catalog/interface/banner_t1_aprendiz.png" alt="" loading="lazy">
+          </div>
+          <div><span class="nome">Aprendiz</span><span class="rar" style="color:#9CA3AF">Comum</span></div>
+        </div></div>
+    </article></div>
+
+<h2>As quatro direções da placa</h2>
+<p class="lead">Desenhadas com o CSS exportado por <code>constants/rewardPlateStyles.ts</code> — o
+mesmo objeto que o componente aplica, não uma imitação.</p>
+<div class="direcoes"><figure class="direcao">
+      <div class="placa" style="border: 1px solid #424548; background: radial-gradient(ellipse at 50% -6%, rgba(184,146,82,.16), transparent 42%), linear-gradient(145deg, rgba(184,146,82,.055), transparent 35%, rgba(184,146,82,.025) 72%, transparent), linear-gradient(160deg, #181a1d, #08090b 58%, #0e1012); box-shadow: -7px 9px 0 #060708, 0 28px 78px #000; clip-path: polygon(0 32px, 32px 0, 100% 0, 100% calc(100% - 46px), calc(100% - 46px) 100%, 0 100%)">
+        <div class="crest" style="border: 1px solid #5b5e62; background: linear-gradient(155deg, #17191c, #060708 62%); clip-path: polygon(50% 0, 100% 32%, 82% 100%, 18% 100%, 0 32%)"></div>
+        <div class="linhas"><span></span><span></span><span></span></div>
+        <div class="botao" style="clip-path: polygon(13px 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%, 0 13px)"></div>
+      </div>
+      <figcaption>A · Fissura</figcaption>
+    </figure><figure class="direcao">
+      <div class="placa" style="border: 3px solid #56585a; background: radial-gradient(ellipse at 50% -6%, rgba(184,146,82,.16), transparent 42%), linear-gradient(145deg, rgba(184,146,82,.055), transparent 35%, rgba(184,146,82,.025) 72%, transparent), linear-gradient(160deg, #1a1c1f, #090a0c 58%, #111315); box-shadow: inset 0 0 0 5px #090b0d, inset 0 0 0 6px #33363a, inset 0 0 0 9px #0b0d0f, 9px 11px 0 #050607, 12px 14px 0 #24272a, 0 30px 86px #000, 0 0 32px rgba(184,146,82,.055); clip-path: polygon(0 28px, 28px 0, calc(100% - 28px) 0, 100% 28px, 100% calc(100% - 28px), calc(100% - 28px) 100%, 28px 100%, 0 calc(100% - 28px))">
+        <div class="crest" style="border: 1px solid rgba(184,146,82,.55); background: linear-gradient(135deg, #191c20, #07090b 68%); box-shadow: inset 0 0 0 5px #080a0c, inset 0 0 0 6px #30343a, 5px 6px 0 #050607; clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0 82%, 0 18%)"></div>
+        <div class="linhas"><span></span><span></span><span></span></div>
+        <div class="botao" style="clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 18px 100%, 0 50%)"></div>
+      </div>
+      <figcaption>B · Monolito Central <b>· aprovada</b></figcaption>
+    </figure><figure class="direcao">
+      <div class="placa" style="border: 1px solid #414449; background: radial-gradient(ellipse at 50% -6%, rgba(184,146,82,.16), transparent 42%), linear-gradient(145deg, rgba(184,146,82,.055), transparent 35%, rgba(184,146,82,.025) 72%, transparent), linear-gradient(160deg, #181a1d, #08090b 58%, #0e1012); box-shadow: 0 30px 85px #000, inset 0 0 0 7px #0c0e10, inset 0 0 0 8px #282b2e; clip-path: polygon(38px 0, calc(100% - 38px) 0, 100% 55px, 100% calc(100% - 22px), calc(100% - 22px) 100%, 22px 100%, 0 calc(100% - 22px), 0 55px)">
+        <div class="crest" style="border: 1px solid #5b5e62; background: linear-gradient(145deg, #17191c, #060708); clip-path: polygon(50% 0, 94% 26%, 94% 74%, 50% 100%, 6% 74%, 6% 26%)"></div>
+        <div class="linhas"><span></span><span></span><span></span></div>
+        <div class="botao" style="clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%)"></div>
+      </div>
+      <figcaption>C · Santuário</figcaption>
+    </figure><figure class="direcao">
+      <div class="placa" style="border: 1px solid #42464a; background: radial-gradient(ellipse at 50% 0, rgba(184,146,82,.06), transparent 38%), linear-gradient(90deg, #14171a, #07090a 49.7%, #111316 50.3%, #090b0d); box-shadow: 0 28px 76px #000, inset 0 0 0 6px #0a0c0e; clip-path: polygon(22px 0, calc(100% - 22px) 0, 100% 22px, 100% calc(100% - 22px), calc(100% - 22px) 100%, 22px 100%, 0 calc(100% - 22px), 0 22px)">
+        <div class="crest" style="border: 1px solid #5b5e62; background: linear-gradient(135deg, #181a1d, #070809 65%); clip-path: polygon(20% 0, 80% 0, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0 80%, 0 20%)"></div>
+        <div class="linhas"><span></span><span></span><span></span></div>
+        <div class="botao" style="clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))"></div>
+      </div>
+      <figcaption>D · Bipartido</figcaption>
+    </figure></div>
+
+<h2>As medidas da direção B</h2>
+<p class="lead">Lidas do <code>RewardPackBody.tsx</code>. Vieram da folha aprovada
+<code>docs/drafts/reward-modal-4-direcoes.html</code>, bloco <code>.monolith</code>: trocar uma
+delas quebra a família.</p>
+<table>
+  <thead><tr><th>Peça</th><th>Padrão</th><th>Caso especial</th><th>Quando</th></tr></thead>
+  <tbody><tr>
+    <td>Suporte do emblema</td>
+    <td class="n">84 px</td>
+    <td class="n">—</td>
+    <td>—</td>
+  </tr><tr>
+    <td>PNG do emblema</td>
+    <td class="n">66 px</td>
+    <td class="n">—</td>
+    <td>—</td>
+  </tr><tr>
+    <td>Título</td>
+    <td class="n">34 px</td>
+    <td class="n">25 px</td>
+    <td>título com mais de 25 caracteres</td>
+  </tr><tr>
+    <td>Quadrado da métrica</td>
+    <td class="n">94 px</td>
+    <td class="n">76 px</td>
+    <td>quatro ou mais métricas</td>
+  </tr><tr>
+    <td>Nicho do símbolo</td>
+    <td class="n">33 px</td>
+    <td class="n">27 px</td>
+    <td>quatro ou mais métricas</td>
+  </tr><tr>
+    <td>Linha do item</td>
+    <td class="n">68 px</td>
+    <td class="n">104 px</td>
+    <td>um item só</td>
+  </tr><tr>
+    <td>Arte do item</td>
+    <td class="n"><span style="color:#e9a268">não encontrada</span></td>
+    <td class="n">—</td>
+    <td>—</td>
+  </tr><tr>
+    <td>Destaque do baú</td>
+    <td class="n">190 px</td>
+    <td class="n">—</td>
+    <td>—</td>
+  </tr><tr>
+    <td>PNG em destaque</td>
+    <td class="n">132 px</td>
+    <td class="n">—</td>
+    <td>—</td>
+  </tr></tbody>
+</table>
+
+<h2>As regras que não mudam</h2>
+<div class="nota"><strong>O botão é sempre o da Skin UI equipada</strong>, nunca a cor da raridade.
+A direção B muda só o recorte — as duas pontas viram bico.</div>
+<div class="nota"><strong>O modal não concede nada.</strong> Ele apresenta o que o fluxo já
+entregou. Conceder durante a renderização faria a recompensa depender de a tela abrir.</div>
+<div class="nota"><strong>A cor do acontecimento é reflexo, não pintura.</strong> A placa continua
+grafite; o tom entra forte no topo e some no resto.</div>
+<div class="nota"><strong>Baú aberto não tem tela própria.</strong> Item novo e duplicata caem os
+dois no modal do item, com arte grande — a duplicata leva uma linha dizendo que virou fragmento.</div>
+
+<footer>
+  Gerada por <code>scripts/build-modal-sheet.mjs</code> · <code>npm run folhas</code>.
+  Não edite este arquivo à mão: a próxima geração apaga.
+</footer>
+</div></body></html>

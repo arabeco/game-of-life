@@ -8,6 +8,7 @@ import { WeeklyPlannerGrid } from '../components/WeeklyPlannerGrid';
 import { PoolAction } from '../components/PoolAction';
 import { DropIndicator } from '../components/DropIndicator';
 import { SitrepModal } from '../components/SitrepModal';
+import { announceBlockingOverlay } from '../utils/blockingOverlay';
 import { MilestonePoolAction } from '../components/MilestonePoolAction';
 import { ActionModal } from '../components/ActionModal';
 import { GlassCard } from '../components/GlassCard';
@@ -822,6 +823,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         taskPool,
         scheduleTask,
         scheduleMultipleTasks,
+        ensureTasksLoadedThrough,
         getTasksForDate,
         tasks,
         checklistItems,
@@ -1948,11 +1950,27 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
 
         return grouped;
     }, [activeCycle, executionQueuedTaskIds, isSimpleList, plannerScopedTasks, sanitizedExecutionQueueByDate, simpleWeekDateSet, tasks, viewMode]);
-    const changeDate = (amount: number) => setCurrentDate(prev => {
-        const newDate = new Date(prev);
+    // Navegar para frente pode passar do horizonte que a hidratacao baixou. Sem
+    // pedir o pedaco que falta, a semana apareceria vazia e pareceria que as
+    // tarefas sumiram. Pedimos duas semanas alem da que vai ser mostrada, para o
+    // proximo clique ja chegar com o dado em maos em vez de piscar vazio.
+    // O SitrepModal cobre a tela inteira, mas nasce aqui dentro — o
+    // AuthenticatedApp, que segura os modais de celebracao, nunca soube que ele
+    // existia. Sem este aviso, a missao inicial completava e o "MISSAO CONCLUIDA"
+    // empilhava por cima do RESUMO DIARIO na primeira abertura do app.
+    React.useEffect(() => {
+        announceBlockingOverlay(isSitrepVisible);
+        return () => announceBlockingOverlay(false);
+    }, [isSitrepVisible]);
+
+    const changeDate = (amount: number) => {
+        const newDate = new Date(currentDate);
         newDate.setDate(newDate.getDate() + (amount * (viewMode === 'week' ? 7 : 1)));
-        return newDate;
-    });
+        const lookahead = new Date(newDate);
+        lookahead.setDate(lookahead.getDate() + 14);
+        void ensureTasksLoadedThrough(formatLocalDateString(lookahead));
+        setCurrentDate(newDate);
+    };
     
     const isTaskAlreadyJudged = useCallback((task: ScheduledTask | undefined | null) => {
         return isTaskInClosedCycleScope(task);

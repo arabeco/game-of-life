@@ -30,10 +30,14 @@ assert.match(appSource, /onBlockingOverlayChange=\{setInnerBlockingOverlayVisibl
 assert.match(appSource, /!isInnerBlockingOverlayVisible/);
 assert.match(contextSource, /activeAchievementRef/);
 assert.match(contextSource, /setAchievementQueue/);
-assert.match(contextSource, /emitDailyCompletionPrompt\(\{[\s\S]*?kind: 'sitrep'/);
-assert.match(appSource, /setPendingDailyCompletionPrompt\(customEvent\.detail\)/);
-assert.match(appSource, /glyph:daily-panel-opened/);
-assert.doesNotMatch(appSource, /setDailyCompletionPrompt\(customEvent\.detail\)/);
+// O DailyCompletionPromptModal foi enterrado: era o resto de um widget do painel
+// diario que saiu porque planejar o dia dentro da baia inteira confundia. O
+// encanamento dele (evento, estado pendente, ponte para o sitrep) sobreviveu ao
+// widget e ficou disparando so em reconciliacao. Estas linhas existem para que
+// ele nao volte por engano quando o resgate diario for desenhado.
+assert.doesNotMatch(appSource, /DailyCompletionPrompt/);
+assert.doesNotMatch(appSource, /glyph:daily-panel-opened/);
+assert.doesNotMatch(contextSource, /emitDailyCompletionPrompt/);
 assert.match(reportsSource, /ensurePostCycleRewardsGranted/);
 assert.match(reportsSource, /ReportResultCarousel/);
 assert.match(reportsSource, /RewardPackModal/);

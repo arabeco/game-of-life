@@ -1,0 +1,1095 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alinhar avatar — Glyph</title>
+<!--
+  Ferramenta de desenvolvimento. Nao entra no build: o Vite so empacota o
+  index.html da raiz, e tudo em tools/ fica de fora do dist. Com `npm run dev`,
+  abra http://localhost:3000/tools/avatar-align.html
+
+  Existe porque o CanvasAvatar desenhava toda camada em (0,0,500,500) — mesma
+  posicao para qualquer corpo — e as pecas nao foram desenhadas contra a mesma
+  cabeca. O ajuste fino por ARQUIVO sai daqui e vai para constants/avatarOffsets.ts.
+
+  A chave e o nome do arquivo, e nao o id do item, porque variantes de cor do
+  mesmo penteado divergem entre si: CABELO_T3_DREADS_pre tem os mesmos 5146
+  pixels do _cast, salvo 7px mais abaixo.
+-->
+<style>
+  :root {
+    --fundo:#15171b; --painel:#1d2026; --linha:#2e323a; --borda:#3a3f49;
+    --texto:#e8eaee; --fraco:#969ca6; --acento:#d8b44c; --ok:#5ec98a; --alerta:#e08c6a;
+    --mono:ui-monospace,'JetBrains Mono',Consolas,monospace;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--fundo); color:var(--texto);
+    font:14px/1.5 system-ui,sans-serif; display:flex; height:100vh; overflow:hidden;
+  }
+  aside { width:290px; flex:none; background:var(--painel); border-right:1px solid var(--linha); overflow-y:auto; padding:14px; }
+  main { flex:1; display:flex; flex-direction:column; min-width:0; }
+  .palco {
+    flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
+    overflow:auto; padding:8px;
+  }
+  footer { border-top:1px solid var(--linha); background:var(--painel); padding:9px 14px 10px; }
+  .gaveta { margin-top:6px; }
+  .gaveta > summary {
+    cursor:pointer; font-size:11.5px; color:var(--fraco); list-style:none;
+    display:flex; align-items:center; gap:8px; padding:2px 0; user-select:none;
+  }
+  .gaveta > summary::-webkit-details-marker { display:none; }
+  .gaveta > summary::before { content:'▸'; font-size:10px; }
+  .gaveta[open] > summary::before { content:'▾'; }
+  .gaveta > summary:hover { color:var(--texto); }
+  .conta { color:var(--acento); font-size:11px; }
+
+  h1 { font-size:14px; margin:0 0 3px; letter-spacing:.02em; }
+  .sub { font-size:11.5px; color:var(--fraco); margin:0 0 14px; }
+  h2 { font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--fraco); margin:16px 0 6px; }
+  label { display:block; font-size:11px; color:var(--fraco); margin:9px 0 3px; }
+  select, button, input {
+    width:100%; background:#14161a; color:var(--texto); border:1px solid var(--borda);
+    border-radius:6px; padding:7px 9px; font:inherit; font-size:12.5px;
+  }
+  button { cursor:pointer; }
+  button:hover { border-color:var(--acento); }
+  .linha-botoes { display:flex; gap:6px; margin-top:8px; }
+
+  canvas { image-rendering:pixelated; background:
+    repeating-conic-gradient(#25282e 0 25%, #1b1e23 0 50%) 0 0/20px 20px;
+    border:1px solid var(--borda); border-radius:8px; cursor:grab; touch-action:none; }
+  canvas.arrastando { cursor:grabbing; }
+
+  .camadas { display:flex; flex-direction:column; gap:4px; }
+  .camada {
+    display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:6px;
+    border:1px solid transparent; background:#14161a; cursor:pointer; font-size:12px;
+  }
+  .camada:hover { border-color:var(--borda); }
+  .camada.sel { border-color:var(--acento); background:#221d10; }
+  .camada .nome { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .camada .val { font-family:var(--mono); font-size:10.5px; color:var(--fraco); }
+  .camada.mexida .val { color:var(--acento); }
+  .camada.travada { opacity:.55; cursor:default; }
+  .camada.travada:hover { border-color:transparent; }
+  .camada .cadeado { font-size:10px; color:var(--fraco); }
+
+  .numeros { display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-family:var(--mono); font-size:12.5px; }
+  .numeros b { color:var(--acento); font-weight:700; }
+  .escala { display:flex; align-items:center; gap:6px; }
+  .escala button { width:26px; padding:2px 0; line-height:1.1; font-size:15px; }
+  .escala input[type=range] { width:130px; accent-color:var(--acento); padding:0; border:0; background:none; }
+  .dica { font-size:11.5px; color:var(--fraco); margin-top:5px; }
+  kbd {
+    font-family:var(--mono); font-size:10.5px; background:#14161a; border:1px solid var(--borda);
+    border-bottom-width:2px; border-radius:4px; padding:1px 5px; color:var(--texto);
+  }
+  textarea {
+    width:100%; height:150px; margin-top:6px; background:#0f1114; color:var(--texto);
+    border:1px solid var(--borda); border-radius:6px; padding:9px; font-family:var(--mono);
+    font-size:11.5px; resize:vertical;
+  }
+  .aviso { font-size:11.5px; color:var(--alerta); margin-top:7px; }
+  .ok { color:var(--ok); }
+  .guia-toggle { display:flex; align-items:center; gap:7px; font-size:12px; margin-top:9px; }
+  .guia-toggle input { width:auto; }
+  .ajuda { font-size:11px; color:var(--fraco); margin:0 0 8px; line-height:1.45; }
+  .cobre { display:flex; flex-direction:column; gap:5px; }
+  .cobre label {
+    display:flex; align-items:center; gap:8px; margin:0; font-size:12.5px; color:var(--texto);
+    cursor:pointer; padding:6px 9px; border:1px solid var(--borda); border-radius:8px;
+    background:#14161a;
+  }
+  .cobre label:hover { border-color:var(--acento); }
+  .cobre input { width:auto; }
+  .cobre .obs { margin-left:auto; font-size:10px; color:var(--fraco); }
+  .cobre.inativo { opacity:.4; pointer-events:none; }
+  .recortes { display:flex; flex-direction:column; gap:4px; margin-top:7px; }
+  .recorte {
+    display:flex; align-items:center; gap:8px; padding:5px 9px; border-radius:6px;
+    border:1px solid var(--borda); background:#14161a; font-size:11.5px;
+    font-family:var(--mono); color:var(--fraco);
+  }
+  .recorte span { flex:1; }
+  .recorte button { width:auto; padding:2px 8px; font-size:11px; border-color:transparent; color:var(--alerta); }
+  .recorte button:hover { border-color:var(--alerta); }
+  #recortar.ativo { border-color:var(--acento); background:#221d10; color:var(--acento); }
+  #recortar:disabled { opacity:.4; cursor:default; }
+  .destino {
+    margin:6px 0 0; padding:6px 9px; border-radius:6px; font-size:11px; line-height:1.4;
+    border:1px solid var(--borda); background:#14161a; color:var(--fraco);
+  }
+  .destino.override { border-color:var(--acento); color:var(--acento); background:#221d10; }
+</style>
+</head>
+<body>
+
+<aside>
+  <h1>Alinhar avatar</h1>
+  <p class="sub">Arraste a peça. O resultado vai para <code>constants/avatarOffsets.ts</code>.</p>
+
+  <label for="corpo">Corpo</label>
+  <select id="corpo"></select>
+  <p class="destino" id="destino"></p>
+  <div class="linha-botoes">
+    <button id="ciclarCorpo" title="Percorre todos os corpos com a peça selecionada">Testar em todos</button>
+  </div>
+
+  <label for="roupa">Roupa</label>
+  <select id="roupa"></select>
+
+  <label for="cabelo">Cabelo</label>
+  <select id="cabelo"></select>
+
+  <label for="extra">Extra (artefato, glifo…)</label>
+  <select id="extra"></select>
+
+  <h2>Camadas</h2>
+  <div class="camadas" id="camadas"></div>
+
+  <h2>A roupa esconde</h2>
+  <p class="ajuda" id="ajudaCobre">Marque o que esta roupa cobre por inteiro. O corpo deixa de ser
+  desenhado ali, e para de vazar pelas bordas.</p>
+  <div class="cobre" id="cobre">
+    <label><input type="checkbox" data-regiao="bracos"> Braços <span class="obs">mãos também</span></label>
+    <label><input type="checkbox" data-regiao="pernas"> Pernas</label>
+    <label><input type="checkbox" data-regiao="pes"> Pés</label>
+  </div>
+
+  <h2>Recortes à mão</h2>
+  <p class="ajuda">Para o que preset nenhum resolve — tirar o antebraço deixando a mão,
+  cobrir o quadril. Vale só nesta roupa.</p>
+  <button id="recortar">Desenhar recorte</button>
+  <div class="recortes" id="listaRecortes"></div>
+
+  <div class="guia-toggle">
+    <input type="checkbox" id="guias" checked>
+    <label for="guias" style="margin:0">Guias do gabarito</label>
+  </div>
+  <h2>O cabelo, nesta roupa</h2>
+  <select id="modoCabelo">
+    <option value="porCima">Por cima (padrão)</option>
+    <option value="porBaixo">Por baixo — capuz, boné, turbante</option>
+    <option value="esconde">Não desenha — elmo fechado</option>
+  </select>
+  <p class="ajuda" id="ajudaCabelo" style="margin-top:6px"></p>
+
+  <h2>Zoom</h2>
+  <select id="zoom">
+    <option value="fit" selected>Ajustar</option>
+    <option value="1">1×</option>
+    <option value="1.5">1,5×</option>
+    <option value="2">2×</option>
+    <option value="3">3×</option>
+  </select>
+</aside>
+
+<main>
+  <div class="palco"><canvas id="tela" width="500" height="500"></canvas></div>
+  <footer>
+    <div class="numeros">
+      <span>Selecionada: <b id="selNome">—</b></span>
+      <span>x <b id="selX">0</b></span>
+      <span>y <b id="selY">0</b></span>
+      <span class="escala">escala
+        <button id="menos" title="Diminuir 1%">−</button>
+        <b id="selE">1.00</b>
+        <button id="mais" title="Aumentar 1%">+</button>
+        <input type="range" id="faixa" min="40" max="200" step="1" value="100" title="Redimensionar a peça">
+      </span>
+      <button id="zerar" style="width:auto;padding:5px 12px">Zerar esta</button>
+      <button id="copiar" style="width:auto;padding:5px 12px">Copiar bloco</button>
+      <button id="limpar" style="width:auto;padding:5px 12px">Limpar tudo</button>
+      <button id="aplicar" style="width:auto;padding:5px 12px">Aplicar bloco colado</button>
+    </div>
+<!-- Gavetas fechadas: o palco e a parte que precisa de altura. Com a ajuda e o
+     bloco sempre abertos, o canvas de 500px nao cabia e o topo — a cabeca, que e
+     onde se trabalha — saia cortado. -->
+    <details class="gaveta">
+      <summary>Atalhos</summary>
+      <div class="dica">
+        <kbd>arrastar</kbd> mover ·
+        <kbd>←↑→↓</kbd> 1px ·
+        <kbd>Shift</kbd>+seta 10px ·
+        <kbd>+</kbd> <kbd>−</kbd> escala 1% ·
+        <kbd>Ctrl</kbd>+<kbd>+</kbd> 5% ·
+        <kbd>0</kbd> zera a peça (posição, escala e o que ela esconde) ·
+        <kbd>Tab</kbd> próxima camada ·
+        <kbd>Ctrl</kbd>+<kbd>Z</kbd> desfazer ·
+        o campo abaixo aceita colar de volta o bloco do arquivo
+      </div>
+    </details>
+    <details class="gaveta" id="gavetaBloco">
+      <summary>Bloco para colar <span id="estado" class="conta"></span></summary>
+      <textarea id="saida" spellcheck="false"></textarea>
+    </details>
+  </footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var RAIZ = '/assets/catalog/';
+  // Do constants/avatarOffsets.ts. Corpo novo deve nascer contra estes numeros;
+  // scripts/check-avatar-geometry.mjs confere um PNG contra eles.
+  var GABARITO = { corpo: 'body_masc_1.png', topo: 54, centro: 244, largura: 42, pescoco: 99 };
+  var CHAVE_LOCAL = 'glyph.avatar-offsets';
+
+  var tela = document.getElementById('tela');
+  var ctx = tela.getContext('2d');
+  var els = {};
+  ['corpo','roupa','cabelo','extra','camadas','selNome','selX','selY','selE','saida',
+   'estado','guias','zoom','copiar','zerar','limpar','ciclarCorpo',
+   'menos','mais','faixa','cobre','ajudaCobre','modoCabelo','ajudaCabelo',
+   'destino','aplicar','recortar','listaRecortes'].forEach(function (id) {
+    els[id] = document.getElementById(id);
+  });
+
+  var offsets = {};
+  try { offsets = JSON.parse(localStorage.getItem(CHAVE_LOCAL) || '{}') || {}; } catch (e) { offsets = {}; }
+
+  var camadas = [];        // [{ url, nome, papel }]
+  var selecionada = 0;
+  var cache = {};
+
+  // Um arrasto atravessado joga a peca para fora do quadro, e ai parece que a
+  // ferramenta carregou o item errado. Aconteceu na primeira vez que isto foi
+  // usado: o terno foi para x=-232 e sumiu da tela. Sem desfazer, a unica saida
+  // era zerar tudo e recomecar.
+  var historico = [];
+
+  function guardarDesfazer() {
+    historico.push(JSON.stringify(offsets));
+    if (historico.length > 60) historico.shift();
+  }
+
+  function desfazer() {
+    var anterior = historico.pop();
+    if (!anterior) { els.estado.textContent = 'Nada para desfazer.'; return; }
+    offsets = JSON.parse(anterior);
+    desenhar();
+  }
+
+  function nomeArquivo(url) {
+    var limpo = url.split('?')[0];
+    return decodeURIComponent(limpo.slice(limpo.lastIndexOf('/') + 1));
+  }
+
+  function off(url) {
+    var k = nomeArquivo(url);
+    if (!offsets[k]) offsets[k] = { x: 0, y: 0, scale: 1, cobre: [] };
+    if (!offsets[k].cobre) offsets[k].cobre = [];
+    return offsets[k];
+  }
+
+  function mexida(o) {
+    if (!o) return false;
+    var temPorCorpo = o.porCorpo && Object.keys(o.porCorpo).some(function (k) {
+      var v = o.porCorpo[k];
+      return v.x || v.y || Math.abs((v.scale || 1) - 1) > 0.0001;
+    });
+    return o.x !== 0 || o.y !== 0 || Math.abs(o.scale - 1) > 0.0001
+      || (o.cobre && o.cobre.length) || (o.recortes && o.recortes.length)
+      || !!o.cabelo || !!temPorCorpo;
+  }
+
+  // O corpo e a REFERENCIA. Mover ele e o unico movimento que nao faz sentido
+  // aqui — e como era o primeiro da lista, o primeiro arrasto de quem abria a
+  // ferramenta mexia justamente nele.
+  function travada(c) { return !!c && c.papel === 'corpo'; }
+
+  function corpoAtual() { return nomeArquivo(els.corpo.value || GABARITO.corpo); }
+  function noGabarito() { return corpoAtual() === GABARITO.corpo; }
+
+  // Onde x, y e escala vao ser gravados.
+  //
+  // No corpo de referencia, no proprio ajuste. Em qualquer outro, num bloco
+  // `porCorpo` separado — senao afinar uma peca olhando o corpo feminino
+  // sobrescreveria o valor afinado no masculino, e o estrago so apareceria no
+  // outro corpo, que ninguem estaria olhando na hora.
+  function alvoDoAjuste(url) {
+    var base = off(url);
+    if (noGabarito()) return base;
+    if (!base.porCorpo) base.porCorpo = {};
+    if (!base.porCorpo[corpoAtual()]) base.porCorpo[corpoAtual()] = { x: 0, y: 0, scale: 1 };
+    return base.porCorpo[corpoAtual()];
+  }
+
+  // O que o desenho usa: a base somada ao ajuste do corpo, igual ao app.
+  function efetivo(url) {
+    var base = off(url);
+    var extra = base.porCorpo && base.porCorpo[corpoAtual()];
+    if (!extra) return base;
+    return {
+      x: (base.x || 0) + (extra.x || 0),
+      y: (base.y || 0) + (extra.y || 0),
+      scale: (base.scale || 1) * (extra.scale || 1),
+      cobre: base.cobre, cabelo: base.cabelo,
+    };
+  }
+
+  // As caixas de constants/avatarOffsets.ts, medidas do perfil de alpha do
+  // body_masc_1: os bracos descolam do tronco em y=177 com o tronco entre x=209
+  // e x=281, a entrepernas abre em y=267 e a silhueta volta a alargar em y=441.
+  var REGIOES = {
+    bracos: [[163, 114, 50, 182], [277, 114, 50, 182]],
+    pernas: [[188, 284, 120, 158]],
+    pes: [[176, 436, 150, 36]],
+  };
+  var CORES_REGIAO = { bracos: '255,120,120', pernas: '120,200,255', pes: '255,210,90' };
+
+  function recortesDaRoupa() {
+    var r = camadaDaRoupa();
+    return (r && off(r.url).recortes) || [];
+  }
+
+  function camadaDaRoupa() {
+    for (var i = 0; i < camadas.length; i += 1) {
+      if (camadas[i].papel === 'roupa') return camadas[i];
+    }
+    return null;
+  }
+
+  // Onde esta o desenho de verdade dentro do quadro de 500x500.
+  //
+  // Precisa disto para redimensionar direito. A conta do app escala em torno do
+  // centro do QUADRO (250,250), e a arte quase nunca esta la: o cabelo mora
+  // entre y=18 e y=160. Escalar 10% em torno de (250,250) empurraria o cabelo
+  // uns 15px para cima, e a pessoa teria de reposicionar a cada mudanca de
+  // tamanho — que e exatamente o tipo de briga que faz desistir da ferramenta.
+  //
+  // Entao a ferramenta escala em torno do centro da ARTE e converte o resultado
+  // para o par (x, y) que a conta simples do app precisa. O runtime continua
+  // burro; a esperteza fica aqui.
+  var centros = {};
+  function centroDaArte(url) {
+    if (centros[url]) return centros[url];
+    var img = cache[url];
+    if (!img) return { cx: 250, cy: 250 };
+    var c = document.createElement('canvas');
+    c.width = 500; c.height = 500;
+    var cc = c.getContext('2d', { willReadFrequently: true });
+    cc.drawImage(img, 0, 0, 500, 500);
+    var d = cc.getImageData(0, 0, 500, 500).data;
+    var x0 = 500, y0 = 500, x1 = -1, y1 = -1;
+    for (var y = 0; y < 500; y += 1) {
+      for (var x = 0; x < 500; x += 1) {
+        if (d[(y * 500 + x) * 4 + 3] <= 16) continue;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+    centros[url] = (x1 < 0)
+      ? { cx: 250, cy: 250 }
+      : { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
+    return centros[url];
+  }
+
+  function carregar(url) {
+    if (cache[url]) return Promise.resolve(cache[url]);
+    return new Promise(function (ok) {
+      var img = new Image();
+      img.onload = function () { cache[url] = img; ok(img); };
+      img.onerror = function () { ok(null); };
+      img.src = url;
+    });
+  }
+
+  // Mesma conta de constants/avatarOffsets.ts: a escala cresce a partir do
+  // CENTRO da peca, para arrastar e redimensionar nao brigarem entre si.
+  function encaixe(o) {
+    var e = (o && o.scale) || 1;
+    var w = 500 * e, h = 500 * e;
+    return { x: (500 - w) / 2 + ((o && o.x) || 0), y: (500 - h) / 2 + ((o && o.y) || 0), w: w, h: h };
+  }
+
+  function desenhar() {
+    ctx.clearRect(0, 0, 500, 500);
+    // A ordem do cabelo vem da roupa, nao de um checkbox de previa: e o mesmo
+    // dado que o CanvasAvatar le, entao o que se ve aqui e o que sai no jogo.
+    var roupaOrdem = camadaDaRoupa();
+    var modo = (roupaOrdem && off(roupaOrdem.url).cabelo) || 'porCima';
+    var ordem = camadas.filter(function (c) {
+      return !(c.papel === 'cabelo' && modo === 'esconde');
+    });
+    if (modo === 'porBaixo') {
+      var iC = -1, iR = -1;
+      ordem.forEach(function (c, i) { if (c.papel === 'cabelo') iC = i; if (c.papel === 'roupa') iR = i; });
+      if (iC > -1 && iR > -1 && iC > iR) {
+        var t = ordem[iC]; ordem.splice(iC, 1); ordem.splice(iR, 0, t);
+      }
+    }
+    // O corpo vai para uma camada propria, exatamente como no CanvasAvatar: a
+    // mascara precisa apagar so ele, sem levar junto o que estiver por baixo.
+    var roupa = camadaDaRoupa();
+    var esconde = (roupa && off(roupa.url).cobre) || [];
+    var corpoAparte = document.createElement('canvas');
+    corpoAparte.width = 500; corpoAparte.height = 500;
+    var ctxAparte = corpoAparte.getContext('2d');
+
+    ordem.forEach(function (c) {
+      var img = cache[c.url];
+      if (!img) return;
+      var e = encaixe(efetivo(c.url));
+      if (c.papel === 'corpo') {
+        ctxAparte.drawImage(img, e.x, e.y, e.w, e.h);
+        esconde.forEach(function (r) {
+          (REGIOES[r] || []).forEach(function (cx) { ctxAparte.clearRect(cx[0], cx[1], cx[2], cx[3]); });
+        });
+        recortesDaRoupa().forEach(function (cx) { ctxAparte.clearRect(cx[0], cx[1], cx[2], cx[3]); });
+        ctx.drawImage(corpoAparte, 0, 0);
+        return;
+      }
+      ctx.drawImage(img, e.x, e.y, e.w, e.h);
+    });
+
+    // Os recortes a mao, desenhados na mesma camada do corpo.
+    // (ja aplicados acima, junto com os presets)
+
+    // As caixas marcadas aparecem por cima, para se ver o que esta sendo cortado.
+    if (esconde.length) {
+      esconde.forEach(function (r) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(' + CORES_REGIAO[r] + ',.85)';
+        ctx.fillStyle = 'rgba(' + CORES_REGIAO[r] + ',.10)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        (REGIOES[r] || []).forEach(function (cx) {
+          ctx.fillRect(cx[0], cx[1], cx[2], cx[3]);
+          ctx.strokeRect(cx[0] + 1, cx[1] + 1, cx[2] - 2, cx[3] - 2);
+        });
+        ctx.restore();
+      });
+    }
+
+    // Os recortes a mao, em traco continuo para nao se confundirem com os presets.
+    var meus = recortesDaRoupa();
+    meus.forEach(function (cx, i) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(216,180,76,.9)';
+      ctx.fillStyle = 'rgba(216,180,76,.12)';
+      ctx.lineWidth = 2;
+      ctx.fillRect(cx[0], cx[1], cx[2], cx[3]);
+      ctx.strokeRect(cx[0] + 1, cx[1] + 1, cx[2] - 2, cx[3] - 2);
+      ctx.font = 'bold 13px system-ui';
+      ctx.fillStyle = 'rgba(216,180,76,1)';
+      ctx.fillText(String(i + 1), cx[0] + 5, cx[1] + 16);
+      ctx.restore();
+    });
+    if (caixaEmCurso) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,.9)';
+      ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
+      ctx.strokeRect(caixaEmCurso[0], caixaEmCurso[1], caixaEmCurso[2], caixaEmCurso[3]);
+      ctx.restore();
+    }
+
+    if (els.guias.checked) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(216,180,76,.75)'; ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      [GABARITO.topo, GABARITO.pescoco].forEach(function (y) {
+        ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(500, y + .5); ctx.stroke();
+      });
+      ctx.beginPath(); ctx.moveTo(GABARITO.centro + .5, 0); ctx.lineTo(GABARITO.centro + .5, 500); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(94,201,138,.85)';
+      var m = GABARITO.largura / 2;
+      ctx.strokeRect(GABARITO.centro - m + .5, GABARITO.topo + .5, GABARITO.largura, GABARITO.pescoco - GABARITO.topo);
+      ctx.restore();
+    }
+    pintarPainel();
+  }
+
+  function pintarPainel() {
+    els.camadas.innerHTML = '';
+    camadas.forEach(function (c, i) {
+      var o = travada(c) ? off(c.url) : alvoDoAjuste(c.url);
+      var trava = travada(c);
+      var div = document.createElement('div');
+      div.className = 'camada' + (i === selecionada && !trava ? ' sel' : '')
+        + (mexida(o) && !trava ? ' mexida' : '') + (trava ? ' travada' : '');
+      div.innerHTML = '<span class="nome">' + c.nome + '</span>'
+        + (trava
+          ? '<span class="cadeado">referência</span>'
+          : '<span class="val">' + ((o.x || 0) > 0 ? '+' : '') + (o.x || 0) + ' / ' + ((o.y || 0) > 0 ? '+' : '') + (o.y || 0)
+            + (Math.abs(o.scale - 1) > 0.0001 ? ' · ' + o.scale.toFixed(2) + '×' : '') + '</span>');
+      if (!trava) div.onclick = function () { selecionada = i; desenhar(); };
+      div.title = trava ? 'O corpo e a referência e não se move' : c.nome;
+      els.camadas.appendChild(div);
+    });
+
+    var atual = camadas[selecionada];
+    if (travada(atual)) atual = null;
+    if (atual) {
+      var o = alvoDoAjuste(atual.url);
+      els.selNome.textContent = atual.nome;
+      els.selX.textContent = ((o.x || 0) > 0 ? '+' : '') + (o.x || 0);
+      els.selY.textContent = ((o.y || 0) > 0 ? '+' : '') + (o.y || 0);
+      els.selE.textContent = (o.scale || 1).toFixed(2);
+      els.faixa.value = String(Math.round((o.scale || 1) * 100));
+      els.faixa.disabled = false;
+      els.mais.disabled = false;
+      els.menos.disabled = false;
+    } else {
+      els.selNome.textContent = '—';
+      els.selE.textContent = '1.00';
+      els.faixa.value = '100';
+      els.faixa.disabled = true;
+      els.mais.disabled = true;
+      els.menos.disabled = true;
+    }
+
+    // Os checkboxes seguem a ROUPA, nao a camada selecionada: quem cobre o corpo
+    // e a roupa, e marcar isso no cabelo nao significaria nada.
+    // `cobre` e `cabelo` moram sempre na base: sao decisoes sobre a roupa (tem
+    // manopla? tem elmo?), e isso nao muda conforme quem a veste.
+    var roupaAtual = camadaDaRoupa();
+    var cobreAtual = (roupaAtual && off(roupaAtual.url).cobre) || [];
+    els.cobre.classList.toggle('inativo', !roupaAtual);
+    els.ajudaCobre.textContent = roupaAtual
+      ? 'O que ' + roupaAtual.nome + ' cobre por inteiro. O corpo deixa de ser desenhado ali.'
+      : 'Escolha uma roupa para marcar o que ela cobre.';
+    els.cobre.querySelectorAll('input').forEach(function (inp) {
+      inp.checked = cobreAtual.indexOf(inp.dataset.regiao) > -1;
+    });
+
+    els.recortar.disabled = !roupaAtual;
+    els.recortar.classList.toggle('ativo', recortando);
+    els.recortar.textContent = recortando ? 'Arraste no boneco (Esc sai)' : 'Desenhar recorte';
+    els.listaRecortes.innerHTML = '';
+    recortesDaRoupa().forEach(function (cx, i) {
+      var div = document.createElement('div');
+      div.className = 'recorte';
+      div.innerHTML = '<span>' + (i + 1) + ' · ' + cx.join(', ') + '</span>';
+      var bt = document.createElement('button');
+      bt.textContent = 'tirar';
+      bt.onclick = function () {
+        guardarDesfazer();
+        var lista = recortesDaRoupa().slice();
+        lista.splice(i, 1);
+        var o = off(camadaDaRoupa().url);
+        if (lista.length) o.recortes = lista; else delete o.recortes;
+        desenhar();
+      };
+      div.appendChild(bt);
+      els.listaRecortes.appendChild(div);
+    });
+
+    els.modoCabelo.disabled = !roupaAtual;
+    els.modoCabelo.value = (roupaAtual && off(roupaAtual.url).cabelo) || 'porCima';
+    els.ajudaCabelo.textContent = roupaAtual
+      ? { porCima: 'Como hoje. Serve para roupa que não cobre a cabeça.',
+          porBaixo: 'O cabelo espia pelas laterais e some onde o pano cobre.',
+          esconde: 'Nem é desenhado. Só para elmo que fecha o crânio inteiro.' }[els.modoCabelo.value]
+      : 'Escolha uma roupa.';
+
+    if (noGabarito()) {
+      els.destino.className = 'destino';
+      els.destino.textContent = 'Corpo de referência. O ajuste vale para todos os corpos.';
+    } else {
+      els.destino.className = 'destino override';
+      els.destino.textContent = 'Fora da referência: o ajuste vai para porCorpo['
+        + corpoAtual() + '] e SOMA ao valor base, sem sobrescrevê-lo.';
+    }
+
+    var mexidas = Object.keys(offsets).filter(function (k) { return mexida(offsets[k]); }).sort();
+    if (!mexidas.length) {
+      els.saida.value = 'export const AVATAR_OFFSETS: Record<string, AvatarOffset> = {};';
+    } else {
+      var linhas = mexidas.map(function (k) {
+        var o = offsets[k];
+        var partes = [];
+        if (o.x) partes.push('x: ' + o.x);
+        if (o.y) partes.push('y: ' + o.y);
+        if (Math.abs(o.scale - 1) > 0.0001) partes.push('scale: ' + Number(o.scale.toFixed(3)));
+        if (o.cobre && o.cobre.length) {
+          partes.push("cobre: ['" + o.cobre.join("', '") + "']");
+        }
+        if (o.recortes && o.recortes.length) {
+          partes.push('recortes: [' + o.recortes.map(function (cx) {
+            return '[' + cx.join(', ') + ']';
+          }).join(', ') + ']');
+        }
+        if (o.cabelo) partes.push("cabelo: '" + o.cabelo + "'");
+        if (o.porCorpo) {
+          var porCorpo = Object.keys(o.porCorpo).sort().filter(function (cb) {
+            var v = o.porCorpo[cb];
+            return v.x || v.y || Math.abs((v.scale || 1) - 1) > 0.0001;
+          }).map(function (cb) {
+            var v = o.porCorpo[cb]; var dentro = [];
+            if (v.x) dentro.push('x: ' + v.x);
+            if (v.y) dentro.push('y: ' + v.y);
+            if (Math.abs((v.scale || 1) - 1) > 0.0001) dentro.push('scale: ' + Number(v.scale.toFixed(3)));
+            return "'" + cb + "': { " + dentro.join(', ') + ' }';
+          });
+          if (porCorpo.length) partes.push('porCorpo: { ' + porCorpo.join(', ') + ' }');
+        }
+        return "    '" + k + "': { " + partes.join(', ') + ' },';
+      });
+      els.saida.value = 'export const AVATAR_OFFSETS: Record<string, AvatarOffset> = {\n'
+        + linhas.join('\n') + '\n};';
+    }
+    els.estado.textContent = mexidas.length
+      ? mexidas.length + (mexidas.length === 1 ? ' peça ajustada' : ' peças ajustadas')
+      : 'nenhuma peça ajustada';
+    try { localStorage.setItem(CHAVE_LOCAL, JSON.stringify(offsets)); } catch (e) { /* aba anonima */ }
+  }
+
+  function montar() {
+    camadas = [];
+    function add(sel, papel) {
+      var v = sel.value;
+      if (!v) return;
+      camadas.push({ url: RAIZ + v, nome: nomeArquivo(v), papel: papel });
+    }
+    add(els.corpo, 'corpo');
+    add(els.roupa, 'roupa');
+    add(els.cabelo, 'cabelo');
+    add(els.extra, 'extra');
+    if (selecionada >= camadas.length || travada(camadas[selecionada])) {
+        selecionada = camadas.findIndex(function (c) { return !travada(c); });
+        if (selecionada < 0) selecionada = 0;
+    }
+    Promise.all(camadas.map(function (c) { return carregar(c.url); })).then(desenhar);
+  }
+
+  function ajustar(dx, dy, dEscala) {
+    var atual = camadas[selecionada];
+    if (!atual || travada(atual)) return;
+    var o = alvoDoAjuste(atual.url);
+    o.x = (o.x || 0) + dx; o.y = (o.y || 0) + dy;
+    if (dEscala) definirEscala(o, (o.scale || 1) + dEscala, atual.url);
+    desenhar();
+  }
+
+  // Muda a escala mantendo o centro da arte parado.
+  //
+  // A conta do app e: destino = 250*(1-s) + deslocamento + origem*s. Para o
+  // ponto C ficar onde estava ao ir de s0 para s1, o deslocamento tem de andar
+  // (C - 250) * (s0 - s1). Isso e o que guarda a compatibilidade: o arquivo
+  // continua com um par (x, y) simples e um scale, e o app nao precisa saber
+  // nada sobre onde a arte esta dentro do quadro.
+  function definirEscala(o, nova, url) {
+    var s1 = Math.max(0.4, Math.min(2, Math.round(nova * 100) / 100));
+    var s0 = o.scale;
+    if (s1 === s0) return;
+    var c = centroDaArte(url);
+    o.x = Math.round(o.x + (c.cx - 250) * (s0 - s1));
+    o.y = Math.round(o.y + (c.cy - 250) * (s0 - s1));
+    o.scale = s1;
+  }
+
+  // ---- arrastar ----
+  var arrastando = false, ultimo = null;
+  function noQuadro(ev) {
+    var r = tela.getBoundingClientRect();
+    var z = tela.clientWidth / 500;
+    return [
+      Math.max(0, Math.min(500, Math.round((ev.clientX - r.left) / z))),
+      Math.max(0, Math.min(500, Math.round((ev.clientY - r.top) / z))),
+    ];
+  }
+
+  tela.addEventListener('pointerdown', function (ev) {
+    if (recortando) {
+      if (!camadaDaRoupa()) return;
+      var p0 = noQuadro(ev);
+      caixaEmCurso = [p0[0], p0[1], 0, 0];
+      arrastando = true; ultimo = ev;
+      tela.setPointerCapture(ev.pointerId);
+      return;
+    }
+    if (travada(camadas[selecionada])) return;
+    // Um arrasto inteiro vale UM passo de desfazer, e nao um por pixel movido.
+    guardarDesfazer();
+    arrastando = true; ultimo = ev; tela.classList.add('arrastando');
+    tela.setPointerCapture(ev.pointerId);
+  });
+  tela.addEventListener('pointermove', function (ev) {
+    if (!arrastando) return;
+    if (recortando && caixaEmCurso) {
+      var p = noQuadro(ev);
+      caixaEmCurso = [
+        Math.min(caixaEmCurso[0], p[0]) === caixaEmCurso[0] ? caixaEmCurso[0] : caixaEmCurso[0],
+        caixaEmCurso[1],
+        p[0] - caixaEmCurso[0],
+        p[1] - caixaEmCurso[1],
+      ];
+      desenhar();
+      return;
+    }
+    var z = tela.clientWidth / 500;
+    var dx = Math.round((ev.clientX - ultimo.clientX) / z);
+    var dy = Math.round((ev.clientY - ultimo.clientY) / z);
+    if (!dx && !dy) return;
+    ultimo = ev;
+    ajustar(dx, dy, 0);
+  });
+  ['pointerup', 'pointercancel'].forEach(function (e) {
+    tela.addEventListener(e, function () {
+      arrastando = false;
+      tela.classList.remove('arrastando');
+      if (!caixaEmCurso) return;
+      // Normaliza: arrastar da direita para a esquerda produz largura negativa,
+      // e clearRect com valor negativo nao apaga nada — o recorte pareceria
+      // gravado e simplesmente nao funcionaria.
+      var x = caixaEmCurso[0], y = caixaEmCurso[1], w = caixaEmCurso[2], h = caixaEmCurso[3];
+      if (w < 0) { x += w; w = -w; }
+      if (h < 0) { y += h; h = -h; }
+      caixaEmCurso = null;
+      if (w < 6 || h < 6) { desenhar(); return; }   // clique solto, nao retangulo
+      var roupa = camadaDaRoupa();
+      if (!roupa) { desenhar(); return; }
+      guardarDesfazer();
+      var o = off(roupa.url);
+      o.recortes = (o.recortes || []).concat([[x, y, w, h]]);
+      desenhar();
+    });
+  });
+
+  // ---- teclado ----
+  document.addEventListener('keydown', function (ev) {
+    if (ev.target.tagName === 'SELECT' || ev.target.tagName === 'TEXTAREA') return;
+    var p = ev.shiftKey ? 10 : 1;
+    var mapa = { ArrowLeft: [-p, 0], ArrowRight: [p, 0], ArrowUp: [0, -p], ArrowDown: [0, p] };
+    if (mapa[ev.key]) { ev.preventDefault(); guardarDesfazer(); ajustar(mapa[ev.key][0], mapa[ev.key][1], 0); return; }
+    // Ctrl para o passo grosso, e nao Shift.
+    //
+    // No teclado ABNT2 o '+' ja exige Shift, entao 'Shift = 5%' tornava o passo
+    // de 1% inalcancavel: toda tentativa de ajuste fino virava um salto de 5%.
+    if (ev.key === '+' || ev.key === '=') { ev.preventDefault(); guardarDesfazer(); ajustar(0, 0, ev.ctrlKey ? 0.05 : 0.01); return; }
+    if (ev.key === '-' || ev.key === '_') { ev.preventDefault(); guardarDesfazer(); ajustar(0, 0, ev.ctrlKey ? -0.05 : -0.01); return; }
+    if (ev.key === 'Escape' && recortando) { ev.preventDefault(); els.recortar.onclick(); return; }
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z') { ev.preventDefault(); desfazer(); return; }
+    if (ev.key === '0') { ev.preventDefault(); zerarAtual(); return; }
+    if (ev.key === 'Tab') {
+      ev.preventDefault();
+      if (!camadas.length) return;
+      for (var n = 0; n < camadas.length; n += 1) {
+        selecionada = (selecionada + 1) % camadas.length;
+        if (!travada(camadas[selecionada])) break;
+      }
+      desenhar();
+    }
+  });
+
+  function zerarAtual() {
+    var atual = camadas[selecionada];
+    if (!atual || travada(atual)) return;
+    guardarDesfazer();
+    if (noGabarito()) {
+      // Zera a base, mas preserva os ajustes por corpo: eles foram decididos
+      // olhando outro boneco e nao tem por que morrer junto.
+      var antigo = off(atual.url);
+      offsets[nomeArquivo(atual.url)] = {
+        x: 0, y: 0, scale: 1, cobre: [],
+        cabelo: antigo.cabelo, porCorpo: antigo.porCorpo, recortes: antigo.recortes,
+      };
+    } else {
+      var base = off(atual.url);
+      if (base.porCorpo) delete base.porCorpo[corpoAtual()];
+    }
+    desenhar();
+  }
+  els.zerar.onclick = zerarAtual;
+
+  // O trabalho fica no localStorage para nao se perder num reload, e por isso
+  // precisa de uma saida: sem isto, um ajuste de teste fica para sempre e a
+  // proxima sessao comeca com numero de outra pessoa ja aplicado.
+  els.cobre.querySelectorAll('input').forEach(function (inp) {
+    inp.onchange = function () {
+      var roupa = camadaDaRoupa();
+      if (!roupa) return;
+      guardarDesfazer();
+      var o = off(roupa.url);
+      var lista = (o.cobre || []).slice();
+      var i = lista.indexOf(inp.dataset.regiao);
+      if (inp.checked && i < 0) lista.push(inp.dataset.regiao);
+      if (!inp.checked && i > -1) lista.splice(i, 1);
+      o.cobre = lista;
+      desenhar();
+    };
+  });
+
+  els.recortar.onclick = function () {
+    recortando = !recortando;
+    caixaEmCurso = null;
+    tela.style.cursor = recortando ? 'crosshair' : '';
+    desenhar();
+  };
+
+  els.modoCabelo.onchange = function () {
+    var roupa = camadaDaRoupa();
+    if (!roupa) return;
+    guardarDesfazer();
+    var o = off(roupa.url);
+    if (els.modoCabelo.value === 'porCima') delete o.cabelo;
+    else o.cabelo = els.modoCabelo.value;
+    desenhar();
+  };
+
+  els.mais.onclick = function () { guardarDesfazer(); ajustar(0, 0, 0.01); };
+  els.menos.onclick = function () { guardarDesfazer(); ajustar(0, 0, -0.01); };
+  els.faixa.oninput = function () {
+    var atual = camadas[selecionada];
+    if (!atual || travada(atual)) return;
+    guardarDesfazer();
+    definirEscala(alvoDoAjuste(atual.url), Number(els.faixa.value) / 100, atual.url);
+    desenhar();
+  };
+
+  els.limpar.onclick = function () {
+    var n = Object.keys(offsets).filter(function (k) { return mexida(offsets[k]); }).length;
+    if (!n) { els.estado.textContent = 'Nada para limpar.'; return; }
+    if (!confirm('Apagar os ajustes de ' + n + ' peça(s)?')) return;
+    guardarDesfazer();
+    offsets = {};
+    try { localStorage.removeItem(CHAVE_LOCAL); } catch (e) { /* aba anonima */ }
+    desenhar();
+  };
+
+  // O caminho de volta.
+  //
+  // A ferramenta so sabia exportar. Se o localStorage do navegador se perdesse —
+  // aba anonima, cache limpo, outro computador — nao havia como recarregar o que
+  // ja estava no constants/avatarOffsets.ts, e a passada inteira teria de ser
+  // refeita a mao. Agora e so colar o bloco do arquivo aqui e aplicar.
+  els.aplicar.onclick = function () {
+    var texto = els.saida.value;
+    var i = texto.indexOf('{');
+    var j = texto.lastIndexOf('}');
+    if (i < 0 || j < i) { els.estado.textContent = 'nao achei um bloco { ... } no texto'; return; }
+    var lido;
+    try {
+      // eslint-disable-next-line no-eval
+      lido = eval('(' + texto.slice(i, j + 1) + ')');
+    } catch (e) {
+      els.estado.textContent = 'nao consegui ler: ' + e.message;
+      return;
+    }
+    if (!lido || typeof lido !== 'object') { els.estado.textContent = 'o bloco nao e um objeto'; return; }
+    var quantos = Object.keys(lido).length;
+    if (!confirm('Substituir os ajustes atuais pelos ' + quantos + ' do bloco colado?')) return;
+    guardarDesfazer();
+    offsets = {};
+    Object.keys(lido).forEach(function (k) {
+      var o = lido[k] || {};
+      offsets[k] = {
+        x: o.x || 0, y: o.y || 0,
+        scale: o.scale === undefined ? 1 : o.scale,
+        cobre: o.cobre || [],
+      };
+      if (o.cabelo) offsets[k].cabelo = o.cabelo;
+      if (o.porCorpo) offsets[k].porCorpo = o.porCorpo;
+      if (o.recortes) offsets[k].recortes = o.recortes;
+    });
+    desenhar();
+    els.estado.textContent = quantos + ' entrada(s) aplicada(s)';
+  };
+
+  els.copiar.onclick = function () {
+    els.saida.select();
+    navigator.clipboard.writeText(els.saida.value).then(function () {
+      els.copiar.textContent = 'Copiado';
+      setTimeout(function () { els.copiar.textContent = 'Copiar bloco'; }, 1400);
+    });
+  };
+
+  // Percorre os corpos com a peca escolhida: o que encaixa num tem de encaixar
+  // nos outros, e essa e a checagem que so o olho faz.
+  els.ciclarCorpo.onclick = function () {
+    var i = els.corpo.selectedIndex;
+    els.corpo.selectedIndex = (i + 1) % els.corpo.options.length;
+    montar();
+  };
+
+  [els.corpo, els.roupa, els.cabelo, els.extra].forEach(function (s) { s.onchange = montar; });
+  els.guias.onchange = desenhar;
+  // "Ajustar" mede o palco em vez de multiplicar por um numero fixo. Um canvas
+  // de 500px num palco de 490 corta justamente o topo, e era ali que estava a
+  // cabeca. Nunca passa de 1x: ampliar de leve so borraria o pixel.
+  function aplicarZoom() {
+    var valor = els.zoom.value;
+    var escala;
+    if (valor === 'fit') {
+      var caixa = document.querySelector('.palco').getBoundingClientRect();
+      escala = Math.min((caixa.width - 18) / 500, (caixa.height - 18) / 500, 1);
+      escala = Math.max(0.35, escala);
+    } else {
+      escala = parseFloat(valor);
+    }
+    tela.style.width = (500 * escala) + 'px';
+    tela.style.height = tela.style.width;
+  }
+  els.zoom.onchange = aplicarZoom;
+
+  // O gatilho do reajuste observa o RODAPE, nao o palco.
+  //
+  // Duas armadilhas juntas. A primeira: o palco encolhe por motivos que o
+  // window.resize nao acusa — abrir uma gaveta do rodape, o pane do navegador
+  // mudar de tamanho — e ai o canvas continuava em 500px num palco de 471 e o
+  // topo, que e a cabeca, saia cortado.
+  //
+  // A segunda: observar o PALCO nao resolve. O canvas mora dentro dele, entao
+  // redimensionar o canvas dentro do callback re-dispara o observador, e o
+  // navegador corta a notificacao seguinte para nao entrar em laco — a conta
+  // rodava uma vez e parava de rodar. O rodape e quem empurra o palco e nao
+  // contem o canvas, entao observa-lo e seguro.
+  // Chamada direta, sem requestAnimationFrame.
+  //
+  // rAF nao roda em aba de segundo plano. Com ele, uma unica notificacao
+  // chegando com a aba escondida deixava a flag de agendamento presa em true, e
+  // o reajuste morria de vez — inclusive depois de voltar para a aba.
+  // Modo de recorte: enquanto ligado, arrastar no canvas desenha um retangulo
+  // em vez de mover a peca. Duas coisas muito diferentes no mesmo gesto, entao
+  // o modo e explicito e o cursor muda.
+  var recortando = false;
+  var caixaEmCurso = null;
+
+  var reajustando = false;
+  function reajustar() {
+    if (reajustando) return;
+    reajustando = true;
+    try { aplicarZoom(); } finally { reajustando = false; }
+  }
+  window.addEventListener('resize', reajustar);
+  document.querySelectorAll('.gaveta').forEach(function (g) {
+    g.addEventListener('toggle', reajustar);
+  });
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(reajustar);
+    ro.observe(document.querySelector('footer'));
+    ro.observe(document.querySelector('main'));
+  }
+
+  function opcoes(sel, lista, vazio, padrao) {
+    sel.innerHTML = '';
+    if (vazio) {
+      var o = document.createElement('option'); o.value = ''; o.textContent = vazio;
+      sel.appendChild(o);
+    }
+    lista.forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p; o.textContent = nomeArquivo(p);
+      sel.appendChild(o);
+    });
+    if (padrao) {
+      for (var i = 0; i < sel.options.length; i += 1) {
+        if (sel.options[i].value.indexOf(padrao) > -1) { sel.selectedIndex = i; break; }
+      }
+    }
+  }
+
+  function agrupar(sel, lista) {
+    sel.innerHTML = '';
+    var vazio = document.createElement('option');
+    vazio.value = ''; vazio.textContent = '(nenhum)';
+    sel.appendChild(vazio);
+
+    var grupos = [
+      ['Artefato', /artefato_/i],
+      ['Glifo (molde)', /MOLDE_/],
+      ['Orbe', /ORBE_/],
+      ['Placa', /PLACA_/],
+      ['Jardim', /JARDIM_/],
+    ];
+    var usados = {};
+    grupos.forEach(function (g) {
+      var itens = lista.filter(function (caminho) { return g[1].test(nomeArquivo(caminho)); });
+      if (!itens.length) return;
+      var og = document.createElement('optgroup');
+      og.label = g[0];
+      itens.forEach(function (caminho) {
+        usados[caminho] = true;
+        var o = document.createElement('option');
+        o.value = caminho; o.textContent = nomeArquivo(caminho);
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+
+    var resto = lista.filter(function (caminho) { return !usados[caminho]; });
+    if (resto.length) {
+      var og2 = document.createElement('optgroup');
+      og2.label = 'Outros';
+      resto.forEach(function (caminho) {
+        var o = document.createElement('option');
+        o.value = caminho; o.textContent = nomeArquivo(caminho);
+        og2.appendChild(o);
+      });
+      sel.appendChild(og2);
+    }
+  }
+
+  fetch(RAIZ + 'manifest.json').then(function (r) { return r.json(); }).then(function (m) {
+    var av = m.assets.map(function (a) { return a.path; }).filter(function (p) {
+      return p.indexOf('avatars/') === 0;
+    });
+    var corpos = av.filter(function (p) { return /body_/.test(p); }).sort();
+
+    // Corpo novo nao esta no manifesto, e o manifesto so e regerado pelos
+    // scripts de otimizacao do catalogo. Sem isto, body_fem_4 e body_fem_5
+    // existiam no disco e nao apareciam na lista — o que fez a primeira passada
+    // inteira ser conferida so contra o corpo masculino.
+    //
+    // A sondagem tenta carregar cada candidato e fica com o que responder.
+    // Custa alguns 404 em desenvolvimento, e e melhor do que manter uma lista a
+    // mao que envelhece calada.
+    var candidatos = [];
+    ['fem', 'masc'].forEach(function (g) {
+      for (var n = 1; n <= 9; n += 1) candidatos.push('avatars/body_' + g + '_' + n + '.png');
+    });
+    var extras = candidatos.filter(function (c) { return corpos.indexOf(c) < 0; });
+    Promise.all(extras.map(function (c) {
+      return new Promise(function (ok) {
+        var img = new Image();
+        img.onload = function () { ok(c); };
+        img.onerror = function () { ok(null); };
+        img.src = RAIZ + c;
+      });
+    })).then(function (achados) {
+      var novos = achados.filter(Boolean);
+      if (!novos.length) return;
+      corpos = corpos.concat(novos).sort();
+      var atual = els.corpo.value;
+      opcoes(els.corpo, corpos, null, GABARITO.corpo);
+      if (atual) els.corpo.value = atual;
+      els.estado.textContent = novos.length + ' corpo(s) fora do manifesto encontrado(s)';
+    });
+    var cabelos = av.filter(function (p) { return p.indexOf('/hair/') > -1; }).sort();
+    var roupas = av.filter(function (p) { return /SKIN_/i.test(p); }).sort();
+    var extras = av.filter(function (p) {
+      return !/body_/.test(p) && p.indexOf('/hair/') === -1 && !/SKIN_/i.test(p);
+    }).sort();
+
+    opcoes(els.corpo, corpos, null, GABARITO.corpo);
+    opcoes(els.cabelo, cabelos, '(sem cabelo)');
+    opcoes(els.roupa, roupas, '(sem roupa)');
+    // Artefato, glifo, orbe, placa e jardim caem todos no mesmo select, e varias
+    // dessas pecas ocupam o quadro inteiro. Sem rotulo, escolher uma e loteria.
+    agrupar(els.extra, extras);
+    aplicarZoom();
+    montar();
+  }).catch(function (e) {
+    // O rotulo da gaveta e curto por natureza; o recado longo vai no bloco, que
+    // e aberto na forca para a pessoa nao ficar diante de uma tela vazia.
+    els.estado.innerHTML = '<span style="color:var(--alerta)">sem manifesto</span>';
+    document.getElementById('gavetaBloco').open = true;
+    els.saida.value = [
+      'Nao consegui ler ' + RAIZ + 'manifest.json',
+      '',
+      'Rode `npm run dev` e abra por http://localhost:3000/tools/avatar-align.html',
+      'Abrir o arquivo direto do disco (file://) nao funciona: os PNGs vem do servidor.',
+    ].join('\n');
+  });
+})();
+</script>
+</body>
+</html>

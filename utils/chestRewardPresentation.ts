@@ -1,32 +1,6 @@
-import type { ChestOpenResult, ChestType, RewardModalPayload } from '../types';
-
-export const buildChestRewardPayload = (
-  result: ChestOpenResult,
-  chestType: ChestType,
-): RewardModalPayload => {
-  const metricCards = [
-    { label: 'Baú', value: chestType },
-    { label: '\u{1F48E} Fragmentos', value: `+${result.fragmentsGained || 0}` },
-    { label: 'Status', value: result.isDuplicate ? 'Duplicado' : 'Novo' },
-  ];
-
-  if ((result.goldGained || 0) > 0) {
-    metricCards.push({ label: 'Ouro bônus', value: `+${result.goldGained}` });
-  }
-
-  return {
-    eyebrow: 'RECOMPENSA',
-    title: result.itemName || 'Recompensa recebida',
-    summary: result.isDuplicate
-      ? `Você já tinha esse item. Convertido em ${result.fragmentsGained || 0} \u{1F48E} fragmentos.`
-      : `Seu baú ${chestType.toLowerCase()} foi aberto e o prêmio já entrou no Arsenal.`,
-    buttonLabel: 'Fechar',
-    itemSectionTitle: 'Item recebido',
-    emptyMessage: 'O resultado já foi integrado ao inventário.',
-    itemIds: result.itemId ? [result.itemId] : [],
-    metricCards,
-  };
-};
+import type { ChestType, RewardMetricCard, RewardModalPayload } from '../types';
+import { getChestDisplayName, getChestVisual } from '../constants/rarityVisuals';
+import { getChestArtUrl } from '../constants/catalogAssets';
 
 /**
  * O que o fecho de ciclo entrega, numa tela so.
@@ -47,29 +21,34 @@ export const buildCycleRewardPayload = (premio: {
   chestType: ChestType | null;
   cycleName?: string | null;
 }): RewardModalPayload => {
-  const metricCards = [
-    { label: 'EXP', value: `+${premio.exp.toLocaleString('pt-BR')}`, detail: 'creditada no perfil' },
+  // O tipo vem explicito porque o primeiro elemento nao pode ditar a forma do
+  // array: inferido dele, todo push seguinte teria de repetir `simbolo`, e o bau
+  // nao tem simbolo nenhum — o tipo dele e o proprio valor.
+  const metricCards: RewardMetricCard[] = [
+    // Sem `detail`: card com simbolo mostra so numero, simbolo e legenda — e o
+    // resumo la em cima ja diz que a EXP entrou no perfil.
+    { label: 'EXP', simbolo: 'exp', value: `+${premio.exp.toLocaleString('pt-BR')}` },
   ];
 
   if (premio.fragments > 0) {
-    metricCards.push({ label: '\u{1F48E} Fragmentos', value: `+${premio.fragments}`, detail: '' });
+    metricCards.push({ label: 'Fragmentos', simbolo: 'fragmento', value: `+${premio.fragments}` });
   }
-  if (premio.chestType) {
-    metricCards.push({ label: 'Baú', value: premio.chestType, detail: 'no Arsenal' });
-  }
-
   const rewardHighlights = premio.chestType
     ? [{
         label: 'Baú conquistado',
-        value: `${premio.chestType} · guardado no Arsenal`,
+        value: `${getChestDisplayName(premio.chestType)} · guardado no Arsenal`,
         detail: 'Abra quando quiser, pelo Arsenal.',
-        tone: 'gold' as const,
+        // Dourado era a cor de UMA raridade servindo para todas. O bau de
+        // ciclo e raro, e raro e azul.
+        rarityRgb: getChestVisual(premio.chestType).rgb,
+        imageUrl: getChestArtUrl(premio.chestType),
       }]
     : [];
 
   return {
-    eyebrow: 'Ciclo fechado',
-    title: premio.cycleName || 'Ciclo concluído',
+    eyebrow: '',
+    title: 'Ciclo concluído!',
+    subtitle: premio.cycleName || undefined,
     summary: premio.chestType
       ? 'A EXP já entrou no seu perfil e o baú está esperando no Arsenal.'
       : 'A EXP já entrou no seu perfil.',

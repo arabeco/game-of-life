@@ -58,6 +58,11 @@ export type OracleSpeechEvent =
     // momentos que mudam o significado delas. Fechar uma acao e banal; fechar a
     // primeira depois de oito dias e historia.
     | 'first_after_pause'
+    // A missao individual e a unica que a PESSOA escolheu. Ate aqui o Oraculo
+    // oferecia, ela aceitava, e ele nunca mais mencionava.
+    | 'pact_progress'
+    | 'pact_last_one'
+    | 'pact_completed'
     | 'streak_saved';
 
 type ToneVariants = Record<OracleSpeechTone, string[]>;
@@ -208,6 +213,83 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
     },
 
     /** Falta uma para fechar. Marcadores: {action} {count} {target} */
+    /**
+     * Avanço na missao individual. Marcadores: {arena} {count} {target} {remaining} {dias}
+     *
+     * `{dias}` vem vazio quando a missao nao tem prazo — so a de volume tem
+     * janela, e dizer "faltam X dias" onde nao ha prazo inventa urgencia.
+     */
+    pact_progress: {
+        neutro: [
+            '{count} de {target} na sua missão de {arena}. Faltam {remaining}{dias}.',
+            'Missão de {arena}: {count}/{target}. Ainda faltam {remaining}{dias}.',
+            '{arena} avançou na missão: {count}/{target}.',
+        ],
+        calmo: [
+            '{count} de {target} na missão de {arena}. Sem pressa{dias}.',
+            'Missão de {arena} em {count}/{target}. O resto cabe no seu tempo.',
+            '{arena}: {count}/{target} na missão. Vai indo.',
+        ],
+        coach: [
+            '{count}/{target} na missão de {arena}. Dica: deixa a próxima marcada antes de fechar o app{dias}.',
+            'Missão de {arena} em {count}/{target}. Faltam {remaining} — vale distribuir, não acumular.',
+            '{arena}: {count}/{target}. Sugestão: uma agora vale mais que duas depois.',
+        ],
+        reflexivo: [
+            '{count} de {target} na missão de {arena}. Ela ainda faz sentido do jeito que você aceitou?',
+            'Missão de {arena} em {count}/{target}. O que mudou desde que você escolheu ela?',
+            '{arena}: {count}/{target}. Esse ritmo está sendo seu, ou está sendo cobrança?',
+        ],
+    },
+
+    /** Falta uma para fechar a missao. Marcadores: {arena} {count} {target} {dias} */
+    pact_last_one: {
+        neutro: [
+            'Falta uma para fechar a missão de {arena}: {count}/{target}{dias}.',
+            'Missão de {arena} a uma entrega do fim ({count}/{target}).',
+            '{arena}: {count}/{target}. Falta uma.',
+        ],
+        calmo: [
+            'Falta uma na missão de {arena}. Ela pode esperar{dias}.',
+            '{arena} está a uma entrega de fechar a missão. Sem correria.',
+            '{count}/{target} em {arena}. A última pode ser amanhã.',
+        ],
+        coach: [
+            'Falta uma para a missão de {arena} fechar{dias}. Dica: agenda agora, enquanto é só uma.',
+            '{arena}: {count}/{target}. Sugestão: fecha hoje e tira da cabeça.',
+            'Uma entrega separa você de fechar a missão de {arena}.',
+        ],
+        reflexivo: [
+            'Falta uma em {arena}. O que costuma acontecer com você na última?',
+            '{count}/{target} na missão de {arena}. A última é difícil ou só ficou para depois?',
+            'Uma entrega para fechar {arena}. O que segurou ela até aqui?',
+        ],
+    },
+
+    /** Missao individual cumprida. Marcadores: {arena} {target} */
+    pact_completed: {
+        neutro: [
+            'Missão de {arena} cumprida: {target} entregas. A recompensa já está no Arsenal.',
+            'Você fechou a missão de {arena}. {target} de {target}.',
+            'Missão de {arena} concluída. Foi você que escolheu ela.',
+        ],
+        calmo: [
+            'Missão de {arena} cumprida. {target} entregas, no seu tempo.',
+            'Você fechou o que tinha combinado em {arena}. Pode descansar nisso.',
+            '{arena}: missão concluída. Nada mais é cobrado daqui.',
+        ],
+        coach: [
+            'Missão de {arena} fechada: {target} entregas. Dica: escolhe a próxima só quando quiser, não por inércia.',
+            'Você cumpriu a missão de {arena}. Sugestão: repara no ritmo que deu certo antes de escolher outra.',
+            '{arena} fechada em {target} entregas. Esse tamanho coube — vale lembrar dele.',
+        ],
+        reflexivo: [
+            'Missão de {arena} cumprida. Ela foi do tamanho certo, ou sobrou folga?',
+            'Você fechou {arena} em {target} entregas. O que fez esse dar certo?',
+            'Missão concluída em {arena}. Você faria de novo do mesmo jeito?',
+        ],
+    },
+
     cycle_goal_last_one: {
         neutro: [
             '{action}: {count}/{target} no ciclo. Falta só 1 para fechar essa meta.',

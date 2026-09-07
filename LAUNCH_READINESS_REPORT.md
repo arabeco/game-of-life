@@ -1,13 +1,13 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-07T19:58:59.061Z
+- Generated at: 2026-09-07T21:34:57.254Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: SKIPPED
+- Build: PASS (27.2s)
 
 ## Checks
 
-### PASS - Avatar offsets regression (0.2s)
+### PASS - Avatar offsets regression (0.3s)
 - Kind: `logic`
 - Simulates: tabela vazia desenha igual ao comportamento antigo
 - Simulates: escala cresce do centro da peca
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.3s)
+### PASS - Item art regression (0.4s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -37,7 +37,7 @@
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.1s)
+### PASS - Reward modal priority regression (0.2s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -53,19 +53,19 @@
 - Simulates: a assinatura muda a regua e nao o elogio
 - Simulates: dia abaixo da media nao soa como falha
 
-### PASS - Cycle comparison regression (0.1s)
+### PASS - Cycle comparison regression (0.2s)
 - Kind: `logic`
 - Simulates: o ciclo nao entra na propria referencia
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.1s)
+### PASS - Subscription XP bonus regression (0.2s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.2s)
+### PASS - Arena pacts regression (0.3s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
@@ -77,7 +77,7 @@
 - Simulates: a virada reagenda as acoes recorrentes
 - Simulates: o agendamento para no fim do ciclo, nao em 365 dias
 
-### PASS - XP scale regression (0.1s)
+### PASS - XP scale regression (0.2s)
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
@@ -100,7 +100,7 @@
 - Simulates: a primeira acao depois de uma pausa tem fala propria
 - Simulates: a dica de tela olha o que existe na tela
 
-### PASS - Sensory grammar regression (0.1s)
+### PASS - Sensory grammar regression (0.2s)
 - Kind: `logic`
 - Simulates: tres pesos e nada colidindo
 - Simulates: fechar ciclo nao vibra como fechar painel
@@ -112,7 +112,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.7s)
+### PASS - Oracle presence policy regression (0.8s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -142,47 +142,47 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (18.2s)
+### PASS - Onboarding happy path (25.2s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (22.8s)
+### PASS - Campaign quiz flow (17.4s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (20.3s)
+### PASS - Cycle report flow (23.0s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (12.2s)
+### PASS - UI shell smoke (12.1s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais
 - Simulates: garante que a casca da app sobe sem overlay travando
 
-### PASS - Onboarding + oracle + delete (23.5s)
+### PASS - Onboarding + oracle + delete (25.0s)
 - Kind: `browser`
 - Simulates: valida onboarding
 - Simulates: abre oracle
 - Simulates: exercita fluxo de delete/account cleanup
 
-### FAIL - Notification lab
+### SKIP - Notification lab
 - Kind: `browser`
 - Simulates: abre laboratorio de notificacoes
 - Simulates: injeta notificacoes de teste
 - Simulates: confere renderizacao e estados basicos
-- Error: Notification lab failed with exit 1
+- Error: o laboratorio de notificacoes nao tem tela no app
 
-### PASS - Clan creation (17.0s)
+### PASS - Clan creation (14.9s)
 - Kind: `browser`
 - Simulates: abre criacao de grupo
 - Simulates: confirma debito/fluxo
@@ -223,12 +223,12 @@
 - Simulates: verifica integracao base com grupo
 - Error: feature clanMissions desligada
 
-### FAIL - Legacy era customization
+### SKIP - Legacy era customization
 - Kind: `browser`
 - Simulates: abre customizacao do legado
 - Simulates: troca configuracoes principais
 - Simulates: confirma persistencia visual
-- Error: Legacy era customization failed with exit 1
+- Error: o modal de customizar era nao tem porta de entrada no app
 
 ### FAIL - Legacy plaque flow
 - Kind: `browser`

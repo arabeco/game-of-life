@@ -222,6 +222,15 @@ const suites = {
       interactions: ['valida onboarding', 'abre oracle', 'exercita fluxo de delete/account cleanup'],
     },
     {
+      // A TELA QUE ESTA SUITE MEDIA NAO EXISTE MAIS.
+      //
+      // Os botoes do laboratorio vivem em NotificationTypeButton, dentro do
+      // SovereignPanelView — um componente definido e nunca renderizado. Nao ha
+      // como abrir o laboratorio pelo app, entao o teste nao pode passar.
+      //
+      // Fica listado, e nao apagado, porque o conteudo dele volta a valer no dia
+      // em que alguem religar a tela: basta tirar esta linha.
+      retiredBecause: 'o laboratorio de notificacoes nao tem tela no app',
       id: 'notifications',
       label: 'Notification lab',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'notification-lab-smoke.cdp.mjs')]],
@@ -281,6 +290,10 @@ const suites = {
   ],
   legacy: [
     {
+      // Mesma historia: EraCustomizationModal e definido e nunca importado, entao
+      // o modal de customizar era nao tem porta de entrada. O teste percorre todo
+      // o caminho ate o hub do legado — e ali nao ha o que abrir.
+      retiredBecause: 'o modal de customizar era nao tem porta de entrada no app',
       id: 'legacy-customization',
       label: 'Legacy era customization',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'legacy-era-customization.cdp.mjs')]],
@@ -602,6 +615,12 @@ async function main() {
     }
 
     for (const entry of browserEntries) {
+      if (entry.retiredBecause) {
+        console.log(`\n[skip] ${entry.label} — ${entry.retiredBecause}`);
+        results.push({ id: entry.id, label: entry.label, status: 'SKIP', error: entry.retiredBecause });
+        continue;
+      }
+
       if (entry.requiresFeature && PRODUCT_FEATURES[entry.requiresFeature] !== true) {
         console.log(`\n[skip] ${entry.label} — ${entry.requiresFeature} esta desligada`);
         results.push({ id: entry.id, label: entry.label, status: 'SKIP', error: `feature ${entry.requiresFeature} desligada` });

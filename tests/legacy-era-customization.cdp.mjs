@@ -313,12 +313,31 @@ try {
 
   const hasActiveCycle = await evaluate(`(() => document.querySelector('#end-cycle-button') instanceof HTMLElement)()`);
   if (!hasActiveCycle) {
+    // A TELA DE CRIAR CICLO E OUTRA.
+    //
+    // Isto esperava um campo com placeholder "Conquista de Fevereiro" e um botao
+    // "INICIAR CICLO" — a tela antiga. Hoje quem cria e o NewCycleSetupView, com
+    // ids proprios e uma confirmacao no meio. A sequencia abaixo e a mesma que o
+    // smoke do relatorio de ciclo ja usa e que funciona.
     await clickSelector('#start-new-cycle-button');
-    await waitFor('start cycle modal', `(() => Array.from(document.querySelectorAll('input')).some((node) => (node.getAttribute('placeholder') || '').includes('Conquista de Fevereiro')))()`, 10000);
-    await setField('Conquista de Fevereiro', cycleName);
-    await setDateField(today);
-    await clickByText('INICIAR CICLO');
-    await waitFor('active cycle button', `(() => document.querySelector('#end-cycle-button') instanceof HTMLElement)()`, 15000);
+    await waitFor(
+      'start cycle setup',
+      `(() => document.querySelector('#new-cycle-name-input') instanceof HTMLInputElement && document.querySelector('#new-cycle-submit-button') instanceof HTMLElement)()`,
+      15000,
+    );
+    await setFieldById('new-cycle-name-input', cycleName);
+    await clickSelector('#new-cycle-submit-button');
+    await waitFor(
+      'start cycle confirmation',
+      `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').includes('CONFIRMAR')))()`,
+      10000,
+    );
+    await clickByText('CONFIRMAR');
+    // Depois de confirmar, o app volta ao PLANNER. O #end-cycle-button vive na
+    // tela de relatorios, entao e preciso voltar la antes de procura-lo.
+    await waitFor('planner apos criar ciclo', `(() => document.querySelector('#report-button') instanceof HTMLElement)()`, 20000);
+    await clickSelector('#report-button');
+    await waitFor('active cycle button', `(() => document.querySelector('#end-cycle-button') instanceof HTMLElement)()`, 20000);
     checkpoints.push('cycle-started');
   }
 
@@ -331,33 +350,56 @@ try {
   checkpoints.push('report-results-open');
 
   await clickSelector('#reports-view-back-button');
-  await waitFor('legacy hub after results', `(() => document.body && document.body.innerText.toLowerCase().includes('resumo de vida'))()`, 15000);
-  await waitFor('legacy atlas panel', `(() => document.getElementById('legacy-atlas-panel') instanceof HTMLElement)()`, 10000);
+  // O QUE ESTE TRECHO MEDIA, E O QUE ELE MEDE AGORA.
+  //
+  // Ele esperava a expressao "resumo de vida" (que nao existe em lugar nenhum do
+  // app), depois o #legacy-atlas-panel (cujo componente, LegacyAtlasPanel, nao e
+  // importado por ninguem), clicava em "ERA I" em algarismo romano quando a tela
+  // escreve "ERA 1", e por fim conferia a persistencia de dois campos —
+  // descricao e resumo final da era — que o EraCustomizationModal nao tem mais.
+  //
+  // Cinco ancoras para coisas que sairam. O modal de hoje edita o NOME da era e
+  // mostra a leitura automatica; e isso que passa a ser verificado. Menos do que
+  // antes, e honesto dizer: os dois campos sumiram do produto, nao do teste.
+  await waitFor(
+    'legacy hub after results',
+    `(() => !!document.body && document.body.innerText.includes('Registro de Soberania'))()`,
+    20000,
+  );
   checkpoints.push('returned-to-legacy-hub');
-  checkpoints.push('legacy-atlas-visible');
-  checkpoints.push('legacy-plaque-visible');
 
-  await clickByText('ERA I');
-  await waitFor('era customization modal', `(() => document.getElementById('era-customization-name') instanceof HTMLElement && document.getElementById('era-customization-save') instanceof HTMLElement)()`, 10000);
+  await clickByText('ERA 1');
+  await waitFor(
+    'era customization modal',
+    `(() => document.getElementById('era-customization-name') instanceof HTMLElement && document.getElementById('era-customization-save') instanceof HTMLElement)()`,
+    10000,
+  );
   checkpoints.push('era-modal-open');
 
   await setFieldById('era-customization-name', eraName);
-  await setFieldById('era-customization-description', eraDescription);
-  await setFieldById('era-customization-final-summary', eraFinalSummary);
-  await waitFor('ai summary and strip in modal', `(() => document.getElementById('era-customization-ai-summary') instanceof HTMLElement && document.body && document.body.innerText.toLowerCase().includes('cartografia da era'))()`, 10000);
+  await waitFor(
+    'leitura automatica da era',
+    `(() => document.getElementById('era-customization-ai-summary') instanceof HTMLElement)()`,
+    10000,
+  );
   await clickSelector('#era-customization-save');
-  await waitFor('custom era label in legacy', `(() => document.body && document.body.innerText.includes(${JSON.stringify(eraName)}) && document.body.innerText.includes(${JSON.stringify(eraFinalSummary)}))()`, 10000);
+  await waitFor(
+    'nome da era no legado',
+    `(() => document.body && document.body.innerText.includes(${JSON.stringify(eraName)}))()`,
+    10000,
+  );
   checkpoints.push('era-name-saved');
-  checkpoints.push('era-final-summary-visible');
 
+  // Reabrir prova que o nome ficou gravado, e nao so pintado na tela.
   await clickByText(eraName);
-  await waitFor('era modal reopen', `(() => document.getElementById('era-customization-description') instanceof HTMLElement)()`, 10000);
-  await waitFor('era description persisted', `(() => { const field = document.getElementById('era-customization-description'); return field instanceof HTMLTextAreaElement && field.value === ${JSON.stringify(eraDescription)}; })()`, 10000);
-  await waitFor('era final summary persisted', `(() => { const field = document.getElementById('era-customization-final-summary'); return field instanceof HTMLTextAreaElement && field.value === ${JSON.stringify(eraFinalSummary)}; })()`, 10000);
-  checkpoints.push('era-description-saved');
-  checkpoints.push('era-final-summary-saved');
+  await waitFor(
+    'nome persistido ao reabrir',
+    `(() => { const campo = document.getElementById('era-customization-name'); return campo instanceof HTMLInputElement && campo.value === ${JSON.stringify(eraName)}; })()`,
+    10000,
+  );
+  checkpoints.push('era-name-persisted');
 
-  console.log(JSON.stringify({ success: true, email, cycleName, eraName, eraDescription, eraFinalSummary, checkpoints }, null, 2));
+  console.log(JSON.stringify({ success: true, email, cycleName, eraName, checkpoints }, null, 2));
 } catch (error) {
   console.error(JSON.stringify({
     success: false,

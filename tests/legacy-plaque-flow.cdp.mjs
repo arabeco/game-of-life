@@ -311,12 +311,28 @@ try {
   for (let index = 0; index < cycleNames.length; index += 1) {
     const hasActiveCycle = await evaluate(`(() => document.querySelector('#end-cycle-button') instanceof HTMLElement)()`);
     if (!hasActiveCycle) {
+      // A tela de criar ciclo e outra: era um campo com placeholder "Conquista de
+      // Fevereiro" e um botao INICIAR CICLO; hoje e o NewCycleSetupView, com ids
+      // proprios e uma confirmacao no meio.
       await clickSelector('#start-new-cycle-button');
-      await waitFor('start cycle modal', `(() => Array.from(document.querySelectorAll('input')).some((node) => (node.getAttribute('placeholder') || '').includes('Conquista de Fevereiro')))()`, 10000);
-      await setField('Conquista de Fevereiro', cycleNames[index]);
-      await setDateField(today);
-      await clickByText('INICIAR CICLO');
-      await waitFor('active cycle button', `(() => document.querySelector('#end-cycle-button') instanceof HTMLElement)()`, 15000);
+      await waitFor(
+        'start cycle setup',
+        `(() => document.querySelector('#new-cycle-name-input') instanceof HTMLInputElement && document.querySelector('#new-cycle-submit-button') instanceof HTMLElement)()`,
+        15000,
+      );
+      await setFieldById('new-cycle-name-input', cycleNames[index]);
+      await clickSelector('#new-cycle-submit-button');
+      await waitFor(
+        'start cycle confirmation',
+        `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').includes('CONFIRMAR')))()`,
+        10000,
+      );
+      await clickByText('CONFIRMAR');
+      // Depois de confirmar, o app volta ao PLANNER. O #end-cycle-button vive na
+      // tela de relatorios, entao e preciso voltar la antes de procura-lo.
+      await waitFor('planner apos criar ciclo', `(() => document.querySelector('#report-button') instanceof HTMLElement)()`, 20000);
+      await clickSelector('#report-button');
+      await waitFor('active cycle button', `(() => document.querySelector('#end-cycle-button') instanceof HTMLElement)()`, 20000);
       checkpoints.push(`cycle-${index + 1}-started`);
     }
 
@@ -329,7 +345,10 @@ try {
     checkpoints.push(`cycle-${index + 1}-results`);
 
     await clickSelector('#reports-view-back-button');
-    await waitFor('legacy hub after results', `(() => document.body && document.body.innerText.toLowerCase().includes('resumo de vida'))()`, 15000);
+    // A expressao 'resumo de vida' nao existe em lugar nenhum do app — esta espera
+  // nunca podia terminar. Quem prova que o hub abriu e o proprio painel, logo
+  // abaixo, que tem id e existe.
+  await waitFor('legacy hub after results', `(() => document.getElementById('legacy-atlas-panel') instanceof HTMLElement)()`, 20000);
     checkpoints.push(`cycle-${index + 1}-returned`);
   }
 

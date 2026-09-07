@@ -67,8 +67,10 @@ import { SYSTEM_CHALLENGES, SYSTEM_CHALLENGE_INSIGNIA_ID } from '../constants/sy
 import type { SystemChallenge } from '../constants/systemChallenges';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import {
+    buildAppScopePacts,
     buildPactCandidates,
     buildPactCandidatesForArena,
+    ESCOPO_APP,
     measurePactProgress,
     rebuildActivePact,
     toArenaPactState,
@@ -798,6 +800,8 @@ export interface GameContextType {
     activeArenaPact: ArenaPact | null;
     arenaPactProgress: { current: number; goal: number; percent: number; completed: boolean; windowEnded?: boolean } | null;
     arenaPactCandidates: ArenaPact[];
+    /** Ha missao individual para oferecer — inclusive a do app inteiro. */
+    missaoIndividualDisponivel: boolean;
     getArenaPactOptionsForArena: (arenaId: string) => ArenaPact[];
     acceptArenaPact: (pact: ArenaPact, substituir?: boolean) => Promise<void>;
     abandonArenaPact: () => Promise<void>;
@@ -12172,6 +12176,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
          * a que a pessoa suou para ter.
          */
         semInsignia?: boolean;
+        /**
+         * Missao inicial nao ganha video.
+         *
+         * O video de missao dura quase cinco segundos antes do primeiro OK. Para
+         * uma missao que se completa sozinha por abrir uma tela, isso e cobranca
+         * de atencao por algo que a pessoa nem escolheu fazer. O modal com o
+         * "nao mostrar novamente" basta.
+         */
+        semVideo?: boolean;
         /** Insignias e itens da propria missao, alem dos de patente. */
         itemIds?: string[];
         feedTitle?: string;
@@ -12244,6 +12257,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 title: grant.title,
                 icon: grant.icon,
                 origem: grant.origem || 'missao',
+                semVideo: grant.semVideo,
                 seloDaTemporada: grant.seloDaTemporada,
                 seasonId: grant.seasonId,
                 reward: {
@@ -12410,8 +12424,11 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             goldGranted,
             fragments: challenge.rewardFragments || 0,
             chest: challenge.rewardChest || null,
-            // Missao inicial e reconhecimento, nao conquista: sem insignia.
+            // Missao inicial e reconhecimento, nao conquista: sem insignia, e sem
+            // video — ela se completa sozinha, entao nao ha o que celebrar em tela
+            // cheia por cinco segundos.
             semInsignia: Boolean(challenge.inicial),
+            semVideo: Boolean(challenge.inicial),
             itemIds: challenge.inicial ? [] : [SYSTEM_CHALLENGE_INSIGNIA_ID],
         });
     };
@@ -14163,12 +14180,37 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
     const getArenaPactOptionsForArena = useCallback(
         (arenaId: string) => {
+            // O ESCOPO DO APP NAO E UMA ARENA DA LISTA.
+            //
+            // Ele e sintetico: id vazio, e as acoes de todas as frentes juntas. O
+            // balao pedia as opcoes dele por aqui e recebia lista vazia, porque
+            // `allArenas.find(id === '')` nunca acha nada — entao a missao geral
+            // simplesmente nunca aparecia, mesmo com a tela oferecendo "Tudo junto".
+            if (arenaId === ESCOPO_APP) {
+                return buildAppScopePacts(allArenas, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks });
+            }
             const arena = allArenas.find((entry) => entry.id === arenaId);
             if (!arena) return [];
             return buildPactCandidatesForArena(arena, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks });
         },
         [actions, allArenas, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks],
     );
+
+    /**
+     * Existe missao para oferecer AGORA?
+     *
+     * O botao do Oraculo se apoiava so nas candidatas por arena. Quando nenhuma
+     * frente isolada rendia proposta — o que acontece cedo, com pouca historia, e
+     * sem ciclo aberto — a pessoa levava "Nenhuma arena sua esta elegivel" e nunca
+     * chegava a ver a missao GERAL, que estava disponivel a um clique de distancia.
+     *
+     * A pergunta certa e "ha alguma missao?", nao "ha alguma arena?".
+     */
+    const missaoIndividualDisponivel = useMemo(() => {
+        if (activeArenaPact) return false;
+        if (arenaPactCandidates.length > 0) return true;
+        return buildAppScopePacts(allArenas, actions, cycleScopedTasks, arenaPactToday, { lockedArenaIds, allTimeTasks: tasks }).length > 0;
+    }, [actions, activeArenaPact, allArenas, arenaPactCandidates, arenaPactToday, cycleScopedTasks, lockedArenaIds, tasks]);
 
     /**
      * Aceitar — e, com `substituir`, TROCAR.
@@ -14357,7 +14399,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             addSeason, updateSeason, addSeasonMission, saveSanctuaryPosition, getSanctuaryPositionsForClan, getSanctuaryAreaStats, updateSanctuaryAreaTime, applySanctuaryAreaDecay, loadClanAndMembers, userMissionParticipations, joinClanMission, updateClanMissionProgress, leaveClanMission, activateClanQuest, updateCustomClanMissionProgress, isProfileLoaded, activeTheme, toggleTheme, createArenaFolder, updateArenaFolder, deleteArenaFolder, moveArenaToFolder, reorderArena, reorderArenaPriority, reorderEntity, reorderEntityPriority, arenasViewMode, setArenasViewMode, reorderAction, getUserPublicData, oraclePreferences, updateOraclePreferences, oracleMessages, markOracleMessageAsRead, refreshOracleMessages, requestOracleContentCard, inventory, buyGoldPack, buyStoreItem, recycleItem, donateItem, craftItem, buyChestWithFragments, equipItem, toggleEquipItem, showToast, toast, hideToast, notifications, markNotificationRead, deleteNotification, fetchNotifications, cycleExpBonus, cycleProgress, deleteCycle, freeProgressResetAt, resetFreeProgress, continueFreeProgressFrom, getAldeiaSlots, updateAldeiaSlot, getAldeiaPresence, enterAldeiaSlot, performAldeiaDailyUpdate, campaigns, addCampaign, updateCampaign, deleteCampaign, installPrompt, promptInstall, codexCatalog, userCodexes, refreshCodexes, buyCodex, buyCodexWithFragments, buyCodexCreationSlot, getRelationshipCapacitySummary, fetchRelationshipHubData, createRelationshipInvite, createCompetitionInvite, respondToRelationshipInvite, endRelationshipLink, renewRelationshipLink, offerMentorshipArena, respondMentorshipOffer, buyRelationshipCapacitySlot, createLinkedRelationshipArena, selectMentorshipArena, shareRelationshipArena, removeRelationshipArenaShare, createCompetitionChallenge, respondCompetitionChallenge, cancelCompetitionChallenge, createCodexShareLink, sendCodexToNickname, getCodexSharePreview, claimCodexShare, installCodex, deleteUserCodex, transferUserCodex, duplicateUserCodexToRecipient, createMentorCodexForRecipient,
             getOrCreateOfficeArena, cleanupEmptyOfficeArena, setArenaAsShared,
             aldeiaSlots, aldeiaPresence, loadAldeiaData, setAldeiaSlots, setAldeiaPresence,
-            activeArenaPact, arenaPactProgress, arenaPactCandidates, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva
+            activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, getArenaPactOptionsForArena, acceptArenaPact, abandonArenaPact, claimArenaPact, missaoDeSistemaAtiva
         }}>
             {children}
         </GameContext.Provider>

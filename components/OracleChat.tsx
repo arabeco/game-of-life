@@ -200,7 +200,7 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
-  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoDeSistemaAtiva, showToast } = useGame();
+  const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -499,7 +499,11 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Sem arena elegivel não ha pacto possível. O botao fica opaco em vez de sumir:
   // sumir faz o rodape pular, e não explica nada.
-  const missionAvailable = (arenaPactCandidates?.length || 0) > 0;
+  // Inclui a missao do APP INTEIRO, e nao so as por arena. Antes, quem nao tinha
+  // nenhuma frente isolada elegivel — cedo na jornada, ou sem ciclo aberto —
+  // levava "Nenhuma arena sua esta elegivel" com a missao geral disponivel logo
+  // ali dentro do balao.
+  const missionAvailable = missaoIndividualDisponivel;
 
   /**
    * A leitura do proprio estado, na hora e de graca.
@@ -559,7 +563,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }
     if (!missionAvailable) {
       sensory('error');
-      showToast('Nenhuma arena sua esta elegivel para missao agora.', 'warning');
+      showToast('Nenhuma missao disponivel agora. Registre uma acao e eu volto com uma.', 'warning');
       return;
     }
     sensory('click_soft');

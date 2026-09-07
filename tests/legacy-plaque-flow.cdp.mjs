@@ -113,6 +113,10 @@ async function clickSelector(selector) {
   if (!ok) throw new Error(`Could not click selector: ${selector}\n\n${await bodyText()}`);
 }
 
+async function page_waitForSelectorCompat(sel, timeout = 25000) {
+  await waitFor(sel, `(() => document.querySelector(${JSON.stringify(sel)}) instanceof HTMLElement)()`, timeout);
+}
+
 async function clickByText(text) {
   const ok = await evaluate(`(() => {
     const needle = ${JSON.stringify(text)}.toLowerCase();
@@ -345,14 +349,25 @@ try {
     checkpoints.push(`cycle-${index + 1}-results`);
 
     await clickSelector('#reports-view-back-button');
-    // A expressao 'resumo de vida' nao existe em lugar nenhum do app — esta espera
-  // nunca podia terminar. Quem prova que o hub abriu e o proprio painel, logo
-  // abaixo, que tem id e existe.
-  await waitFor('legacy hub after results', `(() => document.getElementById('legacy-atlas-panel') instanceof HTMLElement)()`, 20000);
+    // Duas ancoras mortas passaram por aqui: a expressao "resumo de vida", que nao
+  // existe no app, e o #legacy-atlas-panel, cujo componente foi apagado por nao
+  // ser importado por ninguem. Quem prova que o hub abriu e o titulo da tela.
+  await waitFor('legacy hub after results', `(() => !!document.body && document.body.innerText.includes('Registro de Soberania'))()`, 20000);
     checkpoints.push(`cycle-${index + 1}-returned`);
   }
 
-  await waitFor('forge modal', `(() => document.body && document.body.innerText.toLowerCase().includes('ritual de forja') && document.body.innerText.toLowerCase().includes('placa do legado'))()`, 15000);
+  // O CAMINHO ATE A PLACA GANHOU DOIS PASSOS.
+  //
+  // Este teste esperava um 'ritual de forja' aparecer sozinho ao voltar para o
+  // hub. Hoje a placa mora atras da PROJECAO: e preciso abrir o legado, deixar a
+  // projecao rodar e so entao a forja acontece. Os dois gatilhos ganharam id
+  // nesta mesma mudanca, porque ambos eram botoes sem nada por onde pegar.
+  await page_waitForSelectorCompat('#legacy-export-entry');
+  await clickSelector('#legacy-export-entry');
+  await waitFor('projecao do legado', `(() => document.getElementById('legacy-projection-open-plaque') instanceof HTMLElement)()`, 25000);
+  await clickSelector('#legacy-projection-open-plaque');
+
+  await waitFor('forge modal', `(() => { const t = (document.body?.innerText || '').toLowerCase(); return t.includes('forjando o registro final') || t.includes('preparando a placa final'); })()`, 25000);
   checkpoints.push('forge-modal-open');
 
   await waitFor('plaque modal after forge', `(() => document.getElementById('legacy-plaque-export-button') instanceof HTMLElement)()`, 20000);

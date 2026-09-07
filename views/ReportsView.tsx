@@ -2102,6 +2102,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         }}
                     />
                     <button
+                        id="legacy-export-entry"
                         type="button"
                         onClick={handleStartLegacyExport}
                         className="relative z-10 flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-white/[0.03]"
@@ -2173,6 +2174,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         }}
                     />
                     <button
+                        id="legacy-export-plaque-entry"
                         type="button"
                         onClick={handleStartLegacyExport}
                         className="relative z-10 flex w-full flex-col px-3 py-3 text-left transition-colors hover:bg-white/[0.03]"

@@ -415,6 +415,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                 </button>
                                 {onOpenPlaque && (
                                     <button
+                                        id="legacy-projection-open-plaque"
                                         type="button"
                                         onClick={onOpenPlaque}
                                         className="w-full rounded-full px-6 py-3 text-[11px] font-black uppercase tracking-[0.22em] luxe-skin-button"

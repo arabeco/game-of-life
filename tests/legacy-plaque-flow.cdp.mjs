@@ -251,7 +251,9 @@ try {
   await waitFor('login screen', `(() => document.querySelector('#login-google-button') instanceof HTMLElement)()`);
   checkpoints.push('login-loaded');
 
-  await clickByText('Cadastrar');
+  // O botao se chama CRIAR CONTA COM E-MAIL na tela; 'Cadastrar' e nome de uma
+  // versao anterior. Usamos o id, que nao muda quando o texto muda.
+  await clickSelector('#login-show-manual-signup-button');
   await waitFor('signup form', `(() => Array.from(document.querySelectorAll('input')).some((node) => (node.getAttribute('placeholder') || '').includes('Nickname')))()`, 10000);
   await sleep(300);
   await setField('Email ou Nickname', email);

@@ -169,34 +169,67 @@ export async function createFriendship(sender, recipient) {
   return request.data.id;
 }
 
+// CRIAR CLA PELO MESMO CAMINHO QUE O APP USA.
+//
+// Isto inseria direto em `clans`, e falhava com "new row violates row-level
+// security policy". A recusa estava CERTA: o RLS existe justamente para que
+// ninguem crie cla sem passar pela funcao que cobra o ouro. O fixture e que
+// estava furando o caixa.
+//
+// O app chama create_clan_with_gold (security definer), que debita os 100 de
+// ouro, cria o cla e ja registra a lideranca. Testar por fora disso media um
+// caminho que nenhum usuario percorre — e escondia que o caminho real funciona.
+const GOLD_PARA_CRIAR_CLA = 100;
+
 export async function createClan(leader, { name = `Smoke Clan ${Date.now()}` } = {}) {
-  const clanInsert = await leader.client
-    .from('clans')
-    .insert({
-      name,
-      icon: '🏰',
-      description: 'Fixture de smoke do Codex',
-      clan_type: 'Casual',
-      recruitment_status: 'Aberto',
-      exp: 0,
-      rank_id: 'feudo',
-    })
-    .select('*')
-    .single();
+  // A conta de smoke nasce com zero de ouro, e a funcao cobra antes de criar.
+  const topUp = await leader.client
+    .from('user_profiles')
+    .update({ gold: GOLD_PARA_CRIAR_CLA * 2, wallet: { gold: GOLD_PARA_CRIAR_CLA * 2, fragments: 0 } })
+    .eq('id', leader.userId);
 
-  if (clanInsert.error || !clanInsert.data) {
-    throw new Error(`clan insert failed: ${clanInsert.error?.message || 'clan missing'}`);
+  if (topUp.error) {
+    throw new Error(`clan gold top-up failed: ${topUp.error.message}`);
   }
 
-  const memberInsert = await leader.client
+  const { data, error } = await leader.client.rpc('create_clan_with_gold', {
+    p_name: name,
+    p_icon: '🏰',
+    p_description: 'Fixture de smoke do Codex',
+    p_clan_type: 'Casual',
+    p_recruitment_status: 'Aberto',
+  });
+
+  const clan = data?.clan;
+  if (error || !clan?.id) {
+    throw new Error(`clan creation rpc failed: ${error?.message || 'clan missing in rpc payload'}`);
+  }
+
+  // A funcao ja registra o lider. Conferimos em vez de inserir por cima: se um dia
+  // ela deixar de fazer isso, queremos saber por um erro claro, nao por um clan
+  // sem dono aparecendo tres testes adiante.
+  const membership = await leader.client
     .from('clan_members')
-    .insert({ user_id: leader.userId, clan_id: clanInsert.data.id, role: 'leader' });
+    .select('role')
+    .eq('clan_id', clan.id)
+    .eq('user_id', leader.userId)
+    .maybeSingle();
 
-  if (memberInsert.error) {
-    throw new Error(`leader clan membership failed: ${memberInsert.error.message}`);
+  if (membership.error) {
+    throw new Error(`could not verify leader membership: ${membership.error.message}`);
   }
 
-  return clanInsert.data;
+  if (!membership.data) {
+    const memberInsert = await leader.client
+      .from('clan_members')
+      .insert({ user_id: leader.userId, clan_id: clan.id, role: 'leader' });
+
+    if (memberInsert.error) {
+      throw new Error(`leader clan membership failed: ${memberInsert.error.message}`);
+    }
+  }
+
+  return clan;
 }
 
 export async function addClanMember(member, clanId) {

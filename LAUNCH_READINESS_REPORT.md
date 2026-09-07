@@ -1,13 +1,13 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-07T16:19:17.298Z
+- Generated at: 2026-09-07T16:44:09.857Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (11.3s)
+- Build: PASS (13.1s)
 
 ## Checks
 
-### PASS - Avatar offsets regression (0.2s)
+### PASS - Avatar offsets regression (0.3s)
 - Kind: `logic`
 - Simulates: tabela vazia desenha igual ao comportamento antigo
 - Simulates: escala cresce do centro da peca
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.3s)
+### PASS - Item art regression (0.4s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -59,7 +59,7 @@
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.1s)
+### PASS - Subscription XP bonus regression (0.2s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
@@ -77,7 +77,7 @@
 - Simulates: a virada reagenda as acoes recorrentes
 - Simulates: o agendamento para no fim do ciclo, nao em 365 dias
 
-### PASS - XP scale regression (0.1s)
+### PASS - XP scale regression (0.2s)
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
@@ -100,7 +100,7 @@
 - Simulates: a primeira acao depois de uma pausa tem fala propria
 - Simulates: a dica de tela olha o que existe na tela
 
-### PASS - Sensory grammar regression (0.1s)
+### PASS - Sensory grammar regression (0.2s)
 - Kind: `logic`
 - Simulates: tres pesos e nada colidindo
 - Simulates: fechar ciclo nao vibra como fechar painel
@@ -112,7 +112,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.6s)
+### PASS - Oracle presence policy regression (0.8s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -124,7 +124,7 @@
 - Simulates: a tela de descanso respeita as duas barras
 - Simulates: preferencia que ainda nao chegou nao vira botao morto
 
-### PASS - Relationship link as timed product regression (0.1s)
+### PASS - Relationship link as timed product regression (0.2s)
 - Kind: `logic`
 - Simulates: o preco exibido e o preco cobrado
 - Simulates: renovar custa menos que criar
@@ -142,34 +142,34 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (19.5s)
+### PASS - Onboarding happy path (20.2s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (16.1s)
+### PASS - Campaign quiz flow (17.8s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (19.5s)
+### PASS - Cycle report flow (20.6s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (10.8s)
+### PASS - UI shell smoke (12.5s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais
 - Simulates: garante que a casca da app sobe sem overlay travando
 
-### PASS - Onboarding + oracle + delete (22.6s)
+### PASS - Onboarding + oracle + delete (22.7s)
 - Kind: `browser`
 - Simulates: valida onboarding
 - Simulates: abre oracle

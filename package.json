@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:zen3d": "vite --config vite.zen3d.config.ts",
+    "build:zen3d": "vite build --config vite.zen3d.config.ts",
+    "type-check:zen3d": "tsc --project zen3d-test/tsconfig.json --noEmit",
     "build": "vite build",
     "test": "npm run test:core-loop",
     "test:core-loop": "node tests/core-loop.regression.mjs",
@@ -50,6 +53,7 @@
     "@capacitor/local-notifications": "^8.0.2",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/push-notifications": "^8.0.3",
+    "@react-three/fiber": "^9.7.0",
     "@supabase/supabase-js": "^2.45.0",
     "ai": "^6.0.86",
     "dotenv": "^17.3.1",
@@ -59,11 +63,14 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-easy-crop": "^5.0.7",
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^22.14.0",
+    "@types/react-dom": "^19.2.7",
+    "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^5.0.0",
     "sharp": "^0.35.3",
     "supabase": "^2.76.16",

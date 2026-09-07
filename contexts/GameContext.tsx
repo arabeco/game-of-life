@@ -4679,6 +4679,19 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             totalCount: totalAllCount,
             completedCount: completedAllCount,
             score: allActionScore,
+            // ESTE ZERO E A UNICA FONTE DE sitrepBonus NO APP INTEIRO, e ele nunca
+            // deixa de ser zero.
+            //
+            // O bonus existia quando fechar o dia era um ritual que pagava por si.
+            // O ritual acabou — o painel diario so le o que foi registrado —, mas o
+            // CAMPO ficou, e ele atravessa vinte pontos daqui: e comparado, gravado
+            // em daily_commitments.sitrep_bonus, em sitrep_reports.bonus_xp, lido de
+            // volta e mandado para o widget. Tudo carregando zero.
+            //
+            // Nao foi arrancado de proposito: sao vinte edicoes neste arquivo para
+            // nenhuma mudanca de comportamento, e este arquivo ja custou caro. Quem
+            // for tirar, tire por aqui: mude este zero para nada e siga os erros de
+            // tipo. As colunas do banco podem ficar — elas nao incomodam ninguem.
             sitrepBonus: 0,
             baseExp: expSnapshot.baseExp,
             premiumBonusExp: expSnapshot.premiumBonusExp,

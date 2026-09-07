@@ -88,6 +88,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                     <div className="flex-none flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 gap-4">
                         <div className="flex-1 flex p-1 bg-white/5 rounded-xl overflow-hidden overflow-x-auto no-scrollbar">
                             <button
+                                id="oracle-tab-chat"
                                 onClick={() => setActiveTab('chat')}
                                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                             >

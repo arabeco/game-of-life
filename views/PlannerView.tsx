@@ -7,7 +7,7 @@ import { ChecklistModal } from '../components/ChecklistModal';
 import { WeeklyPlannerGrid } from '../components/WeeklyPlannerGrid';
 import { PoolAction } from '../components/PoolAction';
 import { DropIndicator } from '../components/DropIndicator';
-import { SitrepModal } from '../components/SitrepModal';
+import { DailyPanelModal } from '../components/DailyPanelModal';
 import { announceBlockingOverlay } from '../utils/blockingOverlay';
 import { MilestonePoolAction } from '../components/MilestonePoolAction';
 import { ActionModal } from '../components/ActionModal';
@@ -895,8 +895,8 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
         normalizedPlannerRole.includes('sovereign')
     );
     const [isChecklistVisible, setChecklistVisible] = useState(false);
-    const [isSitrepVisible, setIsSitrepVisible] = useState(false);
-    const [sitrepDate, setSitrepDate] = useState<string | null>(null);
+    const [isDailyPanelVisible, setIsDailyPanelVisible] = useState(false);
+    const [dailyPanelDate, setDailyPanelDate] = useState<string | null>(null);
 
     const clearRestScreenSessionForTask = useCallback((taskId: string, actionId?: string) => {
         if (!userProfile?.id) return;
@@ -912,13 +912,13 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     }, [userProfile?.id]);
 
     useEffect(() => {
-        const handleOpenSitrep = (event: Event) => {
+        const handleOpenDailyPanel = (event: Event) => {
             const detail = (event as CustomEvent<{ date?: string | null }>).detail;
-            setSitrepDate(detail?.date || null);
-            setIsSitrepVisible(true);
+            setDailyPanelDate(detail?.date || null);
+            setIsDailyPanelVisible(true);
         };
-        window.addEventListener('openSitrep', handleOpenSitrep);
-        return () => window.removeEventListener('openSitrep', handleOpenSitrep);
+        window.addEventListener('openDailyPanel', handleOpenDailyPanel);
+        return () => window.removeEventListener('openDailyPanel', handleOpenDailyPanel);
     }, []);
 
     useEffect(() => {
@@ -1954,14 +1954,14 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
     // pedir o pedaco que falta, a semana apareceria vazia e pareceria que as
     // tarefas sumiram. Pedimos duas semanas alem da que vai ser mostrada, para o
     // proximo clique ja chegar com o dado em maos em vez de piscar vazio.
-    // O SitrepModal cobre a tela inteira, mas nasce aqui dentro — o
+    // O DailyPanelModal cobre a tela inteira, mas nasce aqui dentro — o
     // AuthenticatedApp, que segura os modais de celebracao, nunca soube que ele
     // existia. Sem este aviso, a missao inicial completava e o "MISSAO CONCLUIDA"
     // empilhava por cima do RESUMO DIARIO na primeira abertura do app.
     React.useEffect(() => {
-        announceBlockingOverlay(isSitrepVisible);
+        announceBlockingOverlay(isDailyPanelVisible);
         return () => announceBlockingOverlay(false);
-    }, [isSitrepVisible]);
+    }, [isDailyPanelVisible]);
 
     const changeDate = (amount: number) => {
         const newDate = new Date(currentDate);
@@ -2185,7 +2185,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                                     </span>
                                 )}
                             </button>
-                            <button id="sitrep-button" onClick={() => setIsSitrepVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Resumo diário">
+                            <button id="daily-panel-button" onClick={() => setIsDailyPanelVisible(true)} className="planner-soft-control p-1.5 rounded-full hover:bg-white/8 text-gray-400 hover:text-white transition-colors" title="Resumo diário">
                                 <PanelIcon className="h-3.5 w-3.5" />
                             </button>
                         </div>
@@ -2423,7 +2423,7 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
                 <button aria-label="Nova ação" onClick={() => setIsActionModalOpen(true)} className="w-12 h-12 rounded-full luxe-skin-button flex items-center justify-center shadow-lg shadow-black/50 transform hover:scale-110 transition-transform"><PlusIcon className="w-6 h-6 text-black" /></button>
             </div>
             {isChecklistVisible && <ChecklistModal onClose={() => setChecklistVisible(false)} />}
-            {isSitrepVisible && <SitrepModal selectedDate={sitrepDate} onClose={() => setIsSitrepVisible(false)} />}
+            {isDailyPanelVisible && <DailyPanelModal selectedDate={dailyPanelDate} onClose={() => setIsDailyPanelVisible(false)} />}
             {isActionModalOpen && <ActionModal arenaId={defaultPlannerArenaId} action={null} initialMode="edit" onClose={() => setIsActionModalOpen(false)} />}
         </div>
     );

@@ -12,7 +12,7 @@ export type DailyArenaFocus = {
     completed: number;
 } | null;
 
-export type SitrepStockOption = {
+export type DailyPanelStockOption = {
     count: number;
     action: Action;
     ids: string[];
@@ -107,12 +107,12 @@ export function getVisiblePoolTaskIdsForAction(
     trackedTaskIds?: string[],
 ): string[];
 
-export function buildSitrepStockOptions(
+export function buildDailyPanelStockOptions(
     actions: Action[],
     taskPool: TaskPoolItemLike[],
     tasks: ScheduledTask[],
     dailyCommitment: DailyCommitment,
-): SitrepStockOption[];
+): DailyPanelStockOption[];
 
 export function buildTaskPoolEntries(
     actions: Action[],

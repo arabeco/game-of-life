@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGame, getLocalDateString } from '../contexts/GameContext';
-import { countRecurringOccurrences, resolveScheduleHorizon } from '../utils/cycleScheduling';
+import { countRecurringOccurrences } from '../utils/cycleScheduling';
 import { Action, DayOfWeek, ActionType, PlannerMatrixQuadrant, ScheduledTask } from '../types';
 import { GlassCard } from './GlassCard';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, XIcon, CalendarIcon, Trash2Icon, ClockIcon, PlayIcon, CheckCircleIcon } from './Icons';
@@ -1163,18 +1163,18 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         if (editableAction.actionType !== 'Ação Recorrente') return null;
         if (!temHorario || selectedDays.length === 0) return null;
 
+        // So mostramos o numero quando existe ciclo. O app grava um ano de
+        // tarefas a frente (taskDomain), mas quem conta e a janela do ciclo: e ela
+        // que define o total da barra da arena. Sem ciclo nao existe janela, e
+        // inventar um numero aqui seria prometer uma meta que ninguem mede.
+        if (!activeCycle?.endDate || activeCycle.endDate < getLocalDateString()) return null;
         const hoje = getLocalDateString();
-        const ate = resolveScheduleHorizon(hoje, activeCycle);
+        const ate = activeCycle.endDate;
         const vezes = countRecurringOccurrences({ from: hoje, through: ate, daysOfWeek: selectedDays });
         if (vezes === 0) return null;
 
-        const [ano, mes, dia] = ate.split('-');
-        return {
-            vezes,
-            ateLabel: `${dia}/${mes}`,
-            dentroDoCiclo: Boolean(activeCycle?.endDate && activeCycle.endDate >= hoje),
-            ano,
-        };
+        const [, mes, dia] = ate.split('-');
+        return { vezes, ateLabel: `${dia}/${mes}` };
     }, [activeCycle, editableAction.actionType, selectedDays, temHorario]);
     const timeOptions = ['Sem Horário', ...Array.from({ length: 24 * 4 }, (_, i) => { const h = Math.floor(i / 4); const m = (i % 4) * 15; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; })];
     useEffect(() => {
@@ -1793,7 +1793,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                 {agendaPrevista && (
                                                                     <p className="mt-2 px-1 text-[10px] leading-relaxed text-white/56">
                                                                         <span className="font-bold text-white/80">{agendaPrevista.vezes} {agendaPrevista.vezes === 1 ? 'vez' : 'vezes'}</span>
-                                                                        {agendaPrevista.dentroDoCiclo ? ' até o fim do ciclo, em ' : ' nos próximos 35 dias, até '}
+                                                                        {' neste ciclo, até '}
                                                                         {agendaPrevista.ateLabel}.
                                                                     </p>
                                                                 )}
@@ -1964,7 +1964,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                                                                 {agendaPrevista && (
                                                                     <p className="mt-2 px-1 text-[10px] leading-relaxed text-white/56">
                                                                         <span className="font-bold text-white/80">{agendaPrevista.vezes} {agendaPrevista.vezes === 1 ? 'vez' : 'vezes'}</span>
-                                                                        {agendaPrevista.dentroDoCiclo ? ' até o fim do ciclo, em ' : ' nos próximos 35 dias, até '}
+                                                                        {' neste ciclo, até '}
                                                                         {agendaPrevista.ateLabel}.
                                                                     </p>
                                                                 )}

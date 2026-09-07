@@ -311,6 +311,10 @@ function parseArgs(argv) {
 
   for (const arg of argv) {
     if (arg === '--dry-run') options.dryRun = true;
+    // Sem isto o portao para no primeiro problema e esconde todo o resto. Foi
+    // assim que nove suites ficaram sem rodar sem ninguem perceber: uma falhava
+    // no meio da fila e as de baixo nunca eram alcancadas.
+    else if (arg === '--keep-going') options.keepGoing = true;
     else if (arg === '--list') options.list = true;
     else if (arg === '--skip-build') options.skipBuild = true;
     else if (arg === '--skip-server') options.skipServer = true;
@@ -574,7 +578,8 @@ async function main() {
         console.log(`[ok] ${entry.label} (${formatSeconds(durationMs)})`);
       } catch (error) {
         results.push({ id: entry.id, label: entry.label, status: 'FAIL', error: error instanceof Error ? error.message : String(error) });
-        throw error;
+        if (!options.keepGoing) throw error;
+        console.log(`[fail] ${entry.label} — seguindo por causa de --keep-going`);
       }
     }
 
@@ -599,7 +604,8 @@ async function main() {
         console.log(`[ok] ${entry.label} (${formatSeconds(durationMs)})`);
       } catch (error) {
         results.push({ id: entry.id, label: entry.label, status: 'FAIL', error: error instanceof Error ? error.message : String(error) });
-        throw error;
+        if (!options.keepGoing) throw error;
+        console.log(`[fail] ${entry.label} — seguindo por causa de --keep-going`);
       }
     }
 

@@ -10,7 +10,7 @@ import {
   ScheduledTask,
 } from '../types';
 import { getCycleTimingSummary, getScoreGrade } from './dateUtils';
-import { buildDailyArenaFocus, buildSitrepStockOptions, filterCycleTasksByScope } from './coreLoopUtils.js';
+import { buildDailyArenaFocus, buildDailyPanelStockOptions, filterCycleTasksByScope } from './coreLoopUtils.js';
 import { getOperationalDateString, taskMatchesOperationalDate } from './operationalDay.js';
 import { hasScheduledTime } from './taskDomain.js';
 import type { RestScreenActionSessionDetail } from './restScreenActionSession';
@@ -379,7 +379,7 @@ export const buildDailyWidgetSnapshot = ({
   };
   const commitmentStats = buildCommitmentStatsSnapshot(tasks, executionCommitment, actions);
   const focusArena = buildDailyArenaFocus(commitmentStats.scoredTasksWithStatus, actions, arenas);
-  const availableGroups = buildSitrepStockOptions(actions, taskPool, tasks, executionCommitment) as Array<{
+  const availableGroups = buildDailyPanelStockOptions(actions, taskPool, tasks, executionCommitment) as Array<{
     count: number;
     action: Action;
     ids: string[];

@@ -5,7 +5,7 @@
  * bloqueando a tela — perfil, relatorios, tela de descanso. Ele sabe desses tres
  * porque eles moram nele.
  *
- * O SitrepModal nao mora. Ele nasce dentro do PlannerView, fundo na arvore, e o
+ * O DailyPanelModal nao mora. Ele nasce dentro do PlannerView, fundo na arvore, e o
  * app nunca soube que ele existia. O resultado aparecia na primeira abertura: a
  * pessoa completava a missao inicial e o "MISSAO CONCLUIDA" empilhava por cima do
  * RESUMO DIARIO, antes dela ter lido o proprio dia.

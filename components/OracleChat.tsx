@@ -42,7 +42,7 @@ interface Message {
 
 type ChatQuickAction =
   | { id: string; label: string; kind: 'open_planner_create_action' }
-  | { id: string; label: string; kind: 'open_sitrep' }
+  | { id: string; label: string; kind: 'open_daily_panel' }
   | { id: string; label: string; kind: 'open_planner' }
   | { id: string; label: string; kind: 'open_cycle' }
   | { id: string; label: string; kind: 'open_arenas' }
@@ -251,8 +251,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     }, 220);
   }, []);
 
-  const openPlannerSitrep = useCallback(() => {
-    dispatchAppView({ view: 'planner', openSitrep: true });
+  const openPlannerDailyPanel = useCallback(() => {
+    dispatchAppView({ view: 'planner', openDailyPanel: true });
   }, []);
 
   const openCycleReview = useCallback(() => {
@@ -572,8 +572,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         openPlannerCreateAction();
         onClose();
         return;
-      case 'open_sitrep':
-        openPlannerSitrep();
+      case 'open_daily_panel':
+        openPlannerDailyPanel();
         onClose();
         return;
       case 'open_planner':
@@ -595,7 +595,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       default:
         return;
     }
-  }, [onClose, openArena, openArenasView, openCycleReview, openPlannerCreateAction, openPlannerSitrep, openPlannerView]);
+  }, [onClose, openArena, openArenasView, openCycleReview, openPlannerCreateAction, openPlannerDailyPanel, openPlannerView]);
 
   const formatCooldownLabel = (milliseconds: number): string => {
     if (milliseconds <= 0) return 'agora';
@@ -904,6 +904,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                 duas custam ZERO de rede: leem o que ja esta na memoria do app. */}
             <div className="flex min-w-0 flex-1 gap-2">
               <button
+                id="oracle-read-my-day"
                 onClick={handleReadMyDay}
                 className="min-w-0 flex-1 rounded-2xl border border-white/12 bg-white/[0.04] px-2.5 py-2.5 text-left transition-colors hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]"
               >

@@ -236,7 +236,7 @@ export const getVisiblePoolTaskIdsForAction = (action, scopedTasks, poolTaskIds,
  * @param {DailyCommitment} dailyCommitment
  * @returns {Array<{ count: number, action: Action, ids: string[] }>}
  */
-export const buildSitrepStockOptions = (actions, taskPool, tasks, dailyCommitment) => {
+export const buildDailyPanelStockOptions = (actions, taskPool, tasks, dailyCommitment) => {
     const actionById = new Map(actions.map(action => [action.id, action]));
     return Object.entries(buildActionPoolByDate(actions, taskPool, tasks, dailyCommitment.date, dailyCommitment.taskIds))
         .filter(([, payload]) => payload.count > 0)

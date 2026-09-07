@@ -291,17 +291,36 @@ async function semearUmDiaPagoNoCiclo() {
   // concluidas do ciclo — por cima do que ja vinha somado dos dias julgados. Para
   // que a diferenca exista e preciso das duas coisas ao mesmo tempo: uma tarefa
   // concluida dentro da janela e um dia julgado com EXP. Uma so nao denuncia nada.
-  const { data: cycle, error: cycleError } = await user.client
-    .from('cycles')
-    .select('id, start_date, end_date, arena_ids')
-    .eq('user_id', user.userId)
-    .is('report_data', null)
-    .order('start_date', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // O CICLO CHEGA AO BANCO DEPOIS DE APARECER NA TELA.
+  //
+  // startCycle poe o ciclo no estado local e dispara o insert sem esperar por ele
+  // (`.insert(...).then(...)`). O teste ja viu o ciclo na interface e vem aqui
+  // perguntar ao banco — as vezes antes do insert terminar.
+  //
+  // Isto deu um "No open cycle to seed" intermitente que custou caro: eu atribui
+  // a falha a uma mudanca de codigo, "confirmei" ligando e desligando ela, e
+  // reverti uma feature boa por causa de uma moeda jogada tres vezes. A leitura
+  // agora insiste por alguns segundos antes de desistir.
+  let cycle = null;
+  let cycleError = null;
+  for (let tentativa = 0; tentativa < 12; tentativa += 1) {
+    const resultado = await user.client
+      .from('cycles')
+      .select('id, start_date, end_date, arena_ids')
+      .eq('user_id', user.userId)
+      .is('report_data', null)
+      .order('start_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    cycleError = resultado.error;
+    cycle = resultado.data;
+    if (cycleError || cycle) break;
+    await sleep(500);
+  }
 
   if (cycleError) throw new Error(`Could not read the open cycle: ${cycleError.message}`);
-  if (!cycle) throw new Error('No open cycle to seed.');
+  if (!cycle) throw new Error('No open cycle to seed (esperamos 6s pelo insert).');
 
   const arenaId = randomUUID();
   const actionId = randomUUID();

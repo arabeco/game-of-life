@@ -1552,7 +1552,6 @@ export interface OracleContext {
   needsFirstArena: boolean;
   needsFirstAction: boolean;
   needsFirstTask: boolean;
-  needsSitrepClosure: boolean;
 }
 
 export type OracleIntent =

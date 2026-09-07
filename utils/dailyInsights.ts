@@ -148,7 +148,7 @@ export const buildHistoricalDailyInsight = (input: HistoricalDailyInsightInput):
  * Leitura do dia corrente no painel diario.
  *
  * O painel so falava sobre dias passados: `buildHistoricalDailyInsight` devolve
- * texto para uma data que ja fechou, e a chamada em SitrepContent desiste quando
+ * texto para uma data que ja fechou, e a chamada em DailyPanelContent desiste quando
  * a data e hoje. Ou seja, no caso normal — abrir o painel durante o dia — nao
  * havia frase nenhuma. Esta funcao cobre esse caso.
  *

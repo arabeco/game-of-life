@@ -82,7 +82,7 @@ export const ArenaPactBalloon: React.FC<{ onTrocar?: () => void }> = ({ onTrocar
     };
 
     return (
-        <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
+        <div className="daily-panel-neutral flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
             <OracleSpeakerMark tone={completed ? 'success' : 'guide'} size="sm" className="mt-0.5 shrink-0" pulse={completed} />
             <div className="min-w-0 flex-1">
                 <p className="core-label text-[var(--skin-accent-color)]">
@@ -230,7 +230,7 @@ export const ArenaPactProposal: React.FC<{ onClose?: () => void; substituindo?: 
     const mostrandoEscolha = escolhendoArena && arenasComPacto.length > 0;
 
     return (
-        <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
+        <div className="daily-panel-neutral flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
             <OracleSpeakerMark tone="guide" size="sm" className="mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
                 <p className="core-label text-[var(--skin-accent-color)]">

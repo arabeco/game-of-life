@@ -207,7 +207,6 @@ const buildNextMove = ({
   needsFirstArena,
   needsFirstAction,
   needsFirstTask,
-  needsSitrepClosure,
   priorityArenaName,
   priorityActionName,
   pendingActionsToday,
@@ -216,7 +215,6 @@ const buildNextMove = ({
   needsFirstArena: boolean;
   needsFirstAction: boolean;
   needsFirstTask: boolean;
-  needsSitrepClosure: boolean;
   priorityArenaName: string | null;
   priorityActionName: string | null;
   pendingActionsToday: number;
@@ -241,9 +239,14 @@ const buildNextMove = ({
       : 'Agendar a primeira tarefa do ciclo.';
   }
 
-  if (needsSitrepClosure) {
-    return 'Fechar o SITREP de hoje antes de encerrar o dia.';
-  }
+  // "Fechar o SITREP de hoje antes de encerrar o dia." saiu daqui e do servidor
+  // ao mesmo tempo — a frase vivia duplicada nos dois, palavra por palavra.
+  //
+  // Era a unica coisa no app que dizia SITREP para a pessoa, e cobrava um ritual
+  // de fechar o dia que nao existe mais: o painel diario so le o que foi
+  // registrado, nao trava meta nem pede julgamento. E ja era inalcancavel — o
+  // gatilho era stage === 'battle', e lockDailyCommitment, o unico lugar que
+  // escreve esse estado, nao tem chamador nenhum.
 
   if (priorityActionName) {
     return priorityArenaName
@@ -486,14 +489,12 @@ export const buildOracleOperationalContext = ({
   const needsFirstArena = !hasArenaEvidence;
   const needsFirstAction = !needsFirstArena && actions.length === 0;
   const needsFirstTask = !needsFirstArena && !needsFirstAction && tasks.length === 0;
-  const needsSitrepClosure = dailyCommitment?.date === operationalDate && dailyCommitment?.stage === 'battle';
 
   const nextMove = buildNextMove({
     hasCycle: !!activeCycle,
     needsFirstArena,
     needsFirstAction,
     needsFirstTask,
-    needsSitrepClosure,
     priorityArenaName: priorityArena?.name || null,
     priorityActionName: priorityAction?.name || null,
     pendingActionsToday: pendingTodayTasks.length,
@@ -574,6 +575,5 @@ export const buildOracleOperationalContext = ({
     needsFirstArena,
     needsFirstAction,
     needsFirstTask,
-    needsSitrepClosure,
   };
 };

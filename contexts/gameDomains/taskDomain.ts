@@ -613,7 +613,7 @@ export const createTaskDomain = ({
         maybeTriggerDailyMomentumAttention(action, completedTask, previousTasks, nextTasks);
     };
 
-    const maybePromptSitrepFollowUp = (task: ScheduledTask, action?: Action) => {
+    const maybePromptDailyPanelFollowUp = (task: ScheduledTask, action?: Action) => {
         void task;
         void action;
     };
@@ -623,17 +623,21 @@ export const createTaskDomain = ({
         if (!action) return;
         const actionId = action.id;
 
-        // ATE ONDE AGENDAR.
+        // ATE ONDE AGENDAR: O CICLO.
         //
         // Isto era um laco de 365 dias fixos: marcar "todo dia" gravava o ano
         // inteiro no primeiro clique. Enchia o banco, descia em toda abertura do
-        // app, e — pior — inventava uma meta que ninguem escolheu, porque o ano
-        // nao significa nada para quem mede a vida em ciclos.
+        // app, e inventava uma meta que ninguem escolheu — o ano nao significa
+        // nada para quem mede a vida em ciclos.
         //
-        // Agora o limite e o ciclo, o mesmo horizonte que ja recorta a barra da
-        // arena e o relatorio. Sem ciclo aberto, a janela da rodada livre.
-        // Quando o ciclo vira, startNewCycle reagenda — antes isso funcionava por
-        // acidente, porque o ano ja estava gravado.
+        // O ano tinha um efeito colateral util: fazia a virada de ciclo funcionar
+        // sozinha, porque as tarefas do ciclo seguinte ja estavam gravadas. Quem
+        // assume esse papel agora e a regeneracao explicita em startNewCycle.
+        //
+        // (Registro, porque custou caro: esta mudanca chegou a ser revertida por
+        // "quebrar" o smoke do relatorio de ciclo. Nao quebrava — o smoke tinha uma
+        // corrida entre o insert do ciclo, que e disparado sem espera, e a leitura
+        // dele no banco. Corrigida a corrida, o par voltou.)
         const todayString = getLocalDateString();
         const scheduleThrough = resolveScheduleHorizon(todayString, activeCycle);
 
@@ -963,7 +967,7 @@ export const createTaskDomain = ({
             maybeTriggerTaskCompletionSpeech(action, updatedTask, tasks, optimisticTasks);
         }
         runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
-        maybePromptSitrepFollowUp(updatedTask, action);
+        maybePromptDailyPanelFollowUp(updatedTask, action);
     };
 
     const scheduleAndCompleteNow = async (actionId: string, taskId?: string) => {
@@ -1056,7 +1060,7 @@ export const createTaskDomain = ({
             emitAppSensoryCue('task_complete');
             maybeTriggerTaskCompletionSpeech(action, newTask, tasks, [...tasks, newTask]);
         }
-        maybePromptSitrepFollowUp(newTask, action);
+        maybePromptDailyPanelFollowUp(newTask, action);
         onDailyProofActionCompleted?.({ task: newTask, action, tasksAfterChange: [...tasks, newTask] });
     };
 
@@ -1118,7 +1122,7 @@ export const createTaskDomain = ({
             if (!existingTask.completed) {
                 runTaskCompletionSideEffects(updatedTask, action, optimisticTasks);
             }
-            maybePromptSitrepFollowUp(updatedTask, action);
+            maybePromptDailyPanelFollowUp(updatedTask, action);
             return;
         }
 
@@ -1171,7 +1175,7 @@ export const createTaskDomain = ({
             maybeTriggerTaskCompletionSpeech(action, newTask, tasks, optimisticTasks);
         }
         runTaskCompletionSideEffects(newTask, action, optimisticTasks);
-        maybePromptSitrepFollowUp(newTask, action);
+        maybePromptDailyPanelFollowUp(newTask, action);
     };
 
     const scheduleAndCompleteMilestoneNow = async (actionId: string) => {
@@ -1255,7 +1259,7 @@ export const createTaskDomain = ({
                 durationMs: 5000,
             }, 'marco');
         }
-        maybePromptSitrepFollowUp(newTask, action);
+        maybePromptDailyPanelFollowUp(newTask, action);
         onDailyProofActionCompleted?.({ task: newTask, action, tasksAfterChange: [...tasks, newTask] });
         setAchievementUnlocked({ type: 'MILESTONE_COMPLETED', data: action });
         addFeedEvent({

@@ -139,7 +139,7 @@ assert.equal(acceptsLocalCard({ ...automaticCard,
 }, 2), false, 'a correcao de presenca nao libera outros formatos no modo neutro');
 
 // --- o painel respeita a frequencia --------------------------------------
-const sitrep = readFileSync(new URL('../components/SitrepContent.tsx', import.meta.url), 'utf8');
+const sitrep = readFileSync(new URL('../components/DailyPanelContent.tsx', import.meta.url), 'utf8');
 assert.match(sitrep, /getOraclePresenceRules/, 'o painel le a politica, nao um numero solto');
 assert.match(sitrep, /hasSpokenOpeningLineToday/, 'o nivel diario precisa lembrar se ja falou hoje');
 

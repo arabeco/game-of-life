@@ -4,7 +4,7 @@ import {
     buildCyclePaceMetrics,
     buildDailyExpSnapshot,
     buildDailyArenaFocus,
-    buildSitrepStockOptions,
+    buildDailyPanelStockOptions,
     buildTaskPoolEntries,
     filterCycleTasksByScope,
     getVisiblePoolTaskIdsForAction,
@@ -288,8 +288,8 @@ const tests = [
             assert.equal(plannerPool['action-focus'].count, 1);
             assert.equal(isTaskInPool(tasks[0]), true);
 
-            const sitrepPool = buildActionPoolByDate(actions, taskPool, tasks, '2026-03-08', ['task-bay']);
-            assert.equal(sitrepPool['action-focus'].count, 0);
+            const dailyPanelPool = buildActionPoolByDate(actions, taskPool, tasks, '2026-03-08', ['task-bay']);
+            assert.equal(dailyPanelPool['action-focus'].count, 0);
         },
     },
     {
@@ -428,10 +428,10 @@ const tests = [
                 { id: 'task-committed', actionId: 'action-focus', date: '2026-03-08', startTime: -1, duration: 60, completed: false },
             ];
 
-            const before = buildSitrepStockOptions(actions, taskPool, tasksBeforeReturn, dailyCommitment);
+            const before = buildDailyPanelStockOptions(actions, taskPool, tasksBeforeReturn, dailyCommitment);
             assert.equal(before[0]?.count ?? 0, 1);
 
-            const after = buildSitrepStockOptions(actions, taskPool, tasksAfterReturn, { ...dailyCommitment, taskIds: [] });
+            const after = buildDailyPanelStockOptions(actions, taskPool, tasksAfterReturn, { ...dailyCommitment, taskIds: [] });
             assert.equal(after[0]?.count ?? 0, 2);
         },
     },

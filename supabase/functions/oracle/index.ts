@@ -90,7 +90,6 @@ type OracleContext = {
   needsFirstArena: boolean;
   needsFirstAction: boolean;
   needsFirstTask: boolean;
-  needsSitrepClosure: boolean;
 };
 
 type OracleArenaSignal = {
@@ -624,7 +623,6 @@ const buildNextMove = ({
   needsFirstArena,
   needsFirstAction,
   needsFirstTask,
-  needsSitrepClosure,
   priorityArenaName,
   priorityActionName,
   pendingActionsToday,
@@ -633,7 +631,6 @@ const buildNextMove = ({
   needsFirstArena: boolean;
   needsFirstAction: boolean;
   needsFirstTask: boolean;
-  needsSitrepClosure: boolean;
   priorityArenaName: string | null;
   priorityActionName: string | null;
   pendingActionsToday: number;
@@ -642,7 +639,13 @@ const buildNextMove = ({
   if (needsFirstArena) return "Criar a primeira arena do ciclo.";
   if (needsFirstAction) return priorityArenaName ? `Criar a primeira acao em ${priorityArenaName}.` : "Criar a primeira acao do ciclo.";
   if (needsFirstTask) return priorityActionName ? `Agendar a primeira execucao de ${priorityActionName}.` : "Agendar a primeira tarefa do ciclo.";
-  if (needsSitrepClosure) return "Fechar o SITREP de hoje antes de encerrar o dia.";
+  // "Fechar o SITREP de hoje antes de encerrar o dia." saiu daqui.
+  //
+  // Era a unica frase do app que dizia SITREP para a pessoa, e cobrava um
+  // ritual de fechar o dia que nao existe mais — o painel diario so le o que
+  // foi registrado, nao trava meta nem pede julgamento. Alem disso ela ja era
+  // inalcancavel: o gatilho era stage === "battle", e lockDailyCommitment, o
+  // unico lugar que escreve esse estado, nao tem nenhum chamador.
   if (priorityActionName) return priorityArenaName ? `Executar ${priorityActionName} em ${priorityArenaName}.` : `Executar ${priorityActionName}.`;
   if (pendingActionsToday > 0) return "Executar a proxima tarefa planejada do dia.";
   return "Proteger a cadencia do ciclo com a proxima acao relevante.";
@@ -863,7 +866,6 @@ const buildOracleOperationalContext = ({
   const needsFirstArena = !hasArenaEvidence;
   const needsFirstAction = !needsFirstArena && actions.length === 0;
   const needsFirstTask = !needsFirstArena && !needsFirstAction && tasks.length === 0;
-  const needsSitrepClosure = dailyCommitment?.date === operationalDate && dailyCommitment?.stage === "battle";
 
   return {
     currentTime: now.toISOString(),
@@ -914,7 +916,6 @@ const buildOracleOperationalContext = ({
       needsFirstArena,
       needsFirstAction,
       needsFirstTask,
-      needsSitrepClosure,
       priorityArenaName: priorityArena ? asTrimmedString(priorityArena.name) || null : null,
       priorityActionName: priorityAction ? asTrimmedString(priorityAction.name) || null : null,
       pendingActionsToday: pendingTodayTasks.length,
@@ -923,7 +924,6 @@ const buildOracleOperationalContext = ({
     needsFirstArena,
     needsFirstAction,
     needsFirstTask,
-    needsSitrepClosure,
   };
 };
 

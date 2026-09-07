@@ -419,7 +419,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     const [viewTransitionVersion, setViewTransitionVersion] = useState(0);
     const [isProfileVisible, setProfileVisible] = useState(false);
     const [isReportsVisible, setReportsVisible] = useState(false);
-    const [pendingSitrepOpen, setPendingSitrepOpen] = useState(false);
+    const [pendingDailyPanelOpen, setPendingDailyPanelOpen] = useState(false);
     const [screenTipsEnabled, setScreenTipsEnabled] = useState(() => areScreenIntroTipsEnabled(userProfile.id, userProfile.completedSeasonMissions || []));
     const [activeScreenTipId, setActiveScreenTipId] = useState<ScreenIntroTipId | null>(null);
     const [screenIntroContextId, setScreenIntroContextId] = useState<ScreenIntroTipId | null>(null);
@@ -616,7 +616,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
                 case 'P': setProfileVisible((prev) => !prev); break;
                 case 's':
                 case 'S':
-                    window.dispatchEvent(new CustomEvent('openSitrep'));
+                    window.dispatchEvent(new CustomEvent('openDailyPanel'));
                     break;
             }
         };
@@ -693,8 +693,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         const handleAppNavigate = (event: Event) => {
             const customEvent = event as CustomEvent<AppNavigatePayload>;
             if (!customEvent.detail?.view) return;
-            if (customEvent.detail.openSitrep) {
-                setPendingSitrepOpen(true);
+            if (customEvent.detail.openDailyPanel) {
+                setPendingDailyPanelOpen(true);
                 setRestScreenVisible(false);
                 window.dispatchEvent(new CustomEvent('tutorialRestScreen', { detail: { open: false } }));
             }
@@ -784,15 +784,15 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
     }, [currentView, handleSetView]);
 
     useEffect(() => {
-        if (!pendingSitrepOpen || currentView !== 'planner') return;
+        if (!pendingDailyPanelOpen || currentView !== 'planner') return;
 
         const timer = window.setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('openSitrep'));
-            setPendingSitrepOpen(false);
+            window.dispatchEvent(new CustomEvent('openDailyPanel'));
+            setPendingDailyPanelOpen(false);
         }, 180);
 
         return () => window.clearTimeout(timer);
-    }, [currentView, pendingSitrepOpen]);
+    }, [currentView, pendingDailyPanelOpen]);
 
     /**
      * Uma fala de abertura por VINDA ao app — e vinda tem intervalo minimo.
@@ -1447,7 +1447,7 @@ const MainApp: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     const [isInnerBlockingOverlayVisible, setInnerBlockingOverlayVisible] = useState(false);
 
     // Overlays que moram fundo na arvore e nao tem como receber uma prop daqui.
-    // Hoje e so o SitrepModal, dentro do PlannerView. Ficam separados do sinal de
+    // Hoje e so o DailyPanelModal, dentro do PlannerView. Ficam separados do sinal de
     // cima de proposito: um e prop, o outro e anuncio, e misturar os dois numa
     // variavel so esconderia qual deles esta segurando a celebracao.
     const [isDeepBlockingOverlayVisible, setDeepBlockingOverlayVisible] = useState(false);

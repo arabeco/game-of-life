@@ -245,7 +245,10 @@ const checkpoints = [];
 const cycleNames = Array.from({ length: 3 }, (_, index) => `Legacy Plaque Cycle ${index + 1} ${Date.now()}`);
 
 try {
-  await waitFor('login screen', `(() => document.body && document.body.innerText.includes('GLYPH') && Array.from(document.querySelectorAll('input')).some((node) => (node.getAttribute('placeholder') || '').includes('Email')))()`);
+  // Antes isto esperava um campo com placeholder 'Email', que so existe depois
+  // de clicar ENTRAR COM E-MAIL. A tela de login ja estava na frente; o teste e
+  // que olhava um passo adiante. O helper login() abre o formulario sozinho.
+  await waitFor('login screen', `(() => document.querySelector('#login-google-button') instanceof HTMLElement)()`);
   checkpoints.push('login-loaded');
 
   await clickByText('Cadastrar');

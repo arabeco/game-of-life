@@ -245,7 +245,7 @@ export const parseOracleActionDraft = (text: string, today: string): OracleActio
 
   if (/\b(organiza|organizar|reorganiza|reorganizar|arruma meu dia|planeja meu dia)\b/.test(normalized)) {
     kind = "organize_day";
-  } else if (/\b(como ta|como está|status|sitrep|resumo do dia|resumo do ciclo)\b/.test(normalized)) {
+  } else if (/\b(como ta|como está|status|resumo do dia|resumo do ciclo)\b/.test(normalized)) {
     kind = "status";
   } else if (/\b(fiz|feito|feita|realizei|terminei|completei|completar|completa|concluir|conclui)\b/.test(normalized)) {
     kind = "complete_action";
@@ -301,7 +301,7 @@ export const parseOracleActionDraft = (text: string, today: string): OracleActio
   };
 };
 
-const APP_KEYWORDS = /\b(glyph|app|oraculo|oráculo|planner|sitrep|ciclo|arena|acao|ações|acoes|premium|clã|cla|mundo|mensagens)\b/;
+const APP_KEYWORDS = /\b(glyph|app|oraculo|oráculo|planner|ciclo|arena|acao|ações|acoes|premium|clã|cla|mundo|mensagens)\b/;
 const GENERAL_TOPIC_KEYWORDS = /\b(ansiedade|saude|treino|trabalho|relacionamento|vida|estudo|filme|livro|negocio|negócio|produtividade|rotina)\b/;
 const PREMIUM_DEPTH_KEYWORDS = /\b(aprofund|mais fundo|detalha|detalhado|me acompanha|acompanha comigo|continuar nisso|continuidade|memoria|voz|plano completo|reflexao longa|reflexão longa)\b/;
 

@@ -9,7 +9,7 @@ import { MoodModal } from './MoodModal';
 import { ChecklistModal } from './ChecklistModal';
 import { GardenZenModal } from './GardenZenModal';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
-import { SitrepContent } from './SitrepContent';
+import { DailyPanelContent } from './DailyPanelContent';
 import { ClanOverviewModal } from './ClanOverviewModal';
 import { getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { OracleFeed } from './OracleFeed';
@@ -74,7 +74,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const [isMoodOpen, setIsMoodOpen] = useState(false);
     const [isOracleOpen, setIsOracleOpen] = useState(false);
     const [isClanOpen, setIsClanOpen] = useState(false);
-    const [isSitrepLocked, setIsSitrepLocked] = useState(true); // Default to locked (safe mode)
+    const [isDailyPanelCollapsed, setIsDailyPanelCollapsed] = useState(true); // Default to locked (safe mode)
     const [isDeepWorkOpen, setIsDeepWorkOpen] = useState(false);
     const [selectedDeepWorkTime, setSelectedDeepWorkTime] = useState('25');
     const [deepWorkActive, setDeepWorkActive] = useState(false);
@@ -117,7 +117,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
         task: currentActionSessionTask,
         nowMs: Date.now(),
     }), [actionSession, currentActionSessionTask, actionSessionTimeLeft]);
-    const sitrepStatusLabel = isSitrepLocked ? 'Resumo' : 'Aberto';
+    const dailyPanelStatusLabel = isDailyPanelCollapsed ? 'Resumo' : 'Aberto';
     // Fundo calmo era exclusivo do modo BASIC; agora e quem desliga animacoes.
     const softVisuals = oraclePreferences?.animationsEnabled === false;
     const isLightTheme = activeTheme === 'LIGHT';
@@ -199,7 +199,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     /**
      * Duas abas no painel, e a data e a unica coisa que muda.
      *
-     * SitrepContent ja derivava tudo — ações, entregas, experiência — de uma data
+     * DailyPanelContent ja derivava tudo — ações, entregas, experiência — de uma data
      * que podia vir de fora. Todo o painel de ontem ja existia; não havia so
      * nenhuma forma de pedir por ele.
      *
@@ -218,8 +218,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
      * que era o de agora. Ontem e uma consulta; hoje e onde se mora.
      */
     React.useEffect(() => {
-        if (isSitrepLocked) setPainelDiarioAba('hoje');
-    }, [isSitrepLocked]);
+        if (isDailyPanelCollapsed) setPainelDiarioAba('hoje');
+    }, [isDailyPanelCollapsed]);
     const dataDoPainel = painelDiarioAba === 'ontem'
         ? shiftLocalDateString(restOperationalDate, -1)
         : restOperationalDate;
@@ -258,8 +258,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
     const dailyDoneLabel = `${dailyDoneCount} ${dailyDoneCount === 1 ? 'feita' : 'feitas'}`;
     const dailyPanelSummary = `HOJE · ${dailyCommandLabel} · ${dailyOpenLabel} · ${dailyDoneLabel}`;
     const handleDailyPanelOpen = () => {
-        if (isSitrepLocked) {
-            setIsSitrepLocked(false);
+        if (isDailyPanelCollapsed) {
+            setIsDailyPanelCollapsed(false);
         }
     };
 
@@ -971,17 +971,17 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                 <div className="flex-1 flex min-h-0 w-full items-center justify-center px-4 pb-2 z-10 animate-fade-in overflow-hidden">
                     {/* min-h-0 e max-h-full: sem os dois o filho nao encolhe e o
                         painel transborda a tela em aparelho curto. */}
-                    <div className={`relative flex min-h-0 max-h-full w-full flex-col group transition-[max-width,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-w-[21rem] translate-y-1' : 'max-w-md translate-y-0'}`}>
+                    <div className={`relative flex min-h-0 max-h-full w-full flex-col group transition-[max-width,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isDailyPanelCollapsed ? 'max-w-[21rem] translate-y-1' : 'max-w-md translate-y-0'}`}>
                         {/* Decorative background glow */}
-                        <div className={`absolute rounded-3xl -z-10 bg-black/20 blur-2xl transition-all duration-500 ${isSitrepLocked ? 'inset-x-6 inset-y-0 opacity-60' : 'inset-0 opacity-90'}`} />
+                        <div className={`absolute rounded-3xl -z-10 bg-black/20 blur-2xl transition-all duration-500 ${isDailyPanelCollapsed ? 'inset-x-6 inset-y-0 opacity-60' : 'inset-0 opacity-90'}`} />
 
                         <GlassCard
-                            id="sitrep-embedded-card"
+                            id="daily-panel-embedded-card"
                             variant="neutral"
-                            className={`restscreen-neutral-shell rounded-[2rem] flex flex-col gap-2 shadow-2xl relative overflow-hidden transition-[max-height,padding,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'p-3 max-h-[5.2rem]' : 'p-4 min-h-0 flex-1'}`}
+                            className={`restscreen-neutral-shell rounded-[2rem] flex flex-col gap-2 shadow-2xl relative overflow-hidden transition-[max-height,padding,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isDailyPanelCollapsed ? 'p-3 max-h-[5.2rem]' : 'p-4 min-h-0 flex-1'}`}
                         >
                             {/* Header / Lock Control */}
-                            {isSitrepLocked ? (
+                            {isDailyPanelCollapsed ? (
                                 <button
                                     type="button"
                                     onClick={handleDailyPanelOpen}
@@ -1028,17 +1028,17 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                                         </div>
                                     </div>
 
-                                    {/* A pilha de status saiu: ela dizia sitrepStatusLabel e o
-                                        botao ao lado dizia sitrepStatusLabel de novo — o mesmo
+                                    {/* A pilha de status saiu: ela dizia dailyPanelStatusLabel e o
+                                        botao ao lado dizia dailyPanelStatusLabel de novo — o mesmo
                                         nome duas vezes na mesma linha, um deles sem funcao
                                         nenhuma alem de ocupar largura. */}
                                     <div className="flex items-center gap-3">
                                         <button
-                                            onClick={() => setIsSitrepLocked(!isSitrepLocked)}
-                                            className={`restscreen-neutral-pill inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all hover:bg-black/70 ${isSitrepLocked ? 'text-white' : 'text-[var(--skin-accent-color)]'}`}
+                                            onClick={() => setIsDailyPanelCollapsed(!isDailyPanelCollapsed)}
+                                            className={`restscreen-neutral-pill inline-flex items-center gap-2 rounded-full border px-3 py-2 transition-all hover:bg-black/70 ${isDailyPanelCollapsed ? 'text-white' : 'text-[var(--skin-accent-color)]'}`}
                                         >
-                                            {isSitrepLocked ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
-                                            <span className="text-[9px] font-black uppercase tracking-[0.18em]">{sitrepStatusLabel}</span>
+                                            {isDailyPanelCollapsed ? <LockIcon className="w-4 h-4" /> : <UnlockIcon className="w-4 h-4" />}
+                                            <span className="text-[9px] font-black uppercase tracking-[0.18em]">{dailyPanelStatusLabel}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1048,8 +1048,8 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                             {/* overflow-hidden: quem rola agora e a lista de acoes por
                                 dentro do painel. O painel inteiro rolando era o que
                                 fazia ele parecer que nao coube. */}
-                            <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSitrepLocked ? 'max-h-0 scale-y-95 translate-y-[-8px] opacity-0 pointer-events-none' : 'flex-1 min-h-0 scale-y-100 translate-y-0 opacity-100 pointer-events-auto'}`}>
-                                {!isSitrepLocked && <SitrepContent fillHeight selectedDateOverride={dataDoPainel} />}
+                            <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isDailyPanelCollapsed ? 'max-h-0 scale-y-95 translate-y-[-8px] opacity-0 pointer-events-none' : 'flex-1 min-h-0 scale-y-100 translate-y-0 opacity-100 pointer-events-auto'}`}>
+                                {!isDailyPanelCollapsed && <DailyPanelContent fillHeight selectedDateOverride={dataDoPainel} />}
                             </div>
                         </GlassCard>
                     </div>

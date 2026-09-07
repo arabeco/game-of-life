@@ -66,11 +66,6 @@ const STATE_LINES: Record<OracleHostOperationalState, string[]> = {
     "Tem compromisso chegando em {arena}. Cinco minutos de preparo evitam meia hora de atrito.",
     "O próximo bloco ja esta marcado. Vale deixar o caminho livre agora.",
   ],
-  pronto_para_fechar: [
-    "O dia esta pronto pra fechar. Faz o julgamento e leva a EXP.",
-    "Tudo que dava pra hoje ja foi feito. Fecha o dia e deixa registrado.",
-    "Restam {pendentes} pendencias, e nenhuma precisa ser hoje. Pode fechar.",
-  ],
   arena_esquecida: [
     "{arena} esta parada ha um tempo. Ou volta com algo pequeno, ou tira do ciclo sem culpa.",
     "Tem arena sem movimento. Deixar parada e uma escolha valida, desde que seja escolha.",

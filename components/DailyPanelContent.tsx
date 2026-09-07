@@ -77,7 +77,7 @@ const PanelMetric: React.FC<{ label: string; value: string | number; hint?: stri
     hint,
     accent = false,
 }) => (
-    <div className="sitrep-neutral-panel rounded-2xl p-3 text-center">
+    <div className="daily-panel-neutral rounded-2xl p-3 text-center">
         <p className="core-label">{label}</p>
         <p className={`mt-1 arena-title-text text-2xl leading-tight ${accent ? 'accent-text luxe-title-shadow' : 'text-white'}`}>
             {value}
@@ -129,10 +129,10 @@ const ActionSummaryCard: React.FC<{
  * crescer e empurrar rolagem para fora.
  *
  * Na tela de descanso ele abre grande e nao deve rolar: o unico trecho que rola
- * e a lista de acoes, por dentro. No SitrepModal o comportamento certo e o
+ * e a lista de acoes, por dentro. No DailyPanelModal o comportamento certo e o
  * contrario — la o proprio modal rola —, por isso isto e opcional e nao padrao.
  */
-export const SitrepContent: React.FC<{
+export const DailyPanelContent: React.FC<{
     onClose?: () => void;
     selectedDateOverride?: string | null;
     fillHeight?: boolean;
@@ -439,7 +439,7 @@ export const SitrepContent: React.FC<{
                         o que estourava a tela em aparelho curto. A leitura de hoje
                         ganha, por ser a mais especifica. */}
                     {ehHoje && (!fillHeight || !todayReading) && historicalInsight && (
-                        <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
+                        <div className="daily-panel-neutral flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
                             <OracleSpeakerMark tone="info" size="sm" className="mt-0.5 shrink-0" />
                             <div className="min-w-0">
                                 {/* Sem rotulo: o rosto do Oraculo ao lado ja diz de quem e a fala. */}
@@ -449,7 +449,7 @@ export const SitrepContent: React.FC<{
                     )}
 
                     {ehHoje && todayReading && (
-                        <div className="sitrep-neutral-panel flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
+                        <div className="daily-panel-neutral flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
                             <OracleSpeakerMark tone="info" size="sm" className="mt-0.5 shrink-0" />
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-2">
@@ -478,7 +478,7 @@ export const SitrepContent: React.FC<{
                     {ehHoje && <ArenaPactBalloon />}
 
                     {activeCycle && cyclePattern && (
-                        <div className="sitrep-neutral-panel rounded-2xl p-3">
+                        <div className="daily-panel-neutral rounded-2xl p-3">
                             <div className="flex items-center justify-between gap-2">
                                 <div className="min-w-0">
                                     <p className="core-label truncate">{activeCycle.name}</p>
@@ -489,7 +489,7 @@ export const SitrepContent: React.FC<{
                                     <p className="text-[10px] text-gray-500">dias</p>
                                 </div>
                             </div>
-                            <div className="sitrep-neutral-track mt-3 h-1.5 w-full rounded-full">
+                            <div className="daily-panel-track mt-3 h-1.5 w-full rounded-full">
                                 <div className="h-full rounded-full bg-[var(--skin-accent-color)]" style={{ width: `${Math.max(0, Math.min(100, cyclePattern.progress))}%` }} />
                             </div>
                             <p className="mt-1 text-[10px] text-gray-500">
@@ -523,7 +523,7 @@ export const SitrepContent: React.FC<{
                     </div>
 
                     {!fillHeight && topArena && (
-                        <div className="sitrep-neutral-panel rounded-2xl p-3">
+                        <div className="daily-panel-neutral rounded-2xl p-3">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--skin-accent-color)]/25 bg-[var(--skin-accent-color)]/12">
                                     <TrophyIcon className="h-5 w-5 text-[var(--skin-accent-color)]" />
@@ -546,15 +546,15 @@ export const SitrepContent: React.FC<{
                         existe; o painel embutido responde so "como esta hoje". */}
                     {!fillHeight && cyclePattern && (
                         <div className="grid grid-cols-3 gap-2 text-center">
-                            <div className="sitrep-neutral-panel rounded-xl p-2">
+                            <div className="daily-panel-neutral rounded-xl p-2">
                                 <p className="core-label">Perfeitos</p>
                                 <p className="arena-title-text text-lg leading-tight text-white">{cyclePattern.perfectDays}</p>
                             </div>
-                            <div className="sitrep-neutral-panel rounded-xl p-2">
+                            <div className="daily-panel-neutral rounded-xl p-2">
                                 <p className="core-label">Sequencia</p>
                                 <p className="arena-title-text text-lg leading-tight text-white">{cyclePattern.currentPerfectStreak}</p>
                             </div>
-                            <div className="sitrep-neutral-panel rounded-xl p-2">
+                            <div className="daily-panel-neutral rounded-xl p-2">
                                 <p className="core-label">Melhor dia</p>
                                 <p className="text-xs font-bold leading-tight text-white">{cyclePattern.bestDay ? formatPanelDate(cyclePattern.bestDay.date) : '--'}</p>
                             </div>
@@ -604,7 +604,7 @@ export const SitrepContent: React.FC<{
                                 />
                             ))}
                             {dailyRows.length === 0 && (
-                                <div className="sitrep-neutral-panel rounded-2xl p-4 text-center">
+                                <div className="daily-panel-neutral rounded-2xl p-4 text-center">
                                     <CheckCircleIcon className="mx-auto h-6 w-6 text-white/35" />
                                     <p className="mt-2 text-xs text-gray-500">Nenhuma ação registrada para este dia.</p>
                                 </div>

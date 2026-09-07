@@ -34,6 +34,10 @@ function onboardingTitleExpression(text) {
   })()`;
 }
 
+async function waitForStep(page, title, timeoutMs = 20000) {
+  await page.waitFor(`passo "${title}"`, onboardingTitleExpression(title), timeoutMs);
+}
+
 async function waitForBodyText(page, description, text, timeoutMs = 12000) {
   await page.waitFor(description, bodyIncludesExpression(text), timeoutMs);
 }
@@ -121,7 +125,7 @@ async function seedSession(page, session) {
 async function clickOracleSend(page) {
   const ok = await page.evaluate(`(() => {
     const input = Array.from(document.querySelectorAll('input'))
-      .find((node) => node instanceof HTMLInputElement && (node.placeholder || '').includes('Consulte o Oráculo'));
+      .find((node) => node instanceof HTMLInputElement && (node.placeholder || '').includes('operacional'));
     if (!(input instanceof HTMLInputElement)) return false;
     const wrapper = input.parentElement;
     const button = wrapper ? wrapper.querySelector('button') : null;
@@ -164,90 +168,105 @@ async function waitForOracleResponse(page, promptText) {
 async function runOnboardingScenario() {
   const checkpoints = [];
   const user = await createTempUser({ label: 'onboarding-smoke', isPremium: true });
+
+  // createTempUser marca TODA conta temporaria com onboarding_completed_at e
+  // onboarding_dismissed_at, para que o overlay nao atrapalhe os outros smokes.
+  // Este cenario quer justamente o overlay, entao precisa desfazer isso — sem
+  // isto ele pedia uma tela que ele mesmo tinha acabado de desligar.
+  await updateProfile(user.client, user.userId, {
+    onboarding_completed_at: null,
+    onboarding_dismissed_at: null,
+  });
+
   const session = await getSession(user.client);
 
   await withBrowser({ baseUrl, debugPort: 9331 }, async (page) => {
     await seedSession(page, session);
     checkpoints.push('login-ok');
 
-    await page.waitFor(
-      'onboarding overlay',
-      `(() => {
-        const body = (document.body?.innerText || '')
-          .normalize('NFD')
-          .replace(/[\\u0300-\\u036f]/g, '')
-          .toUpperCase();
-        return body.includes('ONBOARDING') && body.includes('PRIMEIRO CICLO');
-      })()`,
-      40000,
-    );
+    // Antes isto procurava as palavras ONBOARDING e PRIMEIRO CICLO no texto da
+    // tela. Nenhuma das duas aparece para quem usa o app: "onboarding" e nome de
+    // codigo nosso, e o primeiro passo pergunta "Pra que você quer usar o app?".
+    // O id do titulo existe no overlay e nao depende do texto de nenhum passo.
+    // O PASSO A PASSO SEGUE O FLUXO DE HOJE, NAO O DE ONTEM.
+    //
+    // A versao anterior deste trecho percorria uma geracao antiga do onboarding:
+    // comecava pelo ciclo, depois arena, depois acao, e esperava titulos como
+    // "Nomeie a fase", "Tipo da acao" e "Duracao base". Nenhum deles existe.
+    //
+    // O fluxo atual tem 14 passos e comeca perguntando o proposito:
+    //   proposito -> arena -> acao -> ciclo -> missoes -> fim
+    //
+    // Cada passo destaca um elemento do app (targetSelector) e alguns escondem o
+    // botao Proximo (hideNext) porque so avancam quando a pessoa faz a coisa de
+    // verdade. Por isso aqui alternamos: clicar no alvo quando o passo exige acao,
+    // e avancar a tour quando ele so explica.
+    //
+    // Esperamos por TITULO DE PASSO, nao por texto solto na tela: o texto de
+    // varios passos muda conforme o proposito escolhido, e o titulo nao.
+    await waitForStep(page, 'Pra que você quer usar o app?', 40000);
     checkpoints.push('overlay-open');
 
-    await page.waitForSelector('#start-new-cycle-button', 20000);
-    await page.clickSelector('#start-new-cycle-button');
-    await page.waitForSelector('#new-cycle-name-input', 20000);
-    await page.setInputValue('#new-cycle-name-input', 'Ciclo Smoke');
-    await sleep(300);
-    await advanceOverlay(page, 'Nomeie a fase');
-    checkpoints.push('cycle-name');
+    // Passo 1 esconde o Proximo: so sai daqui quem escolhe um proposito.
+    await page.clickSelector('#onboarding-purpose-organizar');
 
-    await waitForBodyText(page, 'cycle-date-step', 'Escolha a data final', 12000);
-    await advanceOverlay(page, 'Escolha a data final');
-    await waitForBodyText(page, 'cycle-save-step', 'Inicie o ciclo', 12000);
+    await waitForStep(page, 'Sua primeira arena');
+    await page.clickSelector('#new-action-button');
+
+    await waitForStep(page, 'Escolha a área');
+    await advanceOverlay(page, 'Escolha a área');
+
+    await waitForStep(page, 'Dê um nome claro');
+    await page.setInputValue('#new-arena-name-input', 'Arena Smoke');
+    await sleep(250);
+    await advanceOverlay(page, 'Dê um nome claro');
+
+    await waitForStep(page, 'Crie a arena');
+    await page.clickSelector('#new-arena-submit-button');
+    checkpoints.push('arena-created');
+
+    await waitForStep(page, 'Primeira ação');
+    await page.clickSelector('#add-action-button');
+
+    await waitForStep(page, 'O que você vai fazer?');
+    await page.setInputValue('#onboarding-action-name-input', 'Acao Smoke');
+    await sleep(250);
+    await advanceOverlay(page, 'O que você vai fazer?');
+
+    await waitForStep(page, 'Escolha uma meta leve');
+    await advanceOverlay(page, 'Escolha uma meta leve');
+
+    await waitForStep(page, 'Salve sua ação');
+    await page.clickSelector('#onboarding-action-save-button');
+    checkpoints.push('action-created');
+
+    await waitForStep(page, 'Comece um ciclo curto');
+    // Aqui o botao do overlay se chama ABRIR, nao Proximo: o alvo
+    // (#start-new-cycle-button) vive em outra tela, e e o proprio overlay que
+    // navega e aciona. Clicar no alvo direto falha porque ele nem esta montado.
+    await advanceOverlay(page, 'Comece um ciclo curto');
+
+    await waitForStep(page, 'Confira o prazo');
+    await advanceOverlay(page, 'Confira o prazo');
+
+    await waitForStep(page, 'Inicie o ciclo');
     await page.clickSelector('#new-cycle-submit-button');
     await page.clickText('CONFIRMAR');
     checkpoints.push('cycle-created');
 
-    await waitForBodyText(page, 'arena-entry', 'Crie sua primeira arena', 20000);
-    await page.waitForSelector('#new-action-button', 20000);
-    await page.clickSelector('#new-action-button');
-    await page.waitForSelector('#new-arena-name-input', 20000);
-    await waitForBodyText(page, 'arena-asset-step', 'Ativo pai', 12000);
-    await advanceOverlay(page, 'Ativo pai');
-    await page.setInputValue('#new-arena-name-input', 'Arena Smoke');
-    await sleep(250);
-    await advanceOverlay(page, 'Nome da arena');
-    await waitForBodyText(page, 'arena-description-step', 'Meta da arena', 12000);
-    await advanceOverlay(page, 'Meta da arena');
-    await waitForBodyText(page, 'arena-save-step', 'Criar arena', 12000);
-    await page.clickSelector('#new-arena-submit-button');
-    checkpoints.push('arena-created');
+    await waitForStep(page, 'Quer uma missão para comecar?');
+    await advanceOverlay(page, 'Quer uma missão para comecar?');
 
-    await waitForBodyText(page, 'action-entry', 'Primeira ação', 20000);
-    await page.waitForSelector('#add-action-button', 20000);
-    await page.clickSelector('#add-action-button');
-    await page.waitForSelector('#onboarding-action-name-input', 20000);
-    await page.setInputValue('#onboarding-action-name-input', 'Acao Smoke');
-    await sleep(250);
-    await advanceOverlay(page, 'Título da ação');
-    await waitForBodyText(page, 'action-type-step', 'Tipo da ação', 12000);
-    await advanceOverlay(page, 'Tipo da ação');
-    await waitForBodyText(page, 'action-repetitions-step', 'Repetições', 12000);
-    await advanceOverlay(page, 'Repetições');
-    await waitForBodyText(page, 'action-duration-step', 'Duração base', 12000);
-    await advanceOverlay(page, 'Duração base');
-    await waitForBodyText(page, 'action-save-step', 'Salvar ação', 12000);
-    await page.clickSelector('#onboarding-action-save-button');
-    checkpoints.push('action-created');
-
-    await waitForBodyText(page, 'planner-step', 'pronta para uso', 20000);
-    await advanceOverlay(page, 'Planner');
-    await waitForBodyText(page, 'rest-entry-step', 'Tela de descanso', 12000);
-    await page.clickSelector('#lock-icon-button');
-    await page.waitForSelector('#sitrep-embedded-card', 20000);
-    await waitForBodyText(page, 'sitrep-step', 'fluxo diário', 12000);
-    await advanceOverlay(page, 'Painel Diário');
-    await waitForBodyText(page, 'finish-step', 'Configurações > Tutoriais', 12000);
+    await waitForStep(page, 'Tudo pronto');
     await page.clickText('Concluir');
     checkpoints.push('onboarding-finished');
 
+    // O que importa no fim e o overlay ter saido de cena. A tela em que a pessoa
+    // aterrissa e decisao do ultimo passo e ja mudou uma vez; prender o teste a
+    // ela foi o que deixou este trecho desatualizado por tanto tempo.
     await page.waitFor(
-      'rest screen after onboarding',
-      `(() => {
-        const hasOnboardingBadge = Array.from(document.querySelectorAll('div, span, p, h3, button'))
-          .some((node) => (node.textContent || '').trim() === 'ONBOARDING');
-        return !hasOnboardingBadge && !!document.querySelector('#sitrep-embedded-card');
-      })()`,
+      'overlay closed',
+      `(() => !document.querySelector('#first-use-onboarding-title'))()`,
       25000,
     );
   });
@@ -278,26 +297,50 @@ async function runOracleScenario() {
     await seedSession(page, session);
     checkpoints.push('login-ok');
 
+    // O QUE ESTE CENARIO MEDIA, E O QUE ELE MEDE AGORA.
+    //
+    // Antes ele digitava uma pergunta livre no chat e esperava a resposta da edge
+    // function, checando inclusive as mensagens de fallback ("Sessao expirada no
+    // Oraculo", "Oraculo indisponivel"). Era a unica cobertura de ponta a ponta
+    // daquele servidor.
+    //
+    // Essa consulta escrita NAO EXISTE MAIS na interface. O unico campo de texto
+    // do Oraculo vivia em components/OracleAction.tsx — 1903 linhas que nenhum
+    // arquivo importava, apagadas junto com esta correcao. O chat de hoje e por
+    // botao.
+    //
+    // Entao aqui passamos a medir o que existe: "Ler meu dia" devolve a leitura.
+    // E honesto dizer que isto e MENOS: a leitura le da memoria do app e nao toca
+    // a rede, entao a edge function do Oraculo ficou sem cobertura de interface —
+    // nao porque o teste piorou, mas porque a tela que a exercitava saiu.
     await page.clickSelector('#header-oracle');
-    await page.waitFor('oracle input', `(() => Array.from(document.querySelectorAll('input')).some((node) => node instanceof HTMLInputElement && (node.placeholder || '').includes('Consulte o Oráculo')))()`, 25000);
+    await page.waitFor('oracle tabs', `(() => document.querySelector('#oracle-tab-chat') instanceof HTMLElement)()`, 25000);
+    await page.clickSelector('#oracle-tab-chat');
+    await page.waitFor('oracle chat', `(() => document.querySelector('#oracle-read-my-day') instanceof HTMLElement)()`, 25000);
     checkpoints.push('oracle-open');
 
-    await page.evaluate(`(() => {
-      const input = Array.from(document.querySelectorAll('input'))
-        .find((node) => node instanceof HTMLInputElement && (node.placeholder || '').includes('Consulte o Oráculo'));
-      if (!(input instanceof HTMLInputElement)) return false;
-      const proto = HTMLInputElement.prototype;
-      const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-      if (!setter) return false;
-      input.focus();
-      setter.call(input, ${JSON.stringify(promptText)});
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      return true;
-    })()`);
+    await page.clickSelector('#oracle-read-my-day');
+    await page.waitFor(
+      'oracle reading',
+      `(() => {
+        const body = document.body ? document.body.innerText : '';
+        if (body.includes('Consultando os astros...')) return false;
+        // O estado vazio some quando a leitura entra na conversa.
+        return !body.includes('O Oráculo aguarda sua consulta');
+      })()`,
+      45000,
+    );
 
-    await clickOracleSend(page);
-    await waitForOracleResponse(page, promptText);
+    const oracleBody = await page.bodyText();
+    const oracleFallback = [
+      'O Oraculo esta em silencio momentaneo',
+      'Sessao expirada no Oraculo',
+      'Oraculo bloqueado para esta origem',
+      'Oraculo indisponivel',
+    ].find((marker) => oracleBody.includes(marker));
+    if (oracleFallback) {
+      throw new Error(`Oracle returned fallback message: ${oracleFallback}`);
+    }
     checkpoints.push('oracle-response');
   });
 
@@ -334,9 +377,12 @@ async function runDeleteScenario() {
     await page.clickText('CONFIRMAR');
     checkpoints.push('delete-confirmed');
 
+    // Antes isto exigia os campos do formulario de e-mail, que so existem depois
+    // de clicar "ENTRAR COM E-MAIL". A tela de login ja aparecia; o teste e que
+    // procurava dois passos adiante. O que importa aqui e estar deslogado.
     await page.waitFor(
       'login screen after deletion',
-      `(() => document.querySelector('#login-email-input') instanceof HTMLElement && document.querySelector('#login-submit-button') instanceof HTMLElement)()`,
+      `(() => document.querySelector('#login-google-button') instanceof HTMLElement)()`,
       45000,
     );
   });

@@ -17,7 +17,6 @@ export type OracleHostOperationalState =
   | "em_risco"
   | "retomando"
   | "proximo_compromisso"
-  | "pronto_para_fechar"
   | "arena_esquecida"
   | "escopo_pesado"
   | "oportunidade_util"
@@ -50,7 +49,6 @@ export type OracleHostContext = {
   needsFirstArena: boolean;
   needsFirstAction: boolean;
   needsFirstTask: boolean;
-  needsSitrepClosure: boolean;
   dailyProofStreakCurrent: number;
   dailyProofLastClosedDate: string | null;
   activeMode: OracleHostMode;
@@ -167,7 +165,6 @@ export const ORACLE_STATE_FAMILY: Record<OracleHostOperationalState, string> = {
   proximo_compromisso: "Tempo",
   retomando: "Retorno",
   arena_esquecida: "Manutencao",
-  pronto_para_fechar: "Manutencao",
   oportunidade_util: "Valor",
   em_ritmo: "Valor",
   streak_mantida: "Valor",
@@ -274,12 +271,6 @@ export const ORACLE_VOICE_EXAMPLES: Record<OracleHostOperationalState, Record<Or
     chat: ["O melhor uso do Oráculo agora e tirar atrito: prepare o ambiente e entre na ação sem redesenhar o plano."],
     card: ["PRIORIDADE: entrar na ação.\nRISCO: renegociar na hora de executar.\nAJA: prepare o ambiente e comece."],
   },
-  pronto_para_fechar: {
-    push: ["Seu dia ja tem material. Fecha antes que vire ruido.", "Ja tem registro para guardar. Fecha o dia com calma.", "Não deixa o dia aberto na cabeca."],
-    balao: ["Ja existe progresso para revisar. Fecha o dia antes que ele fique aberto na cabeca.", "O que você fez hoje ja merece registro. Quer selar o dia?"],
-    chat: ["O dia ja tem materia suficiente para fechamento. Revisar agora deixa o próximo movimento mais limpo.", "Pergunta curta: o que você fez hoje que merece ficar registrado? Vamos guardar isso sem transformar em relatório pesado."],
-    card: ["PRIORIDADE: fechar o dia.\nRISCO: perder clareza do que foi feito.\nAJA: faca o fechamento do painel."],
-  },
   arena_esquecida: {
     push: ["Uma arena ficou sem movimento. Vale decidir se ela entra hoje ou sai do ciclo."],
     balao: ["Essa arena esta sem sinal ha alguns dias. Falta tempo ou falta uma próxima ação?"],
@@ -369,10 +360,6 @@ export const deriveOracleHostOperationalState = (
 
   if (context.staleArenas.length > 0) {
     return "arena_esquecida";
-  }
-
-  if (context.needsSitrepClosure) {
-    return "pronto_para_fechar";
   }
 
   if (context.pendingChests > 0) {

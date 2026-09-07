@@ -88,7 +88,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         title: '05. RESUMO DO DIA',
         text: 'O dia fecha sozinho na virada: voce nao precisa selar nada. Este botao abre o resumo do que ficou registrado. Se voce entender Arena, Planner e Ciclo, ja consegue usar o Glyph de verdade.',
         view: 'planner',
-        targetId: 'sitrep-button',
+        targetId: 'daily-panel-button',
     },
     {
         category: 'IDENTIDADE',
@@ -162,6 +162,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
         title: 'GUIA CONCLUIDO',
         text: 'Para comecar bem, lembra do essencial: Arena, Planner, Ciclo e Fechamento do Dia.\n\nO resto entra aos poucos, quando fizer sentido para voce.',
         view: 'planner',
-        targetId: 'sitrep-button',
+        targetId: 'daily-panel-button',
     },
 ];

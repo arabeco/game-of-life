@@ -259,10 +259,13 @@ try {
   await clickSelector('#login-show-manual-signup-button');
   await waitFor('signup form', `(() => Array.from(document.querySelectorAll('input')).some((node) => (node.getAttribute('placeholder') || '').includes('Nickname')))()`, 10000);
   await sleep(300);
-  await setField('Email ou Nickname', email);
-  await setField('Senha', password);
-  await setField('Nickname', 'LegacySmoke');
-  await clickByText('CRIAR PERFIL');
+  // Os placeholders mudam conforme o modo (no cadastro e 'E-mail', no login e
+  // 'E-mail ou nickname') e ja mudaram de acentuacao. Os ids nao mudam.
+  await setFieldById('login-email-input', email);
+  await setFieldById('login-password-input', password);
+  await setFieldById('login-nickname-input', 'LegacySmoke');
+  // O rotulo do botao ja foi 'Cadastrar' e agora e outro; o id nao muda.
+  await clickSelector('#login-submit-button');
   await waitFor('signup transition', `(() => document.body && (document.body.innerText.includes('Cadastro realizado') || document.body.innerText.includes('O DESPERTAR DO SOBERANO') || document.body.innerText.includes('O DESPERTAR')))()`, 30000);
   checkpoints.push('signup-ok');
 

@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-07T18:12:25.776Z
+- Generated at: 2026-09-07T18:42:21.683Z
 - Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (12.7s)
+- Build: PASS (12.5s)
 
 ## Checks
 
@@ -31,7 +31,7 @@
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.1s)
+### PASS - Oracle cycle coach regression (0.2s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
@@ -65,19 +65,19 @@
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.2s)
+### PASS - Arena pacts regression (0.1s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
 - Simulates: entrega anterior ao aceite nao conta
 
-### PASS - Cycle scheduling regression (0.1s)
+### PASS - Cycle scheduling regression (0.2s)
 - Kind: `logic`
 - Simulates: renovar uma arena nao expulsa as outras do ciclo
 - Simulates: a virada reagenda as acoes recorrentes
 - Simulates: o agendamento para no fim do ciclo, nao em 365 dias
 
-### PASS - XP scale regression (0.1s)
+### PASS - XP scale regression (0.2s)
 - Kind: `logic`
 - Simulates: missoes, jornadas e pactos usam a mesma escala
 - Simulates: nenhuma recompensa passa de 500 XP
@@ -94,7 +94,7 @@
 - Simulates: abrir ciclo fecha a rodada
 - Simulates: o fecho do ciclo nao recalcula a base ja paga
 
-### PASS - Oracle reaction regression (0.2s)
+### PASS - Oracle reaction regression (0.1s)
 - Kind: `logic`
 - Simulates: a reacao nao repete a frase anterior
 - Simulates: a primeira acao depois de uma pausa tem fala propria
@@ -124,7 +124,7 @@
 - Simulates: a tela de descanso respeita as duas barras
 - Simulates: preferencia que ainda nao chegou nao vira botao morto
 
-### PASS - Relationship link as timed product regression (0.2s)
+### PASS - Relationship link as timed product regression (0.1s)
 - Kind: `logic`
 - Simulates: o preco exibido e o preco cobrado
 - Simulates: renovar custa menos que criar
@@ -142,34 +142,34 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (19.7s)
+### PASS - Onboarding happy path (18.3s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (15.1s)
+### PASS - Campaign quiz flow (15.3s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (19.8s)
+### PASS - Cycle report flow (20.1s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (11.4s)
+### PASS - UI shell smoke (11.1s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais
 - Simulates: garante que a casca da app sobe sem overlay travando
 
-### PASS - Onboarding + oracle + delete (22.3s)
+### PASS - Onboarding + oracle + delete (22.4s)
 - Kind: `browser`
 - Simulates: valida onboarding
 - Simulates: abre oracle
@@ -182,12 +182,11 @@
 - Simulates: confere renderizacao e estados basicos
 - Error: Notification lab failed with exit 1
 
-### FAIL - Clan creation
+### PASS - Clan creation (17.1s)
 - Kind: `browser`
 - Simulates: abre criacao de grupo
 - Simulates: confirma debito/fluxo
 - Simulates: garante que o grupo nasce na UI
-- Error: Clan creation failed with exit 1
 
 ### FAIL - Mentorship planner sync
 - Kind: `browser`
@@ -217,12 +216,12 @@
 - Simulates: confere vencedor, bau e reflexo final
 - Error: Competition race failed with exit 1
 
-### FAIL - Season clan smoke
+### SKIP - Season clan smoke
 - Kind: `browser`
 - Simulates: abre temporada
 - Simulates: entra em superficie de missao/quest
 - Simulates: verifica integracao base com grupo
-- Error: Season clan smoke failed with exit 1
+- Error: feature clanMissions desligada
 
 ### FAIL - Legacy era customization
 - Kind: `browser`

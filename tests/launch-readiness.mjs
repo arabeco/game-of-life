@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { PRODUCT_FEATURES } from '../constants/featureFlags.ts';
 import { once } from 'node:events';
 import fs from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -265,6 +266,12 @@ const suites = {
       interactions: ['abre competicao', 'executa corrida entre contas', 'confere vencedor, bau e reflexo final'],
     },
     {
+      // Esta suite exercita MISSAO DE CLA, e a feature esta desligada
+      // (PRODUCT_FEATURES.clanMissions === false). A aba de missoes nem renderiza,
+      // entao o teste nao tinha como passar — e cobrava do portao uma coisa que o
+      // produto decidiu nao ter. Se o flag voltar a true, ele volta a rodar
+      // sozinho, sem ninguem precisar lembrar.
+      requiresFeature: 'clanMissions',
       id: 'season-clan',
       label: 'Season clan smoke',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'season-clan-smoke.cdp.mjs')]],
@@ -595,6 +602,12 @@ async function main() {
     }
 
     for (const entry of browserEntries) {
+      if (entry.requiresFeature && PRODUCT_FEATURES[entry.requiresFeature] !== true) {
+        console.log(`\n[skip] ${entry.label} — ${entry.requiresFeature} esta desligada`);
+        results.push({ id: entry.id, label: entry.label, status: 'SKIP', error: `feature ${entry.requiresFeature} desligada` });
+        continue;
+      }
+
       console.log(`\n[check] ${entry.label}`);
       try {
         const durationMs = await runProcess(entry.label, entry.command[0], entry.command[1], {

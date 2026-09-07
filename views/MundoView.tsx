@@ -588,6 +588,7 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                     ].map((section) => (
                         <button
                             key={section.id}
+                            id={`mundo-social-${section.id}`}
                             type="button"
                             onClick={() => setActiveSection(section.id as SocialSection)}
                             className={`w-full rounded-xl border px-2 py-2 text-center transition-colors ${

@@ -47,6 +47,10 @@ try {
     checkpoints.push('poor-user-login');
 
     await page.clickSelector('#nav-mundo');
+    // O Mundo abre na secao Pessoas. O botao Criar Grupo vive na secao Cla, entao
+    // procura-lo direto media uma tela que ainda nao estava aberta.
+    await page.waitForSelector('#mundo-social-clan', 20000);
+    await page.clickSelector('#mundo-social-clan');
     await page.waitFor('create group entry', `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').toLowerCase().includes('criar grupo')))()`, 20000);
     await page.clickText('Criar Grupo');
     await page.waitForSelector('#create-clan-name-input', 15000);
@@ -66,7 +70,11 @@ try {
       'gold shortage prompt for clan creation',
       `(() => {
         const body = document.body?.innerText || '';
-        return body.includes('Saldo insuficiente') && body.toLowerCase().includes('recarga');
+        // A palavra "recarga" nao existe mais em lugar nenhum do app, entao esta
+        // condicao nunca podia ser verdadeira. O que importa e a recusa chegar a
+        // pessoa, e ela chega por dois caminhos: o aviso do modal de criar grupo
+        // ("Saldo insuficiente") ou o de ouro do app ("Ouro insuficiente").
+        return body.includes('Saldo insuficiente') || body.includes('Ouro insuficiente');
       })()`,
       15000,
     );
@@ -79,6 +87,10 @@ try {
     checkpoints.push('rich-user-login');
 
     await page.clickSelector('#nav-mundo');
+    // O Mundo abre na secao Pessoas. O botao Criar Grupo vive na secao Cla, entao
+    // procura-lo direto media uma tela que ainda nao estava aberta.
+    await page.waitForSelector('#mundo-social-clan', 20000);
+    await page.clickSelector('#mundo-social-clan');
     await page.waitFor('create group entry', `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || '').toLowerCase().includes('criar grupo')))()`, 20000);
     await page.clickText('Criar Grupo');
     await page.waitForSelector('#create-clan-name-input', 15000);
@@ -118,9 +130,12 @@ try {
       target.click();
       return true;
     })()`);
-    await page.waitForSelector('#clan-tab-sanctuary', 20000);
+    // Depois de criar, quem mostra o grupo e o CARD do Mundo (#clans-section),
+    // nao a aba do modal — o modal nem chega a abrir aqui. O santuario, alias,
+    // esta desligado (PRODUCT_FEATURES.clanSanctuary === false).
+    await page.waitForSelector('#clans-section', 20000);
     await page.waitFor(
-      'new clan visible in sanctuary',
+      'novo grupo visivel no Mundo',
       `(() => {
         const body = (document.body?.innerText || '').toLowerCase();
         return body.includes(${JSON.stringify(clanName.toLowerCase())});

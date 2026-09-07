@@ -26,8 +26,8 @@ try {
     checkpoints.push('leader-login');
 
     await page.clickSelector('#nav-mundo');
-    await page.waitForSelector('#clan-sanctuary', 20000);
-    await page.clickSelector('#clan-sanctuary button');
+    await page.waitForSelector('#clan-tab-sanctuary', 20000);
+    await page.clickSelector('#clan-tab-sanctuary button');
     await page.waitForSelector('#clan-tab-quests', 15000);
     await page.clickSelector('#clan-tab-quests');
     await page.waitForSelector(`#clan-quest-activate-${mission.id}`, 15000);
@@ -48,8 +48,8 @@ try {
     checkpoints.push('member-login');
 
     await page.clickSelector('#nav-mundo');
-    await page.waitForSelector('#clan-sanctuary', 20000);
-    await page.clickSelector('#clan-sanctuary button');
+    await page.waitForSelector('#clan-tab-sanctuary', 20000);
+    await page.clickSelector('#clan-tab-sanctuary button');
     await page.waitForSelector('#clan-tab-quests', 15000);
     await page.clickSelector('#clan-tab-quests');
     await page.waitForSelector(`#clan-season-quest-open-${mission.id}`, 15000);
@@ -105,8 +105,8 @@ try {
     checkpoints.push('member-relogin-for-claim');
 
     await page.clickSelector('#nav-mundo');
-    await page.waitForSelector('#clan-sanctuary', 20000);
-    await page.clickSelector('#clan-sanctuary button');
+    await page.waitForSelector('#clan-tab-sanctuary', 20000);
+    await page.clickSelector('#clan-tab-sanctuary button');
     await page.waitForSelector('#clan-tab-quests', 15000);
     await page.clickSelector('#clan-tab-quests');
     await page.waitForSelector(`#clan-quest-claim-${mission.id}`, 15000);

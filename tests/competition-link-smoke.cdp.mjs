@@ -32,17 +32,17 @@ try {
       25000,
     );
     await page.clickSelector('#links-button');
-    await page.waitForSelector('#relationship-hub-tab-competicao', 15000);
-    await page.clickSelector('#relationship-hub-tab-competicao');
+    await page.waitForSelector('#connections-tab-competicao', 15000);
+    await page.clickSelector('#connections-tab-competicao');
     await page.waitFor(
       'competition cta',
       `(() => {
-        const button = document.querySelector('#relationship-hub-primary-create-button');
+        const button = document.querySelector('#connections-invite-open');
         return button instanceof HTMLButtonElement && !button.disabled;
       })()`,
       20000,
     );
-    await page.clickSelector('#relationship-hub-primary-create-button');
+    await page.clickSelector('#connections-invite-open');
     await page.waitForSelector('#relationship-friend-search-input', 15000);
     await page.setInputValue('#relationship-friend-search-input', friend.nickname);
     await page.waitForSelector(`#relationship-friend-${friend.userId}`, 15000);

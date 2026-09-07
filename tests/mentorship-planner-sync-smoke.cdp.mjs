@@ -335,8 +335,8 @@ try {
     await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
-    await page.waitForSelector('#relationship-hub-tab-mentoria', 15000);
-    await page.clickSelector('#relationship-hub-tab-mentoria');
+    await page.waitForSelector('#connections-tab-mentoria', 15000);
+    await page.clickSelector('#connections-tab-mentoria');
     await page.waitFor(
       'mentorship link card visible for pupil',
       `(() => {
@@ -452,8 +452,8 @@ try {
     await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
-    await page.waitForSelector('#relationship-hub-tab-mentoria', 15000);
-    await page.clickSelector('#relationship-hub-tab-mentoria');
+    await page.waitForSelector('#connections-tab-mentoria', 15000);
+    await page.clickSelector('#connections-tab-mentoria');
     await page.waitFor(
       'mentor sees mentorship link card',
       `(() => {

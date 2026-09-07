@@ -24,17 +24,17 @@ try {
     await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
-    await page.waitForSelector('#relationship-hub-tab-parceria', 15000);
-    await page.clickSelector('#relationship-hub-tab-parceria');
+    await page.waitForSelector('#connections-tab-parceria', 15000);
+    await page.clickSelector('#connections-tab-parceria');
     await page.waitFor(
       'partnership create button',
       `(() => {
-        const button = document.querySelector('#relationship-hub-primary-create-button');
+        const button = document.querySelector('#connections-invite-open');
         return button instanceof HTMLButtonElement && !button.disabled;
       })()`,
       20000,
     );
-    await page.clickSelector('#relationship-hub-primary-create-button');
+    await page.clickSelector('#connections-invite-open');
     await page.waitForSelector('#relationship-friend-search-input', 15000);
     await page.setInputValue('#relationship-friend-search-input', friend.nickname);
     await page.waitForSelector(`#relationship-friend-${friend.userId}`, 15000);
@@ -66,8 +66,8 @@ try {
     await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
-    await page.waitForSelector('#relationship-hub-tab-parceria', 15000);
-    await page.clickSelector('#relationship-hub-tab-parceria');
+    await page.waitForSelector('#connections-tab-parceria', 15000);
+    await page.clickSelector('#connections-tab-parceria');
     await page.waitFor(
       'incoming partnership invite',
       `(() => {

@@ -26,17 +26,17 @@ try {
     await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
-    await page.waitForSelector('#relationship-hub-tab-mentoria', 15000);
-    await page.clickSelector('#relationship-hub-tab-mentoria');
+    await page.waitForSelector('#connections-tab-mentoria', 15000);
+    await page.clickSelector('#connections-tab-mentoria');
     await page.waitFor(
       'mentor invite disabled button',
-      `(() => document.querySelector('#relationship-hub-primary-create-button') instanceof HTMLButtonElement)()`,
+      `(() => document.querySelector('#connections-invite-open') instanceof HTMLButtonElement)()`,
       20000,
     );
     await page.waitFor(
       'free pupil cannot create mentor invite',
       `(() => {
-        const button = document.querySelector('#relationship-hub-primary-create-button');
+        const button = document.querySelector('#connections-invite-open');
         return button instanceof HTMLButtonElement && button.disabled;
       })()`,
       15000,
@@ -52,17 +52,17 @@ try {
     await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
-    await page.waitForSelector('#relationship-hub-tab-mentoria', 15000);
-    await page.clickSelector('#relationship-hub-tab-mentoria');
+    await page.waitForSelector('#connections-tab-mentoria', 15000);
+    await page.clickSelector('#connections-tab-mentoria');
     await page.waitFor(
       'mentor cta',
       `(() => {
-        const button = document.querySelector('#relationship-hub-primary-create-button');
+        const button = document.querySelector('#connections-invite-open');
         return button instanceof HTMLButtonElement && !button.disabled;
       })()`,
       20000,
     );
-    await page.clickSelector('#relationship-hub-primary-create-button');
+    await page.clickSelector('#connections-invite-open');
     await page.waitForSelector('#relationship-friend-search-input', 15000);
     await page.setInputValue('#relationship-friend-search-input', pupil.nickname);
     await page.waitForSelector(`#relationship-friend-${pupil.userId}`, 15000);
@@ -98,8 +98,8 @@ try {
     await page.clickSelector('#nav-mundo');
     await page.waitForSelector('#links-button', 15000);
     await page.clickSelector('#links-button');
-    await page.waitForSelector('#relationship-hub-tab-mentoria', 15000);
-    await page.clickSelector('#relationship-hub-tab-mentoria');
+    await page.waitForSelector('#connections-tab-mentoria', 15000);
+    await page.clickSelector('#connections-tab-mentoria');
     await page.waitFor(
       'accept mentorship invite button',
       `(() => Array.from(document.querySelectorAll('button')).some((node) => (node.innerText || node.textContent || '').toLowerCase().includes('aceitar')))()`,

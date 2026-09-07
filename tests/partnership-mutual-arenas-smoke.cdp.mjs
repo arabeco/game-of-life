@@ -18,8 +18,8 @@ async function openPartnershipDetail(page, otherNickname) {
   await page.clickSelector('#nav-mundo');
   await page.waitForSelector('#links-button', 15000);
   await page.clickSelector('#links-button');
-  await page.waitForSelector('#relationship-hub-tab-parceria', 15000);
-  await page.clickSelector('#relationship-hub-tab-parceria');
+  await page.waitForSelector('#connections-tab-parceria', 15000);
+  await page.clickSelector('#connections-tab-parceria');
   await page.waitFor(
     'partnership relationship card',
     `(() => {

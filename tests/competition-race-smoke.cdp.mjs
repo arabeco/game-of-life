@@ -24,8 +24,8 @@ async function openCompetitionDetail(page, otherNickname) {
   await page.clickSelector('#nav-mundo');
   await page.waitForSelector('#links-button', 15000);
   await page.clickSelector('#links-button');
-  await page.waitForSelector('#relationship-hub-tab-competicao', 15000);
-  await page.clickSelector('#relationship-hub-tab-competicao');
+  await page.waitForSelector('#connections-tab-competicao', 15000);
+  await page.clickSelector('#connections-tab-competicao');
   await page.waitFor(
     'competition relationship card',
     `(() => {
@@ -235,7 +235,7 @@ try {
     await page.clickText('Lancar desafio');
     await page.waitForSelector(`#relationship-competition-source-${sourceArena.id}`, 20000);
     await page.clickSelector(`#relationship-competition-source-${sourceArena.id}`);
-    await page.clickSelector('#relationship-competition-submit-button');
+    await page.clickSelector('#connections-competition-submit');
     checkpoints.push('leader-launched-challenge');
   });
 

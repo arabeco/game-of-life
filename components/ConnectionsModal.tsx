@@ -425,7 +425,7 @@ export const ConnectionsModal: React.FC<{
 
             <section className="flex items-center justify-between gap-3">
               <p className="text-[11px] leading-relaxed text-white/45">{typeCopy[activeType].description}</p>
-              <button type="button" onClick={() => setInviteType(activeType)} className="shrink-0 rounded-md bg-[var(--skin-accent-color)] px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-black">
+              <button id="connections-invite-open" type="button" onClick={() => setInviteType(activeType)} className="shrink-0 rounded-md bg-[var(--skin-accent-color)] px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-black">
                 {typeCopy[activeType].invite}
               </button>
             </section>
@@ -622,7 +622,7 @@ export const ConnectionsModal: React.FC<{
               {inviteCandidates.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/42">Adicione a pessoa como amiga primeiro.</div>
               ) : inviteCandidates.map((friend) => (
-                <button key={friend.id} type="button" disabled={Boolean(busyKey)} onClick={() => void sendInvite(friend.id)} className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-left hover:bg-white/[0.07]">
+                <button key={friend.id} id={`connections-invite-friend-${friend.id}`} type="button" disabled={Boolean(busyKey)} onClick={() => void sendInvite(friend.id)} className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-left hover:bg-white/[0.07]">
                   <Avatar profile={profileFromUser(friend)} />
                   <div className="min-w-0 flex-1"><div className="truncate text-sm font-bold text-white">{friend.nickname}</div><div className="text-[10px] text-white/40">Nivel {getDisplayLevel(friend.level)}</div></div>
                   <PlusIcon className="h-4 w-4 text-white/55" />
@@ -638,13 +638,13 @@ export const ConnectionsModal: React.FC<{
           <div className="w-full max-w-sm rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-base font-black text-white">Minha arena na parceria</h3>
             <p className="mt-1 text-[11px] text-white/45">A outra pessoa acompanha o progresso. Você continua sendo dono da arena.</p>
-            <select value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
+            <select id="connections-partnership-arena-select" value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
               <option value="">Escolha uma arena</option>
               {ownArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
             </select>
             <div className="mt-4 flex gap-2">
               <button type="button" onClick={() => setArenaPickerLink(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
-              <button type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void savePartnershipArena()} className="flex-1 rounded-md bg-[var(--skin-accent-color)] px-3 py-2 text-xs font-black text-black disabled:opacity-40">Salvar</button>
+              <button id="connections-partnership-save" type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void savePartnershipArena()} className="flex-1 rounded-md bg-[var(--skin-accent-color)] px-3 py-2 text-xs font-black text-black disabled:opacity-40">Salvar</button>
             </div>
           </div>
         </div>
@@ -660,7 +660,7 @@ export const ConnectionsModal: React.FC<{
                 <p className="mt-0.5 text-[10px] text-white/42">A pessoa verá arena, prazo e recompensa antes de aceitar.</p>
               </div>
             </div>
-            <select value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
+            <select id="connections-competition-arena-select" value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
               <option value="">Escolha uma arena</option>
               {competitionArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
             </select>
@@ -709,7 +709,7 @@ export const ConnectionsModal: React.FC<{
             <p className="mt-3 text-[10px] leading-relaxed text-white/42">O envio é gratuito. Se o convite for aceito, 50 de ouro serão cobrados de você e as duas cópias serão seladas.</p>
             <div className="mt-4 flex gap-2">
               <button type="button" onClick={() => setCompetitionInviteFriend(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
-              <button type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void sendCompetitionInvite()} className="flex-1 rounded-md bg-rose-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Enviar convite</button>
+              <button id="connections-competition-submit" type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void sendCompetitionInvite()} className="flex-1 rounded-md bg-rose-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Enviar convite</button>
             </div>
           </div>
         </div>
@@ -720,14 +720,14 @@ export const ConnectionsModal: React.FC<{
           <div className="w-full max-w-sm rounded-lg border border-white/12 bg-[#0b0c0f] p-4" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-base font-black text-white">Arena acompanhada</h3>
             <p className="mt-1 text-[11px] leading-relaxed text-white/45">O mentor podera ver o progresso e conversar com você, mas não podera criar, editar ou apagar suas ações. A primeira escolha custa 50 de ouro; trocar depois não cobra novamente.</p>
-            <select value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
+            <select id="connections-mentorship-arena-select" value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
               <option value="">Escolha uma arena</option>
               {ownArenas.map((arena: Arena) => <option key={arena.id} value={arena.id}>{arena.name}</option>)}
             </select>
             {ownArenas.length === 0 && <p className="mt-2 text-[10px] text-amber-200/70">Crie uma arena primeiro; o mentor não fara isso por você.</p>}
             <div className="mt-4 flex gap-2">
               <button type="button" onClick={() => setMentorshipPickerLink(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
-              <button type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void saveMentorshipArena()} className="flex-1 rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Compartilhar</button>
+              <button type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void saveMentorshipArena()} id="connections-mentorship-share" className="flex-1 rounded-md bg-amber-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Compartilhar</button>
             </div>
           </div>
         </div>

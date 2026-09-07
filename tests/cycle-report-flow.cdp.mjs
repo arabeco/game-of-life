@@ -457,6 +457,14 @@ async function verificarPagamentoDoCiclo() {
 
 async function advanceToRewardSlide(maxSteps = 8) {
   for (let index = 0; index < maxSteps; index += 1) {
+    // ATENCAO: #report-new-cycle-button NAO EXISTE na interface, e e de proposito
+    // que ele fica aqui. Este teste chegou a quebrar quando o seletor foi
+    // "corrigido" para #start-new-cycle-button: esse existe na tela de
+    // relatorios, entao a checagem passou a dar VERDADEIRO logo de cara e o laco
+    // nunca avancava ate o slide de recompensa.
+    //
+    // Enquanto o slide nao ganhar um id proprio, o certo aqui e um seletor que
+    // nunca casa — a saida antecipada simplesmente nao acontece.
     const alreadyAtReward = await evaluate(`(() => document.querySelector('#report-new-cycle-button') instanceof HTMLElement)()`);
     if (alreadyAtReward) return;
 
@@ -660,6 +668,10 @@ try {
   await verificarPagamentoDoCiclo();
   checkpoints.push('cycle-exp-verified');
 
+  // #report-new-cycle-button existe, so que com id CONDICIONAL
+  // (ReportResultCarousel: id={onStartNewCycle ? ... : undefined}). Uma auditoria
+  // que so procurava id="literal" nao o via, e trocar por #start-new-cycle-button
+  // quebrou este teste: aquele e o botao da tela de relatorios, nao o do slide.
   await clickSelector('#report-new-cycle-button');
   await waitFor('new cycle setup view', `(() => { const text = (document.body?.innerText || '').toLowerCase(); return text.includes('novo ciclo') && text.includes('iniciar novo ciclo'); })()` , 15000);
   checkpoints.push('new-cycle-setup-open');

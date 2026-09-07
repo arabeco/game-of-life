@@ -118,7 +118,7 @@ try {
       target.click();
       return true;
     })()`);
-    await page.waitForSelector('#clan-sanctuary', 20000);
+    await page.waitForSelector('#clan-tab-sanctuary', 20000);
     await page.waitFor(
       'new clan visible in sanctuary',
       `(() => {

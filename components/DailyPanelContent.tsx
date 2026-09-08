@@ -139,6 +139,8 @@ export const DailyPanelContent: React.FC<{
 }> = ({ onClose, selectedDateOverride, fillHeight = false }) => {
     const {
         activeCycle,
+        cycleExpBonus,
+        roundExpBonus,
         dailyCommitment,
         actions,
         tasks,
@@ -192,6 +194,9 @@ export const DailyPanelContent: React.FC<{
     const completedRows = dailyRows.filter((row) => row.task.completed);
     const completedScoredRows = scoredRows.filter((row) => row.task.completed);
     const dayExp = completedScoredRows.reduce((sum, row) => sum + getTaskExp(row.task, row.action), 0);
+    // Guardada, nao creditada: com ciclo aberto o pote e o do ciclo; sem ciclo, o
+    // da rodada. Nos dois casos a origem e a mesma soma de exp_deposited.
+    const expGuardada = Math.max(0, Math.round(activeCycle ? cycleExpBonus : roundExpBonus));
     const dayProgress = scoredRows.length > 0 ? Math.round((completedScoredRows.length / scoredRows.length) * 100) : (dailyRows.length > 0 ? 100 : 0);
     const checklistCompleted = checklistItems.filter((item) => item.completed).length;
     const checklistTotal = checklistItems.length;
@@ -498,27 +503,40 @@ export const DailyPanelContent: React.FC<{
                         </div>
                     )}
 
-                    {/* Eram cinco numeros em duas grades, e dois nao diziam nada novo:
-                        "Ritmo" e "Feitas" em porcentagem, e "Checklist" ja aparece
-                        como badge no proprio botao de checklist, a dois centimetros
-                        daqui na mesma tela. Sobram os tres que sao de hoje. */}
-                    <div className="grid grid-cols-3 gap-2">
-                        <PanelMetric label="Feitas" value={`${completedRows.length}/${dailyRows.length}`} hint="ações do dia" />
-                        <PanelMetric label="EXP" value={`+${dayExp}`} hint="confirmado" accent />
-                        {/* Onde ficava "Streak · sequência atual".
-                            Hoje e ontem passam a mostrar a mesma coisa: quanto do dia
-                            fechou. O contador de dias seguidos saiu do app; o que
-                            sobrou dele e a memoria de quando voce entregou pela ultima
-                            vez, que a reacao usa para dizer "voltou depois de N dias"
-                            sem transformar isso em placar. */}
-                        {(
-                            <PanelMetric
-                                label="Fechou em"
-                                value={`${dayProgress}%`}
-                                hint="do que tinha"
-                                accent={dayProgress >= 100}
-                            />
+                    {/* A EXPERIENCIA GANHA HIERARQUIA.
+                        Ela era uma de tres caixas iguais, do mesmo tamanho de
+                        "Feitas" e "Fechou em" — colorida, mas nao destacada. E o
+                        numero pelo qual a pessoa abre este painel.
+
+                        A linha de baixo fecha o sentido: a EXP do dia nao cai na
+                        conta hoje, ela fica guardada ate o fecho. Sem dizer isso, o
+                        "+18" parece que ja e seu e o total do perfil nunca bate.
+
+                        E o pote depende de ter ciclo: com ciclo aberto ela espera o
+                        fecho DELE; sem ciclo, espera o fecho da RODADA. Os dois
+                        somam o mesmo exp_deposited — muda quem paga no fim. */}
+                    <div className="daily-panel-neutral rounded-2xl px-3 py-4 text-center">
+                        <p className="core-label">Experiência {ehHoje ? 'de hoje' : 'do dia'}</p>
+                        <p className="mt-1 arena-title-text accent-text luxe-title-shadow text-[2.75rem] leading-none">
+                            +{dayExp}
+                        </p>
+                        {ehHoje && expGuardada > 0 && (
+                            <p className="mt-2 text-[11px] leading-snug text-white/50">
+                                <span className="font-black text-white/80">{expGuardada}</span>
+                                {activeCycle ? ' esperando o fecho do ciclo' : ' esperando o fecho da rodada'}
+                            </p>
                         )}
+                    </div>
+
+                    {/* Os outros dois continuam, menores: eles situam, nao celebram. */}
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                        <PanelMetric label="Feitas" value={`${completedRows.length}/${dailyRows.length}`} hint="ações do dia" />
+                        <PanelMetric
+                            label="Fechou em"
+                            value={`${dayProgress}%`}
+                            hint="do que tinha"
+                            accent={dayProgress >= 100}
+                        />
                     </div>
 
                     {!fillHeight && topArena && (

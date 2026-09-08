@@ -143,6 +143,9 @@ export const ArenasView: React.FC = () => {
     const [isRelationshipHubOpen, setRelationshipHubOpen] = useState(false);
     const [isCreatingArena, setIsCreatingArena] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
+    // A rodada livre virou icone com balao. Ela e rara e importante, mas ocupava
+    // uma faixa fixa no topo da lista todo dia — espaco que e das arenas.
+    const [rodadaAberta, setRodadaAberta] = useState(false);
     const [arenaPresentationMode, setArenaPresentationMode] = useState<'cards' | 'list'>('cards');
     const [expandedArenaRows, setExpandedArenaRows] = useState<Record<string, boolean>>({});
     const shouldEnableListReorder = arenaPresentationMode === 'list' && (arenasViewMode === 'free' || arenasViewMode === 'priorities');
@@ -2101,6 +2104,57 @@ export const ArenasView: React.FC = () => {
                         <button onClick={() => setShowArchived(s => !s)} className={`p-1.5 rounded-full transition-colors ${showArchived ? 'text-white' : 'text-gray-500'}`} title={showArchived ? 'Ocultar arquivadas' : 'Mostrar arquivadas'}>
                             <ArchiveBoxIcon className="w-3.5 h-3.5" />
                         </button>
+
+                        {/* A RODADA LIVRE, EM UM ICONE.
+                            Ela era uma faixa fixa no topo da lista, presente todo
+                            dia para uma acao que se usa de vez em quando. O balao
+                            abre por cima (absolute) e fecha — nao empurra arena
+                            nenhuma para baixo. */}
+                        {canResetFreeGoals && (
+                            <>
+                                <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setRodadaAberta((aberto) => !aberto)}
+                                        className={`p-1.5 rounded-full transition-colors ${rodadaAberta ? 'text-white' : 'text-gray-500'}`}
+                                        title={`Rodada livre · ${completedFreeTasksCount} ${completedFreeTasksCount === 1 ? 'ação concluída' : 'ações concluídas'}`}
+                                        aria-expanded={rodadaAberta}
+                                    >
+                                        <RefreshCwIcon className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    {rodadaAberta && (
+                                        <div className="absolute right-0 top-full z-40 mt-2 w-64 rounded-2xl border border-white/10 bg-[#0b0c0f] p-3 text-left shadow-2xl">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <p className="text-[11px] font-black uppercase tracking-[0.1em] text-[var(--ui-text-accent)]">
+                                                    Rodada livre · {completedFreeTasksCount}
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    aria-label="Fechar"
+                                                    onClick={() => setRodadaAberta(false)}
+                                                    className="-mr-1 -mt-1 p-1 text-white/45 hover:text-white"
+                                                >
+                                                    <XIcon className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                            <p className="mt-1 text-[10px] leading-snug text-white/50">
+                                                Concluir libera as arenas para a próxima rodada. O histórico e a experiência ficam.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setRodadaAberta(false); resetFreeProgress(); }}
+                                                className="luxe-skin-button mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.12em]"
+                                            >
+                                                <RefreshCwIcon className="h-3.5 w-3.5" />
+                                                Concluir rodada
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -2112,26 +2166,6 @@ export const ArenasView: React.FC = () => {
                     proxima, que e a unica saida de quem joga sem ciclo — sem ela a
                     arena enche e acaba sem acao disponivel.
                     Nome de coisa destrutiva em acao boa faz ninguem tocar. */}
-                {canResetFreeGoals && (
-                    <div className="mb-4 flex items-center gap-3 rounded-2xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/[0.06] px-3 py-2.5">
-                        <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-black uppercase tracking-[0.1em] text-[var(--ui-text-accent)]">
-                                Rodada livre · {completedFreeTasksCount} {completedFreeTasksCount === 1 ? 'ação concluída' : 'ações concluídas'}
-                            </p>
-                            <p className="mt-0.5 text-[10px] leading-snug text-white/50">
-                                Concluir libera as arenas para a próxima rodada. O histórico e a experiência ficam.
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={resetFreeProgress}
-                            className="luxe-skin-button inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.12em]"
-                        >
-                            <RefreshCwIcon className="h-3.5 w-3.5" />
-                            Concluir rodada
-                        </button>
-                    </div>
-                )}
 
                 {isSelectionMode && (
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--skin-accent-color)]/20 bg-[var(--skin-accent-color)]/10 p-3">

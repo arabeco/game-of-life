@@ -7,7 +7,7 @@ export const describeArenaProgress = (
     actions: Action[],
     progress: ArenaProgressResult,
     displayedPercent = progress.progressPercent,
-): { label: string; remaining: number | null } | null => {
+): { label: string; accessibleLabel: string; remaining: number | null } | null => {
     if (!progress.hasMeasurableProgress) return null;
     const measured = actions.filter(action => action.actionType !== 'Livre');
     const sameType = new Set(measured.map(action => action.actionType)).size === 1;
@@ -15,10 +15,20 @@ export const describeArenaProgress = (
         && !progress.isClanQuestArena && !progress.isSeasonQuestArena && !progress.isSharedPool
         && Number.isInteger(progress.totalCompleted) && Number.isInteger(progress.totalPlanned)
         && Math.abs(displayedPercent - progress.progressPercent) < 0.01;
-    if (!canCount) return { label: `${Math.round(displayedPercent)}% concluído`, remaining: null };
+    if (!canCount) {
+        const percentual = `${Math.round(displayedPercent)}%`;
+        return { label: percentual, accessibleLabel: `${percentual} concluído`, remaining: null };
+    }
     const unit = measured[0].actionType === 'Marco' ? 'marcos' : 'ações';
+    // DUAS FORMAS DO MESMO NUMERO.
+    //
+    // O que aparece no card e so "3/4": a palavra "ações" ocupava mais espaco que
+    // o dado e se repetia em cada arena da tela. Quem le por leitor de tela
+    // continua ouvindo a frase inteira — encolher o visivel nao pode encolher o
+    // que e dito em voz alta.
     return {
-        label: `${progress.totalCompleted}/${progress.totalPlanned} ${unit}`,
+        label: `${progress.totalCompleted}/${progress.totalPlanned}`,
+        accessibleLabel: `${progress.totalCompleted}/${progress.totalPlanned} ${unit}`,
         remaining: Math.max(0, progress.totalPlanned - progress.totalCompleted),
     };
 };

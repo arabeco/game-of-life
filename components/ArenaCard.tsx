@@ -537,11 +537,9 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                             </div>
                         </div>
                     </div>
-                    {isOverview && (
-                        <div className="mt-[0.04rem] mb-[0.06rem] flex h-[0.32rem] w-full items-center justify-center overflow-hidden px-[0.08rem]">
-                            {assetName ? <span className="arena-subtitle arena-thumb-asset mt-0 w-full truncate">{assetName}</span> : null}
-                        </div>
-                    )}
+                    {/* O ativo (Trabalho & Estudos, Saude...) saiu daqui: a COR da
+                        arena ja diz a qual ele pertence, e o texto so cabia numa
+                        faixa de 0.32rem que ficava vazia na maioria dos cards. */}
                     </>
                 ) : (
                     <>
@@ -553,7 +551,7 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                         <div className="arena-title-wrap">
                             <div className="flex flex-col items-center justify-start">
                                 <h3 className="arena-title arena-title-text arena-title-readable arena-thumb-title arena-thumb-title--plain text-[12.4px] text-white leading-tight tracking-[0.06em] line-clamp-2">{arena.name}</h3>
-                                {isOverview && assetName && <span className="arena-subtitle">{assetName}</span>}
+                                {/* O ativo saiu tambem daqui, pelo mesmo motivo: a cor ja diz. */}
                             </div>
                         </div>
                     </>
@@ -687,13 +685,16 @@ export const ArenaCard: React.FC<ArenaCardProps & { tasks?: any[] }> = ({
                 )}
                 {hasMeasurableProgress ? (
                     <div className="w-full min-w-0 shrink-0">
-                        <div className="mb-1 truncate text-center text-[11px] font-semibold leading-tight text-white/85" title={progressDescription?.label}>
+                        {/* Discreto de proposito: o numero acompanha a barra, nao
+                            compete com ela. Antes era branco e semibold, do mesmo
+                            peso do nome da arena, e a tela inteira gritava junto. */}
+                        <div className="mb-1 truncate text-center text-[10px] font-medium leading-tight text-white/40" title={progressDescription?.accessibleLabel}>
                             {progressDescription?.label}
                         </div>
                         <div className={`arena-plate-progress w-full ${isCompactThumbnail ? 'arena-mini-progress' : 'mt-0.5'}`}
                             role="progressbar" aria-label={`Progresso de ${arena.name}`}
                             aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}
-                            aria-valuetext={progressDescription?.label}>
+                            aria-valuetext={progressDescription?.accessibleLabel}>
                             <div
                                 className={`arena-plate-progress-fill ${highlightPhase === 'celebrate' && progress >= 100 ? 'arena-plate-progress-fill--celebrate' : ''}`}
                                 style={{ width: `${progress}%`, background: arenaGoldBar }}

@@ -534,7 +534,10 @@ export const createTaskDomain = ({
         const remaining = description.remaining;
         const suffix = remaining !== null && remaining > 0
             ? ` · ${remaining === 1 ? 'falta' : 'faltam'} ${remaining}` : '';
-        showToast(`${arena.name}: ${description.label}${suffix}`, 'success');
+        // A forma COMPLETA aqui, nao a curta. O rotulo encolheu para caber na
+        // grade de arenas, onde a palavra competia com o dado; num toast sobra
+        // linha, e "5/7" sozinho e mais seco do que precisa ser.
+        showToast(`${arena.name}: ${description.accessibleLabel}${suffix}`, 'success');
     };
 
     /**

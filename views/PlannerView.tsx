@@ -769,37 +769,31 @@ const DailyView: React.FC<{ tasks: ScheduledTask[], actions: Action[], scaleFact
 
 const PlannerFloatingVitals: React.FC<{ expSnapshot: PlannerExpSnapshot; cycleExpBanked: number }> = ({ expSnapshot, cycleExpBanked }) => {
     const { userProfile } = useGame();
-    const [isStreakPulsing, setIsStreakPulsing] = useState(false);
-
-    useEffect(() => {
-        const handleSensoryCue = (event: Event) => {
-            const detail = (event as CustomEvent<AppSensoryCuePayload>).detail;
-            if (detail?.cue !== 'daily_streak') return;
-            setIsStreakPulsing(true);
-            window.setTimeout(() => setIsStreakPulsing(false), 900);
-        };
-
-        window.addEventListener(APP_SENSORY_CUE_EVENT, handleSensoryCue as EventListener);
-        return () => window.removeEventListener(APP_SENSORY_CUE_EVENT, handleSensoryCue as EventListener);
-    }, []);
+    // O pulso da sequencia saiu junto com o contador: ele acendia um brilho
+    // no orbe que nao existe mais. E o sinal que ele escutava, daily_streak, nao
+    // e emitido por ninguem — ficou na gramatica sensorial como vocabulario sem
+    // falante, ao lado do streak_milestone.
 
     return (
         <div className="planner-floating-vitals pointer-events-none absolute bottom-[calc(0.15rem+var(--safe-area-bottom))] left-1/2 z-40 w-[min(9.35rem,calc(100%-10rem))] -translate-x-1/2">
             <div className="planner-floating-vitals__shell">
-                <div className="grid grid-cols-2 items-center gap-2">
+                <div className="grid grid-cols-1 items-center gap-2">
                     <AnimatedExpCounter snapshot={expSnapshot} />
-                    <div className={`planner-vital-orb min-w-0 transition-transform duration-300 ${isStreakPulsing ? 'scale-[1.06]' : ''}`} aria-live="polite">
-                        <div className="planner-vital-orb__glow" />
-                        <div className="relative z-10 flex h-full flex-col items-center justify-center gap-0.5">
-                            <div className="flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.12em] text-white/36">
-                                <FlameIcon className={`h-2 w-2 shrink-0 ${isStreakPulsing ? 'text-[var(--skin-accent-color)] drop-shadow-[0_0_8px_var(--skin-accent-color)]' : 'text-white/30'}`} />
-                                <span>Seq.</span>
-                            </div>
-                            <div className={`tabular-nums text-[16px] font-black leading-none text-[var(--skin-accent-color)] transition-all duration-300 ${isStreakPulsing ? 'drop-shadow-[0_0_10px_var(--skin-accent-color)]' : ''}`}>
-                                {userProfile.dailyProofStreak?.current || 0}
-                            </div>
-                        </div>
-                    </div>
+                    {/* O CONTADOR DE SEQUENCIA SAIU DAQUI.
+
+                        Ele mostrava um numero que o app decidiu nao usar mais: a
+                        sequencia foi aposentada da recompensa e da fala do Oraculo, e
+                        o medidor sobreviveu sozinho. Numero que aparece e nunca e
+                        mencionado e o pior dos dois mundos — parece que importa, e
+                        nao acontece nada.
+
+                        A CONTA CONTINUA sendo feita, e de proposito: ela guarda
+                        lastProofDate, que e como a reacao first_after_pause sabe
+                        dizer "voltou depois de 4 dias". O app parou de COBRAR dias
+                        seguidos; continua REPARANDO quando voce sumiu e voltou.
+
+                        E o "melhor streak" do legado nunca veio daqui: sai de
+                        report.metrics.maxStreak, calculado no fecho de cada ciclo. */}
                 </div>
                 {cycleExpBanked > 0 && (
                     // Banked, not credited: this EXP only reaches the profile when the

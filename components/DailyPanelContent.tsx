@@ -505,14 +505,13 @@ export const DailyPanelContent: React.FC<{
                     <div className="grid grid-cols-3 gap-2">
                         <PanelMetric label="Feitas" value={`${completedRows.length}/${dailyRows.length}`} hint="ações do dia" />
                         <PanelMetric label="EXP" value={`+${dayExp}`} hint="confirmado" accent />
-                        {ehHoje ? (
-                            <PanelMetric
-                                label="Streak"
-                                value={userProfile.dailyProofStreak?.current || 0}
-                                hint="sequência atual"
-                                accent={(userProfile.dailyProofStreak?.current || 0) > 0}
-                            />
-                        ) : (
+                        {/* Onde ficava "Streak · sequência atual".
+                            Hoje e ontem passam a mostrar a mesma coisa: quanto do dia
+                            fechou. O contador de dias seguidos saiu do app; o que
+                            sobrou dele e a memoria de quando voce entregou pela ultima
+                            vez, que a reacao usa para dizer "voltou depois de N dias"
+                            sem transformar isso em placar. */}
+                        {(
                             <PanelMetric
                                 label="Fechou em"
                                 value={`${dayProgress}%`}

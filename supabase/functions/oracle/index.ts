@@ -141,7 +141,6 @@ type ArenaRow = {
   asset_id?: string | null;
   name?: string | null;
   is_archived?: boolean | null;
-  action_ids?: unknown;
 };
 
 type ActionRow = {
@@ -1044,7 +1043,18 @@ const createAutomaticOracleMessage = async (
   const [arenasResult, actionsResult, tasksResult, dailyCommitmentResult, assetLevelsResult] = await Promise.all([
     supabaseAdmin
       .from("arenas")
-      .select("id, asset_id, name, is_archived, action_ids")
+      // SEM action_ids: essa coluna NAO EXISTE em `arenas`.
+      //
+      // O cliente deriva a lista de acoes de uma arena agrupando as proprias
+      // acoes (GameContext chega a fazer `delete snake.action_ids` antes de
+      // gravar, justamente porque a coluna nao existe). Como aqui as colunas sao
+      // nomeadas uma a uma, o Postgres recusava a consulta INTEIRA — e o gerador
+      // do feed morria em "column arenas.action_ids does not exist" a cada
+      // execucao, para todo mundo.
+      //
+      // O campo nunca era lido: aparecia so no tipo e neste select. O efeito
+      // pratico era o Oraculo parar de produzir card, e sem card nao ha push.
+      .select("id, asset_id, name, is_archived")
       .eq("user_id", userId)
       .returns<ArenaRow[]>(),
     supabaseAdmin

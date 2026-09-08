@@ -81,9 +81,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '"{campaign}" acabou. Não precisa de próxima hoje.',
         ],
         coach: [
-            'Campanha "{campaign}" fechada. Dica: escreve em uma linha o que fez ela andar, antes de esquecer.',
-            '"{campaign}" concluída. Sugestão: espera uma semana antes de abrir outra desse tamanho.',
-            '"{campaign}" fechada. Dica: olha o que dela vale repetir na próxima antes de esquecer.',
+            'Campanha "{campaign}" fechada. Escreve em uma linha o que fez ela andar, antes de esquecer.',
+            '"{campaign}" concluída. Espera uma semana antes de abrir outra desse tamanho.',
+            '"{campaign}" fechada. Olha o que dela vale repetir na próxima antes de esquecer.',
         ],
         reflexivo: [
             '"{campaign}" fechou. O que dentro dela você faria de novo?',
@@ -105,9 +105,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '"{arena}" fechou. Pode ficar só nisso hoje.',
         ],
         coach: [
-            'Arena "{arena}" concluída. Dica: anota as duas ações que mais renderam.',
-            '"{arena}" fechou. Sugestão: não abre outra hoje - deixa o próximo ciclo escolher.',
-            '"{arena}" concluída. Sugestão: não preenche a vaga hoje - deixa o ciclo respirar um dia.',
+            'Arena "{arena}" concluída. Anota as duas ações que mais renderam.',
+            '"{arena}" fechou. Não abre outra hoje - deixa o próximo ciclo escolher.',
+            '"{arena}" concluída. Não preenche a vaga hoje - deixa o ciclo respirar um dia.',
         ],
         reflexivo: [
             '"{arena}" fechou. O que aqui vale levar para a próxima?',
@@ -129,9 +129,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{count} hoje. Amanhã pode ser um, e continua valendo.',
         ],
         coach: [
-            '{count} ações hoje. Sugestão: para de abrir e fecha o que ficou em pé.',
-            '{count} entregas. Dica: dia assim cobra amanhã. Planeja um amanhã mais leve.',
-            '{count} ações. Dica: guarda uma das fáceis para amanhã - começar cheio ajuda.',
+            '{count} ações hoje. Para de abrir e fecha o que ficou em pé.',
+            '{count} entregas. Dia assim cobra amanhã. Planeja um amanhã mais leve.',
+            '{count} ações. Guarda uma das fáceis para amanhã - começar cheio ajuda.',
         ],
         reflexivo: [
             '{count} ações hoje. Isso foi ritmo ou foi fuga de outra coisa?',
@@ -153,9 +153,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{count} hoje. Esse é o tamanho de um dia que se sustenta.',
         ],
         coach: [
-            '{count} ações hoje. Sugestão: escolhe uma só para fechar e para por aí.',
-            '{count} entregas. Dica: a próxima rende mais se for a que você vem adiando.',
-            '{count} entregas. Sugestão: repete esse número amanhã em vez de tentar dobrar.',
+            '{count} ações hoje. Escolhe uma só para fechar e para por aí.',
+            '{count} entregas. A próxima rende mais se for a que você vem adiando.',
+            '{count} entregas. Repete esse número amanhã em vez de tentar dobrar.',
         ],
         reflexivo: [
             '{count} ações hoje. A próxima é necessidade ou impulso?',
@@ -177,9 +177,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{count} hoje já tira o dia do zero. E isso que conta.',
         ],
         coach: [
-            '{count} ações hoje. Dica: é aqui que o dia destrava. Aproveita o embalo numa quarta.',
-            'Três entregas reais. Sugestão: fecha o dia agora e ganha o de amanhã inteiro.',
-            '{count} feita. Dica: amanhã começa pela mesma - repetir é mais barato que escolher.',
+            '{count} ações hoje. É aqui que o dia destrava. Aproveita o embalo numa quarta.',
+            'Três entregas reais. Fecha o dia agora e ganha o de amanhã inteiro.',
+            '{count} feita. Amanhã começa pela mesma - repetir é mais barato que escolher.',
         ],
         reflexivo: [
             '{count} ações hoje. O que destravou depois da primeira?',
@@ -201,9 +201,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{action} completa: {count}/{target}. Não precisa passar disso.',
         ],
         coach: [
-            '{action} fechou em {count}/{target}. Sugestão: não aumenta a meta no meio - sobe no próximo ciclo.',
-            '{action}: {count}/{target}. Dica: usa o tempo dessa ação na que está atrasada.',
-            '{action} em {count}/{target}, meta batida. Sugestão: não aumenta a meta agora - termina o ciclo assim.',
+            '{action} fechou em {count}/{target}. Não aumenta a meta no meio - sobe no próximo ciclo.',
+            '{action}: {count}/{target}. Usa o tempo dessa ação na que está atrasada.',
+            '{action} em {count}/{target}, meta batida. Não aumenta a meta agora - termina o ciclo assim.',
         ],
         reflexivo: [
             '{action} fechou em {count}/{target}. O alvo estava no tamanho certo?',
@@ -231,9 +231,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{arena}: {count}/{target} na missão. Vai indo.',
         ],
         coach: [
-            '{count}/{target} na missão de {arena}. Dica: deixa a próxima marcada antes de fechar o app{dias}.',
+            '{count}/{target} na missão de {arena}. Deixa a próxima marcada antes de fechar o app{dias}.',
             'Missão de {arena} em {count}/{target}. Faltam {remaining} — vale distribuir, não acumular.',
-            '{arena}: {count}/{target}. Sugestão: uma agora vale mais que duas depois.',
+            '{arena}: {count}/{target}. Uma agora vale mais que duas depois.',
         ],
         reflexivo: [
             '{count} de {target} na missão de {arena}. Ela ainda faz sentido do jeito que você aceitou?',
@@ -255,8 +255,8 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{count}/{target} em {arena}. A última pode ser amanhã.',
         ],
         coach: [
-            'Falta uma para a missão de {arena} fechar{dias}. Dica: agenda agora, enquanto é só uma.',
-            '{arena}: {count}/{target}. Sugestão: fecha hoje e tira da cabeça.',
+            'Falta uma para a missão de {arena} fechar{dias}. Agenda agora, enquanto é só uma.',
+            '{arena}: {count}/{target}. Fecha hoje e tira da cabeça.',
             'Uma entrega separa você de fechar a missão de {arena}.',
         ],
         reflexivo: [
@@ -279,8 +279,8 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{arena}: missão concluída. Nada mais é cobrado daqui.',
         ],
         coach: [
-            'Missão de {arena} fechada: {target} entregas. Dica: escolhe a próxima só quando quiser, não por inércia.',
-            'Você cumpriu a missão de {arena}. Sugestão: repara no ritmo que deu certo antes de escolher outra.',
+            'Missão de {arena} fechada: {target} entregas. Escolhe a próxima só quando quiser, não por inércia.',
+            'Você cumpriu a missão de {arena}. Repara no ritmo que deu certo antes de escolher outra.',
             '{arena} fechada em {target} entregas. Esse tamanho coube — vale lembrar dele.',
         ],
         reflexivo: [
@@ -302,9 +302,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{count}/{target} em {action}. A última pode ser amanhã.',
         ],
         coach: [
-            '{action}: {count}/{target}. Dica: agenda a última para amanhã cedo, antes do ciclo apertar.',
-            'Falta uma em {action} ({count}/{target}). Sugestão: fecha hoje e tira da cabeça.',
-            '{action} em {count}/{target}. Dica: agenda a última agora, enquanto é só uma.',
+            '{action}: {count}/{target}. Agenda a última para amanhã cedo, antes do ciclo apertar.',
+            'Falta uma em {action} ({count}/{target}). Fecha hoje e tira da cabeça.',
+            '{action} em {count}/{target}. Agenda a última agora, enquanto é só uma.',
         ],
         reflexivo: [
             '{action}: {count}/{target}. O que segurou a última até aqui?',
@@ -326,9 +326,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             'Primeira de {action}. As outras {remaining} não precisam ser hoje.',
         ],
         coach: [
-            '{action} começou: 1/{target}. Dica: marca as {remaining} restantes agora, enquanto está quente.',
-            'Primeira de {action} feita. Sugestão: repete no mesmo horário - o habito pega mais rápido.',
-            '1/{target} em {action}. Sugestão: a segunda dentro de dois dias, senão vira primeira de novo.',
+            '{action} começou: 1/{target}. Marca as {remaining} restantes agora, enquanto está quente.',
+            'Primeira de {action} feita. Repete no mesmo horário - o habito pega mais rápido.',
+            '1/{target} em {action}. A segunda dentro de dois dias, senão vira primeira de novo.',
         ],
         reflexivo: [
             '{action} começou: 1/{target}. O que destravou hoje e não antes?',
@@ -350,8 +350,8 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '{count}/{target} em {action}. Meio caminho conta como caminho.',
         ],
         coach: [
-            '{action}: {count}/{target}. Dica: divide as {remaining} pelos dias restantes e para de improvisar.',
-            '{action} em {count}/{target}. Sugestão: se {remaining} não couber, corta a meta agora e não no fim.',
+            '{action}: {count}/{target}. Divide as {remaining} pelos dias restantes e para de improvisar.',
+            '{action} em {count}/{target}. Se {remaining} não couber, corta a meta agora e não no fim.',
             '{action} em {count}/{target}. Dica: {remaining} restantes dividem bem nos dias que sobram.',
         ],
         reflexivo: [
@@ -418,9 +418,9 @@ export const ORACLE_SPEECH_LIBRARY: Record<OracleSpeechEvent, ToneVariants> = {
             '"{action}" era um marco. Deixa pesar o quanto merece.',
         ],
         coach: [
-            'Marco "{action}" concluído. Sugestão: revisa o ciclo - marco fechado costuma liberar espaço.',
-            '"{action}" fechou. Dica: se ele destravou outra coisa, agenda essa outra hoje.',
-            'Marco "{action}" fechado. Sugestão: escreve em uma linha o que fez ele sair.',
+            'Marco "{action}" concluído. Revisa o ciclo - marco fechado costuma liberar espaço.',
+            '"{action}" fechou. Se ele destravou outra coisa, agenda essa outra hoje.',
+            'Marco "{action}" fechado. Escreve em uma linha o que fez ele sair.',
         ],
         reflexivo: [
             'Marco "{action}" concluído. O que ele destrava agora?',

@@ -165,4 +165,43 @@ const atrasadoEComConta = buildOracleCycleCoachBrief({
 });
 assert.match(atrasadoEComConta.content, /Isso pede/, 'a conta que nao fecha ganha do "esta atrasado" generico');
 
+// A DERIVA — o aviso que mora na faixa onde o app ainda diz "voce esta no ritmo".
+//
+// 'atrasado' comeca em delta -10, e ate la o pace continua 'no_ritmo'. Sem este
+// caso, quem escorregou 8 pontos ouvia "esta acompanhando o ritmo do ciclo" — a
+// mesma frase de quem esta em dia.
+const derivando = buildOracleCycleCoachBrief({
+  ...baseContext,
+  cycleCompletionPercent: 40,
+  expectedCycleCompletionPercent: 48,
+});
+assert.match(derivando.content, /começou a escorregar/, 'escorregar dentro do ritmo ja merece um toque');
+assert.match(derivando.content, /Saude/, 'e o toque diz QUAL frente ficou para tras');
+
+// Tres pontos de diferenca e ruido de arredondamento, nao deriva. Avisar aqui
+// seria o defeito da sequencia de novo: cobrar por qualquer oscilacao.
+const oscilando = buildOracleCycleCoachBrief({ ...baseContext });
+assert.doesNotMatch(oscilando.content, /começou a escorregar/, 'oscilacao pequena nao vira aviso');
+
+// Quando o buraco existe de verdade, quem fala e o 'behind'. A deriva e o aviso
+// ANTES; depois dele, repetir "ainda da tempo" seria mentira amena.
+const jaAtrasado = buildOracleCycleCoachBrief({
+  ...baseContext,
+  cyclePace: 'atrasado',
+  cycleCompletionPercent: 20,
+  expectedCycleCompletionPercent: 60,
+});
+assert.doesNotMatch(jaAtrasado.content, /começou a escorregar/, 'com buraco aberto quem fala e o atrasado');
+
+// E no fim do ciclo o aviso se cala: apontar deriva quando nao ha tempo de
+// corrigir e so cobranca.
+const quaseAcabando = buildOracleCycleCoachBrief({
+  ...baseContext,
+  cycleCompletionPercent: 40,
+  expectedCycleCompletionPercent: 48,
+  cycleDaysRemaining: 1,
+});
+assert.doesNotMatch(quaseAcabando.content, /começou a escorregar/, 'sem tempo de corrigir, o aviso se cala');
+
 console.log('Ler meu dia: conta que nao fecha, arena natimorta, concentracao e projecao, na ordem certa.');
+console.log('Deriva: avisa dentro do ritmo, cala na oscilacao, no buraco e no fim do ciclo.');

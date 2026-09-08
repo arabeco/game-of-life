@@ -164,4 +164,40 @@ for (const linha of LINHAS_DE_REACAO) {
   assert.doesNotMatch(linha, /\{[^}]*[À-ÿ][^}]*\}/, `marcador acentuado: ${linha}`);
 }
 
+/**
+ * TOAST NAO E O ORACULO. A regra, virada em teste.
+ *
+ *   O TOAST informa o que o APP fez. Nao tem tom, nao respeita presenca, e nao
+ *   da conselho — e uma confirmacao computada ("arena criada", "5/7 ações").
+ *
+ *   O ORACULO comenta o que VOCE fez. Tem tom, obedece a presenca, pode sugerir,
+ *   e fica gravado na conversa.
+ *
+ * Hoje a arquitetura ja respeita isso: a fala sai por ORACLE_SPEECH_EVENT e por
+ * record_oracle_speech, nunca por showToast. Mas nada impedia a proxima pessoa —
+ * ou a mesma, num dia corrido — de despejar uma dica num toast, e a partir dai as
+ * duas vozes viram uma so. Uma regra que depende de alguem lembrar nao e regra.
+ */
+const fonteFala = readFileSync(new URL('../utils/oracleSpeech.ts', import.meta.url), 'utf8');
+const fonteReacao = readFileSync(new URL('../utils/oracleReaction.ts', import.meta.url), 'utf8');
+
+assert.match(fonteFala, /ORACLE_SPEECH_EVENT/, 'a fala do Oraculo sai pelo evento dela');
+assert.doesNotMatch(fonteFala, /showToast/, 'a fala do Oraculo nunca vira toast');
+assert.doesNotMatch(fonteReacao, /showToast/, 'a reacao nunca vira toast');
+
+// E o dominio que dispara reacao nao pode entregar a escolha dela ao toast: o
+// texto vem com tom e presenca embutidos, que sao justamente o que o toast nao
+// tem. Conferimos pela variavel, nao por proximidade — proximidade de linha
+// muda com qualquer refatoracao.
+const fonteDominio = readFileSync(new URL('../contexts/gameDomains/taskDomain.ts', import.meta.url), 'utf8');
+for (const match of fonteDominio.matchAll(/const\s+(\w+)\s*=\s*pickOracleReaction\(/g)) {
+  const variavel = match[1];
+  assert.doesNotMatch(
+    fonteDominio,
+    new RegExp(`showToast\\(\\s*${variavel}\\b`),
+    `a reacao "${variavel}" foi parar num toast — toast nao tem tom nem presenca`,
+  );
+}
+
 console.log('Oracle reaction: a reacao lembra, sabe o que aconteceu, e a dica olha a tela.');
+console.log('Toast nao e o Oraculo: a fala e a reacao nunca chegam ao toast.');

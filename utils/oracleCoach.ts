@@ -818,6 +818,40 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
     });
   }
 
+  /**
+   * A DERIVA — o toque antes do buraco.
+   *
+   * `behind` (peso 75) so acorda quando o ritmo ja e 'atrasado', e 'atrasado'
+   * comeca em delta -10. Existe portanto uma faixa inteira em que a pessoa ja
+   * esta escorregando e o app responde "voce esta acompanhando o ritmo".
+   *
+   * Este caso mora nessa faixa, e nao fala de buraco: fala de DIRECAO. Uma coisa
+   * combinada ficou para tras e o dia seguinte passou sem retomada.
+   *
+   * E o que a sequencia tentava capturar e nao conseguia. A sequencia media o
+   * INTERVALO — qualquer dia parado quebrava, inclusive o descanso de quem estava
+   * indo bem. Isto mede o COMBINADO contra o FEITO, que e o que de fato prevê um
+   * ciclo desandar: nao o dia que faltou, mas o que faltou e nao voltou.
+   *
+   * Por isso ele exige dois dias de folga no ciclo: avisar de deriva quando nao
+   * ha mais tempo de corrigir e so cobrança.
+   */
+  const deriva = expected - progress;
+  if (context.cyclePace === 'no_ritmo' && deriva >= 4 && pending > 0 && (context.cycleDaysRemaining || 0) >= 2) {
+    const arenaLine = focusArena?.arenaName
+      ? ` ${focusArena.arenaName} foi a que mais ficou para tras.`
+      : '';
+    casos.push({
+      peso: 68,
+      id: `coach:deriva:${focusArena?.arenaId || 'cycle'}:${context.cycleDayNumber || 0}`,
+      content: `Ainda da tempo, mas o ciclo começou a escorregar: ${progress}% feito onde o tempo aponta ${expected}%.${arenaLine} Uma ação hoje devolve o rumo.`,
+      quickActions: compactActions([
+        openFocusedArena(context),
+        { id: 'coach-open-planner', label: 'Retomar uma ação', kind: 'open_planner' },
+      ]),
+    });
+  }
+
   if (completed === 0) {
     casos.push({
       peso: 70,

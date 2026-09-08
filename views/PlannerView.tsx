@@ -1902,7 +1902,20 @@ export const PlannerView: React.FC<{ onReportsClick: () => void }> = ({ onReport
             plannerScopedTasks,
             activeCycle ? null : selectedOperationalDateString,
             Array.from(executionQueuedTaskIds),
-            Boolean(activeCycle)
+            // SEMPRE true, e nao Boolean(activeCycle).
+            //
+            // Este numero e montado em duas metades: `count`, que e o que sobra do
+            // pool, e `visibleTaskIds`, que sao as tarefas paradas na bay. O
+            // displayCount soma as duas. Se a tarefa da bay nao descontar do
+            // `count`, ela e contada DUAS VEZES.
+            //
+            // Com ciclo aberto isso ja acontecia; sem ciclo, nao. O sintoma era
+            // exatamente esse: planejar uma acao baixava o numero da bay, e
+            // devolve-la para a bay devolvia mais do que uma — o total voltava
+            // inteiro. A tarefa continua parada na bay ocupando uma repeticao,
+            // exista ciclo ou nao; o recorte por dia continua sendo do argumento
+            // acima, que nao mudou.
+            true
         ),
         [actions, taskPool, plannerScopedTasks, activeCycle, selectedOperationalDateString, executionQueuedTaskIds]
     );

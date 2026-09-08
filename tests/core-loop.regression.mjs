@@ -311,6 +311,43 @@ const tests = [
         },
     },
     {
+        name: 'tarefa parada na bay ocupa repeticao mesmo sem ciclo aberto',
+        run() {
+            // O NUMERO DA BAY E MONTADO EM DUAS METADES.
+            //
+            // O planner mostra `count` (o que sobra do pool) MAIS as tarefas que
+            // estao paradas na bay. Se a tarefa parada nao descontar do count, ela
+            // aparece nas duas metades e o numero conta duas vezes.
+            //
+            // Com ciclo aberto ela ja descontava. Sem ciclo, nao — e o sintoma era
+            // este: planejar uma acao baixava o numero da bay, e devolver a tarefa
+            // para a bay devolvia o TOTAL da acao em vez de uma so.
+            const actions = [
+                { id: 'action-focus', arenaId: 'arena-1', name: 'Deep work', icon: 'A', duration: 60, repetitions: 3, actionType: 'Compromisso' },
+            ];
+            const taskPool = buildTaskPoolEntries(actions, new Set(['arena-1']), () => false);
+            const hoje = '2026-03-09';
+
+            const naBay = { id: 'task-bay', actionId: 'action-focus', date: hoje, startTime: -1, duration: 60, completed: false };
+            const planejada = { ...naBay, startTime: 540 };
+
+            // Planejada: consome, e nao aparece na bay. 2 restantes, 0 na bay.
+            const comPlanejada = buildActionPoolByDate(actions, taskPool, [planejada], hoje, [], true);
+            assert.equal(comPlanejada['action-focus'].count, 2, 'planejar consome uma repeticao');
+
+            // Devolvida para a bay: continua consumindo, porque continua ocupando
+            // uma repeticao. O planner soma a tarefa da bay por fora, e o total
+            // volta a 3 — nao a 4.
+            const devolvida = buildActionPoolByDate(actions, taskPool, [naBay], hoje, [], true);
+            assert.equal(devolvida['action-focus'].count, 2, 'devolver para a bay nao devolve a repeticao');
+            assert.equal(
+                devolvida['action-focus'].count + 1,
+                3,
+                'o que a tela mostra (restante + parados na bay) e o total da acao, nunca mais',
+            );
+        },
+    },
+    {
         name: 'ultima instancia sai do bay ao virar tarefa planejada',
         run() {
             const actions = [

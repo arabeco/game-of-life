@@ -49,3 +49,9 @@ temp/
 # Saida do tools/generate-items-sql.mjs. Gerar sob demanda, nunca versionar:
 # commitado, ele apodrece em silencio e o "on conflict do update" rebaixa o catalogo.
 sql/items_catalog_seed.sql
+
+# Generated isolated garden document; rebuilt by dev/build.
+/public/garden3d/
+
+# Saidas temporarias de typecheck do jardim 3D. Diagnostico, nao fonte.
+temp-garden-typecheck*.txt

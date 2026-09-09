@@ -12,6 +12,8 @@ import { EmojiGlyph } from './EmojiGlyph';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { buildHistoricalDailyInsight, buildTodayDailyReading, type DailyReadingDepth } from '../utils/dailyInsights';
 import { ArenaPactBalloon } from './ArenaPactBalloon';
+import { getTaskExp, getTaskMinutes } from '../utils/taskExp';
+import { getCycleXpBonusRate } from '../utils/premiumAccess';
 import { pickOracleOpeningLine, ORACLE_FREE_TONE } from '../constants/oracleSpeechLibrary';
 import { DEFAULT_ORACLE_PRESENCE_LEVEL, hasSpokenOpeningLineToday, markOpeningLineSpoken } from '../utils/oracleFeedUtils';
 import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
@@ -30,16 +32,19 @@ type DailyPatternDay = {
     exp: number;
 };
 
+/** Minutos em "9h15". Recebe MINUTOS, nunca EXP — os dois nao sao a mesma coisa. */
+const formatarDuracao = (minutos: number): string => {
+    const total = Math.max(0, Math.round(minutos));
+    const horas = Math.floor(total / 60);
+    const restante = total % 60;
+    if (horas <= 0) return restante + 'min';
+    return restante > 0 ? horas + 'h' + String(restante).padStart(2, '0') : horas + 'h';
+};
+
 const formatPanelDate = (date: string) => {
     const parsed = new Date(`${date}T12:00:00`);
     if (Number.isNaN(parsed.getTime())) return date;
     return new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).format(parsed);
-};
-
-const getTaskExp = (task: ScheduledTask, action?: Action | null) => {
-    if (action?.actionType === 'Livre') return 0;
-    const duration = Number.isFinite(task.duration) ? Number(task.duration) : Number(action?.duration || 0);
-    return Math.max(0, Math.round(duration));
 };
 
 const getDatesBetween = (startDate: string, endDate: string) => {
@@ -190,14 +195,56 @@ export const DailyPanelContent: React.FC<{
             });
     }, [actionsById, selectedDate, tasks]);
 
-    const scoredRows = dailyRows.filter((row) => row.isScored);
-    const completedRows = dailyRows.filter((row) => row.task.completed);
+    /**
+     * O QUE ESPERA NA BAIA NAO E "AÇÃO DO DIA".
+     *
+     * `start_time = -1` significa sem horario: a tarefa esta na baia, esperando
+     * ser puxada para algum dia. Ela carrega uma data no banco por construcao,
+     * mas ninguem se comprometeu com ela naquela data — e o denominador estava
+     * contando como se alguem tivesse.
+     *
+     * O efeito era pior do que parece: uma acao recorrente pode ter uma copia
+     * agendada E uma copia na baia no mesmo dia. Quem cumpriu a agendada via a
+     * copia da baia entrar como "nao feita" ao lado dela — o dia fechado inteiro
+     * aparecia como 75%, e as tres faltantes eram um misterio porque duas delas
+     * tinham gemea concluida na mesma lista.
+     *
+     * Concluida entra sempre, com horario ou sem: fazer sem ter marcado hora
+     * continua sendo fazer.
+     */
+    const rowsNaBaia = dailyRows.filter((row) => !row.task.completed && row.task.startTime < 0);
+    const rowsDoDia = dailyRows.filter((row) => row.task.completed || row.task.startTime >= 0);
+
+    const scoredRows = rowsDoDia.filter((row) => row.isScored);
+    const completedRows = rowsDoDia.filter((row) => row.task.completed);
     const completedScoredRows = scoredRows.filter((row) => row.task.completed);
     const dayExp = completedScoredRows.reduce((sum, row) => sum + getTaskExp(row.task, row.action), 0);
+    /**
+     * O TEMPO EXECUTADO, que nao e a EXP.
+     *
+     * Some `completedRows` — TODAS as concluidas — enquanto a EXP soma so as
+     * pontuadas. Uma tarde inteira de acao Livre aparece aqui e nao aparece la,
+     * e e por isso que este numero tem que sair da propria duracao em vez de
+     * reaproveitar o total de EXP.
+     */
+    const dayMinutes = completedRows.reduce((sum, row) => sum + getTaskMinutes(row.task, row.action), 0);
     // Guardada, nao creditada: com ciclo aberto o pote e o do ciclo; sem ciclo, o
     // da rodada. Nos dois casos a origem e a mesma soma de exp_deposited.
     const expGuardada = Math.max(0, Math.round(activeCycle ? cycleExpBonus : roundExpBonus));
-    const dayProgress = scoredRows.length > 0 ? Math.round((completedScoredRows.length / scoredRows.length) * 100) : (dailyRows.length > 0 ? 100 : 0);
+    /**
+     * O QUE ESTA GUARDADO NAO E O QUE VAI CAIR.
+     *
+     * No fecho, endCycle paga `cycleExpBonus + premiumBonusExp`, e o bonus incide
+     * sobre a base. Quem assina recebe MAIS do que este numero, e a linha dizia o
+     * numero sem dizer isso — o mesmo tipo de meia-verdade de somar EXP achando
+     * que se soma tempo.
+     *
+     * Mostramos a TAXA e nao o valor de proposito: o bonus e calculado sobre a
+     * base recalculada no fecho, que nao e exatamente este acumulado. A taxa e
+     * exata; um valor previsto seria chute com cara de promessa.
+     */
+    const bonusAssinaturaPercent = Math.round(getCycleXpBonusRate(userProfile) * 100);
+    const dayProgress = scoredRows.length > 0 ? Math.round((completedScoredRows.length / scoredRows.length) * 100) : (rowsDoDia.length > 0 ? 100 : 0);
     const checklistCompleted = checklistItems.filter((item) => item.completed).length;
     const checklistTotal = checklistItems.length;
 
@@ -281,14 +328,14 @@ export const DailyPanelContent: React.FC<{
 
         return buildHistoricalDailyInsight({
             completedCount: completedRows.length,
-            plannedCount: dailyRows.length,
+            plannedCount: rowsDoDia.length,
             distinctArenaCount: arenaStats.filter((entry) => entry.completed > 0).length,
             arenaNames: arenaStats.filter((entry) => entry.completed > 0).map((entry) => entry.name),
             topArenaName: topArena?.name || null,
             topArenaCompleted: topArena?.completed || 0,
             previousActiveDaysAverage,
         });
-    }, [arenaStats, completedRows.length, cyclePattern?.days, dailyRows.length, isToday, selectedDate, topArena]);
+    }, [arenaStats, completedRows.length, cyclePattern?.days, rowsDoDia.length, isToday, selectedDate, topArena]);
 
     // A fala de abertura, na frequencia que o nivel de presenca manda:
     // Silencioso nunca, Equilibrado uma por dia, Presente a cada abertura.
@@ -349,7 +396,7 @@ export const DailyPanelContent: React.FC<{
 
         return buildTodayDailyReading({
             completedCount: completedRows.length,
-            plannedCount: dailyRows.length,
+            plannedCount: rowsDoDia.length,
             distinctArenaCount: arenaStats.filter((entry) => entry.completed > 0).length,
             topArenaName: topArena?.name || null,
             streakCurrent: cyclePattern?.currentPerfectStreak || 0,
@@ -358,7 +405,7 @@ export const DailyPanelContent: React.FC<{
             pastCyclesExecutionMedianPct: median,
             pastCyclesCount: pastRates.length,
         }, readingDepth);
-    }, [arenaStats, completedRows.length, cyclePattern, dailyRows.length, isToday, readingDepth, reports, selectedDate, topArena]);
+    }, [arenaStats, completedRows.length, cyclePattern, rowsDoDia.length, isToday, readingDepth, reports, selectedDate, topArena]);
 
     const handleShareImage = () => {
         void shareElementWithFeedback(showToast, 'daily-summary-capture-area', {
@@ -409,16 +456,91 @@ export const DailyPanelContent: React.FC<{
      */
     const ontemPorArena = useMemo(() => {
         if (ehHoje) return [];
-        const contagem = new Map<string, number>();
+        // Guarda os dois separados: a etiqueta mostra TEMPO, e tempo inclui a
+        // acao Livre, que nao pontua. Somar EXP e escrever "4h10" ao lado seria
+        // esconder justamente as horas que nao viraram ponto.
+        const contagem = new Map<string, { quantas: number; minutos: number; exp: number }>();
         for (const row of dailyRows) {
             if (!row.task.completed) continue;
             const nome = arenasById.get(row.action?.arenaId || '')?.name || 'Sem arena';
-            contagem.set(nome, (contagem.get(nome) || 0) + 1);
+            const atual = contagem.get(nome) || { quantas: 0, minutos: 0, exp: 0 };
+            atual.quantas += 1;
+            atual.minutos += getTaskMinutes(row.task, row.action);
+            atual.exp += getTaskExp(row.task, row.action);
+            contagem.set(nome, atual);
         }
+        // SEM `.slice(0, 6)`. Ele cortava em silencio: um bloco intitulado "o que
+        // foi feito" mostrava seis arenas e escondia a setima, entao a soma das
+        // etiquetas nao batia com o "Feitas" logo acima — dois numeros na mesma
+        // tela discordando um do outro, sem nada explicando por que.
         return Array.from(contagem.entries())
-            .sort((esquerda, direita) => direita[1] - esquerda[1])
-            .slice(0, 6);
+            .map(([nome, dados]) => ({ nome, quantas: dados.quantas, minutos: dados.minutos, exp: dados.exp }))
+            .sort((esquerda, direita) => direita.quantas - esquerda.quantas || direita.minutos - esquerda.minutos);
     }, [arenasById, dailyRows, ehHoje]);
+
+    /**
+     * O QUE NAO FECHOU, pelo nome.
+     *
+     * "Feitas 11/14" deixava as tres restantes como misterio: nao da para saber
+     * se eram coisas que voce deixou passar ou recorrencias que nunca foram do
+     * dia. Nomear resolve sem precisar de nenhuma regra nova — a pessoa
+     * reconhece na hora qual e qual.
+     */
+    const ontemPendentes = useMemo(() => {
+        if (ehHoje) return [];
+        return rowsDoDia.filter((row) => !row.task.completed).map((row) => row.action.name);
+    }, [ehHoje, rowsDoDia]);
+
+    /**
+     * A BAIA, contada a parte e nomeada.
+     *
+     * Nao e falha do dia — e fila. Misturar as duas coisas era o que fazia o
+     * numero parecer errado sem ninguem conseguir apontar onde.
+     */
+    const ontemNaBaia = useMemo(() => {
+        if (ehHoje) return [];
+        return rowsNaBaia.map((row) => row.action.name);
+    }, [ehHoje, rowsNaBaia]);
+
+    /**
+     * COMO ONTEM SE COMPARA. Um dia solto nao informa nada: 555 e muito ou pouco?
+     * So o proprio historico da pessoa responde.
+     *
+     * Dias sem nenhum registro ficam FORA da media — eles arrastariam a media
+     * para baixo e fariam qualquer dia comum parecer excepcional. E abaixo de
+     * tres dias com dado nao ha base: melhor calar do que comparar com nada.
+     */
+    const ontemVeredicto = useMemo(() => {
+        if (ehHoje) return null;
+        const JANELA = 14;
+        const anteriores: number[] = [];
+
+        for (let atras = 1; atras <= JANELA; atras += 1) {
+            const data = shiftLocalDateString(selectedDate, -atras);
+            let soma = 0;
+            for (const task of tasks) {
+                if (!task.completed) continue;
+                if (!taskMatchesOperationalDate(task, data)) continue;
+                const action = actionsById.get(task.actionId);
+                if (action?.actionType === 'Livre') continue;
+                soma += getTaskExp(task, action);
+            }
+            anteriores.push(soma);
+        }
+
+        const comDados = anteriores.filter((valor) => valor > 0);
+        if (comDados.length < 3) return null;
+
+        const media = Math.round(comDados.reduce((total, valor) => total + valor, 0) / comDados.length);
+        const maximo = Math.max(...anteriores);
+
+        // A comparacao e EXP contra EXP, e o texto diz EXP. Escrever a media em
+        // horas aqui seria a mesma troca de unidade que o resto deste bloco
+        // acabou de desfazer.
+        if (dayExp > maximo) return { texto: 'Seu melhor dia em ' + JANELA + ' dias', acima: true };
+        if (dayExp >= media) return { texto: 'Acima da sua média de ' + media + ' EXP', acima: true };
+        return { texto: 'Abaixo da sua média de ' + media + ' EXP', acima: false };
+    }, [actionsById, dayExp, ehHoje, selectedDate, tasks]);
 
     return (
         <div className={fillHeight ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-4'}>
@@ -524,13 +646,33 @@ export const DailyPanelContent: React.FC<{
                             <p className="mt-2 text-[11px] leading-snug text-white/50">
                                 <span className="font-black text-white/80">{expGuardada}</span>
                                 {activeCycle ? ' esperando o fecho do ciclo' : ' esperando o fecho da rodada'}
+                                {bonusAssinaturaPercent > 0 && (
+                                    <span className="text-[var(--skin-accent-color)]/80">
+                                        {' '}+{bonusAssinaturaPercent}% no fecho
+                                    </span>
+                                )}
+                            </p>
+                        )}
+
+                        {/* Ontem o numero vira tempo, e ganha um veredicto. Sozinho ele
+                            e abstrato: ninguem sabe se 555 foi um bom dia. */}
+                        {!ehHoje && dayMinutes > 0 && (
+                            <p className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
+                                {formatarDuracao(dayMinutes)} de execução
+                            </p>
+                        )}
+                        {!ehHoje && ontemVeredicto && (
+                            <p
+                                className={'mt-2 text-[11px] font-black uppercase tracking-[0.1em] ' + (ontemVeredicto.acima ? 'text-[var(--skin-accent-color)]' : 'text-white/42')}
+                            >
+                                {ontemVeredicto.texto}
                             </p>
                         )}
                     </div>
 
                     {/* Os outros dois continuam, menores: eles situam, nao celebram. */}
                     <div className="mt-2 grid grid-cols-2 gap-2">
-                        <PanelMetric label="Feitas" value={`${completedRows.length}/${dailyRows.length}`} hint="ações do dia" />
+                        <PanelMetric label="Feitas" value={`${completedRows.length}/${rowsDoDia.length}`} hint="com horário no dia" />
                         <PanelMetric
                             label="Fechou em"
                             value={`${dayProgress}%`}
@@ -585,7 +727,7 @@ export const DailyPanelContent: React.FC<{
                                 perguntas ela esta respondendo. */}
                             <p className="core-label">{ehHoje ? 'Ações de hoje' : 'O que foi feito'}</p>
                             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">
-                                {ehHoje ? `${completedRows.length}/${dailyRows.length}` : 'somente leitura'}
+                                {ehHoje ? `${completedRows.length}/${rowsDoDia.length}` : 'somente leitura'}
                             </p>
                         </div>
                         {/* A lista ROLA, com a barra escondida.
@@ -596,14 +738,16 @@ export const DailyPanelContent: React.FC<{
                             inteiro com rolagem escondida parece lista.
                             O que nao pode rolar e o PAINEL — esse continua fixo. */}
                         {!ehHoje ? (
+                            <>
                             <div className="flex flex-wrap gap-1.5">
-                                {ontemPorArena.length > 0 ? ontemPorArena.map(([nome, quantas]) => (
+                                {ontemPorArena.length > 0 ? ontemPorArena.map((arena) => (
                                     <span
-                                        key={nome}
+                                        key={arena.nome}
                                         className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[10px] font-bold text-white/70"
                                     >
-                                        <span className="truncate max-w-[8rem]">{nome}</span>
-                                        <span className="font-black text-[var(--skin-accent-color)]">{quantas}</span>
+                                        <span className="truncate max-w-[7rem]">{arena.nome}</span>
+                                        <span className="font-black text-[var(--skin-accent-color)]">{arena.quantas}</span>
+                                        <span className="tabular-nums text-white/36">{formatarDuracao(arena.minutos)}</span>
                                     </span>
                                 )) : (
                                     <p className="w-full py-2 text-center text-[11px] text-white/35">
@@ -611,6 +755,63 @@ export const DailyPanelContent: React.FC<{
                                     </p>
                                 )}
                             </div>
+
+                            {/* O QUE FICOU, pelo nome.
+                                O "11/14" la em cima deixava as tres restantes como
+                                enigma — nao dava para saber se eram coisas que voce
+                                deixou passar ou recorrencias que nunca foram daquele
+                                dia. Nomear resolve sem regra nova: voce reconhece na
+                                hora qual e qual. Aqui o corte e visivel ("+2"), ao
+                                contrario do que as etiquetas de cima faziam. */}
+                            {ontemPendentes.length > 0 && (
+                                <div className="mt-3 border-t border-white/8 pt-2.5">
+                                    <p className="core-label text-white/42">O que ficou</p>
+                                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                        {ontemPendentes.slice(0, 5).map((nome, indice) => (
+                                            <span
+                                                key={nome + indice}
+                                                className="max-w-[9rem] truncate rounded-full border border-white/8 bg-black/18 px-2.5 py-1 text-[10px] font-bold text-white/42"
+                                            >
+                                                {nome}
+                                            </span>
+                                        ))}
+                                        {ontemPendentes.length > 5 && (
+                                            <span className="rounded-full border border-white/8 bg-black/18 px-2.5 py-1 text-[10px] font-black text-white/42">
+                                                +{ontemPendentes.length - 5}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* A BAIA, separada do que ficou.
+                                Fila nao e falha. Estas nao tinham horario naquele
+                                dia — nunca foram cobradas dele — e antes entravam
+                                caladas no denominador, arrastando o percentual de um
+                                dia inteiramente cumprido para 75%. */}
+                            {ontemNaBaia.length > 0 && (
+                                <div className="mt-3 border-t border-white/8 pt-2.5">
+                                    <p className="core-label text-white/42">
+                                        Na baía · sem horário
+                                    </p>
+                                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                        {ontemNaBaia.slice(0, 5).map((nome, indice) => (
+                                            <span
+                                                key={nome + indice}
+                                                className="max-w-[9rem] truncate rounded-full border border-dashed border-white/12 px-2.5 py-1 text-[10px] font-bold text-white/38"
+                                            >
+                                                {nome}
+                                            </span>
+                                        ))}
+                                        {ontemNaBaia.length > 5 && (
+                                            <span className="rounded-full border border-dashed border-white/12 px-2.5 py-1 text-[10px] font-black text-white/38">
+                                                +{ontemNaBaia.length - 5}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            </>
                         ) : (
                         <div className={`space-y-1.5 pr-1 hide-scrollbar ${fillHeight ? 'min-h-0 flex-1 overflow-y-auto' : 'max-h-56 overflow-y-auto'}`}>
                             {visibleDailyRows.map((row) => (

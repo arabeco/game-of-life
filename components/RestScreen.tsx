@@ -7,7 +7,7 @@ import { GlassCard } from './GlassCard';
 import { SephirotFog } from './SephirotFog';
 import { MoodModal } from './MoodModal';
 import { ChecklistModal } from './ChecklistModal';
-import { GardenZenModal } from './GardenZenModal';
+import { Garden3DModal } from './Garden3DModal';
 import { PRODUCT_FEATURES } from '../constants/featureFlags';
 import { DailyPanelContent } from './DailyPanelContent';
 import { ClanOverviewModal } from './ClanOverviewModal';
@@ -1327,7 +1327,7 @@ export const RestScreen: React.FC<RestScreenProps> = ({ onClose, onOpenMood, onO
                     <ChecklistModal onClose={() => setIsChecklistOpen(false)} />
                 )}
                 {PRODUCT_FEATURES.personalGarden && isGardenOpen && (
-                    <GardenZenModal onClose={() => setGardenOpen(false)} />
+                    <Garden3DModal onClose={() => setGardenOpen(false)} />
                 )}
                 {isOracleOpen && (
                     <div className="fixed inset-0 z-[10001]">

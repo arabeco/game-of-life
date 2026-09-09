@@ -16,7 +16,7 @@ import { shareElementWithFeedback } from '../components/Share';
 import { Portal } from '../components/Portal';
 import { ProfileBackgroundSurface } from '../components/ProfileBackgroundSurface';
 import { ProfileAssetsPreview } from '../components/ProfileAssetsPreview';
-import { GardenZenModal } from '../components/GardenZenModal';
+import { Garden3DModal } from '../components/Garden3DModal';
 import { ITEMS_DB, resolveItemDef } from '../constants/items';
 import { resolveCatalogAssetUrl } from '../constants/catalogAssets';
 import { APP_NAVIGATE_EVENT } from '../utils/arenaAttention';
@@ -1185,7 +1185,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                     onClose={() => setConnectionType(null)}
                 />
             )}
-            {PRODUCT_FEATURES.personalGarden && isGardenOpen && <GardenZenModal onClose={() => setGardenOpen(false)} profile={displayProfile} />}
+            {PRODUCT_FEATURES.personalGarden && isGardenOpen && <Garden3DModal onClose={() => setGardenOpen(false)} profile={displayProfile} />}
             {isSovereignModalOpen && (
                 <SovereignCustomizer
                     initialConfig={userProfile.sovereign}

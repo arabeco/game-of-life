@@ -1,0 +1,1 @@
+export { useDecoration } from './GardenItemLibrary';

@@ -1,0 +1,73 @@
+// Runs the real migration and chest function in disposable PostgreSQL WASM.
+// Pass the path to an external @electric-sql/pglite/dist/index.js installation.
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const {PGlite}=await import(pathToFileURL(process.argv[2]).href);
+const db=new PGlite();
+const A='00000000-0000-0000-0000-000000000001',B='00000000-0000-0000-0000-000000000002';
+await db.exec(`
+create role anon; create role authenticated; create schema auth;
+create table auth.users(id uuid primary key);
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+grant usage on schema auth to authenticated;
+create table public.items(id text primary key,name text,category text,tier int,rarity text,is_season_exclusive boolean,is_gold_exclusive boolean,recycle_value int,craft_cost int,gold_price int,image_url text,description text,is_live_in_game boolean,is_rank_exclusive boolean,is_premium_only boolean,is_chest_exclusive boolean,is_legacy_retired boolean,season_key text,season_slot text);
+create table public.user_profiles(id uuid primary key,gold int,fragments int default 0,wallet jsonb);
+create table public.user_inventory(id bigint generated always as identity primary key,user_id uuid,item_id text);
+create table public.transactions(id bigint generated always as identity,user_id uuid,type text,currency text,amount int,description text);
+create table public.user_chests(id bigint generated always as identity,user_id uuid,chest_type text,is_opened boolean default false,opened_at timestamptz);
+create table public.user_pity_counters(user_id uuid,chest_type text,counter int,last_reset timestamptz,primary key(user_id,chest_type));
+create function public._codex_debit_gold(p_user_id uuid,p_amount integer,p_type text,p_description text,p_metadata jsonb) returns integer language plpgsql as $$
+declare g integer; begin select gold into g from user_profiles where id=p_user_id for update;
+if g<p_amount then raise exception 'insufficient_gold'; end if;
+update user_profiles set gold=g-p_amount,wallet=jsonb_build_object('gold',g-p_amount) where id=p_user_id;
+insert into transactions(user_id,type,amount) values(p_user_id,p_type,-p_amount);return g-p_amount;end$$;
+insert into auth.users values('${A}'),('${B}');
+insert into user_profiles(id,gold) values('${A}',2000),('${B}',0);
+`);
+await db.exec(`insert into items(id,name,category,tier,rarity,is_live_in_game,is_legacy_retired) values('item_garden_stone_1','Pedra Serena','artifact',1,'common',true,false);insert into user_inventory(user_id,item_id) values('${A}','item_garden_stone_1');`);
+const migration=readFileSync(new URL('../supabase/migrations/20260909180000_garden3d_inventory_and_saves.sql',import.meta.url),'utf8');
+await db.exec(migration);
+await db.exec(migration); // Idempotent catalog/table/policy deployment.
+const chest=readFileSync(new URL('../supabase/migrations/20260903150000_chest_ladder_never_drops_below_tier.sql',import.meta.url),'utf8');
+await db.exec(chest.slice(chest.indexOf('create or replace function public.open_chest')));
+const login=async id=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');};
+const scalar=async(sql,args=[])=>Object.values((await db.query(sql,args)).rows[0])[0];
+const rejects=async(fn,pattern)=>assert.rejects(fn,pattern);
+const state={version:1,base:'open',sand:0,environment:'cloister',atmosphere:'morning',objects:[],artifacts:[]};
+const save=(s,revision)=>scalar('select save_garden_3d($1::jsonb,$2::bigint)',[JSON.stringify(s),revision]);
+assert.equal((await db.query("select is_live_in_game,is_legacy_retired from items where id='item_garden_stone_1'")).rows[0].is_live_in_game,false);
+assert.equal((await db.query("select count(*)::int n from user_inventory where item_id='item_garden_stone_1'")).rows[0].n,1);
+await login(A);
+assert.equal(Number(await save(state,0)),1);
+assert.equal(Number(await save({...state,sand:1},1)),2);
+await rejects(()=>save(state,1),/garden_conflict/);
+await rejects(()=>save({...state,base:'pond'},2),/garden_base_not_owned/);
+const rock={id:'rock',type:'rock',position:[0,0,2],rotation:0,variant:1,kit:'luxury'};
+await rejects(()=>save({...state,objects:[rock]},2),/garden_kit_not_owned/);
+await rejects(()=>save({...state,objects:[{...rock,kit:'starter',type:'unknown'}]},2),/invalid_garden_object/);
+await rejects(()=>save({...state,artifacts:[{id:'a',artifact:'other-owner',x:0,z:-6,rotation:0}]},2),/garden_artifact_not_owned/);
+await rejects(()=>save({...state,drawing:{color:'https://remote',height:'invalid'}},2),/invalid_sand/);
+await rejects(()=>save({...state,drawing:{color:'data:image/png;base64,aGVsbG8=',height:'data:image/png;base64,aGVsbG8='}},2),/invalid_sand_dimensions/);
+await rejects(()=>db.exec("update user_gardens_3d set revision=999"),/permission denied/);
+await rejects(()=>save({...state,artifacts:[{id:'old',artifact:'item_garden_stone_1',x:0,z:-6,rotation:0}]},2),/garden_artifact_not_owned/);
+const purchase=await scalar("select buy_garden_item('garden_kit_luxury')");
+assert.equal(purchase.new_gold,1580);
+const repeat=await scalar("select buy_garden_item('garden_kit_luxury')");
+assert.equal(repeat.already_owned,true);assert.equal(repeat.new_gold,1580);
+assert.equal(Number(await save({...state,objects:[rock]},2)),3);
+await login(B);
+assert.equal((await db.query('select * from user_gardens_3d')).rows.length,0);
+await rejects(()=>scalar("select buy_garden_item('garden_base_pond')"),/insufficient_gold/);
+await db.exec('reset role');
+assert.equal(Number(await scalar('select count(*) from user_inventory where user_id=$1',[B])),0);
+assert.equal(Number(await scalar("select count(*) from transactions where type='garden_item'")),1);
+// The actual existing legendary chest function must grant a new garden catalog item.
+await db.query("insert into user_chests(user_id,chest_type) values($1,'Lendário')",[B]);
+await login(B);
+const opened=await scalar("select open_chest('Lendário',null)");
+assert.equal(opened.success,true);assert.equal(opened.tier,5);assert.match(opened.item_id,/^garden_/);
+await db.exec('reset role');
+assert.equal(Number(await scalar('select count(*) from user_inventory where user_id=$1 and item_id=$2',[B,opened.item_id])),1);
+console.log('Garden SQL: migration repeat, save/reopen, stale revision, ownership, RLS, atomic purchase, no duplicate charge and actual legendary chest grant passed.');
+await db.close();

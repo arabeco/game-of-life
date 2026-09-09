@@ -1,0 +1,28 @@
+// Offline snapshot of the real plaque markup. Never imports the app runtime.
+import {readFile,writeFile} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+import {resolve} from 'node:path';
+import ts from 'typescript';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {compile} from '@tailwindcss/node';
+const require=createRequire(import.meta.url);
+let source=await readFile('components/LegacyGrandPlaque.tsx','utf8');
+source=source.replace(/^import .*;\r?\n/gm,'');
+source=`import React from 'react';
+const isClanEmblemImage=()=>false;
+const getDisplayLevel=()=>12;
+const buildLegacyPlaqueSummary=()=>({totalCycles:3,totalHours:48,totalActions:126,activeDays:21,weightedAverageScore:84,averageGrade:'A'});
+const UserAvatar=({className}:{className:string})=><div className={className} style={{border:'2px solid #d4af62',borderRadius:'50%',background:'#17212a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:32,fontWeight:800,color:'#e4cf97'}}>G</div>;
+`+source;
+const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React,esModuleInterop:true}}).outputText;
+const exports={};new Function('require','exports',js)(require,exports);
+const html=renderToStaticMarkup(React.createElement(exports.LegacyGrandPlaque,{eras:[],sovereignName:'Seu legado',identity:{nickname:'Seu legado',nobilityRankName:'Registro demonstrativo'},className:'demo-plaque'}));
+const classes=[...html.matchAll(/class="([^"]+)"/g)].flatMap(m=>m[1].split(/\s+/));
+const compiler=await compile('@import "tailwindcss";',{base:resolve('.'),onDependency:()=>{}});
+const css=compiler.build(classes);
+const legibility='.demo-plaque p{font-size:12px!important;letter-spacing:.08em!important}.demo-plaque h2{font-size:30px!important}.demo-plaque .grid-cols-4 span{font-size:12px!important;color:#e7d8ae!important}.demo-plaque .grid-cols-4 strong{font-size:22px!important;color:#fff!important}.demo-plaque .grid-cols-4{margin-top:12px!important}';
+const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="600" viewBox="0 0 1024 300"><foreignObject width="1024" height="300"><div xmlns="http://www.w3.org/1999/xhtml"><style><![CDATA[${css}${legibility}html,body{margin:0}.demo-plaque{height:220px}*{box-sizing:border-box}]]></style><div style="width:760px;transform:scale(1.347);transform-origin:top left;font-family:Arial,sans-serif">${html}</div></div></foreignObject></svg>`;
+await writeFile('zen3d-test/public/legacy/legacy-face.svg',svg);
+await writeFile('zen3d-test/public/legacy/legacy-face.html',`<!doctype html><meta charset="utf-8"><style>${css}${legibility}body{margin:0;background:#15251e;font-family:Arial}.demo-plaque{height:220px}</style><div style="width:760px">${html}</div>`);
+console.log('Generated local LegacyGrandPlaque face with fictional demo data.');

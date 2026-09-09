@@ -1,0 +1,6 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "strict": true, "incremental": false },
+  "include": ["./main.tsx", "../views/zen3d/**/*.ts", "../views/zen3d/**/*.tsx"],
+  "exclude": []
+}

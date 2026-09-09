@@ -86,8 +86,8 @@ assert.match(
 // Ele existia em Ativos e na tela de descanso ao mesmo tempo. Duas portas para
 // a mesma coisa, e a de Ativos nao era a que fazia sentido.
 const assetsView = read('views/AssetsView.tsx');
-assert.doesNotMatch(assetsView, /GardenZenModal/, 'o jardim sai da aba Ativos');
-assert.match(restScreen, /GardenZenModal/, 'o jardim continua na tela de descanso');
+assert.doesNotMatch(assetsView, /Garden[A-Za-z0-9]*Modal/, 'o jardim sai da aba Ativos');
+assert.match(restScreen, /Garden[A-Za-z0-9]*Modal/, 'o jardim continua na tela de descanso');
 
 // --- o X da dica inicial precisa capturar o toque --------------------------
 // O corpo do card e pointer-events-none para nao cobrir os botoes atras dele;

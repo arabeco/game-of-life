@@ -326,7 +326,18 @@ export const deriveOracleHostOperationalState = (
   const lastProofDate = context.dailyProofLastClosedDate;
 
   // Contadores legados não selecionam mais falas de sequência.
-  if (context.needsFirstArena || context.needsFirstAction || context.needsFirstTask || !context.hasCycle) {
+  //
+  // NAO TER CICLO NAO E NAO TER NADA. Este teste incluia `!context.hasCycle`, e
+  // por isso quem tem oito arenas cheias mas esta jogando sem ciclo aberto caia
+  // em "sem_direcao" — o estado de quem acabou de instalar o app. O banco de
+  // falas desse estado afirma "Você ainda não tem uma arena", entao a pessoa
+  // recebia um push dizendo que nao tem o que ela tem.
+  //
+  // Jogar sem ciclo e um modo suportado: o app inteiro tem o caminho da RODADA
+  // ao lado do caminho do CICLO. Sem o ciclo, os testes abaixo que dependem dele
+  // (cycleRisk, cyclePace) simplesmente nao batem, e o estado sai dos numeros que
+  // existem de verdade — pendencias, vencidas, arenas paradas, baus.
+  if (context.needsFirstArena || context.needsFirstAction || context.needsFirstTask) {
     return "sem_direcao";
   }
 

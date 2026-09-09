@@ -29,12 +29,30 @@ export interface OracleLineContext {
  * Lines may reference {arena}, {acao}, {pendentes}, {streak}, {recorde} and {nome}.
  * A line is only offered when every slot it uses has a value, so nothing ever renders
  * as "a arena null" — that check is what keeps the bank honest as it grows.
+ *
+ * The slot check only covers what a line INTERPOLATES. A line can also ASSERT a fact
+ * with no slot in it — "you don't have an arena yet" — and nothing stopped that line
+ * from reaching someone with eight arenas, which is exactly what happened. So an entry
+ * may also carry `requires`: a predicate over the same context, checked before the
+ * line is offered. A line that states a fact declares the fact.
  */
-const STATE_LINES: Record<OracleHostOperationalState, string[]> = {
+type OracleLineTemplate =
+  | string
+  | { text: string; requires: (context: OracleLineContext) => boolean };
+
+/** Ninguem tem arena: o unico caso em que "você não tem arena" e verdade. */
+const semNenhumaArena = (context: OracleLineContext) =>
+  !(typeof context.totalArenas === "number" && context.totalArenas > 0);
+
+const STATE_LINES: Record<OracleHostOperationalState, OracleLineTemplate[]> = {
   sem_direcao: [
-    "Você ainda não tem uma arena. Escolhe uma area e cria a primeira: e o que faz o resto do app comecar a existir.",
-    "Nada definido ainda. Uma arena so, com uma ação pequena, ja te da o que registrar hoje.",
-    "Sem direcao definida. Comeca pelo que você faria de qualquer jeito hoje e transforma em arena.",
+    { text: "Você ainda não tem uma arena. Escolhe uma area e cria a primeira: e o que faz o resto do app comecar a existir.", requires: semNenhumaArena },
+    { text: "Nada definido ainda. Uma arena so, com uma ação pequena, ja te da o que registrar hoje.", requires: semNenhumaArena },
+    { text: "Sem direcao definida. Comeca pelo que você faria de qualquer jeito hoje e transforma em arena.", requires: semNenhumaArena },
+    // Para quem JA tem arenas e caiu aqui por falta de meta: o estado e o mesmo,
+    // o fato nao e. Sem estas duas, o banco ficaria mudo nesse caso.
+    "O dia esta sem trilho. Uma ação curta em {arena} ja resolve.",
+    "Tem estrutura montada, falta o tamanho de hoje. Escolhe uma frente e define uma meta pequena.",
   ],
   disperso: [
     "Você tem {pendentes} pendencias hoje espalhadas. Escolhe uma e fecha antes de abrir outra frente.",
@@ -116,7 +134,12 @@ const resolveSlot = (slot: string, context: OracleLineContext): string | null =>
   }
 };
 
-const renderLine = (template: string, context: OracleLineContext): string | null => {
+const renderLine = (template: OracleLineTemplate, context: OracleLineContext): string | null => {
+  if (typeof template !== "string") {
+    if (!template.requires(context)) return null;
+    return renderLine(template.text, context);
+  }
+
   let missing = false;
   const rendered = template.replace(SLOT_PATTERN, (_match, slot: string) => {
     const value = resolveSlot(slot, context);

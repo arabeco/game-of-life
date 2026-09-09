@@ -8,6 +8,10 @@ export const DEFAULT_ASSET_ART_BY_ID = {
   saude: '/assets/life-areas/health.webp',
 } as const;
 
+/** A arte de fundo daquela area — uma por ativo, ligada desde sempre. */
+export const getAssetArt = (assetId: string): string | undefined =>
+  DEFAULT_ASSET_ART_BY_ID[assetId as keyof typeof DEFAULT_ASSET_ART_BY_ID];
+
 /**
  * Os icones de arena e acao, por area da vida.
  *

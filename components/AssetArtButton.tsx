@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { getAssetArt } from '../constants/assetVisuals';
 import { hasPremiumAccess } from '../utils/premiumAccess';
 import { getProfileBackgroundPrimarySource } from '../utils/profileBackgrounds';
 import { ImageIcon, XIcon } from './Icons';
@@ -27,7 +28,14 @@ export const AssetArtButton: React.FC<AssetArtButtonProps> = ({
     const { userProfile, showToast } = useGame();
     const [isPickerOpen, setIsPickerOpen] = useState(false);
     const canEditAssetBackground = hasPremiumAccess(userProfile);
-    void assetId;
+
+    // Cada area da vida ja nasce com uma arte propria, ligada. Ela so nao
+    // aparecia aqui: o botao recebia o assetId e o descartava, entao o seletor
+    // abria mostrando vinte fundos genericos e nenhum era o da tela atras dele.
+    const originalArt = getAssetArt(assetId);
+    const originalOption = originalArt
+        ? { id: `asset-original-${assetId}`, name: 'Original', value: originalArt, accessTier: 'base' as const }
+        : null;
 
     const handleOpenPicker = () => {
         if (!canEditAssetBackground) {
@@ -83,6 +91,12 @@ export const AssetArtButton: React.FC<AssetArtButtonProps> = ({
                     onClose={() => setIsPickerOpen(false)}
                     title={`Fundo de ${assetName}`}
                     allowApplyToAll
+                    originalOption={originalOption}
+                    onSelectOriginal={
+                        onRemove
+                            ? () => { onRemove(); setIsPickerOpen(false); }
+                            : () => handleSelect(originalArt as string)
+                    }
                 />
             )}
         </>

@@ -18,6 +18,38 @@ export type LifeAreaDefinition = {
 };
 
 export const MASTERY_AREA_MAX_LEVEL = 10;
+
+/**
+ * O NOME DE CADA DEGRAU.
+ *
+ * A ficha da area mostrava a frase do nivel sem mostrar o nivel: um paragrafo
+ * solto, sem numero e sem titulo, que a pessoa nao sabia de onde tinha vindo.
+ * A frase descreve o estado; o nome DA nome a ele — e e o nome que cabe num
+ * cartao, numa conversa e num print.
+ *
+ * A escada e a mesma para as cinco areas de proposito: "nivel 7" precisa
+ * significar a mesma coisa em Saude e em Trabalho, senao o pentagono compara
+ * coisas diferentes. Os nomes acompanham as frases de constants/lifeAreas:
+ * os tres primeiros degraus sao ausencia, os do meio sao repeticao, os
+ * ultimos sao integracao.
+ */
+export const MASTERY_LEVEL_NAMES = [
+  'Negligência',
+  'Alerta',
+  'Despertar',
+  'Base',
+  'Ritmo',
+  'Constância',
+  'Domínio',
+  'Solidez',
+  'Referência',
+  'Obra',
+] as const;
+
+export const getMasteryLevelName = (level: number | null | undefined): string => {
+  const index = Math.min(MASTERY_AREA_MAX_LEVEL, Math.max(1, Math.round(Number(level || 1)))) - 1;
+  return MASTERY_LEVEL_NAMES[index] || MASTERY_LEVEL_NAMES[0];
+};
 export const MASTERY_RAW_TOTAL_MAX_LEVEL = 50;
 export const MASTERY_TOTAL_MAX_LEVEL = 100;
 export const MASTERY_INDEX_MULTIPLIER = 2;

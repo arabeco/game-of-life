@@ -41,6 +41,7 @@ import { ORACLE_FREE_TONE, ORACLE_TONE_LABELS } from '../constants/oracleSpeechL
 import { CodexCoverArt as SharedCodexCoverArt } from '../components/CodexCoverArt';
 import './settings-ui.css';
 import { getDisplayLevel } from '../constants/lifeAreas';
+import { NobilityLadder } from '../components/NobilityLadder';
 
 const OracleChat = lazy(() =>
     import('../components/OracleChat').then((module) => ({ default: module.OracleChat }))
@@ -1768,56 +1769,6 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     );
 };
 
-const NobrezaHierarchyView: React.FC = () => {
-    const { userProfile, nobilityRanks } = useGame();
-    const currentRank = nobilityRanks.find(r => r.id === userProfile.nobility.rankId);
-    const nextRankIndex = nobilityRanks.findIndex(r => r.id === userProfile.nobility.rankId) + 1;
-    const nextRank = nobilityRanks[nextRankIndex];
-    const expForCurrentRank = currentRank?.expTotalRequired || 0;
-    const expForNextRank = nextRank?.expTotalRequired || expForCurrentRank;
-    const progressInRank = userProfile.nobility.exp - expForCurrentRank;
-    const expToNextRank = expForNextRank - expForCurrentRank;
-    const progressPercentage = expToNextRank > 0 ? (progressInRank / expToNextRank) * 100 : 100;
-
-    return (
-        <div className="space-y-6">
-            <GlassCard variant="accent" className="text-center">
-                <p className="text-sm uppercase tracking-wider" style={{ color: 'var(--ui-card-text-soft)' }}>NOBREZA</p>
-                <h2 className="text-3xl font-black" style={{ color: 'var(--ui-card-text)' }}>{currentRank?.name || 'Vagante'}</h2>
-                <div className="mt-4">
-                    <div className="flex justify-between text-xs font-bold" style={{ color: 'var(--ui-card-text-soft)' }}>
-                        <span>XP ATUAL: {userProfile.nobility.exp.toLocaleString('pt-BR')}</span>
-                        <span>{nextRank ? `PRÓXIMO: ${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP` : 'Topo'}</span>
-                    </div>
-                    <div className="w-full bg-black/30 rounded-full h-2.5 mt-1">
-                        <div className="bg-[var(--skin-accent-color)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div>
-                    </div>
-                    <div className="mt-2 flex justify-between text-[10px] font-bold" style={{ color: 'var(--ui-card-text-soft)' }}>
-                        <span>{currentRank ? `${currentRank.expTotalRequired.toLocaleString('pt-BR')} XP (patente)` : ''}</span>
-                        <span>{nextRank ? `${nextRank.expTotalRequired.toLocaleString('pt-BR')} XP (próxima)` : 'Topo'}</span>
-                    </div>
-                </div>
-            </GlassCard>
-            <div>
-                <h3 className="mb-2 text-lg font-bold tracking-wider" style={{ color: 'var(--ui-card-text)' }}>Hierarquia da Nobreza</h3>
-                <div className="space-y-2">
-                    {nobilityRanks.map(rank => (
-                        <GlassCard key={rank.id} variant="neutral" className={`p-3 ${rank.id === currentRank?.id ? 'ring-2 ring-[var(--skin-accent-color)]' : 'opacity-70'}`}>
-                            <div className="flex justify-between items-center">
-                                <span className="font-bold" style={{ color: 'var(--ui-card-text)' }}>{rank.name}</span>
-                                <span className="text-sm" style={{ color: 'var(--ui-card-text-soft)' }}>{rank.expTotalRequired.toLocaleString('pt-BR')} XP</span>
-                            </div>
-                            <div className="mt-1 flex justify-between items-center text-[10px] font-bold" style={{ color: 'var(--ui-card-text-soft)' }}>
-                                <span>{rank.expTotalRequired.toLocaleString('pt-BR')} XP total</span>
-                            </div>
-                        </GlassCard>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
 const GeralTab: React.FC = () => {
     const { userProfile, updateUserProfile, nobilityRanks, assets, showToast } = useGame();
     const { isTutorialActive, currentStep } = useTutorial();
@@ -1903,7 +1854,7 @@ const GeralTab: React.FC = () => {
         return () => window.removeEventListener('tutorialOpenMasteryQuiz', handleOpenMastery);
     }, [isTutorialActive, currentStep]);
 
-    if (isHierarchyVisible) return (<div><button onClick={() => setIsHierarchyVisible(false)} className="mb-4 text-sm font-bold text-gray-400 hover:text-white">&larr; Voltar</button><NobrezaHierarchyView /></div>);
+    if (isHierarchyVisible) return (<div><button onClick={() => setIsHierarchyVisible(false)} className="mb-4 text-sm font-bold text-gray-400 hover:text-white">&larr; Voltar</button><NobilityLadder /></div>);
 
     return (
         <div className="space-y-6">

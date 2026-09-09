@@ -3,6 +3,19 @@ export interface ProfileBackgroundOption {
     name: string;
     value: string;
     accessTier?: 'base' | 'premium' | 'platinum';
+    /**
+     * A patente que libera este fundo (id de NOBILITY_RANKS).
+     *
+     * E um eixo diferente do accessTier: aquele e o que se COMPRA, este e o que
+     * se CONQUISTA. Um fundo tem um ou outro, nunca os dois — cobrar Platinum
+     * por algo que a pessoa levou 4.000 horas para alcancar seria tirar com uma
+     * mao o que a outra deu.
+     *
+     * Nao ha unlock gravado no perfil: a patente ja e derivada da EXP a cada
+     * leitura, entao derivar o fundo dela tambem faz a coisa valer para quem ja
+     * estava la em cima antes desta mudanca existir.
+     */
+    rankRequired?: string;
 }
 
 export const PROFILE_BACKGROUND_BUCKET_NAME = 'user-images';
@@ -122,7 +135,64 @@ const PROFILE_BACKGROUND_ASSETS: Record<string, ProfileBackgroundAssetDefinition
         basename: 'office1',
         fallbackValue: 'linear-gradient(135deg, #19191a 0%, #4e4438 48%, #cbb99a 100%)',
     },
+
+    // ------------------------------------------------------ OS DEZ DA ESCADA
+    //
+    // Um fundo por patente. A ARTE AINDA NAO EXISTE: nenhum destes basenames
+    // tem arquivo no bucket, e por isso cada um cai no gradiente abaixo, que e
+    // um marcador honesto — a cor da patente, sem cena.
+    //
+    // Para ligar um deles de verdade basta subir a imagem como
+    // `background/<basename>.jpg` no bucket user-images. Nao ha nada a mudar no
+    // codigo: a lista de fontes ja tenta .jpg, .png e .jpeg antes de desistir
+    // para o gradiente. Um por vez funciona; nao e tudo ou nada.
+    //
+    // O brief da arte esta em docs/2026-09-08-fundos-de-patente-brief-de-arte.md
+    [toProfileBackgroundToken('rank-vagante')]: {
+        basename: 'rank01vagante',
+        fallbackValue: 'linear-gradient(160deg, #16181c 0%, #2b2f36 52%, #4a5058 100%)',
+    },
+    [toProfileBackgroundToken('rank-escudeiro')]: {
+        basename: 'rank02escudeiro',
+        fallbackValue: 'linear-gradient(160deg, #12161d 0%, #2a3546 52%, #55697f 100%)',
+    },
+    [toProfileBackgroundToken('rank-cavaleiro')]: {
+        basename: 'rank03cavaleiro',
+        fallbackValue: 'linear-gradient(160deg, #0d141f 0%, #23415f 52%, #6d93b8 100%)',
+    },
+    [toProfileBackgroundToken('rank-lorde')]: {
+        basename: 'rank04lorde',
+        fallbackValue: 'linear-gradient(160deg, #0c1712 0%, #1d4433 52%, #5d9b78 100%)',
+    },
+    [toProfileBackgroundToken('rank-barao')]: {
+        basename: 'rank05barao',
+        fallbackValue: 'linear-gradient(160deg, #1a0b0f 0%, #4a1622 52%, #9c4356 100%)',
+    },
+    [toProfileBackgroundToken('rank-conde')]: {
+        basename: 'rank06conde',
+        fallbackValue: 'linear-gradient(160deg, #150b1e 0%, #3b1c58 52%, #7d55a8 100%)',
+    },
+    [toProfileBackgroundToken('rank-duque')]: {
+        basename: 'rank07duque',
+        fallbackValue: 'linear-gradient(160deg, #0b0f1c 0%, #222c52 52%, #7a86ad 100%)',
+    },
+    [toProfileBackgroundToken('rank-principe')]: {
+        basename: 'rank08principe',
+        fallbackValue: 'linear-gradient(160deg, #080d1e 0%, #17265e 52%, #8f9ed6 100%)',
+    },
+    [toProfileBackgroundToken('rank-rei')]: {
+        basename: 'rank09rei',
+        fallbackValue: 'linear-gradient(160deg, #100b04 0%, #4a3410 52%, #d4af52 100%)',
+    },
+    [toProfileBackgroundToken('rank-soberano')]: {
+        basename: 'rank10soberano',
+        fallbackValue: 'linear-gradient(160deg, #1a1408 0%, #7a5f1c 44%, #f4e6b0 100%)',
+    },
 };
+
+/** O token do fundo daquela patente. Uma so forma de montar, em todo o app. */
+export const getRankBackgroundToken = (rankId: string): string =>
+    toProfileBackgroundToken('rank-' + rankId);
 
 export const buildProfileBackgroundPublicUrl = (fileName: string): string => {
     return `${PROFILE_BACKGROUND_STORAGE_BASE_URL}/${PROFILE_BACKGROUND_BUCKET_FOLDER}/${fileName}`;
@@ -172,6 +242,20 @@ export const PROFILE_BACKGROUND_OPTIONS: ProfileBackgroundOption[] = [
     { id: 'garden-frost', name: 'Jardim Frost', value: toProfileBackgroundToken('garden-frost'), accessTier: 'platinum' },
     { id: 'land-01', name: 'Horizonte 01', value: toProfileBackgroundToken('land-01'), accessTier: 'platinum' },
     { id: 'office-01', name: 'Office 01', value: toProfileBackgroundToken('office-01'), accessTier: 'platinum' },
+
+    // Os da escada vem por ultimo na grade porque sao os unicos que nao se
+    // compram: quem nao chegou la ve o cadeado com o nome da patente, nao um
+    // convite para assinar.
+    { id: 'rank-vagante', name: 'Vagante', value: toProfileBackgroundToken('rank-vagante'), rankRequired: 'vagante' },
+    { id: 'rank-escudeiro', name: 'Escudeiro', value: toProfileBackgroundToken('rank-escudeiro'), rankRequired: 'escudeiro' },
+    { id: 'rank-cavaleiro', name: 'Cavaleiro', value: toProfileBackgroundToken('rank-cavaleiro'), rankRequired: 'cavaleiro' },
+    { id: 'rank-lorde', name: 'Lorde', value: toProfileBackgroundToken('rank-lorde'), rankRequired: 'lorde' },
+    { id: 'rank-barao', name: 'Barão', value: toProfileBackgroundToken('rank-barao'), rankRequired: 'barao' },
+    { id: 'rank-conde', name: 'Conde', value: toProfileBackgroundToken('rank-conde'), rankRequired: 'conde' },
+    { id: 'rank-duque', name: 'Duque', value: toProfileBackgroundToken('rank-duque'), rankRequired: 'duque' },
+    { id: 'rank-principe', name: 'Príncipe', value: toProfileBackgroundToken('rank-principe'), rankRequired: 'principe' },
+    { id: 'rank-rei', name: 'Rei', value: toProfileBackgroundToken('rank-rei'), rankRequired: 'rei' },
+    { id: 'rank-soberano', name: 'Soberano', value: toProfileBackgroundToken('rank-soberano'), rankRequired: 'soberano' },
 ];
 
 const LEGACY_BACKGROUND_ALIASES: Record<string, string> = {

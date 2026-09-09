@@ -1,11 +1,12 @@
 import React from 'react';
 import { GlassCard } from './GlassCard';
-import { LockIcon } from './Icons';
+import { CrownIcon, LockIcon } from './Icons';
 import { Portal } from './Portal';
 import { ProfileBackgroundSurface } from './ProfileBackgroundSurface';
 import { useGame } from '../contexts/GameContext';
 import { supabase } from '../supabaseClient';
 import { hasPlatinumAccess, hasPremiumAccess } from '../utils/premiumAccess';
+import { NOBILITY_RANKS } from '../constants/nobility';
 import {
     PROFILE_BACKGROUND_BUCKET_FOLDER,
     PROFILE_BACKGROUND_BUCKET_NAME,
@@ -25,6 +26,14 @@ interface BackgroundImageSelectionModalProps {
     showUpload?: boolean;
     isPremiumUser?: boolean;
     allowApplyToAll?: boolean;
+    /**
+     * A arte que a coisa ja tinha antes de qualquer escolha — a do ativo, no
+     * caso. Entra na frente de todas e nunca fica trancada: voltar ao estado
+     * original nao e um item de loja.
+     */
+    originalOption?: ProfileBackgroundOption | null;
+    /** Escolher a original limpa a personalizacao em vez de gravar uma URL. */
+    onSelectOriginal?: () => void;
 }
 
 export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionModalProps> = ({
@@ -36,10 +45,18 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
     showUpload,
     isPremiumUser: propIsPremium,
     allowApplyToAll = false,
+    originalOption,
+    onSelectOriginal,
 }) => {
     const { userProfile, showToast } = useGame();
     const isPremiumUser = propIsPremium ?? hasPremiumAccess(userProfile);
     const isPlatinumUser = hasPlatinumAccess(userProfile);
+
+    // A patente do usuario, por posicao na escada. Um fundo de patente esta
+    // liberado quando voce chegou naquele degrau ou passou dele.
+    const viewerRankIndex = NOBILITY_RANKS.findIndex((rank) => rank.id === userProfile.nobility?.rankId);
+    const rankIndexOf = (rankId: string) => NOBILITY_RANKS.findIndex((rank) => rank.id === rankId);
+    const rankNameOf = (rankId: string) => NOBILITY_RANKS.find((rank) => rank.id === rankId)?.name || 'patente';
 
     const backgroundOptions = options ?? PROFILE_BACKGROUND_OPTIONS;
     const modalTitle = title ?? 'Selecionar Plano de Fundo';
@@ -148,24 +165,41 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
         };
     }, [backgroundOptions]);
 
+    // A original vem primeiro. Ela era a unica imagem que a pessoa ja tinha
+    // visto naquele lugar, e era tambem a unica que a grade nao oferecia — quem
+    // trocasse por curiosidade nao tinha caminho de volta.
     const renderedBackgroundOptions = React.useMemo(
-        () => [...backgroundOptions, ...bucketBackgroundOptions],
-        [backgroundOptions, bucketBackgroundOptions],
+        () => [...(originalOption ? [originalOption] : []), ...backgroundOptions, ...bucketBackgroundOptions],
+        [originalOption, backgroundOptions, bucketBackgroundOptions],
     );
 
+    const isOriginalOption = (bg: ProfileBackgroundOption) => Boolean(originalOption && bg.id === originalOption.id);
+
     const canUseBackground = (bg: ProfileBackgroundOption) => {
+        if (isOriginalOption(bg)) return true;
+        // A patente vem antes do tier: o que se conquista nao se cobra de novo.
+        if (bg.rankRequired) return viewerRankIndex >= 0 && viewerRankIndex >= rankIndexOf(bg.rankRequired);
         if (bg.accessTier === 'platinum') return isPlatinumUser;
         if (bg.accessTier === 'premium') return isPremiumUser;
         return true;
     };
 
     const handleSelect = (bg: ProfileBackgroundOption) => {
+        if (isOriginalOption(bg) && onSelectOriginal) {
+            onSelectOriginal();
+            return;
+        }
+
         if (!canUseBackground(bg)) {
+            // Um cadeado de patente nao e uma negativa de venda: ele diz o degrau
+            // que falta, que e informacao que a pessoa pode usar.
             showToast(
-                bg.accessTier === 'platinum'
-                    ? 'Acesso negado. Recurso restrito ao Platinum.'
-                    : 'Acesso negado. Recurso restrito ao Premium.',
-                'error',
+                bg.rankRequired
+                    ? `Fundo da patente ${rankNameOf(bg.rankRequired)}. Ele é seu quando você chegar lá.`
+                    : bg.accessTier === 'platinum'
+                        ? 'Acesso negado. Recurso restrito ao Platinum.'
+                        : 'Acesso negado. Recurso restrito ao Premium.',
+                bg.rankRequired ? 'info' : 'error',
             );
             return;
         }
@@ -181,7 +215,12 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
                         {renderedBackgroundOptions.map(bg => {
                             const resolvedValue = resolveProfileBackgroundValue(bg.value);
                             const resolvedCurrent = resolveProfileBackgroundValue(currentBackground);
-                            const isSelected = resolvedCurrent === resolvedValue;
+                            // Sem personalizacao gravada, quem esta em uso e a original —
+                            // e o anel precisa dizer isso, senao a grade abre com nada
+                            // marcado e parece que a imagem da tela nao esta ali.
+                            const isSelected = isOriginalOption(bg)
+                                ? !resolvedCurrent || resolvedCurrent === resolvedValue
+                                : resolvedCurrent === resolvedValue;
 
                             return (
                                 <div key={bg.id} className="text-center relative">
@@ -194,9 +233,17 @@ export const BackgroundImageSelectionModal: React.FC<BackgroundImageSelectionMod
                                             className="w-full h-full object-cover"
                                             alt={bg.name}
                                         />
+                                        {/* Coroa e cadeado dizem coisas diferentes: a coroa
+                                            e um degrau que se sobe, o cadeado e uma compra.
+                                            O mesmo icone para os dois transformava conquista
+                                            em vitrine. */}
                                         {!canUseBackground(bg) && (
                                             <div className="absolute top-1 right-1 bg-black/80 rounded-full w-5 h-5 flex items-center justify-center border border-yellow-500/50 shadow-lg">
-                                                <LockIcon className="w-2.5 h-2.5 text-yellow-300" />
+                                                {bg.rankRequired ? (
+                                                    <CrownIcon className="w-2.5 h-2.5 text-yellow-300" />
+                                                ) : (
+                                                    <LockIcon className="w-2.5 h-2.5 text-yellow-300" />
+                                                )}
                                             </div>
                                         )}
                                     </button>

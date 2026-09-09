@@ -250,6 +250,10 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
                 messages.push(...detailLines);
             }
 
+            if (rewards.background?.name) {
+                messages.push(`\u{1F5BC} ${rewards.background.name} liberado`);
+            }
+
             if (rewards.chest) {
                 messages.push(`\u{1F4E6} Baú ${rewards.chest} adicionado`);
             }

@@ -2357,6 +2357,16 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         const userId = getSupabaseUserId();
         if (!userId) return;
 
+        // Garden unlocks use a server-priced, idempotent purchase; no client cost is trusted.
+        if (type === 'exclusive' && ITEMS_DB.some(i => i.id === itemId && i.category === 'garden')) {
+            const { data, error } = await supabase.rpc('buy_garden_item', { p_item_id: itemId });
+            if (error || !data?.success) { showToast('Não foi possível comprar o item do jardim. Confira o saldo e a conexão.', 'error'); return; }
+            setUserProfile(previous => ({ ...previous, wallet: { ...previous.wallet, gold: Number(data.new_gold) } }));
+            await fetchInventory(userId);
+            showToast(data.already_owned ? 'Este item já está no seu inventário.' : 'Item do jardim desbloqueado!', 'success');
+            return;
+        }
+
         let cost = 0;
         let name = '';
 
@@ -8741,6 +8751,14 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                                 exp: 0, // Exp already added
                                 items: allRankRewardItems,
                                 rewardDetails: allRankRewardDetails,
+                                // O FUNDO DA PATENTE so e ANUNCIADO aqui.
+                                //
+                                // Ele nao passa por grantUserUnlock de proposito: o
+                                // acesso e derivado do degrau a cada leitura, do mesmo
+                                // jeito que a propria patente e derivada da EXP. Isso
+                                // faz valer para quem ja estava no alto antes desta
+                                // regra existir, sem migracao e sem item de catalogo.
+                                background: { name: 'Fundo ' + newRank.name },
                                 uiSkins: rankRewardDetails
                                     .filter(reward => reward.category === 'ui_skins')
                                     .map(reward => reward.itemId),

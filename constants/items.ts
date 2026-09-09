@@ -4,7 +4,7 @@ import { PRODUCT_FEATURES } from './featureFlags';
 import { getHairUrl } from './skins';
 import { CATALOG_ASSET_ROOT, CATALOG_AVATAR_ROOT, CATALOG_GLYPH_ROOT, CATALOG_INTERFACE_ROOT } from './catalogAssets';
 
-export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest' | 'insignia' | 'insignias';
+export type ItemCategory = 'skin' | 'hair' | 'border' | 'banner' | 'glyph' | 'aura' | 'ui_skin' | 'artifact' | 'orb' | 'plate' | 'chest' | 'insignia' | 'insignias' | 'garden';
 export type ItemSeasonSlot = 'skin' | 'border' | 'banner' | 'glyph' | 'orb' | 'plate' | 'insignia' | 'ui_skin';
 
 export interface SeasonCollectionDef {
@@ -142,6 +142,22 @@ const themeCatalogItem = (item: AssetBackedItemInput): ItemDef =>
 // });
 
 export const ITEMS_DB: ItemDef[] = [
+    // O JARDIM TEM ESCADA, e os cinco nasceram no mesmo degrau.
+    //
+    // Todos entraram tier 5 / legendary a 340-500 de ouro — o teto absoluto da
+    // loja, ao lado do Orbe Soberano. Dois efeitos: nenhum deles era acessivel, e
+    // como o bau nao filtra por categoria, os cinco caiam de uma vez no pool
+    // lendario e diluiam tudo que ja estava la.
+    //
+    // Agora cada um ocupa um degrau proprio, dentro das faixas de preco que o
+    // catalogo ja pratica (t2 30-60, t3 70-135, t4 180-280, t5 340-500):
+    // uma base de entrada barata, uma media, dois epicos e UM lendario — o
+    // Genesis, que continua caro de proposito.
+    { id: 'garden_base_path', name: 'Jardim: Caminho antigo', category: 'garden', tier: 2, rarity: 'uncommon', imageUrl: '/garden3d/catalog/garden_base_path.svg', description: 'Desbloqueia a base de cantos suaves com caminho de pedras.', costGold: 45 },
+    { id: 'garden_base_pond', name: 'Jardim: Espelho do bosque', category: 'garden', tier: 3, rarity: 'rare', imageUrl: '/garden3d/catalog/garden_base_pond.svg', description: 'Desbloqueia a base ampla com lago lateral.', costGold: 110 },
+    { id: 'garden_kit_luxury', name: 'Kit Jardim: Pátio dourado', category: 'garden', tier: 4, rarity: 'epic', imageUrl: '/garden3d/catalog/garden_kit_luxury.svg', description: 'Seis peças de calcário, bronze e folhagem dourada para seu jardim.', costGold: 210 },
+    { id: 'garden_base_river', name: 'Jardim: Margens do refúgio', category: 'garden', tier: 4, rarity: 'epic', imageUrl: '/garden3d/catalog/garden_base_river.svg', description: 'Desbloqueia a base alongada com riacho e ponte.', costGold: 260 },
+    { id: 'garden_kit_genesis', name: 'Kit Jardim: Gênesis', category: 'garden', tier: 5, rarity: 'legendary', imageUrl: '/garden3d/catalog/garden_kit_genesis.svg', description: 'Seis peças de basalto e ametista com folhagem violeta.', costGold: 480 },
     // --- SKINS ---
     // T1 (Comum)
     { id: 'item_skin_1_001', name: 'Náufrago', category: 'skin', tier: 1, rarity: 'common', icon: '🧥', imageUrl: avatarPngAsset('SKIN_T1_NAUFRAGO'), description: "Trajes desgastados pelo tempo e pelo mar. Ideal para quem está começando sua jornada do zero.", isRankExclusive: true },
@@ -176,19 +192,19 @@ export const ITEMS_DB: ItemDef[] = [
     { id: 'item_artifact_1_003', name: 'Gato Laranja', category: 'artifact', tier: 1, rarity: 'common', icon: '🐱', imageUrl: avatarPngAsset('artefato_t1_gatolaranja') },
     { id: 'item_artifact_1_004', name: 'Halteres', category: 'artifact', tier: 1, rarity: 'common', icon: '🏋️', imageUrl: avatarPngAsset('artefato_t1_halterespar') },
     { id: 'item_artifact_1_005', name: 'Trio Café', category: 'artifact', tier: 1, rarity: 'common', icon: '☕', imageUrl: avatarPngAsset('artefato_t1_triocafe'), isRankExclusive: true },
-    { id: 'item_garden_stone_1', name: 'Pedra Serena', category: 'artifact', tier: 1, rarity: 'common', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_SERENA'), description: 'Pedra basica para iniciar o Jardim Zen.' },
-    { id: 'item_garden_plant_1', name: 'Musgo Vivo', category: 'artifact', tier: 1, rarity: 'common', icon: '\u{1FAB4}', imageUrl: avatarPngAsset('JARDIM_MUSGO_VIVO'), description: 'Planta basica para iniciar o Jardim Zen.' },
-    { id: 'item_garden_tool_1', name: 'Garfo de Areia', category: 'artifact', tier: 1, rarity: 'common', icon: '\u{1F9F9}', imageUrl: avatarPngAsset('JARDIM_GARFO_3_DENTES'), description: 'Ferramenta decorativa para compor o Jardim Zen.' },
+    { id: 'item_garden_stone_1', name: 'Pedra Serena', category: 'artifact', isLegacyRetired: true, tier: 1, rarity: 'common', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_SERENA'), description: 'Pedra basica para iniciar o Jardim Zen.' },
+    { id: 'item_garden_plant_1', name: 'Musgo Vivo', category: 'artifact', isLegacyRetired: true, tier: 1, rarity: 'common', icon: '\u{1FAB4}', imageUrl: avatarPngAsset('JARDIM_MUSGO_VIVO'), description: 'Planta basica para iniciar o Jardim Zen.' },
+    { id: 'item_garden_tool_1', name: 'Garfo de Areia', category: 'artifact', isLegacyRetired: true, tier: 1, rarity: 'common', icon: '\u{1F9F9}', imageUrl: avatarPngAsset('JARDIM_GARFO_3_DENTES'), description: 'Ferramenta decorativa para compor o Jardim Zen.' },
     // T2
     { id: 'item_artifact_2_001', name: 'Cachorro Husky', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '🐺', imageUrl: avatarPngAsset('artefato_t2_cachorrohusky') },
     { id: 'item_artifact_2_002', name: 'Gato Siamês', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '🐈', imageUrl: avatarPngAsset('artefato_t2_gatosiames') },
     { id: 'item_artifact_2_003', name: 'Setup', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '💻', imageUrl: avatarPngAsset('artefato_t2_setup'), isRankExclusive: true },
-    { id: 'item_garden_stone_2', name: 'Pedra Lunar', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_LUNAR'), description: 'Pedra clara para composicoes de areia.' },
-    { id: 'item_garden_lantern_1', name: 'Lanterna de Pedra', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '\u{1F3EE}', imageUrl: avatarPngAsset('JARDIM_LANTERNA_PEDRA'), description: 'Lanterna ornamental para dar profundidade ao Jardim Zen.' },
-    { id: 'item_garden_plant_2', name: 'Bambu Jovem', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '\u{1F38D}', imageUrl: avatarPngAsset('JARDIM_BAMBU_JOVEM'), description: 'Vegetacao vertical para o Jardim Zen.' },
-    { id: 'item_garden_stone_3', name: 'Pedra Obsidiana', category: 'artifact', tier: 3, rarity: 'rare', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_OBSIDIANA'), description: 'Pedra escura e mais rara para contraste no Jardim Zen.' },
-    { id: 'item_garden_bridge_1', name: 'Ponte de Madeira', category: 'artifact', tier: 2, rarity: 'uncommon', icon: '\u{1F309}', imageUrl: avatarPngAsset('JARDIM_PONTE_MADEIRA'), description: 'Ponte pequena para criar caminho e composicao no Jardim Zen.' },
-    { id: 'item_garden_statue_1', name: 'Estatua de Meditacao', category: 'artifact', tier: 3, rarity: 'rare', icon: '\u{1F5FF}', imageUrl: avatarPngAsset('JARDIM_ESTATUA_MEDITACAO'), description: 'Ponto de contemplacao raro para o Jardim Zen.' },
+    { id: 'item_garden_stone_2', name: 'Pedra Lunar', category: 'artifact', isLegacyRetired: true, tier: 2, rarity: 'uncommon', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_LUNAR'), description: 'Pedra clara para composicoes de areia.' },
+    { id: 'item_garden_lantern_1', name: 'Lanterna de Pedra', category: 'artifact', isLegacyRetired: true, tier: 2, rarity: 'uncommon', icon: '\u{1F3EE}', imageUrl: avatarPngAsset('JARDIM_LANTERNA_PEDRA'), description: 'Lanterna ornamental para dar profundidade ao Jardim Zen.' },
+    { id: 'item_garden_plant_2', name: 'Bambu Jovem', category: 'artifact', isLegacyRetired: true, tier: 2, rarity: 'uncommon', icon: '\u{1F38D}', imageUrl: avatarPngAsset('JARDIM_BAMBU_JOVEM'), description: 'Vegetacao vertical para o Jardim Zen.' },
+    { id: 'item_garden_stone_3', name: 'Pedra Obsidiana', category: 'artifact', isLegacyRetired: true, tier: 3, rarity: 'rare', icon: '\u{1FAA8}', imageUrl: avatarPngAsset('JARDIM_PEDRA_OBSIDIANA'), description: 'Pedra escura e mais rara para contraste no Jardim Zen.' },
+    { id: 'item_garden_bridge_1', name: 'Ponte de Madeira', category: 'artifact', isLegacyRetired: true, tier: 2, rarity: 'uncommon', icon: '\u{1F309}', imageUrl: avatarPngAsset('JARDIM_PONTE_MADEIRA'), description: 'Ponte pequena para criar caminho e composicao no Jardim Zen.' },
+    { id: 'item_garden_statue_1', name: 'Estatua de Meditacao', category: 'artifact', isLegacyRetired: true, tier: 3, rarity: 'rare', icon: '\u{1F5FF}', imageUrl: avatarPngAsset('JARDIM_ESTATUA_MEDITACAO'), description: 'Ponto de contemplacao raro para o Jardim Zen.' },
     // T3
     { id: 'item_artifact_3_001', name: 'Cachorro Jack', category: 'artifact', tier: 3, rarity: 'rare', icon: '🐕', imageUrl: avatarPngAsset('artefato_t3_cachorrojack') },
     { id: 'item_artifact_3_002', name: 'Caixa Mágica', category: 'artifact', tier: 3, rarity: 'rare', icon: '🎁', imageUrl: avatarPngAsset('ARTEFATO_T3_caixamagica') },
@@ -606,7 +622,8 @@ export const isItemPendingArt = (itemOrId?: ItemDef | string): boolean => {
 
 export const isItemCatalogVisible = (itemOrId?: ItemDef | string): boolean => {
     const itemId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.id;
-    if (!PRODUCT_FEATURES.personalGarden && itemId?.startsWith('item_garden_')) return false;
+    if (itemId?.startsWith('item_garden_')) return false; // Retired 2D collection; keep IDs only for historical ownership.
+    if (!PRODUCT_FEATURES.personalGarden && (itemId?.startsWith('item_garden_') || itemId?.startsWith('garden_'))) return false;
     return !isItemPendingArt(itemOrId);
 };
 

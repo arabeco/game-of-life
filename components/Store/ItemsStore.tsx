@@ -10,6 +10,7 @@ import { ConfirmationModal } from '../ConfirmationModal';
 import { ValorIcon } from '../ValorIcon';
 
 const STORE_CATEGORY_LABELS: Record<ItemDef['category'], string> = {
+    garden: 'Jardim',
     skin: 'Skin',
     hair: 'Cabelo',
     border: 'Borda',
@@ -76,6 +77,10 @@ export const ItemsStore: React.FC = () => {
 
     const items = useMemo(() => {
         const lowTicketIds = new Set<string>(ACTIVE_GOLD_STORE_ITEM_IDS);
+        // O `|| category === 'garden'` que existia aqui era o que colocava os itens
+        // do jardim na loja sem passar pela lista curada — e, sem posicao na lista,
+        // o sort os jogava para o `?? 999`, ou seja, para o rodape. Agora eles estao
+        // em ACTIVE_GOLD_STORE_ITEMS, cada um ao lado dos seus pares de preco.
         const catalog = getCatalogItems(item => lowTicketIds.has(item.id) && item.category !== 'hair');
         const order = new Map<string, number>(ACTIVE_GOLD_STORE_ITEM_IDS.map((id, index) => [id, index]));
 

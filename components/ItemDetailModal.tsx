@@ -405,16 +405,16 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                     ) : (
                         <button 
                             onClick={handleEquip}
-                            disabled={!isOwned || isInsignia}
+                            disabled={!isOwned || isInsignia || currentItem.category === 'garden'}
                             className={`col-span-2 py-3 rounded-xl font-bold uppercase tracking-wider transition-all transform shadow-lg
-                                ${(!isOwned || isInsignia)
+                                ${(!isOwned || isInsignia || currentItem.category === 'garden')
                                     ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed border border-gray-700' 
                                     : isEquipped 
                                         ? 'bg-red-500/20 text-red-400 border border-red-500/50 hover:scale-105 active:scale-95' 
                                         : 'luxe-skin-button hover:scale-105 active:scale-95'
                                 }`}
                         >
-                            {isInsignia ? 'Somente Visualização' : (!isOwned ? 'Bloqueado' : isEquipped ? 'Desequipar' : 'Equipar')}
+                            {currentItem.category === 'garden' ? (isOwned ? 'Disponível no Jardim' : 'Bloqueado') : isInsignia ? 'Somente Visualização' : (!isOwned ? 'Bloqueado' : isEquipped ? 'Desequipar' : 'Equipar')}
                         </button>
                     )}
                     

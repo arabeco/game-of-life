@@ -12,7 +12,7 @@ import { getChestArtUrl } from '../../constants/catalogAssets';
 import { ItemArt } from '../ItemArt';
 import { resolveCatalogAssetUrl } from '../../constants/catalogAssets';
 
-type InventoryTab = 'all' | 'sovereign' | 'glyph' | 'interface' | 'honors' | 'chests';
+type InventoryTab = 'garden' | 'all' | 'sovereign' | 'glyph' | 'interface' | 'honors' | 'chests';
 type InventoryEntry = {
     id: string;
     instanceId: string;
@@ -28,6 +28,7 @@ const isHonorCategory = (category?: string) => HONOR_CATEGORIES.has(String(categ
 const isNonInventoryCategory = (category?: string) => NON_INVENTORY_CATEGORIES.has(String(category || ''));
 
 const TABS: { id: InventoryTab; label: string; categories: string[] }[] = [
+    { id: 'garden', label: 'Jardim', categories: ['garden'] },
     { id: 'all', label: 'Tudo', categories: [] },
     { id: 'sovereign', label: 'Soberano', categories: ['skin', 'artifact'] },
     { id: 'glyph', label: 'Glifo', categories: ['glyph', 'aura', 'orb', 'plate'] },

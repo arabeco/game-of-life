@@ -159,7 +159,7 @@ const normalizeItem = (raw) => {
     gold_price: raw.gold_price ?? null,
     image_url: raw.image_url ?? null,
     description: raw.description ? normalizeText(raw.description) : null,
-    is_live_in_game: true,
+    is_live_in_game: !raw.isLegacyRetired && !String(raw.id).startsWith('item_garden_'),
     is_rank_exclusive: Boolean(raw.isRankExclusive),
     is_premium_only: Boolean(raw.isPremiumOnly),
     is_chest_exclusive: Boolean(raw.isChestExclusive),

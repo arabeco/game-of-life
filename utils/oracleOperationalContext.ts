@@ -347,6 +347,53 @@ export const buildOracleOperationalContext = ({
     ? cycleTotalActions / cycleTotalDays
     : null;
 
+  /**
+   * O RITMO EM DUAS JANELAS.
+   *
+   * "Melhor dia" e "dias com execucao" resumem o ciclo inteiro num numero cada, e
+   * numero unico nao consegue mostrar MUDANCA. Comparando a primeira metade dos
+   * dias decorridos com a segunda, aparecem duas medidas independentes:
+   *
+   *   VOLUME     = media de execucoes por dia
+   *   CONSTANCIA = fracao de dias em que houve pelo menos uma execucao
+   *
+   * As duas podem andar em direcoes opostas, e e justamente ai que existe algo a
+   * dizer que a tela nao mostra: fazer menos por dia e faltar menos dias.
+   *
+   * Seis dias e o minimo: com menos, cada metade tem dois dias e um unico dia
+   * atipico vira "tendencia".
+   */
+  const cycleRhythm = (() => {
+    if (!activeCycle?.startDate || !cycleDayNumber || cycleDayNumber < 6) return null;
+
+    const contagens: number[] = [];
+    const cursor = new Date(`${activeCycle.startDate}T12:00:00`);
+    if (Number.isNaN(cursor.getTime())) return null;
+    for (let i = 0; i < cycleDayNumber; i += 1) {
+      const ano = cursor.getFullYear();
+      const mes = String(cursor.getMonth() + 1).padStart(2, '0');
+      const dia = String(cursor.getDate()).padStart(2, '0');
+      contagens.push(completionsByDay.get(`${ano}-${mes}-${dia}`) || 0);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const meio = Math.floor(contagens.length / 2);
+    const antes = contagens.slice(0, meio);
+    const depois = contagens.slice(meio);
+    if (antes.length === 0 || depois.length === 0) return null;
+
+    const volume = (janela: number[]) => janela.reduce((soma, n) => soma + n, 0) / janela.length;
+    const constancia = (janela: number[]) => janela.filter((n) => n > 0).length / janela.length;
+
+    return {
+      diasAnalisados: contagens.length,
+      volumeAntes: volume(antes),
+      volumeDepois: volume(depois),
+      constanciaAntes: constancia(antes),
+      constanciaDepois: constancia(depois),
+    };
+  })();
+
   const cycleDaysRemaining = activeCycle && cycleDayNumber && cycleTotalDays
     ? Math.max(0, cycleTotalDays - cycleDayNumber)
     : null;
@@ -529,6 +576,7 @@ export const buildOracleOperationalContext = ({
     pendingActionsToday: pendingTodayTasks.length,
     overdueActions: overdueTasks.length,
     plannedDailyDemand,
+    cycleRhythm,
     bestDailyCompletions,
     daysWithCompletions,
     // O pacto, para o Oraculo poder falar do compromisso que a pessoa aceitou.

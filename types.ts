@@ -1507,6 +1507,24 @@ export interface OracleContext {
   plannedDailyDemand?: number | null;
   bestDailyCompletions?: number | null;
   daysWithCompletions?: number;
+  /**
+   * VOLUME E CONSTANCIA sao coisas diferentes e podem andar em direcoes opostas.
+   *
+   * A serie diaria do ciclo ja era calculada e colapsada em "melhor dia" e
+   * "dias com execucao" — dois numeros que nao conseguem dizer que alguem passou
+   * a fazer MENOS por dia e a faltar MENOS dias. Isto compara a primeira metade
+   * do ciclo decorrido com a segunda, que e a mesma tecnica que o trend de arena
+   * ja usa, aplicada ao ciclo.
+   *
+   * Opcional: o cron do servidor nao monta, e nao precisa.
+   */
+  cycleRhythm?: {
+    diasAnalisados: number;
+    volumeAntes: number;
+    volumeDepois: number;
+    constanciaAntes: number;
+    constanciaDepois: number;
+  } | null;
   dailyProofStreakCurrent: number;
   dailyProofStreakBest: number;
   dailyProofTotalClosedDays: number;

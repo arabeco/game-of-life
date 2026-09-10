@@ -13,15 +13,20 @@ import { getNotificationBody, getNotificationTitle, getOracleChatNotificationsFo
 import { APP_NAVIGATE_EVENT, type AppNavigatePayload } from '../utils/arenaAttention';
 import { PLANNER_OPEN_ACTION_MODAL_EVENT } from '../utils/restScreenActionSession';
 import { useSensoryFeedback } from '../hooks/useSensoryFeedback';
+import { buildOracleDayBrief } from '../utils/oracleDayBrief';
 import { buildOracleCycleCoachBrief } from '../utils/oracleCoach';
+import { lerMemoriaDoCoach, registrarLeituraDoCoach } from '../utils/oracleCoachMemory';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
 import { ArenaPactBalloon, ArenaPactProposal } from './ArenaPactBalloon';
 
 type OracleTabTarget = 'chat' | 'requests';
 // Marca a leitura pedida a mao: uma so por vez na lista, e nunca vai para o banco.
 const READING_FEED_ID = 'reading:now';
+const CYCLE_READING_FEED_ID = 'reading:cycle';
+const isReading = (id?: string) => id === READING_FEED_ID || id === CYCLE_READING_FEED_ID;
 
 interface Message {
+  section?: 'guidance' | 'wisdom';
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
@@ -201,6 +206,7 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
   const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
+  const [section, setSection] = useState<'guidance' | 'wisdom'>('guidance');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -309,15 +315,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Load recent Oracle pulses without overriding the chosen preference mode.
   useEffect(() => {
-    // Card de infos ('feed') e fala do Oraculo ('chat') entram os dois. Sao coisas
-    // diferentes — o card e conteudo pago com cota propria, a fala e o Oraculo
-    // falando — mas as duas sao mensagens de verdade e as duas moram no historico
-    // com data e hora. Antes so o card era lido, e a fala evaporava no balao.
+    // Falas já gravadas continuam no histórico; novos eventos são temporários.
     const recentFeedCards = (oracleMessages || [])
-      .filter((message) => (
-        message.deliveryType === 'feed'
-        || (message.deliveryType === 'chat' && message.contextSnapshot?.purpose === 'oracle_speech')
-      ))
+      .filter((message) => message.deliveryType === 'feed'
+        || (message.deliveryType === 'chat' && message.contextSnapshot?.purpose === 'oracle_speech'))
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
     if (recentFeedCards.length === 0) {
@@ -327,8 +328,9 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       return;
     }
 
-    const feedCards: Message[] = recentFeedCards.slice(-4).map((feedMessage) => ({
+    const feedCards: Message[] = recentFeedCards.slice(-30).map((feedMessage) => ({
       role: 'assistant',
+      section: feedMessage.deliveryType === 'feed' ? 'wisdom' : 'guidance',
       content: feedMessage.content,
       timestamp: new Date(feedMessage.createdAt),
       mode: feedMessage.mode,
@@ -345,10 +347,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
     setMessages((previous) => {
       if (isInitialLoadRef.current) {
-        return feedCards;
+        return [...feedCards, ...previous.filter(message => isReading(message.feedId))];
       }
 
-      const preservedMessages = previous.filter((message) => !(message.feedId && !message.feedId.startsWith('notification:')));
+      const preservedMessages = previous.filter((message) => !(message.feedId && !isReading(message.feedId) && !message.feedId.startsWith('notification:')));
       const mergedMessages = [...preservedMessages];
 
       feedCards.forEach((feedCard) => {
@@ -396,7 +398,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, section]);
 
 
   
@@ -528,25 +530,27 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   // leitura no lugar e a hora muda junto. Continua sem gravar no banco — some ao
   // fechar o Oráculo, como a proposta de missão.
   const handleReadMyDay = useCallback(() => {
-    const brief = buildOracleCycleCoachBrief(operationalContext);
-    if (!brief?.content) return;
+    const brief = buildOracleDayBrief(tasks);
     sensory('click_soft');
-    setMessages((previous) => [
-      ...previous.filter((message) => message.feedId !== READING_FEED_ID),
-      {
-        role: 'assistant',
-        content: brief.content,
-        timestamp: new Date(),
-        mode: currentMode,
-        feedId: READING_FEED_ID,
-        feedCategory: 'analise_padroes',
-        feedPresentation: 'ambient_pulse',
-        feedSummary: 'Leitura do momento',
-        feedTrigger: 'manual',
-        quickActions: brief.quickActions,
-      },
-    ]);
-  }, [operationalContext, sensory, currentMode]);
+    setMessages(previous => [...previous.filter(message => message.feedId !== READING_FEED_ID), {
+      role: 'assistant', content: brief.content, timestamp: new Date(), mode: currentMode,
+      feedId: READING_FEED_ID, feedCategory: 'analise_padroes', feedSummary: 'Meu dia',
+      feedTrigger: 'manual', quickActions: brief.quickActions,
+    }]);
+  }, [tasks, sensory, currentMode]);
+
+  const handleAnalyzeCycle = useCallback(() => {
+    const memoria = lerMemoriaDoCoach(userProfile.id);
+    const brief = buildOracleCycleCoachBrief(operationalContext, memoria);
+    if (!brief?.content) return;
+    registrarLeituraDoCoach(userProfile.id, brief.id);
+    sensory('click_soft');
+    setMessages(previous => [...previous.filter(message => message.feedId !== CYCLE_READING_FEED_ID), {
+      role: 'assistant', content: brief.content, timestamp: new Date(), mode: currentMode,
+      feedId: CYCLE_READING_FEED_ID, feedCategory: 'analise_padroes', feedSummary: 'Meu ciclo',
+      feedTrigger: 'manual', quickActions: brief.quickActions,
+    }]);
+  }, [operationalContext, sensory, currentMode, userProfile.id]);
 
   const handleAskMission = useCallback(() => {
     if (activeArenaPact) {
@@ -647,6 +651,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             ...previous,
             {
               role: 'assistant',
+              section: 'wisdom',
               content: result.message.content,
               timestamp: new Date(result.message.createdAt),
               mode: result.message.mode,
@@ -665,6 +670,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             ...previous,
             {
               role: 'assistant',
+              section: 'wisdom',
               content: statusMessage,
               timestamp: new Date(),
               mode: currentMode,
@@ -681,10 +687,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const selectedThemeCount = oraclePreferences?.enabledCategories?.length || 0;
   const manualQuotaLabel = `${oracleFeedStatus.combinedSentToday}/${oracleFeedStatus.dailyLimit}`;
   const manualGenerateLabel = !isPremiumUser
-    ? 'Premium'
+    ? 'Conhecer o Premium'
     : isGeneratingCard
       ? 'Gerando...'
-      : 'Card do Oráculo';
+      : 'Pedir card de sabedoria';
   const selectedThemeLabel = selectedThemeCount === 1 ? '1 tema marcado' : `${selectedThemeCount} temas marcados`;
   // O card automático virou um por dia para todo mundo, inclusive no gratuito: a
   // pool tem 3 variacoes por estado, entao volume maior entregaria repeticao. O
@@ -700,7 +706,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   
   // Custom header for Embedded mode (since default header might be hidden)
   // If isEmbedded is true, we render a smaller status bar inside the chat area if header is hidden
-  const showStatusPill = isEmbedded || hideHeader;
+  const showStatusPill = hideHeader;
+
+  const wisdomIds = new Set((oracleMessages || []).filter(message => message.deliveryType === 'feed' && message.contextSnapshot?.purpose !== 'oracle_speech').map(message => message.id));
+  const visibleMessages = messages.filter(message => section === 'wisdom' ? (message.section === 'wisdom' || wisdomIds.has(message.feedId || '')) : !(message.section === 'wisdom' || wisdomIds.has(message.feedId || '')));
 
   const content = (
       <>
@@ -752,19 +761,27 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
             </div>
         )}
 
+        <div className="flex shrink-0 gap-2 border-b border-white/10 px-4 py-2" role="tablist" aria-label="Oráculo">
+          {([['guidance', 'Meu acompanhamento'], ['wisdom', 'Sabedoria']] as const).map(([id, label]) => <button key={id} id={`oracle-tab-${id}`} role="tab" aria-selected={section === id} aria-controls="oracle-content" className={`min-h-11 flex-1 rounded-xl px-2 text-xs font-bold ${section === id ? 'bg-white/10 text-[var(--skin-accent-color)]' : 'text-white/55'}`} onClick={() => {setSection(id);setPactPanelOpen(false);}}>{label}</button>)}
+        </div>
+        {section === 'guidance' && <div className="grid shrink-0 grid-cols-2 gap-2 px-4 pt-3">
+          <button id="oracle-read-my-day" onClick={handleReadMyDay} className="min-h-14 rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Ler meu dia</span><span className="text-[11px] text-white/50">Atividades de hoje</span></button>
+          <button id="oracle-analyze-cycle" onClick={handleAnalyzeCycle} className="min-h-14 rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Analisar meu ciclo</span><span className="text-[11px] text-white/50">Metas, ritmo e progresso</span></button>
+        </div>}
+
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-          {messages.length === 0 && (
+        <div id="oracle-content" role="tabpanel" aria-labelledby={`oracle-tab-${section}`} className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+          {visibleMessages.length === 0 && (
             <div className="flex min-h-full flex-col items-center justify-center p-6 text-center">
               <div className="opacity-50">
               <HeaderIcon className={`w-16 h-16 mb-4 ${MODE_VISUALS[currentMode].color} drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]`} />
-              <p className="text-sm text-gray-400 font-bold">O Oráculo aguarda sua consulta, Soberano.</p>
-              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">Tom atual: {ORACLE_TONE_LABELS[currentMode].hint}</p>
+              <p className="text-sm text-gray-400 font-bold">{section === 'wisdom' ? 'Um espaço para refletir' : 'Seu dia ou seu ciclo?'}</p>
+              <p className="text-xs text-gray-600 mt-2 max-w-[200px]">{section === 'wisdom' ? 'Seus cards de informação e sabedoria aparecem aqui.' : 'Escolha uma leitura acima. A resposta aparece aqui.'}</p>
               </div>
             </div>
           )}
           
-          {messages.map((msg, idx) => {
+          {visibleMessages.map((msg, idx) => {
              const msgMode = msg.role === 'assistant' ? resolveTone(msg.mode) : ORACLE_FREE_TONE;
              const visuals = MODE_VISUALS[msgMode];
              const isFeedCard = msg.role === 'assistant' && Boolean(msg.feedId);
@@ -778,7 +795,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                || ORACLE_CATEGORY_VISUALS.frases_inspiradoras;
              // A fala não e card de conteúdo, entao não usa o rotulo do tema.
              const isSpeech = msg.feedPurpose === 'oracle_speech';
-             const feedLabel = isSpeech ? 'Oráculo' : feedVisual.label;
+             const feedLabel = isReading(msg.feedId) ? msg.feedSummary : isSpeech ? 'Oráculo' : feedVisual.label;
 
              return (
             <div 
@@ -810,12 +827,15 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                         falas sem quando, e nao da para saber se a de cima e de
                         agora ou da semana passada. Custo de egress: zero. */}
                     <span className="ml-auto text-[10px] font-semibold tabular-nums tracking-[0.08em] text-white/32">
-                      {formatFeedMoment(msg.timestamp)}
+                      {isSpeech ? msg.timestamp.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : formatFeedMoment(msg.timestamp)}
                     </span>
                   </div>
                   <div className={`whitespace-pre-line ${feedVisual.accentClass} ${feedPresentation === 'info_card' ? 'font-medium text-[14px]' : 'text-white/88'}`}>
                     {msg.content}
                   </div>
+                  {!!msg.quickActions?.length && <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-2">
+                    {msg.quickActions.map(action => <button key={action.id} onClick={() => runQuickAction(action)} className="min-h-11 rounded-lg px-2 text-xs font-semibold text-[var(--skin-accent-color)] underline underline-offset-4">{action.label}</button>)}
+                  </div>}
                 </div>
               ) : (
                 <div 
@@ -875,54 +895,11 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           </div>
         )}
 
-        {/* Input */}
-        <div className="p-4 border-t border-white/10 bg-black/40 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="relative shrink-0">
-              <button
-                onClick={handleGenerateCard}
-                disabled={manualGenerateDisabled}
-                className={`group relative flex h-12 w-12 items-center justify-center rounded-full border transition-all ${
-                  manualGenerateDisabled
-                    ? 'cursor-not-allowed border-white/10 bg-white/5 text-gray-500'
-                    : 'border-[var(--skin-accent-color)]/30 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.18),rgba(255,255,255,0.03)_45%,rgba(6,9,14,0.94)_100%)] text-[var(--skin-accent-color)] shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_10px_28px_rgba(0,0,0,0.22),0_0_28px_rgba(255,255,255,0.04)] hover:border-[var(--skin-accent-color)]/45 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_12px_30px_rgba(0,0,0,0.24),0_0_34px_rgba(255,255,255,0.06)]'
-                }`}
-                title={oracleInputHint}
-                aria-label={`${manualGenerateLabel}. ${manualQuotaLabel} hoje.`}
-              >
-                {!isPremiumUser ? <CrownIcon className="h-4.5 w-4.5" /> : <GameLogoIcon className="h-6 w-6 transition-transform group-hover:scale-105" />}
-              </button>
-              <div className={`pointer-events-none absolute -right-1 -top-1 rounded-full border px-1.5 py-0.5 text-[8px] font-black tracking-[0.12em] ${
-                manualGenerateDisabled
-                  ? 'border-white/10 bg-black text-gray-500'
-                  : 'border-[var(--skin-accent-color)]/25 bg-black text-[var(--skin-accent-color)]'
-              }`}>
-                {manualQuotaLabel}
-              </div>
-            </div>
-            {/* O chat livre saiu: ele chamava o modelo para todo mundo sem portao de
-                Premium, entao o custo crescia com cadastros e nao com receita. O
-                espaco dele virava duas linhas explicando o botao ao lado — texto
-                sobre um botao que ja tem rotulo.
-                Agora sao duas acoes que a pessoa pode pedir quando quiser, e as
-                duas custam ZERO de rede: leem o que ja esta na memoria do app. */}
-            <div className="flex min-w-0 flex-1 gap-2">
-              <button
-                id="oracle-read-my-day"
-                onClick={handleReadMyDay}
-                className="min-w-0 flex-1 rounded-2xl border border-white/12 bg-white/[0.04] px-2.5 py-2.5 text-left transition-colors hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]"
-              >
-                <span className="block text-[11px] font-black uppercase leading-tight tracking-[0.02em] text-white/82">Ler meu dia</span>
-                <span className="mt-0.5 block truncate text-[9px] text-white/38">agora</span>
-              </button>
-
-              {/* UM slot, tres estados: vazio convida, ocupado informa QUEM ocupa.
-                  A missao individual pode ser de arena ou de sistema, e o botao tem
-                  de dizer a verdade nos dois casos — senao a pessoa ve "Escolher
-                  missao", toca, e leva um aviso de que ja tem uma.
-
-                  Botao que some faz o rodape pular; opaco com aviso diz por que nao
-                  da, em vez de nao dar e ficar calado. */}
+        <div className="shrink-0 border-t border-white/10 bg-black/20 p-3">
+          {section === 'wisdom' ? <div className="space-y-2">
+            <p className="text-[11px] leading-relaxed text-white/55">{oracleInputHint}</p>
+            <button disabled={manualGenerateDisabled} onClick={handleGenerateCard} className="min-h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-bold disabled:opacity-50">{manualGenerateLabel}{isPremiumUser ? ` · ${manualQuotaLabel} hoje` : ''}</button>
+          </div> : <div className="flex">
               <button
                 onClick={handleAskMission}
                 className={`min-w-0 flex-1 rounded-2xl border px-2.5 py-2.5 text-left transition-colors ${
@@ -948,8 +925,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
                       : 'uma de cada vez'}
                 </span>
               </button>
-            </div>
-          </div>
+          </div>}
         </div>
       </>
   );

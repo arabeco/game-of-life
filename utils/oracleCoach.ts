@@ -4,6 +4,8 @@ import type { OracleCandidateInput } from './oracleCandidates.ts';
 import { detectOracleCandidates, getOracleRelevanceThreshold, ORACLE_CANDIDATE_WEIGHTS } from './oracleCandidates.ts';
 import type { OracleSpeechMemoryEntry } from './oracleSpeechMemory.ts';
 import { isOracleSubjectOnCooldown, recallOracleSpeech } from './oracleSpeechMemory.ts';
+import type { OracleMasterState } from './oracleMasterState.ts';
+import { deriveOracleMasterState } from './oracleMasterState.ts';
 
 // Os tipos de ritmo moram no arbitro agora, junto de quem os le. Reexportados
 // para quem ja importava daqui.
@@ -730,9 +732,70 @@ const compactActions = (
  *
  * Os textos sao os mesmos, palavra por palavra. O que mudou e quem decide.
  */
-type CasoDoBrief = OracleCycleCoachBrief & { peso: number };
+type CasoDoBrief = OracleCycleCoachBrief & { peso: number; cooldownDays: number };
 
-export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleCoachBrief => {
+/** O raciocinio que levou a uma leitura. Existe para ser auditado, nao exibido. */
+export interface OracleCoachAudit {
+  estado: OracleMasterState;
+  motivo: string;
+  modificadores: string[];
+  proibidos: string[];
+  assunto: string;
+  pesoBase: number;
+  bonus: number;
+  pesoFinal: number;
+  porQueVenceu: string;
+  descartados: { assunto: string; peso: number; razao: string }[];
+}
+
+/** O que a pessoa ja leu, por familia, na forma familia -> data operacional. */
+export type OracleCoachMemory = Record<string, string>;
+
+/**
+ * A FAMILIA de um caso: os dois primeiros segmentos do id.
+ *
+ * Os ids carregam parte variavel de proposito — `coach:behind:arena-7:12` muda
+ * quando o dia do ciclo muda. Guardar o id inteiro faria o descanso nunca valer,
+ * porque amanha ele ja e outra chave. O que descansa e o ASSUNTO.
+ */
+export const oracleCoachFamily = (id: string): string => id.split(':').slice(0, 2).join(':');
+
+const diasEntre = (de: string, ate: string): number => {
+  const inicio = Date.parse(`${de}T12:00:00`);
+  const fim = Date.parse(`${ate}T12:00:00`);
+  if (!Number.isFinite(inicio) || !Number.isFinite(fim)) return Number.POSITIVE_INFINITY;
+  return Math.round((fim - inicio) / 86400000);
+};
+
+/**
+ * A LEITURA DEIXA DE SER SEMPRE A MESMA.
+ *
+ * Os catorze casos ja tinham peso, mas o peso e CONSTANTE: quem esta atrasado
+ * tem `coach:behind` no topo hoje, amanha e depois. Na pratica duas ou tres
+ * portas capturavam todo mundo, e as outras onze — escritas, revisadas e pagas —
+ * nunca chegavam a ser lidas por ninguem.
+ *
+ * O conserto e o mesmo que o arbitro dos candidatos de abertura ja usa: cada
+ * caso tem um DESCANSO em dias. Dito uma vez, ele sai da fila pelo tempo dele, e
+ * o proximo mais relevante assume. Quem continua atrasado ouve sobre o atraso
+ * hoje; amanha ouve sobre a arena natimorta, sobre a concentracao, sobre quanto
+ * falta — coisas que tambem sao verdade sobre ele e que ele nunca ia ver.
+ *
+ * Nao e rodizio: o peso continua mandando dentro do que esta disponivel. O
+ * descanso so impede que o primeiro lugar seja vitalicio.
+ *
+ * A memoria e OPCIONAL e vem de fora. Sem ela a funcao se comporta como antes —
+ * o que mantem o teste de regressao valido, e mantem a funcao pura: ela nao le
+ * relogio nem armazenamento, so recebe o que ja foi lido.
+ *
+ * E se TODOS os casos aplicaveis estiverem descansando, o descanso e ignorado.
+ * Melhor repetir do que emudecer um botao que a pessoa acabou de apertar.
+ */
+export const buildOracleCycleCoachBrief = (
+  context: OracleContext,
+  memoria?: { hoje: string; vistos: OracleCoachMemory },
+  auditar?: (auditoria: OracleCoachAudit) => void,
+): OracleCycleCoachBrief => {
   const focusArena = context.focusArenaSignal;
   const progress = Math.max(0, Math.round(context.cycleCompletionPercent || 0));
   const expected = Math.max(0, Math.round(context.expectedCycleCompletionPercent || 0));
@@ -744,7 +807,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
 
   if (!context.hasArenas) {
     casos.push({
-      peso: 100,
+      peso: 100, cooldownDays: 0, // Sem arena nenhuma nao existe outra leitura possivel: e o unico caminho.
       id: 'coach:first-arena',
       content: 'Vamos comecar pequeno. Escolha uma frente importante da sua vida e crie uma arena com uma ação que realmente caiba na sua semana.',
       quickActions: [{ id: 'coach-open-arenas', label: 'Criar primeira arena', kind: 'open_arenas' }],
@@ -753,7 +816,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
 
   if (!context.hasCycle) {
     casos.push({
-      peso: 95,
+      peso: 95, cooldownDays: 2, // Jogar sem ciclo e modo suportado. Cobrar ciclo todo dia e a definicao de chatear.
       id: 'coach:start-cycle',
       content: `Você ja tem ${context.totalArenas} arena${context.totalArenas === 1 ? '' : 's'}. Agora escolha uma rodada curta para transformar intencao em ritmo. Sete dias ja bastam para aprender o que cabe de verdade.`,
       quickActions: [
@@ -768,7 +831,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
     // — este caso e de quem terminou tudo ANTES do prazo, e ai fechar e escolha,
     // nao instrucao.
     casos.push({
-      peso: 90,
+      peso: 90, cooldownDays: 0, // Terminar antes do prazo e fato pontual e acionavel. Calar seria esconder a saida.
       id: `coach:cycle-ready:${context.cycleName || 'active'}`,
       content: context.cycleDaysRemaining && context.cycleDaysRemaining > 0
         ? `Você concluiu o que estava medido neste ciclo, e ainda faltam ${context.cycleDaysRemaining} dia${context.cycleDaysRemaining === 1 ? '' : 's'}. Pode encerrar agora e registrar o que funcionou, ou deixar rodando.`
@@ -779,7 +842,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
 
   if (total === 0) {
     casos.push({
-      peso: 85,
+      peso: 85, cooldownDays: 2, // Meta mensuravel nao aparece sozinha em 24 horas.
       id: `coach:unmeasured:${focusArena?.arenaId || 'cycle'}`,
       content: focusArena
         ? `${focusArena.arenaName} ainda não tem uma meta mensuravel neste ciclo. Se quiser acompanhar o ritmo, defina uma repeticao minima que seja honesta.`
@@ -793,7 +856,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
 
   if (context.cycleDaysRemaining === 0 && pending > 0) {
     casos.push({
-      peso: 80,
+      peso: 80, cooldownDays: 0, // O ultimo dia acontece uma vez por ciclo. Nao ha o que espacar.
       id: `coach:last-day:${context.cycleName || 'active'}:${pending}`,
       content: `O ciclo chegou ao último dia com ${pending} acao${pending === 1 ? '' : 'es'} pendente${pending === 1 ? '' : 's'}. Não precisa fingir um fechamento perfeito: faca o que ainda cabe e encerre com uma leitura honesta.`,
       quickActions: [
@@ -808,7 +871,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
       ? ` ${focusArena.arenaName} pede mais atencao agora.`
       : '';
     casos.push({
-      peso: 75,
+      peso: 75, cooldownDays: 1, // Cada dia atras e um fato novo — mas um dia de folga e o que deixa o resto da fila existir.
       id: `coach:behind:${focusArena?.arenaId || 'cycle'}:${context.cycleDayNumber || 0}`,
       content: `Seu ciclo esta em ${progress}%, enquanto o tempo percorrido aponta cerca de ${expected}%.${arenaLine} Em vez de tentar compensar tudo, escolha uma ação real ou reduza uma meta que deixou de fazer sentido.`,
       quickActions: compactActions([
@@ -837,12 +900,17 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
    * ha mais tempo de corrigir e so cobrança.
    */
   const deriva = expected - progress;
-  if (context.cyclePace === 'no_ritmo' && deriva >= 4 && pending > 0 && (context.cycleDaysRemaining || 0) >= 2) {
+  // "Uma acao hoje devolve o rumo" exige que exista acao HOJE. O teste era
+  // contra as pendencias do CICLO, entao quem tem meta de frequencia — seis
+  // treinos em catorze dias — recebia ordem de treinar num dia sem treino
+  // marcado, so porque 67% fica abaixo dos 71% lineares. Meta semanal nao e
+  // divida diaria, e o app nao deve inventar urgencia que a agenda nao registra.
+  if (context.cyclePace === 'no_ritmo' && deriva >= 4 && (context.pendingActionsToday || 0) > 0 && (context.cycleDaysRemaining || 0) >= 2) {
     const arenaLine = focusArena?.arenaName
       ? ` ${focusArena.arenaName} foi a que mais ficou para tras.`
       : '';
     casos.push({
-      peso: 68,
+      peso: 68, cooldownDays: 2, // A deriva e aviso preventivo. Repetido vira cobranca sobre algo que ela ja ouviu.
       id: `coach:deriva:${focusArena?.arenaId || 'cycle'}:${context.cycleDayNumber || 0}`,
       content: `Ainda da tempo, mas o ciclo começou a escorregar: ${progress}% feito onde o tempo aponta ${expected}%.${arenaLine} Uma ação hoje devolve o rumo.`,
       quickActions: compactActions([
@@ -854,7 +922,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
 
   if (completed === 0) {
     casos.push({
-      peso: 70,
+      peso: 70, cooldownDays: 0, // A primeira prova do ciclo so acontece uma vez.
       id: `coach:first-proof:${context.cycleName || 'active'}`,
       content: 'O ciclo comecou, mas ainda falta a primeira conclusao. Não tente resolver a semana inteira agora: escolha a menor ação que coloca o ciclo em movimento hoje.',
       quickActions: [
@@ -863,9 +931,13 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
     });
   }
 
-  if (context.cyclePace === 'adiantado') {
+  // O reconhecimento acompanha o Estado Mestre: 'forte' comeca em +5 de delta, e
+  // o assunto que reconhece precisa EXISTIR nessa faixa para poder receber o
+  // bonus. Preso a 'adiantado', ele nao existia em 80% contra 71% — e a leitura
+  // abria por uma pendencia de arena num ciclo claramente bom.
+  if (context.cyclePace === 'adiantado' || progress - expected >= 5) {
     casos.push({
-      peso: 40,
+      peso: 40, cooldownDays: 2, // Elogio repetido vira bajulacao, e bajulacao gasta a confianca do resto.
       id: `coach:ahead:${context.cycleDayNumber || 0}:${completed}`,
       content: (() => {
         // A projecao: no ritmo medio ate aqui, quantos dias sobrariam.
@@ -900,7 +972,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
     if (porDia > melhorDia) {
       const arredondado = porDia >= 2 ? Math.round(porDia) : Math.round(porDia * 10) / 10;
       casos.push({
-        peso: 78,
+        peso: 78, cooldownDays: 2, // A conta que nao fecha e estrutural: nao muda de um dia para o outro.
         id: `coach:conta-nao-fecha:${context.cycleDayNumber || 0}:${pending}`,
         content: `Faltam ${pending} ações e ${diasRestantes} dia${diasRestantes === 1 ? '' : 's'}. Isso pede ${arredondado} por dia, e seu melhor dia até agora ${melhorDia === 1 ? 'foi 1' : `foram ${melhorDia}`}. Reduzir uma meta agora não tira EXP já conquistada.`,
         quickActions: compactActions([
@@ -924,7 +996,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
   if (natimortas.length > 0 && (context.arenaSignals || []).length > natimortas.length) {
     const total = (context.arenaSignals || []).length;
     casos.push({
-      peso: 65,
+      peso: 65, cooldownDays: 3, // Arena natimorta leva dias para deixar de ser. Nao ha o que dizer de novo antes disso.
       id: `coach:arena-natimorta:${natimortas.length}:${context.cycleDayNumber || 0}`,
       content: natimortas.length === 1
         ? `Você desenhou este ciclo com ${total} arenas, e ${natimortas[0].arenaName} ainda não recebeu nenhum registro.`
@@ -947,9 +1019,9 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
     .sort((a, b) => (b.pendingActions || 0) - (a.pendingActions || 0))[0];
   if (maisPendente && diasRestantes > 0) {
     casos.push({
-      peso: 60,
+      peso: 60, cooldownDays: 2, // E agregado e pouco acionavel: repetir so acumula peso sem indicar saida.
       id: `coach:quanto-falta:${maisPendente.arenaId}:${maisPendente.pendingActions}`,
-      content: `A que mais precisa agora é ${maisPendente.arenaName}: ${maisPendente.pendingActions} ação${maisPendente.pendingActions === 1 ? '' : 'ões'} em ${diasRestantes} dia${diasRestantes === 1 ? '' : 's'}.`,
+      content: `A que mais precisa agora é ${maisPendente.arenaName}: ${maisPendente.pendingActions} ${maisPendente.pendingActions === 1 ? 'ação' : 'ações'} em ${diasRestantes} dia${diasRestantes === 1 ? '' : 's'}.`,
       quickActions: compactActions([
         { id: 'coach-open-arena', label: `Abrir ${maisPendente.arenaName}`, kind: 'open_arena', arenaId: maisPendente.arenaId },
         { id: 'coach-open-planner', label: 'Abrir Planner', kind: 'open_planner' },
@@ -974,7 +1046,7 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
     const fatia = totalEntregas > 0 ? (dominante.completedActions || 0) / totalEntregas : 0;
     if (totalEntregas >= 5 && fatia >= 0.6) {
       casos.push({
-        peso: 62,
+        peso: 62, cooldownDays: 3, // Concentracao e revelacao, nao conselho. Repetir transforma constatacao em julgamento.
         id: `coach:concentracao:${dominante.arenaId}:${Math.round(fatia * 100)}`,
         content: `Você tem ${(context.arenaSignals || []).length} arenas neste ciclo. ${Math.round(fatia * 10)} de cada 10 registros foram em ${dominante.arenaName}.`,
         quickActions: [{ id: 'coach-open-arenas', label: 'Ver arenas', kind: 'open_arenas' }],
@@ -982,12 +1054,27 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
     }
   }
 
-  // O fundo da fila: sempre aplicavel, para o botao nunca ficar mudo.
+  /**
+   * O "VOCE ESTA NO RITMO" DEIXA DE SER INCONDICIONAL.
+   *
+   * Este era o unico dos catorze sem guarda nenhuma, e era o fundo da fila.
+   * Resultado: bastava os assuntos de cima nao se aplicarem — ou, depois que o
+   * descanso por assunto entrou, bastava eles estarem descansando — para o app
+   * afirmar "voce esta acompanhando o ritmo do ciclo" a quem tinha 10 de 140
+   * feitas. Foi exatamente o que a simulacao dos cinco perfis pegou na quarta
+   * consulta dos perfis Sobrecarga e Retomada.
+   *
+   * Agora ele so existe quando o ritmo REALMENTE e no_ritmo ou adiantado. E o
+   * Estado Mestre ainda o proibe em todo estado incompativel, por garantia: uma
+   * frase que afirma um fato precisa da condicao do fato, e nao da ausencia de
+   * concorrentes.
+   */
+  const ritmoPermiteElogio = context.hasCycle && (context.cyclePace === 'no_ritmo' || context.cyclePace === 'adiantado');
   const priorityLine = context.priorityActionName
     ? ` Que tal ${context.priorityActionName} hoje?`
     : ' Escolha uma ação que mantenha o fio sem pesar o dia.';
-  casos.push({
-    peso: 0,
+  if (ritmoPermiteElogio) casos.push({
+    peso: 0, cooldownDays: 0,
     id: `coach:on-pace:${context.cycleDayNumber || 0}:${completed}`,
     content: `Você concluiu ${completed} de ${total} ações e esta acompanhando o ritmo do ciclo.${priorityLine}`,
     quickActions: [
@@ -996,6 +1083,169 @@ export const buildOracleCycleCoachBrief = (context: OracleContext): OracleCycleC
     ],
   });
 
-  const escolhido = casos.reduce((melhor, caso) => (caso.peso > melhor.peso ? caso : melhor));
+  /**
+   * A RETOMADA COMO ACONTECIMENTO.
+   *
+   * `trend === 'retomando'` ja era calculado por arena e o coach nunca olhava —
+   * so as falas de abertura usavam. Quem voltou hoje depois de seis dias parado
+   * recebia a leitura de atraso, que ele ja sabia, em vez da unica coisa que o
+   * app percebeu e ele talvez nao: que ele voltou.
+   *
+   * A frase nao manda compensar. Compensar e o instinto errado depois de uma
+   * pausa, e e o que quebra a retomada no segundo dia.
+   */
+  const arenaRetomada = (context.arenaSignals || []).find((sinal) => sinal.trend === 'retomando');
+  if (arenaRetomada) {
+    const pausa = arenaRetomada.trendPauseDays;
+    casos.push({
+      peso: 55, cooldownDays: 1, // Retomada e um momento. Repetir todo dia transforma reconhecimento em bajulacao.
+      id: `coach:retomada:${arenaRetomada.arenaId}:${context.cycleDayNumber || 0}`,
+      content: pausa
+        ? `Você voltou a registrar em ${arenaRetomada.arenaName} depois de ${pausa} dia${pausa === 1 ? '' : 's'} sem nada. O ciclo segue abaixo do planejado, mas recuperar tudo agora não é a prioridade — sustentar a volta é.`
+        : `Você voltou a registrar em ${arenaRetomada.arenaName} depois de uma pausa. O ciclo segue abaixo do planejado, mas recuperar tudo agora não é a prioridade — sustentar a volta é.`,
+      quickActions: compactActions([
+        openFocusedArena(context),
+        { id: 'coach-open-planner', label: 'Abrir Planner', kind: 'open_planner' },
+      ]),
+    });
+  }
+
+  /**
+   * O CICLO CONCENTRADO NUM DIA.
+   *
+   * Ja existia `coach:concentracao`, mas ele mede concentracao por ARENA — em
+   * qual frente a pessoa gastou os registros. Este mede por DIA: quanto do ciclo
+   * aconteceu de uma vez so.
+   *
+   * Sao coisas diferentes e nenhuma tela mostra a segunda. O Planner soma o
+   * ciclo e soma o dia; ele nunca compara os dois.
+   *
+   * A frase termina no fato, sem conselho. Fazer tudo num dia nao e erro — e
+   * so uma coisa sobre a qual a pessoa talvez nao tenha reparado. Exige dois
+   * dias com execucao: com um so, "metade num dia" e aritmetica, nao padrao.
+   */
+  const melhorDoDia = Math.max(0, Math.round(context.bestDailyCompletions || 0));
+  const diasComExecucao = context.daysWithCompletions || 0;
+  if (completed >= 6 && diasComExecucao >= 2 && melhorDoDia / completed >= 0.5) {
+    const fatia = Math.round((melhorDoDia / completed) * 100);
+    casos.push({
+      peso: 58, cooldownDays: 3, // Padrao do passado do ciclo: nao muda de um dia para o outro.
+      id: `coach:dia-concentrado:${melhorDoDia}:${completed}`,
+      content: `Dos ${completed} registros deste ciclo, ${melhorDoDia} aconteceram num único dia — ${fatia}% do que você fez saiu de uma vez só.`,
+      quickActions: [{ id: 'coach-open-cycle', label: 'Ver ciclo', kind: 'open_cycle' }],
+    });
+  }
+
+  /**
+   * VOLUME E CONSTANCIA EM DIRECOES OPOSTAS.
+   *
+   * O caso mais valioso que este motor consegue provar, e o que a tela nao
+   * mostra de jeito nenhum: fazer MENOS por dia e faltar MENOS dias. O Planner
+   * mostra soma e porcentagem; nenhum dos dois enxerga que o padrao mudou.
+   *
+   * So fala quando as duas medidas discordam. Se as duas sobem ou as duas caem,
+   * a leitura seria "voce esta melhor" ou "voce esta pior" — que e o que os
+   * outros assuntos ja dizem melhor, com acao junto.
+   *
+   * Os cortes (20% de volume, 15 pontos de constancia) existem para nao chamar
+   * de mudanca o que e oscilacao de um dia.
+   */
+  const ritmo = context.cycleRhythm;
+  if (ritmo && ritmo.volumeAntes > 0) {
+    const quedaVolume = (ritmo.volumeAntes - ritmo.volumeDepois) / ritmo.volumeAntes;
+    const ganhoConstancia = ritmo.constanciaDepois - ritmo.constanciaAntes;
+    const metade = Math.floor(ritmo.diasAnalisados / 2);
+
+    if (quedaVolume >= 0.2 && ganhoConstancia >= 0.15) {
+      casos.push({
+        peso: 56, cooldownDays: 3,
+        id: `coach:volume-x-constancia:queda:${ritmo.diasAnalisados}`,
+        content: `Nos últimos ${ritmo.diasAnalisados - metade} dias você fez menos por dia do que no começo do ciclo, mas faltou menos dias. Seu volume caiu; sua constância melhorou.`,
+        quickActions: [{ id: 'coach-open-cycle', label: 'Ver ciclo', kind: 'open_cycle' }],
+      });
+    } else if (quedaVolume <= -0.2 && ganhoConstancia <= -0.15) {
+      casos.push({
+        peso: 56, cooldownDays: 3,
+        id: `coach:volume-x-constancia:picos:${ritmo.diasAnalisados}`,
+        content: `Nos últimos ${ritmo.diasAnalisados - metade} dias você fez mais por dia do que no começo do ciclo, mas em menos dias. Seu volume subiu; sua constância caiu.`,
+        quickActions: [{ id: 'coach-open-cycle', label: 'Ver ciclo', kind: 'open_cycle' }],
+      });
+    }
+  }
+
+  /**
+   * O FUNDO HONESTO — a resposta quando nao ha o que apontar.
+   *
+   * Antes, o fundo da fila afirmava ritmo adequado. Agora que ele tem condicao,
+   * precisa existir alguma coisa embaixo de tudo que nao afirme NADA sobre o
+   * ritmo, para o botao nunca ficar mudo e nunca mentir.
+   *
+   * Nem toda leitura precisa terminar em tarefa. "Esta bom assim" e resposta.
+   */
+  casos.push({
+    peso: -1, cooldownDays: 0,
+    id: `coach:sem-leitura:${context.cycleDayNumber || 0}`,
+    content: 'Nada mudou o suficiente para uma leitura nova. Se o dia já está do jeito que você queria, está bom assim.',
+    quickActions: [{ id: 'coach-open-planner', label: 'Abrir Planner', kind: 'open_planner' }],
+  });
+
+  const descansando = (caso: CasoDoBrief): boolean => {
+    if (!memoria || caso.cooldownDays <= 0) return false;
+    const visto = memoria.vistos[oracleCoachFamily(caso.id)];
+    if (!visto) return false;
+    return diasEntre(visto, memoria.hoje) < caso.cooldownDays;
+  };
+
+  /**
+   * A HISTORIA MANDA NA ORDEM, e proibe o que a contradiz.
+   *
+   * O peso do caso continua sendo a relevancia GERAL dele. O que o Estado Mestre
+   * acrescenta e a relevancia AGORA: um bonus por assunto, e uma lista do que
+   * nao pode ser dito neste estado. Sem isso, variedade vencia verdade — a fila
+   * escolhia o proximo assunto disponivel mesmo quando ele negava o anterior.
+   */
+  const diagnostico = deriveOracleMasterState(context);
+  const bonusDe = (caso: CasoDoBrief) => diagnostico.bonus[oracleCoachFamily(caso.id)] || 0;
+  const pesoFinal = (caso: CasoDoBrief) => caso.peso + bonusDe(caso);
+  const proibido = (caso: CasoDoBrief) => diagnostico.proibidos.includes(oracleCoachFamily(caso.id));
+
+  // O fundo honesto nunca e proibido: e ele que garante resposta em qualquer
+  // estado, sem afirmar nada que o estado negue.
+  const permitidos = casos.filter((caso) => !proibido(caso));
+  const disponiveis = permitidos.filter((caso) => !descansando(caso));
+  const fila = disponiveis.length > 0 ? disponiveis : permitidos;
+
+  const escolhido = fila.reduce((melhor, caso) => (pesoFinal(caso) > pesoFinal(melhor) ? caso : melhor));
+
+  if (auditar) {
+    const descartados = casos
+      .filter((caso) => caso.id !== escolhido.id)
+      .map((caso) => ({
+        assunto: oracleCoachFamily(caso.id),
+        peso: pesoFinal(caso),
+        razao: proibido(caso)
+          ? `proibido pelo estado ${diagnostico.estado}`
+          : descansando(caso)
+            ? `descansando (${caso.cooldownDays}d)`
+            : 'peso menor',
+      }))
+      .sort((a, b) => b.peso - a.peso);
+
+    auditar({
+      estado: diagnostico.estado,
+      motivo: diagnostico.motivo,
+      modificadores: diagnostico.modificadores,
+      proibidos: diagnostico.proibidos,
+      assunto: oracleCoachFamily(escolhido.id),
+      pesoBase: escolhido.peso,
+      bonus: bonusDe(escolhido),
+      pesoFinal: pesoFinal(escolhido),
+      porQueVenceu: descartados.length === 0
+        ? 'unico candidato'
+        : `maior peso final entre os permitidos e acordados; o proximo era ${descartados[0].assunto} (${descartados[0].peso}, ${descartados[0].razao})`,
+      descartados: descartados.slice(0, 6),
+    });
+  }
+
   return { id: escolhido.id, content: escolhido.content, quickActions: escolhido.quickActions };
 };

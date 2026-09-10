@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildOracleCycleCoachBrief } from '../utils/oracleCoach.ts';
+import { buildOracleCycleCoachBrief, oracleCoachFamily } from '../utils/oracleCoach.ts';
 
 const baseContext = {
   hasArenas: true,
@@ -79,11 +79,63 @@ const onPace = buildOracleCycleCoachBrief(baseContext);
 assert.match(onPace.content, /Que tal treinar hoje/);
 assert.equal(onPace.quickActions[0]?.kind, 'open_planner');
 
+// ---------------------------------------------------------------- O DESCANSO
+//
+// Os catorze casos sempre tiveram peso, mas peso CONSTANTE faz do primeiro lugar
+// um cargo vitalicio: quem esta atrasado le `coach:behind` hoje, amanha e depois,
+// e as outras onze leituras — escritas e revisadas — nunca sao lidas por
+// ninguem. Estes tres casos travam o conserto.
+const atrasadoHoje = {
+  ...baseContext,
+  cycleCompletionPercent: 20,
+  expectedCycleCompletionPercent: 60,
+  cyclePace: 'critico',
+};
+
+// 1. Sem memoria, nada muda — e por isso todas as asserçoes acima continuam
+//    valendo. A funcao segue pura: nao le relogio nem armazenamento.
+const semMemoria = buildOracleCycleCoachBrief(atrasadoHoje);
+assert.equal(oracleCoachFamily(semMemoria.id), 'coach:behind', 'sem memoria vence o peso, como sempre');
+
+// 2. Dito hoje, o assunto sai da fila e o proximo mais relevante assume.
+const jaLeuHoje = buildOracleCycleCoachBrief(atrasadoHoje, {
+  hoje: '2026-09-09',
+  vistos: { 'coach:behind': '2026-09-09' },
+});
+assert.notEqual(oracleCoachFamily(jaLeuHoje.id), 'coach:behind', 'o mesmo assunto nao volta no mesmo dia');
+assert.ok(jaLeuHoje.content, 'e o que assume tem texto de verdade');
+
+// 3. Passado o descanso, ele volta — e um dia, porque cada dia atrasado E um
+//    fato novo; o que o descanso impede e o monopolio, nao o assunto.
+const ontem = buildOracleCycleCoachBrief(atrasadoHoje, {
+  hoje: '2026-09-09',
+  vistos: { 'coach:behind': '2026-09-08' },
+});
+assert.equal(oracleCoachFamily(ontem.id), 'coach:behind', 'passado o descanso, o peso manda de novo');
+
+// 4. E com TODOS os assuntos descansando o botao nao emudece: melhor repetir do
+//    que nao responder a um toque que a pessoa acabou de dar.
+const tudoDescansando = buildOracleCycleCoachBrief(atrasadoHoje, {
+  hoje: '2026-09-09',
+  vistos: Object.fromEntries(
+    ['coach:behind', 'coach:deriva', 'coach:arena-natimorta', 'coach:concentracao', 'coach:quanto-falta',
+     'coach:conta-nao-fecha', 'coach:unmeasured', 'coach:start-cycle', 'coach:ahead']
+      .map((familia) => [familia, '2026-09-09']),
+  ),
+});
+assert.ok(tudoDescansando.content, 'com tudo descansando, ainda ha resposta');
+
 const coachSource = readFileSync(new URL('../utils/oracleCoach.ts', import.meta.url), 'utf8');
 assert.doesNotMatch(coachSource, /supabase|fetch\(|invoke\(|hasPremiumAccess/i);
+// A memoria mora no cliente, nao aqui. Se o coach passar a ler armazenamento
+// direto, ele deixa de ser testavel sem navegador — e este teste morre junto.
+assert.doesNotMatch(coachSource, /localStorage|sessionStorage/, 'o coach nao le armazenamento');
 
 const chatSource = readFileSync(new URL('../components/OracleChat.tsx', import.meta.url), 'utf8');
-assert.match(chatSource, /buildOracleCycleCoachBrief\(operationalContext\)/);
+// Aceita o segundo argumento: o que a regra protege e a leitura sair do contexto
+// LOCAL, nao a aridade da chamada.
+assert.match(chatSource, /buildOracleCycleCoachBrief\(\s*operationalContext\b/);
+assert.match(chatSource, /registrarLeituraDoCoach\(/, 'o que foi lido fica registrado, senao o descanso nunca comeca');
 assert.match(chatSource, /case 'open_arena'/);
 assert.match(chatSource, /showArenaId: arenaId/);
 
@@ -174,6 +226,7 @@ const derivando = buildOracleCycleCoachBrief({
   ...baseContext,
   cycleCompletionPercent: 40,
   expectedCycleCompletionPercent: 48,
+  pendingActionsToday: 1,
 });
 assert.match(derivando.content, /começou a escorregar/, 'escorregar dentro do ritmo ja merece um toque');
 assert.match(derivando.content, /Saude/, 'e o toque diz QUAL frente ficou para tras');
@@ -204,4 +257,20 @@ const quaseAcabando = buildOracleCycleCoachBrief({
 assert.doesNotMatch(quaseAcabando.content, /começou a escorregar/, 'sem tempo de corrigir, o aviso se cala');
 
 console.log('Ler meu dia: conta que nao fecha, arena natimorta, concentracao e projecao, na ordem certa.');
+// META DE FREQUENCIA NAO E DIVIDA DIARIA.
+//
+// A deriva termina em "uma acao hoje devolve o rumo", e isso exige que exista
+// acao HOJE. O teste era contra as pendencias do CICLO, entao seis treinos em
+// catorze dias com 67% feito contra 71% de tempo virava ordem de treinar num dia
+// sem treino marcado. O app nao pode inventar urgencia que a agenda nao registra.
+const semAcaoHoje = buildOracleCycleCoachBrief({
+  ...baseContext,
+  cycleCompletionPercent: 40,
+  expectedCycleCompletionPercent: 48,
+  pendingActionsToday: 0,
+});
+assert.doesNotMatch(semAcaoHoje.content, /começou a escorregar/, 'sem acao marcada hoje, nao ha rumo a devolver hoje');
+
 console.log('Deriva: avisa dentro do ritmo, cala na oscilacao, no buraco e no fim do ciclo.');
+console.log('Frequencia: sem acao marcada hoje, a deriva se cala.');
+console.log('Descanso: o assunto sai da fila depois de dito, volta no prazo, e nunca emudece o botao.');

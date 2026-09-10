@@ -209,18 +209,21 @@ antes de alguém escrever frase nova.</p>
   <div><b>${candidatosVivos}<span style="font-size:14px;color:#6e747c">/${candidatos.length}</span></b><span>candidatos vivos</span></div>
   <div><b>${estadosVivos}<span style="font-size:14px;color:#6e747c">/${estados.length}</span></b><span>estados do servidor</span></div>
   <div><b>${reacoes.length}</b><span>eventos de reação</span></div>
-  <div><b>${casosDoBrief.length}</b><span>casos do "ler meu dia"</span></div>
+  <div><b>${casosDoBrief.length}</b><span>casos do "Analisar meu ciclo"</span></div>
   <div><b>${totalFrases}</b><span>frases escritas</span></div>
 </div>
 
+<h2>Entradas do Oráculo — organização de 10/09/2026</h2>
+<p>Meu acompanhamento reúne <strong>Ler meu dia</strong> (tarefas do dia operacional) e <strong>Analisar meu ciclo</strong> (metas e ritmo do período). Cada leitura ocupa seu próprio espaço na conversa; pedir novamente atualiza a leitura correspondente. As leituras ainda são locais à sessão do painel.</p>
+<p><strong>Sabedoria</strong> reúne os cards de conteúdo e o pedido de card. As falas antigas permanecem no acompanhamento com data e hora. Novas aberturas e reações são temporárias e não gravam mensagens.</p>
 <h2>As quatro superfícies</h2>
 <table>
   <thead><tr><th>superfície</th><th>quando aparece</th><th>quem controla</th><th>vira push?</th></tr></thead>
   <tbody>
     <tr><td><b>Card</b></td><td>no máximo um por dia, gerado por IA</td><td>interruptor próprio + presença</td><td class="sim">sim</td></tr>
-    <tr><td><b>Fala de abertura</b></td><td>ao abrir uma tela</td><td>presença</td><td class="nao">não — é gravada como chat</td></tr>
-    <tr><td><b>Reação</b></td><td>ao concluir algo</td><td>presença</td><td class="nao">não — é gravada como chat</td></tr>
-    <tr><td><b>Chat</b> (ler meu dia, pedir pacto)</td><td>quando a pessoa pede</td><td>ninguém — ela pediu</td><td class="nao">nunca</td></tr>
+    <tr><td><b>Fala de abertura</b></td><td>ao abrir uma tela</td><td>presença</td><td class="nao">não — aparece só no momento</td></tr>
+    <tr><td><b>Reação</b></td><td>ao concluir algo</td><td>presença</td><td class="nao">não — aparece só no momento</td></tr>
+    <tr><td><b>Chat</b> (ler meu dia, analisar meu ciclo, escolher missão)</td><td>quando a pessoa pede</td><td>ninguém — ela pediu</td><td class="nao">nunca</td></tr>
   </tbody>
 </table>
 <div class="nota">Toda a complexidade do repertório está dentro de <strong>duas</strong> dessas
@@ -279,7 +282,7 @@ ser o modelo dos outros dois.</p>
   </tr>`).join('')}</tbody>
 </table>
 
-<h2>"Ler meu dia" <span style="color:#6e747c;font-weight:400">· <code>utils/oracleCoach.ts</code></span></h2>
+<h2>"Analisar meu ciclo" <span style="color:#6e747c;font-weight:400">· <code>utils/oracleCoach.ts</code></span></h2>
 <p class="lead">Grátis, local, sem ida ao servidor — e é a única superfície com <strong>botões que
 navegam</strong>. É a casa natural das leituras mais afiadas. Mas é uma <strong>cascata</strong>: o
 primeiro caso que casa vence, e os de baixo nunca são considerados.</p>

@@ -160,7 +160,7 @@ const OracleSpeechOverlay: React.FC = () => {
             // E o mesmo tipo de duplicidade que ja tinha feito o push exigir
             // presenca 3 enquanto a tabela dizia outra coisa.
             const rules = getOraclePresenceRules(oraclePreferences?.presenceLevel ?? DEFAULT_ORACLE_PRESENCE_LEVEL);
-            if (rules.openingLine === 'nunca') return;
+            if (detail.kind === 'reacao' ? rules.reactions === 'nenhuma' : rules.openingLine === 'nunca') return;
 
             // Reacao segue o proprio peso, ja filtrado antes de chegar aqui; a cota
             // diaria vale so para a fala de abertura do nivel Equilibrado.

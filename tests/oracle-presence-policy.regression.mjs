@@ -243,26 +243,10 @@ assert.match(
 assert.match(blocoPush, /Ajustes > Or[aá]culo & Alertas/, 'a recusa precisa dizer onde ligar depois');
 
 
-// --- as tres coisas sao tres, e as tres sao reais ------------------------
-// CARD DE INFOS nasce no cron e sempre foi real. FALA e REACAO usavam o mesmo
-// cano: um evento de janela que pintava um balao por cinco segundos e
-// evaporava — sem gravar, sem push, sem hora. Quem estava com o celular no
-// bolso simplesmente nao recebia, embora o combinado fosse que desligar o aviso
-// tirasse a fala do celular, nao que a apagasse.
+// Aberturas e reações aparecem no momento; cards e análises têm fluxo próprio.
 const speech = readFileSync(new URL('../utils/oracleSpeech.ts', import.meta.url), 'utf8');
-assert.match(speech, /record_oracle_speech/, 'a fala precisa ficar gravada, nao so piscar');
-assert.match(
-  speech,
-  /if \(payload\.ephemeral\) return;/,
-  'reacao de rotina passa e some; so marco fica no historico',
-);
-
-// O balao continua aparecendo antes da gravacao: perder o historico e ruim,
-// nao mostrar nada e pior.
-assert.ok(
-  speech.indexOf('window.dispatchEvent') < speech.indexOf('supabase.rpc'),
-  'a fala aparece na hora mesmo se a gravacao falhar',
-);
+assert.doesNotMatch(speech, /supabase|record_oracle_speech/, 'aberturas e reações não gravam mensagens');
+assert.match(speech, /window.dispatchEvent/, 'falas continuam aparecendo no momento');
 
 // A fala nao pode roubar a cota do card, que e conteudo pago com regra propria.
 const rpcFala = readFileSync(
@@ -290,8 +274,8 @@ assert.match(
 );
 assert.doesNotMatch(portaoPush, /oracle_speech/, 'a fala nao pode voltar a virar aviso');
 
-// Mas ela continua GRAVADA: desligar o aviso nunca apagou a fala.
-assert.match(speech, /record_oracle_speech/, 'a fala continua no historico');
+// As falas rápidas não são gravadas pelo cliente atual.
+assert.doesNotMatch(speech, /record_oracle_speech/, 'falas rápidas não entram no histórico');
 
 // --- o que a pessoa PEDE nao vira historico -----------------------------
 // "Ler meu dia" e resposta a um toque, sobre algo que ela esta olhando — como o
@@ -299,6 +283,11 @@ assert.match(speech, /record_oracle_speech/, 'a fala continua no historico');
 // historico de linhas iguais no mesmo dia, e o historico existe para o que o
 // Oraculo disse por conta propria.
 const chat = readFileSync(new URL('../components/OracleChat.tsx', import.meta.url), 'utf8');
+assert.match(chat, /purpose === 'oracle_speech'/, 'falas antigas permanecem no histórico');
+assert.match(chat, /isSpeech \? msg.timestamp.toLocaleString/, 'falas antigas mostram data e hora');
+assert.match(chat, /Ler meu dia/, 'leitura diária visível');
+assert.match(chat, /Analisar meu ciclo/, 'análise de ciclo visível');
+assert.match(chat, /Sabedoria/, 'cards têm aba própria');
 const lerMeuDia = chat.slice(
   chat.indexOf('const handleReadMyDay'),
   chat.indexOf('const handleAskMission'),

@@ -24,6 +24,12 @@ export default defineConfig({
     // (`/assets/catalog/...`). Sem isto o Vite procuraria tools/public e a
     // bancada abriria com todo PNG quebrado.
     publicDir: fileURLToPath(new URL('./public', import.meta.url)),
+    // E as variaveis de ambiente tambem sao as do projeto. A bancada monta
+    // componentes DE VERDADE, e componente de verdade importa o supabaseClient,
+    // que se recusa a existir sem VITE_SUPABASE_URL. Sem isto a pagina abre
+    // preta com um erro no console — nenhuma requisicao chega a ser feita, mas
+    // o modulo nao carrega.
+    envDir: fileURLToPath(new URL('.', import.meta.url)),
     server: {
         port: 3010,
         host: '0.0.0.0',

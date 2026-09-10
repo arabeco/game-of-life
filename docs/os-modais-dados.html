@@ -84,8 +84,8 @@ Esta folha não redesenha nada — ela <strong>chama os construtores de payload 
 mostra o que cada acontecimento produz. Se um construtor mudar, a folha muda junto.</p>
 
 <div class="carimbo">
-  <span>gerada 06/09/2026, 07:51</span>
-  <span>commit 9363eb9</span>
+  <span>gerada 10/09/2026, 15:30</span>
+  <span>commit 5708c45</span>
   <span>miolo: components/RewardPackBody.tsx</span>
 </div>
 
@@ -368,6 +368,100 @@ mesmo objeto que o componente aplica, não uma imitação.</p>
       <figcaption>D · Bipartido</figcaption>
     </figure></div>
 
+<h2>A sétima tela: nível novo marcado</h2>
+<p class="nota">
+  Fecha a avaliação de maestria. <b>Não é um acontecimento de recompensa</b> — não
+  tem gatilho de prêmio, não passa pelo <code>RewardPackBody</code> e não entrega
+  item nenhum. Está aqui porque usa a <b>mesma placa</b>: quem mexer na direção B
+  mexe nela também.
+</p>
+<p class="nota">
+  E não é modal de conquista de propósito. O número da maestria é
+  <b>auto-declarado</b> — a pessoa escreveu o próprio nível no questionário.
+  Comemorar isso com vídeo, confete e prêmio gastaria a moeda da comemoração em
+  algo que não custou nada, e emprestaria ao número um crédito que ele não tem.
+  Por isso não há medalha: medalha é a gramática do que foi conquistado. O
+  pentágono já é a forma destes dados.
+</p>
+<table>
+  <thead><tr><th>Peça</th><th>Como é hoje</th><th>Por quê</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Placa</td>
+      <td class="n">direção B, igual às outras</td>
+      <td>Um card genérico no meio de um app com gramática visual própria lê como tela de sistema, e não como um momento.</td>
+    </tr>
+    <tr>
+      <td>Tom</td>
+      <td class="n">rgb(159,216,255)</td>
+      <td>Azul-guia — o mesmo que o Oráculo reserva para o que não é vitória nem cobrança. Os outros tons ali significam raridade, e maestria não é raridade nenhuma: o número pode ter caído.</td>
+    </tr>
+    <tr>
+      <td>Pentágono</td>
+      <td class="n">min(232px, 30svh)</td>
+      <td>Vértices em destaque: a pessoa acabou de escolher os cinco, um a um. O <code>svh</code> amarra o tamanho ao da placa, que encolhe em aparelho baixo — altura fixa vazaria pelo recorte e seria cortada sem avisar.</td>
+    </tr>
+    <tr>
+      <td>Escala</td>
+      <td class="n">0 a 20 · 2 pontos por degrau</td>
+      <td>A avaliação continua tendo dez degraus; o gráfico mostra de 0 a 20 para as cinco pontas somarem exatamente os 100 do Índice no centro, sem a pessoa ter de fazer a conta.</td>
+    </tr>
+    <tr>
+      <td>Primeira vez</td>
+      <td class="n">só o presente</td>
+      <td>Não há com o que comparar. A tela diz &ldquo;é assim que você se vê hoje&rdquo; e avisa que na próxima ela vira comparação — que é o motivo de refazer.</td>
+    </tr>
+    <tr>
+      <td>Da segunda em diante</td>
+      <td class="n">&ldquo;há 3 meses você se via em 52. Hoje, 60 (+8)&rdquo;</td>
+      <td>O único fato que o app tem sobre essa pessoa e que ela não vê em lugar nenhum. Vale nos dois sentidos: se caiu, também é verdade, e aparece sem julgamento — espelho que só mostra melhora é propaganda.</td>
+    </tr>
+    <tr>
+      <td>O que mudou</td>
+      <td class="n">só as áreas com diferença</td>
+      <td>Listar as cinco com &ldquo;0&rdquo; ao lado de três delas transforma a informação em tabela. O título olha as áreas e não só o Índice: subir dois numa e cair dois noutra dá o mesmo número no centro, e ainda assim mudou.</td>
+    </tr>
+    <tr>
+      <td>Retrato</td>
+      <td class="n">tabela <code>mastery_snapshots</code></td>
+      <td>Uma linha por avaliação, sem update — <code>asset_levels</code> grava só o valor atual, então cada avaliação apagava a anterior e não havia com o que comparar.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>O rodapé: um botão só</h2>
+<p class="nota">
+  A saída era <b>duas barras douradas de faixa inteira, empilhadas</b> — Compartilhar
+  por cima, Prosseguir por baixo, mesma cor e mesmo peso. Quem chegava na placa
+  tinha de ler para saber qual era a saída, e o compartilhar aparecia primeiro,
+  que é o inverso da importância.
+</p>
+<table>
+  <thead><tr><th>Peça</th><th>Como é hoje</th><th>Por quê</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Botão primário</td>
+      <td class="n">min-w-[10.5rem] px-10</td>
+      <td>Do tamanho da palavra, centrado na placa. Gradiente da Skin UI equipada, recorte em bico da direção B.</td>
+    </tr>
+    <tr>
+      <td>Compartilhar</td>
+      <td class="n">ícone 44×44, <code>absolute right-0</code></td>
+      <td>Fora do fluxo, encostado na direita: aparecer ou não deixa de mover o botão que a pessoa já está mirando.</td>
+    </tr>
+    <tr>
+      <td>Brilho</td>
+      <td class="n">2x · 1.15s cada, 0.45s depois de abrir</td>
+      <td>Corria sozinho preso a <code>group-hover</code>. No aparelho não há hover antes do toque, e depois do toque o modal já fechou: o efeito nunca aconteceu para ninguém. Agora atravessa sozinho ao abrir, duas vezes — infinito viraria ruído ao lado do texto.</td>
+    </tr>
+    <tr>
+      <td>Não mostrar novamente</td>
+      <td class="n">linha própria, largura total</td>
+      <td>Uma só, igual para arena, missão e relatório. Antes o caso de arena tinha layout próprio e um segundo ícone de compartilhar duplicado.</td>
+    </tr>
+  </tbody>
+</table>
+
 <h2>As medidas da direção B</h2>
 <p class="lead">Lidas do <code>RewardPackBody.tsx</code>. Vieram da folha aprovada
 <code>docs/drafts/reward-modal-4-direcoes.html</code>, bloco <code>.monolith</code>: trocar uma
@@ -406,9 +500,9 @@ delas quebra a família.</p>
     <td>um item só</td>
   </tr><tr>
     <td>Arte do item</td>
-    <td class="n"><span style="color:#e9a268">não encontrada</span></td>
-    <td class="n">—</td>
-    <td>—</td>
+    <td class="n">46 px</td>
+    <td class="n">76 px</td>
+    <td>um item só</td>
   </tr><tr>
     <td>Destaque do baú</td>
     <td class="n">154 px</td>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modais de conquista — bancada</title>
+<style>
+  :root {
+    color-scheme: dark;
+    /* O modal pinta a borda e o botao com o acento da skin. Sem isto ele sai
+       cinza aqui e a gente julgaria uma cor que o jogo nunca mostra. */
+    --skin-accent-color: #d4af37;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 22px 60px;
+    background: #15171b; color: #e8eaee;
+    font: 14px/1.5 system-ui, sans-serif;
+  }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  header p { color: #969ca6; font-size: 12.5px; margin: 0 0 14px; max-width: 74ch; }
+  .interruptor { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: #c3c9d2; margin-bottom: 20px; cursor: pointer; }
+  .interruptor em { color: #7d848e; font-style: normal; }
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; max-width: 1000px; }
+  .cartao {
+    display: grid; gap: 4px; text-align: left; cursor: pointer;
+    padding: 12px 14px; border: 1px solid #2b3038; border-radius: 10px;
+    background: #1b1e24; color: inherit; font: inherit;
+    transition: border-color 140ms ease, background 140ms ease;
+  }
+  .cartao:hover { border-color: #d4af37; background: #21252c; }
+  .cartao strong { font-size: 13.5px; }
+  .cartao small { color: #8b929c; font-size: 11px; }
+  .cartao code { color: #d8b44c; font-family: ui-monospace, monospace; font-size: 10.5px; }
+  .titulo-secao { font-size: 13px; text-transform: uppercase; letter-spacing: .14em; color: #8b929c; margin: 26px 0 10px; }
+  /* O botao primario vive no index.html da RAIZ, que esta bancada nao carrega.
+     Sem estas variaveis ele sai transparente aqui e a gente julgaria um botao
+     que o jogo nunca mostra. Copia literal do bloco de la. */
+  :root {
+    --metal-gold: linear-gradient(145deg, #f0d999, #b8892f 52%, #f4e3af);
+    --sephirot-glow-color: rgba(212,175,55,.32);
+    --luxe-button-text-color: #1b1408;
+  }
+  .luxe-skin-button {
+    background-image: linear-gradient(180deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 38%), var(--ui-button-primary-bg, var(--metal-gold));
+    color: var(--ui-text-on-accent, var(--luxe-button-text-color, #1b1408));
+    font-weight: 800;
+    border: 1px solid var(--ui-button-primary-border, var(--skin-accent-color));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 24px var(--ui-button-primary-glow, var(--sephirot-glow-color)), 0 2px 6px rgba(0,0,0,.4);
+    text-shadow: var(--ui-text-on-accent-shadow, var(--luxe-button-text-shadow, 0 1px 0 rgba(255,255,255,.35)));
+  }
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script type="module" src="/modais-bancada.tsx"></script>
+</body>
+</html>

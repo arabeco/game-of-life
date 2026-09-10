@@ -56,6 +56,141 @@ const arte = (url) => String(url || '').replace(/^\/assets\//, '../public/assets
 const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /**
+ * AS CONSTANTES DO GRAFICO, lidas do componente que o desenha.
+ *
+ * O pentagono da prova era SVG escrito a mao, e saiu errado: o vertice de
+ * Relacoes, que vale 8 de 20, ficava quase na borda. Agora ele e calculado com
+ * a mesma conta do SvgRadarChart, com os mesmos numeros — se o raio mudar la, a
+ * prova muda junto na proxima geracao.
+ */
+const constantesDoGrafico = () => {
+    const radar = fs.readFileSync(path.join(raiz, 'components', 'SvgRadarChart.tsx'), 'utf8');
+    const pent = fs.readFileSync(path.join(raiz, 'components', 'AssetPentagon.tsx'), 'utf8');
+    const num = (fonte, re, nome) => {
+        const m = fonte.match(re);
+        if (!m) throw new Error(`não achei ${nome} — o gerador da prova visual precisa ser ajustado`);
+        return Number(m[1]);
+    };
+    return {
+        centro: num(radar, /const CENTER = ([\d.]+)/, 'CENTER'),
+        raio: num(radar, /const RADIUS = ([\d.]+)/, 'RADIUS'),
+        aneis: num(pent, /levels=\{(\d+)\}/, 'levels'),
+        recuoDoNome: num(pent, /labelOffset=\{destacarPontas \? ([\d.]+)/, 'labelOffset'),
+        recuoDoValor: num(pent, /valueLabelOffset: destacarPontas \? ([\d.]+)/, 'valueLabelOffset'),
+        corpoDoValor: num(pent, /valueLabelSize: destacarPontas \? ([\d.]+)/, 'valueLabelSize'),
+        pontoDoVertice: num(pent, /dotRadius: destacarPontas \? ([\d.]+)/, 'dotRadius'),
+        nomeTamanho: num(pent, /labelSize=\{([\d.]+)\}/, 'labelSize'),
+    };
+};
+
+/** O pentagono da prova, com a geometria do componente e um exemplo fixo. */
+const pentagonoDaProva = () => {
+    const c = constantesDoGrafico();
+    const maximo = Number(telaDaMaestria().degrau) * 10;
+    const areas = [
+        ['PROPÓSITO', 14], ['RELAÇÕES', 8], ['TRABALHO', 16], ['LAZER', 10], ['SAÚDE', 12],
+    ];
+    const indice = areas.reduce((soma, [, v]) => soma + v, 0);
+    const ponto = (i, magnitude) => {
+        const ang = ((Math.PI * 2) / areas.length) * i - Math.PI / 2;
+        return { x: c.centro + Math.cos(ang) * magnitude, y: c.centro + Math.sin(ang) * magnitude, ang };
+    };
+    const n = (v) => String(Number(v.toFixed(2)));
+    const partes = [];
+
+    for (let nivel = 1; nivel <= c.aneis; nivel += 1) {
+        const m = (c.raio * nivel) / c.aneis;
+        const pts = areas.map((_, i) => `${n(ponto(i, m).x)},${n(ponto(i, m).y)}`).join(' ');
+        partes.push(`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width=".35"/>`);
+    }
+    areas.forEach((_, i) => {
+        const q = ponto(i, c.raio);
+        partes.push(`<line x1="${c.centro}" y1="${c.centro}" x2="${n(q.x)}" y2="${n(q.y)}" stroke="rgba(255,255,255,0.08)" stroke-width=".35"/>`);
+    });
+
+    const vertices = areas.map(([, v], i) => ponto(i, (c.raio * v) / maximo));
+    partes.push(`<polygon points="${vertices.map((q) => `${n(q.x)},${n(q.y)}`).join(' ')}" fill="#6f5d2f" fill-opacity=".28" stroke="#d6c38e" stroke-width="1.35" stroke-linejoin="round"/>`);
+    vertices.forEach((q) => partes.push(`<circle cx="${n(q.x)}" cy="${n(q.y)}" r="${c.pontoDoVertice}" fill="#11110f" stroke="#d6c38e" stroke-width=".55"/>`));
+
+    areas.forEach(([, v], i) => {
+        const q = ponto(i, (c.raio * v) / maximo + c.recuoDoValor);
+        const r = c.corpoDoValor * (0.62 + 0.2 * String(v).length);
+        partes.push(`<circle cx="${n(q.x)}" cy="${n(q.y)}" r="${n(r)}" fill="#11110f" fill-opacity=".92" stroke="#d6c38e" stroke-width=".5"/>`);
+        partes.push(`<text x="${n(q.x)}" y="${n(q.y + c.corpoDoValor * 0.35)}" text-anchor="middle" fill="#fff6dd" font-size="${c.corpoDoValor}" font-weight="900">${v}</text>`);
+    });
+
+    partes.push(`<circle cx="${c.centro}" cy="${c.centro}" r="10.3" fill="#0b0c0d" fill-opacity=".38" stroke="#8d7951" stroke-width=".7"/>`);
+    partes.push(`<text x="${c.centro}" y="${c.centro + 4.4}" text-anchor="middle" fill="#d6c38e" font-size="11" font-weight="900">${indice}</text>`);
+
+    areas.forEach(([nome], i) => {
+        const q = ponto(i, c.raio + c.recuoDoNome);
+        const cos = Math.cos(q.ang);
+        const sin = Math.sin(q.ang);
+        const anchor = cos > 0.22 ? 'start' : cos < -0.22 ? 'end' : 'middle';
+        const dy = sin > 0.4 ? 6 : sin < -0.4 ? -4 : 3;
+        partes.push(`<text x="${n(q.x)}" y="${n(q.y + dy)}" text-anchor="${anchor}" fill="rgba(235,229,213,0.58)" font-size="${c.nomeTamanho}" font-weight="700" letter-spacing=".3">${nome}</text>`);
+    });
+
+    return `<svg viewBox="0 0 100 100" class="pent" aria-hidden="true">${partes.join('')}</svg>`;
+};
+
+/**
+ * O rodape da prova, com a medida do botao de verdade.
+ *
+ * `min-w-[10.5rem] px-10` do Tailwind vira 168px de largura minima e 40px de
+ * respiro. Converter aqui e o que impede a prova de mostrar um botao com outra
+ * largura no dia em que a classe mudar.
+ */
+const medidaDoBotaoEmPixels = () => {
+    const classe = larguraDoBotao() || '';
+    const rem = classe.match(/min-w-\[([\d.]+)rem\]/);
+    const px = classe.match(/px-(\d+)/);
+    if (!rem || !px) throw new Error('não consegui ler a largura do botão primário');
+    return { largura: Math.round(Number(rem[1]) * 16), respiro: Number(px[1]) * 4 };
+};
+
+/**
+ * A tela que fecha a avaliacao de maestria.
+ *
+ * Ela NAO e um dos seis acontecimentos: nao tem gatilho de recompensa, nao
+ * passa pelo RewardPackBody e nao entrega item nenhum. Entra nesta folha porque
+ * usa a MESMA placa — e quem for mexer na direcao B precisa saber que mexe aqui
+ * tambem.
+ */
+const telaDaMaestria = () => {
+    const fonte = fs.readFileSync(path.join(raiz, 'components', 'MasteryResultModal.tsx'), 'utf8');
+    const areas = fs.readFileSync(path.join(raiz, 'constants', 'lifeAreas.ts'), 'utf8');
+    const tom = fonte.match(/TOM_DA_MAESTRIA = '([^']+)'/);
+    const pentagono = fonte.match(/<AssetPentagon assets=\{assets\} size="([^"]+)"/);
+    const degrau = areas.match(/PONTOS_POR_DEGRAU = (\d+)/);
+    const maximo = areas.match(/MASTERY_AREA_MAX_LEVEL = (\d+)/);
+    return {
+        tom: tom ? tom[1] : null,
+        pentagono: pentagono ? pentagono[1] : null,
+        escala: degrau && maximo ? `0 a ${Number(degrau[1]) * Number(maximo[1])}` : null,
+        degrau: degrau ? degrau[1] : null,
+    };
+};
+
+/** A largura do botao primario, lida do AchievementModal. */
+const larguraDoBotao = () => {
+    const fonte = fs.readFileSync(path.join(raiz, 'components', 'AchievementModal.tsx'), 'utf8');
+    const classe = (fonte.match(/primaryButtonClass = '([^']+)'/) || [])[1] || '';
+    // So as duas medidas que importam: o resto da classe e layout, e listar
+    // items-center / justify-center / gap-3 no meio esconde o que a linha diz.
+    const largura = classe.match(/min-w-\[[^\]]+\]/);
+    const respiro = classe.match(/px-\d+/);
+    return largura && respiro ? largura[0] + ' ' + respiro[0] : null;
+};
+
+/** Quantas vezes a faixa de luz passa, e quando. Lido do index.css. */
+const brilhoDoBotao = () => {
+    const fonte = fs.readFileSync(path.join(raiz, 'index.css'), 'utf8');
+    const m = fonte.match(/animation: luxe-brilho-passa ([\d.]+)s [^ ]+ ([\d.]+)s (\d+)/);
+    return m ? `${m[3]}x · ${m[1]}s cada, ${m[2]}s depois de abrir` : 'não encontrado';
+};
+
+/**
  * As medidas da placa, lidas do componente.
  *
  * Varias sao CONDICIONAIS: o quadrado da metrica encolhe quando sao quatro ou
@@ -80,7 +215,10 @@ const medidasDoMiolo = () => {
           quando: 'quatro ou mais métricas' },
         { rotulo: 'Linha do item', v: pega(/itemUnico \? 'h-\[(\d+)px\][^]*?: 'h-\[(\d+)px\]/), inverso: true,
           quando: 'um item só' },
-        { rotulo: 'Arte do item', v: pega(/itemUnico \? 'h-\[(\d+)px\] w-\d+px\]' : 'h-\[(\d+)px\]/), inverso: true,
+        // O `place-items-center` ancora a linha da ARTE e nao a da caixa: as duas
+        // comecam com `itemUnico ? 'h-[`, e sem a ancora o regex casava com a
+        // primeira e a medida saia errada em vez de sair vazia.
+        { rotulo: 'Arte do item', v: pega(/place-items-center overflow-hidden \$\{itemUnico \? 'h-\[(\d+)px\][^]*?: 'h-\[(\d+)px\]/), inverso: true,
           quando: 'um item só' },
         { rotulo: 'Destaque do baú', v: pega(/grid min-h-\[(\d+)px\] place-items-center/) },
         { rotulo: 'PNG em destaque', v: pega(/featuredRewardItem\.itemDef\.name\}[^]*?h-\[(\d+)px\]/) },
@@ -354,6 +492,100 @@ dados. Esta folha é o registro; a bancada é a prova.</div>
 mesmo objeto que o componente aplica, não uma imitação.</p>
 <div class="direcoes">${Object.entries(DIRECOES).map(cartaoDaDirecao).join('')}</div>
 
+<h2>A sétima tela: nível novo marcado</h2>
+<p class="nota">
+  Fecha a avaliação de maestria. <b>Não é um acontecimento de recompensa</b> — não
+  tem gatilho de prêmio, não passa pelo <code>RewardPackBody</code> e não entrega
+  item nenhum. Está aqui porque usa a <b>mesma placa</b>: quem mexer na direção B
+  mexe nela também.
+</p>
+<p class="nota">
+  E não é modal de conquista de propósito. O número da maestria é
+  <b>auto-declarado</b> — a pessoa escreveu o próprio nível no questionário.
+  Comemorar isso com vídeo, confete e prêmio gastaria a moeda da comemoração em
+  algo que não custou nada, e emprestaria ao número um crédito que ele não tem.
+  Por isso não há medalha: medalha é a gramática do que foi conquistado. O
+  pentágono já é a forma destes dados.
+</p>
+<table>
+  <thead><tr><th>Peça</th><th>Como é hoje</th><th>Por quê</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Placa</td>
+      <td class="n">direção B, igual às outras</td>
+      <td>Um card genérico no meio de um app com gramática visual própria lê como tela de sistema, e não como um momento.</td>
+    </tr>
+    <tr>
+      <td>Tom</td>
+      <td class="n">rgb(${esc(telaDaMaestria().tom || '—')})</td>
+      <td>Azul-guia — o mesmo que o Oráculo reserva para o que não é vitória nem cobrança. Os outros tons ali significam raridade, e maestria não é raridade nenhuma: o número pode ter caído.</td>
+    </tr>
+    <tr>
+      <td>Pentágono</td>
+      <td class="n">${esc(telaDaMaestria().pentagono || '—')}</td>
+      <td>Vértices em destaque: a pessoa acabou de escolher os cinco, um a um. O <code>svh</code> amarra o tamanho ao da placa, que encolhe em aparelho baixo — altura fixa vazaria pelo recorte e seria cortada sem avisar.</td>
+    </tr>
+    <tr>
+      <td>Escala</td>
+      <td class="n">${esc(telaDaMaestria().escala || '—')} · ${esc(telaDaMaestria().degrau || '?')} pontos por degrau</td>
+      <td>A avaliação continua tendo dez degraus; o gráfico mostra de 0 a 20 para as cinco pontas somarem exatamente os 100 do Índice no centro, sem a pessoa ter de fazer a conta.</td>
+    </tr>
+    <tr>
+      <td>Primeira vez</td>
+      <td class="n">só o presente</td>
+      <td>Não há com o que comparar. A tela diz &ldquo;é assim que você se vê hoje&rdquo; e avisa que na próxima ela vira comparação — que é o motivo de refazer.</td>
+    </tr>
+    <tr>
+      <td>Da segunda em diante</td>
+      <td class="n">&ldquo;há 3 meses você se via em 52. Hoje, 60 (+8)&rdquo;</td>
+      <td>O único fato que o app tem sobre essa pessoa e que ela não vê em lugar nenhum. Vale nos dois sentidos: se caiu, também é verdade, e aparece sem julgamento — espelho que só mostra melhora é propaganda.</td>
+    </tr>
+    <tr>
+      <td>O que mudou</td>
+      <td class="n">só as áreas com diferença</td>
+      <td>Listar as cinco com &ldquo;0&rdquo; ao lado de três delas transforma a informação em tabela. O título olha as áreas e não só o Índice: subir dois numa e cair dois noutra dá o mesmo número no centro, e ainda assim mudou.</td>
+    </tr>
+    <tr>
+      <td>Retrato</td>
+      <td class="n">tabela <code>mastery_snapshots</code></td>
+      <td>Uma linha por avaliação, sem update — <code>asset_levels</code> grava só o valor atual, então cada avaliação apagava a anterior e não havia com o que comparar.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>O rodapé: um botão só</h2>
+<p class="nota">
+  A saída era <b>duas barras douradas de faixa inteira, empilhadas</b> — Compartilhar
+  por cima, Prosseguir por baixo, mesma cor e mesmo peso. Quem chegava na placa
+  tinha de ler para saber qual era a saída, e o compartilhar aparecia primeiro,
+  que é o inverso da importância.
+</p>
+<table>
+  <thead><tr><th>Peça</th><th>Como é hoje</th><th>Por quê</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Botão primário</td>
+      <td class="n">${esc(larguraDoBotao() || 'min-w-[10.5rem] px-10')}</td>
+      <td>Do tamanho da palavra, centrado na placa. Gradiente da Skin UI equipada, recorte em bico da direção B.</td>
+    </tr>
+    <tr>
+      <td>Compartilhar</td>
+      <td class="n">ícone 44×44, <code>absolute right-0</code></td>
+      <td>Fora do fluxo, encostado na direita: aparecer ou não deixa de mover o botão que a pessoa já está mirando.</td>
+    </tr>
+    <tr>
+      <td>Brilho</td>
+      <td class="n">${esc(brilhoDoBotao())}</td>
+      <td>Corria sozinho preso a <code>group-hover</code>. No aparelho não há hover antes do toque, e depois do toque o modal já fechou: o efeito nunca aconteceu para ninguém. Agora atravessa sozinho ao abrir, duas vezes — infinito viraria ruído ao lado do texto.</td>
+    </tr>
+    <tr>
+      <td>Não mostrar novamente</td>
+      <td class="n">linha própria, largura total</td>
+      <td>Uma só, igual para arena, missão e relatório. Antes o caso de arena tinha layout próprio e um segundo ícone de compartilhar duplicado.</td>
+    </tr>
+  </tbody>
+</table>
+
 <h2>As medidas da direção B</h2>
 <p class="lead">Lidas do <code>RewardPackBody.tsx</code>. Vieram da folha aprovada
 <code>docs/drafts/reward-modal-4-direcoes.html</code>, bloco <code>.monolith</code>: trocar uma
@@ -389,11 +621,42 @@ fs.writeFileSync(saida, html, 'utf8');
 // folha oficial, só os caminhos dos assets precisam subir um nível a menos.
 // Assim `npm run folhas` nunca volta a substituir a prova visual pelo relatório
 // técnico.
-const visual = fs.readFileSync(referenciaVisual, 'utf8')
+let visual = fs.readFileSync(referenciaVisual, 'utf8')
     .replaceAll('../../public/', '../public/')
     .replaceAll('./profile-card-soberano-v2.html?embed=1', './drafts/profile-card-soberano-v2.html?embed=1');
+
+/**
+ * O QUE A PROVA MOSTRA VEM DO CODIGO.
+ *
+ * O rascunho carrega o desenho aprovado — cores, molduras, composicao. Mas duas
+ * coisas nele descrevem o COMPONENTE, e essas o rascunho nao tem como manter:
+ * o pentagono e a largura do botao. Ficaram velhas em silencio uma vez, e a
+ * folha passou a mostrar um rodape de duas barras que o app ja nao tinha.
+ *
+ * Aqui elas sao reescritas a cada geracao. E se a ancora sumir, isto ESTOURA em
+ * vez de gerar quieto: uma prova errada e pior que uma prova que faltou.
+ */
+const trocaAncorada = (texto, inicio, fim, conteudo, nome) => {
+    const i = texto.indexOf(inicio);
+    if (i < 0) throw new Error(`prova visual: não achei a âncora de ${nome}`);
+    const j = texto.indexOf(fim, i);
+    if (j < 0) throw new Error(`prova visual: âncora de ${nome} não fecha`);
+    return texto.slice(0, i) + conteudo + texto.slice(j + fim.length);
+};
+
+visual = trocaAncorada(visual, '<svg viewBox="0 0 100 100" class="pent"', '</svg>', pentagonoDaProva(), 'pentágono');
+
+const botao = medidaDoBotaoEmPixels();
+visual = trocaAncorada(
+    visual,
+    'width:max-content;min-width:',
+    ';margin-left:auto',
+    `width:max-content;min-width:${botao.largura}px;padding:0 ${botao.respiro}px;margin-left:auto`,
+    'largura do botão',
+);
+
 fs.writeFileSync(saidaVisual, visual, 'utf8');
 
-console.log(`os-modais: ${path.relative(raiz, saidaVisual)} (prova visual aprovada)`);
+console.log(`os-modais: ${path.relative(raiz, saidaVisual)} (prova visual · pentágono e botão redesenhados do código)`);
 console.log(`os-modais-dados: ${path.relative(raiz, saida)} (${(html.length / 1024).toFixed(0)} KB)`);
 console.log(`  ${ACONTECIMENTOS.length} acontecimentos · ${Object.keys(DIRECOES).length} direções · ${medidasDoMiolo().filter((m) => m.padrao).length}/${medidasDoMiolo().length} medidas encontradas`);

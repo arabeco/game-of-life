@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Portal } from './Portal';
 
 interface GoldenToastProps {
     message: string;
@@ -55,7 +56,21 @@ export const GoldenToast: React.FC<GoldenToastProps> = ({ message, type = 'info'
         };
     }, [duration, onClose]);
 
+    /**
+     * O TOAST SAI PELO PORTAL, e sem isso o z-index dele e decorativo.
+     *
+     * Ele ja pedia z-[10000] — mais alto que qualquer coisa no app. So que
+     * renderizava DENTRO da arvore da AuthenticatedApp, e basta um ancestral com
+     * transform, filter ou opacity para criar um contexto de empilhamento
+     * proprio: dali para dentro o 10000 so compete com irmaos, e o cartao inteiro
+     * passa a valer o z-index do ancestral, que e quase nada.
+     *
+     * O Oraculo abre por Portal, no body, com z-50. Cinquenta ganhava de dez mil
+     * — e o aviso "nenhuma missao disponivel agora" acontecia atras do chat. Para
+     * quem estava olhando, o botao simplesmente nao fazia nada.
+     */
     return (
+        <Portal>
         <div
             className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[10000] transition-all duration-700 pointer-events-none ${
                 isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95'
@@ -85,5 +100,6 @@ export const GoldenToast: React.FC<GoldenToastProps> = ({ message, type = 'info'
                 </div>
             </div>
         </div>
+        </Portal>
     );
 };

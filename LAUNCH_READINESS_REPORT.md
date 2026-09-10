@@ -1,19 +1,19 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-10T14:59:26.459Z
+- Generated at: 2026-09-10T19:09:37.294Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (27.8s)
+- Build: PASS (19.4s)
 
 ## Checks
 
-### PASS - Avatar offsets regression (0.3s)
+### PASS - Avatar offsets regression (0.2s)
 - Kind: `logic`
 - Simulates: tabela vazia desenha igual ao comportamento antigo
 - Simulates: escala cresce do centro da peca
 - Simulates: o gabarito do corpo bate entre o codigo e o script
 
-### PASS - Reward modal regression (0.2s)
+### PASS - Reward modal regression (0.1s)
 - Kind: `logic`
 - Simulates: trava que existe um miolo so de recompensa
 - Simulates: impede a letra solta voltar no lugar do simbolo
@@ -47,7 +47,7 @@
 - Simulates: remove planejamento diario do widget
 - Simulates: mostra acoes feitas, XP e arenas tocadas
 
-### PASS - Daily reading regression (0.2s)
+### PASS - Daily reading regression (0.1s)
 - Kind: `logic`
 - Simulates: fala sobre o dia corrente, nao so sobre dias fechados
 - Simulates: a assinatura muda a regua e nao o elogio
@@ -112,7 +112,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (1.2s)
+### PASS - Oracle presence policy regression (0.7s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -136,27 +136,33 @@
 - Simulates: salva a ordem no banco
 - Simulates: mantem conclusoes fora da baia
 
+### PASS - Skin button contrast regression (0.1s)
+- Kind: `logic`
+- Simulates: interpola o gradiente do botao
+- Simulates: cobra o minimo da WCAG em cada skin
+- Simulates: trava a faixa de luz que corre sozinha
+
 ### PASS - Core loop regression (0.1s)
 - Kind: `logic`
 - Simulates: recalcula o core loop
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (20.9s)
+### PASS - Onboarding happy path (21.4s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (15.2s)
+### PASS - Campaign quiz flow (16.4s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (21.1s)
+### PASS - Cycle report flow (22.0s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas

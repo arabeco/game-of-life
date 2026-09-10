@@ -49,8 +49,8 @@ está vivo, o que está morto e onde os assuntos se repetem — para caber na ca
 antes de alguém escrever frase nova.</p>
 
 <div class="carimbo">
-  <span>gerada 08/09/2026, 08:56</span>
-  <span>commit c7c113c</span>
+  <span>gerada 10/09/2026, 15:30</span>
+  <span>commit 5708c45</span>
   <span>npm run folhas</span>
 </div>
 
@@ -58,8 +58,8 @@ antes de alguém escrever frase nova.</p>
   <div><b>12<span style="font-size:14px;color:#6e747c">/14</span></b><span>candidatos vivos</span></div>
   <div><b>8<span style="font-size:14px;color:#6e747c">/13</span></b><span>estados do servidor</span></div>
   <div><b>15</b><span>eventos de reação</span></div>
-  <div><b>14</b><span>casos do "Analisar meu ciclo"</span></div>
-  <div><b>219</b><span>frases escritas</span></div>
+  <div><b>19</b><span>casos do "Analisar meu ciclo"</span></div>
+  <div><b>221</b><span>frases escritas</span></div>
 </div>
 
 <h2>Entradas do Oráculo — organização de 10/09/2026</h2>
@@ -174,7 +174,7 @@ tom</strong> — são frases fixas, enquanto as reações têm quatro tons. Mesm
   <thead><tr><th>estado</th><th>frases</th><th>alcançável?</th></tr></thead>
   <tbody><tr>
     <td><code>sem_direcao</code></td>
-    <td class="n">3</td>
+    <td class="n">5</td>
     <td><span class="sim">sim</span></td>
   </tr><tr>
     <td><code>disperso</code></td>
@@ -297,13 +297,32 @@ ser o modelo dos outros dois.</p>
 
 <h2>"Analisar meu ciclo" <span style="color:#6e747c;font-weight:400">· <code>utils/oracleCoach.ts</code></span></h2>
 <p class="lead">Grátis, local, sem ida ao servidor — e é a única superfície com <strong>botões que
-navegam</strong>. É a casa natural das leituras mais afiadas. Mas é uma <strong>cascata</strong>: o
-primeiro caso que casa vence, e os de baixo nunca são considerados.</p>
-<ol class="cascata"><li><code>coach:first-arena</code></li><li><code>coach:start-cycle</code></li><li><code>coach:cycle-ready</code></li><li><code>coach:unmeasured</code></li><li><code>coach:last-day</code></li><li><code>coach:behind</code></li><li><code>coach:deriva</code></li><li><code>coach:first-proof</code></li><li><code>coach:ahead</code></li><li><code>coach:conta-nao-fecha</code></li><li><code>coach:arena-natimorta</code></li><li><code>coach:quanto-falta</code></li><li><code>coach:concentracao</code></li><li><code>coach:on-pace</code></li></ol>
-<div class="nota alerta"><strong>Consequência da ordem:</strong> <code>coach:behind</code> e
-<code>coach:ahead</code> capturam quase todo mundo, então leituras mais interessantes colocadas
-depois nunca apareceriam. Repertório novo aqui exige trocar a cascata por escolha de relevância —
-como o árbitro dos candidatos já faz.</div>
+navegam</strong>. Cada assunto tem um <strong>peso</strong> (relevância geral) e um
+<strong>descanso</strong> em dias. Dito uma vez, o assunto sai da fila pelo tempo dele e o próximo
+mais relevante assume: não é rodízio, o peso continua mandando dentro do que está disponível — o
+descanso só impede que o primeiro lugar seja vitalício.</p>
+<table>
+  <thead><tr><th>assunto</th><th>peso</th><th>descanso</th><th>por quê esse descanso</th></tr></thead>
+  <tbody><tr><td><code>coach:first-arena</code></td><td>100</td><td>—</td><td style="font-size:12px;color:#6e747c">Sem arena nenhuma nao existe outra leitura possivel: e o unico caminho.</td></tr><tr><td><code>coach:start-cycle</code></td><td>95</td><td>2d</td><td style="font-size:12px;color:#6e747c">Jogar sem ciclo e modo suportado. Cobrar ciclo todo dia e a definicao de chatear.</td></tr><tr><td><code>coach:cycle-ready</code></td><td>90</td><td>—</td><td style="font-size:12px;color:#6e747c">Terminar antes do prazo e fato pontual e acionavel. Calar seria esconder a saida.</td></tr><tr><td><code>coach:unmeasured</code></td><td>85</td><td>2d</td><td style="font-size:12px;color:#6e747c">Meta mensuravel nao aparece sozinha em 24 horas.</td></tr><tr><td><code>coach:last-day</code></td><td>80</td><td>—</td><td style="font-size:12px;color:#6e747c">O ultimo dia acontece uma vez por ciclo. Nao ha o que espacar.</td></tr><tr><td><code>coach:conta-nao-fecha</code></td><td>78</td><td>2d</td><td style="font-size:12px;color:#6e747c">A conta que nao fecha e estrutural: nao muda de um dia para o outro.</td></tr><tr><td><code>coach:behind</code></td><td>75</td><td>1d</td><td style="font-size:12px;color:#6e747c">Cada dia atras e um fato novo — mas um dia de folga e o que deixa o resto da fila existir.</td></tr><tr><td><code>coach:first-proof</code></td><td>70</td><td>—</td><td style="font-size:12px;color:#6e747c">A primeira prova do ciclo so acontece uma vez.</td></tr><tr><td><code>coach:deriva</code></td><td>68</td><td>2d</td><td style="font-size:12px;color:#6e747c">A deriva e aviso preventivo. Repetido vira cobranca sobre algo que ela ja ouviu.</td></tr><tr><td><code>coach:arena-natimorta</code></td><td>65</td><td>3d</td><td style="font-size:12px;color:#6e747c">Arena natimorta leva dias para deixar de ser. Nao ha o que dizer de novo antes disso.</td></tr><tr><td><code>coach:concentracao</code></td><td>62</td><td>3d</td><td style="font-size:12px;color:#6e747c">Concentracao e revelacao, nao conselho. Repetir transforma constatacao em julgamento.</td></tr><tr><td><code>coach:quanto-falta</code></td><td>60</td><td>2d</td><td style="font-size:12px;color:#6e747c">E agregado e pouco acionavel: repetir so acumula peso sem indicar saida.</td></tr><tr><td><code>coach:dia-concentrado</code></td><td>58</td><td>3d</td><td style="font-size:12px;color:#6e747c">Padrao do passado do ciclo: nao muda de um dia para o outro.</td></tr><tr><td><code>coach:volume-x-constancia</code></td><td>56</td><td>3d</td><td style="font-size:12px;color:#6e747c"></td></tr><tr><td><code>coach:volume-x-constancia</code></td><td>56</td><td>3d</td><td style="font-size:12px;color:#6e747c"></td></tr><tr><td><code>coach:retomada</code></td><td>55</td><td>1d</td><td style="font-size:12px;color:#6e747c">Retomada e um momento. Repetir todo dia transforma reconhecimento em bajulacao.</td></tr><tr><td><code>coach:ahead</code></td><td>40</td><td>2d</td><td style="font-size:12px;color:#6e747c">Elogio repetido vira bajulacao, e bajulacao gasta a confianca do resto.</td></tr><tr><td><code>coach:on-pace</code></td><td>0</td><td>—</td><td style="font-size:12px;color:#6e747c"></td></tr><tr><td><code>coach:sem-leitura</code></td><td>-1</td><td>—</td><td style="font-size:12px;color:#6e747c"></td></tr></tbody>
+</table>
+<div class="nota"><strong>O peso não é a última palavra.</strong> Antes de escolher, o
+<code>utils/oracleMasterState.ts</code> deriva qual é a <em>história</em> agora e aplica dois
+efeitos: bônus de peso ao assunto que a conta, e <strong>proibição</strong> dos que a contradizem.
+Foi isso que impediu o app de afirmar &ldquo;você está no ritmo&rdquo; a quem tem 10 de 140 feitas.</div>
+
+<h2>Estado Mestre <span style="color:#6e747c;font-weight:400">· <code>utils/oracleMasterState.ts</code></span></h2>
+<p class="lead">Um diagnóstico dominante, derivado do contexto que o app já calculava. Ele responde
+&ldquo;qual é a história mais importante agora?&rdquo; e <strong>não escolhe a frase</strong> — ele
+reordena e proíbe. A cor da marca também sai daqui: a casca continua dourada, e o que muda é o
+<strong>círculo no centro</strong> e a <strong>luz ao redor</strong>. Cor é detalhe, não identidade.</p>
+<table>
+  <thead><tr><th>estado</th><th>tom</th><th>cor</th><th>proíbe</th></tr></thead>
+  <tbody><tr><td><code>sem_dados</code></td><td>Sinal</td><td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#eaf2ff;box-shadow:0 0 8px #eaf2ff;vertical-align:middle;margin-right:6px"></span><code>#eaf2ff</code></td><td style="font-size:12px;color:#6e747c"><code>coach:on-pace</code> <code>coach:ahead</code> <code>coach:behind</code> <code>coach:deriva</code> <code>coach:conta-nao-fecha</code> <code>coach:dia-concentrado</code> <code>coach:volume-x-constancia</code></td></tr><tr><td><code>sem_ciclo</code></td><td>Sinal</td><td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#eaf2ff;box-shadow:0 0 8px #eaf2ff;vertical-align:middle;margin-right:6px"></span><code>#eaf2ff</code></td><td style="font-size:12px;color:#6e747c"><code>coach:on-pace</code> <code>coach:ahead</code> <code>coach:behind</code> <code>coach:deriva</code> <code>coach:conta-nao-fecha</code></td></tr><tr><td><code>retomando</code></td><td>Guia</td><td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#9fd8ff;box-shadow:0 0 8px #9fd8ff;vertical-align:middle;margin-right:6px"></span><code>#9fd8ff</code></td><td style="font-size:12px;color:#6e747c"><code>coach:on-pace</code> <code>coach:ahead</code> <code>coach:deriva</code></td></tr><tr><td><code>inviavel</code></td><td>Risco</td><td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 8px #ff6b6b;vertical-align:middle;margin-right:6px"></span><code>#ff6b6b</code></td><td style="font-size:12px;color:#6e747c"><code>coach:on-pace</code> <code>coach:ahead</code> <code>coach:deriva</code> <code>coach:dia-concentrado</code> <code>coach:volume-x-constancia</code></td></tr><tr><td><code>ultimo_dia</code></td><td>Risco</td><td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 8px #ff6b6b;vertical-align:middle;margin-right:6px"></span><code>#ff6b6b</code></td><td style="font-size:12px;color:#6e747c"><code>coach:on-pace</code> <code>coach:ahead</code> <code>coach:deriva</code></td></tr><tr><td><code>forte</code></td><td>Progresso</td><td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#7cf5b1;box-shadow:0 0 8px #7cf5b1;vertical-align:middle;margin-right:6px"></span><code>#7cf5b1</code></td><td style="font-size:12px;color:#6e747c"><code>coach:behind</code> <code>coach:deriva</code></td></tr><tr><td><code>atrasado</code></td><td>Atencao</td><td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ffd166;box-shadow:0 0 8px #ffd166;vertical-align:middle;margin-right:6px"></span><code>#ffd166</code></td><td style="font-size:12px;color:#6e747c"><code>coach:on-pace</code> <code>coach:ahead</code></td></tr><tr><td><code>estavel</code></td><td>Oraculo</td><td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#f3d48a;box-shadow:0 0 8px #f3d48a;vertical-align:middle;margin-right:6px"></span><code>#f3d48a</code></td><td style="font-size:12px;color:#6e747c">—</td></tr></tbody>
+</table>
+<div class="nota alerta"><strong>A cor só informa se alguém a passar.</strong> A abertura já usa o
+Estado Mestre; as reações usam o próprio evento (concluir é <em>Progresso</em>, avançar numa missão
+é <em>Guia</em>). Emissor que não passa tom cai em dourado — e dourado deixa de querer dizer
+&ldquo;o Oráculo em repouso&rdquo; para querer dizer &ldquo;ninguém decidiu&rdquo;.</div>
 
 <h2>Assuntos escritos mais de uma vez</h2>
 <p class="lead">Agrupamento <strong>curado</strong>, não derivado — dizer que duas peças são o mesmo

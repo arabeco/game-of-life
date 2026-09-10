@@ -61,6 +61,7 @@ import { getOraclePresenceRules } from '../constants/oraclePresencePolicy';
 import { resolveOracleSpeechTone } from '../constants/oracleSpeechLibrary';
 import { App as CapacitorApp } from '@capacitor/app';
 import { getOracleSpeakerToneTokens, OracleSpeakerMark, type OracleSpeakerTone } from './OracleSpeakerMark';
+import { deriveOracleMasterState, ORACLE_TONE_BY_STATE } from '../utils/oracleMasterState';
 import { buildOracleOperationalContext } from '../utils/oracleOperationalContext';
 import {
     decideOracleSpeech,
@@ -211,7 +212,7 @@ const OracleSpeechOverlay: React.FC = () => {
     return (
         <div className="pointer-events-none fixed inset-x-0 top-[calc(10px+var(--safe-area-top))] z-[10004] flex justify-center px-4">
             <div
-                className="pointer-events-none relative flex w-full max-w-[22rem] gap-2 overflow-hidden rounded-[16px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-2.5 pl-[4.65rem] shadow-[0_12px_38px_rgba(0,0,0,0.38)] backdrop-blur-xl animate-in fade-in slide-in-from-top-3 duration-300"
+                className="pointer-events-none relative flex w-full max-w-[22rem] items-center gap-3 overflow-hidden rounded-[16px] border bg-[linear-gradient(180deg,rgba(20,17,13,0.96),rgba(7,7,8,0.98))] p-2.5 shadow-[0_12px_38px_rgba(0,0,0,0.38)] backdrop-blur-xl animate-in fade-in slide-in-from-top-3 duration-300"
                 style={{
                     borderColor: toneTokens.border,
                     boxShadow: `0 12px 38px rgba(0,0,0,0.38), 0 0 20px ${toneTokens.glow}`,
@@ -219,7 +220,18 @@ const OracleSpeechOverlay: React.FC = () => {
             >
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-10" style={{ background: `radial-gradient(circle at top, ${toneTokens.coreSoft}, transparent 72%)` }} />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${toneTokens.border}, transparent)` }} />
-                <OracleSpeakerMark tone={tone} size="sm" className="absolute left-3 top-1/2 -translate-y-1/2" />
+                {/* A MARCA VOLTA A SER PARTE DA LINHA.
+                    Ela era \`absolute left-3\` e o texto era empurrado por um
+                    \`pl-[4.65rem]\` — 74,4px chutados a mao contra uma marca que
+                    ocupa 44px a partir dos 12px, ou seja, termina nos 56. O
+                    espacamento nao vinha de lugar nenhum: era um numero que
+                    alguem ajustou olhando, e que deixa de bater assim que a
+                    marca muda de tamanho.
+
+                    Como filho normal do flex, com \`items-center gap-3\`, a
+                    distancia passa a ser uma so, declarada, e o alinhamento
+                    vertical deixa de depender de translate. */}
+                <OracleSpeakerMark tone={tone} size="sm" className="relative z-10" />
                 <button
                     type="button"
                     onClick={() => setSpeech(null)}
@@ -569,8 +581,20 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
         indicatorRef.current.style.transform = `translateX(${-diff}px)`;
     };
 
-    const handleSetView = useCallback((view: View) => {
+    /**
+     * @param preservarHistorico quem JA decidiu se o historico fica aberto.
+     *
+     * Fechar o historico aqui e certo para o gesto do usuario — tocar em ATIVOS
+     * com o historico aberto marcava a aba e continuava mostrando o historico,
+     * a barra dizendo um lugar e a tela mostrando outro. Mas o tutorial navega
+     * pelo mesmo caminho DEPOIS de ja ter aberto o historico de proposito: o
+     * passo do ciclo aponta para um botao que so existe la. Fechar por baixo
+     * dele apagava o alvo, o "Proximo" ficava desabilitado e o onboarding
+     * travava — sem erro nenhum, so um botao que nao respondia.
+     */
+    const handleSetView = useCallback((view: View, preservarHistorico = false) => {
         setRestScreenVisible(false);
+        if (!preservarHistorico) setReportsVisible(false);
         setCurrentView((prev) => {
             const nextView = sanitizeView(view, canUseAssetsView, isBuilderMode);
             return prev === nextView ?prev : nextView;
@@ -675,7 +699,8 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             }
 
             if (e.detail.view) {
-                handleSetView(e.detail.view);
+                // Este handler ja decidiu o historico acima, a partir do passo.
+                handleSetView(e.detail.view, true);
             }
 
             if (e.detail.tab) {
@@ -944,10 +969,17 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             // sem hora, sem historico, sem push. Agora o caminho que ela sugeria
             // viaja junto de uma fala de verdade.
             openingSpokenThisSessionRef.current = true;
+            // A COR DA ABERTURA VEM DO DIAGNOSTICO.
+            //
+            // Ela era 'info' fixo — a mesma luz para quem esta adiantado, para
+            // quem tem a conta estourada e para quem acabou de voltar. O brief ja
+            // era montado aqui para pegar os botoes; o mesmo contexto responde
+            // qual e a historia, e a marca passa a acender na cor dela.
+            const diagnostico = deriveOracleMasterState(oracleContext);
             emitOracleSpeech({
                 title: 'Oraculo',
                 message,
-                tone: 'info',
+                tone: ORACLE_TONE_BY_STATE[diagnostico.estado],
                 durationMs: 6800,
                 kind: 'abertura',
                 quickActions: buildOracleCycleCoachBrief(oracleContext).quickActions,

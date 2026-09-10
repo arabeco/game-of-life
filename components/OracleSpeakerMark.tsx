@@ -18,10 +18,10 @@ const TONE_TOKENS: Record<OracleSpeakerTone, {
     label: 'Oraculo',
   },
   guide: {
-    core: '#f3d48a',
-    coreSoft: 'rgba(243,212,138,0.16)',
-    border: 'rgba(243,212,138,0.46)',
-    glow: 'rgba(243,212,138,0.18)',
+    core: '#9fd8ff',
+    coreSoft: 'rgba(159,216,255,0.14)',
+    border: 'rgba(159,216,255,0.46)',
+    glow: 'rgba(159,216,255,0.20)',
     label: 'Guia',
   },
   success: {
@@ -46,7 +46,7 @@ const TONE_TOKENS: Record<OracleSpeakerTone, {
     label: 'Risco',
   },
   info: {
-    core: '#f3d48a',
+    core: '#eaf2ff',
     coreSoft: 'rgba(243,212,138,0.14)',
     border: 'rgba(243,212,138,0.44)',
     glow: 'rgba(243,212,138,0.18)',
@@ -104,7 +104,16 @@ export const OracleSpeakerMark: React.FC<{
       style={{
         borderColor: 'rgba(243,212,138,0.46)',
         color: tokens.core,
-        boxShadow: `0 0 18px rgba(243,212,138,0.16), 0 12px 28px rgba(0,0,0,0.44)`,
+        // A LUZ CARREGA A COR, A CASCA NAO.
+        //
+        // A marca nao vira verde nem vermelha — ela continua sendo o Oraculo, com
+        // a mesma borda dourada. O que muda e o BRILHO ao redor e o circulo no
+        // centro, que sao detalhe, nao identidade. Assim a cor informa sem que a
+        // marca deixe de ser reconhecivel de longe.
+        //
+        // A base dourada fica na primeira sombra, sempre; a cor do tom entra na
+        // segunda, mais larga e mais fraca.
+        boxShadow: `0 0 12px rgba(243,212,138,0.14), 0 0 26px ${tokens.glow}, 0 12px 28px rgba(0,0,0,0.44)`,
       }}
       aria-label={tokens.label}
     >

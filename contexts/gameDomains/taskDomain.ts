@@ -598,7 +598,9 @@ export const createTaskDomain = ({
                 remaining: faltam,
                 dias,
             }),
-            tone: 'success',
+            // Concluir e vitoria; avancar e orientacao. Pintar os dois de verde
+            // gastava o verde — quando tudo e comemoracao, nada e.
+            tone: progresso.completed || faltam <= 1 ? 'success' : 'guide',
             durationMs: progresso.completed || faltam <= 1 ? 5200 : 4300,
         });
         return true;

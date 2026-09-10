@@ -5,7 +5,12 @@ export type OracleSpeechKind = 'abertura' | 'reacao';
 export type OracleSpeechPayload = {
   title?: string;
   message: string;
-  tone?: 'success' | 'info' | 'warning' | 'danger' | 'neutral';
+  /**
+   * O tom decide a COR do detalhe da marca: o circulo no centro e a luz ao redor.
+   * A casca continua dourada em todos — a cor informa sem tirar a identidade.
+   * 'guide' faltava aqui, entao o azul era inalcancavel a partir de uma fala.
+   */
+  tone?: 'success' | 'info' | 'warning' | 'danger' | 'neutral' | 'guide';
   durationMs?: number;
   /** Classifica a fala momentânea; nenhuma abertura ou reação entra no chat. */
   kind?: OracleSpeechKind;

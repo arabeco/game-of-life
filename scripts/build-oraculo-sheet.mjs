@@ -53,6 +53,33 @@ for (let n = 0; n <= 3; n += 1) {
  * removidos e o TIPO ficou — a folha precisa mostrar essa diferenca, senao
  * conta fantasma como repertorio.
  */
+// ------------------------------------------------- ESTADO MESTRE E AS CORES
+/**
+ * O Estado Mestre e as cores sao DERIVADOS, nao escritos aqui: o mapa vem do
+ * modulo e as cores vem do componente da marca. Se alguem trocar um tom, a
+ * folha muda na proxima geracao — que e a unica forma de ela nao apodrecer.
+ */
+const mestreMod = await empacota('utils/oracleMasterState.ts', 'oraculo-mestre.mjs');
+const { ORACLE_TONE_BY_STATE } = mestreMod;
+
+const fonteMarca = le('components/OracleSpeakerMark.tsx');
+const coresPorTom = Object.fromEntries(
+    [...fonteMarca.matchAll(/(\w+):\s*\{\s*core:\s*'(#[0-9a-fA-F]{6})'[^]*?label:\s*'([^']+)'/g)]
+        .map((m) => [m[1], { cor: m[2], rotulo: m[3] }]),
+);
+
+// Descanso e peso de cada assunto do ciclo, lidos da fonte.
+const fonteCoachAssuntos = le('utils/oracleCoach.ts');
+const assuntosDoCiclo = [...fonteCoachAssuntos.matchAll(/peso:\s*(-?\d+),\s*cooldownDays:\s*(\d+),(.*)[\s\S]*?id:\s*[`']coach:([a-z-]+)/g)]
+    .map((m) => ({ peso: Number(m[1]), descanso: Number(m[2]), motivo: m[3].replace(/^\s*\/\/\s*/, '').trim(), assunto: m[4] }))
+    .sort((a, b) => b.peso - a.peso);
+
+// O que cada estado PROIBE, lido do proprio arquivo: sao as travas de coerencia.
+const proibidosPorEstado = Object.fromEntries(
+    [...le('utils/oracleMasterState.ts').matchAll(/estado:\s*'(\w+)'[^]*?proibidos:\s*(\[[^\]]*\])/g)]
+        .map((m) => [m[1], (m[2].match(/'coach:[a-z-]+'/g) || []).map((x) => x.replace(/'/g, ''))]),
+);
+
 const fonteCandidatos = le('utils/oracleCandidates.ts');
 const tiposDeclarados = (fonteCandidatos.match(/export const ORACLE_CANDIDATE_TYPES[^]*?\];/)?.[0] || '')
     .match(/'([a-z_]+)'/g)?.map((s) => s.replace(/'/g, '')) || [];
@@ -284,13 +311,38 @@ ser o modelo dos outros dois.</p>
 
 <h2>"Analisar meu ciclo" <span style="color:#6e747c;font-weight:400">· <code>utils/oracleCoach.ts</code></span></h2>
 <p class="lead">Grátis, local, sem ida ao servidor — e é a única superfície com <strong>botões que
-navegam</strong>. É a casa natural das leituras mais afiadas. Mas é uma <strong>cascata</strong>: o
-primeiro caso que casa vence, e os de baixo nunca são considerados.</p>
-<ol class="cascata">${casosDoBrief.map((c) => `<li><code>coach:${esc(c)}</code></li>`).join('')}</ol>
-<div class="nota alerta"><strong>Consequência da ordem:</strong> <code>coach:behind</code> e
-<code>coach:ahead</code> capturam quase todo mundo, então leituras mais interessantes colocadas
-depois nunca apareceriam. Repertório novo aqui exige trocar a cascata por escolha de relevância —
-como o árbitro dos candidatos já faz.</div>
+navegam</strong>. Cada assunto tem um <strong>peso</strong> (relevância geral) e um
+<strong>descanso</strong> em dias. Dito uma vez, o assunto sai da fila pelo tempo dele e o próximo
+mais relevante assume: não é rodízio, o peso continua mandando dentro do que está disponível — o
+descanso só impede que o primeiro lugar seja vitalício.</p>
+<table>
+  <thead><tr><th>assunto</th><th>peso</th><th>descanso</th><th>por quê esse descanso</th></tr></thead>
+  <tbody>${assuntosDoCiclo.map((c) => `<tr><td><code>coach:${esc(c.assunto)}</code></td><td>${c.peso}</td><td>${c.descanso === 0 ? '—' : `${c.descanso}d`}</td><td style="font-size:12px;color:#6e747c">${esc(c.motivo)}</td></tr>`).join('')}</tbody>
+</table>
+<div class="nota"><strong>O peso não é a última palavra.</strong> Antes de escolher, o
+<code>utils/oracleMasterState.ts</code> deriva qual é a <em>história</em> agora e aplica dois
+efeitos: bônus de peso ao assunto que a conta, e <strong>proibição</strong> dos que a contradizem.
+Foi isso que impediu o app de afirmar &ldquo;você está no ritmo&rdquo; a quem tem 10 de 140 feitas.</div>
+
+<h2>Estado Mestre <span style="color:#6e747c;font-weight:400">· <code>utils/oracleMasterState.ts</code></span></h2>
+<p class="lead">Um diagnóstico dominante, derivado do contexto que o app já calculava. Ele responde
+&ldquo;qual é a história mais importante agora?&rdquo; e <strong>não escolhe a frase</strong> — ele
+reordena e proíbe. A cor da marca também sai daqui: a casca continua dourada, e o que muda é o
+<strong>círculo no centro</strong> e a <strong>luz ao redor</strong>. Cor é detalhe, não identidade.</p>
+<table>
+  <thead><tr><th>estado</th><th>tom</th><th>cor</th><th>proíbe</th></tr></thead>
+  <tbody>${Object.entries(ORACLE_TONE_BY_STATE).map(([estado, tom]) => {
+    const c = coresPorTom[tom] || { cor: '#888888', rotulo: tom };
+    const proibidos = proibidosPorEstado[estado] || [];
+    return `<tr><td><code>${esc(estado)}</code></td><td>${esc(c.rotulo)}</td>` +
+      `<td><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${c.cor};box-shadow:0 0 8px ${c.cor};vertical-align:middle;margin-right:6px"></span><code>${esc(c.cor)}</code></td>` +
+      `<td style="font-size:12px;color:#6e747c">${proibidos.length ? proibidos.map((x) => `<code>${esc(x)}</code>`).join(' ') : '—'}</td></tr>`;
+  }).join('')}</tbody>
+</table>
+<div class="nota alerta"><strong>A cor só informa se alguém a passar.</strong> A abertura já usa o
+Estado Mestre; as reações usam o próprio evento (concluir é <em>Progresso</em>, avançar numa missão
+é <em>Guia</em>). Emissor que não passa tom cai em dourado — e dourado deixa de querer dizer
+&ldquo;o Oráculo em repouso&rdquo; para querer dizer &ldquo;ninguém decidiu&rdquo;.</div>
 
 <h2>Assuntos escritos mais de uma vez</h2>
 <p class="lead">Agrupamento <strong>curado</strong>, não derivado — dizer que duas peças são o mesmo

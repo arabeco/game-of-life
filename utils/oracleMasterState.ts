@@ -57,6 +57,36 @@ const contaNaoFecha = (context: OracleContext): { fecha: boolean; porDia: number
 const arenaRetomada = (context: OracleContext) =>
   (context.arenaSignals || []).find((sinal) => sinal.trend === 'retomando') || null;
 
+/**
+ * A COR DO DIAGNOSTICO.
+ *
+ * A marca do Oraculo ja tinha seis tons com cor propria, mas tres deles eram o
+ * mesmo dourado — na pratica so existiam quatro, e quase tudo chegava como
+ * neutro. Faltava alguem DECIDIR a cor; agora existe: o Estado Mestre.
+ *
+ * A cor nao troca a casca da marca, que continua dourada e reconhecivel. Ela
+ * entra como luz ao redor e como o circulo no centro — detalhe, nao identidade.
+ */
+export const ORACLE_TONE_BY_STATE: Record<
+  OracleMasterState,
+  'neutral' | 'guide' | 'success' | 'warning' | 'danger' | 'info'
+> = {
+  // Branco: sinal sem juizo de valor. Nao ha o que celebrar nem o que cobrar.
+  sem_dados: 'info',
+  sem_ciclo: 'info',
+  // Azul: orientacao. Voltar depois de uma pausa nao e vitoria nem falha.
+  retomando: 'guide',
+  // Vermelho: a conta nao fecha, ou o prazo acabou.
+  inviavel: 'danger',
+  ultimo_dia: 'danger',
+  // Verde: o conjunto esta a frente.
+  forte: 'success',
+  // Amarelo: atencao, ainda da tempo.
+  atrasado: 'warning',
+  // Dourado: o Oraculo em repouso, sem desvio a apontar.
+  estavel: 'neutral',
+};
+
 export const deriveOracleMasterState = (context: OracleContext): OracleMasterDiagnosis => {
   const modificadores: string[] = [];
   const progresso = Math.round(context.cycleCompletionPercent || 0);

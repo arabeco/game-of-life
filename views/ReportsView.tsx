@@ -535,7 +535,7 @@ const StartCycleModal: React.FC<{ onClose: () => void; onStart: (name: string, e
                             className='w-full p-3 bg-black/30 rounded-lg border border-white/20 mt-1'
                         />
                     </div>
-                    <button onClick={handleStart} disabled={!endDate || !name} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">INICIAR CICLO</button>
+                    <button onClick={handleStart} disabled={!endDate || !name} className="w-full py-3 luxe-bico luxe-skin-button disabled:opacity-50">INICIAR CICLO</button>
                 </GlassCard>
             </div>
         </Portal>
@@ -2628,7 +2628,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     <SimplifiedCycleHUD cycle={visibleActiveCycle} onEdit={setCycleBeingEdited} showTimelineMarker={false} showControls={false} />
                                 </div>
                                 <div className="mt-3">
-                                    <button id="end-cycle-button" onClick={handleEndCycle} className="w-full py-3 rounded-xl luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20">ENCERRAR CICLO ATUAL</button>
+                                    <button id="end-cycle-button" onClick={handleEndCycle} className="w-full py-3 luxe-bico luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20">ENCERRAR CICLO ATUAL</button>
                                 </div>
                             </GlassCard>
                         )}
@@ -2821,7 +2821,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 <button
                                     id="start-new-cycle-button"
                                     onClick={() => setShowNewCycleSetup(true)}
-                                    className="w-full rounded-xl py-3 luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20"
+                                    className="w-full luxe-bico py-3 luxe-skin-button shadow-lg shadow-[var(--skin-accent-color)]/20"
                                 >
                                     INICIAR NOVO CICLO
                                 </button>

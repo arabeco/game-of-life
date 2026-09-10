@@ -398,7 +398,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({ item: initialI
                     {currentItem.category === 'chest' ? (
                         <button 
                             onClick={handleOpen}
-                            className="col-span-2 py-3 rounded-xl luxe-skin-button"
+                            className="col-span-2 py-3 luxe-bico luxe-skin-button"
                         >
                             ABRIR
                         </button>

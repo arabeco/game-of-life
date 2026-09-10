@@ -43,7 +43,7 @@ const JoinClanBox: React.FC<{ onCreate: () => void }> = ({ onCreate }) => {
         <GlassCard variant="neutral" className="text-center p-6 space-y-4" id="clans-section">
             <h2 className="text-xl font-bold">Você não está em um grupo</h2>
             <p className="text-sm text-gray-400">Entre em um grupo para coordenar tarefas em conjunto ou crie o seu para operar em equipe.</p>
-            <button onClick={onCreate} className="w-full py-2 rounded-xl luxe-skin-button">Criar Grupo</button>
+            <button onClick={onCreate} className="w-full py-2 luxe-bico luxe-skin-button">Criar Grupo</button>
         </GlassCard>
     );
 };

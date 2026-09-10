@@ -2081,7 +2081,7 @@ export const ArenasView: React.FC = () => {
                         <EditIcon className="w-3.5 h-3.5" />
                     </button>
                     </div>
-                    <div className="ml-auto flex min-w-0 shrink-0 items-center bg-black/40 rounded-full px-1 border border-white/5">
+                    <div className="arenas-toolbar-pills ml-auto flex min-w-0 shrink-0 items-center bg-black/40 rounded-full px-1 border border-white/5">
                         <button
                             onClick={handleCycleViewMode}
                             className={`px-1.5 py-1 rounded-full transition-colors flex items-center gap-1 ${arenasViewMode !== 'free' ? 'text-[var(--skin-accent-color)]' : 'text-gray-500 hover:text-gray-300'}`}
@@ -2145,7 +2145,7 @@ export const ArenasView: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => { setRodadaAberta(false); resetFreeProgress(); }}
-                                                className="luxe-skin-button mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.12em]"
+                                                className="luxe-skin-button luxe-bico mt-3 inline-flex h-9 w-full items-center justify-center gap-2 px-3 text-[10px] font-black uppercase tracking-[0.12em]"
                                             >
                                                 <RefreshCwIcon className="h-3.5 w-3.5" />
                                                 Concluir rodada

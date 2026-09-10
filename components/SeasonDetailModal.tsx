@@ -138,7 +138,7 @@ export const QuestDetailModal: React.FC<{
                             Ative pelo menu do grupo
                         </div>
                     ) : (
-                        <button onClick={onTake} className="w-full rounded-xl py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
+                        <button onClick={onTake} className="w-full luxe-bico py-3 text-xs font-black uppercase tracking-[0.2em] text-black shadow-[0_0_20px_var(--sephirot-glow-color)] luxe-skin-button">
                             Aceitar missão
                         </button>
                     )

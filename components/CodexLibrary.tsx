@@ -246,7 +246,7 @@ const CodexCard: React.FC<{
         <button onClick={onPreview} className="py-2.5 rounded-xl luxe-button-secondary text-[11px] font-bold uppercase tracking-[0.14em] inline-flex items-center justify-center gap-2">
           <EyeIcon className="w-4 h-4" /> Ver
         </button>
-        <button onClick={onInstall} disabled={!shareable} className="py-2.5 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed text-[11px] font-bold uppercase tracking-[0.14em] inline-flex items-center justify-center gap-2">
+        <button onClick={onInstall} disabled={!shareable} className="py-2.5 luxe-bico luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed text-[11px] font-bold uppercase tracking-[0.14em] inline-flex items-center justify-center gap-2">
           <CheckIcon className="w-4 h-4" /> Instalar
         </button>
         {onShare && (

@@ -803,9 +803,8 @@ export const ReportResultCarousel: React.FC<ReportResultCarouselProps> = ({
                                 <button
                                     id={onStartNewCycle ? 'report-new-cycle-button' : undefined}
                                     onClick={onStartNewCycle || onOk}
-                                    className="report-primary-cta luxe-skin-button group shadow-xl"
+                                    className="report-primary-cta luxe-skin-button luxe-brilho shadow-xl"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                     {onStartNewCycle ? 'Novo Ciclo' : 'OK'}
                                 </button>
                             </div>

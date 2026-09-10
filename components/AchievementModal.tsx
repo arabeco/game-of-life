@@ -191,7 +191,19 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
         }
         : payloadDoFeitoBase;
     const primaryButtonLabel = achievement.data.buttonLabel || (isCompetitionResult || seloDaTemporada || isArenaComplete ? 'OK' : 'Prosseguir');
-    const primaryButtonClass = 'luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]';
+    /**
+     * O BOTAO DEIXA DE OCUPAR A FAIXA INTEIRA.
+     *
+     * Ele era `w-full`, e o Compartilhar era um segundo `w-full` empilhado por
+     * cima: duas barras douradas iguais, uma sobre a outra, com a mesma cor e o
+     * mesmo peso — quem chegava na placa tinha de LER para saber qual era a
+     * saida. E o compartilhar vinha primeiro, o inverso da importancia.
+     *
+     * Agora o OK e um so, centrado, do tamanho da palavra, e o compartilhar
+     * volta a ser o que ja e noutros lugares do app: um simbolo ao lado. Sobra
+     * ar em volta do unico botao que a pessoa precisa tocar.
+     */
+    const primaryButtonClass = 'luxe-skin-button luxe-brilho flex min-w-[13rem] items-center justify-center gap-3 px-10 py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-transform active:scale-[0.97]';
 
     const handlePostToFeed = () => {
         if (!canShareAchievement) return;
@@ -351,43 +363,38 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ achievement,
 
                             <div className={`relative z-10 mt-auto ${isCompetitionResult ? 'p-5 pt-3' : 'p-6 pt-4'}`}>
                                 <div className="space-y-3">
-                                    {canShareAchievement && !isArenaComplete && (
-                                        <button
-                                            onClick={handlePostToFeed}
-                                            className="luxe-skin-button group relative flex w-full items-center justify-center gap-3 overflow-hidden py-4 text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-                                            style={{ ...estiloDaPlaca.botao, borderWidth: 2 }}
-                                        >
-                                            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-                                            <ShareIcon className="h-4 w-4" />
-                                            Compartilhar no Feed
-                                        </button>
-                                    )}
-
-                                    {isArenaComplete ? (
-                                        <div className="flex items-center gap-2">
-                                            <button type="button" onClick={handleDisableCelebrations} className="flex min-h-10 flex-1 items-center gap-2 border border-white/10 bg-black/25 px-3 py-2 text-left text-[9px] font-bold uppercase tracking-[0.11em] text-white/52 transition-colors hover:border-white/20 hover:text-white/75">
-                                                <span className="grid h-4 w-4 shrink-0 place-items-center border border-white/25 bg-black/40" aria-hidden="true" />
-                                                Não mostrar novamente
-                                            </button>
-                                            <button type="button" aria-label="Compartilhar no Feed" onClick={handlePostToFeed} className="grid h-10 w-10 shrink-0 place-items-center border border-white/15 bg-white/[0.045] text-white/68 transition-colors hover:border-white/28 hover:bg-white/[0.08] hover:text-white">
-                                                <ShareIcon className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    ) : (isQuestComplete || isReportComplete) && (
+                                    {(isArenaComplete || isQuestComplete || isReportComplete) && (
                                         <button type="button" onClick={handleDisableCelebrations} className="flex w-full items-center gap-2 border border-white/10 bg-black/25 px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-[0.13em] text-white/52 transition-colors hover:border-white/20 hover:text-white/75">
                                             <span className="grid h-4 w-4 shrink-0 place-items-center border border-white/25 bg-black/40" aria-hidden="true" />
                                             Não mostrar novamente
                                         </button>
                                     )}
 
-                                    <button
-                                        onClick={handleClose}
-                                        className={primaryButtonClass}
-                                        style={{ ...estiloDaPlaca.botao, borderWidth: 2 }}
-                                    >
-                                        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-                                        {primaryButtonLabel}
-                                    </button>
+                                    {/* O OK fica no CENTRO DA PLACA, e nao no centro
+                                        do que sobrou: o simbolo de compartilhar sai
+                                        do fluxo, encostado na direita. Assim ele
+                                        aparecer ou nao deixa de mover o botao que a
+                                        pessoa ja esta mirando. */}
+                                    <div className="relative flex items-center justify-center">
+                                        <button
+                                            onClick={handleClose}
+                                            className={primaryButtonClass}
+                                            style={{ ...estiloDaPlaca.botao, borderWidth: 2 }}
+                                        >
+                                            {primaryButtonLabel}
+                                        </button>
+
+                                        {canShareAchievement && (
+                                            <button
+                                                type="button"
+                                                aria-label="Compartilhar no Feed"
+                                                onClick={handlePostToFeed}
+                                                className="absolute right-0 grid h-11 w-11 shrink-0 place-items-center border border-white/15 bg-white/[0.045] text-white/68 transition-colors hover:border-white/28 hover:bg-white/[0.08] hover:text-white"
+                                            >
+                                                <ShareIcon className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -28,6 +28,7 @@
     "test:pact-speech": "node tests/pact-speech.regression.mjs",
     "test:device-only": "node tests/safe-area-insets.regression.mjs",
     "test:relationship-links": "node tests/relationship-links.regression.mjs",
+    "test:skin-button": "node tests/skin-button-contrast.regression.mjs",
     "test:ui-hygiene": "node tests/ui-hygiene.regression.mjs",
     "test:item-art": "node tests/item-art.regression.mjs",
     "test:avatar-offsets": "node tests/avatar-offsets.regression.mjs",

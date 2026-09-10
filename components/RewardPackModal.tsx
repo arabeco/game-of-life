@@ -84,14 +84,20 @@ export const RewardPackModal: React.FC<RewardPackModalProps> = ({
           />
 
           {/* O botao NAO herda a raridade: e sempre o da Skin UI equipada. O
-              que a direcao B muda e so o recorte — as duas pontas viram bico. */}
-          <button
-            onClick={onClose}
-            className="luxe-skin-button mt-[17px] h-12 w-full shrink-0 text-[11px] font-black uppercase tracking-[0.24em]"
-            style={{ ...estilo.botao, borderWidth: 2 }}
-          >
-            {payload?.buttonLabel || fallbackButtonLabel}
-          </button>
+              que a direcao B muda e so o recorte — as duas pontas viram bico.
+
+              E ele nao ocupa mais a faixa inteira: uma barra de borda a borda no
+              pe da placa le como rodape, nao como saida. Do tamanho da palavra e
+              centrado, ele volta a parecer um botao. */}
+          <div className="mt-[17px] flex shrink-0 justify-center">
+            <button
+              onClick={onClose}
+              className="luxe-skin-button luxe-brilho h-12 min-w-[13rem] px-10 text-[11px] font-black uppercase tracking-[0.24em]"
+              style={{ ...estilo.botao, borderWidth: 2 }}
+            >
+              {payload?.buttonLabel || fallbackButtonLabel}
+            </button>
+          </div>
         </div>
       </div>
     </Portal>

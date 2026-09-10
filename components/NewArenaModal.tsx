@@ -174,7 +174,7 @@ export const NewArenaModal: React.FC<NewArenaModalProps> = ({ assetId: initialAs
                             <button onClick={onClose} className="w-full py-2 rounded-xl luxe-button-secondary">
                                 CANCELAR
                             </button>
-                            <button id="new-arena-submit-button" onClick={handleSave} disabled={!canCreateArena} className="w-full py-2 rounded-xl luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50">
+                            <button id="new-arena-submit-button" onClick={handleSave} disabled={!canCreateArena} className="w-full py-2 luxe-bico luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50">
                                 CRIAR ARENA
                             </button>
                         </div>

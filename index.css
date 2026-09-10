@@ -946,6 +946,36 @@ body {
   background: var(--app-background);
 }
 
+/* A BARRA DE MODOS ASSUME CHAO ESCURO, E NO TEMA CLARO NAO HA CHAO ESCURO.
+ *
+ * Os botoes de modo, lista e arquivadas usam text-gray-500 quando inativos e
+ * text-white quando ativos — os dois pensados para um fundo preto. No tema claro
+ * o inativo se dissolve no cinza do fundo e o ATIVO fica pior ainda, branco sobre
+ * claro. Some justamente o que indica onde voce esta.
+ *
+ * A pastilha ganha fundo claro proprio e os dois estados invertem: cinza escuro
+ * para o inativo, quase-preto para o ativo. O acento continua sendo o acento. */
+.mode-game.theme-light .arenas-toolbar-pills,
+.mode-office.theme-light .arenas-toolbar-pills {
+  background: rgba(255, 255, 255, 0.62) !important;
+  border-color: rgba(83, 98, 120, 0.22) !important;
+}
+
+.mode-game.theme-light .arenas-toolbar-pills .text-gray-500,
+.mode-office.theme-light .arenas-toolbar-pills .text-gray-500 {
+  color: rgba(71, 90, 109, 0.78) !important;
+}
+
+.mode-game.theme-light .arenas-toolbar-pills .text-white,
+.mode-office.theme-light .arenas-toolbar-pills .text-white {
+  color: #17212c !important;
+}
+
+.mode-game.theme-light .arenas-toolbar-pills > div,
+.mode-office.theme-light .arenas-toolbar-pills > div {
+  background: rgba(83, 98, 120, 0.24) !important;
+}
+
 .mode-game.theme-light .arenas-view-root--builder {
   background: var(--app-background);
 }
@@ -1926,4 +1956,76 @@ body {
 
 .asset-title-glint {
   animation: asset-title-glint 6.5s ease-in-out infinite;
+}
+
+/* O BRILHO DO BOTAO NAO PODE DEPENDER DE MOUSE.
+   ------------------------------------------------------------------------
+   Os botoes de recompensa tinham uma faixa de luz presa a `group-hover`: ela
+   atravessava o botao quando o ponteiro passava por cima. No aparelho nao ha
+   ponteiro — nao existe estado de hover antes do toque, e depois do toque o
+   modal ja fechou. Ou seja: o efeito foi desenhado no navegador e nunca
+   aconteceu para ninguem no celular, que e onde o app vive.
+
+   Aqui ele passa a acontecer sozinho, duas vezes, logo que a placa aparece —
+   sem esperar gesto nenhum. Duas e nao infinito de proposito: o brilho e para
+   dizer "o botao esta vivo, toque aqui", e uma luz que nunca para vira ruido
+   piscando ao lado do texto que a pessoa esta tentando ler.
+
+   O ::after herda o recorte do botao porque o botao ja e overflow-hidden. */
+@keyframes luxe-brilho-passa {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+.luxe-brilho { position: relative; overflow: hidden; }
+
+.luxe-brilho::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translateX(-100%);
+  /* A faixa tem UM LADO CLARO E UM ESCURO.
+     So com branco ela sumia nas skins de botao claro — AURORA, BASIC e
+     NEBULOSA pintam o primario quase branco, e uma luz branca sobre fundo
+     branco e nada. Com o par, sempre ha um dos dois lados visivel, seja
+     qual for a skin equipada. */
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.42) 42%,
+    rgba(0, 0, 0, 0.16) 62%,
+    transparent
+  );
+  animation: luxe-brilho-passa 1.15s ease-in-out 0.45s 2 both;
+}
+
+/* Quem pediu menos movimento no sistema nao recebe a faixa. */
+@media (prefers-reduced-motion: reduce) {
+  .luxe-brilho::after { animation: none; opacity: 0; }
+}
+
+/* AS PONTAS EM BICO — a forma dos momentos que mudam o jogo.
+   ------------------------------------------------------------------------
+   O recorte e o mesmo da direcao B em constants/rewardPlateStyles.ts, o das
+   placas de recompensa. Ele NAO vale para o app inteiro: sao mais de cem botoes
+   com a Skin UI, e a maioria e Fechar, Cancelar ou Salvar de formulario, onde o
+   bico so faria barulho. Tambem nao vale para as pilulas de filtro da loja —
+   pilula redonda diz "escolha uma", e o bico confundiria filtro com confirmacao.
+
+   Vale para abrir um ciclo, encerrar, instalar um codex, criar uma arena,
+   aceitar uma missao, abrir um bau: o que a pessoa lembra depois. Assim esses
+   botoes se parecem com o modal que aparece quando dao certo.
+
+   A forma mora AQUI, e nao em dezenove clip-paths copiados pelas telas. */
+.luxe-bico {
+  clip-path: polygon(
+    18px 0,
+    calc(100% - 18px) 0,
+    100% 50%,
+    calc(100% - 18px) 100%,
+    18px 100%,
+    0 50%
+  );
+  border-radius: 0;
 }

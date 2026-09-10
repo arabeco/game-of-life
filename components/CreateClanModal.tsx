@@ -163,7 +163,7 @@ export const CreateClanModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                 id="create-clan-submit-button"
                                 onClick={handleSave}
                                 disabled={isSubmitting}
-                                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-2 luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50"
+                                className="inline-flex w-full items-center justify-center gap-1.5 luxe-bico py-2 luxe-skin-button disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {isSubmitting ? 'CRIANDO...' : <><span>Criar</span><span className="text-[11px] leading-none">{'\u{1FA99}'}</span><span>{GOLD_CLAN_CREATION_COST}</span></>}
                             </button>

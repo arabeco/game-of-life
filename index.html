@@ -181,7 +181,9 @@
     [data-skin="CYBER"] {
       --skin-accent-color: #7cd9ff;
       --skin-line-color: rgba(255, 94, 218, 0.28);
-      --metal-gold: linear-gradient(135deg, #07111d 0%, #15314d 28%, #35d8ff 60%, #ff56d8 100%);
+      /* O neon vai para as PONTAS. Ciano e rosa em cima do texto branco davam
+         1.52 de contraste — o botao lia como decoracao, nao como saida. */
+      --metal-gold: linear-gradient(135deg, #ff56d8 0%, #35d8ff 15%, #15314d 35%, #0a1729 50%, #15314d 65%, #35d8ff 85%, #ff56d8 100%);
       --luxe-button-text-color: #f7f0ff;
       --luxe-button-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
       --sephirot-bg-gradient: radial-gradient(circle, #102533 0%, #07131b 100%);
@@ -213,7 +215,9 @@
     [data-skin="EMBER"] {
       --skin-accent-color: #a61f1b;
       --skin-line-color: rgba(196, 96, 24, 0.4);
-      --metal-gold: linear-gradient(135deg, #2a0709 0%, #5d1013 28%, #a12a17 62%, #d26c1d 100%);
+      /* Passava por pouco (5.26). Simetrico, a brasa fica nas bordas e o texto
+         volta para o vinho escuro: 8.39. */
+      --metal-gold: linear-gradient(135deg, #d26c1d 0%, #a12a17 20%, #5d1013 38%, #2a0709 50%, #5d1013 62%, #a12a17 80%, #d26c1d 100%);
       --luxe-button-text-color: #f8ede3;
       --luxe-button-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
       --sephirot-bg-gradient: radial-gradient(circle, #4d2000 0%, #2e1300 100%);
@@ -287,7 +291,9 @@
       --skin-accent-color: #8db8ff;
       --skin-line-color: rgba(100, 118, 232, 0.54);
       --arena-card-border-color: #3650a6;
-      --metal-gold: linear-gradient(135deg, #0c1026 0%, #253c7a 34%, #6f58ff 62%, #7ee7ff 100%);
+      /* Mesma correcao do CYBER: o ciano claro no fim do gradiente ficava
+         debaixo do texto branco, e dava 3.18. */
+      --metal-gold: linear-gradient(135deg, #7ee7ff 0%, #6f58ff 16%, #253c7a 36%, #0c1026 50%, #253c7a 64%, #6f58ff 84%, #7ee7ff 100%);
       --luxe-button-text-color: #f4f7ff;
       --luxe-button-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
       --sephirot-bg-gradient: radial-gradient(circle, #1c2453 0%, #090d1c 100%);

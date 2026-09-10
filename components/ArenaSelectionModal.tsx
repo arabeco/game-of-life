@@ -94,7 +94,7 @@ export const ArenaSelectionModal: React.FC<ArenaSelectionModalProps> = ({ curren
                             <button
                                 onClick={handleCreateArena}
                                 disabled={!newArenaName.trim() || !canCreateArena}
-                                className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full py-3 luxe-bico luxe-skin-button disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Criar Arena
                             </button>

@@ -241,7 +241,7 @@ export const CodexClaimModal: React.FC<CodexClaimModalProps> = ({ onClose, token
                       Ver campanha
                     </button>
                   )}
-                  <button onClick={handleClaim} disabled={!preview.canClaim || isClaiming} className="inline-flex items-center justify-center gap-2 rounded-xl luxe-skin-button px-4 py-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50">
+                  <button onClick={handleClaim} disabled={!preview.canClaim || isClaiming} className="inline-flex items-center justify-center gap-2 luxe-bico luxe-skin-button px-4 py-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50">
                     {preview.deliveryMethod === 'external_link' ? <LinkIcon className="h-4 w-4" /> : <CheckIcon className="h-4 w-4" />}
                     {isClaiming ? 'Reivindicando...' : preview.canClaim ? 'Reivindicar campanha' : 'Indisponivel'}
                   </button>

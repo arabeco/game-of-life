@@ -178,6 +178,13 @@ const suites = {
       interactions: ['preserva horarios', 'salva a ordem no banco', 'mantem conclusoes fora da baia'],
     },
     {
+      id: 'skin-button-contrast',
+      label: 'Skin button contrast regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'skin-button-contrast.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['interpola o gradiente do botao', 'cobra o minimo da WCAG em cada skin', 'trava a faixa de luz que corre sozinha'],
+    },
+    {
       id: 'logic-core',
       label: 'Core loop regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'core-loop.regression.mjs')]],

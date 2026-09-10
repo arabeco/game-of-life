@@ -682,11 +682,11 @@ export const CodexModal: React.FC<{
               <div className="grid grid-cols-2 gap-2 mt-4">
                 <button onClick={() => activeCodex && setCampaignPreview(buildDraftPreview(activeCodex))} className="w-full py-2 rounded-xl luxe-button-secondary col-span-2 font-bold tracking-wider">VER CAMPANHA</button>
                 {recipientId ? (
-                  <button onClick={handleDeliverCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">
+                  <button onClick={handleDeliverCodex} className="w-full py-2 luxe-bico luxe-skin-button col-span-2 font-bold tracking-wider">
                     FORJAR PARA {recipientName?.toUpperCase() || 'PUPILO'} · {MENTOR_CAMPAIGN_FORGE_GOLD_COST} OURO
                   </button>
                 ) : (
-                  <button onClick={handleApplyCodex} className="w-full py-2 rounded-xl luxe-skin-button col-span-2 font-bold tracking-wider">INSTALAR NO JOGO</button>
+                  <button onClick={handleApplyCodex} className="w-full py-2 luxe-bico luxe-skin-button col-span-2 font-bold tracking-wider">INSTALAR NO JOGO</button>
                 )}
                 <button onClick={handleCopyJson} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR MODELO</button>
                 <button onClick={handleCopyLink} className="w-full py-2 rounded-xl luxe-button-secondary text-xs">COPIAR LINK</button>
@@ -716,7 +716,7 @@ export const CodexModal: React.FC<{
             </div>
             <div className="flex space-x-2 pt-2">
               <button onClick={() => setIsCreatingArena(false)} className="w-full py-2 rounded-xl luxe-button-secondary">CANCELAR</button>
-              <button onClick={saveArena} className="w-full py-2 rounded-xl luxe-skin-button">CRIAR ARENA</button>
+              <button onClick={saveArena} className="w-full py-2 luxe-bico luxe-skin-button">CRIAR ARENA</button>
             </div>
           </GlassCard>
         </div>

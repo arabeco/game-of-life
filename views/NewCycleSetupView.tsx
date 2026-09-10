@@ -212,7 +212,7 @@ export const NewCycleSetupView: React.FC<NewCycleSetupViewProps> = ({ onCancel, 
                         ))}
                     </div>
                     <div className="flex-shrink-0 pt-4">
-                        <button id="new-cycle-submit-button" onClick={() => setShowConfirm(true)} disabled={!cycleName || !cycleEndDate} className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50">INICIAR NOVO CICLO</button>
+                        <button id="new-cycle-submit-button" onClick={() => setShowConfirm(true)} disabled={!cycleName || !cycleEndDate} className="w-full py-3 luxe-bico luxe-skin-button disabled:opacity-50">INICIAR NOVO CICLO</button>
                     </div>
                 </div>
             </div>

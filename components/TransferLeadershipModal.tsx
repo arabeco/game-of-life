@@ -47,7 +47,7 @@ export const TransferLeadershipModal: React.FC<TransferLeadershipModalProps> = (
                     <button 
                         onClick={() => selectedMemberId && onConfirm(selectedMemberId)} 
                         disabled={!selectedMemberId}
-                        className="w-full py-3 rounded-xl luxe-skin-button disabled:opacity-50"
+                        className="w-full py-3 luxe-bico luxe-skin-button disabled:opacity-50"
                     >
                         Transferir e Sair
                     </button>

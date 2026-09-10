@@ -990,6 +990,22 @@ body {
   color: var(--text-primary) !important;
 }
 
+/* O CARTAO DO ATIVO NAO E O CHAO DA TELA.
+ *
+ * A regra acima escurece todo texto branco dos Ativos no tema claro, e isso esta
+ * certo para o que fica sobre o fundo claro da tela. Mas o cartao de ativo leva
+ * o PROPRIO fundo escuro — a arte da area coberta por um degrade preto, mais as
+ * caixinhas de Arenas e Acoes em preto 70%. O texto branco dele ja estava certo,
+ * e a regra geral o pintava de #17212c: escuro sobre escuro.
+ *
+ * Mesma specificidade da regra acima (quatro classes), entao vence por vir
+ * depois — e e o mesmo remendo que .assets-detail-root ja recebia logo abaixo,
+ * pelo mesmo motivo. */
+.mode-game.theme-light .asset-overview-card :is(.text-white, [class*="text-white/"]),
+.mode-office.theme-light .asset-overview-card :is(.text-white, [class*="text-white/"]) {
+  color: rgba(248, 250, 252, 0.94) !important;
+}
+
 .mode-game.theme-light .assets-detail-root :is(.text-white, [class*="text-white/"]),
 .mode-office.theme-light .assets-detail-root :is(.text-white, [class*="text-white/"]) {
   color: rgba(248, 250, 252, 0.94) !important;

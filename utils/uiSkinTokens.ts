@@ -46,6 +46,67 @@ const mixRgb = (a: RGB, b: RGB, amount: number): RGB => {
   ];
 };
 
+/**
+ * TEXTO CLARO EXIGE FUNDO ESCURO, E ISSO NAO E O MESMO QUE "TEMA ESCURO".
+ *
+ * No tema escuro o cartao e feito misturando o ACENTO DA SKIN com um cinza
+ * profundo — mas so 24% em direcao ao escuro. Com um acento ja claro, como o
+ * Gelo Eterno (#92d4f3), o cartao sai CLARO; e a cor do texto, decidida pelo
+ * tema e nao pelo cartao, saia quase branca. Branco sobre azul-claro.
+ *
+ * A pergunta certa nao e "qual e o tema" e sim "quao claro ficou o fundo".
+ */
+const luminancia = (rgb: RGB): number => {
+  const canal = (valor: number) => {
+    const n = valor / 255;
+    return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * canal(rgb[0]) + 0.7152 * canal(rgb[1]) + 0.0722 * canal(rgb[2]);
+};
+
+/**
+ * A relacao de contraste entre duas cores (WCAG). 4,5:1 e o minimo para texto
+ * pequeno; abaixo disso a pessoa esta adivinhando o que esta escrito.
+ */
+const contraste = (frente: RGB, fundo: RGB): number => {
+  const a = luminancia(frente);
+  const b = luminancia(fundo);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+};
+
+/** Minimo do WCAG para texto pequeno. Abaixo disso a pessoa esta adivinhando. */
+const CONTRASTE_MINIMO = 4.5;
+
+/**
+ * A COR DO TEXTO DO CARTAO, escolhida pelo cartao e nao pelo tema.
+ *
+ * Recebe as duas tintas que a skin gostaria de usar — a clara e a escura, cada
+ * uma no par forte/suave — e devolve a que LE. Se nenhuma das duas alcanca o
+ * minimo, cai para branco ou quase-preto, o que contrastar mais: feio e legivel
+ * ganha de bonito e ilegivel.
+ *
+ * O par forte/suave sai sempre do MESMO lado. Titulo escuro com subtitulo claro
+ * seria pior que os dois errados juntos.
+ */
+const escolherTextoDoCartao = (
+  fundo: RGB,
+  claroForte: RGB,
+  claroSuave: RGB,
+  escuroForte: RGB,
+  escuroSuave: RGB,
+): { forte: RGB; suave: RGB } => {
+  const usarClaro = contraste(claroForte, fundo) >= contraste(escuroForte, fundo);
+  const forte = usarClaro ? claroForte : escuroForte;
+  if (contraste(forte, fundo) >= CONTRASTE_MINIMO) {
+    return { forte, suave: usarClaro ? claroSuave : escuroSuave };
+  }
+
+  const branco: RGB = [255, 255, 255];
+  const quasePreto: RGB = [17, 20, 24];
+  const extremo = contraste(branco, fundo) >= contraste(quasePreto, fundo) ? branco : quasePreto;
+  return { forte: extremo, suave: mixRgb(extremo, fundo, 0.26) };
+};
+
 const rgbToString = (rgb: RGB, alpha = 1) =>
   alpha >= 1 ? `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})` : `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
 
@@ -178,6 +239,20 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
           : mixRgb(accent, white, 0.18);
     const accentText = mixRgb(accent, white, 0.74);
     const accentTextSoft = mixRgb(accent, hexToRgb('#bcc8d5'), 0.82);
+    // Skin de acento claro produz cartao claro mesmo aqui — e a escolha do texto
+    // e por CONTRASTE, nao por brilho. O cartao do Gelo Eterno tem luminancia
+    // 0,37, que passaria por "escuro" em qualquer corte razoavel; mas o texto
+    // claro em cima dele rende 2,2:1, quando o minimo legivel e 4,5:1. Medir a
+    // relacao entre os dois responde certo sem precisar de numero magico.
+    const textoCartao = escolherTextoDoCartao(
+      cardTop,
+      accentText,
+      accentTextSoft,
+      mixRgb(accent, deepDark, 0.88),
+      mixRgb(accent, deepDark, 0.7),
+    );
+    const textoDoCartao = textoCartao.forte;
+    const textoDoCartaoSoft = textoCartao.suave;
     const plannerTop = mixRgb(plannerAccent, hexToRgb('#151b24'), 0.18);
     const plannerHeader = mixRgb(plannerAccent, hexToRgb('#0f141b'), 0.16);
     const plannerScroll = mixRgb(plannerAccent, hexToRgb('#10161d'), 0.12);
@@ -202,10 +277,10 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
       cardStrongBackground: `linear-gradient(180deg, ${rgbToString(cardStrongTop, 0.975)} 0%, ${rgbToString(cardStrongBottom, 0.99)} 100%)`,
       borderColor: rgbToString(border),
       borderSoftColor: rgbToString(borderSoft),
-      accentTextColor: rgbToString(accentText),
+      accentTextColor: rgbToString(textoDoCartao),
       accentSoftTextColor: rgbToString(accentTextSoft),
-      cardTextColor: rgbToString(accentText),
-      cardTextSoftColor: rgbToString(accentTextSoft),
+      cardTextColor: rgbToString(textoDoCartao),
+      cardTextSoftColor: rgbToString(textoDoCartaoSoft),
       plannerTopBackground: isEmber
         ? 'linear-gradient(180deg, rgba(57, 12, 16, 0.96) 0%, rgba(20, 8, 10, 0.985) 100%)'
         : isCyber
@@ -269,6 +344,18 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
         : mixRgb(accent, safeDarkSoft, 0.22);
   const accentText = mixRgb(accent, safeDark, 0.9);
   const accentTextSoft = mixRgb(accent, safeDarkSoft, 0.88);
+  // O mesmo problema do tema escuro, do avesso: acento escuro (Chama Viva,
+  // Genesis) produz cartao ESCURO tambem aqui, e o texto escuro do tema claro
+  // caia para 3,1:1. A escolha e por contraste, igual la.
+  const textoCartao = escolherTextoDoCartao(
+    cardTop,
+    mixRgb(accent, white, 0.86),
+    mixRgb(accent, white, 0.7),
+    accentText,
+    accentTextSoft,
+  );
+  const textoDoCartao = textoCartao.forte;
+  const textoDoCartaoSoft = textoCartao.suave;
   const plannerTop = mixRgb(plannerAccent, plannerMid, 0.2);
   const plannerHeader = mixRgb(plannerAccent, plannerMid, 0.26);
   const plannerScroll = mixRgb(plannerAccent, plannerBase, 0.18);
@@ -293,10 +380,10 @@ export const buildUiSkinTokens = (skinId: string | null | undefined, theme: UiSk
     cardStrongBackground: `linear-gradient(180deg, ${rgbToString(cardStrongTop, 0.98)} 0%, ${rgbToString(cardStrongBottom, 0.96)} 100%)`,
     borderColor: rgbToString(border),
     borderSoftColor: rgbToString(borderSoft),
-    accentTextColor: rgbToString(accentText),
+    accentTextColor: rgbToString(textoDoCartao),
     accentSoftTextColor: rgbToString(accentTextSoft),
-    cardTextColor: rgbToString(accentText),
-    cardTextSoftColor: rgbToString(accentTextSoft),
+    cardTextColor: rgbToString(textoDoCartao),
+    cardTextSoftColor: rgbToString(textoDoCartaoSoft),
     plannerTopBackground: isEmber
       ? 'linear-gradient(180deg, rgba(90, 35, 42, 0.95) 0%, rgba(58, 22, 31, 0.96) 100%)'
       : isCyber

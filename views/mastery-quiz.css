@@ -645,3 +645,117 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ============================================================== A ESCALA
+ *
+ * Dez botoes iguais empilhados obrigavam a ler dez paragrafos para escolher um,
+ * e nenhum deles dizia onde a pessoa estava em relacao aos outros. A escala
+ * separa as duas perguntas: a regua da esquerda responde "onde estou", e as
+ * frases da direita respondem "o que isso quer dizer" — mostrando so tres, a de
+ * baixo, a sua e a de cima.
+ *
+ * Os numeros sao os PONTOS (2 a 20), nao os degraus (1 a 10): e a mesma escala
+ * do pentagono e da ficha da area. Duas telas discordando sobre o mesmo nivel e
+ * pior que qualquer uma das duas escalas.
+ */
+.mastery-scale {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 14px;
+  min-height: 0;
+  align-items: stretch;
+}
+
+/* De cima para baixo o rail vai do 20 ao 2: enche como termometro, e o topo da
+   escada fica em cima, onde a pessoa espera que ele esteja. */
+.mastery-scale-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.mastery-scale-notch {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 245, 227, 0.34);
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+/* Preenchido = tudo que voce ja passou. E o que da a leitura de termometro. */
+.mastery-scale-notch.is-filled {
+  background: color-mix(in srgb, var(--mastery-accent) 22%, rgba(255, 255, 255, 0.04));
+  border-color: color-mix(in srgb, var(--mastery-accent) 30%, transparent);
+  color: rgba(255, 245, 227, 0.78);
+}
+
+.mastery-scale-notch.is-selected {
+  background: color-mix(in srgb, var(--mastery-accent) 62%, rgba(0, 0, 0, 0.2));
+  border-color: var(--mastery-accent);
+  color: #0f0c07;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--mastery-accent) 42%, transparent);
+}
+
+.mastery-scale-notch:hover:not(.is-selected) {
+  border-color: color-mix(in srgb, var(--mastery-accent) 44%, rgba(255, 255, 255, 0.1));
+  color: rgba(255, 245, 227, 0.9);
+}
+
+.mastery-scale-phrases {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mastery-scale-phrase {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 9px;
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+/* As vizinhas ficam legiveis, mas claramente em segundo plano: elas existem
+   para dar contexto, nao para competir com a escolha. */
+.mastery-scale-phrase.is-side {
+  opacity: 0.5;
+}
+
+.mastery-scale-phrase.is-side:hover {
+  opacity: 0.82;
+}
+
+.mastery-scale-phrase.is-current {
+  border-color: color-mix(in srgb, var(--mastery-accent) 46%, transparent);
+  background: color-mix(in srgb, var(--mastery-accent) 12%, rgba(255, 255, 255, 0.03));
+}
+
+.mastery-scale-phrase-level {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mastery-accent);
+}
+
+.mastery-scale-phrase-text {
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 245, 227, 0.86);
+}

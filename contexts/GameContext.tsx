@@ -37,6 +37,7 @@ import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils
 import { getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getCycleXpBonusRate, getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
+import { toMasteryIndex } from '../constants/lifeAreas';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
@@ -1015,7 +1016,12 @@ export interface GameContextType {
     loadAldeiaData: (clanId: string) => Promise<void>;
 }
 
-const GameContext = createContext<GameContextType | undefined>(undefined);
+/**
+ * Exportado para a BANCADA. Componentes como o AchievementModal leem daqui
+ * quatro coisas — toast, feed e preferencias — e sem acesso ao contexto nao ha
+ * como monta-los fora do app para olhar. Nenhum codigo de producao usa isto.
+ */
+export const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode, session: Session | null }> = ({ children, session }) => {
     const isGoldenInviteGateEnabled = false;
@@ -9497,6 +9503,25 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     level: newLevel
                 };
             }).filter(Boolean);
+
+            /**
+             * O RETRATO, gravado ANTES do upsert derrubar o anterior.
+             *
+             * `asset_levels` grava com on-conflict-update: cada avaliacao apaga a
+             * de antes. Sem uma copia, a proxima avaliacao nao tem com o que se
+             * comparar — e comparar-se com a versao anterior de si mesmo e a
+             * unica coisa que essa tela consegue dizer e nenhuma outra diz.
+             *
+             * Falhar aqui nao pode derrubar a avaliacao: o nivel novo e o que a
+             * pessoa pediu; o retrato e memoria nossa.
+             */
+            void supabase.from('mastery_snapshots').insert({
+                user_id: userId,
+                levels: normalizedLevels,
+                mastery_index: toMasteryIndex(nextTotalLevel),
+            }).then(({ error }) => {
+                if (error) console.error('Nao consegui guardar o retrato da maestria:', error.message);
+            });
 
             if (levelsPayload.length > 0) {
                 supabase.from('asset_levels').upsert(levelsPayload, { onConflict: 'user_id,asset_id' })

@@ -2,8 +2,9 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
-import { MASTERY_TOTAL_MAX_LEVEL, getMasteryIndexFromAssets } from '../constants/lifeAreas';
+import { MASTERY_TOTAL_MAX_LEVEL, PONTOS_POR_DEGRAU, getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { GlassCard } from '../components/GlassCard';
+import { MasteryResultModal } from '../components/MasteryResultModal';
 import { ShareIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
 import { shareElementWithFeedback } from '../components/Share';
 import './mastery-quiz.css';
@@ -19,6 +20,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
     const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
     const [currentAssetIndex, setCurrentAssetIndex] = useState(0);
     const [isAssessmentActive, setIsAssessmentActive] = useState(false);
+    const [mostrarResultado, setMostrarResultado] = useState(false);
 
     const buildDraftFromAssets = () => {
         const initialLevels = assets.reduce((acc, asset) => ({ ...acc, [asset.id]: asset.level || 1 }), {});
@@ -91,6 +93,10 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
           ? `A cada 72 horas, você pode mudar sua maestria. Próxima liberação em ${remainingHours}h.`
           : 'A cada 72 horas, você pode mudar sua maestria.';
 
+    if (mostrarResultado) {
+        return <MasteryResultModal onClose={() => { setMostrarResultado(false); onClose?.(); }} />;
+    }
+
     if (!currentAsset) return null;
 
     const accentColor = (ASSET_ACCENT_COLORS as Record<string, string>)[currentAsset.id] || '#C9A84C';
@@ -116,7 +122,11 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
         const success = updateAllAssetLevels(levelsToSave);
         if (success) {
             setShowConfirmModal(false);
-            onClose?.();
+            // O quiz terminava em nada: gravava e voltava para Config. Cinco
+            // decisoes sobre a propria vida, e nenhum instante para olhar o que
+            // elas formam juntas. A tela do resultado fica NO LUGAR do fechamento
+            // — quem fecha ela e que sai.
+            setMostrarResultado(true);
         }
     };
 
@@ -267,24 +277,49 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                                     </div>
                                 </div>
 
-                                <div className="mastery-quiz-level-options" role="radiogroup" aria-label={`Nível de ${currentAsset.name}`}>
-                                    {currentDescriptions.map((description, index) => {
-                                        const level = index + 1;
-                                        const isSelected = currentLevel === level;
-                                        return (
-                                            <button
-                                                key={`${currentAsset.id}-${level}`}
-                                                type="button"
-                                                role="radio"
-                                                aria-checked={isSelected}
-                                                onClick={() => handleLevelChange(level)}
-                                                className={`mastery-quiz-level-option ${isSelected ? 'is-selected' : ''}`}
-                                            >
-                                                <span className="mastery-quiz-level-number">{level}</span>
-                                                <span className="mastery-quiz-level-description">{description}</span>
-                                            </button>
-                                        );
-                                    })}
+                                {/* A ESCALA VIRA TERMOMETRO.
+                                    Dez botoes de tamanho igual, um embaixo do outro, obrigam a
+                                    ler dez paragrafos para escolher um — e nenhum deles diz onde
+                                    voce esta em relacao aos outros. Aqui a coluna da esquerda e
+                                    uma regua que ENCHE ate o seu nivel, e a direita mostra so
+                                    tres frases: a de baixo, a sua e a de cima.
+                                    Ver de onde veio e para onde vai e o que transforma escolher
+                                    um numero em se situar numa escada. */}
+                                <div className="mastery-scale" role="radiogroup" aria-label={`Nível de ${currentAsset.name}`}>
+                                    <div className="mastery-scale-rail">
+                                        {[...currentDescriptions].map((_, index) => currentDescriptions.length - index).map((level) => {
+                                            const isSelected = currentLevel === level;
+                                            return (
+                                                <button
+                                                    key={`${currentAsset.id}-${level}`}
+                                                    type="button"
+                                                    role="radio"
+                                                    aria-checked={isSelected}
+                                                    aria-label={`Nível ${level * PONTOS_POR_DEGRAU}`}
+                                                    onClick={() => handleLevelChange(level)}
+                                                    className={`mastery-scale-notch ${isSelected ? 'is-selected' : ''} ${level <= currentLevel ? 'is-filled' : ''}`}
+                                                >
+                                                    <span className="mastery-scale-number">{level * PONTOS_POR_DEGRAU}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="mastery-scale-phrases">
+                                        {[currentLevel + 1, currentLevel, currentLevel - 1]
+                                            .filter((level) => level >= 1 && level <= sliderMax)
+                                            .map((level) => (
+                                                <button
+                                                    key={`frase-${currentAsset.id}-${level}`}
+                                                    type="button"
+                                                    onClick={() => handleLevelChange(level)}
+                                                    className={`mastery-scale-phrase ${level === currentLevel ? 'is-current' : 'is-side'}`}
+                                                >
+                                                    <span className="mastery-scale-phrase-level">Nível {level * PONTOS_POR_DEGRAU}</span>
+                                                    <span className="mastery-scale-phrase-text">{currentDescriptions[level - 1]}</span>
+                                                </button>
+                                            ))}
+                                    </div>
                                 </div>
 
                                 <div className="mastery-quiz-actions">
@@ -321,7 +356,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                             <button onClick={() => setShowConfirmModal(false)} className="luxe-button-secondary w-full py-3 rounded-2xl">
                                 Cancelar
                             </button>
-                            <button onClick={handleSave} className="luxe-skin-button w-full py-3 rounded-2xl">
+                            <button onClick={handleSave} className="luxe-skin-button luxe-bico w-full py-3">
                                 Confirmar
                             </button>
                         </div>
@@ -339,7 +374,7 @@ export const MasteryView: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                             <button onClick={() => setShowExitConfirmModal(false)} className="luxe-button-secondary w-full py-3 rounded-2xl">
                                 Cancelar
                             </button>
-                            <button onClick={discardAssessmentDraft} className="luxe-skin-button w-full py-3 rounded-2xl">
+                            <button onClick={discardAssessmentDraft} className="luxe-skin-button rounded-2xl w-full py-3">
                                 OK
                             </button>
                         </div>

@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { getAreaDisplayLevel } from '../constants/lifeAreas';
 import { Asset } from '../types';
 
 interface SephirotProps {
@@ -101,7 +102,7 @@ export const Sephirot: React.FC<SephirotProps> = ({
                     transform: 'translateY(-0.07em)',
                 }}
             >
-                {asset.level}
+                {getAreaDisplayLevel(asset.level)}
             </span>
         </div>
   );

@@ -8,7 +8,7 @@ import { Sephirot } from '../components/Sephirot';
 import { EditIcon, XIcon } from '../components/Icons';
 import { Portal } from '../components/Portal';
 import { ASSET_ACCENT_COLORS, getAssetArt } from '../constants/assetVisuals';
-import { LIFE_AREAS, MASTERY_AREA_MAX_LEVEL, getMasteryLevelName } from '../constants/lifeAreas';
+import { LIFE_AREAS, MASTERY_AREA_MAX_LEVEL, PONTOS_POR_DEGRAU, getMasteryLevelName } from '../constants/lifeAreas';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
@@ -630,7 +630,12 @@ export const AssetsView: React.FC = () => {
                             <div className="mx-1 mb-2 border-y border-white/14 bg-[rgba(5,7,10,0.62)] px-3 py-3">
                                 <div className="flex items-baseline justify-between gap-2">
                                     <p className="text-[9px] font-black uppercase leading-none tracking-[0.22em] text-white/50">
-                                        Nível {selectedAssetLevel} de {MASTERY_AREA_MAX_LEVEL}
+                                        {/* A MESMA ESCALA DO PENTAGONO.
+                                            Cada degrau da avaliacao vale dois pontos, e e em
+                                            pontos que a pessoa ve o proprio nivel no grafico.
+                                            Dizer 6 aqui e 12 la seria obrigar a fazer a conta
+                                            para ligar duas telas que falam da mesma coisa. */}
+                                        Nível {selectedAssetLevel * PONTOS_POR_DEGRAU} de {MASTERY_AREA_MAX_LEVEL * PONTOS_POR_DEGRAU}
                                     </p>
                                     <p
                                         className="truncate text-[11px] font-black uppercase leading-none tracking-[0.16em]"
@@ -666,7 +671,7 @@ export const AssetsView: React.FC = () => {
                                 {selectedAssetNextLevel && selectedAssetNextPhrase && (
                                     <p className="mt-2.5 border-t border-white/10 pt-2.5 text-[11px] leading-snug text-white/46">
                                         <span className="font-black uppercase tracking-[0.14em] text-white/62">
-                                            Nível {selectedAssetNextLevel} · {getMasteryLevelName(selectedAssetNextLevel)}
+                                            Nível {selectedAssetNextLevel * PONTOS_POR_DEGRAU} · {getMasteryLevelName(selectedAssetNextLevel)}
                                         </span>
                                         {' — '}
                                         {selectedAssetNextPhrase}

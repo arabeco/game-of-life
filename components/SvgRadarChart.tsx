@@ -17,6 +17,15 @@ interface RadarSeries {
   valueLabelColor?: string;
   valueLabelSize?: number;
   valueLabelWeight?: number | string;
+  /**
+   * Empurra a pastilha do numero para FORA do vertice, ao longo do eixo.
+   *
+   * Com o numero em cima do vertice, duas coisas quebram: a linha do poligono
+   * atravessa o texto, e um valor baixo (que fica perto do centro) cai em cima
+   * do anel do indice. Deslocando, o numero nunca briga com nenhum dos dois,
+   * qualquer que seja o valor — e o ponto exato continua marcado pelo disco.
+   */
+  valueLabelOffset?: number;
 }
 
 interface SvgRadarChartProps {
@@ -30,6 +39,8 @@ interface SvgRadarChartProps {
   labelSize?: number;
   showLegend?: boolean;
   legendAccentColor?: string;
+  /** Distancia do nome da area ate a borda. Sobe quando os numeros saem para fora. */
+  labelOffset?: number;
 }
 
 const CHART_SIZE = 100;
@@ -79,6 +90,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
   labelSize = 4,
   showLegend = false,
   legendAccentColor = 'rgba(255,255,255,0.7)',
+  labelOffset = 8,
 }) => {
   const total = labels.length;
   const gridLevels = Array.from({ length: levels }, (_, index) => (index + 1) / levels);
@@ -145,18 +157,41 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
                       stroke={item.dotStroke || item.stroke}
                       strokeWidth="0.55"
                     />
-                    {label ? (
-                      <text
-                        x={point.x}
-                        y={point.y + 1.1}
-                        textAnchor="middle"
-                        fill={item.valueLabelColor || item.stroke}
-                        fontSize={item.valueLabelSize ?? 3}
-                        fontWeight={item.valueLabelWeight ?? 800}
-                      >
-                        {label}
-                      </text>
-                    ) : null}
+                    {label ? (() => {
+                      const recuo = item.valueLabelOffset ?? 0;
+                      const alvo = recuo > 0
+                        ? getPoint(index, total, RADIUS * normalized + recuo)
+                        : point;
+                      const corpo = item.valueLabelSize ?? 3;
+                      return (
+                        <>
+                          {/* O disco da pastilha acompanha quantos digitos o
+                              numero tem: um raio fixo corta o "16" e sobra no
+                              "2". So existe quando o numero sai do vertice. */}
+                          {recuo > 0 ? (
+                            <circle
+                              cx={alvo.x}
+                              cy={alvo.y}
+                              r={corpo * (0.62 + 0.2 * label.length)}
+                              fill={item.dotFill || '#000'}
+                              fillOpacity={0.92}
+                              stroke={item.dotStroke || item.stroke}
+                              strokeWidth="0.5"
+                            />
+                          ) : null}
+                          <text
+                            x={alvo.x}
+                            y={alvo.y + corpo * 0.35}
+                            textAnchor="middle"
+                            fill={item.valueLabelColor || item.stroke}
+                            fontSize={corpo}
+                            fontWeight={item.valueLabelWeight ?? 800}
+                          >
+                            {label}
+                          </text>
+                        </>
+                      );
+                    })() : null}
                   </g>
                 );
               })}
@@ -164,7 +199,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
         ))}
 
         {labels.map((label, index) => {
-          const point = getPoint(index, total, RADIUS + 8);
+          const point = getPoint(index, total, RADIUS + labelOffset);
           return (
             <text
               key={`label-${label}-${index}`}

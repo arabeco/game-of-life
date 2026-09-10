@@ -20,6 +20,31 @@ export type LifeAreaDefinition = {
 export const MASTERY_AREA_MAX_LEVEL = 10;
 
 /**
+ * Cada degrau da avaliacao vale DOIS pontos na tela.
+ *
+ * A avaliacao continua tendo dez degraus — e o que fica gravado. O que muda e a
+ * escala em que o numero e MOSTRADO: de 0 a 20 por area, o que faz a soma das
+ * cinco fechar nos 100 do Indice Glyph sem ninguem precisar multiplicar nada.
+ *
+ * E o mesmo dois do MASTERY_INDEX_MULTIPLIER, declarado aqui em cima dele para
+ * nao criar dependencia de ordem — se um mudar, o outro tem de mudar junto.
+ */
+export const PONTOS_POR_DEGRAU = 2;
+
+/**
+ * O NIVEL DE UMA AREA, do jeito que a pessoa ve.
+ *
+ * Existe porque o mesmo numero aparece em quatro lugares — o orbe do ativo, a
+ * ficha da area, o pentagono e a previa do perfil — e tres deles mostravam o
+ * valor cru enquanto o quarto mostrava dobrado. Duas telas discordando sobre o
+ * mesmo nivel e pior que qualquer uma das duas escalas.
+ *
+ * O que fica GRAVADO continua sendo o degrau de 1 a 10. Isto e so a exibicao.
+ */
+export const getAreaDisplayLevel = (level: number | null | undefined): number =>
+  Math.max(1, Math.round(Number(level || 1))) * PONTOS_POR_DEGRAU;
+
+/**
  * O NOME DE CADA DEGRAU.
  *
  * A ficha da area mostrava a frase do nivel sem mostrar o nivel: um paragrafo

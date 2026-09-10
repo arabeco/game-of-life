@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { getAreaDisplayLevel } from '../constants/lifeAreas';
 import { Asset, Slot, SlotValue } from '../types';
 import { AssetArenaBoard } from './AssetArenaBoard';
 import { ASSET_ACCENT_COLORS, DEFAULT_ASSET_ART_BY_ID } from '../constants/assetVisuals';
@@ -170,7 +171,7 @@ export const ProfileAssetsPreview: React.FC<{
                                                     background: `linear-gradient(135deg, ${rgbaString(selectedAssetAccentRgb, 0.32)} 0%, rgba(10,12,16,0.92) 100%)`,
                                                 }}
                                             >
-                                                {selectedAssetLevel}
+                                                {getAreaDisplayLevel(selectedAssetLevel)}
                                             </div>
                                             <div className="min-w-0 text-left">
                                                 <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/42">
@@ -263,7 +264,7 @@ export const ProfileAssetsPreview: React.FC<{
                                 <span className="mt-0.5 block truncate text-[9px] text-white/55">{area.description}</span>
                             </span>
                             <span className="text-right text-[9px] font-bold uppercase text-white/68">
-                                <span className="block text-sm font-black text-white">{Math.max(1, asset.level || 1)}</span>
+                                <span className="block text-sm font-black text-white">{getAreaDisplayLevel(asset.level)}</span>
                                 <span>{activeArenas} arenas · {totalActions} ações</span>
                             </span>
                         </button>

@@ -30,9 +30,10 @@ import { getRankBackgroundToken } from '../utils/profileBackgrounds';
  *    para MOSTRAR numa lista, e e o que faz a tela parecer uma escada de verdade
  *    em vez de dez linhas de texto.
  *
- * A regua do jogo e ~1 EXP por minuto executado, entao todo limiar tambem e um
- * numero de HORAS. Horas sao o que a pessoa reconhece: "4.000 horas" quer dizer
- * alguma coisa, "240.000 XP" nao quer dizer nada.
+ * Os limiares sao ditos em EXP. A regua do jogo e ~1 EXP por minuto executado,
+ * entao da vontade de traduzir para horas — mas o bonus de assinatura entra no
+ * fecho e desfaz essa equivalencia justamente para quem paga. Ver a nota sobre
+ * `num` no corpo do componente.
  */
 
 const RAIL_LEFT = 27;
@@ -54,8 +55,21 @@ export const NobilityLadder: React.FC = () => {
     const doneExp = Math.max(0, exp - expAtRank);
     const progress = spanExp > 0 ? Math.min(100, (doneExp / spanExp) * 100) : 100;
 
+    /**
+     * A ESCADA FALA EM EXP, NAO EM HORAS.
+     *
+     * Ela dizia horas porque a regua do jogo e ~1 EXP por minuto executado, e
+     * "4.000 horas" parece mais concreto que "240.000 XP". Duas coisas derrubam
+     * isso:
+     *
+     *  1. QUEM ASSINA NAO BATE. O bonus de assinatura entra no fecho, sobre a
+     *     base — entao a EXP acumulada de um assinante NAO corresponde ao tempo
+     *     que ele executou. A conversao para horas mentiria justamente para quem
+     *     paga.
+     *  2. O NUMERO FINAL. O Soberano custa 1.000.000 de EXP. Esse numero e um
+     *     marco; "16.667 horas" e uma conta.
+     */
     const num = (value: number) => Math.round(value).toLocaleString('pt-BR');
-    const horas = (value: number) => num(value / 60);
 
     const handleToggle = (rankId: string, alcancada: boolean) => {
         const abrindo = openRankId !== rankId;
@@ -95,8 +109,8 @@ export const NobilityLadder: React.FC = () => {
                         Antes eram quatro linhas repetindo os mesmos dois numeros. */}
                     <p className="mt-2 text-[11px] font-bold text-white/70">
                         {nextRank
-                            ? horas(exp) + ' h acumuladas · faltam ' + horas(expAtNext - exp) + ' h para ' + nextRank.name
-                            : horas(exp) + ' h acumuladas · topo da escada'}
+                            ? num(exp) + ' EXP · faltam ' + num(expAtNext - exp) + ' para ' + nextRank.name
+                            : num(exp) + ' EXP · topo da escada'}
                     </p>
                 </div>
             </div>
@@ -171,7 +185,7 @@ export const NobilityLadder: React.FC = () => {
                                             {rank.name}
                                         </span>
                                         <span className="shrink-0 text-[11px] font-black tabular-nums text-white/72">
-                                            {index === 0 ? 'início' : horas(rank.expTotalRequired) + ' h'}
+                                            {index === 0 ? 'início' : num(rank.expTotalRequired) + ' EXP'}
                                         </span>
                                     </div>
 
@@ -180,7 +194,7 @@ export const NobilityLadder: React.FC = () => {
                                             ? 'Você está aqui'
                                             : alcancada
                                                 ? 'Conquistada'
-                                                : 'faltam ' + horas(Math.max(0, rank.expTotalRequired - exp)) + ' h'}
+                                                : 'faltam ' + num(Math.max(0, rank.expTotalRequired - exp)) + ' EXP'}
                                     </p>
 
                                     {aberta && (

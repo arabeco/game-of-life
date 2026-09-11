@@ -1177,7 +1177,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                     <div className="text-[10px] font-black tracking-widest text-gray-400">MEUS PUPILOS</div>
                                                     <button
                                                         onClick={handleOpenMentorshipModal}
-                                                        className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--skin-accent-color)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
+                                                        className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--ui-text-accent)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
                                                     >
                                                         <span>+</span> ADICIONAR
                                                     </button>
@@ -1216,7 +1216,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                             event.stopPropagation();
                                                                             setSelectedPupilLink(link);
                                                                         }}
-                                                                        className="px-3 py-2 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[10px] font-bold tracking-wider text-[var(--skin-accent-color)] hover:bg-[var(--skin-accent-color)]/20 transition-all"
+                                                                        className="px-3 py-2 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[10px] font-bold tracking-wider text-[var(--ui-text-accent)] hover:bg-[var(--skin-accent-color)]/20 transition-all"
                                                                     >
                                                                         NOVA CAMPANHA
                                                                     </button>
@@ -1267,7 +1267,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 <button
                                                     id="links-new-mentorship-button"
                                                     onClick={handleOpenMentorshipModal}
-                                                    className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
+                                                    className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--ui-text-accent)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
                                                 >
                                                     <span>💎</span>
                                                     NOVA MENTORIA
@@ -1282,7 +1282,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 <div className="text-[10px] font-black tracking-widest text-gray-400">VÍNCULOS DE SANGUE</div>
                                                 <button
                                                     onClick={handleOpenPartnershipModal}
-                                                    className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--skin-accent-color)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
+                                                    className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--ui-text-accent)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
                                                 >
                                                     <span>+</span> ADICIONAR
                                                 </button>
@@ -1329,7 +1329,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                             <div className="pt-2 border-t border-white/10">
                                                 <button
                                                     onClick={handleOpenPartnershipModal}
-                                                    className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
+                                                    className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--ui-text-accent)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
                                                 >
                                                     <span>🤝</span>
                                                     NOVA PARCERIA
@@ -1344,7 +1344,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 <div className="text-[10px] font-black tracking-widest text-gray-400">EVENTOS PVP</div>
                                                 <button
                                                     onClick={handleOpenChallengeModal}
-                                                    className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--skin-accent-color)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
+                                                    className="p-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[var(--ui-text-accent)] text-[10px] font-black hover:bg-white/10 transition-all flex items-center gap-1"
                                                 >
                                                     <span>+</span> ADICIONAR
                                                 </button>
@@ -1367,7 +1367,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                                         <div className="text-[10px] text-gray-400">vs {opponent?.nickname || 'Oponente'}</div>
                                                                     </div>
                                                                 </div>
-                                                                <div className="text-xs font-bold text-[var(--skin-accent-color)]">EM ANDAMENTO</div>
+                                                                <div className="text-xs font-bold text-[var(--ui-text-accent)]">EM ANDAMENTO</div>
                                                             </div>
 
                                                             <div className="flex items-center gap-2">
@@ -1387,7 +1387,7 @@ const LinksModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 <button
                                                     id="links-new-challenge-button"
                                                     onClick={handleOpenChallengeModal}
-                                                    className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
+                                                    className="w-full py-3 rounded-xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--ui-text-accent)] text-xs font-bold hover:bg-[var(--skin-accent-color)]/20 transition-all flex items-center justify-center gap-2"
                                                 >
                                                     <span>⚔️</span>
                                                     NOVO DESAFIO
@@ -1568,7 +1568,7 @@ const ChallengeSelectionModal: React.FC<{ title?: string; onClose: () => void; o
                                         <div className="text-sm font-bold text-white">{friend.nickname}</div>
                                         <div className="text-[10px] text-gray-400">Nível {getDisplayLevel(friend.level)}</div>
                                     </div>
-                                    <div className="px-3 py-1 bg-[var(--skin-accent-color)]/20 text-[var(--skin-accent-color)] text-[10px] font-bold rounded-lg uppercase">
+                                    <div className="px-3 py-1 bg-[var(--skin-accent-color)]/20 text-[var(--ui-text-accent)] text-[10px] font-bold rounded-lg uppercase">
                                         Desafiar
                                     </div>
                                 </div>
@@ -1753,7 +1753,7 @@ const FeedbackBetaModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
 
                     {status && (
-                        <div className={`text-center text-xs ${sending ? 'text-[var(--skin-accent-color)] animate-pulse' : 'text-gray-400'}`}>{status}</div>
+                        <div className={`text-center text-xs ${sending ? 'text-[var(--ui-text-accent)] animate-pulse' : 'text-gray-400'}`}>{status}</div>
                     )}
 
                     <button
@@ -1858,6 +1858,11 @@ const GeralTab: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            {showMastery ? (
+                <Suspense fallback={<div className="min-h-48" />}>
+                    <MasteryView embedded onClose={() => setShowMastery(false)} />
+                </Suspense>
+            ) : (
             <button
                 type="button"
                 id="mastery-sliders-button"
@@ -1880,7 +1885,7 @@ const GeralTab: React.FC = () => {
                                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Índice Glyph</div>
                                 <div className="mt-1 flex items-end gap-2">
                                     <span className="text-4xl font-black leading-none text-white">{masteryIndex}</span>
-                                    <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--skin-accent-color)]">/{MASTERY_TOTAL_MAX_LEVEL}</span>
+                                    <span className="pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ui-text-accent)]">/{MASTERY_TOTAL_MAX_LEVEL}</span>
                                 </div>
                             </div>
                             <p className="max-w-[18rem] text-[11px] leading-relaxed text-gray-400">
@@ -1888,10 +1893,10 @@ const GeralTab: React.FC = () => {
                             </p>
                         </div>
                         <div className="flex justify-end">
-                            <div className="flex h-[8.75rem] w-[8.75rem] items-center justify-center rounded-[1.6rem] border border-[var(--skin-accent-color)]/16 bg-black/28 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_24px_rgba(0,0,0,0.22)]">
+                            <div className="flex h-[8.75rem] w-[8.75rem] items-center justify-center rounded-[1.6rem] border border-[var(--skin-accent-color)]/16 bg-[#101720] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                                 <div className="h-[7.5rem] w-[7.5rem]">
                                     <Suspense fallback={<div className="h-full w-full rounded-full bg-white/5" />}>
-                                        <AssetPentagon assets={assets} size="100%" />
+                                        <AssetPentagon assets={assets} size="100%" showCentralLevel={false} />
                                     </Suspense>
                                 </div>
                             </div>
@@ -1899,6 +1904,7 @@ const GeralTab: React.FC = () => {
                     </div>
                 </GlassCard>
             </button>
+            )}
 
             <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group shadow-[0_0_20px_var(--sephirot-glow-color-soft)]" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color,rgba(0,0,0,0))] to-black/60 pointer-events-none" />
@@ -1943,15 +1949,7 @@ const GeralTab: React.FC = () => {
                 />
             )}
 
-            {showMastery && (
-                <Portal>
-                    <div className="fixed inset-0 z-[10000] flex flex-col animate-fade-in overflow-hidden">
-                        <Suspense fallback={<div className="flex-1 bg-black" />}>
-                            <MasteryView onClose={() => setShowMastery(false)} />
-                        </Suspense>
-                    </div>
-                </Portal>
-            )}
+
         </div>
     );
 };
@@ -2243,7 +2241,7 @@ const LegacyPremiumTab: React.FC = () => {
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform">🔗</span>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 group-hover:text-white">Vínculos</span>
-                            {!isPremium && <span className="text-[8px] text-[var(--skin-accent-color)] opacity-70">Convites</span>}
+                            {!isPremium && <span className="text-[8px] text-[var(--ui-text-accent)] opacity-70">Convites</span>}
                         </button>
                         <button
                             id="codex-button"
@@ -2563,7 +2561,7 @@ const MentorCodexModal: React.FC<{
 
                     <button
                         onClick={onCreateNew}
-                        className="w-full py-3 rounded-2xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--skin-accent-color)] text-xs font-bold tracking-wider hover:bg-[var(--skin-accent-color)]/20 transition-all"
+                        className="w-full py-3 rounded-2xl bg-[var(--skin-accent-color)]/10 border border-[var(--skin-accent-color)]/30 text-[var(--ui-text-accent)] text-xs font-bold tracking-wider hover:bg-[var(--skin-accent-color)]/20 transition-all"
                     >
                         CRIAR NOVA CAMPANHA PARA ESTE PUPILO · 100 OURO
                     </button>

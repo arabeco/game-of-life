@@ -226,7 +226,7 @@ export const SeasonView: React.FC = () => {
         showToast,
         updateUserProfile,
         activeArenaPact,
-        arenaPactCandidates,
+        missaoIndividualDisponivel,
     } = useGame();
     const [selectedQuest, setSelectedQuest] = useState<SelectableQuest | null>(null);
     const [selectedAutomaticMission, setSelectedAutomaticMission] = useState<SeasonMission | null>(null);
@@ -505,13 +505,16 @@ export const SeasonView: React.FC = () => {
     }, [completedFlags, quests, activeSeason, seasonMissions]);
 
     // Counts only what the player actually took on; season missions are assigned, not chosen.
+    const individualSlotCount = activeSystemQuests.length + activeIndividualQuests.length + (activeArenaPact ? 1 : 0);
     const chosenMissionCount = activeSystemQuests.length
         + activeIndividualQuests.length
-        + activeClanQuests.length;
+        + activeClanQuests.length
+        + (activeArenaPact ? 1 : 0);
     const activeMissionCount = automaticSeasonMissions.length
         + activeSystemQuests.length
         + activeIndividualQuests.length
-        + activeClanQuests.length;
+        + activeClanQuests.length
+        + (activeArenaPact ? 1 : 0);
 
     const isGenesis = isGenesisSeason(activeSeason);
     const activeSeasonBackground = resolveSeasonBackgroundUrl(activeSeason);
@@ -628,11 +631,11 @@ export const SeasonView: React.FC = () => {
                                 </MissionSection>
                             )}
 
-                            {(activeSystemQuests.length > 0 || activeIndividualQuests.length > 0 || activeArenaPact || arenaPactCandidates.length > 0) && (
+                            {(individualSlotCount > 0 || missaoIndividualDisponivel) && (
                                 <MissionSection
                                     title="Sua escolha"
-                                    hint={`${activeSystemQuests.length}/1 missão`}
-                                    count={activeSystemQuests.length + activeIndividualQuests.length + (activeArenaPact ? 1 : 0)}
+                                    hint={`${individualSlotCount}/1 missão`}
+                                    count={individualSlotCount}
                                 >
                                     {activeSystemQuests.map((quest) => (
                                         <SeasonQuestCard
@@ -675,7 +678,7 @@ export const SeasonView: React.FC = () => {
                                         conceito a mais para a pessoa aprender. */}
                                     <ArenaPactBalloon />
 
-                                    {!activeArenaPact && activeIndividualQuests.length === 0 && !isPactRequestOpen && arenaPactCandidates.length > 0 && (
+                                    {individualSlotCount === 0 && !isPactRequestOpen && missaoIndividualDisponivel && (
                                         <button
                                             type="button"
                                             onClick={() => setPactRequestOpen(true)}
@@ -685,7 +688,7 @@ export const SeasonView: React.FC = () => {
                                         </button>
                                     )}
 
-                                    {!activeArenaPact && activeIndividualQuests.length === 0 && isPactRequestOpen && (
+                                    {individualSlotCount === 0 && isPactRequestOpen && missaoIndividualDisponivel && (
                                         <ArenaPactProposal onClose={() => setPactRequestOpen(false)} />
                                     )}
 

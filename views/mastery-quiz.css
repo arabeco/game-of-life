@@ -646,116 +646,378 @@
   }
 }
 
-/* ============================================================== A ESCALA
+/* ============================================================== A RODA
  *
- * Dez botoes iguais empilhados obrigavam a ler dez paragrafos para escolher um,
- * e nenhum deles dizia onde a pessoa estava em relacao aos outros. A escala
- * separa as duas perguntas: a regua da esquerda responde "onde estou", e as
- * frases da direita respondem "o que isso quer dizer" — mostrando so tres, a de
- * baixo, a sua e a de cima.
+ * A escala anterior mostrava tres frases: a de baixo, a sua e a de cima. Isso
+ * resolveu ler dez paragrafos para escolher um, mas as outras sete SUMIAM — e
+ * sumir e diferente de ficar ao fundo. Quem escolhe um nivel quer saber que a
+ * escada continua, sem que isso dispute com a decisao.
  *
- * Os numeros sao os PONTOS (2 a 20), nao os degraus (1 a 10): e a mesma escala
- * do pentagono e da ficha da area. Duas telas discordando sobre o mesmo nivel e
- * pior que qualquer uma das duas escalas.
+ * Aqui as dez existem sempre, e o que se distribui e a ATENCAO: a escolhida
+ * inteira, as vizinhas de leve, o resto como sombra. E o cilindro do seletor de
+ * hora do telefone, e o motivo de ele funcionar nao e enfeite — o angulo carrega
+ * a distancia, entao "quao fundo na roda" se le sem contar linhas.
+ *
+ * DUAS COISAS SEPARAM ISTO DE UM SLIDESHOW.
+ *
+ * A primeira e de quem e a FRASE. Ela existia em todos os dez itens, e dez
+ * blocos de texto empilhados sao dez cartoes por mais que inclinem. Agora a
+ * frase e do visor: apaga em menos de um passo do centro, e o que rola e uma
+ * coluna de selos — um dial, com a descricao acontecendo onde a luz esta.
+ *
+ * A segunda e o VIDRO. O visor nao pinta um retangulo por cima da roda: ele
+ * DESFOCA o que passa por tras. Isso e o que faz uma lente parecer lente — o
+ * conteudo continua atras dela, e nao embaixo de uma tarja. Por isso o fundo cai
+ * para o preto quase puro, com so um sopro de ambar: vidro so se le contra o
+ * escuro, e qualquer clareira forte no fundo come o reflexo da borda.
+ *
+ * O transform de cada item e escrito pelo componente dentro do rAF. Aqui ficam
+ * so a caixa, o visor e o que nao depende da rolagem.
  */
-.mastery-scale {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: 14px;
+.mastery-wheel {
+  position: relative;
   min-height: 0;
-  align-items: stretch;
+  border-radius: 14px;
+  overflow: hidden;
+  /* Preto, com um ambar tao fraco que so se percebe quando some. */
+  background:
+    radial-gradient(
+      ellipse 58% 11% at 50% 50%,
+      color-mix(in srgb, var(--mastery-accent) 20%, transparent),
+      transparent 80%
+    ),
+    radial-gradient(
+      ellipse 70% 30% at 50% 50%,
+      color-mix(in srgb, var(--mastery-accent) 5%, transparent),
+      transparent 72%
+    ),
+    #000;
+  /* A profundidade e o que transforma inclinacao em cilindro. Menos que isto
+     achata a roda; mais, e ela vira um funil. */
+  perspective: 720px;
+  perspective-origin: 50% 50%;
 }
 
-/* De cima para baixo o rail vai do 20 ao 2: enche como termometro, e o topo da
-   escada fica em cima, onde a pessoa espera que ele esteja. */
-.mastery-scale-rail {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 4px 0;
+/* A sombra das bordas: o cilindro entra e sai de dentro da caixa, em vez de
+   comecar e terminar no nada. */
+.mastery-wheel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    #000 0,
+    rgba(0, 0, 0, 0.86) 14%,
+    transparent 36%,
+    transparent 64%,
+    rgba(0, 0, 0, 0.86) 86%,
+    #000 100%
+  );
 }
 
-.mastery-scale-notch {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 245, 227, 0.34);
-  font-size: 11px;
-  font-weight: 900;
-  cursor: pointer;
-  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+/* ---------------------------------------------------------------- O VISOR
+ *
+ * Duas camadas, e a razao e que a borda precisa ser um FIO DE LUZ e nao um
+ * contorno de cor. Uma so daria uma linha chapada; com a moldura por baixo
+ * carregando o gradiente e o vidro por cima recuado um fio, o que sobra na
+ * beirada muda de brilho ao longo do percurso — que e como metal polido pega a
+ * luz de verdade.
+ *
+ * A forma e o bico das placas de recompensa, na escala do dedo.
+ */
+.mastery-wheel-foco {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 50%;
+  height: calc(var(--altura-item) - 8px);
+  transform: translateY(-50%);
+  pointer-events: none;
+  /* O VISOR FICA ATRAS DOS ITENS, e nao por cima. Por cima, o vidro desfoca e
+     escurece justamente a frase que a pessoa esta lendo — o efeito bonito come
+     a unica coisa que a tela precisa entregar. Atras, ele e a lamina onde a
+     escolha pousa, que e como o seletor do telefone tambem faz. */
+  z-index: 0;
+  clip-path: polygon(
+    14px 0,
+    calc(100% - 14px) 0,
+    100% 50%,
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 50%
+  );
+  /* A moldura: dourado nas pontas, branco onde a luz bate, quase nada no resto. */
+  background: linear-gradient(
+    118deg,
+    color-mix(in srgb, var(--mastery-accent) 62%, transparent) 0%,
+    rgba(255, 255, 255, 0.92) 18%,
+    color-mix(in srgb, var(--mastery-accent) 74%, transparent) 34%,
+    color-mix(in srgb, var(--mastery-accent) 26%, transparent) 56%,
+    rgba(255, 255, 255, 0.66) 76%,
+    color-mix(in srgb, var(--mastery-accent) 54%, transparent) 100%
+  );
+  /* SEM `filter` AQUI, e a lembranca vale para quem for mexer: um filtro no pai
+     faz dele o backdrop dos filhos. Enquanto o vidro tinha `backdrop-filter`,
+     um `drop-shadow` aqui o fez desfocar a propria moldura dourada em vez do que
+     estava atras — a borda virou tarja e o texto sumiu dentro dela. O brilho do
+     visor mora no fundo da roda, que nao filtra nada. */
 }
 
-/* Preenchido = tudo que voce ja passou. E o que da a leitura de termometro. */
-.mastery-scale-notch.is-filled {
-  background: color-mix(in srgb, var(--mastery-accent) 22%, rgba(255, 255, 255, 0.04));
-  border-color: color-mix(in srgb, var(--mastery-accent) 30%, transparent);
-  color: rgba(255, 245, 227, 0.78);
+/* O vidro, recuado um fio: e ele que desfoca a roda que passa por tras. */
+.mastery-wheel-foco::before {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  clip-path: polygon(
+    13px 0,
+    calc(100% - 13px) 0,
+    100% 50%,
+    calc(100% - 13px) 100%,
+    13px 100%,
+    0 50%
+  );
+  /* SEM `backdrop-filter`. Com o visor atras dos itens, o unico backdrop dele e
+     o preto da caixa: desfocar preto e desfocar nada, e a propriedade custa uma
+     camada de composicao em todo quadro de rolagem. O vidro aqui e o que vidro
+     escuro realmente e — translucido sobre o halo, com um fio de luz na beirada. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.015) 48%),
+    color-mix(in srgb, var(--mastery-accent) 6%, rgba(9, 9, 11, 0.72));
 }
 
-.mastery-scale-notch.is-selected {
-  background: color-mix(in srgb, var(--mastery-accent) 62%, rgba(0, 0, 0, 0.2));
-  border-color: var(--mastery-accent);
-  color: #0f0c07;
-  box-shadow: 0 0 14px color-mix(in srgb, var(--mastery-accent) 42%, transparent);
+/* The metal warms continuously with the drag; the reading surface stays dark. */
+.mastery-wheel {
+  --nobreza-atual: 0;
+  --wheel-metal: color-mix(in srgb, var(--mastery-accent) calc(18% + var(--nobreza-atual) * 72%), #747d89);
+}
+.mastery-wheel-foco {
+  background: linear-gradient(
+    calc(115deg + var(--nobreza-atual) * 25deg),
+    var(--wheel-metal),
+    color-mix(in srgb, var(--wheel-metal) 30%, #fff4dc) 18%,
+    var(--wheel-metal) 35%,
+    color-mix(in srgb, var(--wheel-metal) 35%, #202730) 58%,
+    color-mix(in srgb, var(--wheel-metal) 45%, #fff4dc) 80%,
+    var(--wheel-metal)
+  );
+}
+.mastery-wheel-foco::before {
+  background:
+    radial-gradient(ellipse at 15% 0%, color-mix(in srgb, var(--wheel-metal) calc(8% + var(--nobreza-atual) * 17%), transparent), transparent 70%),
+    linear-gradient(155deg, #ffffff12, transparent 55%),
+    #10151d;
+}
+.mastery-wheel-foco::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: linear-gradient(110deg, transparent 25%, #fff4dc20 49%, transparent 72%);
+  background-size: 230% 100%;
+  background-position: calc(var(--nobreza-atual) * 100%) 0;
+  opacity: calc(.12 + var(--nobreza-atual) * .5);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mastery-wheel-foco::after { display: none; }
 }
 
-.mastery-scale-notch:hover:not(.is-selected) {
-  border-color: color-mix(in srgb, var(--mastery-accent) 44%, rgba(255, 255, 255, 0.1));
-  color: rgba(255, 245, 227, 0.9);
+.mastery-wheel-trilho {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  transform-style: preserve-3d;
+  scrollbar-width: none;
 }
 
-.mastery-scale-phrases {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  min-width: 0;
-}
+.mastery-wheel-trilho::-webkit-scrollbar { display: none; }
 
-.mastery-scale-phrase {
+.mastery-wheel-item {
   display: grid;
-  gap: 3px;
+  /* A terceira coluna e vazia de proposito: ela espelha a largura do selo, e e
+     o que deixa a frase CENTRADA no visor em vez de centrada no que sobrou. Sem
+     ela o texto puxa para a direita e a composicao inteira fica torta. */
+  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  align-items: center;
+  gap: 12px;
   width: 100%;
-  padding: 10px 13px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 9px;
-  background: linear-gradient(105deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  height: var(--altura-item);
+  padding: 0 18px;
+  border: 0;
+  background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: opacity 160ms ease, border-color 160ms ease, background 160ms ease;
+  scroll-snap-align: center;
+  /* O ponto de giro no centro faz o item tombar como uma peca do cilindro, e
+     nao como uma carta girando na propria borda de cima. */
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 
-/* As vizinhas ficam legiveis, mas claramente em segundo plano: elas existem
-   para dar contexto, nao para competir com a escolha. */
-.mastery-scale-phrase.is-side {
-  opacity: 0.5;
-}
-
-.mastery-scale-phrase.is-side:hover {
-  opacity: 0.82;
-}
-
-.mastery-scale-phrase.is-current {
-  border-color: color-mix(in srgb, var(--mastery-accent) 46%, transparent);
-  background: color-mix(in srgb, var(--mastery-accent) 12%, rgba(255, 255, 255, 0.03));
-}
-
-.mastery-scale-phrase-level {
-  font-size: 9px;
+/* O SELO. O numero deixa de ser um rotulo em cima da frase e vira a peca que a
+   pessoa cata na roda — e o que continua visivel quando a frase ja se foi. */
+.mastery-wheel-selo {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  /* A LIGA. `--nobreza` vem do componente, de 0 no degrau mais baixo a 1 no
+     topo: embaixo o acento da area quase desaparece no chumbo, em cima ele
+     aparece puro. Nunca troca de cor — so de nobreza. */
+  --liga: color-mix(
+    in srgb,
+    var(--mastery-accent) calc(var(--nobreza, 1) * 74% + 8%),
+    #5b6068
+  );
+  /* O MIOLO E SEMPRE ESCURO, e a liga mora no ANEL.
+     Com a liga preenchendo o selo, o numero ficava em cima dela — e as ligas do
+     meio da rampa caem no vale de luminancia onde nem tinta preta nem tinta
+     branca chegam a 4.5. Varrendo a rampa inteira, o melhor caso possivel dava
+     3.45: nao era o tom que estava errado, era a composicao. Assim o numero fica
+     em creme sobre quase preto nos dez degraus, e a nobreza se le no aro e no
+     brilho, que e onde metal brilha de verdade. */
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.05), transparent 60%),
+    color-mix(in srgb, var(--liga) 12%, #0b0b0d);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--liga) 46%, transparent);
+  color: color-mix(in srgb, var(--liga) 30%, rgba(255, 245, 227, 0.72));
+  /* A fonte de titulo do app. O numero e a insignia do degrau, e insignia com a
+     fonte do corpo le como campo de formulario. */
+  font-family: var(--font-heading);
+  font-size: 16px;
   font-weight: 900;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--mastery-accent);
+  font-variant-numeric: tabular-nums;
 }
 
-.mastery-scale-phrase-text {
-  font-size: 12px;
-  line-height: 1.4;
-  color: rgba(255, 245, 227, 0.86);
+/* A frase e do VISOR: o componente apaga a dela em menos de um passo do centro,
+   entao o que sobra rolando e a coluna de selos. */
+.mastery-wheel-frase {
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.42;
+  color: #fff8ec;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
+
+/* Aceso, o que acende e o ANEL, na liga daquele degrau — o topo da escada como
+   ouro, a base como pedra polida. E a mesma peca, no seu melhor. */
+.mastery-wheel-item.is-focado .mastery-wheel-selo {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.1), transparent 58%),
+    color-mix(in srgb, var(--liga) 20%, #0c0b09);
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--liga) 88%, #fff),
+    inset 0 0 14px color-mix(in srgb, var(--liga) 30%, transparent),
+    0 0 24px color-mix(in srgb, var(--liga) 50%, transparent);
+  color: #fff6e2;
+}
+
+/* Assessment keeps the live shape above the gesture, including short phones. */
+.mastery-quiz-backdrop:has(.is-assessing) { min-height: 100dvh; padding: 8px; }
+.mastery-quiz-shell:has(.is-assessing) { height: min(740px, calc(100dvh - 16px)); gap: 6px; }
+.mastery-quiz-panel-inner.is-assessing {
+  display: grid;
+  grid-template-rows: clamp(140px, 25dvh, 210px) auto 252px auto;
+  align-content: start;
+  gap: 8px;
+  padding: 10px 14px;
+  overflow: hidden;
+}
+.is-assessing .mastery-quiz-pentagon-frame { min-height: 0; overflow: hidden; }
+.is-assessing .mastery-quiz-pentagon-square {
+  width: auto;
+  height: 100%;
+  max-height: 280px;
+  max-width: 100%;
+  border: 0;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--mastery-accent) 7%, transparent), transparent 70%);
+  box-shadow: none;
+}
+.is-assessing .mastery-quiz-asset-name { font-size: 20px; }
+.is-assessing .mastery-quiz-meta { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.is-assessing .mastery-quiz-meta-side { text-align: right; }
+.is-assessing .mastery-quiz-total-value { font-size: 24px; }
+.is-assessing .mastery-quiz-actions { display: grid; grid-template-columns: 1fr 1fr; margin: 0; position: static; padding: 0; }
+.is-assessing .mastery-quiz-nav-button { min-height: 44px; padding: 10px; }
+.is-assessing .mastery-quiz-progress { display: none; }
+.is-assessing.mastery-quiz-panel-inner { grid-template-rows: clamp(140px, 25dvh, 210px) auto 252px auto; }
+@media (max-height: 650px) {
+  .mastery-quiz-panel-inner.is-assessing { gap: 4px; padding: 6px 10px; }
+  .is-assessing .mastery-quiz-kicker, .is-assessing .mastery-quiz-total-label { display: none; }
+  .is-assessing.mastery-quiz-panel-inner { grid-template-rows: minmax(90px, 1fr) auto 252px auto;
+    align-content: stretch; }
+  .mastery-quiz-shell:has(.is-assessing) .mastery-quiz-icon-button { width: 36px; height: 36px; }
+  .mastery-quiz-shell:has(.is-assessing) .mastery-quiz-mode-pill { padding: 5px 12px; }
+}
+/* Keep neighboring choices readable; only the outer edge fades away. */
+.mastery-wheel::after {
+  background: linear-gradient(180deg, #000 0%, transparent 16%, transparent 84%, #000 100%);
+}
+@media (max-width: 360px) {
+  .mastery-wheel-item { grid-template-columns: 40px minmax(0, 1fr); gap: 8px; padding: 0 16px; }
+  .mastery-wheel-selo { width: 40px; height: 40px; }
+  .mastery-wheel-frase { font-size: 12px; -webkit-line-clamp: 4; line-height: 1.35; }
+  .is-assessing .mastery-quiz-asset-name { font-size: 16px; }
+}
+
+/* Quem pediu menos movimento no sistema recebe a lista, sem cilindro: o giro
+   deixa de ser aplicado e o snap para de deslizar. */
+@media (prefers-reduced-motion: reduce) {
+  .mastery-wheel-trilho { scroll-behavior: auto; }
+  .mastery-wheel-item { transform: none !important; }
+  .mastery-wheel-item:not(.is-focado) { opacity: 0.42 !important; }
+}
+
+/* The overview stays mounted and in exactly the same place while answering. */
+.mastery-quiz-panel-inner.mastery-quiz-inline { display: flex; gap: 12px; padding: 12px; overflow-y: auto; }
+.mastery-quiz-stable-summary { flex: none; display: grid; gap: 8px; }
+.mastery-quiz-inline .mastery-quiz-pentagon-square { width: clamp(130px, 22dvh, 185px); }
+.mastery-quiz-inline .mastery-quiz-overview-copy { text-align: center; }
+.mastery-quiz-inline .mastery-quiz-overview-title { font-size: 20px; margin: 0; }
+.mastery-quiz-inline .mastery-quiz-overview-note { font-size: 11px; margin: 3px 0 0; }
+.mastery-quiz-inline .mastery-quiz-overview-metrics { grid-template-columns: 1fr 1fr; gap: 8px; }
+.mastery-quiz-inline .mastery-quiz-overview-metric { padding: 8px; min-height: 0; }
+.mastery-quiz-inline .mastery-quiz-total-value--hero { font-size: 24px; }
+.mastery-quiz-inline .mastery-quiz-overview-stat { font-size: 12px; }
+.mastery-quiz-lower { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.mastery-quiz-lower .mastery-wheel { flex-shrink: 0; }
+.mastery-quiz-lower .mastery-quiz-meta { display: flex; flex-direction: row; align-items: center; }
+.mastery-quiz-lower .mastery-quiz-meta-side { display: none; }
+.mastery-quiz-lower .mastery-quiz-asset-name { font-size: 16px; }
+.mastery-quiz-lower .mastery-quiz-actions { position: static; display: grid; grid-template-columns: 1fr 1fr; padding: 0; margin-top: auto; }
+.mastery-quiz-lower .mastery-quiz-actions--single { grid-template-columns: 1fr; }
+.mastery-quiz-lower .mastery-quiz-nav-button { min-height: 44px; padding: 10px; }
+.mastery-quiz-inline .mastery-quiz-overview-metrics { grid-template-columns: 1fr; }
+.mastery-quiz-embedded { min-height: 0; padding: 0; background: none; }
+.mastery-quiz-embedded .mastery-quiz-shell { width: 100%; height: auto; gap: 8px; }
+.mastery-quiz-embedded .mastery-quiz-panel-inner { height: auto; overflow: visible; }
+.mastery-quiz-embedded .mastery-quiz-lower { min-height: 340px; }
+.mastery-quiz-lower .mastery-quiz-meta { justify-content: center; text-align: center; }
+.mastery-quiz-lower .mastery-quiz-asset-name { text-align: center; }
+.mastery-quiz-lower .mastery-quiz-actions:not(.mastery-quiz-actions--single) .mastery-quiz-nav-button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--mastery-accent) 30%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--mastery-accent) 12%, #131920), #0b1016);
+  color: #efe9dc;
+  box-shadow: inset 0 1px 0 #ffffff10;
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+.mastery-quiz-lower .mastery-quiz-actions:not(.mastery-quiz-actions--single) .mastery-quiz-nav-button::before,
+.mastery-quiz-lower .mastery-quiz-actions:not(.mastery-quiz-actions--single) .mastery-quiz-nav-button::after { display: none; }
+.mastery-history { min-height: 84px; border-bottom: 1px solid #ffffff10; color: #bcd8ed; }
+.mastery-history-chart { width: 100%; height: 64px; overflow: visible; }
+.mastery-history p { margin: 0; text-align: center; font-size: 10px; color: #c2c9d0; min-height: 18px; }
+.mastery-history > p:only-child { padding-top: 30px; }
+.mastery-history-point { cursor: pointer; outline: none; }
+.mastery-history-point:focus-visible circle:last-child { stroke: white; stroke-width: 3; }

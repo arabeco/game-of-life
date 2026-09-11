@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-10T19:09:37.294Z
-- Suite: `core`
+- Generated at: 2026-09-11T18:54:12.244Z
+- Suite: `full`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (19.4s)
+- Build: SKIPPED
 
 ## Checks
 
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.4s)
+### PASS - Item art regression (0.3s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -37,7 +37,7 @@
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.2s)
+### PASS - Reward modal priority regression (0.1s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -53,13 +53,13 @@
 - Simulates: a assinatura muda a regua e nao o elogio
 - Simulates: dia abaixo da media nao soa como falha
 
-### PASS - Cycle comparison regression (0.2s)
+### PASS - Cycle comparison regression (0.1s)
 - Kind: `logic`
 - Simulates: o ciclo nao entra na propria referencia
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.2s)
+### PASS - Subscription XP bonus regression (0.1s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
@@ -94,7 +94,7 @@
 - Simulates: abrir ciclo fecha a rodada
 - Simulates: o fecho do ciclo nao recalcula a base ja paga
 
-### PASS - Oracle reaction regression (0.1s)
+### PASS - Oracle reaction regression (0.2s)
 - Kind: `logic`
 - Simulates: a reacao nao repete a frase anterior
 - Simulates: a primeira acao depois de uma pausa tem fala propria
@@ -112,7 +112,7 @@
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.7s)
+### PASS - Oracle presence policy regression (0.6s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -148,32 +148,93 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (21.4s)
+### PASS - Onboarding happy path (19.1s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (16.4s)
+### PASS - Campaign quiz flow (16.9s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (22.0s)
+### PASS - Cycle report flow (23.7s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (10.9s)
+### PASS - UI shell smoke (13.4s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais
 - Simulates: garante que a casca da app sobe sem overlay travando
+
+### FAIL - Onboarding + oracle + delete
+- Kind: `browser`
+- Simulates: valida onboarding
+- Simulates: abre oracle
+- Simulates: exercita fluxo de delete/account cleanup
+- Error: Onboarding + oracle + delete failed with exit 1
+
+### PLANNED - Notification lab
+- Kind: `browser`
+- Simulates: abre laboratorio de notificacoes
+- Simulates: injeta notificacoes de teste
+- Simulates: confere renderizacao e estados basicos
+
+### PLANNED - Clan creation
+- Kind: `browser`
+- Simulates: abre criacao de grupo
+- Simulates: confirma debito/fluxo
+- Simulates: garante que o grupo nasce na UI
+
+### PLANNED - Mentorship planner sync
+- Kind: `browser`
+- Simulates: cria mentoria 2 contas
+- Simulates: cria arena vinculada
+- Simulates: sincroniza planner entre os lados
+
+### PLANNED - Mentorship arenas visibility
+- Kind: `browser`
+- Simulates: abre mentoria existente
+- Simulates: confere arenas compartilhadas
+- Simulates: valida leitura correta no board
+
+### PLANNED - Partnership mutual arenas
+- Kind: `browser`
+- Simulates: cria parceria 2 contas
+- Simulates: espelha arenas dos dois lados
+- Simulates: confirma visibilidade mutua
+
+### PLANNED - Competition race
+- Kind: `browser`
+- Simulates: abre competicao
+- Simulates: executa corrida entre contas
+- Simulates: confere vencedor, bau e reflexo final
+
+### PLANNED - Season clan smoke
+- Kind: `browser`
+- Simulates: abre temporada
+- Simulates: entra em superficie de missao/quest
+- Simulates: verifica integracao base com grupo
+
+### PLANNED - Legacy era customization
+- Kind: `browser`
+- Simulates: abre customizacao do legado
+- Simulates: troca configuracoes principais
+- Simulates: confirma persistencia visual
+
+### PLANNED - Legacy plaque flow
+- Kind: `browser`
+- Simulates: gera placa final
+- Simulates: abre cena de legado
+- Simulates: confere fluxo de conclusao visual
 
 ## Manual QA Still Required
 

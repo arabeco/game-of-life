@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {buildOracleMissionBrief} from '../utils/oracleMissionBrief.ts';
+const pact={arenaId:'',kind:'volume',arenaName:'todas as arenas'};
+const progress={current:2,goal:3,percent:67,completed:false};
+assert.match(buildOracleMissionBrief(pact,progress),/Falta 1 entrega entre suas arenas/);
+assert.match(buildOracleMissionBrief({...pact,arenaId:'one',arenaName:'Treino'},progress),/em Treino/);
+assert.match(buildOracleMissionBrief(pact,{...progress,current:0}),/pronta para começar/);
+assert.match(buildOracleMissionBrief(pact,{...progress,completed:true}),/recompensa está disponível/);
+assert.match(buildOracleMissionBrief(pact,{...progress,windowEnded:true}),/prazo terminou/);
+assert.match(buildOracleMissionBrief({...pact,kind:'constancia'},progress),/dia com registro/);
+assert.match(buildOracleMissionBrief({...pact,kind:'conclusao'},progress),/67%/);
+assert.doesNotMatch(buildOracleMissionBrief(pact,progress),/hoje|ontem|dias restantes/);
+console.log('PASS mission readings: general/arena, zero, progress, completion, expiration, units; no invented dates.');

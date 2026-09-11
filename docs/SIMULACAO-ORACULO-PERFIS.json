@@ -356,7 +356,7 @@
       },
       {
         "id": "coach:on-pace:10:4",
-        "content": "Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.",
+        "content": "Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.",
         "quickActions": [
           {
             "id": "coach-open-planner",
@@ -397,7 +397,7 @@
       },
       {
         "id": "coach:on-pace:10:4",
-        "content": "Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.",
+        "content": "Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.",
         "quickActions": [
           {
             "id": "coach-open-planner",
@@ -438,7 +438,7 @@
       },
       {
         "id": "coach:on-pace:10:4",
-        "content": "Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.",
+        "content": "Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.",
         "quickActions": [
           {
             "id": "coach-open-planner",
@@ -479,7 +479,7 @@
       },
       {
         "id": "coach:on-pace:10:4",
-        "content": "Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.",
+        "content": "Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.",
         "quickActions": [
           {
             "id": "coach-open-planner",
@@ -638,7 +638,7 @@
       },
       {
         "id": "coach:on-pace:10:80",
-        "content": "Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Que tal Treino hoje?",
+        "content": "Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Há 2 atividades planejadas para hoje ainda por concluir. Você pode rever o dia no Planner.",
         "quickActions": [
           {
             "id": "coach-open-planner",
@@ -685,7 +685,7 @@
       },
       {
         "id": "coach:on-pace:10:80",
-        "content": "Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Que tal Treino hoje?",
+        "content": "Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Há 2 atividades planejadas para hoje ainda por concluir. Você pode rever o dia no Planner.",
         "quickActions": [
           {
             "id": "coach-open-planner",
@@ -732,7 +732,7 @@
       },
       {
         "id": "coach:on-pace:10:80",
-        "content": "Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Que tal Treino hoje?",
+        "content": "Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Há 2 atividades planejadas para hoje ainda por concluir. Você pode rever o dia no Planner.",
         "quickActions": [
           {
             "id": "coach-open-planner",
@@ -1242,7 +1242,7 @@
       },
       {
         "id": "coach:on-pace:10:15",
-        "content": "Você concluiu 15 de 20 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.",
+        "content": "Você concluiu 15 de 20 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.",
         "quickActions": [
           {
             "id": "coach-open-planner",
@@ -1293,7 +1293,7 @@
       },
       {
         "id": "coach:on-pace:10:15",
-        "content": "Você concluiu 15 de 20 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.",
+        "content": "Você concluiu 15 de 20 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.",
         "quickActions": [
           {
             "id": "coach-open-planner",
@@ -1372,7 +1372,7 @@
     "readings": [
       {
         "id": "coach:retomada:return-arena-0:10",
-        "content": "Você voltou a registrar em Treino depois de 7 dias sem nada. O ciclo segue abaixo do planejado, mas recuperar tudo agora não é a prioridade — sustentar a volta é.",
+        "content": "Você voltou a registrar em Treino depois de 7 dias sem registros. O ciclo segue abaixo do planejado. Você pode rever a meta sem tentar compensar toda a pausa hoje.",
         "quickActions": [
           {
             "id": "coach-open-arena:return-arena-0",

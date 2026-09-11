@@ -3,6 +3,8 @@ import { useGame } from '../contexts/GameContext';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { EmojiGlyph } from './EmojiGlyph';
 import type { Arena } from '../types';
+import { missionObjective, missionTime } from '../utils/missionPresentation';
+import { getOperationalDateString } from '../utils/operationalDay.js';
 import { ESCOPO_APP } from '../utils/arenaPacts';
 import type { ArenaPact, ArenaPactDifficulty } from '../utils/arenaPacts';
 
@@ -42,8 +44,7 @@ const PactOption: React.FC<{ pact: ArenaPact; onAccept: (pact: ArenaPact) => voi
             <div className="flex min-w-0 items-start gap-2">
                 <EmojiGlyph value={pact.arenaIcon} className="mt-0.5 shrink-0 text-base" />
                 <div className="min-w-0">
-                    <p className="text-[12px] font-black leading-tight text-white">{pact.title}</p>
-                    <p className="mt-0.5 text-[11px] leading-relaxed text-white/60">{pact.description}</p>
+                    <p className="text-[12px] font-black leading-tight text-white">{missionObjective(pact)}</p>
                     {/* O motivo vem do mesmo numero que gerou a proposta. Sem ele a
                         oferta enuncia a regra e nao diz por que ESTA, para VOCE, agora. */}
                     {pact.motivo && (
@@ -62,13 +63,14 @@ const PactOption: React.FC<{ pact: ArenaPact; onAccept: (pact: ArenaPact) => voi
 );
 
 /** O pacto em curso. Sem pacto aberto nao renderiza nada — nunca propoe. */
-export const ArenaPactBalloon: React.FC<{ onTrocar?: () => void }> = ({ onTrocar }) => {
+export const ArenaPactBalloon: React.FC = () => {
     const { activeArenaPact, arenaPactProgress, abandonArenaPact, claimArenaPact } = useGame();
     const [busy, setBusy] = useState(false);
 
     if (!activeArenaPact || !arenaPactProgress) return null;
 
     const { current, goal, percent, completed } = arenaPactProgress;
+    const time = missionTime(activeArenaPact, getOperationalDateString());
 
     const run = async (fn: () => Promise<void>) => {
         setBusy(true);
@@ -82,74 +84,25 @@ export const ArenaPactBalloon: React.FC<{ onTrocar?: () => void }> = ({ onTrocar
     };
 
     return (
-        <div className="daily-panel-neutral flex items-start gap-3 rounded-2xl border border-[var(--skin-accent-color)]/16 p-3 text-left">
-            <OracleSpeakerMark tone={completed ? 'success' : 'guide'} size="sm" className="mt-0.5 shrink-0" pulse={completed} />
-            <div className="min-w-0 flex-1">
-                <p className="core-label text-[var(--skin-accent-color)]">
-                    {completed ? 'Missão cumprida' : 'Missão em curso'}
-                </p>
-                <p className="mt-1 text-[12px] font-black leading-tight text-white">{activeArenaPact.title}</p>
-
-                {completed ? (
-                    <p className="mt-1 text-[11px] leading-relaxed text-white/70">
-                        Você fez o que combinou. Pegue o que e seu.
-                    </p>
-                ) : (
-                    <>
-                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                            <div
-                                className="h-full rounded-full bg-[var(--skin-accent-color)] transition-all"
-                                style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
-                            />
-                        </div>
-                        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white/50 tabular-nums">
-                            {activeArenaPact.kind === 'constancia' ? `${current} de ${goal} dias` : activeArenaPact.kind === 'volume' ? `${current} de ${goal} ações` : `${percent}%`}
-                        </p>
-                    </>
-                )}
-
-                {activeArenaPact.endsOn && <p className="mt-2 text-[11px] text-white/70">
-                    Atividades de {activeArenaPact.startedOn.split('-').reverse().join('/')} até {activeArenaPact.endsOn.split('-').reverse().join('/')} · dia operacional às 4h.
-                    {arenaPactProgress.windowEnded && !completed && ' Prazo das atividades encerrado. Registre o que fez nessas datas ou encerre a missão, sem perder seu progresso.'}
-                </p>}
-                <RewardLine pact={activeArenaPact} />
-
-                <div className="mt-2 flex flex-wrap gap-2">
-                    {completed ? (
-                        <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void run(claimArenaPact)}
-                            className="luxe-skin-button px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] disabled:opacity-50"
-                        >
-                            Receber
-                        </button>
-                    ) : (
-                        <>
-                            {/* Trocar antes de encerrar: e o que a pessoa quer na
-                                maioria das vezes, e encerrar sem substituto era o
-                                unico caminho oferecido. */}
-                            {onTrocar && (
-                                <button
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={onTrocar}
-                                    className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-white/70 transition-colors hover:border-[var(--skin-accent-color)]/40 hover:text-white disabled:opacity-50"
-                                >
-                                    Trocar de missão
-                                </button>
-                            )}
-                            <button
-                                type="button"
-                                disabled={busy}
-                                onClick={() => void run(abandonArenaPact)}
-                                className="rounded-full border border-white/12 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-white/50 transition-colors hover:text-white/80 disabled:opacity-50"
-                            >
-                                Encerrar missão
-                            </button>
-                        </>
-                    )}
+        <div className="daily-panel-neutral rounded-2xl border border-[var(--skin-accent-color)]/20 p-4 text-left">
+            <div className="flex items-center gap-2">
+                <OracleSpeakerMark tone={completed ? 'success' : 'guide'} size="sm" pulse={completed} />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--skin-accent-color)]">{completed ? 'Missão cumprida' : 'Sua missão'}</span>
+            </div>
+            <h3 className="mt-3 text-base font-bold leading-snug text-white">{missionObjective(activeArenaPact)}</h3>
+            <div className="mt-4 space-y-3">
+                <div>
+                    <div className="mb-1.5 flex justify-between text-[11px] text-white/65"><span>Progresso</span><strong className="text-[var(--skin-accent-color)] tabular-nums">{activeArenaPact.kind === 'conclusao' ? `${Math.round(percent)}%` : `${current}/${goal} ${activeArenaPact.kind === 'constancia' ? 'dias' : 'ações'}`}</strong></div>
+                    <div role="progressbar" aria-label="Progresso da missão" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.max(0,Math.min(100,percent)))} className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[var(--skin-accent-color)] transition-all" style={{width:`${Math.max(0,Math.min(100,percent))}%`}} /></div>
                 </div>
+                {time && !completed && <div>
+                    <div className="mb-1.5 flex justify-between text-[11px] text-white/55"><span>Tempo</span><span>{time.label}</span></div>
+                    <div role="progressbar" aria-label="Tempo decorrido da missão" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(time.percent)} aria-valuetext={time.label} className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-sky-300/60" style={{width:`${time.percent}%`}} /></div>
+                </div>}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
+                <RewardLine pact={activeArenaPact} />
+                <button type="button" disabled={busy} onClick={() => void run(completed ? claimArenaPact : abandonArenaPact)} className={completed ? 'luxe-skin-button min-h-11 px-4 text-xs font-bold disabled:opacity-50' : 'min-h-11 rounded-full px-3 text-xs text-white/50 hover:text-white disabled:opacity-50'}>{completed ? 'Receber' : 'Encerrar'}</button>
             </div>
         </div>
     );

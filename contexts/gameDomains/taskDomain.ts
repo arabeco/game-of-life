@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Action, Arena, Campaign, Clan, Cycle, DailyCommitment, DayOfWeek, FeedEvent, FeedEventType, Report, ScheduledTask, SeasonQuest } from '../../types';
 import type { ArenaPact, ArenaPactProgress } from '../../utils/arenaPacts';
+import { isActionInPactScope } from '../../utils/arenaPacts';
 import { mergeTasksIntoCommitment, reconcileTaskInCommitment } from '../../utils/coreLoopUtils.js';
 import { OPERATIONAL_DAY_START_MINUTE, getOperationalDateString, getTaskOperationalDateString, taskMatchesOperationalDate } from '../../utils/operationalDay.js';
 import { isSharedArena } from '../../utils/taskDomain.js';
@@ -563,8 +564,10 @@ export const createTaskDomain = ({
 
         // A conclusao precisa ser da arena do pacto, senao qualquer tarefa do dia
         // viraria "avanco no pacto".
-        const arenaDaAcao = getArenas().find((arena) => (arena.actionIds || []).includes(action.id));
-        if (!arenaDaAcao || arenaDaAcao.id !== pacto.arenaId) return false;
+        if (!isActionInPactScope(pacto, action, getArenas())) return false;
+        const deliveryDate = getTaskOperationalDateString(completedTask);
+        if (deliveryDate < pacto.startedOn || deliveryDate > getOperationalDateString()
+            || (pacto.endsOn && deliveryDate > pacto.endsOn)) return false;
 
         const alvo = Math.max(1, progresso.goal);
         const feito = Math.min(Math.max(0, progresso.current), alvo);

@@ -26,6 +26,7 @@ interface RadarSeries {
    * qualquer que seja o valor — e o ponto exato continua marcado pelo disco.
    */
   valueLabelOffset?: number;
+  activeIndex?: number;
 }
 
 interface SvgRadarChartProps {
@@ -149,6 +150,9 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
                 const label = item.valueLabel?.(value, index) ?? null;
                 return (
                   <g key={`${item.id}-dot-${index}`}>
+                    {item.activeIndex === index && (
+                      <circle cx={point.x} cy={point.y} r={4} fill={item.stroke} fillOpacity={0.2} stroke={item.stroke} strokeWidth={0.65} />
+                    )}
                     <circle
                       cx={point.x}
                       cy={point.y}
@@ -183,7 +187,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
                             x={alvo.x}
                             y={alvo.y + corpo * 0.35}
                             textAnchor="middle"
-                            fill={item.valueLabelColor || item.stroke}
+                            fill={item.activeIndex === index ? '#ffffff' : item.valueLabelColor || item.stroke}
                             fontSize={corpo}
                             fontWeight={item.valueLabelWeight ?? 800}
                           >

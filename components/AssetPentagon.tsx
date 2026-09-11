@@ -8,6 +8,7 @@ interface AssetPentagonProps {
   tempLevels?: Record<string, number>;
   size?: number | string;
   showCentralLevel?: boolean;
+  centralStyle?: 'badge' | 'plain';
   /**
    * Destaca o numero de cada ponta.
    *
@@ -16,6 +17,7 @@ interface AssetPentagonProps {
    * um, e e neles que ela quer se reconhecer.
    */
   destacarPontas?: boolean;
+  activeAreaId?: string;
 }
 
 export const AssetPentagon: React.FC<AssetPentagonProps> = ({
@@ -23,7 +25,9 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
   tempLevels,
   size = 280,
   showCentralLevel = true,
+  centralStyle = 'badge',
   destacarPontas = false,
+  activeAreaId,
 }) => {
   const chartAreas = LIFE_AREAS
     .map((area) => ({ area, asset: assets.find((asset) => asset.id === area.id) }))
@@ -63,6 +67,7 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
         labelOffset={destacarPontas ? 13 : 8}
         series={[{
           id: 'area-levels',
+          activeIndex: activeAreaId ? chartAreas.findIndex(({ area }) => area.id === activeAreaId) : undefined,
           values: pontos,
           stroke: goldBright,
           fill: goldFill,
@@ -72,7 +77,7 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
           dotRadius: destacarPontas ? 1.5 : 1.8,
           dotFill: '#11110f',
           dotStroke: goldBright,
-          valueLabel: (value) => String(value),
+          valueLabel: (value) => String(Math.round(value)),
           valueLabelColor: destacarPontas ? '#fff6dd' : '#eee4c8',
           valueLabelSize: destacarPontas ? 4.2 : 2.75,
           valueLabelWeight: 900,
@@ -89,7 +94,7 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
                parte que da forma a figura. Agora e um anel: menor, quase
                transparente e desfocado, entao o grafico atravessa por baixo e o
                numero continua legivel. */
-            className="flex h-[52px] w-[52px] items-center justify-center rounded-full border bg-[#0b0c0d]/38 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_7px_18px_rgba(0,0,0,.45)] backdrop-blur-[3px]"
+            className={centralStyle === 'plain' ? 'flex items-center justify-center' : 'flex h-[52px] w-[52px] items-center justify-center rounded-full border bg-[#0b0c0d]/38 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_7px_18px_rgba(0,0,0,.45)] backdrop-blur-[3px]'}
             style={{ borderColor: goldMetallic }}
           >
             <span className="text-2xl font-black leading-none [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]" style={{ color: goldBright }}>

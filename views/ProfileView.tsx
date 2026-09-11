@@ -809,7 +809,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                             className="p-2 rounded-full border border-white/20 bg-black/50 backdrop-blur-sm animate-fade-in"
                                             title="Mudar Fundo"
                                         >
-                                            <ImageIcon className="w-5 h-5 text-[var(--skin-accent-color)]" />
+                                            <ImageIcon className="w-5 h-5 text-[var(--ui-text-accent)]" />
                                         </button>
                                     )}
                                 </div>
@@ -821,7 +821,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                         <button
                                             type="button"
                                             onClick={openExistingAchievements}
-                                            className="group flex h-10 w-10 items-center justify-center rounded-full border bg-black/60 text-[var(--skin-accent-color)] backdrop-blur-sm transition-transform hover:scale-[1.04]"
+                                            className="group flex h-10 w-10 items-center justify-center rounded-full border bg-black/60 text-[var(--ui-text-accent)] backdrop-blur-sm transition-transform hover:scale-[1.04]"
                                             style={{
                                                 borderColor: PROFILE_METAL_EDGE,
                                                 boxShadow: '0 10px 26px rgba(0,0,0,.36), 0 0 16px color-mix(in srgb, var(--skin-accent-color) 16%, transparent)',
@@ -1072,6 +1072,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
                                                     <AssetPentagon
                                                         assets={assets}
                                                         tempLevels={profilePentagonLevels}
+                                                        showCentralLevel={false}
                                                         size={210}
                                                     />
                                                 </Suspense>

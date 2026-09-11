@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {missionObjective,missionTime} from '../utils/missionPresentation.ts';
+const pact={arenaId:'',kind:'volume',goal:7,startedOn:'2026-09-10',endsOn:'2026-09-23'};
+assert.equal(missionObjective(pact),'Conclua 7 ações entre suas arenas em 14 dias');
+assert.equal(missionTime(pact,'2026-09-10').percent,0);
+assert.equal(missionTime(pact,'2026-09-17').percent,50);
+assert.equal(missionTime(pact,'2026-09-23').label,'Último dia');
+assert.equal(missionTime(pact,'2026-09-24').percent,100);
+assert.equal(missionTime(pact,'2026-09-09').percent,0);
+assert.equal(missionTime({...pact,endsOn:null},'2026-09-10'),null);
+assert.equal(missionObjective({...pact,kind:'retomada',goal:2,arenaId:'a',arenaName:'Treino',endsOn:null}),'Conclua 2 ações em Treino');
+console.log('PASS objective and time: inclusive 14 days, start, halfway, final day, expiration, no deadline.');

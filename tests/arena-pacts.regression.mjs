@@ -14,6 +14,7 @@ import {
   resolvePactArena,
   DIAS_PARA_RETOMADA,
   isArenaEligible,
+  isActionInPactScope,
   measurePactProgress,
   MIN_ACTIONS_FOR_CONCLUSAO,
   rebuildActivePact,
@@ -221,6 +222,18 @@ assert.equal(outra.current, 0, 'acao de outra arena nao alimenta o pacto');
 // --- retomada fecha com uma unica entrega --------------------------------
 const pactoRetomada = { ...pactoConstancia, kind: 'retomada', goal: 1 };
 const retomou = measurePactProgress(pactoRetomada, alvo, actionsFor(alvo), [task('alvo-a', '2026-08-22')]);
+
+// Nova retomada pede duas entregas; legado com meta 1 continua valido.
+const duas = {...pactoRetomada, goal: 2};
+const primeira = task('alvo-a', '2026-08-22');
+assert.equal(measurePactProgress(duas, alvo, actionsFor(alvo), [primeira, primeira], HOJE).completed, false);
+assert.equal(measurePactProgress(duas, alvo, actionsFor(alvo), [primeira], HOJE).goal, 2);
+assert.equal(measurePactProgress(duas, alvo, actionsFor(alvo), [primeira, task('alvo-b','2026-08-23')], HOJE).completed, true);
+assert.equal(measurePactProgress(duas, alvo, actionsFor(alvo), [primeira, task('alvo-b','2026-08-24')], HOJE).completed, false);
+assert.equal(isActionInPactScope({...duas, arenaId: ESCOPO_APP}, actionsFor(alvo)[0], [alvo]), true);
+assert.equal(isActionInPactScope({...duas, arenaId: ESCOPO_APP}, {...actionsFor(alvo)[0], actionType:'Livre'}, [alvo]), false);
+assert.equal(isActionInPactScope({...duas, arenaId: ESCOPO_APP}, actionsFor(alvo)[0], [{...alvo,isArchived:true}]), false);
+assert.equal(isActionInPactScope({...duas, arenaId:'outra'}, actionsFor(alvo)[0], [alvo]), false);
 assert.equal(retomou.completed, true);
 assert.equal(retomou.percent, 100);
 

@@ -86,7 +86,7 @@ Dados calculados: {"arenas":1,"completed":4,"planned":6,"progress":67,"expected"
    - Assunto: `coach:quanto-falta` (peso 60 = 60).
    - Venceu porque: maior peso final entre os permitidos e acordados; o proximo era coach:on-pace (0, peso menor).
 
-2. Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.
+2. Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.
    - Botões: Abrir Planner · Ver ciclo.
    - Regra: `coach:on-pace:10:4`.
    - Estado Mestre: `estavel` — 67% feito contra 71% esperado, sem desvio relevante.
@@ -95,7 +95,7 @@ Dados calculados: {"arenas":1,"completed":4,"planned":6,"progress":67,"expected"
    - Assunto: `coach:on-pace` (peso 0 = 0).
    - Venceu porque: maior peso final entre os permitidos e acordados; o proximo era coach:quanto-falta (60, descansando (2d)).
 
-3. Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.
+3. Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.
    - Botões: Abrir Planner · Ver ciclo.
    - Regra: `coach:on-pace:10:4`.
    - Estado Mestre: `estavel` — 67% feito contra 71% esperado, sem desvio relevante.
@@ -104,7 +104,7 @@ Dados calculados: {"arenas":1,"completed":4,"planned":6,"progress":67,"expected"
    - Assunto: `coach:on-pace` (peso 0 = 0).
    - Venceu porque: maior peso final entre os permitidos e acordados; o proximo era coach:quanto-falta (60, descansando (2d)).
 
-4. Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.
+4. Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.
    - Botões: Abrir Planner · Ver ciclo.
    - Regra: `coach:on-pace:10:4`.
    - Estado Mestre: `estavel` — 67% feito contra 71% esperado, sem desvio relevante.
@@ -113,7 +113,7 @@ Dados calculados: {"arenas":1,"completed":4,"planned":6,"progress":67,"expected"
    - Assunto: `coach:on-pace` (peso 0 = 0).
    - Venceu porque: maior peso final entre os permitidos e acordados; o proximo era coach:quanto-falta (60, descansando (2d)).
 
-5. Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.
+5. Você concluiu 4 de 6 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.
    - Botões: Abrir Planner · Ver ciclo.
    - Regra: `coach:on-pace:10:4`.
    - Estado Mestre: `estavel` — 67% feito contra 71% esperado, sem desvio relevante.
@@ -152,7 +152,7 @@ Dados calculados: {"arenas":5,"completed":80,"planned":100,"progress":80,"expect
    - Assunto: `coach:quanto-falta` (peso 60 -25 de bônus = 35).
    - Venceu porque: maior peso final entre os permitidos e acordados; o proximo era coach:ahead (90, descansando (2d)).
 
-3. Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Que tal Treino hoje?
+3. Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Há 2 atividades planejadas para hoje ainda por concluir. Você pode rever o dia no Planner.
    - Botões: Abrir Planner · Ver ciclo.
    - Regra: `coach:on-pace:10:80`.
    - Estado Mestre: `forte` — 80% feito contra 71% esperado.
@@ -161,7 +161,7 @@ Dados calculados: {"arenas":5,"completed":80,"planned":100,"progress":80,"expect
    - Assunto: `coach:on-pace` (peso 0 = 0).
    - Venceu porque: maior peso final entre os permitidos e acordados; o proximo era coach:ahead (90, descansando (2d)).
 
-4. Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Que tal Treino hoje?
+4. Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Há 2 atividades planejadas para hoje ainda por concluir. Você pode rever o dia no Planner.
    - Botões: Abrir Planner · Ver ciclo.
    - Regra: `coach:on-pace:10:80`.
    - Estado Mestre: `forte` — 80% feito contra 71% esperado.
@@ -170,7 +170,7 @@ Dados calculados: {"arenas":5,"completed":80,"planned":100,"progress":80,"expect
    - Assunto: `coach:on-pace` (peso 0 = 0).
    - Venceu porque: maior peso final entre os permitidos e acordados; o proximo era coach:ahead (90, descansando (2d)).
 
-5. Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Que tal Treino hoje?
+5. Você concluiu 80 de 100 ações e esta acompanhando o ritmo do ciclo. Há 2 atividades planejadas para hoje ainda por concluir. Você pode rever o dia no Planner.
    - Botões: Abrir Planner · Ver ciclo.
    - Regra: `coach:on-pace:10:80`.
    - Estado Mestre: `forte` — 80% feito contra 71% esperado.
@@ -275,7 +275,7 @@ Dados calculados: {"arenas":1,"completed":15,"planned":20,"progress":75,"expecte
    - Assunto: `coach:volume-x-constancia` (peso 56 = 56).
    - Venceu porque: maior peso final entre os permitidos e acordados; o proximo era coach:quanto-falta (60, descansando (2d)).
 
-4. Você concluiu 15 de 20 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.
+4. Você concluiu 15 de 20 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.
    - Botões: Abrir Planner · Ver ciclo.
    - Regra: `coach:on-pace:10:15`.
    - Estado Mestre: `estavel` — 75% feito contra 71% esperado, sem desvio relevante.
@@ -284,7 +284,7 @@ Dados calculados: {"arenas":1,"completed":15,"planned":20,"progress":75,"expecte
    - Assunto: `coach:on-pace` (peso 0 = 0).
    - Venceu porque: maior peso final entre os permitidos e acordados; o proximo era coach:quanto-falta (60, descansando (2d)).
 
-5. Você concluiu 15 de 20 ações e esta acompanhando o ritmo do ciclo. Escolha uma ação que mantenha o fio sem pesar o dia.
+5. Você concluiu 15 de 20 ações e esta acompanhando o ritmo do ciclo. Hoje não há atividades pendentes no seu planejamento.
    - Botões: Abrir Planner · Ver ciclo.
    - Regra: `coach:on-pace:10:15`.
    - Estado Mestre: `estavel` — 75% feito contra 71% esperado, sem desvio relevante.
@@ -305,7 +305,7 @@ Dados calculados: {"arenas":1,"completed":4,"planned":12,"progress":33,"expected
 
 **Analisar meu ciclo — respostas reais**
 
-1. Você voltou a registrar em Treino depois de 7 dias sem nada. O ciclo segue abaixo do planejado, mas recuperar tudo agora não é a prioridade — sustentar a volta é.
+1. Você voltou a registrar em Treino depois de 7 dias sem registros. O ciclo segue abaixo do planejado. Você pode rever a meta sem tentar compensar toda a pausa hoje.
    - Botões: Abrir Treino · Abrir Planner.
    - Regra: `coach:retomada:return-arena-0:10`.
    - Estado Mestre: `retomando` — Treino voltou apos 7 dias parada.

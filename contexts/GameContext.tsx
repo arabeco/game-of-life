@@ -9504,25 +9504,6 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 };
             }).filter(Boolean);
 
-            /**
-             * O RETRATO, gravado ANTES do upsert derrubar o anterior.
-             *
-             * `asset_levels` grava com on-conflict-update: cada avaliacao apaga a
-             * de antes. Sem uma copia, a proxima avaliacao nao tem com o que se
-             * comparar — e comparar-se com a versao anterior de si mesmo e a
-             * unica coisa que essa tela consegue dizer e nenhuma outra diz.
-             *
-             * Falhar aqui nao pode derrubar a avaliacao: o nivel novo e o que a
-             * pessoa pediu; o retrato e memoria nossa.
-             */
-            void supabase.from('mastery_snapshots').insert({
-                user_id: userId,
-                levels: normalizedLevels,
-                mastery_index: toMasteryIndex(nextTotalLevel),
-            }).then(({ error }) => {
-                if (error) console.error('Nao consegui guardar o retrato da maestria:', error.message);
-            });
-
             if (levelsPayload.length > 0) {
                 supabase.from('asset_levels').upsert(levelsPayload, { onConflict: 'user_id,asset_id' })
                     .then(({ error }) => {
@@ -9531,7 +9512,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                             showToast('Nao consegui salvar a maestria no banco agora.', 'error');
                             return;
                         }
-                        updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
+                        // Only successful level saves belong in the assessment history.
+                        void supabase.from('mastery_snapshots').insert({
+                            user_id: userId,
+                            levels: normalizedLevels,
+                            mastery_index: toMasteryIndex(nextTotalLevel),
+                        }).then(({ error: snapshotError }) => {
+                            if (snapshotError) console.error('Nao consegui guardar o retrato da maestria:', snapshotError.message);
+                            updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
+                        });
                     });
             } else {
                 updateUserProfile({ lastLevelUpdate: Date.now(), level: nextTotalLevel });
@@ -14323,7 +14312,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
         }
 
         const { data, error } = await supabase.rpc('accept_arena_pact', {
-            p_arena_id: fresh.arenaId, p_kind: fresh.kind, p_difficulty: fresh.difficulty, p_goal: fresh.goal,
+            p_arena_id: fresh.arenaId || null, p_kind: fresh.kind, p_difficulty: fresh.difficulty, p_goal: fresh.goal,
         });
         if (error || !data?.success) {
             // O anterior JA foi encerrado. Calar isso deixaria a pessoa achando

@@ -17,7 +17,8 @@ import { buildOracleDayBrief } from '../utils/oracleDayBrief';
 import { buildOracleCycleCoachBrief } from '../utils/oracleCoach';
 import { lerMemoriaDoCoach, registrarLeituraDoCoach } from '../utils/oracleCoachMemory';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
-import { ArenaPactBalloon, ArenaPactProposal } from './ArenaPactBalloon';
+import { OracleMissionPanel } from './OracleMissionPanel';
+import { Sun, Flag, BookOpen } from 'lucide-react';
 
 type OracleTabTarget = 'chat' | 'requests';
 // Marca a leitura pedida a mao: uma so por vez na lista, e nunca vai para o banco.
@@ -206,7 +207,7 @@ const buildNotificationSignalMessage = (notification: Notification, oracleMode: 
 
 export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; isEmbedded?: boolean; onNavigateTab?: (tab: OracleTabTarget) => void }> = ({ onClose, hideHeader = false, isEmbedded = false }) => {
   const { userProfile, assets, actions, tasks, taskPool, activeCycle, dailyCommitment, cycleProgress, oraclePreferences, oracleMessages, notifications, requestOracleContentCard, activeArenaPact, arenaPactProgress, arenaPactCandidates, missaoIndividualDisponivel, missaoDeSistemaAtiva, showToast } = useGame();
-  const [section, setSection] = useState<'guidance' | 'wisdom'>('guidance');
+  const [section, setSection] = useState<'guidance' | 'mission' | 'wisdom'>('guidance');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -317,6 +318,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   useEffect(() => {
     // Falas já gravadas continuam no histórico; novos eventos são temporários.
     const recentFeedCards = (oracleMessages || [])
+      .filter(message => message.contextSnapshot?.purpose !== 'individual_mission')
       .filter((message) => message.deliveryType === 'feed'
         || (message.deliveryType === 'chat' && message.contextSnapshot?.purpose === 'oracle_speech'))
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -397,6 +399,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
   // Auto-scroll to bottom
   useEffect(() => {
+    if (section === 'mission') {
+      document.getElementById('oracle-content')?.scrollTo({top: 0});
+      return;
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, section]);
 
@@ -493,20 +499,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
 
   const { trigger: sensory } = useSensoryFeedback();
-  const [pactPanelOpen, setPactPanelOpen] = useState(false);
-  // Trocar e o caminho mais usado: quem tem um pacto raramente quer ficar sem
-  // nenhum, quer outro no lugar. Este estado abre a proposta POR CIMA do pacto
-  // ativo, em vez de exigir encerrar antes.
-  const [trocandoPacto, setTrocandoPacto] = useState(false);
-
-  // Sem arena elegivel não ha pacto possível. O botao fica opaco em vez de sumir:
-  // sumir faz o rodape pular, e não explica nada.
-  // Inclui a missao do APP INTEIRO, e nao so as por arena. Antes, quem nao tinha
-  // nenhuma frente isolada elegivel — cedo na jornada, ou sem ciclo aberto —
-  // levava "Nenhuma arena sua esta elegivel" com a missao geral disponivel logo
-  // ali dentro do balao.
-  const missionAvailable = missaoIndividualDisponivel;
-
   /**
    * A leitura do proprio estado, na hora e de graca.
    *
@@ -551,28 +543,6 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
       feedTrigger: 'manual', quickActions: brief.quickActions,
     }]);
   }, [operationalContext, sensory, currentMode, userProfile.id]);
-
-  const handleAskMission = useCallback(() => {
-    if (activeArenaPact) {
-      setTrocandoPacto(false);
-      setPactPanelOpen(true);
-      return;
-    }
-    // O slot esta com uma missao de sistema. Abrir a proposta aqui daria um painel
-    // que recusaria o aceite depois — mais honesto dizer onde ela mora.
-    if (missaoDeSistemaAtiva) {
-      sensory('click_soft');
-      showToast(`"${missaoDeSistemaAtiva.title}" esta em andamento. Ela fica na aba Temporada.`, 'info');
-      return;
-    }
-    if (!missionAvailable) {
-      sensory('error');
-      showToast('Nenhuma missao disponivel agora. Registre uma acao e eu volto com uma.', 'warning');
-      return;
-    }
-    sensory('click_soft');
-    setPactPanelOpen(true);
-  }, [activeArenaPact, missaoDeSistemaAtiva, missionAvailable, sensory, showToast]);
 
   const runQuickAction = useCallback((action: ChatQuickAction) => {
     switch (action.kind) {
@@ -709,7 +679,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
   const showStatusPill = hideHeader;
 
   const wisdomIds = new Set((oracleMessages || []).filter(message => message.deliveryType === 'feed' && message.contextSnapshot?.purpose !== 'oracle_speech').map(message => message.id));
-  const visibleMessages = messages.filter(message => section === 'wisdom' ? (message.section === 'wisdom' || wisdomIds.has(message.feedId || '')) : !(message.section === 'wisdom' || wisdomIds.has(message.feedId || '')));
+  const visibleMessages = section === 'mission' ? [] : messages.filter(message => section === 'wisdom' ? (message.section === 'wisdom' || wisdomIds.has(message.feedId || '')) : !(message.section === 'wisdom' || wisdomIds.has(message.feedId || '')));
 
   const content = (
       <>
@@ -762,7 +732,11 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
         )}
 
         <div className="flex shrink-0 gap-2 border-b border-white/10 px-4 py-2" role="tablist" aria-label="Oráculo">
-          {([['guidance', 'Meu acompanhamento'], ['wisdom', 'Sabedoria']] as const).map(([id, label]) => <button key={id} id={`oracle-tab-${id}`} role="tab" aria-selected={section === id} aria-controls="oracle-content" className={`min-h-11 flex-1 rounded-xl px-2 text-xs font-bold ${section === id ? 'bg-white/10 text-[var(--skin-accent-color)]' : 'text-white/55'}`} onClick={() => {setSection(id);setPactPanelOpen(false);}}>{label}</button>)}
+          {([{id:'guidance',label:'Meu dia',icon:Sun},{id:'mission',label:'Missão',icon:Flag},{id:'wisdom',label:'Sabedoria',icon:BookOpen}] as const).map(({id,label,icon:Icon}, index, tabs) => <button key={id} id={`oracle-tab-${id}`} role="tab" aria-selected={section === id} tabIndex={section === id ? 0 : -1} aria-controls="oracle-content" className={`flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-1 text-[11px] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--skin-accent-color)] ${section === id ? 'bg-white/10 text-[var(--skin-accent-color)]' : 'text-white/55'}`} onKeyDown={event => {
+            const next = event.key === 'ArrowRight' ? (index+1)%tabs.length : event.key === 'ArrowLeft' ? (index+tabs.length-1)%tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length-1 : -1;
+            if (next < 0) return;
+            event.preventDefault(); setSection(tabs[next].id); document.getElementById(`oracle-tab-${tabs[next].id}`)?.focus();
+          }} onClick={() => setSection(id)}><Icon size={15} aria-hidden="true" className="shrink-0" />{label}</button>)}
         </div>
         {section === 'guidance' && <div className="grid shrink-0 grid-cols-2 gap-2 px-4 pt-3">
           <button id="oracle-read-my-day" onClick={handleReadMyDay} className="min-h-14 rounded-xl border border-white/10 bg-white/5 p-3 text-left"><span className="block text-xs font-bold">Ler meu dia</span><span className="text-[11px] text-white/50">Atividades de hoje</span></button>
@@ -771,7 +745,8 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
 
         {/* Messages */}
         <div id="oracle-content" role="tabpanel" aria-labelledby={`oracle-tab-${section}`} className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-          {visibleMessages.length === 0 && (
+          {section === 'mission' && <OracleMissionPanel key={`${userProfile.id}:${activeArenaPact?.id || 'none'}`} />}
+          {section !== 'mission' && visibleMessages.length === 0 && (
             <div className="flex min-h-full flex-col items-center justify-center p-6 text-center">
               <div className="opacity-50">
               <HeaderIcon className={`w-16 h-16 mb-4 ${MODE_VISUALS[currentMode].color} drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]`} />
@@ -875,58 +850,10 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
           <div ref={messagesEndRef} />
         </div>
 
-        {/* O painel do pacto abre ACIMA da barra, dentro do proprio Oraculo.
-            Ele nao e conversa: sao duas escolhas — arena e molde — e um aceitar.
-            Nada dele vira mensagem, entao o historico continua limpo. */}
-        {pactPanelOpen && (
-          <div className="border-t border-white/10 bg-black/30 p-3 flex-shrink-0">
-            {activeArenaPact && !trocandoPacto
-              ? <ArenaPactBalloon onTrocar={() => setTrocandoPacto(true)} />
-              : <ArenaPactProposal
-                  substituindo={Boolean(activeArenaPact)}
-                  onClose={() => { setTrocandoPacto(false); setPactPanelOpen(false); }}
-                />}
-            <button
-              onClick={() => { setTrocandoPacto(false); setPactPanelOpen(false); }}
-              className="mt-2 w-full rounded-xl border border-white/10 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/45 transition-colors hover:text-white/80"
-            >
-              Fechar
-            </button>
-          </div>
-        )}
-
-        <div className="shrink-0 border-t border-white/10 bg-black/20 p-3">
-          {section === 'wisdom' ? <div className="space-y-2">
-            <p className="text-[11px] leading-relaxed text-white/55">{oracleInputHint}</p>
-            <button disabled={manualGenerateDisabled} onClick={handleGenerateCard} className="min-h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-bold disabled:opacity-50">{manualGenerateLabel}{isPremiumUser ? ` · ${manualQuotaLabel} hoje` : ''}</button>
-          </div> : <div className="flex">
-              <button
-                onClick={handleAskMission}
-                className={`min-w-0 flex-1 rounded-2xl border px-2.5 py-2.5 text-left transition-colors ${
-                  activeArenaPact || missaoDeSistemaAtiva
-                    ? 'border-[var(--skin-accent-color)]/32 bg-[var(--skin-accent-color)]/8 hover:bg-[var(--skin-accent-color)]/12'
-                    : missionAvailable
-                      ? 'border-white/12 bg-white/[0.04] hover:border-[var(--skin-accent-color)]/35 hover:bg-white/[0.07]'
-                      : 'border-white/8 bg-white/[0.02] opacity-45'
-                }`}
-              >
-                <span className={`block truncate text-[11px] font-black uppercase leading-tight tracking-[0.02em] ${activeArenaPact || missaoDeSistemaAtiva ? 'text-[var(--skin-accent-color)]' : 'text-white/82'}`}>
-                  {activeArenaPact
-                    ? activeArenaPact.title
-                    : missaoDeSistemaAtiva
-                      ? missaoDeSistemaAtiva.title
-                      : 'Escolher missão'}
-                </span>
-                <span className="mt-0.5 block truncate text-[9px] text-white/38">
-                  {activeArenaPact
-                    ? `${arenaPactProgress.current}/${arenaPactProgress.goal}`
-                    : missaoDeSistemaAtiva
-                      ? 'em Temporada'
-                      : 'uma de cada vez'}
-                </span>
-              </button>
-          </div>}
-        </div>
+        {section === 'wisdom' && <div className="shrink-0 border-t border-white/10 bg-black/20 p-3 space-y-2">
+          <p className="text-[11px] leading-relaxed text-white/55">{oracleInputHint}</p>
+          <button disabled={manualGenerateDisabled} onClick={handleGenerateCard} className="min-h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-bold disabled:opacity-50">{manualGenerateLabel}{isPremiumUser ? ` · ${manualQuotaLabel} hoje` : ''}</button>
+        </div>}
       </>
   );
 

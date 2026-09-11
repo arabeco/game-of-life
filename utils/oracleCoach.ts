@@ -1070,9 +1070,14 @@ export const buildOracleCycleCoachBrief = (
    * concorrentes.
    */
   const ritmoPermiteElogio = context.hasCycle && (context.cyclePace === 'no_ritmo' || context.cyclePace === 'adiantado');
-  const priorityLine = context.priorityActionName
-    ? ` Que tal ${context.priorityActionName} hoje?`
-    : ' Escolha uma ação que mantenha o fio sem pesar o dia.';
+  // Ausência de tarefas hoje não é um convite para inventar trabalho extra.
+  // O nome prioritário pode vir de uma pendência antiga, não da agenda de hoje.
+  const pendingToday = context.pendingActionsToday;
+  const priorityLine = pendingToday === 0
+    ? ' Hoje não há atividades pendentes no seu planejamento.'
+    : pendingToday > 0
+      ? ` ${pendingToday === 1 ? 'Há uma atividade planejada' : `Há ${pendingToday} atividades planejadas`} para hoje ainda por concluir. Você pode rever o dia no Planner.`
+      : '';
   if (ritmoPermiteElogio) casos.push({
     peso: 0, cooldownDays: 0,
     id: `coach:on-pace:${context.cycleDayNumber || 0}:${completed}`,
@@ -1097,16 +1102,22 @@ export const buildOracleCycleCoachBrief = (
   const arenaRetomada = (context.arenaSignals || []).find((sinal) => sinal.trend === 'retomando');
   if (arenaRetomada) {
     const pausa = arenaRetomada.trendPauseDays;
+    const atrasoReal = context.hasCycle && (context.cyclePace === 'atrasado' || context.cyclePace === 'critico');
+    const cycleLine = atrasoReal
+      ? ' O ciclo segue abaixo do planejado. Você pode rever a meta sem tentar compensar toda a pausa hoje.'
+      : context.hasCycle && context.cyclePace === 'adiantado'
+        ? ' O ciclo está à frente do ritmo previsto.'
+        : context.hasCycle && context.cyclePace === 'no_ritmo'
+          ? ' O ciclo segue dentro do ritmo previsto.'
+          : '';
     casos.push({
       peso: 55, cooldownDays: 1, // Retomada e um momento. Repetir todo dia transforma reconhecimento em bajulacao.
       id: `coach:retomada:${arenaRetomada.arenaId}:${context.cycleDayNumber || 0}`,
-      content: pausa
-        ? `Você voltou a registrar em ${arenaRetomada.arenaName} depois de ${pausa} dia${pausa === 1 ? '' : 's'} sem nada. O ciclo segue abaixo do planejado, mas recuperar tudo agora não é a prioridade — sustentar a volta é.`
-        : `Você voltou a registrar em ${arenaRetomada.arenaName} depois de uma pausa. O ciclo segue abaixo do planejado, mas recuperar tudo agora não é a prioridade — sustentar a volta é.`,
-      quickActions: compactActions([
-        openFocusedArena(context),
+      content: `Você voltou a registrar em ${arenaRetomada.arenaName}${pausa ? ` depois de ${pausa} dia${pausa === 1 ? '' : 's'} sem registros` : ' depois de uma pausa'}.${cycleLine}`,
+      quickActions: [
+        { id: `coach-open-arena:${arenaRetomada.arenaId}`, label: `Abrir ${arenaRetomada.arenaName}`, kind: 'open_arena', arenaId: arenaRetomada.arenaId },
         { id: 'coach-open-planner', label: 'Abrir Planner', kind: 'open_planner' },
-      ]),
+      ],
     });
   }
 

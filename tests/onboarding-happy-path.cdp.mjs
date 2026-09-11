@@ -391,10 +391,16 @@ async function main() {
     // Clicking save is not the same as having an action. handleSave refuses on a few
     // validations and only reports them through a toast the overlay can cover, which
     // matches the report that the tutorial's arena shows up but its action does not.
-    await sleep(1200);
-    const savedAction = await findActionByName(user.client, { userId: user.userId, name: 'Ação Smoke Feliz' });
+    // Wait for remote persistence, not a fixed network latency. Still fail if
+    // the optimistic card never becomes an actual database row.
+    const persistenceDeadline = Date.now() + 15000;
+    let savedAction = null;
+    do {
+      savedAction = await findActionByName(user.client, { userId: user.userId, name: 'Ação Smoke Feliz' });
+      if (!savedAction) await sleep(500);
+    } while (!savedAction && Date.now() < persistenceDeadline);
     if (!savedAction) {
-      throw new Error(`Onboarding action was not persisted after saving.\n\n${await page.bodyText()}`);
+      throw new Error(`Onboarding action was not persisted after saving.\n\n${await page.bodyText()}\n${JSON.stringify(page.getConsoleMessages())}`);
     }
     checkpoints.push('action-created');
 
@@ -426,6 +432,15 @@ async function main() {
       })()`,
       25000,
     );
+    // Dismissing the overlay is optimistic. Keep the browser alive until the
+    // completion request has reached the database instead of aborting it.
+    const completionDeadline = Date.now() + 15000;
+    let completed = false;
+    do {
+      completed = Boolean((await fetchProfile(user.client, user.userId)).onboarding_completed_at);
+      if (!completed) await sleep(500);
+    } while (!completed && Date.now() < completionDeadline);
+    if (!completed) throw new Error('Onboarding did not persist completion while the browser remained open.');
   });
 
   const profile = await fetchProfile(user.client, user.userId);

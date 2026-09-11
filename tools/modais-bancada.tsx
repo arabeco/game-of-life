@@ -19,8 +19,26 @@ import { GameContext } from '../contexts/GameContext';
 import { AchievementModal } from '../components/AchievementModal';
 import { MasteryResultModal } from '../components/MasteryResultModal';
 import { RewardPackModal } from '../components/RewardPackModal';
+import { MasteryWheel } from '../components/MasteryWheel';
+import { AssetPentagon } from '../components/AssetPentagon';
+import { LIFE_AREAS } from '../constants/lifeAreas';
+import '../views/mastery-quiz.css';
 
 type Cenario = { id: string; rotulo: string; nota: string; type: string; data: Record<string, unknown> };
+
+/** As dez frases de Saude, como o jogo as escreve. */
+const FRASES_DE_EXEMPLO = [
+    'Você evita o assunto. Passa semanas sem pensar nisso, e quando pensa, é com culpa.',
+    'Você tenta às vezes, mas não sustenta. Começa e para, começa e para.',
+    'Você mantém o mínimo. Não avança, mas também não desmorona.',
+    'Você tem uma rotina que funciona na maior parte das semanas.',
+    'Você é consistente. Falha pouco e retoma rápido quando falha.',
+    'Você está acima da média das pessoas que conhece nessa área.',
+    'Você tem domínio. As decisões saem naturais e quase nunca erra o rumo.',
+    'Você é referência para quem está perto. Procuram você para aprender.',
+    'Você opera num nível que poucos alcançam, com resultado visível.',
+    'Isso virou obra. O que você construiu aqui sobrevive a você.',
+];
 
 /** Recompensa de exemplo, no formato que o modal espera. */
 const premio = (items: string[], exp = 0) => ({
@@ -90,6 +108,8 @@ function Bancada() {
     const [animacoes, setAnimacoes] = useState(true);
     const [maestria, setMaestria] = useState<'primeira' | 'comparando' | null>(null);
     const [pacote, setPacote] = useState(false);
+    const [nivelDaRoda, setNivelDaRoda] = useState(6);
+    const [previaDaRoda, setPreviaDaRoda] = useState(6);
 
     // O provedor de mentira: so o que o modal realmente le.
     const contexto = {
@@ -129,6 +149,30 @@ function Bancada() {
                         <code>{cenario.type}</code>
                     </button>
                 ))}
+            </div>
+
+            <h2 className="titulo-secao">A roda dos níveis</h2>
+            <p className="nota-secao">
+                O seletor do questionário de maestria. Role com o dedo ou com a roda do mouse —
+                a escolhida fica inteira, as vizinhas de leve, o resto ao fundo.
+            </p>
+            <div
+                className="roda-palco"
+                style={{ ['--mastery-accent' as string]: '#d4af37' }}
+            >
+                <AssetPentagon assets={LIFE_AREAS.map(area => ({...area, level: 3}))} tempLevels={{saude: previaDaRoda}} showCentralLevel={false} size={190} />
+                <MasteryWheel
+                    compacto
+                    onVisualizar={setPreviaDaRoda}
+                    niveis={FRASES_DE_EXEMPLO.length}
+                    selecionado={nivelDaRoda}
+                    frases={FRASES_DE_EXEMPLO}
+                    onSelecionar={setNivelDaRoda}
+                    hapticos={false}
+                />
+                <p className="roda-leitura">
+                    escolhido: <b>nível {nivelDaRoda * 2}</b> (degrau {nivelDaRoda})
+                </p>
             </div>
 
             <h2 className="titulo-secao">A placa de recompensa avulsa</h2>

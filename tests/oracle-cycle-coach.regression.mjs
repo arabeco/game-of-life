@@ -76,7 +76,7 @@ assert.match(completed.content, /ou deixar rodando/, 'a segunda porta existe');
 assert.equal(completed.quickActions[0]?.kind, 'open_cycle');
 
 const onPace = buildOracleCycleCoachBrief(baseContext);
-assert.match(onPace.content, /Que tal treinar hoje/);
+assert.doesNotMatch(onPace.content, /Que tal treinar hoje/, 'não apresenta prioridade geral como tarefa de hoje sem evidência');
 assert.equal(onPace.quickActions[0]?.kind, 'open_planner');
 
 // ---------------------------------------------------------------- O DESCANSO
@@ -274,3 +274,31 @@ assert.doesNotMatch(semAcaoHoje.content, /começou a escorregar/, 'sem acao marc
 console.log('Deriva: avisa dentro do ritmo, cala na oscilacao, no buraco e no fim do ciclo.');
 console.log('Frequencia: sem acao marcada hoje, a deriva se cala.');
 console.log('Descanso: o assunto sai da fila depois de dito, volta no prazo, e nunca emudece o botao.');
+
+// Retomada: o texto segue o ritmo real e o botão segue a Arena mencionada.
+const treinoRetomado = { ...sinal('treino', 'Treino', 5, 1), trend: 'retomando', trendPauseDays: 6 };
+const focoEstudo = sinal('estudo', 'Estudo', 2, 3);
+for (const [pace, progress, phrase] of [
+  ['adiantado', 85, /à frente do ritmo/],
+  ['no_ritmo', 71, /dentro do ritmo/],
+  ['atrasado', 50, /abaixo do planejado/],
+  ['critico', 20, /abaixo do planejado/],
+]) {
+  const reading = buildOracleCycleCoachBrief({ ...baseContext, cyclePace: pace, cycleCompletionPercent: progress,
+    expectedCycleCompletionPercent: 71, arenaSignals: [focoEstudo, treinoRetomado], focusArenaSignal: focoEstudo });
+  assert.match(reading.id, /^coach:retomada:/);
+  assert.match(reading.content, phrase);
+  if (pace === 'adiantado' || pace === 'no_ritmo') assert.doesNotMatch(reading.content, /abaixo|compensar/);
+  assert.equal(reading.quickActions[0].arenaId, 'treino');
+  assert.equal(reading.quickActions[0].label, 'Abrir Treino');
+}
+const voltaSemCiclo = buildOracleCycleCoachBrief({ ...baseContext, hasCycle: false, cyclePace: null,
+  cycleTotalActions: 0, cycleCompletedActions: 0, cyclePendingActions: 0, arenaSignals: [treinoRetomado] });
+assert.match(voltaSemCiclo.id, /^coach:retomada:/);
+assert.doesNotMatch(voltaSemCiclo.content, /ciclo|planejado|previsto/i);
+const descansoHoje = buildOracleCycleCoachBrief({ ...baseContext, pendingActionsToday: 0 });
+assert.match(descansoHoje.content, /Hoje não há atividades pendentes/);
+assert.doesNotMatch(descansoHoje.content, /Que tal|Escolha uma ação/);
+const tarefaHoje = buildOracleCycleCoachBrief({ ...baseContext, pendingActionsToday: 1 });
+assert.match(tarefaHoje.content, /Há uma atividade planejada para hoje/);
+console.log('Refino: retomada respeita ritmo e Arena; dia sem pendência não recebe tarefa extra.');

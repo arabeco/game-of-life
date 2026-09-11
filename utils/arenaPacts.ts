@@ -259,6 +259,14 @@ export const resolvePactArena = (
     : (arenas || []).find((arena) => arena.id === pact.arenaId) || null
 );
 
+/** Same scope used by progress and by the transient reaction to a delivery. */
+export const isActionInPactScope = (pact: ArenaPact, action: Action, arenas: Arena[]): boolean => {
+  if (action.actionType === 'Livre') return false;
+  const arena = arenas.find(entry => entry.id === action.arenaId);
+  if (!arena) return false;
+  return pact.arenaId === ESCOPO_APP ? !arena.isArchived : arena.id === pact.arenaId;
+};
+
 /**
  * A meta que cabe no ritmo: o que a pessoa costuma entregar, projetado na
  * janela. Sem esticao — o prazo ja e a pressao, e prometer acima do ritmo e
@@ -576,17 +584,23 @@ export const measurePactProgress = (
     };
   }
 
-  const desdeOAceite = arenaCompletedTasks(arena, tasks)
-    .filter((task) => String(task.date || '').slice(0, 10) >= pact.startedOn);
+  const measurable = new Set(actions.filter(action => (arena.actionIds || []).includes(action.id)
+    && action.actionType !== 'Livre').map(action => action.id));
+  const desdeOAceite = [...new Map(arenaCompletedTasks(arena, tasks)
+    .filter(task => measurable.has(task.actionId)
+      && getTaskOperationalDateString(task) >= pact.startedOn
+      && getTaskOperationalDateString(task) <= today)
+    .map(task => [task.id, task])).values()];
 
   if (pact.kind === 'retomada') {
-    const current = desdeOAceite.length > 0 ? 1 : 0;
-    return { current, goal: 1, percent: current * 100, completed: current >= 1 };
+    const current = desdeOAceite.length;
+    const goal = Math.max(1, pact.goal);
+    return { current, goal, percent: Math.min(100, Math.round(current / goal * 100)), completed: current >= goal };
   }
 
   // constancia: dias distintos, nao numero de acoes. Cinco acoes num dia so
   // continuam sendo um dia.
-  const dias = new Set(desdeOAceite.map((task) => String(task.date || '').slice(0, 10)));
+  const dias = new Set(desdeOAceite.map(getTaskOperationalDateString));
   const current = dias.size;
   return {
     current,

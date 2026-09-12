@@ -1,25 +1,25 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-11T18:54:12.244Z
-- Suite: `full`
+- Generated at: 2026-09-12T01:29:12.931Z
+- Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
 - Build: SKIPPED
 
 ## Checks
 
-### PASS - Avatar offsets regression (0.2s)
+### PASS - Avatar offsets regression (0.3s)
 - Kind: `logic`
 - Simulates: tabela vazia desenha igual ao comportamento antigo
 - Simulates: escala cresce do centro da peca
 - Simulates: o gabarito do corpo bate entre o codigo e o script
 
-### PASS - Reward modal regression (0.1s)
+### PASS - Reward modal regression (0.2s)
 - Kind: `logic`
 - Simulates: trava que existe um miolo so de recompensa
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.3s)
+### PASS - Item art regression (0.5s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -31,13 +31,13 @@
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.2s)
+### PASS - Oracle cycle coach regression (0.3s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
 - Simulates: oferece apenas navegacao segura
 
-### PASS - Reward modal priority regression (0.1s)
+### PASS - Reward modal priority regression (0.2s)
 - Kind: `logic`
 - Simulates: nao mostra passagem antiga a conta nova
 - Simulates: evita sobreposicao entre dicas, temporada e recompensas
@@ -47,25 +47,25 @@
 - Simulates: remove planejamento diario do widget
 - Simulates: mostra acoes feitas, XP e arenas tocadas
 
-### PASS - Daily reading regression (0.1s)
+### PASS - Daily reading regression (0.2s)
 - Kind: `logic`
 - Simulates: fala sobre o dia corrente, nao so sobre dias fechados
 - Simulates: a assinatura muda a regua e nao o elogio
 - Simulates: dia abaixo da media nao soa como falha
 
-### PASS - Cycle comparison regression (0.1s)
+### PASS - Cycle comparison regression (0.2s)
 - Kind: `logic`
 - Simulates: o ciclo nao entra na propria referencia
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.1s)
+### PASS - Subscription XP bonus regression (0.2s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.2s)
+### PASS - Arena pacts regression (0.3s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
@@ -100,19 +100,19 @@
 - Simulates: a primeira acao depois de uma pausa tem fala propria
 - Simulates: a dica de tela olha o que existe na tela
 
-### PASS - Sensory grammar regression (0.1s)
+### PASS - Sensory grammar regression (0.2s)
 - Kind: `logic`
 - Simulates: tres pesos e nada colidindo
 - Simulates: fechar ciclo nao vibra como fechar painel
 - Simulates: o marco de sequencia tem pulso proprio
 
-### PASS - Oracle arbiter regression (0.2s)
+### PASS - Oracle arbiter regression (0.3s)
 - Kind: `logic`
 - Simulates: as seis arenas competem em vez de morrer no ranking
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.6s)
+### PASS - Oracle presence policy regression (0.9s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -124,7 +124,7 @@
 - Simulates: a tela de descanso respeita as duas barras
 - Simulates: preferencia que ainda nao chegou nao vira botao morto
 
-### PASS - Relationship link as timed product regression (0.1s)
+### PASS - Relationship link as timed product regression (0.2s)
 - Kind: `logic`
 - Simulates: o preco exibido e o preco cobrado
 - Simulates: renovar custa menos que criar
@@ -136,105 +136,50 @@
 - Simulates: salva a ordem no banco
 - Simulates: mantem conclusoes fora da baia
 
-### PASS - Skin button contrast regression (0.1s)
+### PASS - Displayed level scale regression (0.2s)
+- Kind: `logic`
+- Simulates: confere que area e Indice usam o mesmo fator
+- Simulates: proibe nivel cru na tela
+- Simulates: proibe dobrar a mao
+
+### PASS - Skin button contrast regression (0.2s)
 - Kind: `logic`
 - Simulates: interpola o gradiente do botao
 - Simulates: cobra o minimo da WCAG em cada skin
 - Simulates: trava a faixa de luz que corre sozinha
 
-### PASS - Core loop regression (0.1s)
+### PASS - Core loop regression (0.2s)
 - Kind: `logic`
 - Simulates: recalcula o core loop
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (19.1s)
+### PASS - Onboarding happy path (19.5s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (16.9s)
+### PASS - Campaign quiz flow (15.8s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (23.7s)
+### PASS - Cycle report flow (21.1s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (13.4s)
+### PASS - UI shell smoke (16.1s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais
 - Simulates: garante que a casca da app sobe sem overlay travando
-
-### FAIL - Onboarding + oracle + delete
-- Kind: `browser`
-- Simulates: valida onboarding
-- Simulates: abre oracle
-- Simulates: exercita fluxo de delete/account cleanup
-- Error: Onboarding + oracle + delete failed with exit 1
-
-### PLANNED - Notification lab
-- Kind: `browser`
-- Simulates: abre laboratorio de notificacoes
-- Simulates: injeta notificacoes de teste
-- Simulates: confere renderizacao e estados basicos
-
-### PLANNED - Clan creation
-- Kind: `browser`
-- Simulates: abre criacao de grupo
-- Simulates: confirma debito/fluxo
-- Simulates: garante que o grupo nasce na UI
-
-### PLANNED - Mentorship planner sync
-- Kind: `browser`
-- Simulates: cria mentoria 2 contas
-- Simulates: cria arena vinculada
-- Simulates: sincroniza planner entre os lados
-
-### PLANNED - Mentorship arenas visibility
-- Kind: `browser`
-- Simulates: abre mentoria existente
-- Simulates: confere arenas compartilhadas
-- Simulates: valida leitura correta no board
-
-### PLANNED - Partnership mutual arenas
-- Kind: `browser`
-- Simulates: cria parceria 2 contas
-- Simulates: espelha arenas dos dois lados
-- Simulates: confirma visibilidade mutua
-
-### PLANNED - Competition race
-- Kind: `browser`
-- Simulates: abre competicao
-- Simulates: executa corrida entre contas
-- Simulates: confere vencedor, bau e reflexo final
-
-### PLANNED - Season clan smoke
-- Kind: `browser`
-- Simulates: abre temporada
-- Simulates: entra em superficie de missao/quest
-- Simulates: verifica integracao base com grupo
-
-### PLANNED - Legacy era customization
-- Kind: `browser`
-- Simulates: abre customizacao do legado
-- Simulates: troca configuracoes principais
-- Simulates: confirma persistencia visual
-
-### PLANNED - Legacy plaque flow
-- Kind: `browser`
-- Simulates: gera placa final
-- Simulates: abre cena de legado
-- Simulates: confere fluxo de conclusao visual
 
 ## Manual QA Still Required
 

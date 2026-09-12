@@ -26,7 +26,7 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
     const [preview, setPreview] = useState<{assetId: string; level: number} | null>(null);
 
     const buildDraftFromAssets = () => {
-        const initialLevels = assets.reduce((acc, asset) => ({ ...acc, [asset.id]: asset.level || 1 }), {});
+        const initialLevels = assets.reduce((acc, asset) => ({ ...acc, [asset.id]: asset.level ?? 0 }), {});
         return { initialLevels };
     };
 
@@ -44,8 +44,8 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
 
     useEffect(() => {
         if (!currentAsset) return;
-        const maxLevel = Math.max(1, (MASTERY_LEVEL_DESCRIPTIONS[currentAsset.id] || []).length || 10);
-        const currentLevel = tempLevels[currentAsset.id] || 1;
+        const maxLevel = Math.max(1, ((MASTERY_LEVEL_DESCRIPTIONS[currentAsset.id] || []).length || 11) - 1);
+        const currentLevel = tempLevels[currentAsset.id] ?? 0;
         if (currentLevel > maxLevel) {
             setTempLevels((prev) => ({ ...prev, [currentAsset.id]: maxLevel }));
         }
@@ -89,12 +89,15 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
     if (!currentAsset) return null;
 
     const accentColor = (ASSET_ACCENT_COLORS as Record<string, string>)[currentAsset.id] || '#C9A84C';
-    const sliderMax = Math.max(1, currentDescriptions.length || 10);
-    const currentLevel = clamp(tempLevels[currentAsset.id] || 1, 1, sliderMax);
+    // A lista tem ONZE frases, do degrau 0 ao 10 — o teto e o ultimo indice, e
+    // nao a quantidade. Enquanto era `length`, o quiz oferecia um degrau 11 que
+    // nao existe em lugar nenhum.
+    const sliderMax = Math.max(1, (currentDescriptions.length || 11) - 1);
+    const currentLevel = clamp(tempLevels[currentAsset.id] ?? 0, 0, sliderMax);
     const currentProgress = filteredAssets.length > 0 ? Math.round(((currentAssetIndex + 1) / filteredAssets.length) * 100) : 0;
 
     const handleLevelChange = (nextLevel: number) => {
-        setTempLevels((prev) => ({ ...prev, [currentAsset.id]: clamp(nextLevel, 1, sliderMax) }));
+        setTempLevels((prev) => ({ ...prev, [currentAsset.id]: clamp(nextLevel, 0, sliderMax) }));
     };
 
     const handleSave = () => {

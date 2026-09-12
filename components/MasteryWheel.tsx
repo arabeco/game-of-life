@@ -32,9 +32,9 @@ import { safeVibrate } from '../utils/safeVibrate';
  */
 
 interface MasteryWheelProps {
-    /** Quantos degraus a area tem. Sempre o tamanho da lista de frases. */
+    /** O degrau mais alto da area. A roda mostra de 0 ate ele. */
     niveis: number;
-    /** O degrau escolhido, de 1 a `niveis`. */
+    /** O degrau escolhido, de 0 a `niveis`. */
     selecionado: number;
     frases: string[];
     onSelecionar: (nivel: number) => void;
@@ -89,18 +89,21 @@ export const MasteryWheel: React.FC<MasteryWheelProps> = ({
         const agora = performance.now();
         if (!gestoRef.current || !hapticosRef.current || agora - ultimoToqueRef.current < 75) return;
         ultimoToqueRef.current = agora;
-        safeVibrate(Math.round(7 + 5 * (nivel - 1) / Math.max(1, total - 1)));
+        // A escada comeca no ZERO, entao o degrau ja e a propria posicao: com o
+        // `nivel - 1` de antes, o abandono pedia uma vibracao negativa.
+        safeVibrate(Math.round(7 + 5 * nivel / Math.max(1, total - 1)));
     }, []);
 
     /** De 0 no degrau mais baixo a 1 no topo. E o que decide a liga do selo. */
     const nobrezaDe = useCallback(
-        (nivel: number) => (niveis > 1 ? (nivel - 1) / (niveis - 1) : 1),
+        (nivel: number) => (niveis > 0 ? nivel / niveis : 1),
         [niveis],
     );
 
-    /** Do maior para o menor: o topo da escada em cima, onde se espera que esteja. */
+    /** Do maior para o menor: o topo da escada em cima, onde se espera que esteja.
+     *  Vai ate o ZERO, que e o degrau do abandono e existe como escolha. */
     const ordem = useMemo(
-        () => Array.from({ length: niveis }, (_, i) => niveis - i),
+        () => Array.from({ length: niveis + 1 }, (_, i) => niveis - i),
         [niveis],
     );
 
@@ -270,7 +273,7 @@ export const MasteryWheel: React.FC<MasteryWheelProps> = ({
                         type="button"
                         role="radio"
                         aria-checked={nivel === selecionado}
-                        aria-label={`Nível ${nivel * PONTOS_POR_DEGRAU}: ${frases[nivel - 1] || ''}`}
+                        aria-label={`Nível ${nivel * PONTOS_POR_DEGRAU}: ${frases[nivel] || ''}`}
                         ref={(node) => { itensRef.current[indice] = node; }}
                         className="mastery-wheel-item"
                         onClick={() => {
@@ -298,7 +301,7 @@ export const MasteryWheel: React.FC<MasteryWheelProps> = ({
                         <span className="mastery-wheel-selo" aria-hidden="true">
                             {nivel * PONTOS_POR_DEGRAU}
                         </span>
-                        <span className="mastery-wheel-frase">{frases[nivel - 1]}</span>
+                        <span className="mastery-wheel-frase">{frases[nivel]}</span>
                     </button>
                 ))}
                 <div style={{ height: respiro }} aria-hidden="true" />

@@ -804,7 +804,7 @@ const mapDbProfileToUserProfile = (row: any): UserProfile => {
         nickname: row.nickname ?? 'Usuario',
         avatarUrl: row.avatar_url ?? row.avatarUrl ?? '',
         border: row.border ?? 'default',
-        level: typeof row.level === 'number' ? row.level : 1,
+        level: typeof row.level === 'number' ? row.level : 0,
         backgroundUrl: row.background_url ?? row.backgroundUrl ?? '',
         bannerUrl: row.banner_url ?? row.bannerUrl ?? undefined,
         isOnline: !!(row.is_online ?? row.isOnline),

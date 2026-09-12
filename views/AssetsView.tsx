@@ -166,7 +166,7 @@ export const AssetsView: React.FC = () => {
     const selectedAssetAccent = selectedAsset
         ? ASSET_ACCENT_COLORS[selectedAsset.id as keyof typeof ASSET_ACCENT_COLORS] || '#4b5563'
         : '#4b5563';
-    const selectedAssetLevel = selectedAsset ? Math.max(1, Number(selectedAsset.level || 1)) : 1;
+    const selectedAssetLevel = selectedAsset ? Math.max(0, Number(selectedAsset.level || 0)) : 0;
     const selectedAssetMasteryPhrase = selectedAsset?.levelDescriptions?.[selectedAssetLevel] || '';
     const canShowSelectedAssetWidget = Boolean(selectedAssetPrimarySlot);
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);

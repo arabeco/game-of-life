@@ -37,7 +37,7 @@ import { buildCodexTemplateFromDraft, getCodexLevelDisplayTitle } from '../utils
 import { getNextExpBoostExpiryAt, hasActiveExpBoost } from '../utils/expBoostAccess';
 import { formatLocalDateString, getOperationalDateString as getOperationalDateStringValue, getTaskOperationalDateString, shiftLocalDateString, taskMatchesOperationalDate } from '../utils/operationalDay.js';
 import { getCycleXpBonusRate, getNextPremiumExpiryAt, hasPremiumAccess, isPremiumActive, normalizeSubscriptionTier } from '../utils/premiumAccess';
-import { toMasteryIndex } from '../constants/lifeAreas';
+import { MASTERY_AREA_MAX_LEVEL, toMasteryIndex } from '../constants/lifeAreas';
 import { buildArenaLimitMessage, getArenaCapacitySummary } from '../utils/arenaCapacity';
 import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
@@ -9473,10 +9473,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             return false;
         }
 
+        // O PISO E ZERO, e nao um. O degrau 0 e o abandono, e e uma escolha que a
+        // pessoa faz na roda: forcar 1 aqui gravaria "negligencia" onde ela disse
+        // "desisti disso", e a tela seguinte mostraria um numero que ela nao
+        // escolheu. E o coalescente nulo no lugar do OU pela mesma razao: zero e
+        // um nivel de verdade, e nao ausencia de resposta.
         const normalizedLevels = Object.fromEntries(LIFE_AREA_IDS.map((assetId) => {
-            const currentLevel = assets.find((asset) => asset.id === assetId)?.level || 1;
+            const currentLevel = assets.find((asset) => asset.id === assetId)?.level ?? 0;
             const requestedLevel = Number(levels[assetId] ?? currentLevel);
-            return [assetId, Math.min(10, Math.max(1, Math.round(requestedLevel)))];
+            return [assetId, Math.min(MASTERY_AREA_MAX_LEVEL, Math.max(0, Math.round(requestedLevel)))];
         })) as Record<string, number>;
 
         const nextTotalLevel = LIFE_AREA_IDS.reduce((sum, assetId) => {
@@ -9488,7 +9493,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             ...asset,
             level: normalizedLevels[asset.id] ?? asset.level,
             levelDescriptions: levelDescriptions ?
-                levelDescriptions[asset.id]?.reduce((acc, desc, i) => ({ ...acc, [i + 1]: desc }), {}) || asset.levelDescriptions
+                levelDescriptions[asset.id]?.reduce((acc, desc, i) => ({ ...acc, [i]: desc }), {}) || asset.levelDescriptions
                 : asset.levelDescriptions
         })));
 

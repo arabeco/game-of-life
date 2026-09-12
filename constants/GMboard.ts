@@ -247,8 +247,11 @@ export const ASSETS_DATA: Asset[] = [
     id: area.id,
     name: area.name,
     level: 0,
+    // A lista comeca no degrau ZERO, entao a chave e o proprio indice. Enquanto
+    // era `index + 1` a frase do abandono apareceria como se fosse do degrau 1,
+    // e a escada inteira ficaria deslocada em um.
     levelDescriptions: MASTERY_LEVEL_DESCRIPTIONS[area.id].reduce(
-      (acc, description, index) => ({ ...acc, [index + 1]: description }),
+      (acc, description, index) => ({ ...acc, [index]: description }),
       {} as Record<number, string>,
     ),
     arenas: [],

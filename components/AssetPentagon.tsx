@@ -1,6 +1,13 @@
 import React from 'react';
 import { Asset } from '../types';
-import { LIFE_AREAS, MASTERY_AREA_MAX_LEVEL, PONTOS_POR_DEGRAU, getMasteryIndexFromLevels } from '../constants/lifeAreas';
+import {
+  LIFE_AREAS,
+  MASTERY_AREA_MAX_LEVEL,
+  MASTERY_INDEX_BASE,
+  MASTERY_TOTAL_MAX_LEVEL,
+  PONTOS_POR_DEGRAU,
+  getMasteryIndexFromLevels,
+} from '../constants/lifeAreas';
 import { SvgRadarChart } from './SvgRadarChart';
 
 interface AssetPentagonProps {
@@ -32,7 +39,7 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
   const chartAreas = LIFE_AREAS
     .map((area) => ({ area, asset: assets.find((asset) => asset.id === area.id) }))
     .filter((entry): entry is { area: typeof LIFE_AREAS[number]; asset: Asset } => Boolean(entry.asset));
-  const levels = chartAreas.map(({ asset }) => tempLevels?.[asset.id] ?? Math.max(1, asset.level || 1));
+  const levels = chartAreas.map(({ asset }) => tempLevels?.[asset.id] ?? Math.max(0, asset.level || 0));
   const masteryIndex = getMasteryIndexFromLevels(levels);
   const labels = chartAreas.map(({ area }) => area.shortName);
 
@@ -41,16 +48,12 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
   const goldFill = '#6f5d2f';
 
   /**
-   * O PENTAGONO MOSTRA DE 0 A 20, e nao de 1 a 10.
+   * O PENTAGONO MOSTRA O DEGRAU: de 1 a 10, como a avaliacao pergunta.
    *
-   * A avaliacao continua tendo dez degraus — o que muda e a ESCALA em que o
-   * numero aparece. Cada degrau vale dois pontos, entao o topo de uma area e 20
-   * e a soma das cinco fecha exatamente nos 100 do numero do meio.
-   *
-   * A razao nao e estetica: com 1 a 10 no grafico e 0 a 100 no centro, a pessoa
-   * precisa fazer a conta para ligar as duas coisas. Com 0 a 20 ela nao precisa
-   * — e passa a poder dizer "estou no vinte em Saude", que e uma frase que se
-   * fala. "Estou no dez que vale vinte" nao e.
+   * Houve uma versao com 0 a 20, para as cinco pontas somarem o numero do meio.
+   * A conta fechava, mas "estou no vinte em Saude" e um numero que o modelo nao
+   * tem. As pontas somam 50 e o centro diz 100 — sao o nivel de uma area e o
+   * indice do conjunto, duas coisas.
    */
   const pontos = levels.map((nivel) => nivel * PONTOS_POR_DEGRAU);
 
@@ -59,6 +62,12 @@ export const AssetPentagon: React.FC<AssetPentagonProps> = ({
       <SvgRadarChart
         labels={labels}
         maxValue={MASTERY_AREA_MAX_LEVEL * PONTOS_POR_DEGRAU}
+        /* O RAIO MAPEIA O INDICE, e nao o degrau. O Indice parte de 50, entao a
+           metade de dentro e a base que todo mundo tem por estar de pe, e os dez
+           degraus da area preenchem a metade de fora. Sem isto, uma area em zero
+           puxava a ponta ate o centro e a figura ficava mordida — dizendo que
+           ali nao ha nada, quando o que ha e o piso. */
+        baseInterna={MASTERY_INDEX_BASE / MASTERY_TOTAL_MAX_LEVEL}
         levels={3}
         height="100%"
         className="drop-shadow-[0_10px_22px_rgba(0,0,0,.46)]"

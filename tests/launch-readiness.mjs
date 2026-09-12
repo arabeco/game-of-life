@@ -178,6 +178,13 @@ const suites = {
       interactions: ['preserva horarios', 'salva a ordem no banco', 'mantem conclusoes fora da baia'],
     },
     {
+      id: 'nivel-exibido',
+      label: 'Displayed level scale regression',
+      command: [nodeBin, [path.join(repoRoot, 'tests', 'nivel-exibido.regression.mjs')]],
+      kind: 'logic',
+      interactions: ['confere que area e Indice usam o mesmo fator', 'proibe nivel cru na tela', 'proibe dobrar a mao'],
+    },
+    {
       id: 'skin-button-contrast',
       label: 'Skin button contrast regression',
       command: [nodeBin, [path.join(repoRoot, 'tests', 'skin-button-contrast.regression.mjs')]],

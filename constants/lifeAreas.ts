@@ -20,29 +20,31 @@ export type LifeAreaDefinition = {
 export const MASTERY_AREA_MAX_LEVEL = 10;
 
 /**
- * Cada degrau da avaliacao vale DOIS pontos na tela.
+ * A AREA CONTA DE 1 A 10, e e so isso que ela conta.
  *
- * A avaliacao continua tendo dez degraus — e o que fica gravado. O que muda e a
- * escala em que o numero e MOSTRADO: de 0 a 20 por area, o que faz a soma das
- * cinco fechar nos 100 do Indice Glyph sem ninguem precisar multiplicar nada.
+ * Houve uma versao em que cada degrau valia dois na tela, para as cinco pontas
+ * do pentagono somarem os 100 do Indice sem ninguem multiplicar nada. A conta
+ * fechava e o numero soava falso: "estou no nivel 20 em Saude" e inflacao — o
+ * degrau que a pessoa escolhe continua sendo um entre dez, e dobrar so na
+ * exibicao inventava um numero que nao existe em lugar nenhum do modelo.
  *
- * E o mesmo dois do MASTERY_INDEX_MULTIPLIER, declarado aqui em cima dele para
- * nao criar dependencia de ordem — se um mudar, o outro tem de mudar junto.
+ * O pentagono passa a somar 50 com o centro dizendo 100, e tudo bem: sao duas
+ * grandezas, o nivel de UMA area e o indice do CONJUNTO. O Indice continua sendo
+ * a soma dobrada, em MASTERY_INDEX_MULTIPLIER — aquele dois fica.
  */
-export const PONTOS_POR_DEGRAU = 2;
+export const PONTOS_POR_DEGRAU = 1;
 
 /**
  * O NIVEL DE UMA AREA, do jeito que a pessoa ve.
  *
- * Existe porque o mesmo numero aparece em quatro lugares — o orbe do ativo, a
- * ficha da area, o pentagono e a previa do perfil — e tres deles mostravam o
- * valor cru enquanto o quarto mostrava dobrado. Duas telas discordando sobre o
- * mesmo nivel e pior que qualquer uma das duas escalas.
- *
- * O que fica GRAVADO continua sendo o degrau de 1 a 10. Isto e so a exibicao.
+ * Hoje devolve o proprio degrau, e continua valendo a pena existir: e o ponto
+ * unico por onde toda tela de area passa. Foi a falta dele que deixou o orbe do
+ * ativo, a ficha, o pentagono e a previa do perfil mostrando numeros diferentes
+ * para o mesmo nivel — e foi ele que permitiu trocar a escala inteira mexendo
+ * em uma linha, quando o 0 a 20 se mostrou inflado.
  */
 export const getAreaDisplayLevel = (level: number | null | undefined): number =>
-  Math.max(1, Math.round(Number(level || 1))) * PONTOS_POR_DEGRAU;
+  Math.max(0, Math.round(Number(level || 0))) * PONTOS_POR_DEGRAU;
 
 /**
  * O NOME DE CADA DEGRAU.
@@ -55,10 +57,16 @@ export const getAreaDisplayLevel = (level: number | null | undefined): number =>
  * A escada e a mesma para as cinco areas de proposito: "nivel 7" precisa
  * significar a mesma coisa em Saude e em Trabalho, senao o pentagono compara
  * coisas diferentes. Os nomes acompanham as frases de constants/lifeAreas:
- * os tres primeiros degraus sao ausencia, os do meio sao repeticao, os
- * ultimos sao integracao.
+ * os primeiros degraus sao ausencia, os do meio sao repeticao, os ultimos sao
+ * integracao.
+ *
+ * O ZERO E O ABANDONO, e nao um "1 mais fraco". O degrau 1 ja descrevia alguem
+ * em crise — mas alguem que ENCARA a crise. O zero e de quem parou de encarar:
+ * nao pergunta, nao tenta, nao olha. E a distincao que faz a escada comecar do
+ * chao de verdade, e e o que permite o Indice ter piso em 50 redondo.
  */
 export const MASTERY_LEVEL_NAMES = [
+  'Abandono',
   'Negligência',
   'Alerta',
   'Despertar',
@@ -72,21 +80,42 @@ export const MASTERY_LEVEL_NAMES = [
 ] as const;
 
 export const getMasteryLevelName = (level: number | null | undefined): string => {
-  const index = Math.min(MASTERY_AREA_MAX_LEVEL, Math.max(1, Math.round(Number(level || 1)))) - 1;
+  // O nome esta na posicao do proprio degrau: o zero e o primeiro da lista.
+  const index = Math.min(MASTERY_AREA_MAX_LEVEL, Math.max(0, Math.round(Number(level || 0))));
   return MASTERY_LEVEL_NAMES[index] || MASTERY_LEVEL_NAMES[0];
 };
 export const MASTERY_RAW_TOTAL_MAX_LEVEL = 50;
 export const MASTERY_TOTAL_MAX_LEVEL = 100;
-export const MASTERY_INDEX_MULTIPLIER = 2;
+
+/**
+ * O INDICE GLYPH COMECA EM 50.
+ *
+ * Antes ele era a soma dos degraus DOBRADA, e isso deixava o pentagono com duas
+ * escalas: as cinco pontas somavam 50 e o numero do meio dizia 100. A conta
+ * fechava por multiplicacao, nao por significado.
+ *
+ * Agora os 50 pontos que a pessoa conquista sao literalmente os cinco degraus
+ * somados — dez por area, cinco areas — em cima de uma base de 50 que todo mundo
+ * tem por estar de pe. O pentagono passa a mostrar exatamente a metade de cima
+ * do Indice, ponta por ponta.
+ *
+ * O piso so e 50 redondo porque existe o degrau 0. Com minimo de 1 por area o
+ * menor Indice possivel seria 55, e a base viraria uma promessa que a escala
+ * nunca cumpre.
+ */
+export const MASTERY_INDEX_BASE = 50;
 
 export const toMasteryIndex = (rawTotal: number): number =>
-  Math.min(MASTERY_TOTAL_MAX_LEVEL, Math.max(0, Math.round(rawTotal * MASTERY_INDEX_MULTIPLIER)));
+  Math.min(
+    MASTERY_TOTAL_MAX_LEVEL,
+    Math.max(MASTERY_INDEX_BASE, Math.round(MASTERY_INDEX_BASE + rawTotal)),
+  );
 
-// Cada nivel de area vale 2 pontos no Indice Glyph, que vai de 0 a 100.
-// Area sem nivel conta como 1: o piso vale para as duas funcoes abaixo.
-// Toda tela que mostra o indice usa uma destas - ninguem recalcula na mao.
+// Cada degrau de area vale um ponto no Indice, que vai de 50 a 100.
+// Area sem nivel conta como 0 - o abandono e um degrau de verdade, nao ausencia
+// de dado. Toda tela que mostra o indice usa uma destas: ninguem recalcula.
 const sumAreaLevels = (levels: readonly (number | null | undefined)[]): number =>
-  levels.reduce<number>((sum, level) => sum + Math.max(1, Number(level || 1)), 0);
+  levels.reduce<number>((sum, level) => sum + Math.max(0, Number(level || 0)), 0);
 
 export const getMasteryIndexFromLevels = (levels: readonly (number | null | undefined)[]): number =>
   toMasteryIndex(sumAreaLevels(levels));
@@ -104,7 +133,7 @@ export const getMasteryIndexFromLevels = (levels: readonly (number | null | unde
  * conta interna continua lendo profile.level direto.
  */
 export const getDisplayLevel = (rawLevel: number | null | undefined): number =>
-  toMasteryIndex(Math.max(1, Number(rawLevel || 1)));
+  toMasteryIndex(Math.max(0, Number(rawLevel || 0)));
 
 export const getMasteryIndexFromAssets = (
   assets: readonly { id: string; level?: number | null }[],
@@ -155,6 +184,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     color: '#3f70a4',
     description: 'Sentido, valores, presença, fé e direção interior.',
     levelDescriptions: [
+      'Parei de me perguntar para que estou aqui. A pergunta em si já parece perda de tempo.',
       'Sinto pouca direção e quase não paro para refletir sobre o que dá sentido à minha vida.',
       'Percebo que preciso de um norte, mas ainda vivo principalmente no automático.',
       'Começo a reconhecer meus valores e a explorar práticas de reflexão ou espiritualidade.',
@@ -180,6 +210,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     color: '#3f8069',
     description: 'Família, amizades, amor, comunidade e convivência.',
     levelDescriptions: [
+      'Estou sozinho e parei de tentar. Não procuro ninguém e não deixo ninguém chegar.',
       'Sinto-me isolado ou preso em relações que me fazem mal.',
       'Tenho contatos, mas pouca intimidade, apoio ou segurança emocional.',
       'Começo a perceber padrões e a buscar relações mais honestas.',
@@ -205,6 +236,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     color: '#b28a35',
     description: 'Ofício, estudo, projetos, dinheiro e construção de futuro.',
     levelDescriptions: [
+      'Desisti de organizar essa parte. Deixo acontecer e lido com o estrago depois.',
       'Estou sem direção, paralisado ou em crise com trabalho, estudos e dinheiro.',
       'Faço apenas o urgente e tenho pouca clareza sobre o futuro que estou construindo.',
       'Começo a organizar prioridades, aprender e cuidar melhor da vida financeira.',
@@ -230,6 +262,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     color: '#b9684b',
     description: 'Descanso, prazer, hobbies, criatividade e espaço mental.',
     levelDescriptions: [
+      'Não tenho lazer nenhum, e já nem sinto falta. Descansar virou só cair no sono.',
       'Minha rotina deixa pouco espaço para descanso, prazer ou recuperação mental.',
       'Descanso de modo passivo, mas raramente termino realmente renovado.',
       'Experimento formas de lazer e bem-estar, ainda sem regularidade.',
@@ -255,6 +288,7 @@ export const LIFE_AREAS: readonly LifeAreaDefinition[] = [
     color: '#a6424f',
     description: 'Movimento, alimentação, sono, energia e cuidado físico.',
     levelDescriptions: [
+      'Abandonei meu corpo. Não cuido, não olho e evito saber como ele está.',
       'Minha saúde está muito negligenciada e meu corpo cobra atenção imediata.',
       'Tenho hábitos que drenam energia e quase nenhuma rotina de cuidado.',
       'Tento melhorar movimento, sono ou alimentação, mas ainda sou bastante inconsistente.',
@@ -344,7 +378,7 @@ export const collapseLifeAreaLevels = (
     const level = Number(row.level);
     if (!Number.isFinite(level)) return;
     const bucket = buckets.get(normalizedId) || [];
-    bucket.push(Math.min(MASTERY_AREA_MAX_LEVEL, Math.max(1, Math.round(level))));
+    bucket.push(Math.min(MASTERY_AREA_MAX_LEVEL, Math.max(0, Math.round(level))));
     buckets.set(normalizedId, bucket);
   });
 

@@ -28,6 +28,7 @@ type Cenario = { id: string; rotulo: string; nota: string; type: string; data: R
 
 /** As dez frases de Saude, como o jogo as escreve. */
 const FRASES_DE_EXEMPLO = [
+    'Abandonei meu corpo. Não cuido, não olho e evito saber como ele está.',
     'Você evita o assunto. Passa semanas sem pensar nisso, e quando pensa, é com culpa.',
     'Você tenta às vezes, mas não sustenta. Começa e para, começa e para.',
     'Você mantém o mínimo. Não avança, mas também não desmorona.',
@@ -119,7 +120,8 @@ function Bancada() {
         userProfile: { id: 'bancada' },
         assets: [
             { id: 'proposito', name: 'PROPÓSITO', level: 7, levelDescriptions: {}, arenas: [], slots: [] },
-            { id: 'relacoes', name: 'RELAÇÕES', level: 4, levelDescriptions: {}, arenas: [], slots: [] },
+            // Uma area no degrau ZERO: e a forma que o pentagono precisa aguentar.
+            { id: 'relacoes', name: 'RELAÇÕES', level: 0, levelDescriptions: {}, arenas: [], slots: [] },
             { id: 'trabalho', name: 'TRABALHO', level: 8, levelDescriptions: {}, arenas: [], slots: [] },
             { id: 'lazer', name: 'LAZER', level: 5, levelDescriptions: {}, arenas: [], slots: [] },
             { id: 'saude', name: 'SAÚDE', level: 6, levelDescriptions: {}, arenas: [], slots: [] },
@@ -164,14 +166,14 @@ function Bancada() {
                 <MasteryWheel
                     compacto
                     onVisualizar={setPreviaDaRoda}
-                    niveis={FRASES_DE_EXEMPLO.length}
+                    niveis={FRASES_DE_EXEMPLO.length - 1}
                     selecionado={nivelDaRoda}
                     frases={FRASES_DE_EXEMPLO}
                     onSelecionar={setNivelDaRoda}
                     hapticos={false}
                 />
                 <p className="roda-leitura">
-                    escolhido: <b>nível {nivelDaRoda * 2}</b> (degrau {nivelDaRoda})
+                    escolhido: <b>degrau {nivelDaRoda}</b> de 10
                 </p>
             </div>
 

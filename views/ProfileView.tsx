@@ -351,7 +351,7 @@ export const ShareableProfileCard: React.FC<{
     const selectedBorder = [...SKINS_DATA, ...BORDERS_DATA].find(s => s.id === userProfile.border);
     const activeAssetCount = assets.filter((asset) => asset.id !== 'geral').length;
     const totalArenas = assets.reduce((sum, asset) => sum + asset.arenas.length, 0);
-    const masteryLevels = assets.filter((asset) => asset.id !== 'geral').map((asset) => Math.max(1, asset.level || 1));
+    const masteryLevels = assets.filter((asset) => asset.id !== 'geral').map((asset) => Math.max(0, asset.level || 0));
     const masteryAverageLevel = masteryLevels.length > 0
         ? (masteryLevels.reduce((sum, level) => sum + level, 0) / masteryLevels.length).toFixed(1).replace('.', ',')
         : '1,0';
@@ -700,7 +700,7 @@ export const ProfileView: React.FC<{ onClose: () => void; profile?: UserProfile 
         (sum, asset) => sum + asset.arenas.reduce((arenaSum, arena) => arenaSum + (arena.actionIds?.length || 0), 0),
         0
     );
-    const masteryLevels = profileAssets.map((asset) => Math.max(1, asset.level || 1));
+    const masteryLevels = profileAssets.map((asset) => Math.max(0, asset.level || 0));
     const masteryAverageLevel = masteryLevels.length > 0
         ? masteryLevels.reduce((sum, level) => sum + level, 0) / masteryLevels.length
         : 1;

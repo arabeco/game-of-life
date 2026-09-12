@@ -33,6 +33,15 @@ interface SvgRadarChartProps {
   labels: string[];
   series: RadarSeries[];
   maxValue: number;
+  /**
+   * A fracao do raio que a figura JA OCUPA com valor zero, de 0 a 1.
+   *
+   * Existe para graficos cuja escala nao comeca no zero. No pentagono da
+   * maestria o Indice parte de 50, e desenhar o degrau 0 encostando no centro
+   * dizia que ali nao ha nada — quando ha a base que todo mundo tem. Com a base
+   * declarada, o miolo e o piso e os valores preenchem o que sobra.
+   */
+  baseInterna?: number;
   levels?: number;
   className?: string;
   height?: number | string;
@@ -57,11 +66,16 @@ const getPoint = (index: number, total: number, magnitude: number) => {
   };
 };
 
-const buildPolygon = (values: number[], total: number, maxValue: number) =>
+/** O raio de um valor, ja contando a base que a escala nao comeca do zero. */
+const magnitudeDe = (value: number, maxValue: number, base: number) => {
+  const normalized = Math.max(0, Math.min(value / maxValue, 1));
+  return RADIUS * (base + (1 - base) * normalized);
+};
+
+const buildPolygon = (values: number[], total: number, maxValue: number, base: number) =>
   values
     .map((value, index) => {
-      const normalized = Math.max(0, Math.min(value / maxValue, 1));
-      const point = getPoint(index, total, RADIUS * normalized);
+      const point = getPoint(index, total, magnitudeDe(value, maxValue, base));
       return `${point.x},${point.y}`;
     })
     .join(' ');
@@ -84,6 +98,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
   labels,
   series,
   maxValue,
+  baseInterna = 0,
   levels = 5,
   className,
   height = '100%',
@@ -94,7 +109,12 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
   labelOffset = 8,
 }) => {
   const total = labels.length;
-  const gridLevels = Array.from({ length: levels }, (_, index) => (index + 1) / levels);
+  // Os aneis dividem o que RESTA acima da base: abaixo dela nao ha degrau
+  // nenhum para marcar, e um anel ali sugeriria uma divisao que nao existe.
+  const gridLevels = Array.from(
+    { length: levels },
+    (_, index) => baseInterna + (1 - baseInterna) * ((index + 1) / levels),
+  );
 
   return (
     <div className={className} style={{ height }}>
@@ -135,7 +155,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
         {series.map((item) => (
           <g key={item.id}>
             <polygon
-              points={buildPolygon(item.values, total, maxValue)}
+              points={buildPolygon(item.values, total, maxValue, baseInterna)}
               fill={item.fill || item.stroke}
               fillOpacity={item.fillOpacity ?? 0.18}
               stroke={item.stroke}
@@ -145,8 +165,8 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
             />
             {item.showDots &&
               item.values.map((value, index) => {
-                const normalized = Math.max(0, Math.min(value / maxValue, 1));
-                const point = getPoint(index, total, RADIUS * normalized);
+                const magnitude = magnitudeDe(value, maxValue, baseInterna);
+                const point = getPoint(index, total, magnitude);
                 const label = item.valueLabel?.(value, index) ?? null;
                 return (
                   <g key={`${item.id}-dot-${index}`}>
@@ -164,7 +184,7 @@ export const SvgRadarChart: React.FC<SvgRadarChartProps> = ({
                     {label ? (() => {
                       const recuo = item.valueLabelOffset ?? 0;
                       const alvo = recuo > 0
-                        ? getPoint(index, total, RADIUS * normalized + recuo)
+                        ? getPoint(index, total, magnitude + recuo)
                         : point;
                       const corpo = item.valueLabelSize ?? 3;
                       return (

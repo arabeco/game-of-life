@@ -68,7 +68,7 @@ export const MasteryResultModal: React.FC<{
     const estiloDaPlaca = DIRECOES.B;
 
     const areas = LIFE_AREAS.filter((area) => assets.some((asset) => asset.id === area.id));
-    const niveisAgora = areas.map((area) => Math.max(1, assets.find((a) => a.id === area.id)?.level || 1));
+    const niveisAgora = areas.map((area) => Math.max(0, assets.find((a) => a.id === area.id)?.level || 0));
     const indiceAgora = getMasteryIndexFromLevels(niveisAgora);
 
     useEffect(() => {
@@ -108,8 +108,10 @@ export const MasteryResultModal: React.FC<{
      */
     const mudancasPorArea = areas
         .map((area) => {
-            const agora = Math.max(1, assets.find((a) => a.id === area.id)?.level || 1);
-            const antes = anterior ? Math.max(1, Number(anterior.levels?.[area.id] || 0) || agora) : agora;
+            const agora = Math.max(0, assets.find((a) => a.id === area.id)?.level || 0);
+            // `?? agora` e nao `|| agora`: com o zero valendo, um retrato que
+            // gravou 0 naquela area e um dado de verdade, e nao ausencia dele.
+            const antes = anterior ? Math.max(0, Number(anterior.levels?.[area.id] ?? agora)) : agora;
             return { area, diferenca: (agora - antes) * PONTOS_POR_DEGRAU };
         })
         .filter((entrada) => entrada.diferenca !== 0);

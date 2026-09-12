@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BORDERS_DATA, SKINS_DATA } from '../constants';
+import { getDisplayLevel } from '../constants/lifeAreas';
 
 interface UserAvatarProps {
     avatarUrl?: string;
@@ -9,6 +10,13 @@ interface UserAvatarProps {
     borderColor?: string;
     borderId?: string;
     showBorder?: boolean;
+    /**
+     * A soma crua dos degraus, como vem de `profile.level` — NAO o numero que a
+     * pessoa ve. A conversao acontece aqui dentro, de proposito: as nove telas
+     * que montam um avatar passam o que tem no perfil, e nao deviam precisar
+     * lembrar de dobrar. Enquanto precisavam, o cracha dizia 36 e o texto ao
+     * lado dizia Nivel 72, para a mesma pessoa, lado a lado.
+     */
     level?: number;
     imgProps?: React.ImgHTMLAttributes<HTMLImageElement>;
 }
@@ -83,7 +91,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
             
             {level !== undefined && (
                 <div className="absolute -bottom-1 -right-1 bg-gray-900/90 rounded-full w-6 h-6 flex items-center justify-center border border-[var(--skin-accent-color)] z-20 shadow-lg group-hover:scale-110 transition-transform">
-                    <span className="text-[11px] font-black text-white">{level}</span>
+                    <span className="text-[11px] font-black text-white">{getDisplayLevel(level)}</span>
                 </div>
             )}
         </div>

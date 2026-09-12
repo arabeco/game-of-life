@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -10,6 +10,21 @@ const DEBUG_PORT = 9222;
 const userDataDir = mkdtempSync(path.join(tmpdir(), 'glyph-smoke-'));
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * O Indice de uma conta recem-criada.
+ *
+ * Sai do codigo, e nao de um literal: era 10 quando o Indice era a soma dobrada
+ * com piso de 1 por area, e virou 50 quando a escada ganhou o degrau do abandono
+ * e a base passou a ser declarada. Um numero fixo aqui exigiria lembrar deste
+ * arquivo toda vez que a escala mudasse — e foi exatamente o que nao aconteceu.
+ */
+const indiceDeContaNova = () => {
+  const fonte = readFileSync(path.join(import.meta.dirname, '..', 'constants', 'lifeAreas.ts'), 'utf8');
+  const base = fonte.match(/MASTERY_INDEX_BASE = (\d+)/);
+  if (!base) throw new Error('MASTERY_INDEX_BASE sumiu de constants/lifeAreas.ts');
+  return base[1];
+};
 
 const browser = spawn(EDGE_PATH, [
   '--headless=new',
@@ -352,8 +367,9 @@ try {
     throw new Error(`Assets cards no longer fit their grid: ${JSON.stringify(assetsLayout)}`);
   }
   const headerMasteryIndex = await evaluate(`document.querySelector('[data-testid="header-mastery-index"]')?.textContent?.trim()`);
-  if (headerMasteryIndex !== '10') {
-    throw new Error(`Header mastery index should use the 100-point scale: ${headerMasteryIndex}`);
+  const indiceEsperado = indiceDeContaNova();
+  if (headerMasteryIndex !== indiceEsperado) {
+    throw new Error(`Header mastery index deveria abrir na base da escala (${indiceEsperado}): ${headerMasteryIndex}`);
   }
   checkpoints.push('assets-responsive-level-100');
 

@@ -1,18 +1,17 @@
 import { gardenSurface } from './gardenSurface';
-import { personalEdge } from './gardenTemplates';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { CanvasTexture, Color, LinearFilter, Plane, Raycaster, SRGBColorSpace, Vector2, Vector3 } from 'three';
 import { chaseFactor, roundedCorner } from './sandSmoothing';
 import { rakeBrush, type RakeSettings } from './sandOptions';
-import { GARDEN_X, GARDEN_Z, inGarden, worldFootprint, type GardenObject } from './model';
+import { GARDEN_X, GARDEN_Z, inGarden, type GardenObject } from './model';
 
 export type SandTool = 'rake'|'smooth'|'camera'|'artifacts'|'bases' | 'decor' | 'shop';
 export interface SandActions { clear:()=>void; undo:()=>void; snapshot:()=>{color:string;height:string} }
 const W=512,H=1024;
 const referenceColor=new Color('#d9cdb0');
 // Fixed-size texture memory: no mesh subdivision, stroke list, or growing history.
-export function SandSurface({tool,settings,sandColor,enabled,objects,actions,onChange,initialDrawing,onReady,onLoadError}:{onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(undo:boolean)=>void}) {
+export function SandSurface({tool,settings,sandColor,enabled,actions,onChange,initialDrawing,onReady,onLoadError}:{onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(undo:boolean)=>void}) {
   const {gl,camera,invalidate}=useThree();
   const geometry=useMemo(()=>gardenSurface(),[]);
   useEffect(()=>()=>geometry.dispose(),[geometry]);
@@ -51,15 +50,13 @@ export function SandSurface({tool,settings,sandColor,enabled,objects,actions,onC
     if(!enabled||!restored||tool==='camera')return;
     const canvas=gl.domElement,ray=new Raycaster(),uv=new Vector2(),plane=new Plane(new Vector3(0,1,0),-.045);
     const brush=rakeBrush(settings);
-    const brushRadius=((brush.lines-1)*brush.gap/2+brush.width)*2*GARDEN_X/W;
-    const margin=tool==='smooth'?.34:brushRadius+.08;
-    const obstacles=objects.flatMap(worldFootprint);
+    const margin=.025;
     let pointer:number|null=null,previous:Vector2|null=null,normal:Vector2|null=null,saved=false;
     let anchors:Vector2[]=[],latest:Vector2|null=null,smooth:Vector2|null=null,lastEmitted:Vector2|null=null;
     let raf=0,lastTime=0;
     const mark=()=>{dirty.current=true;invalidate();};
     const point=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();uv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(uv,camera);const p=ray.ray.intersectPlane(plane,new Vector3());
-      if(!p||p.z < personalEdge(p.x)+margin||!inGarden(p.x,p.z,margin+.1)||obstacles.some(o=>Math.hypot(p.x-o.x,p.z-o.z)<o.radius+margin))return null;
+      if(!p||!inGarden(p.x,p.z,margin+.1))return null;
       return new Vector2((p.x/GARDEN_X*.5+.5)*W,(p.z/GARDEN_Z*.5+.5)*H);
     };
     const save=()=>{if(saved)return;saved=true;history.current={color:assets.c.getImageData(0,0,W,H),height:assets.h.getImageData(0,0,W,H)};onChange(true);};
@@ -78,8 +75,8 @@ export function SandSurface({tool,settings,sandColor,enabled,objects,actions,onC
     };
     const sample=(p:Vector2)=>{
       if(tool==='rake'&&previous&&previous.distanceTo(p)<.35)return;
-      // Fill fast gestures while checking each small step against solid objects.
-      if(previous){const from=previous.clone(),steps=Math.ceil(from.distanceTo(p)/3);for(let i=1;i<=steps;i++){const q=from.clone().lerp(p,i/steps);const x=(q.x/W-.5)*2*GARDEN_X,z=(q.y/H-.5)*2*GARDEN_Z;if(z < personalEdge(x)+margin||!inGarden(x,z,margin+.1)||obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<o.radius+margin)){previous=null;normal=null;continue;}paint(q);previous=q;}}
+      // Keep strokes continuous underneath objects; only the garden boundary clips the brush.
+      if(previous){const from=previous.clone(),steps=Math.ceil(from.distanceTo(p)/3);for(let i=1;i<=steps;i++){const q=from.clone().lerp(p,i/steps);const x=(q.x/W-.5)*2*GARDEN_X,z=(q.y/H-.5)*2*GARDEN_Z;if(!inGarden(x,z,margin+.1)){previous=null;normal=null;continue;}paint(q);previous=q;}}
       else {paint(p);previous=p;}
     };
     const curve=(a:Vector2,b:Vector2,c:Vector2)=>{
@@ -122,7 +119,7 @@ export function SandSurface({tool,settings,sandColor,enabled,objects,actions,onC
     };
     canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);canvas.addEventListener('lostpointercapture',end);window.addEventListener('blur',reset);document.addEventListener('visibilitychange',reset);
     return()=>{reset();document.removeEventListener('visibilitychange',reset);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',end);canvas.removeEventListener('pointercancel',end);canvas.removeEventListener('lostpointercapture',end);window.removeEventListener('blur',reset);};
-  },[enabled,restored,tool,settings,objects,gl,camera,assets,invalidate,onChange]);
+  },[enabled,restored,tool,settings,gl,camera,assets,invalidate,onChange]);
   useFrame(()=>{if(dirty.current){assets.map.needsUpdate=true;assets.bump.needsUpdate=true;dirty.current=false;}});
   useEffect(()=>()=>{assets.map.dispose();assets.bump.dispose();},[assets]);
   return <mesh position={[0,.045,0]} rotation={[-Math.PI/2,0,0]} geometry={geometry} receiveShadow>

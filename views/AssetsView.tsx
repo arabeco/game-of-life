@@ -1,3 +1,4 @@
+import './assets-stripes.css';
 ﻿import React, { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useEffect } from 'react';
@@ -186,8 +187,8 @@ export const AssetsView: React.FC = () => {
     const stretchY = 1;
     const cycleSummaryTop = '10px';
     const cycleSummaryTopPx = 10;
-    const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 18;
-    const assetsGridBottomPx = 72;
+    const assetsGridTopPx = cycleSummaryTopPx + cycleSummaryHeight + 10;
+    const assetsGridBottomPx = 'calc(72px + var(--safe-area-bottom, 0px))';
     const overviewCoords = useMemo(
         () => Object.entries(overviewLayout).map(([id, position]) => ({ id, ...position })),
         [overviewLayout],
@@ -861,7 +862,7 @@ export const AssetsView: React.FC = () => {
                         </div>
 
                         <div id="assets-grid" className="absolute inset-x-0" style={{ top: assetsGridTopPx, bottom: assetsGridBottomPx }}>
-                            <div className="asset-overview-grid grid h-full grid-rows-5">
+                            <div className="assets-stripe-grid">
                             {LIFE_AREAS.map(area => {
                                 const asset = assets.find(a => a.id === area.id);
                                 if (!asset) return null;
@@ -870,7 +871,7 @@ export const AssetsView: React.FC = () => {
                                 const accentRgb = hexToRgb(accent);
                                 const stats = assetStats.get(asset.id) || { activeCount: 0, archivedCount: 0, totalActions: 0, totalCompleted: 0, totalPlanned: 0, progressPercent: 0, hasMeasurableProgress: false };
                                 const activeArenas = asset.arenas.filter(arena => !arena.isArchived);
-                                const visibleArenas = activeArenas.slice(0, 8);
+                                const visibleArenas = activeArenas.slice(0, 6);
                                 const hiddenArenaCount = Math.max(0, activeArenas.length - visibleArenas.length);
 
                                 return (
@@ -879,72 +880,18 @@ export const AssetsView: React.FC = () => {
                                         data-testid="asset-overview-card"
                                         type="button"
                                         onClick={() => handleOpenAsset(asset)}
-                                        className="asset-overview-card group relative place-self-center text-left transition-transform duration-200 hover:-translate-y-px"
+                                        className="assets-stripe"
+                                        style={{ '--area-color': accent, '--area-art': assetArtLayer || 'none' } as React.CSSProperties}
+                                        aria-label={`${area.name}, nível ${asset.level ?? 0}, ${stats.activeCount} Arenas`}
                                     >
-                                        <div
-                                            className="absolute inset-0 overflow-hidden rounded-[11px] border"
-                                            style={{
-                                                borderColor: rgbaString(accentRgb, 0.54),
-                                                backgroundImage: `${assetArtLayer ? `linear-gradient(90deg, rgba(6,7,10,0.48), rgba(6,7,10,0.74)), ${assetArtLayer}, ` : ''}linear-gradient(105deg, ${rgbaString(accentRgb, 0.5)} 0%, ${rgbaString(accentRgb, 0.2)} 46%, rgba(8,10,14,0.9) 100%)`,
-                                                backgroundSize: assetArtLayer ? 'cover, cover, auto' : undefined,
-                                                backgroundPosition: 'center',
-                                                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.1), inset 5px 0 0 ${rgbaString(accentRgb, 0.82)}, 0 7px 16px rgba(0,0,0,0.42), 0 0 12px ${rgbaString(accentRgb, 0.12)}`,
-                                            }}
-                                        />
-
-                                        <div
-                                            className="absolute left-[3%] top-0 z-20 flex -translate-y-[24%] items-center justify-center"
-                                            style={{ width: 'clamp(44px, 17cqw, 56px)', height: 'clamp(44px, 48cqh, 56px)' }}
-                                        >
-                                            <Sephirot
-                                                asset={asset}
-                                                onClick={() => handleOpenAsset(asset)}
-                                                useSkinArtworkOnly={hasSephirotRasterArt}
-                                                showLabel={false}
-                                                size="clamp(44px, 48cqh, 56px)"
-                                                interactive={false}
-                                            />
-                                        </div>
-
-                                        <div className="absolute inset-0 z-10 flex min-w-0 flex-col px-[4%] pb-[8%] pt-[2%]">
-                                            <div className="mx-auto flex min-h-[clamp(24px,27cqh,30px)] w-[62%] items-center justify-center rounded-[8px] border border-white/22 bg-[rgba(18,21,27,0.58)] px-[4%] py-[1.5%] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_7px_16px_rgba(0,0,0,0.26)] backdrop-blur-[3px]">
-                                                <h2 className="asset-overview-title line-clamp-2 text-center font-black uppercase leading-[1.06] tracking-[0.04em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]">
-                                                    {area.id === 'proposito' ? area.shortName : area.name}
-                                                </h2>
-                                            </div>
-
-                                            <div className="asset-overview-stats mx-auto mt-auto grid min-w-0 items-end justify-center">
-                                                <div className="asset-overview-stat flex aspect-square flex-col items-center justify-center rounded-[6px] border border-white/24 bg-black/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_7px_16px_rgba(0,0,0,0.34)] backdrop-blur-[2px]">
-                                                    <span className="text-[8px] font-black uppercase leading-none tracking-[0.06em] text-white/66">Arenas</span>
-                                                    <span className="mt-2 text-[25px] font-black leading-none text-white">{stats.activeCount}</span>
-                                                </div>
-
-                                                <div className="asset-overview-emojis mx-auto flex min-w-0 flex-wrap content-center justify-center gap-x-1 gap-y-0.5 overflow-hidden text-[15px] [text-shadow:0_2px_7px_rgba(0,0,0,0.95)]">
-                                                    {visibleArenas.length > 0
-                                                        ? <>
-                                                            {visibleArenas.map(arena => <span key={arena.id} className="w-4 text-center">{arena.icon || '◦'}</span>)}
-                                                            {hiddenArenaCount > 0 && <span className="w-4 text-center text-[8px] font-black text-white/68">+{hiddenArenaCount}</span>}
-                                                        </>
-                                                        : <span className="text-[8px] font-black uppercase tracking-[0.08em] text-white/38">Vazia</span>}
-                                                </div>
-
-                                                <div className="asset-overview-stat flex aspect-square flex-col items-center justify-center rounded-[6px] border border-white/24 bg-black/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_7px_16px_rgba(0,0,0,0.34)] backdrop-blur-[2px]">
-                                                    <span className="text-[8px] font-black uppercase leading-none tracking-[0.06em] text-white/66">Acoes</span>
-                                                    <span className="mt-2 text-[25px] font-black leading-none text-white">{stats.totalActions}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="absolute inset-x-3 bottom-1.5 z-20 h-2 overflow-hidden rounded-full border border-[#e3e8ef]/80 bg-black/78 shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0_8px_rgba(224,232,242,0.48),0_1px_0_rgba(255,255,255,0.28)]">
-                                            <div
-                                                className="h-full rounded-full transition-all duration-500"
-                                                style={{
-                                                    width: stats.hasMeasurableProgress ? `${stats.progressPercent}%` : '0%',
-                                                    background: `linear-gradient(90deg, ${rgbaString(accentRgb, 0.94)} 0%, ${rgbString(lightenToward(accentRgb, [255, 255, 255], 0.42))} 100%)`,
-                                                    boxShadow: `0 0 12px ${rgbaString(accentRgb, 0.88)}, inset 0 1px 0 rgba(255,255,255,0.38)`,
-                                                }}
-                                            />
-                                        </div>
+                                        <span className="assets-stripe-level"><span>{Math.max(0, asset.level || 0) * PONTOS_POR_DEGRAU}</span></span>
+                                        <span className="assets-stripe-title"><span>{area.id === 'proposito' ? area.shortName : area.name}</span></span>
+                                        <span className="assets-stripe-arenas">
+                                            {visibleArenas.map(arena => <span key={arena.id} className="assets-stripe-emoji" title={arena.name}>{arena.icon || '◦'}</span>)}
+                                            {hiddenArenaCount > 0 && <span className="assets-stripe-emoji">+{hiddenArenaCount}</span>}
+                                        </span>
+                                        <span className="assets-stripe-progress-label">{stats.hasMeasurableProgress ? `${stats.totalCompleted}/${stats.totalPlanned} ações · ${stats.progressPercent}%` : 'Sem ações planejadas'}</span>
+                                        <span className="assets-stripe-progress" role="progressbar" aria-label={`Progresso de ${area.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, stats.progressPercent)}><span style={{ width: `${Math.min(100, Math.max(0, stats.progressPercent))}%` }} /></span>
                                     </button>
                                 );
                             })}

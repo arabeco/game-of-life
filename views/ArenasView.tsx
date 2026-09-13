@@ -1,3 +1,4 @@
+import './arena-groups.css';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../contexts/GameContext';
@@ -2525,7 +2526,7 @@ export const ArenasView: React.FC = () => {
                     )}
 
                     {arenasViewMode === 'priorities' && (
-                        <div className={arenaPresentationMode === 'list' ? 'space-y-4' : 'space-y-6'}>
+                        <div className="arena-groups">
                             {(['alta', 'media', 'baixa'] as const).map(priority => {
                                 const sectionId = `priority-${priority}`;
                                 const isCollapsed = collapsedSections[sectionId];
@@ -2547,11 +2548,11 @@ export const ArenasView: React.FC = () => {
                                         className={`space-y-2 rounded-2xl transition-all duration-200 ${isPriorityDragOver ? 'bg-[var(--skin-accent-color)]/10 ring-2 ring-[var(--skin-accent-color)] p-2' : ''}`}
                                     >
                                         <div
-                                            className="flex items-center gap-2 px-2 cursor-pointer group"
+                                            className="arena-group-heading flex items-center gap-2 px-2 cursor-pointer group"
                                             onClick={() => toggleSection(sectionId)}
                                         >
                                             <div className={`w-2 h-2 rounded-full ${priority === 'alta' ? 'bg-red-500' : priority === 'media' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">
+                                            <span className="arena-group-title text-[10px] font-black uppercase tracking-widest">
                                                 {priority === 'alta' ? 'Alta Prioridade' : priority === 'media' ? 'Média Prioridade' : 'Baixa Prioridade'}
                                             </span>
                                             <div className="flex-1 h-[1px] bg-white/5" />
@@ -2624,11 +2625,11 @@ export const ArenasView: React.FC = () => {
                     )}
 
                     {arenasViewMode === 'assets' && (
-                        <div className={arenaPresentationMode === 'list' ? 'space-y-4' : 'space-y-6'}>
+                        <div className="arena-groups">
                             {campaigns.length > 0 && (
                                 <div className={arenaPresentationMode === 'list' ? 'space-y-1' : 'space-y-2'}>
                                     <div
-                                        className="flex items-center gap-2 px-2 cursor-pointer group"
+                                        className="arena-group-heading flex items-center gap-2 px-2 cursor-pointer group"
                                         onClick={() => toggleSection('campaigns')}
                                     >
                                         <span className="text-[10px] font-black uppercase tracking-widest text-[var(--skin-accent-color)] group-hover:text-white transition-colors">
@@ -2662,10 +2663,10 @@ export const ArenasView: React.FC = () => {
                                 return (
                                     <div key={group.id} className={arenaPresentationMode === 'list' ? 'space-y-1' : 'space-y-2'}>
                                         <div
-                                            className="flex items-center gap-2 px-2 cursor-pointer group"
+                                            className="arena-group-heading flex items-center gap-2 px-2 cursor-pointer group"
                                             onClick={() => toggleSection(sectionId)}
                                         >
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">
+                                            <span className="arena-group-title text-[10px] font-black uppercase tracking-widest">
                                                 {group.name}
                                             </span>
                                             <div className="flex-1 h-[1px] bg-white/5" />

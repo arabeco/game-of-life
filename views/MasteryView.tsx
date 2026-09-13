@@ -4,9 +4,6 @@ import { MASTERY_LEVEL_DESCRIPTIONS } from '../constants';
 import { ASSET_ACCENT_COLORS } from '../constants/assetVisuals';
 import { MASTERY_TOTAL_MAX_LEVEL, PONTOS_POR_DEGRAU, getMasteryIndexFromAssets } from '../constants/lifeAreas';
 import { GlassCard } from '../components/GlassCard';
-import { MasteryResultModal } from '../components/MasteryResultModal';
-import { MasteryHistory } from '../components/MasteryHistory';
-import { MasteryWheel } from '../components/MasteryWheel';
 import { ShareIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
 import { shareElementWithFeedback } from '../components/Share';
 import './mastery-quiz.css';
@@ -16,14 +13,12 @@ const AssetPentagon = React.lazy(() => import('../components/AssetPentagon').the
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }> = ({ onClose, embedded = false }) => {
-    const { assets, updateAllAssetLevels, showToast, userProfile, oraclePreferences } = useGame();
+    const { assets, updateAllAssetLevels, showToast, userProfile } = useGame();
     const [tempLevels, setTempLevels] = useState<Record<string, number>>({});
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
     const [currentAssetIndex, setCurrentAssetIndex] = useState(0);
     const [isAssessmentActive, setIsAssessmentActive] = useState(false);
-    const [mostrarResultado, setMostrarResultado] = useState(false);
-    const [preview, setPreview] = useState<{assetId: string; level: number} | null>(null);
 
     const buildDraftFromAssets = () => {
         const initialLevels = assets.reduce((acc, asset) => ({ ...acc, [asset.id]: asset.level ?? 0 }), {});
@@ -82,10 +77,6 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
         ? Math.ceil((threeDays - (Date.now() - lastUpdate)) / (60 * 60 * 1000))
         : 0;
 
-    if (mostrarResultado) {
-        return <MasteryResultModal onClose={() => { setMostrarResultado(false); onClose?.(); }} />;
-    }
-
     if (!currentAsset) return null;
 
     const accentColor = (ASSET_ACCENT_COLORS as Record<string, string>)[currentAsset.id] || '#C9A84C';
@@ -94,7 +85,6 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
     // nao existe em lugar nenhum.
     const sliderMax = Math.max(1, (currentDescriptions.length || 11) - 1);
     const currentLevel = clamp(tempLevels[currentAsset.id] ?? 0, 0, sliderMax);
-    const currentProgress = filteredAssets.length > 0 ? Math.round(((currentAssetIndex + 1) / filteredAssets.length) * 100) : 0;
 
     const handleLevelChange = (nextLevel: number) => {
         setTempLevels((prev) => ({ ...prev, [currentAsset.id]: clamp(nextLevel, 0, sliderMax) }));
@@ -114,11 +104,8 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
         const success = updateAllAssetLevels(levelsToSave);
         if (success) {
             setShowConfirmModal(false);
-            // O quiz terminava em nada: gravava e voltava para Config. Cinco
-            // decisoes sobre a propria vida, e nenhum instante para olhar o que
-            // elas formam juntas. A tela do resultado fica NO LUGAR do fechamento
-            // — quem fecha ela e que sai.
-            setMostrarResultado(true);
+            setIsAssessmentActive(false);
+            showToast('Avaliação salva.', 'success');
         }
     };
 
@@ -137,6 +124,10 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
     };
 
     const startAssessment = () => {
+        if (isMasteryLocked) {
+            showToast(`Nova avaliação disponível em ${remainingHours}h.`, 'info');
+            return;
+        }
         setCurrentAssetIndex(0);
         setIsAssessmentActive(true);
     };
@@ -199,50 +190,31 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                 <div className="mastery-quiz-panel">
                     <div className="mastery-quiz-panel-inner mastery-quiz-inline">
                         <div className="mastery-quiz-stable-summary">
-                                <div className="mastery-quiz-pentagon-frame">
+                                <button type="button" className="mastery-quiz-pentagon-frame mastery-quiz-pentagon-trigger" onClick={() => { if (!isAssessmentActive) startAssessment(); }} aria-label="Abrir perguntas da avaliação" aria-expanded={isAssessmentActive}>
                                     <div className="mastery-quiz-pentagon-square">
                                         <Suspense fallback={<div className="h-full w-full rounded-[1.4rem] bg-white/5" />}>
-                                            <AssetPentagon assets={assets} tempLevels={isAssessmentActive && preview?.assetId === currentAsset.id ? {...tempLevels, [currentAsset.id]: preview.level} : tempLevels} centralStyle="plain" destacarPontas={isAssessmentActive} activeAreaId={isAssessmentActive ? currentAsset.id : undefined} size="100%" />
+                                            <AssetPentagon assets={assets} tempLevels={tempLevels} centralStyle="plain" destacarPontas={isAssessmentActive} activeAreaId={isAssessmentActive ? currentAsset.id : undefined} size="100%" />
                                         </Suspense>
                                     </div>
-                                </div>
-
-                                <MasteryHistory userId={userProfile.id} updatedAt={userProfile.lastLevelUpdate} />
+                                </button>
 
                         </div>
                         <div className="mastery-quiz-lower">
                             {!isAssessmentActive ? <>
-                                <div className="mastery-quiz-actions mastery-quiz-actions--single">
-                                    <button
-                                        onClick={startAssessment}
-                                        disabled={isMasteryLocked}
-                                        className="luxe-skin-button mastery-quiz-nav-button disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        {isMasteryLocked ? `Disponível em ${remainingHours}h` : 'Iniciar avaliação'}
-                                        <ChevronRightIcon className="w-4 h-4" />
-                                    </button>
-                                </div>
+                                <p className="mastery-quiz-start-hint">{isMasteryLocked ? `Nova avaliação em ${remainingHours}h` : 'Toque no pentágono para avaliar suas cinco áreas.'}</p>
                             </> : <>
                                 <div className="mastery-quiz-meta">
                                     <div>
                                         <h1 className="mastery-quiz-asset-name">{currentAsset.name}</h1>
                                     </div>
-                                    <div className="mastery-quiz-meta-side">
-                                        <div className="mastery-quiz-total-label">Índice Glyph</div>
-                                        <div className="mastery-quiz-total-value">{masteryIndex}/{MASTERY_TOTAL_MAX_LEVEL}</div>
-                                    </div>
+                                    <span className="mastery-quiz-step">{currentAssetIndex + 1}/{filteredAssets.length}</span>
                                 </div>
-
-                                <MasteryWheel
-                                    key={currentAsset.id}
-                                    compacto
-                                    onVisualizar={level => setPreview({assetId: currentAsset.id, level})}
-                                    niveis={sliderMax}
-                                    selecionado={currentLevel}
-                                    frases={currentDescriptions}
-                                    onSelecionar={handleLevelChange}
-                                    hapticos={oraclePreferences?.hapticsEnabled !== false}
-                                />
+                                <div className="mastery-quiz-answer">
+                                    <label htmlFor="mastery-level">Como está essa área hoje?</label>
+                                    <p className="mastery-quiz-answer-description" aria-live="polite">{currentDescriptions[currentLevel]}</p>
+                                    <input id="mastery-level" type="range" min={0} max={sliderMax} step={1} value={currentLevel} onChange={event => handleLevelChange(Number(event.target.value))} aria-valuetext={currentDescriptions[currentLevel]} />
+                                    <div className="mastery-quiz-answer-scale"><span>0</span><output htmlFor="mastery-level">{currentLevel * PONTOS_POR_DEGRAU}/{sliderMax * PONTOS_POR_DEGRAU}</output><span>{sliderMax * PONTOS_POR_DEGRAU}</span></div>
+                                </div>
 
                                 <div className="mastery-quiz-actions">
                                     <button

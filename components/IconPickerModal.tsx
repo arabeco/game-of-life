@@ -13,7 +13,7 @@ interface IconPickerModalProps {
 
 export const IconPickerModal: React.FC<IconPickerModalProps> = ({ onSelect, onClose }) => {
     const { activeTheme } = useGame();
-    const [activeCategory, setActiveCategory] = useState<(typeof ICON_PICKER_CATEGORIES)[number]['id']>('sugeridos');
+    const [activeCategory, setActiveCategory] = useState<(typeof ICON_PICKER_CATEGORIES)[number]['id']>(ICON_PICKER_CATEGORIES[0].id);
     const currentCategory = ICON_PICKER_CATEGORIES.find(category => category.id === activeCategory) || ICON_PICKER_CATEGORIES[0];
     const isLightTheme = activeTheme === 'LIGHT';
     const categoryTextColor = isLightTheme ? '#27364a' : '#ffffff';
@@ -93,6 +93,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ onSelect, onCl
                                 <button
                                     key={`${currentCategory.id}-${icon}`}
                                     onClick={() => onSelect(icon)}
+                                    aria-label={`Selecionar ${icon}`}
                                     className={`aspect-square rounded-xl border flex items-center justify-center transition-transform hover:scale-105 ${
                                         isLightTheme
                                             ? 'border-slate-300/30 bg-white/58 hover:bg-white/78 hover:border-slate-400/35'

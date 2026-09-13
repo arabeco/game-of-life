@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { getAssetArt } from '../constants/assetVisuals';
+import { getAssetArt, ASSET_BACKGROUND_VARIANTS } from '../constants/assetVisuals';
 import { hasPremiumAccess } from '../utils/premiumAccess';
-import { getProfileBackgroundPrimarySource } from '../utils/profileBackgrounds';
+import { getProfileBackgroundPrimarySource, PROFILE_BACKGROUND_OPTIONS } from '../utils/profileBackgrounds';
 import { ImageIcon, XIcon } from './Icons';
 import { BackgroundImageSelectionModal } from './BackgroundImageSelectionModal';
 
@@ -91,6 +91,7 @@ export const AssetArtButton: React.FC<AssetArtButtonProps> = ({
                     onClose={() => setIsPickerOpen(false)}
                     title={`Fundo de ${assetName}`}
                     allowApplyToAll
+                    options={[...(ASSET_BACKGROUND_VARIANTS[assetId] || []), ...PROFILE_BACKGROUND_OPTIONS]}
                     originalOption={originalOption}
                     onSelectOriginal={
                         onRemove

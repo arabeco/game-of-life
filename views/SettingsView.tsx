@@ -1856,13 +1856,14 @@ const GeralTab: React.FC = () => {
 
     if (isHierarchyVisible) return (<div><button onClick={() => setIsHierarchyVisible(false)} className="mb-4 text-sm font-bold text-gray-400 hover:text-white">&larr; Voltar</button><NobilityLadder /></div>);
 
+    if (showMastery) return (
+        <Suspense fallback={<div className="min-h-48" />}>
+            <MasteryView embedded onClose={() => setShowMastery(false)} />
+        </Suspense>
+    );
+
     return (
         <div className="space-y-6">
-            {showMastery ? (
-                <Suspense fallback={<div className="min-h-48" />}>
-                    <MasteryView embedded onClose={() => setShowMastery(false)} />
-                </Suspense>
-            ) : (
             <button
                 type="button"
                 id="mastery-sliders-button"
@@ -1904,7 +1905,6 @@ const GeralTab: React.FC = () => {
                     </div>
                 </GlassCard>
             </button>
-            )}
 
             <GlassCard variant="accent" className="text-center cursor-pointer relative overflow-hidden group shadow-[0_0_20px_var(--sephirot-glow-color-soft)]" onClick={() => setIsHierarchyVisible(true)} id="profile-section">
                 <div className="absolute inset-0 bg-gradient-to-b from-[var(--sephirot-glow-color,rgba(0,0,0,0))] to-black/60 pointer-events-none" />

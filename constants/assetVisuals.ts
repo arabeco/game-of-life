@@ -25,15 +25,15 @@ export const getAssetArt = (assetId: string): string | undefined =>
  * exigiria carregar um banco de nomes junto.
  */
 const AREA_ICONS = {
-  proposito: ['✨', '🧭', '🕯️', '🙏', '🧘', '📖', '📿', '🌅', '🌙', '🌌', '🍃', '⛰️', '⭐', '🤍', '☯️', '📓', '🕊️'],
-  relacoes: ['🤝', '🫂', '❤️', '👨‍👩‍👧', '📞', '💬', '☕', '🍻', '🎉', '🎁', '🐕', '🐈', '👶', '🏡', '🎂', '🚗', '✉️'],
-  trabalho: ['💼', '💻', '📊', '📈', '🗓️', '✉️', '📝', '📚', '🎓', '🧠', '🛠️', '🏢', '🧾', '📁', '✍️', '🔬', '🎤'],
-  lazer: ['🎨', '🎮', '🎬', '🎵', '🎸', '📷', '✈️', '🏖️', '🌳', '🍳', '📖', '🎲', '🎧', '🕺', '🎣', '🛹', '🧩'],
-  saude: ['🏃', '💪', '🏋️', '🚴', '🏊', '🧘', '🥗', '💧', '😴', '🩺', '💊', '🦷', '👟', '🚶', '🫀', '🥤', '🧴'],
+  proposito: ['✨', '🧭', '🕯️', '🙏', '🧘', '📖', '📿', '🌅', '🌙', '🌌', '🍃', '⛰️', '⭐', '🤍', '☯️', '📓', '🕊️', '🔭', '🗺️', '🛤️', '🏔️', '🌠', '☀️', '🪷', '🧎', '⛪', '🕌', '🛕', '🕍', '✝️', '☪️', '✡️', '🕉️', '☸️', '🛐', '📝', '💭', '💡', '🎯', '🧩', '📜', '🔥', '🪶', '🌱', '🌍', '🧠', '🫶'],
+  relacoes: ['🤝', '🫂', '❤️', '👨\u200d👩\u200d👧', '📞', '💬', '☕', '🍻', '🎉', '🎁', '🐕', '🐈', '👶', '🏡', '🎂', '🚗', '✉️', '⚽', '🎵', '🏘️', '👪', '👥', '🧑\u200d🤝\u200d🧑', '👫', '👬', '👭', '💑', '💍', '💒', '🍼', '🧸', '🐾', '🐶', '🐱', '🍽️', '🥂', '🫖', '🧉', '🧺', '🎈', '🎊', '🥳', '🗣️', '👂', '🤲', '🤗', '💌', '🫶', '🌹', '🚶'],
+  trabalho: ['💼', '💻', '📊', '📈', '🗓️', '✉️', '📝', '📚', '🎓', '🧠', '🛠️', '🏢', '🧾', '📁', '✍️', '🔬', '🎤', '🖥️', '⌨️', '🖱️', '🖨️', '📱', '📐', '📏', '✏️', '🖊️', '🖌️', '🧮', '📋', '📌', '📎', '🗂️', '🗃️', '🗄️', '📰', '📑', '📕', '📗', '📘', '📙', '🧑\u200d🏫', '🧑\u200d💻', '🧑\u200d🔬', '🧑\u200d🔧', '🧑\u200d🍳', '🩺', '⚖️', '💰', '💳', '🏦', '📦', '🏗️', '⚙️', '🔍', '🧪', '🧬', '🌐', '🎥', '🎙️'],
+  lazer: ['🎨', '🎮', '🎬', '🎵', '🎸', '📷', '✈️', '🏖️', '🌳', '🍳', '📖', '🎲', '🎧', '🕺', '🎣', '🛹', '🧩', '⚽', '🏀', '🏐', '🏈', '⚾', '🎾', '🏸', '🏓', '🎱', '🎳', '🥏', '⛳', '♟️', '🀄', '🃏', '🎯', '🎰', '🎡', '🎢', '🎪', '🎭', '🎤', '🎙️', '🎼', '🎶', '🎹', '🥁', '🪘', '🎷', '🎺', '🎻', '🪈', '🪕', '🪗', '📻', '💿', '📺', '🍿', '🎞️', '🎟️', '🖼️', '🧶', '🧵', '🪡', '🏕️', '🏔️', '🛶', '⛵', '🚲', '🏄', '🏂', '⛷️', '🧗', '🛼', '🐚', '🪁', '🧑\u200d🎨'],
+  saude: ['🏃', '💪', '🏋️', '🚴', '🏊', '🧘', '🥗', '💧', '😴', '🩺', '💊', '🦷', '👟', '🚶', '🫀', '🥤', '🧴', '⚽', '🏀', '🏐', '🎾', '🏸', '🏓', '🥊', '🥋', '🤸', '🤾', '🤽', '🏄', '🧗', '⛹️', '🏌️', '🛼', '🛹', '🏂', '⛷️', '🦵', '🦶', '🦴', '🫁', '🧠', '🧑\u200d⚕️', '🏥', '🩹', '🩻', '🩼', '🩸', '💉', '🌡️', '🧼', '🛁', '🪥', '🛌', '🥦', '🥕', '🥑', '🍎', '🍌', '🍓', '🥚', '🐟', '🥜', '🥛', '🍵', '🧘\u200d♀️', '🚭'],
 } as const;
 
 /** O que nao e area da vida: casa, contas, mercado, carro, bicho, conserto. */
-const OUTROS_ICONS = ['🏠', '🧹', '🧺', '🛒', '🚗', '🔑', '🧾', '📦', '🔧', '💡', '🪴', '🗑️', '⛽', '🏦', '📮', '✅', '📌'] as const;
+const OUTROS_ICONS = ['🚿', '🧽', '🧻', '🪣', '🛏️', '🛋️', '🪑', '🚪', '🪟', '🔋', '🔌', '💡', '🧯', '📬', '📨', '📅', '⏰', '🚕', '🚌', '🚇', '🚆', '🛵', '🏍️', '🛫', '🧳', '🛂', '🪪', '📄', '💵', '🪙', '🧰', '🪛', '🔨', '🪚', '🧱', '🌻', '🌾', '💐', '🏠', '🧹', '🧺', '🛒', '🚗', '🔑', '🧾', '📦', '🔧', '💡', '🪴', '🗑️', '⛽', '🏦', '📮', '✅', '📌'] as const;
 
 export const ASSET_VISUALS = {
   ...Object.fromEntries(LIFE_AREAS.map((area) => [area.id, {
@@ -66,7 +66,7 @@ export const ASSET_ACCENT_COLORS: Record<AssetVisualId, string> = Object.fromEnt
 
 /**
  * O seletor tinha 30 icones no total e a mesma dezena reaparecia em toda arena
- * criada. O acervo agora vem de constants/iconLibrary; os sugeridos e as areas
+ * criada. O acervo fica em AREA_ICONS; as areas
  * da vida continuam na frente porque sao o atalho de quem nao quer procurar.
  */
 /**
@@ -80,6 +80,30 @@ export const ICON_PICKER_CATEGORIES: IconPickerCategory[] = [
     label: config.label,
     color: config.color,
     tabIcon: config.tabIcon,
-    icons: config.icons,
+    icons: [...new Set(config.icons)],
   })),
 ];
+
+/** Additional backgrounds retain the original and use each area's palette. */
+export const ASSET_BACKGROUND_VARIANTS: Record<string, { id: string; name: string; value: string; accessTier: 'base' }[]> = {
+    proposito: [
+        { id: 'purpose-dawn', name: 'Horizonte azul', value: '/assets/life-areas/purpose-dawn.webp', accessTier: 'base' },
+        { id: 'purpose-library', name: 'Refúgio de reflexão', value: '/assets/life-areas/purpose-library.webp', accessTier: 'base' },
+    ],
+    relacoes: [
+        { id: 'relationships-table', name: 'À mesa juntos', value: '/assets/life-areas/relationships-table.webp', accessTier: 'base' },
+        { id: 'relationships-path', name: 'Caminho compartilhado', value: '/assets/life-areas/relationships-path.webp', accessTier: 'base' },
+    ],
+    trabalho: [
+        { id: 'work-workshop', name: 'Oficina criativa', value: '/assets/life-areas/work-workshop.webp', accessTier: 'base' },
+        { id: 'work-library', name: 'Tempo de estudo', value: '/assets/life-areas/work-library.webp', accessTier: 'base' },
+    ],
+    lazer: [
+        { id: 'leisure-music', name: 'Sala de música', value: '/assets/life-areas/leisure-music.webp', accessTier: 'base' },
+        { id: 'leisure-coast', name: 'Pausa à beira-mar', value: '/assets/life-areas/leisure-coast.webp', accessTier: 'base' },
+    ],
+    saude: [
+        { id: 'health-court', name: 'Pista de movimento', value: '/assets/life-areas/health-court.webp', accessTier: 'base' },
+        { id: 'health-kitchen', name: 'Cozinha vital', value: '/assets/life-areas/health-kitchen.webp', accessTier: 'base' },
+    ],
+};

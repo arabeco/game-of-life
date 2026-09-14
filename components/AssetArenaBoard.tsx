@@ -60,7 +60,7 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArc
                                             aria-label={`Abrir ${arena.name}`}
                                             onClick={interactive ? () => setViewingArenaId(arena.id) : undefined}
                                             disabled={!interactive}
-                                            className={`w-[9.25rem] shrink-0 ${index > 0 ? '-ml-6' : ''}`}
+                                            className={`w-[6.85rem] shrink-0 ${index > 0 ? '-ml-5' : ''}`}
                                             style={{ transform: pileTransform(index) }}
                                         >
                                             <div className="pointer-events-none h-[4.75rem] w-full drop-shadow-[0_10px_20px_rgba(0,0,0,0.32)]">
@@ -88,9 +88,13 @@ export const AssetArenaBoard: React.FC<AssetArenaBoardProps> = ({ asset, showArc
 
                     {activeArenas.length > 0 ? (
                         <div className={`${showArchived ? 'mt-2.5 ' : ''}overflow-x-auto pb-1.5`}>
+                            {/* 6.85rem e a largura do cartao na aba Arenas. Aqui era 9.25rem: o
+                                MESMO componente 35% mais largo com a mesma altura, entao a arte, o
+                                titulo e a fileira de acoes saiam todos esticados em relacao ao
+                                padrao que a pessoa ve em todo o resto do app. */}
                             <div className="flex min-w-max gap-2.5 pr-1">
                                 {activeArenas.map((arena) => (
-                                    <div key={arena.id} className="h-[4.75rem] w-[9.25rem] shrink-0">
+                                    <div key={arena.id} className="h-[4.75rem] w-[6.85rem] shrink-0">
                                         <ArenaCard
                                             arena={arena}
                                             actions={getActionsForArena(arena.id)}

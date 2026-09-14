@@ -46,14 +46,14 @@ const profileFromUser = (profile: UserProfile): ProfileLite => ({
   id: profile.id,
   nickname: profile.nickname || 'Aliado',
   avatarUrl: profile.avatarUrl || '',
-  level: Number(profile.level || 1),
+  level: Number(profile.level ?? 0),
 });
 
 const profileFromRow = (row: any): ProfileLite => ({
   id: String(row.id),
   nickname: String(row.nickname || row.username || 'Aliado'),
   avatarUrl: String(row.avatar_url || ''),
-  level: Number(row.level || 1),
+  level: Number(row.level ?? 0),
 });
 
 const Avatar: React.FC<{ profile?: ProfileLite | null }> = ({ profile }) => (
@@ -139,7 +139,7 @@ const ArenaProgress: React.FC<{
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="px-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-white/40">{owner}</div>
+      <div className="px-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-white/45">{owner}</div>
       <ArenaCard
         arena={arenaViva || previewArenaFromEntry(entry)}
         actions={(usarContexto ? acoesVivas : entry.actions) || entry.actions || []}
@@ -445,7 +445,7 @@ export const ConnectionsModal: React.FC<{
         <GlassCard className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden !rounded-lg !p-0" onClick={(event) => event.stopPropagation()}>
           <header className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div>
-              <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">Social</div>
+              <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/45">Social</div>
               <h2 className="mt-0.5 text-lg font-black text-white">Conexões</h2>
             </div>
             <div className="flex items-center gap-1">
@@ -467,7 +467,7 @@ export const ConnectionsModal: React.FC<{
                   data-active={activeType === type ? 'true' : 'false'}
                   type="button"
                   onClick={() => setActiveType(type)}
-                  className={`min-h-10 rounded-md px-2 py-2 text-center text-[10px] font-black uppercase tracking-[0.08em] transition-colors ${activeType === type ? 'bg-white/12 text-white' : 'text-white/42 hover:text-white/72'}`}
+                  className={`min-h-10 rounded-md px-2 py-2 text-center text-[10px] font-black uppercase tracking-[0.08em] transition-colors ${activeType === type ? 'bg-white/12 text-white' : 'text-white/45 hover:text-white/72'}`}
                 >
                   <span className="flex items-center justify-center gap-1.5">
                     {type === 'mentoria' ? <CheckIcon className="h-4 w-4 text-amber-300" /> : type === 'parceria' ? <UsersIcon className="h-4 w-4 text-cyan-300" /> : <TrophyIcon className="h-4 w-4 text-rose-300" />}
@@ -487,7 +487,7 @@ export const ConnectionsModal: React.FC<{
 
             {visibleInvites.length > 0 && (
               <section>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Convites</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Convites</h3>
                 <div className="mt-2 space-y-2">
                   {visibleInvites.map((invite) => {
                     const incoming = invite.recipientId === userProfile.id;
@@ -525,11 +525,11 @@ export const ConnectionsModal: React.FC<{
             )}
 
             <section>
-              <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">Ativas</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Ativas</h3>
               {loading ? (
                 <div className="mt-3 h-24 animate-pulse rounded-lg bg-white/5" />
               ) : visibleLinks.length === 0 ? (
-                <div id="connections-active-empty" className="mt-2 rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/42">Nenhuma conexão ativa.</div>
+                <div id="connections-active-empty" className="mt-2 rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/45">Nenhuma conexão ativa.</div>
               ) : (
                 <div id="connections-active-list" data-active-count={visibleLinks.length} className="mt-2 space-y-3">
                   {visibleLinks.map((link) => {
@@ -543,18 +543,18 @@ export const ConnectionsModal: React.FC<{
                           <Avatar profile={other} />
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-black text-white">{other?.nickname || 'Aliado'}</div>
-                            <div className="mt-0.5 text-[10px] text-white/44">
+                            <div className="mt-0.5 text-[10px] text-white/45">
                               {link.linkType === 'mentoria' ? (isMentor ? 'Você orienta' : 'Orienta você') : typeCopy[link.linkType as VisibleConnectionType].label}
                             </div>
                           </div>
                           <button type="button" onClick={() => openMessages(otherId)} className="rounded-md border border-white/10 p-2 text-white/65 hover:text-white" aria-label={`Conversar com ${other?.nickname || 'aliado'}`}><MessageIcon className="h-4 w-4" /></button>
-                          <button type="button" disabled={Boolean(busyKey)} onClick={() => void endLink(link)} className="p-2 text-white/35 hover:text-rose-200" aria-label="Encerrar conexão"><TrashIcon className="h-4 w-4" /></button>
+                          <button type="button" disabled={Boolean(busyKey)} onClick={() => void endLink(link)} className="p-2 text-white/45 hover:text-rose-200" aria-label="Encerrar conexão"><TrashIcon className="h-4 w-4" /></button>
                         </div>
 
                         {link.linkType === 'competicao' ? (
                           <div className="mt-3 space-y-2">
                             {challengesForLink(link.id).length === 0 ? (
-                              <p className="text-[11px] leading-relaxed text-white/42">Nenhum desafio ativo. Use “Desafiar alguém” acima para escolher arena e prazo.</p>
+                              <p className="text-[11px] leading-relaxed text-white/45">Nenhum desafio ativo. Use “Desafiar alguém” acima para escolher arena e prazo.</p>
                             ) : challengesForLink(link.id).map((challenge) => {
                               const ownDone = challenge.challengerUserId === userProfile.id ? challenge.challengerCompletedAt : challenge.opponentCompletedAt;
                               const rivalDone = challenge.challengerUserId === userProfile.id ? challenge.opponentCompletedAt : challenge.challengerCompletedAt;
@@ -568,7 +568,7 @@ export const ConnectionsModal: React.FC<{
                                   <div className="flex items-center justify-between gap-3">
                                     <div className="min-w-0">
                                       <div className="truncate text-sm font-bold text-white">{name}</div>
-                                      <div className="mt-1 text-[10px] text-white/42">Você: {ownDone ? 'concluiu' : 'em andamento'} · Rival: {rivalDone ? 'concluiu' : 'em andamento'}</div>
+                                      <div className="mt-1 text-[10px] text-white/45">Você: {ownDone ? 'concluiu' : 'em andamento'} · Rival: {rivalDone ? 'concluiu' : 'em andamento'}</div>
                                       <div className="mt-1 text-[9px] font-semibold text-rose-100/58">{formatChallengeTime(challenge.deadlineAt, challenge.completedAt)}</div>
                                     </div>
                                     <div className="flex flex-shrink-0 items-center gap-2">
@@ -607,8 +607,8 @@ export const ConnectionsModal: React.FC<{
                                 <ArenaProgress key={ownerId} entry={entry} owner={owner} arenaViva={arenaVivaDoVinculo(entry)} acoesVivas={getActionsForArena(entry.arenaId)} onOpen={() => setArenaDoVinculoAberta(entry)} />
                               ) : (
                                 <div key={ownerId} className="flex min-h-[5.6rem] flex-col justify-center rounded-lg border border-dashed border-white/12 bg-black/15 p-3">
-                                  <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/40">{owner}</div>
-                                  <div className="mt-2 text-[10px] leading-relaxed text-white/38">Ainda não escolhida.</div>
+                                  <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/45">{owner}</div>
+                                  <div className="mt-2 text-[10px] leading-relaxed text-white/45">Ainda não escolhida.</div>
                                 </div>
                               );
                             })}
@@ -622,7 +622,7 @@ export const ConnectionsModal: React.FC<{
                             })}
                           </div>
                         ) : (
-                          <p className="mt-3 text-[11px] leading-relaxed text-white/42">
+                          <p className="mt-3 text-[11px] leading-relaxed text-white/45">
                             {link.linkType === 'mentoria'
                               ? (isMentor ? `Aguardando ${other?.nickname || 'o orientado'} escolher uma arena.` : 'Escolha uma arena sua para receber acompanhamento. O mentor não pode editar suas ações.')
                               : 'Escolha uma arena para acompanhar junto.'}
@@ -675,11 +675,11 @@ export const ConnectionsModal: React.FC<{
             </div>
             <div className="mt-3 space-y-2">
               {inviteCandidates.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/42">Adicione a pessoa como amiga primeiro.</div>
+                <div className="rounded-lg border border-dashed border-white/12 p-4 text-center text-xs text-white/45">Adicione a pessoa como amiga primeiro.</div>
               ) : inviteCandidates.map((friend) => (
                 <button key={friend.id} id={`connections-invite-friend-${friend.id}`} type="button" disabled={Boolean(busyKey)} onClick={() => void sendInvite(friend.id)} className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-left hover:bg-white/[0.07]">
                   <Avatar profile={profileFromUser(friend)} />
-                  <div className="min-w-0 flex-1"><div className="truncate text-sm font-bold text-white">{friend.nickname}</div><div className="text-[10px] text-white/40">Nivel {getDisplayLevel(friend.level)}</div></div>
+                  <div className="min-w-0 flex-1"><div className="truncate text-sm font-bold text-white">{friend.nickname}</div><div className="text-[10px] text-white/45">Nivel {getDisplayLevel(friend.level)}</div></div>
                   <PlusIcon className="h-4 w-4 text-white/55" />
                 </button>
               ))}
@@ -712,7 +712,7 @@ export const ConnectionsModal: React.FC<{
               <Avatar profile={profileFromUser(competitionInviteFriend)} />
               <div>
                 <h3 className="text-base font-black text-white">Desafiar {competitionInviteFriend.nickname}</h3>
-                <p className="mt-0.5 text-[10px] text-white/42">A pessoa verá arena, prazo e recompensa antes de aceitar.</p>
+                <p className="mt-0.5 text-[10px] text-white/45">A pessoa verá arena, prazo e recompensa antes de aceitar.</p>
               </div>
             </div>
             <select id="connections-competition-arena-select" value={selectedArenaId} onChange={(event) => setSelectedArenaId(event.target.value)} className="mt-4 w-full rounded-md border border-white/12 bg-black/50 px-3 py-3 text-sm text-white">
@@ -723,7 +723,7 @@ export const ConnectionsModal: React.FC<{
 
             <div className="mt-4 flex items-center justify-between border-y border-white/8 py-3">
               <div>
-                <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/42">Prazo</div>
+                <div className="text-[9px] font-black uppercase tracking-[0.16em] text-white/45">Prazo</div>
                 <div className="mt-1 text-[10px] text-white/58">Começa quando o convite for aceito</div>
               </div>
               <div className="flex items-center gap-2">
@@ -756,12 +756,12 @@ export const ConnectionsModal: React.FC<{
 
             {selectedCompetitionStats && (
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <div><div className="text-sm font-black text-white">{selectedCompetitionStats.actionCount}</div><div className="text-[8px] font-bold uppercase text-white/38">Ações</div></div>
-                <div><div className="text-sm font-black text-white">{selectedCompetitionStats.plannedTotal}</div><div className="text-[8px] font-bold uppercase text-white/38">Execuções</div></div>
-                <div><div className="text-sm font-black text-amber-200">{selectedCompetitionStats.rewardXp} EXP</div><div className="text-[8px] font-bold uppercase text-white/38">Baú {selectedCompetitionStats.rewardChestType}</div></div>
+                <div><div className="text-sm font-black text-white">{selectedCompetitionStats.actionCount}</div><div className="text-[8px] font-bold uppercase text-white/45">Ações</div></div>
+                <div><div className="text-sm font-black text-white">{selectedCompetitionStats.plannedTotal}</div><div className="text-[8px] font-bold uppercase text-white/45">Execuções</div></div>
+                <div><div className="text-sm font-black text-amber-200">{selectedCompetitionStats.rewardXp} EXP</div><div className="text-[8px] font-bold uppercase text-white/45">Baú {selectedCompetitionStats.rewardChestType}</div></div>
               </div>
             )}
-            <p className="mt-3 text-[10px] leading-relaxed text-white/42">O envio é gratuito. Se o convite for aceito, 50 de ouro serão cobrados de você e as duas cópias serão seladas.</p>
+            <p className="mt-3 text-[10px] leading-relaxed text-white/45">O envio é gratuito. Se o convite for aceito, 50 de ouro serão cobrados de você e as duas cópias serão seladas.</p>
             <div className="mt-4 flex gap-2">
               <button type="button" onClick={() => setCompetitionInviteFriend(null)} className="flex-1 rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60">Cancelar</button>
               <button id="connections-competition-submit" type="button" disabled={!selectedArenaId || Boolean(busyKey)} onClick={() => void sendCompetitionInvite()} className="flex-1 rounded-md bg-rose-300 px-3 py-2 text-xs font-black text-black disabled:opacity-40">Enviar convite</button>

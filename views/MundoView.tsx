@@ -609,14 +609,26 @@ const SocialTab: React.FC<{ initialSection?: SocialSection; initialParticipantId
                             }`}
                         >
                             <div className="text-[10px] font-semibold">{section.label}</div>
-                            <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.12em] text-white/42">{section.subtitle}</div>
+                            <div className="mt-0.5 truncate text-[9px] uppercase tracking-[0.12em] text-white/45">{section.subtitle}</div>
                         </button>
                     ))}
                 </div>
             </div>
 
+            {/*
+              * O chat ocupa a altura que sobra, e nao um numero chutado.
+              *
+              * Era `min-h-[24rem] max-h-[calc(100dvh-16rem)]`: duas medidas fixas que
+              * brigam entre si. Num aparelho curto o minimo vence o maximo e o conteudo
+              * vaza para fora do `overflow-hidden` — o cabecalho da conversa, com o nome e
+              * o botao de voltar, e a primeira coisa a ser cortada. As 16rem tambem eram um
+              * palpite sobre a altura do topo, e palpite erra em cada aparelho de um jeito.
+              *
+              * `h-[70dvh]` com um teto da viewport real: cresce com a tela, nunca passa do
+              * que existe, e nao tem minimo para entrar em conflito.
+              */}
             {activeSection === 'messages' && (
-                <div className="min-h-[24rem] max-h-[calc(100dvh-16rem)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+                <div className="h-[70dvh] max-h-[calc(100dvh-11rem)] overflow-hidden rounded-[30px] border border-white/8 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
                     <DirectMessages initialParticipantId={initialParticipantId} />
                 </div>
             )}

@@ -10,7 +10,9 @@ import { Sephirot } from '../components/Sephirot';
 import { EditIcon, XIcon } from '../components/Icons';
 import { Portal } from '../components/Portal';
 import { ASSET_ACCENT_COLORS, getAssetArt } from '../constants/assetVisuals';
-import { LIFE_AREAS, PONTOS_POR_DEGRAU, getMasteryLevelName } from '../constants/lifeAreas';
+import { LIFE_AREAS, PONTOS_POR_DEGRAU } from '../constants/lifeAreas';
+import { MasteryStep } from '../components/MasteryWheel';
+import './mastery-quiz.css';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
@@ -19,7 +21,6 @@ import { getProfileBackgroundPrimarySource, isCssProfileBackground } from '../ut
 import { getTaskExp } from '../utils/taskExp';
 import type { Action, Asset, Slot, SlotValue } from '../types';
 
-const MasteryView = lazy(() => import('./MasteryView').then((module) => ({ default: module.MasteryView })));
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
     const normalized = String(hex || '').trim();
@@ -122,7 +123,6 @@ export const AssetsView: React.FC = () => {
     const { assets, userProfile, updateUserProfile, showToast, activeCycle, freeProgressResetAt, dailyCommitment, getArenas, actions, tasks } = useGame();
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
     const [isEditingAssetDetail, setIsEditingAssetDetail] = useState(false);
-    const [isMasteryOpen, setIsMasteryOpen] = useState(false);
     const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
     const [draftAssetArtUrl, setDraftAssetArtUrl] = useState<string | undefined>(undefined);
     const [draftAssetWidgetValue, setDraftAssetWidgetValue] = useState<SlotValue | undefined>(undefined);
@@ -161,6 +161,8 @@ export const AssetsView: React.FC = () => {
         : '#4b5563';
     const selectedAssetLevel = selectedAsset ? Math.max(0, Number(selectedAsset.level || 0)) : 0;
     const selectedAssetMasteryPhrase = selectedAsset?.levelDescriptions?.[selectedAssetLevel] || '';
+    /** O topo da escada desta area, lido da propria lista de frases. */
+    const selectedAssetMaxLevel = Math.max(1, Object.keys(selectedAsset?.levelDescriptions || {}).length - 1);
     const canShowSelectedAssetWidget = Boolean(selectedAssetPrimarySlot);
     const selectedAssetAccentRgb = hexToRgb(selectedAssetAccent);
     const cycleAccentRgb = hexToRgb(userProfile.skinColor || '#d4af37');
@@ -231,7 +233,6 @@ export const AssetsView: React.FC = () => {
         );
     }, [allArenas, assets, actions, cycleScopedTasks]);
 
-    const selectedAssetLevelName = getMasteryLevelName(selectedAssetLevel);
 
     const cycleSummary = useMemo(() => {
         if (!activeCycle) return null;
@@ -519,90 +520,106 @@ export const AssetsView: React.FC = () => {
                         }}
                     >
                         <div className="relative z-10">
-                        <div className="flex items-start justify-between gap-3">
-                            {isEditingAssetDetail ? (
-                                <AssetArtButton
-                                    assetId={selectedAsset.id}
-                                    assetName={selectedAsset.name}
-                                    currentUrl={selectedAssetArtUrl}
-                                    compact
-                                    iconOnly
-                                    onSave={handleSaveAssetArtDraft}
-                                    onRemove={handleRemoveAssetArt}
-                                />
-                            ) : (
-                                <div className="h-8 w-8" />
-                            )}
+                        {/*
+                          * UMA LINHA, NAO TRES.
+                          *
+                          * O topo gastava tres faixas de altura: os botoes sozinhos numa,
+                          * o vazio de 8x8 noutra, e so entao o orbe com o titulo. O "OK"
+                          * empurrava a ficha inteira para baixo sem nada ao lado dele. Orbe,
+                          * titulo e acoes cabem na mesma linha — o titulo cresce, os botoes
+                          * nao encolhem, e a area que sobra vai para o conteudo.
+                          */}
+                        <div className="flex items-center gap-2 pb-3">
+                            <Sephirot
+                                asset={selectedAsset}
+                                onClick={() => {}}
+                                useSkinArtworkOnly={hasSephirotRasterArt}
+                                showLabel={false}
+                                size="48px"
+                                interactive={false}
+                            />
 
-                            <div className="flex items-center gap-2">
-                                {isEditingAssetDetail ? (
-                                    <button
-                                        type="button"
-                                        onClick={handleCancelAssetDetailEdit}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-black/32 text-white/80 transition-colors hover:bg-white/10"
-                                        title="Cancelar edição"
-                                    >
-                                        <XIcon className="h-4 w-4" />
-                                    </button>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={handleEnterAssetDetailEdit}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-black/32 text-white/80 transition-colors hover:bg-white/10"
-                                        title={`Editar ${selectedAsset.name}`}
-                                    >
-                                        <EditIcon className="h-4 w-4" />
-                                    </button>
+                            <div className="flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center rounded-[12px] border border-white/24 bg-[rgba(18,21,27,0.58)] px-2 py-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_18px_rgba(0,0,0,0.28)] backdrop-blur-[3px]">
+                                {/* De quem e esta area. O cartao era anonimo: dizia o nome da
+                                    area e nada dizia que aquele recorte dela era o seu. */}
+                                {userProfile.nickname && (
+                                    <p className="max-w-full truncate text-[9px] font-black uppercase leading-none tracking-[0.3em] text-white/54">
+                                        {userProfile.nickname}
+                                    </p>
                                 )}
+                                <p className="mt-1 line-clamp-2 text-[17px] font-black uppercase leading-[1.12] tracking-[0.015em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]">
+                                    {selectedAsset.name}
+                                </p>
+                            </div>
 
+                            <div className="flex flex-none flex-col items-center gap-1.5">
                                 <button
                                     type="button"
                                     onClick={isEditingAssetDetail ? handleConfirmAssetDetailEdit : handleBack}
-                                    className="justify-self-end px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.22em] rounded-lg luxe-skin-button"
+                                    className="px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.22em] rounded-lg luxe-skin-button"
                                 >
                                     OK
                                 </button>
+
+                                <div className="flex items-center gap-1.5">
+                                    {isEditingAssetDetail && (
+                                        <AssetArtButton
+                                            assetId={selectedAsset.id}
+                                            assetName={selectedAsset.name}
+                                            currentUrl={selectedAssetArtUrl}
+                                            compact
+                                            iconOnly
+                                            onSave={handleSaveAssetArtDraft}
+                                            onRemove={handleRemoveAssetArt}
+                                        />
+                                    )}
+                                    {isEditingAssetDetail ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleCancelAssetDetailEdit}
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-black/32 text-white/80 transition-colors hover:bg-white/10"
+                                            title="Cancelar edicao"
+                                        >
+                                            <XIcon className="h-4 w-4" />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleEnterAssetDetailEdit}
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-black/32 text-white/80 transition-colors hover:bg-white/10"
+                                            title={`Editar ${selectedAsset.name}`}
+                                        >
+                                            <EditIcon className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
-                        <div
-                            className="overflow-hidden"
-                        >
-                            <div className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] items-center gap-2 px-1 pb-3 pt-1 text-center">
-                                <Sephirot
-                                    asset={selectedAsset}
-                                    onClick={() => {}}
-                                    useSkinArtworkOnly={hasSephirotRasterArt}
-                                    showLabel={false}
-                                    size="48px"
-                                    interactive={false}
+                        <div className="overflow-hidden">
+
+                            {/*
+                              * SO A FRASE. O nome do degrau e o botao sairam.
+                              *
+                              * "DOMINIO" era `selectedAssetLevelName`, o nome do degrau 7 — uma
+                              * palavra solta, em caixa alta, que nao dizia de onde vinha e
+                              * competia com o titulo da area logo acima. O numero do degrau ja
+                              * esta no orbe ao lado do titulo, que e onde ele significa alguma
+                              * coisa. E "Ajustar maestria" era um atalho para o questionario no
+                              * meio da ficha: a avaliacao das cinco areas se faz em Config >
+                              * Perfil, inteira, nao uma area por vez por uma porta lateral.
+                              */}
+                            <section
+                                className="asset-current-mastery mx-1 mb-2"
+                                /* O selo toma a cor DESTA area, nao o dourado fixo do quiz:
+                                   e o mesmo desenho falando a lingua da ficha em que esta. */
+                                style={{ ['--mastery-accent' as string]: selectedAssetAccent }}
+                            >
+                                <MasteryStep
+                                    nivel={selectedAssetLevel}
+                                    niveis={selectedAssetMaxLevel}
+                                    frase={selectedAssetMasteryPhrase || 'Avalie como você se sente nesta área.'}
                                 />
-                                <div className="flex min-h-[52px] min-w-0 flex-col items-center justify-center rounded-[12px] border border-white/24 bg-[rgba(18,21,27,0.58)] px-2 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_18px_rgba(0,0,0,0.28)] backdrop-blur-[3px]">
-                                    {/* De quem e esta area. O cartao era anonimo: dizia o nome da
-                                        area e nada dizia que aquele recorte dela era o seu. */}
-                                    {userProfile.nickname && (
-                                        <p className="max-w-full truncate text-[9px] font-black uppercase leading-none tracking-[0.3em] text-white/54">
-                                            {userProfile.nickname}
-                                        </p>
-                                    )}
-                                    <p
-                                        className="mt-1 line-clamp-2 text-[18px] font-black uppercase leading-[1.15] tracking-[0.015em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]"
-                                    >
-                                        {selectedAsset.name}
-                                    </p>
-                                </div>
-
-                            </div>
-
-                            <section className="asset-current-mastery mx-1 mb-2 rounded-xl border border-white/15 bg-black/55 px-3 py-2.5">
-                                <p className="text-center text-[11px] font-black uppercase tracking-[0.16em] text-white/80">{selectedAssetLevelName}</p>
-                                <p className="mt-1.5 text-center text-[14px] font-semibold leading-snug text-white">
-                                    {selectedAssetMasteryPhrase || 'Avalie como você se sente nesta área.'}
-                                </p>
-                                <button type="button" onClick={() => setIsMasteryOpen(true)}
-                                    className="mx-auto mt-2 block rounded-lg border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/85">
-                                    Ajustar maestria
-                                </button>
                             </section>
 
                             <div className="overflow-y-auto pr-1 -mr-1 custom-scrollbar px-1 pb-1">
@@ -651,15 +668,6 @@ export const AssetsView: React.FC = () => {
                         onClose={() => setEditingSlot(null)}
                         onSave={handleSaveAssetWidgetDraft}
                     />
-                )}
-                {isMasteryOpen && (
-                    <Portal>
-                        <div className="fixed inset-0 z-[10000] flex flex-col animate-fade-in overflow-hidden">
-                            <Suspense fallback={<div className="flex-1 bg-black" />}>
-                                <MasteryView onClose={() => setIsMasteryOpen(false)} />
-                            </Suspense>
-                        </div>
-                    </Portal>
                 )}
             </div>
         );

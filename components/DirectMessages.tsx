@@ -357,9 +357,18 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                         </button>
                                     </>
                                 )}
-                                <button aria-label="Voltar para as conversas" 
+                                {/*
+                                  * Sair da conversa nao pode depender da largura.
+                                  *
+                                  * Este botao era `sm:hidden`: some a partir de 640px, na suposicao
+                                  * de que a coluna de avatares da esquerda basta para trocar de
+                                  * conversa. Trocar nao e sair — quem abriu um chat e quer voltar
+                                  * para a lista ficava sem porta, e a unica saida virava o bottom
+                                  * nav, que leva para fora do Mundo inteiro.
+                                  */}
+                                <button aria-label="Voltar para as conversas"
                                     onClick={() => setSelectedParticipantId(null)}
-                                    className="sm:hidden p-2 rounded-full hover:bg-white/10 text-gray-400 active:scale-90 transition-transform"
+                                    className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-gray-300 transition-transform hover:bg-white/10 hover:text-white active:scale-90"
                                 >
                                     <ChevronLeftIcon className="w-5 h-5" />
                                 </button>
@@ -383,7 +392,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                     </p>
                                 </div>
                             ) : activeMessages.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-600 italic text-center p-8 animate-in zoom-in-95 duration-700">
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400 italic text-center p-8 animate-in zoom-in-95 duration-700">
                                     <SparklesIcon className="w-12 h-12 mb-4 opacity-5 animate-pulse" />
                                     <p className="text-xs max-w-[200px] leading-relaxed">
                                         Esta é a sua conexão privada com 
@@ -422,7 +431,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                                 <button
                                                     type="button"
                                                     onClick={() => setReportTarget({ type: 'message', message: msg })}
-                                                    className="mt-1 mr-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/32 transition-colors hover:text-red-200"
+                                                    className="mt-1 mr-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/60 transition-colors hover:text-red-200"
                                                 >
                                                     Denunciar mensagem
                                                 </button>
@@ -434,8 +443,18 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Input Area */}
-                        <div className="flex items-end gap-3 border-t border-white/5 bg-black/40 px-4 pb-[calc(1rem+var(--safe-area-bottom))] pt-4">
+                        {/*
+                          * A barra de escrever nao encolhe, e nao reserva safe area.
+                          *
+                          * Sem `flex-none` ela dividia a sobra com a area de mensagens, que e
+                          * `flex-1`: quando o painel ficava curto, quem cedia altura era o
+                          * campo de texto — o placeholder quebrava em duas linhas e aparecia
+                          * cortado. E o `safe-area-bottom` aqui era espaco morto: este chat so
+                          * existe embutido no Mundo, ACIMA do bottom nav, que ja e quem lida
+                          * com a faixa do aparelho. A reserva empurrava o painel para cima sem
+                          * proteger nada.
+                          */}
+                        <div className="flex flex-none items-end gap-3 border-t border-white/5 bg-black/40 px-4 pb-4 pt-4">
                             <div className="flex-1 relative">
                                 <textarea
                                     value={inputValue}
@@ -443,7 +462,7 @@ export const DirectMessages: React.FC<{ initialParticipantId?: string | null }> 
                                     onKeyDown={handleKeyDown}
                                     placeholder="Escreva sua mensagem..."
                                     rows={1}
-                                    className="custom-scrollbar max-h-32 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-[13px] text-white transition-all placeholder-gray-600 focus:border-[var(--skin-accent-color)]/50 focus:bg-white/10 focus:outline-none"
+                                    className="custom-scrollbar max-h-32 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-[13px] text-white transition-all placeholder-gray-400 focus:border-[var(--skin-accent-color)]/50 focus:bg-white/10 focus:outline-none"
                                     style={{ height: 'auto' }}
                                     onInput={(e) => {
                                         const target = e.target as HTMLTextAreaElement;

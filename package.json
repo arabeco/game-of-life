@@ -1,7 +1,7 @@
 {
   "name": "glyph-app",
   "private": true,
-  "version": "1.0.91",
+  "version": "1.0.92",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -74,6 +74,7 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^22.14.0",
     "@types/react-dom": "^19.2.7",

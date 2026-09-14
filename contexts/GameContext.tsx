@@ -44,6 +44,7 @@ import { resolveUiSkinId } from '../utils/uiSkinTokens';
 import { emitArenaAttention } from '../utils/arenaAttention';
 import { emitAppSensoryCue } from '../utils/sensoryCue';
 import { emitOracleSpeech } from '../utils/oracleSpeech';
+import { REST_SCREEN_ACTION_SESSION_CLEAR_EVENT, loadPersistedRestScreenActionSession } from '../utils/restScreenActionSession';
 import {
     pickOracleReaction,
     readOracleReactionMemory,
@@ -8151,6 +8152,62 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
 
         const taskIds = resolveOperationalScoredTaskIds(closeDate, tasks, commitmentToClose.taskIds);
         const summary = summarizeOperationalDayCommitment(closeDate, tasks, taskIds, 0);
+
+        /**
+         * O QUE NAO FOI FEITO VOLTA PARA A BAY.
+         *
+         * Uma acao agendada e nao concluida ficava parada NAQUELE dia para
+         * sempre. Ela nao aparece no planner de hoje — o planner e do dia na
+         * tela — e continua gastando a repeticao, porque
+         * doesTaskConsumePoolCapacity conta tarefa com horario marcado mesmo sem
+         * conclusao. O efeito pratico: a repeticao foi gasta por uma tarefa que
+         * nunca vai ser concluida, e some do alcance sem ninguem avisar.
+         *
+         * Recuperar exigia adivinhar o caminho: voltar ao dia anterior, arrastar
+         * para a bay, voltar para hoje, arrastar para o planner. Quatro gestos
+         * para desfazer um dia que nao rolou.
+         *
+         * A ORDEM IMPORTA, e e por isso que isto vem logo DEPOIS do summary:
+         * returnTaskToPool tira o id de dailyCommitment.taskIds, e taskIds e o
+         * denominador do score do dia. Devolver antes de pontuar encolheria o
+         * denominador e inflaria a nota — o dia que voce nao cumpriu viraria
+         * 100%. Pontua-se o dia como ele foi; so entao o que sobrou volta.
+         *
+         * Vale para quem sumiu tambem: o reparo de compromissos abertos fecha
+         * ate 21 dias atrasados na proxima abertura do app, e cada um passa por
+         * aqui. Quem ficou uma semana fora reencontra as acoes na bay, nao
+         * espalhadas por sete dias que ja passaram.
+         *
+         * So as NAO concluidas. isTaskLockedByJudgment so barra tarefa
+         * concluida, entao nenhuma destas esbarra na trava do julgamento.
+         */
+        const devolvidasParaEstoque = tasks.filter((task) => (
+            getTaskOperationalDateString(task) === closeDate
+            && !task.completed
+            && Number(task.startTime) >= 0
+        ));
+        devolvidasParaEstoque.forEach((task) => returnTaskToPool(task.id, todayString));
+
+        /**
+         * E a sessao de foco solta junto, igual ao arraste.
+         *
+         * Arrastar uma tarefa para a bay no planner faz tres coisas:
+         * returnTaskToPool, removeExecutionTask e clearRestScreenSessionForTask.
+         * A segunda ja esta coberta — returnTaskToPool grava executionOrder null,
+         * que e exatamente o que removeExecutionTask faz. A terceira nao estava.
+         *
+         * Sem ela, quem fechasse o dia com o modo foco aberto numa pendente
+         * ficaria com a sessao apontando para uma tarefa que acabou de voltar
+         * para o estoque. E estreito, mas o combinado e que isto seja igual a ter
+         * arrastado de volta — e arrastar limpa.
+         */
+        const sessaoDeFoco = loadPersistedRestScreenActionSession(userProfile.id);
+        if (sessaoDeFoco && devolvidasParaEstoque.some((task) => (
+            task.id === sessaoDeFoco.taskId || task.actionId === sessaoDeFoco.actionId
+        ))) {
+            window.dispatchEvent(new CustomEvent(REST_SCREEN_ACTION_SESSION_CLEAR_EVENT));
+        }
+
         const sitrepBonus = summary.sitrepBonus;
         const relationshipBonusXp = 0;
         const expDeposited = summary.expDeposited;
@@ -14364,6 +14421,67 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
     // O ref acompanha os memos: e por ele que o dominio de tarefa enxerga o pacto
     // na hora de comentar uma conclusao.
     arenaPactRef.current = { pact: activeArenaPact, progress: arenaPactProgress };
+
+    /**
+     * MISSAO VENCIDA SE ENCERRA SOZINHA.
+     *
+     * Antes, passar do prazo sem cumprir nao fazia NADA: o botao "Continuar"
+     * sumia, o resgate recusava, e o pacto ficava ativo para sempre. Como so
+     * existe um slot de missao individual, a pessoa ficava impedida de aceitar
+     * qualquer outra por tempo indeterminado — sem nada explicando o porque. Na
+     * primeira missao, isso e frustracao e travamento no mesmo gesto.
+     *
+     * Nao ha cron para isso no servidor (existe para resultado de competicao e
+     * para prazo de ciclo, nao para pacto), entao quem fecha e o app ao abrir. O
+     * precedente e o mesmo de expire_stale_relationship_link_invites: encerrar o
+     * que venceu nao e conceder privilegio, e limpar o proprio estado morto.
+     *
+     * A FALA NAO COBRA. Esta e uma sessao inteira gasta tirando cobranca
+     * indevida do Oraculo; seria andar para tras abrir um modal de derrota aqui.
+     * Ela diz o que aconteceu, reconhece o que foi feito e avisa que o lugar
+     * ficou livre — que e a unica parte acionavel. Sem "voce falhou", sem
+     * recompensa, sem tela cheia.
+     *
+     * A trava de disparo unico e por id de pacto, e nao um booleano: se a pessoa
+     * aceitar outra missao e ELA tambem vencer, e um fato novo e merece ser dito
+     * de novo. O padrao de `!` seria calar a segunda para sempre.
+     */
+    const pactoVencidoAvisadoRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!isProfileLoaded || !hasHydratedFromSupabase) return;
+        const pact = activeArenaPact;
+        const progress = arenaPactProgress;
+        if (!pact || !progress) return;
+        if (!progress.windowEnded || progress.completed) return;
+        if (pactoVencidoAvisadoRef.current === pact.id) return;
+
+        pactoVencidoAvisadoRef.current = pact.id;
+
+        void (async () => {
+            const { error } = await supabase.rpc('abandon_arena_pact');
+            if (error) {
+                // Solta a trava: falha de rede nao pode aposentar o aviso para
+                // sempre. Na proxima abertura ele tenta de novo.
+                pactoVencidoAvisadoRef.current = null;
+                console.error('Nao foi possivel encerrar a missao vencida:', error.message);
+                return;
+            }
+
+            await updateUserProfile(toArenaPactState(null));
+
+            const feitas = Math.max(0, progress.current);
+            const alvo = Math.max(1, progress.goal);
+            emitOracleSpeech({
+                title: 'Oraculo',
+                message: feitas > 0
+                    ? `O prazo de "${pact.title}" terminou. Ficaram ${feitas} de ${alvo} — o que voce fez esta registrado nas arenas, e o lugar da missao esta livre de novo.`
+                    : `O prazo de "${pact.title}" terminou sem registro. O lugar da missao esta livre de novo, e a proxima pode ser menor.`,
+                tone: 'guide',
+                durationMs: 7200,
+                kind: 'abertura',
+            });
+        })();
+    }, [activeArenaPact, arenaPactProgress, hasHydratedFromSupabase, isProfileLoaded]);
 
     const arenaPactCandidates = useMemo(
         () => (activeArenaPact

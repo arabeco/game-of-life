@@ -1,13 +1,13 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-14T21:03:50.135Z
+- Generated at: 2026-09-14T21:39:54.314Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: PASS (16.5s)
+- Build: PASS (16.9s)
 
 ## Checks
 
-### PASS - Avatar offsets regression (0.3s)
+### PASS - Avatar offsets regression (0.2s)
 - Kind: `logic`
 - Simulates: tabela vazia desenha igual ao comportamento antigo
 - Simulates: escala cresce do centro da peca
@@ -19,7 +19,7 @@
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.4s)
+### PASS - Item art regression (0.3s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -71,7 +71,7 @@
 - Simulates: constancia conta dias e nao acoes
 - Simulates: entrega anterior ao aceite nao conta
 
-### PASS - Cycle scheduling regression (0.1s)
+### PASS - Cycle scheduling regression (0.2s)
 - Kind: `logic`
 - Simulates: renovar uma arena nao expulsa as outras do ciclo
 - Simulates: a virada reagenda as acoes recorrentes
@@ -100,7 +100,7 @@
 - Simulates: a primeira acao depois de uma pausa tem fala propria
 - Simulates: a dica de tela olha o que existe na tela
 
-### PASS - Sensory grammar regression (0.2s)
+### PASS - Sensory grammar regression (0.1s)
 - Kind: `logic`
 - Simulates: tres pesos e nada colidindo
 - Simulates: fechar ciclo nao vibra como fechar painel
@@ -124,7 +124,7 @@
 - Simulates: a tela de descanso respeita as duas barras
 - Simulates: preferencia que ainda nao chegou nao vira botao morto
 
-### PASS - Relationship link as timed product regression (0.2s)
+### PASS - Relationship link as timed product regression (0.1s)
 - Kind: `logic`
 - Simulates: o preco exibido e o preco cobrado
 - Simulates: renovar custa menos que criar
@@ -154,28 +154,28 @@
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (18.4s)
+### PASS - Onboarding happy path (17.8s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (16.4s)
+### PASS - Campaign quiz flow (16.0s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (21.0s)
+### PASS - Cycle report flow (20.1s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (11.2s)
+### PASS - UI shell smoke (11.5s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais

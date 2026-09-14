@@ -892,7 +892,7 @@ const AppWithTutorial: React.FC<{ defaultRestScreenOpen?: boolean; allowSeasonTr
             customModeInstructions: oraclePreferences?.customModeInstructions || null,
             enabledCategories: oraclePreferences?.enabledCategories || [],
             username: userProfile.nickname || 'Viajante',
-            level: userProfile.level || 1,
+            level: userProfile.level ?? 0,
             dailyCommitment,
             dailyProofStreak: userProfile.dailyProofStreak || null,
             activeArenaPact,

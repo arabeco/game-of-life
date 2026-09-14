@@ -1757,7 +1757,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         sovereign: userProfile.sovereign ? { ...userProfile.sovereign } : undefined,
         nickname: userProfile.nickname || userProfile.username || 'Usuario',
         title: userProfile.title,
-        level: userProfile.level || 1,
+        level: userProfile.level ?? 0,
         nobilityRankId: userProfile.nobility?.rankId,
         nobilityRankName: NOBILITY_RANKS.find((rank) => rank.id === userProfile.nobility?.rankId)?.name || undefined,
         clanName: userProfile.clanName || null,

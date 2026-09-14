@@ -312,7 +312,7 @@ export const OracleChat: React.FC<{ onClose: () => void; hideHeader?: boolean; i
     customModeInstructions: oraclePreferences?.customModeInstructions || null,
     enabledCategories: oraclePreferences?.enabledCategories || [],
     username: userProfile.nickname || 'Viajante',
-    level: userProfile.level || 1,
+    level: userProfile.level ?? 0,
     clanName: null,
     seasonName: null,
     pendingChests: userProfile.chests?.reduce((acc, chest) => acc + (chest.count || 0), 0) || 0,

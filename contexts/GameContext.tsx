@@ -418,7 +418,9 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     id: 'placeholder_user',
     nickname: 'Soberano',
     username: 'soberano',
-    level: 1,
+    // O perfil de partida tambem comeca em 0: com 1 aqui, a fracao de segundo
+    // antes dos dados chegarem ja pintava 51 no cabecalho de quem esta em 50.
+    level: 0,
     avatarUrl: '',
     border: 'default',
     backgroundUrl: '',
@@ -1659,7 +1661,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             customModeInstructions: oraclePreferences.customModeInstructions || null,
             enabledCategories: oraclePreferences.enabledCategories || [],
             username: userProfile.nickname || 'Soberano',
-            level: userProfile.level || 1,
+            level: userProfile.level ?? 0,
             clanName: clan?.name || null,
             seasonName: null,
             pendingChests: totalChests,
@@ -2214,7 +2216,15 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                     // Vamos garantir que o perfil comece com os dados corretos.
                     updateUserProfile({
                         nobility: { exp: 0, rankId: 'vagante' },
-                        level: 1 // Forçar nível 1 inicial
+                        // ZERO, e nao 1.
+                        //
+                        // O comentario duas linhas acima ja dizia a regra — "o level do
+                        // usuario e a soma dos niveis dos assets" — e a linha seguinte a
+                        // contrariava, cravando 1 em quem tem as cinco areas em 0. Como o
+                        // Indice e `50 + soma`, quem acabou de entrar aparecia acima do piso
+                        // sem ter respondido nada. O degrau 0 existe e e o do abandono:
+                        // comecar nele nao e bug, e o comeco honesto da escada.
+                        level: 0
                     });
 
                     const newItems = starterItems.map(i => ({
@@ -9881,7 +9891,7 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
             sovereign: userProfile.sovereign ? { ...userProfile.sovereign } : undefined,
             nickname: userProfile.nickname || userProfile.username || 'Usuario',
             title: userProfile.title,
-            level: userProfile.level || 1,
+            level: userProfile.level ?? 0,
             nobilityRankId: userProfile.nobility?.rankId,
             nobilityRankName: NOBILITY_RANKS.find(rank => rank.id === userProfile.nobility?.rankId)?.name || undefined,
             clanName: clan?.name || userProfile.clanName || null,

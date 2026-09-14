@@ -17,7 +17,8 @@ export const buildClosedBetaProfilePayload = (session: Session) => {
     nickname: fallbackNickname,
     avatar_url: session.user.user_metadata?.avatar_url || '',
     border: 'default',
-    level: 1,
+    // Mesma regra do perfil padrao: o nivel e a soma das areas, e ela comeca em 0.
+    level: 0,
     gold: 0,
     fragments: 0,
     background_url: '',

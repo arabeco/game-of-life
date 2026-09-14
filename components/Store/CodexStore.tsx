@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../../contexts/GameContext';
 import { GlassCard } from '../GlassCard';
 import { CheckIcon, FilterIcon, LightbulbIcon } from '../Icons';
@@ -105,7 +105,8 @@ const resolveTypeFromTags = (tags: string[]): CampaignTypeId => {
 };
 
 export const CodexStore: React.FC = () => {
-    const { userCodexes, userProfile, codexCatalog, buyCodex, buyCodexWithFragments, installCodex, getArenas, showToast, assets } = useGame();
+    const { userCodexes, userProfile, codexCatalog, refreshCodexes, buyCodex, buyCodexWithFragments, installCodex, getArenas, showToast, assets } = useGame();
+    useEffect(() => { void refreshCodexes(); }, [refreshCodexes]);
     const fragmentsInWallet = Number(userProfile.wallet?.fragments || 0);
 
     const handleFragmentPurchase = async (codex: { id: string; duration_days: number; price_fragments?: number | null }) => {
@@ -482,6 +483,9 @@ export const CodexStore: React.FC = () => {
                                             ) : (
                                                 <button
                                                     type="button"
+                                                    aria-label={`Comprar campanha ${codex.title}`}
+                                                    data-catalog-id={codex.id}
+                                                    data-price={goldPrice}
                                                     onClick={() => handlePurchase(codex.id)}
                                                     disabled={!!purchasing}
                                                     className="luxe-skin-button inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-50"

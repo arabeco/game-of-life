@@ -72,7 +72,7 @@ export const LegacyRenderView: React.FC = () => {
     }
 
     return (
-        <div className={`min-h-screen bg-[#050505] text-white overflow-hidden ${captureMode ? 'p-0' : 'p-6'}`}>
+        <div className={`min-h-screen bg-[#050505] text-white overflow-hidden p-0`}>
             <div className={captureMode ? 'mx-auto w-[1920px]' : 'mx-auto max-w-[1720px]'}>
                 <LegacyProjectionScene
                     eras={payload.eras}

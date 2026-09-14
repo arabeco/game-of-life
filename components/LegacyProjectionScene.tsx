@@ -286,7 +286,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         if (Math.abs(delta) < 1) return;
 
         scroller.scrollTo({
-            left: Math.max(scroller.scrollLeft + (delta / Math.max(layout.cyclesZoom, 0.01)), 0),
+            left: Math.max(scroller.scrollLeft + (delta / Math.max(cycleZoom, 0.01)), 0),
             behavior,
         });
     }, [layout.cyclesZoom]);
@@ -424,8 +424,10 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
     if (!eras.length) return null;
 
     const timelineVisible = !interactive || projectionActive;
-    const sceneCyclesTranslateX = layout.cyclesOffsetX;
-    const sceneCyclesTranslateY = layout.cyclesOffsetY + 8;
+    const portraitLayout = interactive && !showLayoutEditor;
+    const cycleZoom = portraitLayout ? 1 : layout.cyclesZoom;
+    const sceneCyclesTranslateX = portraitLayout ? 0 : layout.cyclesOffsetX;
+    const sceneCyclesTranslateY = portraitLayout ? 0 : layout.cyclesOffsetY + 8;
     const backdropScale = interactive ? layout.backdropZoom : 1.02;
     const stageScale = interactive
         ? Math.min(
@@ -487,7 +489,7 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
         const baseClass = 'shrink-0 rounded-[12px] border border-white/0 bg-transparent p-0 text-left transition-all opacity-100';
         const style = { boxShadow: isFocused ? `0 0 0 1px ${skin.edge}18, 0 8px 14px ${skin.baseBottom}24` : 'none' } as React.CSSProperties;
         const cycleContent = (
-            <div className="flex w-[188px] flex-col items-center gap-0.5">
+            <div className={portraitLayout ? "legacy-cycle-focus flex w-[260px] flex-col items-center gap-3" : "flex w-[188px] flex-col items-center gap-0.5"}>
                 <LegacyCycleCard
                     rank={displayGrade}
                     score={cycle.score}
@@ -500,12 +502,13 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                     activeDays={cycleMetrics.activeDays}
                     totalHours={cycleMetrics.hours}
                     totalActions={cycleMetrics.totalActions}
-                    style={{ width: '88px' }}
+                    style={{ width: portraitLayout ? '228px' : '88px' }}
                 />
                 <MiniCyclePlannerSnapshot
                     weeks={cycle.weeklyAtlas || []}
                     accentColor={skin.edge}
                     compact
+                    spacious={portraitLayout}
                     className="legacy-cycle-planner w-full"
                     style={{ transformOrigin: 'top center' }}
                 />
@@ -739,10 +742,10 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                     className={`mx-auto transition-all duration-700 ${timelineVisible ? 'opacity-100' : 'pointer-events-none opacity-40'} ${interactive ? 'cursor-pointer' : ''}`}
                     onClick={interactive ? onActivatePlaque : undefined}
                     style={{
-                        marginTop: interactive ? '74px' : undefined,
-                        width: interactive ? `${scenePlaqueWidth}px` : undefined,
+                        marginTop: interactive ? '72px' : undefined,
+                        width: interactive ? `${portraitLayout ? 342 : scenePlaqueWidth}px` : undefined,
                         maxWidth: interactive ? `${LEGACY_STAGE_WIDTH - 20}px` : undefined,
-                        transform: `translate(${layout.plaqueOffsetX}px, ${(timelineVisible ? 0 : -16) + layout.plaqueOffsetY}px) scale(${(enteringProjection ? 0.985 : 1) * scenePlaqueScale})`,
+                        transform: `translate(${portraitLayout ? 0 : layout.plaqueOffsetX}px, ${(timelineVisible ? 0 : -16) + (portraitLayout ? 0 : layout.plaqueOffsetY)}px) scale(${(enteringProjection ? 0.985 : 1) * (portraitLayout ? 1 : scenePlaqueScale)})`,
                         transformOrigin: 'top center',
                         boxShadow: eraTransitionPulse
                             ? `0 -10px 60px ${eraTransitionPulse}22, inset 0 0 70px ${eraTransitionPulse}11`
@@ -768,18 +771,18 @@ export const LegacyProjectionScene: React.FC<LegacyProjectionSceneProps> = ({
                     </div>
                 </div>
 
-                <div className="mt-auto space-y-0.5 transition-all duration-700">
+                <div className={portraitLayout ? "mt-8 space-y-0.5 transition-all duration-700" : "mt-auto space-y-0.5 transition-all duration-700"}>
                     <div className={`mx-auto transition-all duration-1000 ${timelineVisible ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-6 opacity-0'}`} style={{ maxWidth: interactive ? 'min(98vw, 1480px)' : undefined }}>
                         <div
                             ref={timelineScrollRef}
                             onScroll={handleTimelineScroll}
                             className={`${interactive ? 'mx-auto overflow-x-auto pb-1 hide-scrollbar' : 'overflow-visible'}`}
                             style={{
-                                transform: `translate(${sceneCyclesTranslateX}px, ${sceneCyclesTranslateY}px) scale(${layout.cyclesZoom})`,
+                                transform: `translate(${sceneCyclesTranslateX}px, ${sceneCyclesTranslateY}px) scale(${cycleZoom})`,
                                 transformOrigin: 'top center',
                                 // Keep the scaled box inside the stage: scaling from the centre would
                                 // otherwise bleed past both edges and clip the era labels.
-                                width: interactive ? `${(LEGACY_STAGE_WIDTH - 24) / Math.max(layout.cyclesZoom, 0.01)}px` : undefined,
+                                width: interactive ? `${(LEGACY_STAGE_WIDTH - 24) / Math.max(cycleZoom, 0.01)}px` : undefined,
                             }}
                         >
                             <div

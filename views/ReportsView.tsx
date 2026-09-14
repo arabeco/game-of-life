@@ -1,3 +1,4 @@
+import './readability-fixes.css';
 
 
 
@@ -236,7 +237,7 @@ const UpcomingCycleCard: React.FC<{ cycle: Cycle; onEdit: (cycle: Cycle) => void
     const totalDays = Math.max(1, daysBetween(parseDate(cycle.startDate), parseDate(cycle.endDate)) + 1);
 
     return (
-        <GlassCard variant="neutral" className="mb-4 px-4 py-3">
+        <GlassCard variant="neutral" className="reports-active-cycle mb-2 px-3 py-2">
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Próximo ciclo</p>
@@ -2163,37 +2164,11 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     const renderLegacySummaryCard = () => {
         return (
-            <GlassCard variant="neutral" className="mb-4 overflow-hidden p-0">
-                <div className="relative">
-                    <div
-                        className="pointer-events-none absolute inset-0 opacity-90"
-                        style={{
-                            backgroundImage: `linear-gradient(180deg, rgba(4,4,6,0.18), rgba(4,4,6,0.82)), url(${LEGACY_HISTORY_PREVIEW_BACKDROP_URL})`,
-                            backgroundPosition: 'center top',
-                            backgroundSize: 'cover',
-                        }}
-                    />
-                    <button
-                        id="legacy-export-plaque-entry"
-                        type="button"
-                        onClick={handleStartLegacyExport}
-                        className="relative z-10 flex w-full flex-col px-3 py-3 text-left transition-colors hover:bg-white/[0.03]"
-                    >
-                        <div className="mx-auto w-full max-w-[340px]">
-                            <LegacyGrandPlaque
-                                eras={eraSummaries}
-                                sovereignName={sovereignName}
-                                identity={legacyFallbackIdentity}
-                                identityMode="current"
-                                banner
-                                hideSovereignName
-                                compact
-                                className="w-full"
-                            />
-                        </div>
-                    </button>
-                </div>
-            </GlassCard>
+            <button id="legacy-export-plaque-entry" type="button" onClick={handleStartLegacyExport}
+                className="reports-legacy-plaque mx-auto block w-full max-w-[340px] overflow-hidden rounded-[22px] text-left">
+                <LegacyGrandPlaque eras={eraSummaries} sovereignName={sovereignName}
+                    identity={legacyFallbackIdentity} identityMode="current" banner hideSovereignName compact className="w-full" />
+            </button>
         );
     };
 
@@ -2570,6 +2545,37 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         );
     };
 
+    const hubViewportRef = useRef<HTMLDivElement>(null);
+    const hubContentRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (view !== 'hub' || isEditingEras) return;
+        const viewport = hubViewportRef.current;
+        const content = hubContentRef.current;
+        if (!viewport || !content) return;
+        let frame = 0;
+        const fit = () => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => {
+                // Measure at the viewport width so scaling cannot introduce extra lines.
+                content.style.width = `${viewport.clientWidth}px`;
+                const current = Number(getComputedStyle(content).zoom) || 1;
+                const naturalHeight = content.getBoundingClientRect().height / current;
+                const scale = Math.min(1, (viewport.clientHeight - 2) / Math.max(1, naturalHeight));
+                if (Math.abs(scale - current) > 0.002) content.style.zoom = String(scale);
+            });
+        };
+        const observer = new ResizeObserver(fit);
+        observer.observe(viewport);
+        observer.observe(content);
+        fit();
+        return () => {
+            observer.disconnect();
+            cancelAnimationFrame(frame);
+            content.style.removeProperty('zoom');
+            content.style.removeProperty('width');
+        };
+    }, [view, isEditingEras]);
+
     const renderContent = () => {
         switch (view) {
             case 'scanning':
@@ -2607,13 +2613,13 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 // items e reportRowIndexMap existiam para montar as linhas da grade
                 // vertical, que saiu. A trilha horizontal le sortedReports direto.
                 return (
-                    <div className="pb-12">
+                    <div ref={hubContentRef} className={isEditingEras ? "pb-4" : "reports-hub-content"}>
                         {reportForComparison && (
                             <div className="p-3 bg-blue-900/30 rounded-lg text-center text-sm mb-6">Selecione um relatório para comparar com o ciclo de {formatDate(reportForComparison.startDate)}.</div>
                         )}
 
                         {visibleActiveCycle && (
-                            <GlassCard variant="neutral" className="mb-4 px-4 py-3">
+                            <GlassCard variant="neutral" className="reports-active-cycle mb-2 px-3 py-2">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--skin-accent-color)]">Ciclo atual</p>
@@ -2685,7 +2691,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                              * esta olhando, e o toque nele abre o relatório. Os vizinhos ficam
                              * espiando nas bordas para a faixa não parecer uma tela so.
                              */
-                            <div className="relative mt-6">
+                            <div className="reports-cycle-timeline relative mt-2">
                                 {/* Setas no lugar do arrastar. A tela e grande e o gesto de
                                     rolar nela parecia lista; seta diz que ha um em foco e
                                     outros ao lado. Elas so aparecem quando ha para onde ir. */}
@@ -2814,7 +2820,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             No meio ele partia a leitura em duas: placa em cima, trilha
                             embaixo, e um botao grande atravessado no caminho. */}
                         {!visibleActiveCycle && !visibleUpcomingCycle && (
-                            <div className="relative z-20 mt-6">
+                            <div className="reports-cycle-start relative z-20 mt-2">
                                 {reports.length < 1 && (
                                     <p className="mb-3 text-center text-sm italic text-gray-500">Sem legado fechado ainda. Inicie sua jornada.</p>
                                 )}
@@ -2903,9 +2909,9 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 fechar: isto agora e o conteudo de uma tela, e mora dentro do <main>,
                 que ja cuida do espaco do cabecalho e da barra de abas. O que fecha e
                 o voltar do cabecalho e o botao fisico do Android. */}
-            <div className="flex h-full min-h-0 flex-col animate-fade-in">
+            <div className={`flex h-full min-h-0 flex-col animate-fade-in ${view === "hub" && !isEditingEras ? "reports-hub-root" : ""}`}>
                 <div className="w-full max-w-[420px] mx-auto h-full min-h-0 px-1 flex flex-col">
-                    <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-4">
+                    <div className="relative z-10 flex-shrink-0 flex justify-between items-center text-white pb-1">
                         <div className="flex items-center space-x-2">
                             {/* O voltar mora na tela, sempre — inclusive no historico, onde
                                 antes so havia um X flutuante no canto oposto. Uma tela sem
@@ -2930,7 +2936,7 @@ export const ReportsView: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         </div>
 
                     </div>
-                    <div className="flex-grow overflow-y-auto relative overflow-hidden">
+                    <div ref={hubViewportRef} className={`reports-content flex-grow min-h-0 relative ${view === "hub" && !isEditingEras ? "overflow-hidden" : "overflow-y-auto"}`}>
                         {renderContent()}
                     </div>
                 </div>

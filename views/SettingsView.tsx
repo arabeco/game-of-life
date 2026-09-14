@@ -1,3 +1,4 @@
+import './readability-fixes.css';
 ﻿import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, STORAGE_KEY_PROFILE, STORAGE_KEY_ASSET_LEVELS, getLocalDateString, PROFILE_FLAG_TERMS_ACCEPTED, PROFILE_FLAG_TUTORIAL_COMPLETED } from '../contexts/GameContext';
 import { useTutorial } from '../contexts/TutorialContext';

@@ -1,3 +1,4 @@
+import { createCoalescedFetch } from './utils/networkEfficiency.js';
 import { createClient } from '@supabase/supabase-js';
 import { Preferences } from '@capacitor/preferences';
 import { isCapacitorNativeRuntime } from './utils/runtimePlatform';
@@ -83,6 +84,7 @@ const createNoopRealtimeChannel = () => {
 };
 
 const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { fetch: createCoalescedFetch((input, init) => fetch(input, init), new URL(supabaseUrl).origin) },
     auth: {
         autoRefreshToken: true,
         persistSession: true,

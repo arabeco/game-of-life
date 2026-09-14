@@ -1,3 +1,4 @@
+import './readability-fixes.css';
 import './assets-stripes.css';
 ﻿import React, { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
@@ -9,7 +10,7 @@ import { Sephirot } from '../components/Sephirot';
 import { EditIcon, XIcon } from '../components/Icons';
 import { Portal } from '../components/Portal';
 import { ASSET_ACCENT_COLORS, getAssetArt } from '../constants/assetVisuals';
-import { LIFE_AREAS, MASTERY_AREA_MAX_LEVEL, PONTOS_POR_DEGRAU, getMasteryLevelName } from '../constants/lifeAreas';
+import { LIFE_AREAS, PONTOS_POR_DEGRAU, getMasteryLevelName } from '../constants/lifeAreas';
 import { useAssetsOverviewLayoutConfig } from '../hooks/useAssetsOverviewLayoutConfig';
 import { calculateArenaProgress } from '../utils/progressUtils';
 import { filterTasksAfterFreeProgressReset } from '../utils/freeProgressScope';
@@ -116,15 +117,6 @@ const buildCycleActionTotal = (cycleActions: Action[], scheduledTaskCount: numbe
 
     return Math.max(plannedFromActions, scheduledTaskCount);
 };
-
-/** Um numero da area, do tamanho de um numero — nao de um cartao. */
-const AreaMetric: React.FC<{ label: string; value: string; hint: string }> = ({ label, value, hint }) => (
-    <div className="rounded-[10px] border border-white/10 bg-[rgba(8,10,14,0.52)] px-2 py-2 text-center">
-        <p className="text-[9px] font-black uppercase leading-none tracking-[0.2em] text-white/48">{label}</p>
-        <p className="mt-1.5 text-[17px] font-black leading-none text-white tabular-nums">{value}</p>
-        <p className="mt-1 text-[9px] leading-none text-white/40">{hint}</p>
-    </div>
-);
 
 export const AssetsView: React.FC = () => {
     const { assets, userProfile, updateUserProfile, showToast, activeCycle, freeProgressResetAt, dailyCommitment, getArenas, actions, tasks } = useGame();
@@ -239,28 +231,7 @@ export const AssetsView: React.FC = () => {
         );
     }, [allArenas, assets, actions, cycleScopedTasks]);
 
-    // A FICHA DA AREA.
-    //
-    // A tela mostrava a frase do nivel e mais nada. Todo o resto ja estava
-    // calculado a poucas linhas daqui, no assetStats que a lista usa, e a ficha
-    // — a tela dedicada aquela area — era a unica que nao lia.
-    const selectedAssetStats = selectedAsset ? assetStats.get(selectedAsset.id) : undefined;
     const selectedAssetLevelName = getMasteryLevelName(selectedAssetLevel);
-    const selectedAssetNextLevel = selectedAssetLevel < MASTERY_AREA_MAX_LEVEL ? selectedAssetLevel + 1 : null;
-    const selectedAssetNextPhrase = selectedAssetNextLevel
-        ? selectedAsset?.levelDescriptions?.[selectedAssetNextLevel] || ''
-        : '';
-
-    // A trava de 72h e a mesma da MasteryView. Ela e repetida aqui so para o
-    // rotulo do botao: quem decide se pode salvar continua sendo o contexto.
-    const masteryLastUpdate = userProfile.lastLevelUpdate || 0;
-    const masteryBypassesLock = userProfile.role === 'admin' || userProfile.role === 'gm';
-    const masteryLockRemainingHours = (() => {
-        if (masteryBypassesLock || !masteryLastUpdate) return 0;
-        const elapsed = Date.now() - masteryLastUpdate;
-        const threeDays = 72 * 60 * 60 * 1000;
-        return elapsed < threeDays ? Math.ceil((threeDays - elapsed) / (60 * 60 * 1000)) : 0;
-    })();
 
     const cycleSummary = useMemo(() => {
         if (!activeCycle) return null;
@@ -531,7 +502,7 @@ export const AssetsView: React.FC = () => {
     if (selectedAsset) {
         return (
             <div
-                className="assets-detail-root flex h-full overflow-y-auto px-4 py-4"
+                className="assets-detail-root flex h-full overflow-y-auto px-3 pt-2"
                 style={{
                     '--ui-card-text': 'rgba(248, 250, 252, 0.94)',
                     '--ui-card-text-soft': 'rgba(203, 213, 225, 0.86)',
@@ -597,16 +568,16 @@ export const AssetsView: React.FC = () => {
                         <div
                             className="overflow-hidden"
                         >
-                            <div className="grid min-w-0 grid-cols-[56px_minmax(0,1fr)_56px] items-center gap-2 px-2 pb-4 pt-1 text-center">
+                            <div className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] items-center gap-2 px-1 pb-3 pt-1 text-center">
                                 <Sephirot
                                     asset={selectedAsset}
                                     onClick={() => {}}
                                     useSkinArtworkOnly={hasSephirotRasterArt}
                                     showLabel={false}
-                                    size="56px"
+                                    size="48px"
                                     interactive={false}
                                 />
-                                <div className="flex min-h-[52px] min-w-0 flex-col items-center justify-center rounded-[12px] border border-white/24 bg-[rgba(18,21,27,0.58)] px-4 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_18px_rgba(0,0,0,0.28)] backdrop-blur-[3px]">
+                                <div className="flex min-h-[52px] min-w-0 flex-col items-center justify-center rounded-[12px] border border-white/24 bg-[rgba(18,21,27,0.58)] px-2 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_18px_rgba(0,0,0,0.28)] backdrop-blur-[3px]">
                                     {/* De quem e esta area. O cartao era anonimo: dizia o nome da
                                         area e nada dizia que aquele recorte dela era o seu. */}
                                     {userProfile.nickname && (
@@ -615,102 +586,24 @@ export const AssetsView: React.FC = () => {
                                         </p>
                                     )}
                                     <p
-                                        className="mt-1 line-clamp-2 text-[21px] font-black uppercase leading-[1.08] tracking-[0.055em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]"
+                                        className="mt-1 line-clamp-2 text-[18px] font-black uppercase leading-[1.15] tracking-[0.015em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.86)]"
                                     >
                                         {selectedAsset.name}
                                     </p>
                                 </div>
-                                <div className="h-14 w-full" />
+
                             </div>
 
-                            {/* A MAESTRIA GANHA CABECA, ESCADA E SAIDA.
-                                Antes era um paragrafo solto: a frase do nivel, sem o
-                                numero, sem o nome do degrau, sem o proximo e sem como
-                                mexer nela — a avaliacao que produziu aquele texto mora
-                                em Config, tres telas longe. */}
-                            <div className="mx-1 mb-2 border-y border-white/14 bg-[rgba(5,7,10,0.62)] px-3 py-3">
-                                <div className="flex items-baseline justify-between gap-2">
-                                    <p className="text-[9px] font-black uppercase leading-none tracking-[0.22em] text-white/50">
-                                        {/* A MESMA ESCALA DO PENTAGONO.
-                                            Cada degrau da avaliacao vale dois pontos, e e em
-                                            pontos que a pessoa ve o proprio nivel no grafico.
-                                            Dizer 6 aqui e 12 la seria obrigar a fazer a conta
-                                            para ligar duas telas que falam da mesma coisa. */}
-                                        Nível {selectedAssetLevel * PONTOS_POR_DEGRAU} de {MASTERY_AREA_MAX_LEVEL * PONTOS_POR_DEGRAU}
-                                    </p>
-                                    <p
-                                        className="truncate text-[11px] font-black uppercase leading-none tracking-[0.16em]"
-                                        style={{ color: rgbString(lightenToward(selectedAssetAccentRgb, [255, 250, 238], 0.5)) }}
-                                    >
-                                        {selectedAssetLevelName}
-                                    </p>
-                                </div>
-
-                                <div className="mt-2 flex items-center gap-[3px]">
-                                    {Array.from({ length: MASTERY_AREA_MAX_LEVEL }, (_, index) => (
-                                        <span
-                                            key={index}
-                                            className="h-1.5 flex-1 rounded-full"
-                                            style={{
-                                                background: index < selectedAssetLevel
-                                                    ? rgbString(selectedAssetAccentRgb)
-                                                    : 'rgba(255,255,255,0.11)',
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-
-                                <p
-                                    className="mt-3 text-center text-[14px] font-semibold leading-[1.35] text-white/95"
-                                    style={{ WebkitFontSmoothing: 'antialiased', textRendering: 'optimizeLegibility' }}
-                                >
-                                    {selectedAssetMasteryPhrase || 'Essa área ainda não tem uma frase de maestria definida.'}
+                            <section className="asset-current-mastery mx-1 mb-2 rounded-xl border border-white/15 bg-black/55 px-3 py-2.5">
+                                <p className="text-center text-[11px] font-black uppercase tracking-[0.16em] text-white/80">{selectedAssetLevelName}</p>
+                                <p className="mt-1.5 text-center text-[14px] font-semibold leading-snug text-white">
+                                    {selectedAssetMasteryPhrase || 'Avalie como você se sente nesta área.'}
                                 </p>
-
-                                {/* O degrau seguinte, em voz baixa. E o unico texto da tela
-                                    que fala do futuro, e e o que da sentido a escada. */}
-                                {selectedAssetNextLevel && selectedAssetNextPhrase && (
-                                    <p className="mt-2.5 border-t border-white/10 pt-2.5 text-[11px] leading-snug text-white/46">
-                                        <span className="font-black uppercase tracking-[0.14em] text-white/62">
-                                            Nível {selectedAssetNextLevel * PONTOS_POR_DEGRAU} · {getMasteryLevelName(selectedAssetNextLevel)}
-                                        </span>
-                                        {' — '}
-                                        {selectedAssetNextPhrase}
-                                    </p>
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={() => setIsMasteryOpen(true)}
-                                    className="mt-3 w-full rounded-[10px] border border-white/14 bg-black/28 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/80 transition-colors hover:bg-white/10"
-                                >
-                                    {masteryLockRemainingHours > 0
-                                        ? `Maestria · libera em ${masteryLockRemainingHours}h`
-                                        : 'Recalibrar maestria'}
+                                <button type="button" onClick={() => setIsMasteryOpen(true)}
+                                    className="mx-auto mt-2 block rounded-lg border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/85">
+                                    Ajustar maestria
                                 </button>
-                            </div>
-
-                            {/* OS NUMEROS DA AREA. Todos ja existiam no assetStats que a
-                                lista de ativos usa; a ficha era a unica tela que nao lia. */}
-                            <div className="mx-1 mb-2 grid grid-cols-3 gap-2">
-                                <AreaMetric
-                                    label="Arenas"
-                                    value={String(selectedAssetStats?.activeCount ?? 0)}
-                                    hint={(selectedAssetStats?.archivedCount ?? 0) > 0
-                                        ? `+${selectedAssetStats?.archivedCount} arquivadas`
-                                        : 'ativas'}
-                                />
-                                <AreaMetric
-                                    label="Ações"
-                                    value={`${selectedAssetStats?.totalCompleted ?? 0}/${selectedAssetStats?.totalPlanned ?? 0}`}
-                                    hint={activeCycle ? 'no ciclo' : 'na rodada'}
-                                />
-                                <AreaMetric
-                                    label="EXP"
-                                    value={`+${selectedAssetStats?.totalExp ?? 0}`}
-                                    hint={activeCycle ? 'no ciclo' : 'na rodada'}
-                                />
-                            </div>
+                            </section>
 
                             <div className="overflow-y-auto pr-1 -mr-1 custom-scrollbar px-1 pb-1">
                                 <div className="space-y-2">

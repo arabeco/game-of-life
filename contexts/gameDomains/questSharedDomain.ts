@@ -94,7 +94,7 @@ export const useQuestSharedDomain = ({
 
         const hydrateSharedCompletions = () => {
             supabase.from('shared_action_completions')
-                .select('*')
+                .select('arena_id,action_id')
                 .then(({ data }: { data?: any[] }) => {
                     if (!data) return;
 

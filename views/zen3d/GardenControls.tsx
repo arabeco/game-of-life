@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { OrthographicCamera, PerspectiveCamera } from 'three';
-import { GARDEN_X, GARDEN_Z, canWalkCircles, collisionCircles, isWater, bridgeHeight, EYE_HEIGHT, findEntrance, type GardenMode, type GardenObject } from './model';
+import { OrthographicCamera, PerspectiveCamera, Plane, Raycaster, Vector2, Vector3 } from 'three';
+import { GARDEN_X, GARDEN_Z, inGarden, canWalkCircles, collisionCircles, isWater, bridgeHeight, EYE_HEIGHT, findEntrance, type GardenMode, type GardenObject } from './model';
 export interface Motion { x:number;y:number }
 export interface GardenView { angle:number;zoom:number;x:number;z:number }
-export function GardenCamera({mode,objects,motion,view,onView,gesture,buildNavigation=true}: {buildNavigation?:boolean;mode:GardenMode;objects:GardenObject[];motion:MutableRefObject<Motion>;view:GardenView;onView:(change:(v:GardenView)=>GardenView)=>void;gesture:MutableRefObject<boolean>}) {
+export function GardenCamera({gestureOwner,mode,objects,motion,view,onView,gesture,buildNavigation=true,sandEditing=false}: {gestureOwner?:MutableRefObject<'sand'|'camera'|null>;buildNavigation?:boolean;sandEditing?:boolean;mode:GardenMode;objects:GardenObject[];motion:MutableRefObject<Motion>;view:GardenView;onView:(change:(v:GardenView)=>GardenView)=>void;gesture:MutableRefObject<boolean>}) {
   const {camera,set,gl,invalidate,size}=useThree();
   const cameras=useMemo(()=>({ build:new OrthographicCamera(-6,6,10,-10,.1,100),explore:new PerspectiveCamera(62,1,.08,100) }),[]);
   const keys=useRef(new Set<string>()),look=useRef({yaw:0,pitch:-.07});
@@ -32,8 +32,10 @@ export function GardenCamera({mode,objects,motion,view,onView,gesture,buildNavig
     if(mode!=='build'||!buildNavigation)return;
     const canvas=gl.domElement,pointers=new Map<number,{x:number;y:number;startX:number;startY:number}>();
     let distance=0,angle=0;
+    const ray=new Raycaster(),uv=new Vector2(),plane=new Plane(new Vector3(0,1,0),-.045);
+    const startsOnIsland=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();uv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(uv,cameras.build);const p=ray.ray.intersectPlane(plane,new Vector3());return !!p&&inGarden(p.x,p.z);};
     const pair=()=>{const p=[...pointers.values()];return {distance:Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y),angle:Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x)};};
-    const down=(e:PointerEvent)=>{if(e.button!==0)return;if(!pointers.size)gesture.current=false;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});canvas.setPointerCapture(e.pointerId);if(pointers.size===2){gesture.current=true;const p=pair();distance=p.distance;angle=p.angle;}};
+    const down=(e:PointerEvent)=>{if(e.button!==0||gestureOwner?.current==='sand'||(sandEditing&&startsOnIsland(e)))return;if(gestureOwner)gestureOwner.current='camera';if(!pointers.size)gesture.current=false;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});canvas.setPointerCapture(e.pointerId);if(pointers.size===2){gesture.current=true;const p=pair();distance=p.distance;angle=p.angle;}};
     const move=(e:PointerEvent)=>{
       const previous=pointers.get(e.pointerId);if(!previous)return;
       if(!gesture.current&&Math.hypot(e.clientX-previous.startX,e.clientY-previous.startY)<7)return;
@@ -42,12 +44,12 @@ export function GardenCamera({mode,objects,motion,view,onView,gesture,buildNavig
       if(pointers.size===1)onView(v=>{if(e.shiftKey)return {...v,angle:v.angle+dx*.008};const scale=(cameras.build.right-cameras.build.left)/size.width;return {...v,x:Math.max(-4,Math.min(4,v.x-dx*scale*Math.cos(v.angle)-dy*scale*Math.sin(v.angle)*1.25)),z:Math.max(-7,Math.min(7,v.z+dx*scale*Math.sin(v.angle)-dy*scale*Math.cos(v.angle)*1.25))};});
       if(pointers.size===2){const next=pair();const ratio=distance/Math.max(20,next.distance),delta=Math.atan2(Math.sin(next.angle-angle),Math.cos(next.angle-angle));onView(v=>({...v,zoom:Math.max(.55,Math.min(1.65,v.zoom*ratio)),angle:v.angle+delta}));distance=next.distance;angle=next.angle;}
     };
-    const up=(e:PointerEvent)=>pointers.delete(e.pointerId);
-    const wheel=(e:WheelEvent)=>{e.preventDefault();onView(v=>({...v,zoom:Math.max(.55,Math.min(1.65,v.zoom*Math.exp(e.deltaY*.001)))}));};
-    const reset=()=>pointers.clear();
+    const up=(e:PointerEvent)=>{pointers.delete(e.pointerId);if(!pointers.size&&gestureOwner?.current==='camera')gestureOwner.current=null;};
+    const wheel=(e:WheelEvent)=>{e.preventDefault();if(gestureOwner?.current==='sand')return;onView(v=>({...v,zoom:Math.max(.55,Math.min(1.65,v.zoom*Math.exp(e.deltaY*.001)))}));};
+    const reset=()=>{pointers.clear();if(gestureOwner?.current==='camera')gestureOwner.current=null;};
     canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('lostpointercapture',up);canvas.addEventListener('wheel',wheel,{passive:false});window.addEventListener('blur',reset);
-    return()=>{canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('lostpointercapture',up);canvas.removeEventListener('wheel',wheel);window.removeEventListener('blur',reset);};
-  },[mode,buildNavigation,gl,cameras,size.width,onView,gesture]);
+    return()=>{reset();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('lostpointercapture',up);canvas.removeEventListener('wheel',wheel);window.removeEventListener('blur',reset);};
+  },[gestureOwner,mode,buildNavigation,sandEditing,gl,cameras,size.width,onView,gesture]);
   useEffect(()=>{
     if(mode!=='explore')return;
     const canvas=gl.domElement;

@@ -9,5 +9,9 @@ assert.match(buildOracleMissionBrief(pact,{...progress,completed:true}),/recompe
 assert.match(buildOracleMissionBrief(pact,{...progress,windowEnded:true}),/prazo terminou/);
 assert.match(buildOracleMissionBrief({...pact,kind:'constancia'},progress),/dia com registro/);
 assert.match(buildOracleMissionBrief({...pact,kind:'conclusao'},progress),/67%/);
+assert.match(buildOracleMissionBrief(pact,{...progress,current:1}),/primeiro passo/);
+assert.match(buildOracleMissionBrief({...pact,kind:'constancia'},{...progress,current:1}),/um único dia/);
+assert.doesNotMatch(buildOracleMissionBrief(pact,{...progress,completed:true}),/próxima ação/);
+assert.doesNotMatch(buildOracleMissionBrief(pact,{...progress,windowEnded:true}),/próxima ação/);
 assert.doesNotMatch(buildOracleMissionBrief(pact,progress),/hoje|ontem|dias restantes/);
 console.log('PASS mission readings: general/arena, zero, progress, completion, expiration, units; no invented dates.');

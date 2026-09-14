@@ -213,7 +213,8 @@ const resolveRecommendation = (answers: QuizAnswers, entries: CampaignEntry[], m
 interface CampaignRecommendationQuizModalProps { onClose: () => void }
 
 export const CampaignRecommendationQuizModal: React.FC<CampaignRecommendationQuizModalProps> = ({ onClose }) => {
-    const { codexCatalog, userCodexes, userProfile, getArenas, buyCodex, installCodex, showToast } = useGame();
+    const { codexCatalog, refreshCodexes, userCodexes, userProfile, getArenas, buyCodex, installCodex, showToast } = useGame();
+    useEffect(() => { void refreshCodexes(); }, [refreshCodexes]);
     const [quizMode, setQuizMode] = useState<QuizMode>('free');
     const [questionIndex, setQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState<QuizAnswers>({});

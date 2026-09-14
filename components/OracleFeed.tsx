@@ -30,7 +30,7 @@ interface OracleFeedProps {
 type Tab = 'chat' | 'action' | 'requests' | 'notifications' | 'clan' | 'dms';
 
 const resolveInitialTab = (tab: Tab): 'chat' | 'requests' =>
-    tab === 'notifications' || tab === 'clan' || tab === 'dms' ? 'requests' : 'chat';
+    tab === 'requests' || tab === 'notifications' || tab === 'clan' || tab === 'dms' ? 'requests' : 'chat';
 
 export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: initialTabProp = 'chat' as Tab }) => {
     const {
@@ -67,14 +67,8 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
         ]);
     }, [activeTab, chatNotifications, markNotificationRead, markOracleMessageAsRead, oracleMessages]);
 
-    useEffect(() => {
-        if (activeTab !== 'requests') return;
+    // Each alert is marked read when opened, not merely when its list appears.
 
-        const unreadNotificationIds = requestNotifications.filter((notification) => !notification.read).map((notification) => notification.id);
-        if (unreadNotificationIds.length === 0) return;
-
-        void Promise.all(unreadNotificationIds.map((notificationId) => markNotificationRead(notificationId)));
-    }, [activeTab, markNotificationRead, requestNotifications]);
 
     return (
         <Portal>
@@ -93,7 +87,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                             >
                                 <SparklesIcon className="w-4 h-4" />
-                                <span className="text-[10px] font-bold tracking-wider hidden sm:inline">CONVERSAR</span>
+                                <span className="text-[10px] font-bold tracking-wider">CONVERSAR</span>
                                 {unreadChat && activeTab !== 'chat' && <div className="w-2 h-2 rounded-full bg-amber-400 ml-1" />}
                             </button>
 
@@ -102,7 +96,7 @@ export const OracleFeed: React.FC<OracleFeedProps> = ({ onClose, initialTab: ini
                                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg transition-all relative ${activeTab === 'requests' ? 'bg-[var(--skin-accent-color)] text-black shadow-lg font-bold' : 'text-gray-400 hover:text-white'}`}
                             >
                                 <MessageIcon className="w-4 h-4" />
-                                <span className="text-[10px] font-bold tracking-wider hidden sm:inline">ALERTAS</span>
+                                <span className="text-[10px] font-bold tracking-wider">ALERTAS</span>
                                 {unreadRequests > 0 && (
                                     <span className="absolute top-1 right-1 flex h-2 w-2">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -569,12 +563,13 @@ const navigateFromNotification = (notification: Notification, onClose: () => voi
         || notification.type === 'competition_result'
     ) {
         dispatchAppView({ view: 'social' });
-        window.dispatchEvent(new CustomEvent('mundo-tab-request', {
+        window.setTimeout(() => window.dispatchEvent(new CustomEvent('mundo-tab-request', {
             detail: {
                 tab: 'social',
                 socialSection: 'people',
+                openRequests: ['friend_request','mentor_invite','partnership_invite'].includes(notification.type),
             },
-        }));
+        })), 80);
         onClose();
     }
 };

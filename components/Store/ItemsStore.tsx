@@ -288,6 +288,9 @@ export const ItemsStore: React.FC = () => {
 
                             {!alreadyOwns && (
                             <button
+                                aria-label={`Comprar ${item.name}`}
+                                data-item-id={item.id}
+                                data-price={item.costGold}
                                 onClick={(event) => handleBuy(event, item)}
                                 disabled={!!loading || !item.costGold}
                                 className={`h-8 w-full rounded-xl text-[10px] font-black uppercase tracking-[0.18em] inline-flex items-center justify-center gap-1.5 transition-all luxe-skin-button ${

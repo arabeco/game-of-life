@@ -11,7 +11,7 @@ export interface SandActions { clear:()=>void; undo:()=>void; snapshot:()=>{colo
 const W=512,H=1024;
 const referenceColor=new Color('#d9cdb0');
 // Fixed-size texture memory: no mesh subdivision, stroke list, or growing history.
-export function SandSurface({tool,settings,sandColor,enabled,actions,onChange,initialDrawing,onReady,onLoadError}:{onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(undo:boolean)=>void}) {
+export function SandSurface({gestureOwner,tool,settings,sandColor,enabled,actions,onChange,initialDrawing,onReady,onLoadError}:{gestureOwner:MutableRefObject<'sand'|'camera'|null>;onReady?:(ready:boolean)=>void;onLoadError?:(message:string)=>void;initialDrawing?:{color:string;height:string};tool:SandTool;settings:RakeSettings;sandColor:string;enabled:boolean;objects:GardenObject[];actions:MutableRefObject<SandActions|null>;onChange:(undo:boolean)=>void}) {
   const {gl,camera,invalidate}=useThree();
   const geometry=useMemo(()=>gardenSurface(),[]);
   useEffect(()=>()=>geometry.dispose(),[geometry]);
@@ -108,8 +108,8 @@ export function SandSurface({tool,settings,sandColor,enabled,actions,onChange,in
       if(!smooth){smooth=latest.clone();lastEmitted=latest.clone();anchors=[latest.clone(),latest.clone()];previous=latest.clone();if(tool==='smooth')sample(latest);}
       if(!raf){lastTime=0;raf=requestAnimationFrame(tick);}
     };
-    const reset=()=>{if(raf)cancelAnimationFrame(raf);raf=0;lastTime=0;pointer=null;previous=null;normal=null;anchors=[];latest=null;smooth=null;lastEmitted=null;};
-    const down=(e:PointerEvent)=>{if(e.button!==0||pointer!==null)return;reset();pointer=e.pointerId;saved=false;canvas.setPointerCapture(e.pointerId);update(e);};
+    const reset=()=>{if(gestureOwner.current==='sand')gestureOwner.current=null;if(raf)cancelAnimationFrame(raf);raf=0;lastTime=0;pointer=null;previous=null;normal=null;anchors=[];latest=null;smooth=null;lastEmitted=null;};
+    const down=(e:PointerEvent)=>{if(e.button!==0||pointer!==null||gestureOwner.current==='camera'||!point(e))return;reset();gestureOwner.current='sand';pointer=e.pointerId;saved=false;canvas.setPointerCapture(e.pointerId);update(e);};
     const move=(e:PointerEvent)=>{if(pointer===e.pointerId)update(e);};
     const end=(e:PointerEvent)=>{
       if(pointer!==e.pointerId)return;
@@ -119,7 +119,7 @@ export function SandSurface({tool,settings,sandColor,enabled,actions,onChange,in
     };
     canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);canvas.addEventListener('lostpointercapture',end);window.addEventListener('blur',reset);document.addEventListener('visibilitychange',reset);
     return()=>{reset();document.removeEventListener('visibilitychange',reset);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',end);canvas.removeEventListener('pointercancel',end);canvas.removeEventListener('lostpointercapture',end);window.removeEventListener('blur',reset);};
-  },[enabled,restored,tool,settings,gl,camera,assets,invalidate,onChange]);
+  },[gestureOwner,enabled,restored,tool,settings,gl,camera,assets,invalidate,onChange]);
   useFrame(()=>{if(dirty.current){assets.map.needsUpdate=true;assets.bump.needsUpdate=true;dirty.current=false;}});
   useEffect(()=>()=>{assets.map.dispose();assets.bump.dispose();},[assets]);
   return <mesh position={[0,.045,0]} rotation={[-Math.PI/2,0,0]} geometry={geometry} receiveShadow>

@@ -4,7 +4,7 @@ import { ArenaPactBalloon, ArenaPactProposal } from './ArenaPactBalloon';
 import { OracleSpeakerMark } from './OracleSpeakerMark';
 import { buildOracleMissionBrief } from '../utils/oracleMissionBrief';
 
-export const OracleMissionPanel: React.FC = () => {
+export const OracleMissionPanel: React.FC<{onContinue: (arenaId?: string) => void; onOpenMissions: () => void}> = ({onContinue,onOpenMissions}) => {
   const {activeArenaPact: pact, arenaPactProgress: progress, missaoIndividualDisponivel,
     missaoDeSistemaAtiva, oracleMessages} = useGame();
   const [choosing, setChoosing] = useState(false);
@@ -24,11 +24,14 @@ export const OracleMissionPanel: React.FC = () => {
       ? 'Você já tem uma missão em andamento. Acompanhe os detalhes na aba Temporada.'
       : missaoIndividualDisponivel ? 'Escolha uma missão para todas as suas arenas ou para uma frente específica.'
       : 'Registre uma ação para abrir suas primeiras propostas de missão.'}</p>
+    {missaoDeSistemaAtiva && <button type="button" onClick={onOpenMissions} className="luxe-skin-button mt-5 min-h-11 w-full px-4 text-xs font-bold">Ver minha missão</button>}
+    {!missaoDeSistemaAtiva && !missaoIndividualDisponivel && <button type="button" onClick={() => onContinue()} className="luxe-skin-button mt-5 min-h-11 w-full px-4 text-xs font-bold">Ir para minhas ações</button>}
     {!missaoDeSistemaAtiva && missaoIndividualDisponivel && <button type="button" onClick={() => setChoosing(true)} className="luxe-skin-button mt-5 min-h-11 w-full px-4 text-xs font-bold">Escolher missão</button>}
   </div>;
   return <div className="space-y-5">
     <div>
       <ArenaPactBalloon />
+      {!progress.completed && !progress.windowEnded && <button type="button" onClick={() => onContinue(pact.arenaId || undefined)} className="luxe-skin-button mt-3 min-h-11 w-full px-4 text-xs font-bold">{progress.current === 0 ? 'Começar pelas minhas ações' : 'Continuar missão'}</button>}
     </div>
     <section aria-label="Acompanhamento da missão" className="space-y-3">
       <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Acompanhamento</h3>

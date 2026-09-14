@@ -361,6 +361,20 @@
     inset 0 -2px 6px rgba(0,0,0,0.18);
 }
 
+.legacy-cycle-focus .legacy-cycle-card { height: auto; min-height: 248px; padding: 14px; border-radius: 18px; }
+.legacy-cycle-focus .legacy-cycle-card__header { height: 54px; padding-top: 16px; }
+.legacy-cycle-focus .legacy-cycle-card__date { font-size: 9px; }
+.legacy-cycle-focus .legacy-cycle-card__title { font-size: 15px; line-height: 1.2; min-height: 36px; max-height: 36px; }
+.legacy-cycle-focus .legacy-cycle-card__hero { padding: 8px 0; gap: 4px; }
+.legacy-cycle-focus .legacy-cycle-card__rank { font-size: 48px; }
+.legacy-cycle-focus .legacy-cycle-card__score { font-size: 12px; }
+.legacy-cycle-focus .legacy-cycle-card__metrics { gap: 6px; }
+.legacy-cycle-focus .legacy-cycle-card__metric { padding: 7px 4px; }
+.legacy-cycle-focus .legacy-cycle-card__metric-label { font-size: 8px; color: var(--legacy-cycle-text); opacity: .8; }
+.legacy-cycle-focus .legacy-cycle-card__metric-value { font-size: 13px; line-height: 1.2; }
+.legacy-planner-readable span.text-gray-500 { font-size: 8px; color: #a7adb7; }
+.legacy-planner-readable span.text-white\/40 { font-size: 7px; color: #d5d9e1; }
+
 .legacy-cycle-card__metric-label {
   display: block;
   width: 100%;

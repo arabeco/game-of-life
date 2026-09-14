@@ -1,6 +1,7 @@
-.arena-groups { display: flex; flex-direction: column; gap: 12px; }
-.arena-group-heading { min-height: 28px; border-radius: 8px; color: #e4e9ee; background: rgba(15, 23, 32, .78); }
+.arena-groups { display: flex; flex-direction: column; gap: 6px; }
+.arena-group-heading { min-height: 23px; color: #f1f4f7; background: transparent; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
 .arena-group-heading .arena-group-title,
 .arena-group-heading > span:last-child { color: inherit; }
-.arena-group-heading > div.h-\[1px\] { background: currentColor; opacity: .16; }
-.theme-light .arena-group-heading { color: #263c49; background: rgba(233, 244, 250, .94); }
+.arena-group-heading > div.h-\[1px\] { background: currentColor; opacity: .35; }
+.theme-light .arena-group-heading { color: #203441; background: transparent; text-shadow: 0 1px 2px #ffffffd9, 0 0 3px #ffffffb3; }
+.arena-groups > div > .arena-group-heading + div { margin-top: 3px; padding-bottom: 2px; }

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111b18">
+  <title>Mundo · Um pequeno universo</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="vendor/three.local.js"></script>
+  <script defer src="data.js"></script>
+  <script defer src="scene.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <main class="world-shell" id="world-app">
+    <div class="stage" id="stage" aria-label="Diorama do Mundo"></div>
+    <div class="atmosphere" aria-hidden="true"></div>
+    <div id="map-ui">
+      <header class="world-header"><div><p>UM PEQUENO UNIVERSO</p><h1>Mundo<span>EXPERIMENTO</span></h1></div><button class="circle-button" data-action="collection" aria-label="Abrir coleção"><span data-icon="chest"></span></button></header>
+      <div class="map-subtitle"><span class="live-dot"></span> CINCO LUGARES. NOVAS POSSIBILIDADES.</div>
+      <div id="place-labels" aria-label="Destinos do Mundo"></div>
+      <div class="camera-tools" aria-label="Câmera"><button data-action="zoom-in" aria-label="Aproximar mapa">+</button><button data-action="reset-camera" aria-label="Centralizar mapa"><span data-icon="focus"></span></button><button data-action="zoom-out" aria-label="Afastar mapa">−</button></div>
+      <footer class="map-footer"><p>Toque em um lugar.<br><span>O resto pode esperar.</span></p><button data-action="help" aria-label="Como navegar"><span data-icon="help"></span></button></footer>
+      <section id="destination-dock" class="destination-dock" hidden aria-label="Destino selecionado"></section>
+    </div>
+    <div id="scene-ui" hidden></div>
+    <section id="welcome" class="welcome" aria-labelledby="welcome-title"><p class="eyebrow">UM EXPERIMENTO PARA A ABA MUNDO</p><h2 id="welcome-title">Tudo se encontra<br>por aqui.</h2><p>Seu refúgio, novas descobertas<br>e lugares para estar em companhia.</p><button class="primary" data-action="start">Entrar no Mundo <span data-icon="arrow"></span></button><small>Uma prévia visual, com conteúdo fictício.</small></section>
+    <div id="panel-host" hidden></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </main>
+</body>
+</html>

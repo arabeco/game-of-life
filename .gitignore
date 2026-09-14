@@ -55,3 +55,7 @@ sql/items_catalog_seed.sql
 
 # Saidas temporarias de typecheck do jardim 3D. Diagnostico, nao fonte.
 temp-garden-typecheck*.txt
+
+# Saida das corridas de teste (mega-journey): video, print e log por execucao.
+# 92 MB so na primeira leva, e reescrito a cada rodada — e artefato, nao fonte.
+/docs/reports/

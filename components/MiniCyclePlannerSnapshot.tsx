@@ -7,6 +7,7 @@ interface MiniCyclePlannerSnapshotProps {
     accentColor?: string;
     className?: string;
     compact?: boolean;
+    spacious?: boolean;
     style?: React.CSSProperties;
 }
 
@@ -51,6 +52,7 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
     accentColor = '#D4AF37',
     className = '',
     compact = false,
+    spacious = false,
     style,
 }) => {
     const days = useMemo(() => weeks.flatMap((week) => week.days.map((day, dayIndex) => ({
@@ -72,10 +74,10 @@ export const MiniCyclePlannerSnapshot: React.FC<MiniCyclePlannerSnapshotProps> =
     }
 
     if (compact) {
-        const compactRowHeight = weeks.length <= 1 ? 26 : weeks.length === 2 ? 18 : 12;
+        const compactRowHeight = spacious ? (weeks.length <= 2 ? 52 : weeks.length <= 4 ? 36 : 24) : weeks.length <= 1 ? 26 : weeks.length === 2 ? 18 : 12;
 
         return (
-            <div className={`px-0 py-0 ${className}`} style={style}>
+            <div className={`px-0 py-0 ${spacious ? 'legacy-planner-readable' : ''} ${className}`} style={style}>
                 <div className="space-y-[2px] overflow-hidden rounded-[6px] border border-white/6 bg-transparent px-[2px] py-[2px]">
                     {weeks.map((week) => (
                         <div

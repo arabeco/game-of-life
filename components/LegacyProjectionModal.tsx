@@ -25,7 +25,7 @@ interface LegacyProjectionModalProps {
     showLayoutEditors?: boolean;
     fallbackIdentity?: ReportIdentitySnapshot;
     onClose: () => void;
-    onToast: (message: string) => void;
+    onToast: (message: string, type?: 'info' | 'success' | 'error') => void;
     onOpenCycle?: (cycleId: string) => void;
     onOpenEra?: (era: LegacyEraSummary) => void;
     onOpenPlaque?: () => void;
@@ -95,6 +95,10 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     confirmDescription = 'Escolha a pele de fundo da projeção. A placa e a timeline serão abertas sobre esse ambiente.',
     confirmButtonLabel = 'Gerar a cena',
 }) => {
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const exportBusy = useRef(false);
+    const recentCycles = useMemo(() => eras.flatMap(era => era.cycles || []).sort((a,b) => b.endDate.localeCompare(a.endDate)).slice(0,6), [eras]);
     const [projectionActive, setProjectionActive] = useState(false);
     const [showProjectionConfirm, setShowProjectionConfirm] = useState(false);
     const [selectedBackdropSkinId, setSelectedBackdropSkinId] = useState<LegacyBackdropSkinId>(DEFAULT_LEGACY_BACKDROP_SKIN_ID);
@@ -208,7 +212,10 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
     };
 
     const handleExportProjection = useCallback(async () => {
-        onToast('Preparando exportacao da cena...', 'info');
+        if (exportBusy.current) return;
+        exportBusy.current = true;
+        setExporting(true);
+        onToast('Preparando sua cena…', 'info');
         try {
             const { exportElementAsImage, shouldPreferNativeShare } = await import('./Share');
             const preferShare = shouldPreferNativeShare();
@@ -231,7 +238,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
         } catch (error) {
             console.error('Erro ao exportar cena do legado:', error);
             onToast('Não foi possível exportar a cena do legado.', 'error');
-        }
+        } finally { exportBusy.current = false; setExporting(false); }
     }, [onToast, sovereignName]);
 
     const renderPreviewStage = () => (
@@ -402,16 +409,17 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                 <button
                                     type="button"
                                     onClick={handleExportProjection}
+                                    disabled={exporting}
                                     className="w-full rounded-full border border-white/16 bg-black/45 px-5 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-white transition hover:border-white/24 hover:bg-black/60"
                                 >
-                                    Exportar cena
+                                    {exporting ? 'Preparando…' : 'Compartilhar cena'}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={startProjection}
                                     className="w-full rounded-full border border-white/16 bg-black/45 px-5 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-white transition hover:border-white/24 hover:bg-black/60"
                                 >
-                                    Repetir projecao
+                                    Rever minha história
                                 </button>
                                 {onOpenPlaque && (
                                     <button
@@ -420,7 +428,7 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                                         onClick={onOpenPlaque}
                                         className="w-full rounded-full px-6 py-3 text-[11px] font-black uppercase tracking-[0.22em] luxe-skin-button"
                                     >
-                                        OK
+                                        Ver minha placa
                                     </button>
                                 )}
                             </div>
@@ -464,6 +472,16 @@ export const LegacyProjectionModal: React.FC<LegacyProjectionModalProps> = ({
                     >
                         x
                     </button>
+
+                    {onOpenCycle && recentCycles.length > 0 && <div className="absolute left-4 bottom-4 z-30 max-w-[calc(100%-5rem)]">
+                        <button type="button" aria-expanded={historyOpen} onClick={() => setHistoryOpen(v => !v)} className="min-h-11 rounded-full border border-white/15 bg-black/70 px-4 text-xs font-bold text-white">{historyOpen ? 'Fechar ciclos' : 'Meus ciclos'}</button>
+                        {historyOpen && <section aria-label="Ciclos do meu legado" className="absolute bottom-14 max-h-[55vh] w-64 max-w-full overflow-y-auto rounded-2xl border border-white/15 bg-[#10151d] p-2 shadow-xl">
+                            {recentCycles.map(cycle => <button key={cycle.id} type="button" onClick={() => {setHistoryOpen(false);onOpenCycle(cycle.id);}} className="block min-h-14 w-full rounded-xl p-3 text-left text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2">
+                                <span className="block truncate text-sm font-bold">{cycle.name}</span>
+                                <span className="mt-1 block text-xs text-white/60">{cycle.endDate.slice(0,10).split('-').reverse().join('/')} · Ver conquista</span>
+                            </button>)}
+                        </section>}
+                    </div>}
 
                     <div className="h-full w-full overflow-hidden">
                         {sequenceComplete ? renderCompletionStage() : projectionActive ? (

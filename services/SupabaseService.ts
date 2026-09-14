@@ -185,85 +185,18 @@ export class SupabaseService {
     }
     return Array.isArray(data) ? data.map(String) : [];
   }
+  /*
+   * ensureAdminAccount foi REMOVIDA.
+   *
+   * Ela inseria um perfil com role 'admin', is_premium true e 99.999 de ouro
+   * direto de uma sessao de cliente. Nao tinha um chamador sequer no projeto —
+   * era arma carregada na gaveta, esperando alguem descobrir que bastava chamar.
+   *
+   * Semear staff e trabalho de service_role ou de SQL direto, que e o que os
+   * gatilhos em 20260914210000_guard_profile_privilege_escalation.sql passaram a
+   * exigir. Um insert de cliente agora nasce como 'user' de qualquer jeito.
+   */
 
-  // Garantir conta admin soberana
-  static async ensureAdminAccount(): Promise<UserProfile | null> {
-    try {
-      const { data: existingAdmin } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (existingAdmin) return existingAdmin as UserProfile;
-
-      const sovereignConfig: SovereignConfig = {
-        body: 'body_masc_1',
-        skinTone: '#FDBCB4',
-        hairStyle: 'short',
-        hairColor: '#2C1810',
-        outfit: 'royal_robes',
-        artifact: 'scepter',
-        glyph: 'none',
-        aura: 'none',
-        orb: 'none'
-      };
-
-      const adminProfile = {
-        email: 'soberano@gol.local',
-        nickname: 'Soberano',
-        sovereign: sovereignConfig,
-        avatar_url: '',
-        border: 'GOLD',
-        level: 99,
-        background_url: '',
-        is_online: true,
-        visible_widgets: [],
-        sequence_items: [],
-        asset_art_by_id: {},
-        asset_widget_values: {},
-        assets_visibility: 'all',
-        mastery_visibility: 'all',
-        skin: 'GOLD',
-        unlocked_skins: {},
-        unlocked_items: {
-          bodyStyles: {},
-          hairStyles: {},
-          outfits: {},
-          artifacts: {},
-          codexes: {},
-          skins: {},
-          borders: {},
-          glyphs: {},
-          auras: {},
-        },
-        completed_season_missions: [],
-        nobility: { exp: 999999, rankId: 'soberano' },
-        mood: 100,
-        chests: [
-          { type: 'Comum', count: 99 },
-          { type: 'Raro', count: 50 },
-          { type: 'Épico', count: 25 },
-          { type: 'Lendário', count: 10 }
-        ],
-        wallet: { gold: 99999, fragments: 99999 },
-        inventory: [],
-        role: 'admin',
-        is_premium: true
-      };
-
-      const { data } = await supabase
-        .from('user_profiles')
-        .insert([adminProfile])
-        .select()
-        .single();
-
-      return data as UserProfile;
-    } catch (error) {
-      console.error('Erro ao criar admin:', error);
-      return null;
-    }
-  }
 
   // Sincronizar perfil
   static async syncUserProfile(profile: UserProfile): Promise<UserProfile | null> {

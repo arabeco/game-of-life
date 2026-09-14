@@ -8890,10 +8890,34 @@ export const GameProvider: React.FC<{ children: ReactNode, session: Session | nu
                 'acceptedSystemChallenges',
                 'onboardingAgeRange',
                 'onboardingPurpose',
-                'role',
-                'isPremium',
-                'premiumExpiresAt',
-                'subscriptionTier',
+                /*
+                 * `role`, `isPremium`, `premiumExpiresAt` e `subscriptionTier` SAIRAM
+                 * daqui, e nao por arrumacao.
+                 *
+                 * Esta lista roda no CLIENTE: ela decide o que o app manda, nao o que o
+                 * banco aceita. Com estes quatro dentro, o caminho era
+                 * `supabase.from('user_profiles').update(...)` na propria linha — e
+                 * qualquer pessoa com o proprio JWT chama a REST API do Supabase direto e
+                 * escreve o que quiser. Nao precisa nem abrir o app.
+                 *
+                 * `role` era o pior. Ele nao e enfeite de tela: o BANCO o honra. Em
+                 * premium_mentor_codex_rules, `role in ('admin','gm','admin_gm')` da acesso
+                 * premium; em require_golden_invite_before_user_profile_insert, passa por
+                 * cima do portao do convite. Quem se escrevesse admin_gm ganhava os tres.
+                 *
+                 * O servidor JA concede o Premium certo: a compra passa pela edge function
+                 * google-play-purchase, que valida com o Google e chama
+                 * process_approved_membership_payment, e a RPC e quem escreve is_premium,
+                 * premium_expires_at e subscription_tier. A escrita do cliente depois disso
+                 * era so um espelho — tirar nao perde nada.
+                 *
+                 * O estado local continua atualizando na hora (o setUserProfile acima roda
+                 * antes deste filtro), entao a tela reage a compra sem esperar recarga. O
+                 * que deixa de acontecer e a PERSISTENCIA.
+                 *
+                 * Isto sozinho nao protege: e defesa em profundidade. Quem fecha a porta e
+                 * o gatilho guard_user_profile_grants no banco.
+                 */
                 'premiumRewardPending',
                 'premiumRewardShownAt',
                 'premiumRewardPayload',

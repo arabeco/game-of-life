@@ -340,31 +340,58 @@ try {
 
   await clickSelector('#nav-assets');
   await waitFor('assets overview', `(() => document.querySelectorAll('[data-testid="asset-overview-card"]').length === 5)()`, 15000);
-  // A janela era 2.3-2.5 e o CSS declara `aspect-ratio: 2.8 / 1` desde 7389bac.
-  // O teste nunca foi atualizado, entao cobrava uma proporcao que o desenho
-  // abandonou — e falhava sem haver defeito.
+  // ESTE TESTE JA SOBREVIVEU AO DESENHO DUAS VEZES. Historia, para nao virar tres:
   //
-  // Medir so a proporcao tambem nao basta. O cartao tem `max-height: calc(100% - 6px)`
-  // de proposito: em tela baixa ele achata para os cinco caberem, e achatar faz a
-  // proporcao SUBIR acima de 2.8 legitimamente. O que nao pode acontecer e os cinco
-  // deixarem de caber, que e a falha que a pessoa ve. Entao o teto de 3.4 guarda o
-  // cartao de virar tarja, e a soma das alturas guarda o que importa de verdade.
+  // 1a. A janela era 2.3-2.5 e o CSS passou a declarar `aspect-ratio: 2.8/1`. O
+  //     teste cobrava uma proporcao que o desenho tinha abandonado.
+  // 2a. Em 94107c7 os cartoes viraram FAIXAS: `.asset-overview-grid` deixou de
+  //     existir e a proporcao foi de ~2.8 para ~12. O teste voltou a falhar sem
+  //     haver defeito, e ficou vermelho mascarando a suite inteira.
+  //
+  // A licao das duas: prender o teste a NUMEROS DE DESENHO o condena a envelhecer.
+  // O que ele sempre quis proteger esta escrito no proprio comentario antigo —
+  // "o que nao pode acontecer e os cinco deixarem de caber, que e a falha que a
+  // pessoa ve". Entao e isso que ele passa a medir, e so isso:
+  //
+  //   - as cinco existem e tem altura de verdade (nao viraram fio);
+  //   - a soma delas nao estoura o container;
+  //   - a ultima termina dentro da janela, que e o que "caber" significa para quem
+  //     olha a tela.
+  //
+  // Nada aqui fala de proporcao nem de nome de classe do container. Se amanha a
+  // faixa virar cartao de novo, hexagono ou lista, o teste continua valendo.
   const assetsLayout = await evaluate(`(() => {
     const cards = Array.from(document.querySelectorAll('[data-testid="asset-overview-card"]'));
-    const grid = document.querySelector('.asset-overview-grid');
-    const gridHeight = grid ? grid.getBoundingClientRect().height : 0;
     const rows = cards.map((card) => {
       const rect = card.getBoundingClientRect();
-      return { width: rect.width, height: rect.height, ratio: rect.width / Math.max(1, rect.height) };
+      return { width: Math.round(rect.width), height: Math.round(rect.height), bottom: Math.round(rect.bottom) };
     });
+    // O container e o pai comum, seja qual for a classe dele hoje.
+    const container = cards[0] ? cards[0].parentElement : null;
+    const containerHeight = container ? Math.round(container.getBoundingClientRect().height) : 0;
     const alturaTotal = rows.reduce((soma, card) => soma + card.height, 0);
-    return { rows, gridHeight, alturaTotal, cabe: gridHeight > 0 && alturaTotal <= gridHeight + 1 };
+    const ultimaBase = rows.length ? rows[rows.length - 1].bottom : 0;
+    return {
+      rows,
+      containerHeight,
+      alturaTotal,
+      alturaDaJanela: window.innerHeight,
+      cabeNoContainer: containerHeight > 0 && alturaTotal <= containerHeight + 2,
+      cabeNaTela: ultimaBase <= window.innerHeight + 2,
+    };
   })()`);
-  if (!assetsLayout || !Array.isArray(assetsLayout.rows) || assetsLayout.rows.some((card) => card.ratio < 2.7 || card.ratio > 3.4)) {
-    throw new Error(`Assets cards lost their responsive aspect ratio: ${JSON.stringify(assetsLayout)}`);
+  const ALTURA_MINIMA_DE_FAIXA = 28;
+  if (!assetsLayout || !Array.isArray(assetsLayout.rows) || assetsLayout.rows.length !== 5) {
+    throw new Error(`Assets overview nao desenhou as cinco areas: ${JSON.stringify(assetsLayout)}`);
   }
-  if (!assetsLayout.cabe) {
-    throw new Error(`Assets cards no longer fit their grid: ${JSON.stringify(assetsLayout)}`);
+  if (assetsLayout.rows.some((card) => card.height < ALTURA_MINIMA_DE_FAIXA || card.width < 80)) {
+    throw new Error(`Uma das areas colapsou a quase nada: ${JSON.stringify(assetsLayout)}`);
+  }
+  if (!assetsLayout.cabeNoContainer) {
+    throw new Error(`As cinco areas estouraram o container: ${JSON.stringify(assetsLayout)}`);
+  }
+  if (!assetsLayout.cabeNaTela) {
+    throw new Error(`A ultima area ficou fora da janela: ${JSON.stringify(assetsLayout)}`);
   }
   const headerMasteryIndex = await evaluate(`document.querySelector('[data-testid="header-mastery-index"]')?.textContent?.trim()`);
   const indiceEsperado = indiceDeContaNova();

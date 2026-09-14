@@ -1,9 +1,9 @@
 # Launch Readiness Report
 
-- Generated at: 2026-09-12T01:29:12.931Z
+- Generated at: 2026-09-14T21:03:50.135Z
 - Suite: `core`
 - Smoke URL: `http://127.0.0.1:3011/`
-- Build: SKIPPED
+- Build: PASS (16.5s)
 
 ## Checks
 
@@ -13,13 +13,13 @@
 - Simulates: escala cresce do centro da peca
 - Simulates: o gabarito do corpo bate entre o codigo e o script
 
-### PASS - Reward modal regression (0.2s)
+### PASS - Reward modal regression (0.1s)
 - Kind: `logic`
 - Simulates: trava que existe um miolo so de recompensa
 - Simulates: impede a letra solta voltar no lugar do simbolo
 - Simulates: fixa a altura do card de item
 
-### PASS - Item art regression (0.5s)
+### PASS - Item art regression (0.4s)
 - Kind: `logic`
 - Simulates: confere que todo imageUrl existe no disco
 - Simulates: trava as categorias que ainda vivem de emoji
@@ -31,7 +31,7 @@
 - Simulates: confere progresso de arenas
 - Simulates: garante insignias acumulaveis
 
-### PASS - Oracle cycle coach regression (0.3s)
+### PASS - Oracle cycle coach regression (0.2s)
 - Kind: `logic`
 - Simulates: le ritmo do ciclo localmente
 - Simulates: prioriza arena em risco
@@ -53,25 +53,25 @@
 - Simulates: a assinatura muda a regua e nao o elogio
 - Simulates: dia abaixo da media nao soa como falha
 
-### PASS - Cycle comparison regression (0.2s)
+### PASS - Cycle comparison regression (0.1s)
 - Kind: `logic`
 - Simulates: o ciclo nao entra na propria referencia
 - Simulates: dias sem entrega conta invertido
 - Simulates: mediana aguenta ciclo extremo
 
-### PASS - Subscription XP bonus regression (0.2s)
+### PASS - Subscription XP bonus regression (0.1s)
 - Kind: `logic`
 - Simulates: platinum rende mais que premium
 - Simulates: assinatura vencida nao paga bonus
 - Simulates: vitrine sai do mesmo numero do calculo
 
-### PASS - Arena pacts regression (0.3s)
+### PASS - Arena pacts regression (0.2s)
 - Kind: `logic`
 - Simulates: nao propoe arena arquivada, travada, vazia ou concluida
 - Simulates: constancia conta dias e nao acoes
 - Simulates: entrega anterior ao aceite nao conta
 
-### PASS - Cycle scheduling regression (0.2s)
+### PASS - Cycle scheduling regression (0.1s)
 - Kind: `logic`
 - Simulates: renovar uma arena nao expulsa as outras do ciclo
 - Simulates: a virada reagenda as acoes recorrentes
@@ -106,13 +106,13 @@
 - Simulates: fechar ciclo nao vibra como fechar painel
 - Simulates: o marco de sequencia tem pulso proprio
 
-### PASS - Oracle arbiter regression (0.3s)
+### PASS - Oracle arbiter regression (0.2s)
 - Kind: `logic`
 - Simulates: as seis arenas competem em vez de morrer no ranking
 - Simulates: a presenca e o corte de relevancia
 - Simulates: sem candidato ele fica quieto
 
-### PASS - Oracle presence policy regression (0.9s)
+### PASS - Oracle presence policy regression (0.7s)
 - Kind: `logic`
 - Simulates: presenca decide o que ele fala
 - Simulates: aviso decide onde chega
@@ -136,46 +136,46 @@
 - Simulates: salva a ordem no banco
 - Simulates: mantem conclusoes fora da baia
 
-### PASS - Displayed level scale regression (0.2s)
+### PASS - Displayed level scale regression (0.1s)
 - Kind: `logic`
 - Simulates: confere que area e Indice usam o mesmo fator
 - Simulates: proibe nivel cru na tela
 - Simulates: proibe dobrar a mao
 
-### PASS - Skin button contrast regression (0.2s)
+### PASS - Skin button contrast regression (0.1s)
 - Kind: `logic`
 - Simulates: interpola o gradiente do botao
 - Simulates: cobra o minimo da WCAG em cada skin
 - Simulates: trava a faixa de luz que corre sozinha
 
-### PASS - Core loop regression (0.2s)
+### PASS - Core loop regression (0.1s)
 - Kind: `logic`
 - Simulates: recalcula o core loop
 - Simulates: valida progresso de campanha/arena
 - Simulates: confere score, atlas e mutacoes utilitarias
 
-### PASS - Onboarding happy path (19.5s)
+### PASS - Onboarding happy path (18.4s)
 - Kind: `browser`
 - Simulates: entra com conta temporaria
 - Simulates: atravessa onboarding
 - Simulates: cria arena/acao inicial
 - Simulates: chega no fluxo principal sem travar
 
-### PASS - Campaign quiz flow (15.8s)
+### PASS - Campaign quiz flow (16.4s)
 - Kind: `browser`
 - Simulates: abre loja de campanhas
 - Simulates: roda quiz gratis
 - Simulates: reabre quiz completo
 - Simulates: instala campanha e confirma menu
 
-### PASS - Cycle report flow (21.1s)
+### PASS - Cycle report flow (21.0s)
 - Kind: `browser`
 - Simulates: cria ciclo real
 - Simulates: conclui tarefas
 - Simulates: fecha ciclo
 - Simulates: abre relatorio e reward flow
 
-### PASS - UI shell smoke (16.1s)
+### PASS - UI shell smoke (11.2s)
 - Kind: `browser`
 - Simulates: abre shell principal
 - Simulates: navega views centrais

@@ -45,6 +45,35 @@ interface MasteryWheelProps {
     hapticos?: boolean;
 }
 
+/**
+ * UM DEGRAU, PARADO.
+ *
+ * A mesma peca que a roda mostra no visor — selo hexagonal com o numero e a
+ * frase ao lado — para quem precisa exibir o degrau escolhido fora da roda. A
+ * ficha do ativo mostrava so a frase, com o nome do degrau ("DOMINIO") solto em
+ * caixa alta por cima: duas linguagens para a mesma coisa em duas telas.
+ *
+ * Reaproveita as classes da roda de proposito. Se o selo mudar la, muda aqui —
+ * e essa e a razao de existir em vez de uma copia do desenho.
+ */
+export const MasteryStep: React.FC<{
+    nivel: number;
+    /** O degrau mais alto da area. So serve para calcular a nobreza do selo. */
+    niveis: number;
+    frase: string;
+    className?: string;
+}> = ({ nivel, niveis, frase, className = '' }) => (
+    <div
+        className={`mastery-step ${className}`.trim()}
+        style={{ ['--nobreza' as string]: niveis > 0 ? nivel / niveis : 1 }}
+    >
+        <div className="mastery-wheel-item is-focado">
+            <span className="mastery-wheel-selo" aria-hidden="true">{nivel * PONTOS_POR_DEGRAU}</span>
+            <span className="mastery-wheel-frase">{frase}</span>
+        </div>
+    </div>
+);
+
 /** Altura de cada item, em px. Precisa ser fixa: e ela que ancora o snap. */
 const ALTURA = 84;
 /** Quantos itens cabem na janela. Impar, para haver um centro de verdade. */

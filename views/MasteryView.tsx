@@ -8,13 +8,23 @@ import { ShareIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icon
 import { shareElementWithFeedback } from '../components/Share';
 import './mastery-quiz.css';
 
+import { MasteryWheel } from '../components/MasteryWheel';
+
 const AssetPentagon = React.lazy(() => import('../components/AssetPentagon').then((m) => ({ default: m.AssetPentagon })));
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }> = ({ onClose, embedded = false }) => {
-    const { assets, updateAllAssetLevels, showToast, userProfile } = useGame();
+    const { assets, updateAllAssetLevels, showToast, userProfile, oraclePreferences } = useGame();
     const [tempLevels, setTempLevels] = useState<Record<string, number>>({});
+    /**
+     * Previa fracionaria enquanto o dedo arrasta a roda.
+     *
+     * A roda avisa o degrau que esta passando ANTES de soltar, e e isso que faz o
+     * pentagono responder ao movimento. Nunca vira resposta: quem grava e
+     * `onSelecionar`, no snap.
+     */
+    const [preview, setPreview] = useState<{ assetId: string; level: number } | null>(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
     const [currentAssetIndex, setCurrentAssetIndex] = useState(0);
@@ -193,7 +203,7 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                                 <button type="button" className="mastery-quiz-pentagon-frame mastery-quiz-pentagon-trigger" onClick={() => { if (!isAssessmentActive) startAssessment(); }} aria-label="Abrir perguntas da avaliação" aria-expanded={isAssessmentActive}>
                                     <div className="mastery-quiz-pentagon-square">
                                         <Suspense fallback={<div className="h-full w-full rounded-[1.4rem] bg-white/5" />}>
-                                            <AssetPentagon assets={assets} tempLevels={tempLevels} centralStyle="plain" destacarPontas={isAssessmentActive} activeAreaId={isAssessmentActive ? currentAsset.id : undefined} size="100%" />
+                                            <AssetPentagon assets={assets} tempLevels={isAssessmentActive && preview?.assetId === currentAsset.id ? { ...tempLevels, [currentAsset.id]: preview.level } : tempLevels} centralStyle="plain" destacarPontas={isAssessmentActive} activeAreaId={isAssessmentActive ? currentAsset.id : undefined} size="100%" />
                                         </Suspense>
                                     </div>
                                 </button>
@@ -209,12 +219,29 @@ export const MasteryView: React.FC<{ onClose?: () => void; embedded?: boolean }>
                                     </div>
                                     <span className="mastery-quiz-step">{currentAssetIndex + 1}/{filteredAssets.length}</span>
                                 </div>
-                                <div className="mastery-quiz-answer">
-                                    <label htmlFor="mastery-level">Como está essa área hoje?</label>
-                                    <p className="mastery-quiz-answer-description" aria-live="polite">{currentDescriptions[currentLevel]}</p>
-                                    <input id="mastery-level" type="range" min={0} max={sliderMax} step={1} value={currentLevel} onChange={event => handleLevelChange(Number(event.target.value))} aria-valuetext={currentDescriptions[currentLevel]} />
-                                    <div className="mastery-quiz-answer-scale"><span>0</span><output htmlFor="mastery-level">{currentLevel * PONTOS_POR_DEGRAU}/{sliderMax * PONTOS_POR_DEGRAU}</output><span>{sliderMax * PONTOS_POR_DEGRAU}</span></div>
-                                </div>
+                                {/*
+                                  * A RODA VOLTA. O slider cru era uma regressao, nao uma decisao.
+                                  *
+                                  * O commit 94107c7 trocou <MasteryWheel> por um <input
+                                  * type="range"> e um paragrafo solto: a frase perdeu o degrau ao
+                                  * lado dela, o pentagono parou de responder ao arraste e o
+                                  * componente ficou orfao no repositorio, vivo so na bancada.
+                                  *
+                                  * A roda mostra a frase escolhida inteira, as vizinhas de leve e
+                                  * o resto ao fundo, com snap degrau a degrau. A escala e a MESMA:
+                                  * `niveis={sliderMax}` continua sendo 10, e o degrau 0 — o do
+                                  * abandono — continua sendo o primeiro item da lista.
+                                  */}
+                                <MasteryWheel
+                                    key={currentAsset.id}
+                                    compacto
+                                    onVisualizar={level => setPreview({ assetId: currentAsset.id, level })}
+                                    niveis={sliderMax}
+                                    selecionado={currentLevel}
+                                    frases={currentDescriptions}
+                                    onSelecionar={handleLevelChange}
+                                    hapticos={oraclePreferences?.hapticsEnabled !== false}
+                                />
 
                                 <div className="mastery-quiz-actions">
                                     <button

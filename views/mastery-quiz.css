@@ -896,11 +896,24 @@
 
 /* A frase e do VISOR: o componente apaga a dela em menos de um passo do centro,
    entao o que sobra rolando e a coluna de selos. */
+/* A FRASE É O QUE A PESSOA LÊ SOBRE A PRÓPRIA VIDA.
+ *
+ * Estava em Inter 12.5px com entrelinha apertada — a mesma tipografia de um
+ * rótulo de botão, para o único texto da tela que pede leitura de verdade. A
+ * serifa muda o registro: ela lê como frase escrita, não como interface. E a
+ * lista pula Cinzel de propósito, que é romana e capitular — bonita em título,
+ * cansativa numa oração inteira. No Android isso cai em Noto Serif.
+ *
+ * O corpo cresce um ponto e a entrelinha abre, que é o que faz duas linhas
+ * respirarem em vez de colarem. */
 .mastery-wheel-frase {
   text-align: center;
-  font-size: 12.5px;
-  line-height: 1.42;
+  font-family: Georgia, "Iowan Old Style", "Noto Serif", "Times New Roman", serif;
+  font-size: 13.5px;
+  line-height: 1.52;
+  letter-spacing: 0.006em;
   color: #fff8ec;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -964,7 +977,7 @@
 @media (max-width: 360px) {
   .mastery-wheel-item { grid-template-columns: 40px minmax(0, 1fr); gap: 8px; padding: 0 16px; }
   .mastery-wheel-selo { width: 40px; height: 40px; }
-  .mastery-wheel-frase { font-size: 12px; -webkit-line-clamp: 4; line-height: 1.35; }
+  .mastery-wheel-frase { font-size: 12.5px; -webkit-line-clamp: 4; line-height: 1.45; }
   .is-assessing .mastery-quiz-asset-name { font-size: 16px; }
 }
 
@@ -1050,3 +1063,46 @@
 .mastery-quiz-answer input { width: 100%; min-height: 32px; accent-color: var(--mastery-accent); }
 .mastery-quiz-answer-scale { display: flex; justify-content: space-between; font-size: 11px; }
 .mastery-quiz-embedded .mastery-quiz-lower .mastery-quiz-actions { margin-top: 4px; }
+
+/* ============================================================
+ * O DEGRAU FORA DA RODA.
+ *
+ * A ficha do ativo mostra o degrau escolhido com a mesma peca do quiz: selo
+ * hexagonal com o numero, frase ao lado. Aqui ele nao rola nem tem vizinhos,
+ * entao perde o que so existia por causa disso — altura fixa de item e
+ * scroll-snap — e ganha a moldura de vidro que na roda vinha do visor.
+ *
+ * As classes internas sao as MESMAS da roda. Se o selo mudar la, muda aqui.
+ * ============================================================ */
+.mastery-step {
+  --altura-item: auto;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--mastery-accent, #d4af37) 30%, rgba(255, 255, 255, 0.14));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012) 62%),
+    rgba(10, 12, 16, 0.58);
+  backdrop-filter: blur(6px) saturate(130%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 20px rgba(0, 0, 0, 0.3);
+  padding: 10px 0;
+}
+
+.mastery-step .mastery-wheel-item {
+  height: auto;
+  padding: 0 12px;
+  cursor: default;
+  scroll-snap-align: none;
+  /* A terceira coluna vazia da roda nao cabe numa ficha estreita: sem ela a
+     frase usa a largura inteira, e o selo continua ancorando a esquerda. */
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.mastery-step .mastery-wheel-frase {
+  text-align: left;
+  -webkit-line-clamp: 4;
+}
+
+@media (max-width: 380px) {
+  .mastery-step .mastery-wheel-item { grid-template-columns: 40px minmax(0, 1fr); gap: 8px; padding: 0 10px; }
+  .mastery-step .mastery-wheel-selo { width: 40px; height: 40px; }
+}
